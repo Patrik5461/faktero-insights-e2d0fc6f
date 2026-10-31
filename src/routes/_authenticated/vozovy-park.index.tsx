@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Car, FileText, Plus } from "lucide-react";
+import { Car, CreditCard, FileText, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -55,12 +55,20 @@ function VozovyPark() {
           "Vozidlá firmy s technickým preukazom, vlastníctvom, poistkami a termínmi STK. Tie isté vozidlá používa Kniha jázd.",
         )}
         action={
-          <Link
-            to="/vozovy-park/nove"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> {t("Nové vozidlo")}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/vozovy-park/palivove-karty"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-muted"
+            >
+              <CreditCard className="h-4 w-4" /> {t("Palivové karty")}
+            </Link>
+            <Link
+              to="/vozovy-park/nove"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> {t("Nové vozidlo")}
+            </Link>
+          </div>
         }
       />
       <PageBody>

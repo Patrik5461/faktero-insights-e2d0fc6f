@@ -150,6 +150,50 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "palivove-karty",
+    title: "Palivové karty (Shell)",
+    body: (
+      <>
+        <p>
+          Vo <Link to="/vozovy-park/palivove-karty">Vozovom parku → Palivové karty</Link> pripojíte
+          kartu Shell. Od Shellu potrebujete prístup k B2B Mobility API (client ID a client secret,
+          vydáva ich Shell na požiadanie) a payer number z faktúry. Pripojiť ju smie majiteľ alebo
+          správca firmy; prístupové údaje sú uložené zašifrované a späť sa už neukážu.
+        </p>
+        <p>
+          Nákupy kartou sa načítajú každú noc aj tlačidlom <strong>Synchronizovať teraz</strong>{" "}
+          (pri prvom pripojení za posledné 3 mesiace). Karta sa k vozidlu priradí sama podľa ŠPZ,
+          ktorú má Shell pri karte; kartu vodiča priradíte ručne. Tankovanie sa zapíše k vozidlu aj
+          so stavom tachometra, ktorý vodič zadal pri platbe, a nákup sa pripočíta k nákladom
+          vozidla.
+        </p>
+        <p>
+          Účtovným dokladom je <strong>faktúra od Shellu</strong>, nie jednotlivé tankovania — pri
+          nákupe kartou je daňovým dokladom faktúra vydavateľa karty. Každá faktúra sa preto založí
+          ako jedna prijatá faktúra s rozpisom nákupov po riadkoch (dátum, palivo, ŠPZ, pumpa).
+          Poplatky za karty dorovná samostatný riadok, aby suma sedela s faktúrou. Nákupy v
+          zahraničí idú do nákladu celou sumou, lebo cudziu DPH si doma neodpočítate.
+        </p>
+        <p>
+          Keď sú všetky nákupy na faktúre z jedného auta, dostane faktúra aj vozidlo a pri aute s
+          odpočtom 50 % sa DPH rozdelí sama. Faktúra za viac áut s kráteným odpočtom má v internej
+          poznámke rozpis po autách na kontrolu.
+        </p>
+        <p>
+          Ak tú istú faktúru Shell už vo Fakteri máte (prišla e-mailom alebo ste ju nahrali), druhá
+          sa nezaloží — nákupy sa len prepoja na existujúcu. Bloček z pumpy s rovnakým dňom a sumou
+          sa označí ako <strong>aj bloček</strong>: nezaúčtujte ho, inak bude náklad aj DPH dvakrát.
+          Kto chce z karty len tankovania bez dokladov, prepne pri karte{" "}
+          <strong>Len tankovania, bez dokladov</strong>.
+        </p>
+        <p>
+          Karty DKV, Eurowag a OMV pripravujeme; pri každej je na stránke napísané, ako u vydavateľa
+          získať prístup k údajom.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "dokumenty",
     title: "Dokumenty k vozidlu",
     body: (
