@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  blocekJeUzamknuty,
   formatujDatum,
+  jeChybaUzamknutia,
   jeOdomknutie,
   jeUzamknute,
   koniecMesiaca,
@@ -83,5 +85,33 @@ describe("formatujDatum", () => {
   it("slovenský tvar a prázdna hodnota", () => {
     expect(formatujDatum("2026-07-31")).toBe("31.07.2026");
     expect(formatujDatum(null)).toBe("—");
+  });
+});
+
+describe("bločky v uzavretom období", () => {
+  it("spracovaný bloček s dátumom do zámku je uzamknutý", () => {
+    expect(blocekJeUzamknuty({ status: "processed", issue_date: "2026-09-30" }, "2026-09-30")).toBe(
+      true,
+    );
+    expect(blocekJeUzamknuty({ status: "exported", issue_date: "2026-08-01" }, "2026-09-30")).toBe(
+      true,
+    );
+    expect(blocekJeUzamknuty({ status: "processed", issue_date: "2026-10-01" }, "2026-09-30")).toBe(
+      false,
+    );
+  });
+  it("nespracovaný bloček zámok nedrží (ešte nie je v účtovníctve)", () => {
+    expect(blocekJeUzamknuty({ status: "new", issue_date: "2026-09-01" }, "2026-09-30")).toBe(
+      false,
+    );
+    expect(blocekJeUzamknuty(null, "2026-09-30")).toBe(false);
+  });
+  it("chybu spúšťača spozná z textu aj z objektu chyby", () => {
+    const sprava =
+      "Obdobie je uzamknuté do 30.09.2026. Doklad z uzavretého obdobia sa už nedá meniť ani mazať.";
+    expect(jeChybaUzamknutia(sprava)).toBe(true);
+    expect(jeChybaUzamknutia(new Error(sprava))).toBe(true);
+    expect(jeChybaUzamknutia({ message: "duplicate key" })).toBe(false);
+    expect(jeChybaUzamknutia(null)).toBe(false);
   });
 });

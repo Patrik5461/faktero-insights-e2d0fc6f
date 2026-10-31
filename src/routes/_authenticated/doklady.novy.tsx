@@ -79,6 +79,7 @@ import {
 import { ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { blocekJeUzamknuty, formatujDatum, HLASKA_ZAMKNUTY_BLOCEK, jeChybaUzamknutia } from "@/lib/faktero/uzavierka";
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový doklad — Faktero") }] }),
   // `prenos` znamená, že bloček prečítaný v skeneri čaká v `sessionStorage`.
@@ -247,6 +248,36 @@ function NovyDokladPage() {
     toast.success(zamknut ? t("Doklad je zamknutý") : t("Doklad je odomknutý"));
     await obnovUlozeny();
   }
+  /* Uzávierka firmy — spracovaný bloček s dátumom do nej sa už nemení (spúšťač v DB). */
+  const [uzamknuteDo, setUzamknuteDo] = useState<string | null>(null);
+  useEffect(() => {
+    if (!cid) return;
+    supabase
+      .from("companies")
+      .select("locked_until")
+      .eq("id", cid)
+      .maybeSingle()
+      .then(({ data }) => setUzamknuteDo(((data as any)?.locked_until as string | null) ?? null));
+  }, [cid]);
+  const zamknutyObdobim = blocekJeUzamknuty(
+    ulozeny ? { status: stavDokladu ?? ulozeny.status, issue_date: ulozeny.issue_date } : null,
+    uzamknuteDo,
+  );
+  /** Chyba zápisu — odmietnutie uzávierkou povie, čo sa dá a čo nie. */
+  const chybaZapisu = (e: any, nahrada: string) =>
+    jeChybaUzamknutia(e) ? t(HLASKA_ZAMKNUTY_BLOCEK) : (e?.message ?? t(nahrada));
+  const pasZamku = zamknutyObdobim ? (
+    <div
+      role="status"
+      className="mx-auto mb-3 flex max-w-6xl items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+    >
+      <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+      <span>
+        {t("Obdobie je uzamknuté do {datum}.", { datum: formatujDatum(uzamknuteDo) })} {t(HLASKA_ZAMKNUTY_BLOCEK)}
+      </span>
+    </div>
+  ) : null;
+
   async function obnovUlozeny() {
     if (!search.id) return;
     const { data } = await supabase
@@ -685,7 +716,7 @@ function NovyDokladPage() {
         },
       });
     } catch (e: any) {
-      toast.error(e?.message ?? t("Uloženie zlyhalo"));
+      toast.error(chybaZapisu(e, "Uloženie zlyhalo"));
     } finally {
       setSaving(false);
     }
@@ -698,7 +729,7 @@ function NovyDokladPage() {
       toast.success(t("Doklad je v koši"));
       navigate({ to: "/doklady" });
     } catch (e: any) {
-      toast.error(e?.message ?? t("Nepodarilo sa"));
+      toast.error(chybaZapisu(e, "Nepodarilo sa"));
     }
   }
   async function spracuj() {
@@ -792,6 +823,7 @@ function NovyDokladPage() {
           }
         />
         <PageBody>
+          {pasZamku}
           {ulozeny.inbox_message_id ? (
             <div className="mx-auto mb-3 flex max-w-6xl justify-end">
               <ZdrojovyMailTlacidlo druh="doklad" id={ulozeny.id} inboxMessageId={ulozeny.inbox_message_id} />
@@ -925,6 +957,7 @@ function NovyDokladPage() {
         }
       />
       <PageBody>
+        {pasZamku}
         <RozlozenieSNahladom
           className={nahladVedla ? "grid grid-cols-1 gap-5" : "mx-auto max-w-3xl"}
           stlpceVlavo="lg:grid-cols-[minmax(0,1fr)_minmax(0,48rem)]"

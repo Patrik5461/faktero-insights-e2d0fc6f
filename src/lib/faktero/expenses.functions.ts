@@ -214,6 +214,20 @@ export const createExpenseFn = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .maybeSingle();
       if (uz) return uz;
+      /*
+        Bloček s týmto id už mohol byť presunutý do Nespracovaných (nastavenie
+        firmy `qr_blocky_do_nespracovanych`) — v Bločkoch ho už niet, ale
+        zapísať ho znova by v Nespracovaných vyrobilo druhú kópiu.
+      */
+      const { presunutyBlocek } = await import("./nespracovane.server");
+      const presunuty = await presunutyBlocek(supabase as any, data.id);
+      if (presunuty)
+        return {
+          id: data.id,
+          company_id: data.company_id,
+          status: "new" as const,
+          nespracovany_id: presunuty,
+        } as unknown as NonNullable<typeof uz> & { nespracovany_id: string };
     }
     const qr = data.qr_raw?.trim();
     if (qr) {
@@ -258,20 +272,31 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       "expense_documents",
       data,
     );
-    const { data: row, error } = await supabase
-      .from("expense_documents")
-      .insert({
-        ...data,
-        // Ručný zápis bez obrázka nesmie mať zdroj „fotka“.
-        source: zdrojVydavku(data.source, Boolean(data.file_path)),
-        ...kurz,
-        created_by: userId,
-        ...(rovnoSpracovany
-          ? { status: "processed", processed_at: new Date().toISOString(), processed_by: userId }
-          : { status: "new" }),
-      })
-      .select("*")
-      .single();
+    const zapis = (spracovany: boolean) =>
+      supabase
+        .from("expense_documents")
+        .insert({
+          ...data,
+          // Ručný zápis bez obrázka nesmie mať zdroj „fotka“.
+          source: zdrojVydavku(data.source, Boolean(data.file_path)),
+          ...kurz,
+          created_by: userId,
+          ...(spracovany
+            ? { status: "processed", processed_at: new Date().toISOString(), processed_by: userId }
+            : { status: "new" }),
+        })
+        .select("*")
+        .single();
+    let { data: row, error } = await zapis(rovnoSpracovany);
+    /*
+      Bloček s dátumom v uzavretom období (uzávierka) do účtovníctva rovno ísť
+      nesmie — spúšťač ho odmietne. Neprepadne však: uloží sa ako nespracovaný
+      a účtovník rozhodne, kam patrí. Inak by fronta appky uviazla na chybe.
+    */
+    if (error && rovnoSpracovany) {
+      const { jeChybaUzamknutia } = await import("./uzavierka");
+      if (jeChybaUzamknutia(error)) ({ data: row, error } = await zapis(false));
+    }
     if (error) {
       // Dva pokusy naraz s tým istým id (fronta v appke a poslucháč siete): druhý
       // narazí na primárny kľúč — vráti sa ten, čo prešiel.
@@ -286,6 +311,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       }
       throw new Error(error.message);
     }
+    if (!row) throw new Error("Doklad sa nepodarilo uložiť.");
     if (ciel === "presun-do-nespracovanych") {
       const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
       const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));

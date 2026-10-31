@@ -291,6 +291,8 @@ function InvoiceDetail() {
   const datumOkno = useAktualnyDatum();
   /** Pôvodný dátum potvrdený pri doklade, ktorý sa zmeniť nedá. */
   const [potvrdenyStaryDatum, setPotvrdenyStaryDatum] = useState(false);
+  /** Číslo, s ktorým sa predvyplnil predmet a text mailu — server ho pri odoslaní zladí s aktuálnym. */
+  const cisloVOkneRef = useRef<string | null>(null);
   function poOdoslaniEfaktury(r: { status: string }) {
     setEfakturaOkno(false);
     /* V testovacom režime doklad do siete Peppol nejde — hláška to musí
@@ -980,6 +982,7 @@ function InvoiceDetail() {
         krajina: krajinaDane((company as any)?.country),
       }),
     });
+    cisloVOkneRef.current = fa.invoice_number ?? null;
     setEmailForm({
       recipient_email: adresa ?? "",
       subject: predvolenyMail.predmet,
@@ -1003,6 +1006,7 @@ function InvoiceDetail() {
           message: emailForm.message,
           s_prilohami: pocetPriloh > 0 && posielatPrilohy,
           potvrdeny_stary_datum: potvrdenyStaryDatum || undefined,
+          cislo_v_okne: cisloVOkneRef.current ?? undefined,
         },
       });
       toast.success(t("E-mail odoslaný"));

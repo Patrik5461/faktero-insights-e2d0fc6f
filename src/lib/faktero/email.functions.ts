@@ -11,6 +11,8 @@ const Input = z.object({
   s_prilohami: z.boolean().optional(),
   /** Odoslať so starším dátumom vystavenia — len keď sa zmeniť nedá. */
   potvrdeny_stary_datum: z.boolean().optional(),
+  /** Číslo faktúry, s ktorým sa predvyplnil predmet a text okna. */
+  cislo_v_okne: z.string().max(100).optional(),
 });
 
 export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
@@ -34,6 +36,7 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
       message: data.message,
       s_prilohami: data.s_prilohami,
       potvrdeny_stary_datum: data.potvrdeny_stary_datum,
+      cislo_v_okne: data.cislo_v_okne,
       user_id: context.userId,
     });
   });

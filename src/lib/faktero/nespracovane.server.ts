@@ -648,12 +648,41 @@ export async function varovaniaNespracovaneho(
 }
 
 /**
+ * Id nespracovaného dokladu vzniknutého presunom bločku — to isté ako id
+ * bločku. Vďaka tomu je presun idempotentný: druhý pokus narazí na primárny
+ * kľúč namiesto založenia druhej kópie, a opakované uloženie z appky s tým
+ * istým id (`createExpenseFn`) presunutý bloček nájde.
+ */
+export function idPresunutehoBlocku(idBlocku: string): string {
+  return idBlocku;
+}
+
+/** Id nespracovaného dokladu, ktorý vznikol presunom bločku `idBlocku`, ak existuje. */
+export async function presunutyBlocek(supabase: Klient, idBlocku: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("nespracovane_doklady")
+    .select("id")
+    .eq("id", idPresunutehoBlocku(idBlocku))
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
+}
+
+/**
  * Nespracovaný bloček do Nespracovaných dokladov (presun aj so skenom).
  * Odovzdaný či spárovaný ostáva bločkom — vráti `{ id: null }`.
  */
 export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string, userId: string | null) {
   const { data: e } = await supabase.from("expense_documents").select("*").eq("id", id_).maybeSingle();
-  if (!e) throw new Error("Doklad sa nenašiel.");
+  if (!e) {
+    /*
+      Presun je idempotentný: nespracovaný doklad dostane to isté id ako
+      bloček (`idPresunutehoBlocku`). Druhé volanie (dvojklik, opakovaný pokus
+      fronty v appke po výpadku) bloček už nenájde — vráti hotový presun.
+    */
+    const uz = await presunutyBlocek(supabase, id_);
+    if (uz) return { id: uz };
+    throw new Error("Doklad sa nenašiel.");
+  }
   if (e.status !== "new" || e.exported_at) return { id: null as string | null };
   const { data: parovany } = await supabase
     .from("bank_transactions")
@@ -693,16 +722,20 @@ export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string
     intPoznamka: e.int_poznamka ?? "",
   };
 
-  const id = crypto.randomUUID();
+  const id = idPresunutehoBlocku(e.id);
   let cesta: string | null = null;
   if (e.file_path) {
     const { data: subor } = await supabase.storage.from("expense-receipts").download(e.file_path);
     if (subor) {
       const pripona = String(e.file_path).split(".").pop()?.toLowerCase().slice(0, 5) || "jpg";
       cesta = `${e.company_id}/${id}.${pripona}`;
+      // upsert: súbežný presun toho istého bločku zapisuje ten istý súbor.
       const up = await supabase.storage
         .from("nespracovane")
-        .upload(cesta, new Uint8Array(await subor.arrayBuffer()), { contentType: e.file_mime ?? subor.type });
+        .upload(cesta, new Uint8Array(await subor.arrayBuffer()), {
+          contentType: e.file_mime ?? subor.type,
+          upsert: true,
+        });
       if (up.error) throw new Error(`Súbor sa nepodarilo presunúť: ${up.error.message}`);
     }
   }
@@ -722,6 +755,15 @@ export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string
     udaje: u,
   });
   if (error) {
+    /*
+      Súbežný presun toho istého bločku (dvojklik, fronta appky) už riadok
+      založil — primárny kľúč druhý zápis odmietne. Súbor nemažeme, patrí
+      tomu riadku; bloček dorobíme zmazať, ak to prvý presun ešte nestihol.
+    */
+    if (error.code === "23505" && (await presunutyBlocek(supabase, id))) {
+      await supabase.from("expense_documents").delete().eq("id", e.id);
+      return { id: id as string | null };
+    }
     if (cesta) await supabase.storage.from("nespracovane").remove([cesta]);
     throw new Error(error.message);
   }
