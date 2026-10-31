@@ -77,7 +77,7 @@ import { formatovacMeny, formatujMnozstvo } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
-import { UdajePreUctovnika, useSirokaPreNahlad, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
+import { UdajePreUctovnika, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
 import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
 import { rezimDphPrijatej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
@@ -147,7 +147,6 @@ function PurchaseInvoiceDetail() {
   const [nahlad, setNahlad] = useState<string | null>(null);
   // Doklad stále vľavo vedľa údajov — pri účtovaní ho netreba hľadať pod formulárom.
   const nahladDetail = useNahladVDetaile();
-  const sirokaPreNahlad = useSirokaPreNahlad();
   // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
   const kompaktne = useDizajn() === "kompaktny";
   const [oknoUhrad, setOknoUhrad] = useState(false);
@@ -761,7 +760,8 @@ function PurchaseInvoiceDetail() {
     navrchu údaje pre účtovníka a úhrada, a to, čo len opakuje doklad
     (strany, položky, poznámka), je zbalené v „Údajoch faktúry“.
   */
-  const pdfRozlozenie = nahladDetail.zapnuty && !!row.file_path && sirokaPreNahlad;
+  // Ako nespracovaný doklad: náhľad na jednej strane, údaje na druhej; na mobile nad/pod nimi.
+  const pdfRozlozenie = nahladDetail.zapnuty && !!row.file_path;
   const udajeUctovnika: UdajeUctovnika = {
     cislo: row.invoice_number,
     druh: titulok,
@@ -1200,6 +1200,7 @@ function PurchaseInvoiceDetail() {
           subor={nahlad ? { url: nahlad, obrazok: (row.file_mime ?? "").startsWith("image/") } : undefined}
           nazov={[row.invoice_number, row.supplier_name].filter(Boolean).join(" · ")}
           onSkryt={() => nahladDetail.prepni(false)}
+          naMobile
           akcie={
             <button
               type="button"

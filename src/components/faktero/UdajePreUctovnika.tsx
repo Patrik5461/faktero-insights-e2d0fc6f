@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { CheckCircle2, ClipboardList, Lock } from "lucide-react";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import type { SkupinaRozpisu } from "@/lib/faktero/rozpis-dph";
@@ -7,24 +7,6 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { popiskyIdentifikatorov } from "@/lib/faktero/firma-de";
-
-/**
- * Šírka, pri ktorej je PDF vedľa údajov (rovnaká hranica ako v
- * DetailSNahladom). Na užšej obrazovke sa PDF nekreslí, preto detail
- * ostáva v pôvodnom rozložení so všetkými údajmi rozbalenými.
- */
-export function useSirokaPreNahlad() {
-  const [siroka, setSiroka] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const zmena = () => setSiroka(mq.matches);
-    zmena();
-    mq.addEventListener("change", zmena);
-    return () => mq.removeEventListener("change", zmena);
-  }, []);
-  return siroka;
-}
 
 export type UdajeUctovnika = {
   cislo: string | null | undefined;
