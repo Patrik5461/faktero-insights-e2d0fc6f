@@ -24,7 +24,12 @@ export const Route = createFileRoute("/api/public/csp-report")({
         }
         if (++zaMinutu > 30) return new Response(null, { status: 204 });
         try {
-          const text = (await request.text().catch(() => "")).slice(0, 8000);
+          // Telo najviac 64 kB — `request.text()` by načítalo do pamäte čokoľvek (nginx pustí 20 MB).
+          const { citajTelo } = await import("@/lib/systemove-chyby/prijem");
+          const text = ((await citajTelo(request, 64 * 1024).catch(() => null)) ?? "").slice(
+            0,
+            8000,
+          );
           const { rozoberCspHlasenia, spravaCsp } = await import("@/lib/systemove-chyby/csp");
           const hlasenia = rozoberCspHlasenia(text);
           if (!hlasenia.length) return new Response(null, { status: 204 });

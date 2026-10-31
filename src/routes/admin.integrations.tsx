@@ -21,6 +21,9 @@ const listIntegrationsAdmin = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
     if (!admin) throw new Error("Forbidden");
+    // Od ADMIN_2FA_POVINNE_OD len s reláciou aal2 (admin-dvojfaktor.ts) — platform_admins
+    // sa tu číta servisným kľúčom, takže kontrolu v is_platform_admin() to obíde.
+    (await import("@/lib/faktero/admin-dvojfaktor.server")).vyzadujAal2Admina();
     const { data: conns } = await supabaseAdmin
       .from("commander_connections")
       .select(

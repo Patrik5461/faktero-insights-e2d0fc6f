@@ -4,6 +4,11 @@ const rpc = vi.fn(async () => ({ data: [{ id: "x", nova: true, upozornit: false 
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc } }));
 
 import {
+  MAX_UPOZORNENI_KLIENTA,
+  _resetUpozorneniKlienta,
+  bezOdkazov,
+  smieUpozornit,
+  textUpozornenia,
   pouzivatelZHlaviciek,
   pripravRiadok,
   urovenChybyFunkcie,
@@ -95,5 +100,38 @@ describe("zaznamenajChybu", () => {
   it("zdroj podľa cesty", () => {
     expect(zdrojPodlaCesty("/api/public/hooks/bank-sync")).toBe("hook");
     expect(zdrojPodlaCesty("/api/v1/invoices")).toBe("server");
+  });
+});
+
+describe("upozornenia z verejného endpointu (audit 31. 10.)", () => {
+  it("chyby z prehliadača a appky majú spoločný hodinový strop, server nie", () => {
+    let t = 1_000_000;
+    _resetUpozorneniKlienta(() => t);
+    // Útočník pošle 60 rôznych „chýb“ za minútu — do Telegramu ich prejde len strop.
+    let pustene = 0;
+    for (let i = 0; i < 60; i++) if (smieUpozornit(i % 2 ? "appka" : "prehliadac")) pustene++;
+    expect(pustene).toBe(MAX_UPOZORNENI_KLIENTA);
+    expect(smieUpozornit("server")).toBe(true);
+    expect(smieUpozornit("hook")).toBe(true);
+    t += 3_600_001;
+    expect(smieUpozornit("prehliadac")).toBe(true);
+  });
+
+  it("odkazy v texte od klienta nie sú klikateľné a text je označený", () => {
+    expect(bezOdkazov("Kliknite na https://zly.example/x alebo www.faktero-login.sk")).toBe(
+      "Kliknite na https[:]//zly[.]example/x alebo www[.]faktero-login[.]sk",
+    );
+    const r = pripravRiadok({
+      zdroj: "prehliadac",
+      sprava: "Účet zablokovaný, overte sa na https://faktero-overenie.com/login",
+      trasa: "/dashboard",
+    });
+    const text = textUpozornenia(r, true);
+    expect(text).toContain("bez overenia");
+    expect(text).not.toContain("https://faktero-overenie.com");
+    expect(text).toContain("/admin/errors");
+    // Serverová chyba ostáva bez zmeny.
+    const s = pripravRiadok({ zdroj: "server", sprava: "fetch failed https://api.example.com" });
+    expect(textUpozornenia(s, true)).toContain("https://api.example.com");
   });
 });

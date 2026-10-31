@@ -441,3 +441,20 @@ export function prijataZFaktury(
   };
   return { riadok, naKontrolu, poznamky };
 }
+
+/* ------------------------------------------------------------- prístup */
+
+/**
+ * Aké oprávnenia potrebuje uloženie nahratého výpisu (audit 31. 10. 2026).
+ * Evidencia a tankovania patria do Knihy jázd, ale pripojenie v režime
+ * „faktura“ zakladá aj prijatú faktúru s číslami z nahratého súboru — to je
+ * oblasť Prijaté faktúry a doklady. Človek s vlastným prístupom len na jazdy
+ * by inak cez výpis dostal do účtovníctva ľubovoľnú prijatú faktúru.
+ */
+export function pristupUlozeniaVypisu(
+  rezim: string | null | undefined,
+): { oblast: "jazdy" | "doklady"; zapis: true }[] {
+  const p: { oblast: "jazdy" | "doklady"; zapis: true }[] = [{ oblast: "jazdy", zapis: true }];
+  if (rezim === "faktura") p.push({ oblast: "doklady", zapis: true });
+  return p;
+}
