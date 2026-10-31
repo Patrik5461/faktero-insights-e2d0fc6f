@@ -2,9 +2,12 @@
  * Kam s plávajúcim tlačidlom AI na úzkej obrazovke, aby nič neprekrývalo.
  *
  * Tlačidlo je na telefóne úzka záložka prilepená k pravému okraju (`SIRKA` × `VYSKA`,
- * `ODSTUP` od spodku). Sedí v pásiku, ktorý tvorí okraj stránky (16 px) a vnútorný
- * okraj karty (16 px) — sumy a ikony zarovnané doprava v kartách ho teda nekryjú,
- * ani keď stránka stojí hore a obsah pod tlačidlom práve je. Obsah stránky
+ * `ODSTUP` od spodku). Na okraj stránky (16 px) a vnútorný okraj karty sa spoliehať
+ * nedá — karty zoznamov majú `p-3` (12 px) + rámček, takže suma, „Vymazať“ či ikona
+ * koša končia na 361 px a záložka (od 358 px) ich kryla. Preto `main` dostane na
+ * telefóne vpravo rezervu `REZERVA_VPRAVO` (CSS premenná `--ai-rezerva-vpravo`,
+ * `html[data-ai-tlacidlo]` v styles.css): obsah stránky končí pred záložkou, nech
+ * má karta akýkoľvek vnútorný okraj, a pri rolovaní pod ňu nič nezapadne. Obsah stránky
  * pod neho nikdy nezapadne natrvalo — `main` má na telefóne rezervu na spodku
  * (`html[data-ai-tlacidlo]` v styles.css), takže posledné tlačidlo stránky sa
  * dá vždy odrolovať nad neho. Čo sa odrolovať nedá, sú pevné (`fixed`) alebo
@@ -17,6 +20,20 @@ export const VYSKA = 44;
 export const ODSTUP = 16;
 /** Medzera medzi lištou a zdvihnutým tlačidlom. */
 export const MEDZERA = 8;
+/** Bočný okraj stránok na telefóne (`PageBody` px-4). */
+export const OKRAJ_STRANKY = 16;
+/** Voľné miesto medzi obsahom stránky a záložkou. */
+export const MEDZERA_VPRAVO = 4;
+/**
+ * Pravý vnútorný okraj `main` na telefóne: spolu s okrajom stránky obsah
+ * (aj rámček karty) skončí `MEDZERA_VPRAVO` pred záložkou.
+ */
+export const REZERVA_VPRAVO = SIRKA + MEDZERA_VPRAVO - OKRAJ_STRANKY;
+
+/** Pravý okraj obsahu stránky (rámček karty) pri šírke okna `sirka`. */
+export function pravyOkrajObsahu(sirka: number, okrajStranky = OKRAJ_STRANKY): number {
+  return sirka - REZERVA_VPRAVO - okrajStranky;
+}
 
 export type Prekazka = { top: number; bottom: number; left: number; right: number };
 

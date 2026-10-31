@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ODSTUP,
+  REZERVA_VPRAVO,
   SIRKA,
   VYSKA,
   pisaciePole,
@@ -11,7 +12,8 @@ import {
 /**
  * Plávajúce tlačidlo AI na úzkej obrazovke (bez odtiahnutia):
  * - `main` dostane rezervu na spodku (`html[data-ai-tlacidlo]`), takže
- *   posledné ovládače stránky sa dajú odrolovať nad tlačidlo;
+ *   posledné ovládače stránky sa dajú odrolovať nad tlačidlo, a vpravo
+ *   (`--ai-rezerva-vpravo`), takže obsah končí pred záložkou;
  * - nad pevnú/prilepenú lištu pri spodku sa tlačidlo zdvihne (`zdvih` v px);
  * - kým sa píše do poľa (otvorená klávesnica), je skryté (`skryte`).
  */
@@ -27,6 +29,7 @@ export function useMiestoAiTlacidla(aktivne: boolean): { zdvih: number; skryte: 
     }
     const html = document.documentElement;
     html.dataset.aiTlacidlo = "";
+    html.style.setProperty("--ai-rezerva-vpravo", `${REZERVA_VPRAVO}px`);
 
     let ramec = 0;
     const prepocitaj = () => {
@@ -90,6 +93,7 @@ export function useMiestoAiTlacidla(aktivne: boolean): { zdvih: number; skryte: 
     });
     return () => {
       delete html.dataset.aiTlacidlo;
+      html.style.removeProperty("--ai-rezerva-vpravo");
       if (ramec) cancelAnimationFrame(ramec);
       window.removeEventListener("scroll", naplanuj, { capture: true });
       window.removeEventListener("resize", naplanuj);

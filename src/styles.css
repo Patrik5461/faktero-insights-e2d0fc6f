@@ -641,10 +641,14 @@ select.input {
   spodku hlavného obsahu dovolí odrolovať posledné ovládače stránky (pätička
   formulára, Uložiť/Zaúčtovať v kompaktnom paneli…) nad neho. Atribút nastavuje
   `useMiestoAiTlacidla`, len kým je tlačidlo na svojom mieste.
+  Vpravo dostane `main` rezervu na šírku záložky (REZERVA_VPRAVO
+  v ai-tlacidlo-miesto.ts): karty zoznamov majú len 12 px vnútorný okraj a suma
+  či „Vymazať“ by inak zapadli pod záložku.
 */
 @media (max-width: 639px) {
   html[data-ai-tlacidlo] main#obsah {
     padding-bottom: 4.5rem;
+    padding-right: var(--ai-rezerva-vpravo, 20px);
   }
 }
 

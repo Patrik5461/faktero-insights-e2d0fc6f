@@ -288,9 +288,13 @@ export default {
           });
           if (!lista) return { chyba: null, bezListy: true };
           // Odroluj tak, aby sekcia bola dole nad lištou, a pozri, či sa celá zmestí.
+          // Prilepená lišta stojí `bottom` px nad spodkom okna (sticky bottom-4 = 16 px) —
+          // bez neho tok odroloval sekciu 8 px POD lištu a hlásil prekryv, ktorý
+          // používateľ odrolovaním ďalej nemá (snímka 1440 po odrolovaní na koniec).
           const vyskaListy = lista.getBoundingClientRect().height;
+          const odSpodku = parseFloat(getComputedStyle(lista).bottom) || 0;
           const rk = karta.getBoundingClientRect();
-          window.scrollBy(0, rk.bottom - (window.innerHeight - vyskaListy - 8));
+          window.scrollBy(0, rk.bottom - (window.innerHeight - odSpodku - vyskaListy - 8));
           await new Promise((res) => setTimeout(res, 300));
           const rk2 = karta.getBoundingClientRect();
           const rl = lista.getBoundingClientRect();

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { MEDZERA, ODSTUP, VYSKA, zdvihTlacidla } from "./ai-tlacidlo-miesto";
+import {
+  MEDZERA,
+  ODSTUP,
+  OKRAJ_STRANKY,
+  REZERVA_VPRAVO,
+  SIRKA,
+  VYSKA,
+  pravyOkrajObsahu,
+  zdvihTlacidla,
+} from "./ai-tlacidlo-miesto";
 
 const okno = { sirka: 390, vyska: 844 };
 
@@ -36,5 +45,24 @@ describe("zdvihTlacidla", () => {
   it("tlačidlo neujde nad hornú hlavičku", () => {
     const vysoka = { top: 430, bottom: 844, left: 0, right: 390 };
     expect(zdvihTlacidla([vysoka], okno)).toBeLessThanOrEqual(844 - VYSKA - 2 * ODSTUP - 56);
+  });
+});
+
+describe("rezerva vpravo pre záložku", () => {
+  it("obsah stránky končí pred záložkou aj pri karte s malým okrajom", () => {
+    for (const sirka of [320, 360, 390, 430, 639]) {
+      const karta = pravyOkrajObsahu(sirka);
+      expect(karta).toBeLessThanOrEqual(sirka - SIRKA - 1);
+      // Karta p-3 (12 px) + rámček: suma „24,60 €“ končila na 361 px pri 390 px.
+      expect(karta - 13).toBeLessThan(sirka - SIRKA);
+    }
+  });
+
+  it("aj stránka s užším okrajom (px-3) nezasahuje pod záložku", () => {
+    expect(pravyOkrajObsahu(390, 12)).toBeLessThanOrEqual(390 - SIRKA);
+  });
+
+  it("rezerva nie je zbytočne veľká (obsah nestráca viac než šírku záložky)", () => {
+    expect(REZERVA_VPRAVO + OKRAJ_STRANKY).toBeLessThanOrEqual(SIRKA + 8);
   });
 });
