@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PrepinacDizajnu } from "@/components/faktero/PrepinacDizajnu";
+import { VolbaStranyNahladu } from "@/components/faktero/RozlozenieSNahladom";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,6 +146,17 @@ function SettingsPage() {
             </p>
             <div className="mt-2">
               <PrepinacRozlozenia />
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="text-sm font-medium">{t("Strana náhľadu dokladu")}</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t(
+                "Či je náhľad dokladu (PDF, sken bločku) naľavo alebo napravo od údajov — pri bločku, prijatej a vystavenej faktúre, v Nespracovaných dokladoch aj pri náhľade vedľa zoznamu. Na úzkej obrazovke znamená vľavo náhľad hore a vpravo dole. Prepnúť sa dá aj tlačidlom priamo v hlavičke náhľadu.",
+              )}
+            </p>
+            <div className="mt-2">
+              <VolbaStranyNahladu />
             </div>
           </div>
         </div>

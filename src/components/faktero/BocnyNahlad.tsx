@@ -1,5 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ExternalLink, Loader2, PanelLeft, X } from "lucide-react";
+import { ExternalLink, Loader2, PanelLeft, PanelRight, X } from "lucide-react";
+import {
+  PrepinacStranyNahladu,
+  RozlozenieSNahladom,
+} from "@/components/faktero/RozlozenieSNahladom";
+import { useStranaNahladu } from "@/hooks/useStranaNahladu";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { useT } from "@/lib/i18n/useT";
 
@@ -49,27 +54,35 @@ export function PrepinacNahladu({
   prepni: (on: boolean) => void;
 }) {
   const { t } = useT();
+  const { strana } = useStranaNahladu();
   return (
     <button
       type="button"
       aria-pressed={zapnuty}
       onClick={() => prepni(!zapnuty)}
-      title={t(
-        "Po kliknutí na riadok sa doklad ukáže vľavo vedľa zoznamu. Šípkami hore a dole prechádzate ďalšie.",
-      )}
+      title={
+        strana === "vpravo"
+          ? t(
+              "Po kliknutí na riadok sa doklad ukáže vpravo vedľa zoznamu. Šípkami hore a dole prechádzate ďalšie.",
+            )
+          : t(
+              "Po kliknutí na riadok sa doklad ukáže vľavo vedľa zoznamu. Šípkami hore a dole prechádzate ďalšie.",
+            )
+      }
       className={`hidden items-center gap-1.5 rounded-md border px-3 py-2 text-sm lg:inline-flex ${
         zapnuty
           ? "border-primary/40 bg-primary/10 text-primary-hover"
           : "border-border hover:bg-secondary"
       }`}
     >
-      <PanelLeft className="h-4 w-4" /> {t("Náhľad vedľa zoznamu")}
+      {strana === "vpravo" ? <PanelRight className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}{" "}
+      {t("Náhľad vedľa zoznamu")}
     </button>
   );
 }
 
 /**
- * Rozloženie zoznamu s náhľadom vľavo. Bez zapnutého náhľadu vráti len zoznam.
+ * Rozloženie zoznamu s náhľadom vedľa (strana podľa `useStranaNahladu`). Bez zapnutého náhľadu vráti len zoznam.
  *
  * `nacitaj` dostane id vybraného dokladu a vráti adresu súboru; volá sa pri
  * každej zmene výberu, staršia odpoveď sa zahodí.
@@ -118,64 +131,71 @@ export function SNahladom({
 
   if (!zapnuty) return <>{children}</>;
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-4">
-      <aside
-        aria-label={t("Náhľad dokladu")}
-        className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
-      >
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
-          <span className="min-w-0 flex-1 truncate font-medium">
-            {vybrany ? (nazov ?? t("Doklad")) : t("Náhľad dokladu")}
-          </span>
-          {vybrany && (
-            <>
-              <button
-                type="button"
-                onClick={() => onOtvorit(vybrany)}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-              >
-                <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť detail")}
-              </button>
-              <button
-                type="button"
-                aria-label={t("Zavrieť náhľad")}
-                onClick={onZavriet}
-                className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </>
-          )}
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
-          {stav === "prazdny" && (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              {t(
-                "Kliknite na doklad v zozname a ukáže sa tu. Šípkami hore a dole prejdete na ďalší.",
-              )}
-            </p>
-          )}
-          {stav === "citam" && (
-            <div className="flex justify-center p-6 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          )}
-          {stav === "chyba" && (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              {t("K dokladu nie je súbor na náhľad.")}
-            </p>
-          )}
-          {stav === "hotovo" && subor ? (
-            subor.obrazok ? (
-              <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
-            ) : (
-              <NahladPdf key={subor.url} url={subor.url} />
-            )
-          ) : null}
-        </div>
-      </aside>
+    <RozlozenieSNahladom
+      className="lg:grid lg:items-start lg:gap-4"
+      stlpceVlavo="lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+      stlpceVpravo="lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
+      nahlad={
+        <aside
+          aria-label={t("Náhľad dokladu")}
+          className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
+        >
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
+            <span className="min-w-0 flex-1 truncate font-medium">
+              {vybrany ? (nazov ?? t("Doklad")) : t("Náhľad dokladu")}
+            </span>
+            <PrepinacStranyNahladu />
+            {vybrany && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onOtvorit(vybrany)}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť detail")}
+                </button>
+                <button
+                  type="button"
+                  aria-label={t("Zavrieť náhľad")}
+                  onClick={onZavriet}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
+            {stav === "prazdny" && (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {t(
+                  "Kliknite na doklad v zozname a ukáže sa tu. Šípkami hore a dole prejdete na ďalší.",
+                )}
+              </p>
+            )}
+            {stav === "citam" && (
+              <div className="flex justify-center p-6 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            )}
+            {stav === "chyba" && (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {t("K dokladu nie je súbor na náhľad.")}
+              </p>
+            )}
+            {stav === "hotovo" && subor ? (
+              subor.obrazok ? (
+                <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
+              ) : (
+                <NahladPdf key={subor.url} url={subor.url} />
+              )
+            ) : null}
+          </div>
+        </aside>
+      }
+    >
       <div className="min-w-0">{children}</div>
-    </div>
+    </RozlozenieSNahladom>
   );
 }
 
@@ -240,8 +260,8 @@ export function useNahladVDetaile() {
 }
 
 /**
- * Detail dokladu s PDF stále vľavo a údajmi vpravo (len na širokej
- * obrazovke). Bez náhľadu vráti obsah tak, ako bol.
+ * Detail dokladu s PDF stále vedľa údajov (len na širokej obrazovke; strana
+ * podľa `useStranaNahladu`, predvolene vľavo). Bez náhľadu vráti obsah tak, ako bol.
  */
 export function DetailSNahladom({
   zobrazit,
@@ -262,43 +282,50 @@ export function DetailSNahladom({
   const { t } = useT();
   if (!zobrazit) return <>{children}</>;
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
-      <aside
-        aria-label={t("Náhľad dokladu")}
-        className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
-      >
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
-          <span className="min-w-0 flex-1 truncate font-medium">
-            {nazov ?? t("Náhľad dokladu")}
-          </span>
-          {akcie}
-          <button
-            type="button"
-            aria-label={t("Skryť náhľad")}
-            title={t("Skryť náhľad")}
-            onClick={onSkryt}
-            className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
-          {subor === undefined ? (
-            <div className="flex justify-center p-6 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          ) : subor === null ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              {t("K dokladu nie je súbor na náhľad.")}
-            </p>
-          ) : subor.obrazok ? (
-            <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
-          ) : (
-            <NahladPdf key={subor.url} url={subor.url} />
-          )}
-        </div>
-      </aside>
+    <RozlozenieSNahladom
+      className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-6"
+      stlpceVlavo=""
+      stlpceVpravo=""
+      nahlad={
+        <aside
+          aria-label={t("Náhľad dokladu")}
+          className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
+        >
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
+            <span className="min-w-0 flex-1 truncate font-medium">
+              {nazov ?? t("Náhľad dokladu")}
+            </span>
+            {akcie}
+            <PrepinacStranyNahladu />
+            <button
+              type="button"
+              aria-label={t("Skryť náhľad")}
+              title={t("Skryť náhľad")}
+              onClick={onSkryt}
+              className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
+            {subor === undefined ? (
+              <div className="flex justify-center p-6 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : subor === null ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                {t("K dokladu nie je súbor na náhľad.")}
+              </p>
+            ) : subor.obrazok ? (
+              <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
+            ) : (
+              <NahladPdf key={subor.url} url={subor.url} />
+            )}
+          </div>
+        </aside>
+      }
+    >
       <div className="min-w-0">{children}</div>
-    </div>
+    </RozlozenieSNahladom>
   );
 }
