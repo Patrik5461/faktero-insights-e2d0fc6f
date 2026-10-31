@@ -16,6 +16,21 @@ import { ODSADENIE_TOASTOV } from "@/components/ui/sonner";
 import { KnihaJazdApka } from "@/components/faktero/mobil/jazdy/KnihaJazdApka";
 import "@/styles.css";
 
+/*
+  Pády a nezachytené chyby appky → Admin → Chyby (zdroj „appka“). Hneď na
+  začiatku, aby sa zachytilo aj to, čo spadne pri štarte. React 19 posiela
+  nezachytené chyby vykresľovania cez `reportError`, teda tiež sem.
+*/
+void import("@/lib/systemove-chyby/klient")
+  .then((m) =>
+    m.zachytavajChyby({
+      zdroj: "appka",
+      adresa: "https://www.faktero.sk/api/public/chyby",
+      vydanie: typeof __PECIATKA__ === "string" ? __PECIATKA__ : null,
+    }),
+  )
+  .catch(() => {});
+
 const koren = document.getElementById("root");
 if (!koren) throw new Error("Chýba #root");
 

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { getSystemHealth } from "@/lib/faktero/admin-health.functions";
+import { SuhrnChyb24h } from "@/components/faktero/AdminSystemoveChyby";
 import { CheckCircle2, AlertTriangle, XCircle, Info, RefreshCw, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/health")({
@@ -97,6 +98,7 @@ function AdminHealthPage() {
         }
       />
       <AdminPageBody>
+        <SuhrnChyb24h />
         {error && (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}

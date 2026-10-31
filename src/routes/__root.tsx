@@ -66,6 +66,10 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   const t = useTKorena();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // Admin → Chyby. Dynamicky, aby chybová stránka nečakala na ďalší kúsok kódu.
+    void import("@/lib/systemove-chyby/klient")
+      .then((m) => m.nahlasChybu(error, "hranica"))
+      .catch(() => {});
   }, [error]);
 
   return (
@@ -259,6 +263,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient, jazyk } = Route.useRouteContext();
+
+  // Nezachytené chyby a odmietnuté sľuby z prehliadača → Admin → Chyby.
+  useEffect(() => {
+    void import("@/lib/systemove-chyby/klient").then((m) => m.zachytavajChyby({})).catch(() => {});
+  }, []);
 
   return (
     <JazykProvider jazyk={jazyk ?? "sk"}>
