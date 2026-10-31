@@ -664,7 +664,9 @@ function DeliveryNoteScanPage() {
                           <th className="p-2 text-right">{t("Množstvo")}</th>
                           <th className="p-2 text-left">{t("MJ")}</th>
                           <th className="p-2 text-right">{t("Cena/ks")}</th>
-                          <th className="p-2"></th>
+                          <th className="p-2">
+                            <span className="sr-only">{t("Akcie")}</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">

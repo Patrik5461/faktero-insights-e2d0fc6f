@@ -51,7 +51,11 @@ export default {
     async function stiahniVykazy(nazov) {
       await t.go("/uctovnictvo/vykazy");
       const main = page.locator("main");
-      await main.getByText("Přiznání k DPH").first().waitFor({ timeout: 30000 });
+      // Slovenské rozhranie po slovensky (od vlny 31. 10.), české po česky.
+      await main
+        .getByText(/^(Priznanie k DPH|Přiznání k DPH)$/)
+        .first()
+        .waitFor({ timeout: 30000 });
       await main.locator('input[type="number"]').first().fill(String(rok));
       const vyber = main.locator("select");
       await vyber.nth(0).selectOption("mesiac");
@@ -76,7 +80,7 @@ export default {
       }
       await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
       await main
-        .getByText(/Kontrolní hlášení —/)
+        .getByText(/Kontrolné hlásenie —|Kontrolní hlášení —/)
         .first()
         .waitFor({ timeout: 30000 });
       const xml = main.getByRole("button", { name: /^XML$/ });

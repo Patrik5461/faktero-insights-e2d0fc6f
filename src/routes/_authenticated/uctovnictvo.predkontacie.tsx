@@ -1348,7 +1348,7 @@ function Ciselnik({
                 <th className="py-1 pr-3 font-medium">{t("Použitie")}</th>
                 <th className="py-1 pr-3 font-medium">{t("Zdroj")}</th>
                 <th className="py-1 pr-3 font-medium">{t("Aktívne")}</th>
-                <th className="py-1" />
+                <th className="py-1"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody>

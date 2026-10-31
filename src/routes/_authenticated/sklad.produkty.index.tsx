@@ -836,6 +836,7 @@ function StockItemsPage() {
                     onChange={(e) => toggleSelectAll(e.target.checked)}
                     aria-label={t("Vybrať všetky")}
                   />
+                  <span className="sr-only">{t("Výber")}</span>
                 </th>
                 <th className="p-3">{t("Kód")}</th>
                 <th className="p-3">{t("Produkt")}</th>
@@ -846,7 +847,9 @@ function StockItemsPage() {
                 <th className="p-3 text-right">{t("Nákupná")}</th>
                 <th className="p-3 text-right">{t("Priem. NC")}</th>
                 <th className="p-3 text-right">{t("Predajná")}</th>
-                <th></th>
+                <th>
+                  <span className="sr-only">{t("Akcie")}</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

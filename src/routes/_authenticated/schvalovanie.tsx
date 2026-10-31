@@ -135,6 +135,7 @@ function Stranka() {
                           setVyber(e.target.checked ? new Set(d.polozky.map((p) => `${p.agenda}:${p.id}`)) : new Set())
                         }
                       />
+                      <span className="sr-only">{t("Výber")}</span>
                     </th>
                     <th className="py-1 pr-3 font-medium">{t("Doklad")}</th>
                     <th className="py-1 pr-3 font-medium">{t("Partner")}</th>

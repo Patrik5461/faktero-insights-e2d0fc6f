@@ -9,7 +9,16 @@ import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/zabudnute-heslo")({
   head: ({ match }) => ({
-    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Zabudnuté heslo — Faktero") }],
+    meta: [
+      { title: preloz(match.context.jazyk ?? "sk", "Zabudnuté heslo — Faktero") },
+      {
+        name: "description",
+        content: preloz(
+          match.context.jazyk ?? "sk",
+          "Zabudli ste heslo do Faktera? Zadajte e-mail a pošleme vám odkaz na nastavenie nového hesla.",
+        ),
+      },
+    ],
   }),
   validateSearch: (s: Record<string, unknown>): { email?: string } =>
     typeof s.email === "string" ? { email: s.email.slice(0, 200) } : {},
@@ -40,7 +49,7 @@ function ZabudnuteHesloPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
+    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 py-10 outline-none">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
@@ -95,6 +104,6 @@ function ZabudnuteHesloPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }

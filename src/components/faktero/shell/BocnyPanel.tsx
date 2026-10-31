@@ -288,6 +288,7 @@ export function BocnyPanel({
 
   return (
     <aside
+      aria-label={t("Hlavné menu")}
       className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card lg:flex ${
         pas ? "w-[72px]" : zbaleny ? "w-16" : "w-[220px]"
       }`}

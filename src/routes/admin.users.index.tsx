@@ -109,7 +109,9 @@ function AdminUsersPage() {
                     <th className="px-3 py-2">Stav</th>
                     <th className="px-3 py-2">Registrovaný</th>
                     <th className="px-3 py-2">Naposledy dnu</th>
-                    <th className="px-3 py-2"></th>
+                    <th className="px-3 py-2">
+                      <span className="sr-only">Akcie</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

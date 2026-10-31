@@ -171,7 +171,9 @@ function ImportHistoryPage() {
                     <th className="px-4 py-2 text-right">{t("Faktúry")}</th>
                     <th className="px-4 py-2 text-right">{t("Odberatelia")}</th>
                     <th className="px-4 py-2 text-right">{t("Chyby")}</th>
-                    <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2">
+                      <span className="sr-only">{t("Akcie")}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

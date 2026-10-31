@@ -487,7 +487,7 @@ function NewOrder() {
                     <th className="py-2 pl-3 text-right font-medium">{t("Cena bez DPH")}</th>
                     <th className="py-2 pl-3 text-left font-medium">{t("DPH")}</th>
                     <th className="py-2 pl-3 text-right font-medium">{t("Spolu")}</th>
-                    <th />
+                    <th><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody>

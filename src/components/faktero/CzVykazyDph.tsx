@@ -23,53 +23,54 @@ import { KODY_PREDMETU_PLNENI, kontrolniRadkyC, type KontrolniHlaseni } from "@/
 
 type Vysledok = Awaited<ReturnType<typeof zostavCzVykazyFn>>;
 
+/* Kľúč s kontextom — holé „Máj“ má v českom slovníku skratku („Kvě“). */
 const MESICE = [
-  "Leden",
-  "Únor",
-  "Březen",
-  "Duben",
-  "Květen",
-  "Červen",
-  "Červenec",
-  "Srpen",
-  "Září",
-  "Říjen",
-  "Listopad",
-  "Prosinec",
+  "mesiac::Január",
+  "mesiac::Február",
+  "mesiac::Marec",
+  "mesiac::Apríl",
+  "mesiac::Máj",
+  "mesiac::Jún",
+  "mesiac::Júl",
+  "mesiac::August",
+  "mesiac::September",
+  "mesiac::Október",
+  "mesiac::November",
+  "mesiac::December",
 ];
 
 /** Riadky priznania, ktoré obrazovka ukazuje — kód poľa tlačiva, číslo riadku a popis. */
 const RIADKY: { k: string; r: string; popis: string }[] = [
-  { k: "obrat23", r: "1", popis: "Tuzemská plnění — základní sazba, základ" },
-  { k: "dan23", r: "1", popis: "Tuzemská plnění — základní sazba, daň" },
-  { k: "obrat5", r: "2", popis: "Tuzemská plnění — snížená sazba, základ" },
-  { k: "dan5", r: "2", popis: "Tuzemská plnění — snížená sazba, daň" },
-  { k: "p_zb23", r: "3", popis: "Pořízení zboží z EU — základní sazba, základ" },
-  { k: "dan_pzb23", r: "3", popis: "Pořízení zboží z EU — základní sazba, daň" },
-  { k: "p_sl23_e", r: "5", popis: "Přijetí služby z EU (§ 9/1) — základ" },
-  { k: "dan_psl23_e", r: "5", popis: "Přijetí služby z EU (§ 9/1) — daň" },
-  { k: "rez_pren23", r: "10", popis: "Přenesení daňové povinnosti — odběratel, základ" },
-  { k: "dan_rpren23", r: "10", popis: "Přenesení daňové povinnosti — odběratel, daň" },
-  { k: "p_sl23_z", r: "12", popis: "Plnění od osoby neusazené — základ" },
-  { k: "dan_psl23_z", r: "12", popis: "Plnění od osoby neusazené — daň" },
-  { k: "dod_zb", r: "20", popis: "Dodání zboží do EU (§ 64)" },
-  { k: "pln_sluzby", r: "21", popis: "Služby do EU (§ 9/1)" },
-  { k: "pln_vyvoz", r: "22", popis: "Vývoz zboží (§ 66)" },
-  { k: "pln_rez_pren", r: "25", popis: "Přenesení daňové povinnosti — dodavatel (§ 92a)" },
-  { k: "tri_dozb", r: "31", popis: "Třístranný obchod — dodání" },
-  { k: "pln23", r: "40", popis: "Odpočet z tuzemska — základní sazba, základ" },
-  { k: "odp_tuz23_nar", r: "40", popis: "Odpočet z tuzemska — základní sazba, daň" },
-  { k: "pln5", r: "41", popis: "Odpočet z tuzemska — snížená sazba, základ" },
-  { k: "odp_tuz5_nar", r: "41", popis: "Odpočet z tuzemska — snížená sazba, daň" },
-  { k: "dov_cu", r: "42", popis: "Dovoz zboží (celní úřad) — základ" },
-  { k: "odp_cu_nar", r: "42", popis: "Dovoz zboží (celní úřad) — odpočet" },
-  { k: "nar_zdp23", r: "43", popis: "Odpočet ze samovyměření — základní sazba, základ" },
-  { k: "od_zdp23", r: "43", popis: "Odpočet ze samovyměření — základní sazba, daň" },
-  { k: "odp_sum_nar", r: "46", popis: "Odpočet daně celkem" },
-  { k: "dan_zocelk", r: "62", popis: "Daň na výstupu celkem" },
-  { k: "odp_zocelk", r: "63", popis: "Odpočet daně celkem" },
-  { k: "dano_da", r: "64", popis: "Vlastní daňová povinnost" },
-  { k: "dano_no", r: "65", popis: "Nadměrný odpočet" },
+  { k: "obrat23", r: "1", popis: "Tuzemské plnenia — základná sadzba, základ" },
+  { k: "dan23", r: "1", popis: "Tuzemské plnenia — základná sadzba, daň" },
+  { k: "obrat5", r: "2", popis: "Tuzemské plnenia — znížená sadzba, základ" },
+  { k: "dan5", r: "2", popis: "Tuzemské plnenia — znížená sadzba, daň" },
+  { k: "p_zb23", r: "3", popis: "Nadobudnutie tovaru z EÚ — základná sadzba, základ" },
+  { k: "dan_pzb23", r: "3", popis: "Nadobudnutie tovaru z EÚ — základná sadzba, daň" },
+  { k: "p_sl23_e", r: "5", popis: "Prijatie služby z EÚ (§ 9/1) — základ" },
+  { k: "dan_psl23_e", r: "5", popis: "Prijatie služby z EÚ (§ 9/1) — daň" },
+  { k: "rez_pren23", r: "10", popis: "Prenesenie daňovej povinnosti — odberateľ, základ" },
+  { k: "dan_rpren23", r: "10", popis: "Prenesenie daňovej povinnosti — odberateľ, daň" },
+  { k: "p_sl23_z", r: "12", popis: "Plnenie od osoby neusadenej v tuzemsku — základ" },
+  { k: "dan_psl23_z", r: "12", popis: "Plnenie od osoby neusadenej v tuzemsku — daň" },
+  { k: "dod_zb", r: "20", popis: "Dodanie tovaru do EÚ (§ 64)" },
+  { k: "pln_sluzby", r: "21", popis: "Služby do EÚ (§ 9/1)" },
+  { k: "pln_vyvoz", r: "22", popis: "Vývoz tovaru (§ 66)" },
+  { k: "pln_rez_pren", r: "25", popis: "Prenesenie daňovej povinnosti — dodávateľ (§ 92a)" },
+  { k: "tri_dozb", r: "31", popis: "Trojstranný obchod — dodanie" },
+  { k: "pln23", r: "40", popis: "Odpočet z tuzemska — základná sadzba, základ" },
+  { k: "odp_tuz23_nar", r: "40", popis: "Odpočet z tuzemska — základná sadzba, daň" },
+  { k: "pln5", r: "41", popis: "Odpočet z tuzemska — znížená sadzba, základ" },
+  { k: "odp_tuz5_nar", r: "41", popis: "Odpočet z tuzemska — znížená sadzba, daň" },
+  { k: "dov_cu", r: "42", popis: "Dovoz tovaru (colný úrad) — základ" },
+  { k: "odp_cu_nar", r: "42", popis: "Dovoz tovaru (colný úrad) — odpočet" },
+  { k: "nar_zdp23", r: "43", popis: "Odpočet zo samovymerania — základná sadzba, základ" },
+  { k: "od_zdp23", r: "43", popis: "Odpočet zo samovymerania — základná sadzba, daň" },
+  { k: "odp_sum_nar", r: "46", popis: "Odpočet dane celkom" },
+  { k: "dan_zocelk", r: "62", popis: "Daň na výstupe celkom" },
+  { k: "odp_zocelk", r: "63", popis: "Odpočet dane celkom" },
+  { k: "dano_da", r: "64", popis: "Vlastná daňová povinnosť" },
+  { k: "dano_no", r: "65", popis: "Nadmerný odpočet" },
 ];
 
 const kc = (n: number | undefined, desatinne = false) =>
@@ -141,7 +142,7 @@ export function CzVykazyDph() {
         kodPredmetu: x.kodPredmetu || res.hlavicka.kodPredmetu,
       }));
     } catch (e: any) {
-      setChyba(e?.message ?? t("Výkazy se nepodařilo sestavit."));
+      setChyba(e?.message ?? t("Výkazy sa nepodarilo zostaviť."));
     } finally {
       setNacitavam(false);
     }
@@ -176,11 +177,11 @@ export function CzVykazyDph() {
 
   function overHlavicku(): boolean {
     if (!/^\d{3}$/.test(h.cUfo)) {
-      toast.error(t("Vyplňte kód finančního úřadu (3 číslice, např. 451 pro Prahu)."));
+      toast.error(t("Vyplňte kód finančného úradu (3 číslice, napr. 451 pre Prahu)."));
       return false;
     }
     if (!hlavicka?.dic) {
-      toast.error(t("Firma nemá DIČ — doplňte ho v Nastavení firmy."));
+      toast.error(t("Firma nemá DIČ — doplňte ho v Nastaveniach firmy."));
       return false;
     }
     return true;
@@ -207,9 +208,9 @@ export function CzVykazyDph() {
           podane: true,
         },
       });
-      toast.success(t("Zapsáno jako podané."));
+      toast.success(t("Zapísané ako podané."));
     } catch (e: any) {
-      toast.error(e?.message ?? t("Nepodařilo se uložit."));
+      toast.error(e?.message ?? t("Nepodarilo sa uložiť."));
     }
   }
 
@@ -221,7 +222,7 @@ export function CzVykazyDph() {
       <PageHeader
         title={t("Výkazy k DPH")}
         description={t(
-          "Přiznání k DPH a kontrolní hlášení sestavené z dokladů, v XML pro portál MOJE daně.",
+          "Priznanie k DPH a kontrolné hlásenie zostavené z dokladov, v XML pre portál MOJE daně.",
         )}
       />
       <PageBody>
@@ -236,18 +237,18 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block">
-            <span className={popis}>{t("Zdaňovací období")}</span>
+            <span className={popis}>{t("Zdaňovacie obdobie")}</span>
             <select
               value={rezim}
               onChange={(e) => setRezim(e.target.value as "mesiac" | "stvrtrok")}
               className={pole}
             >
-              <option value="mesiac">{t("Měsíc")}</option>
-              <option value="stvrtrok">{t("Čtvrtletí")}</option>
+              <option value="mesiac">{t("Mesiac")}</option>
+              <option value="stvrtrok">{t("Štvrťrok")}</option>
             </select>
           </label>
           <label className="block">
-            <span className={popis}>{t("Období")}</span>
+            <span className={popis}>{t("Obdobie")}</span>
             {rezim === "mesiac" ? (
               <select
                 value={mesiac}
@@ -268,43 +269,43 @@ export function CzVykazyDph() {
               >
                 {[1, 2, 3, 4].map((q) => (
                   <option key={q} value={q}>
-                    {t("{q}. čtvrtletí", { q })}
+                    {t("{q}. štvrťrok", { q })}
                   </option>
                 ))}
               </select>
             )}
           </label>
           <label className="block">
-            <span className={popis}>{t("Finanční úřad (kód)")}</span>
+            <span className={popis}>{t("Finančný úrad (kód)")}</span>
             <input
               value={h.cUfo}
               onChange={(e) => setH({ ...h, cUfo: e.target.value.replace(/\D/g, "").slice(0, 3) })}
-              placeholder={t("např. {x}", { x: "451" })}
+              placeholder={t("napr. {x}", { x: "451" })}
               className={pole}
             />
           </label>
           <label className="block">
-            <span className={popis}>{t("Územní pracoviště (kód)")}</span>
+            <span className={popis}>{t("Územné pracovisko (kód)")}</span>
             <input
               value={h.cPracufo}
               onChange={(e) =>
                 setH({ ...h, cPracufo: e.target.value.replace(/\D/g, "").slice(0, 4) })
               }
-              placeholder={t("např. {x}", { x: "2001" })}
+              placeholder={t("napr. {x}", { x: "2001" })}
               className={pole}
             />
           </label>
           <label className="block">
-            <span className={popis}>{t("CZ-NACE (hlavní činnost)")}</span>
+            <span className={popis}>{t("CZ-NACE (hlavná činnosť)")}</span>
             <input
               value={h.okec}
               onChange={(e) => setH({ ...h, okec: e.target.value.replace(/\D/g, "").slice(0, 6) })}
-              placeholder={t("např. {x}", { x: "620100" })}
+              placeholder={t("napr. {x}", { x: "620100" })}
               className={pole}
             />
           </label>
           <label className="block">
-            <span className={popis}>{t("Podává — jméno")}</span>
+            <span className={popis}>{t("Podáva — meno")}</span>
             <input
               value={h.oprJmeno}
               onChange={(e) => setH({ ...h, oprJmeno: e.target.value })}
@@ -312,7 +313,7 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block">
-            <span className={popis}>{t("Podává — příjmení")}</span>
+            <span className={popis}>{t("Podáva — priezvisko")}</span>
             <input
               value={h.oprPrijmeni}
               onChange={(e) => setH({ ...h, oprPrijmeni: e.target.value })}
@@ -320,7 +321,7 @@ export function CzVykazyDph() {
             />
           </label>
           <label className="block">
-            <span className={popis}>{t("Vztah k firmě")}</span>
+            <span className={popis}>{t("Vzťah k firme")}</span>
             <input
               value={h.oprPostaveni}
               onChange={(e) => setH({ ...h, oprPostaveni: e.target.value })}
@@ -329,14 +330,14 @@ export function CzVykazyDph() {
           </label>
           <label className="block sm:col-span-3">
             <span className={popis}>
-              {t("Kód předmětu plnění (přenesení daňové povinnosti § 92a)")}
+              {t("Kód predmetu plnenia (prenesenie daňovej povinnosti § 92a)")}
             </span>
             <select
               value={h.kodPredmetu}
               onChange={(e) => setH({ ...h, kodPredmetu: e.target.value })}
               className={pole}
             >
-              <option value="">{t("— nevybráno —")}</option>
+              <option value="">{t("— nevybrané —")}</option>
               {KODY_PREDMETU_PLNENI.map((k) => (
                 <option key={k.kod} value={k.kod}>
                   {k.kod} – {k.nazov}
@@ -348,7 +349,7 @@ export function CzVykazyDph() {
 
         <p className="mb-4 text-xs text-muted-foreground">
           {t(
-            "Kódy finančních úřadů a pracovišť najdete v číselnících na portálu MOJE daně (např. 451 = Finanční úřad pro hlavní město Prahu). Kontrolní hlášení podává právnická osoba vždy za měsíc — u čtvrtletního přiznání se sestaví za každý měsíc zvlášť.",
+            "Kódy finančných úradov a pracovísk nájdete v číselníkoch na portáli MOJE daně (napr. 451 = Finanční úřad pro hlavní město Prahu). Kontrolné hlásenie podáva právnická osoba vždy za mesiac — pri štvrťročnom priznaní sa zostaví za každý mesiac zvlášť.",
           )}
         </p>
 
@@ -359,7 +360,7 @@ export function CzVykazyDph() {
         )}
         {nacitavam && (
           <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Sestavuji z dokladů…")}
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("Zostavujem z dokladov…")}
           </div>
         )}
 
@@ -367,7 +368,7 @@ export function CzVykazyDph() {
           <>
             <p className="mb-4 text-sm text-muted-foreground">
               {t(
-                "V období je {vystavene} vydaných faktur, {prijate} přijatých a {doklady} dokladů s DPH.",
+                "V období je {vystavene} vystavených faktúr, {prijate} prijatých a {doklady} dokladov s DPH.",
                 {
                   vystavene: data.pocty.vystavene,
                   prijate: data.pocty.prijate,
@@ -380,7 +381,7 @@ export function CzVykazyDph() {
               <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
                 <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
-                  {t("Před podáním doplňte ({n})", { n: data.vytky.length })}
+                  {t("Pred podaním doplňte ({n})", { n: data.vytky.length })}
                 </div>
                 <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
                   {data.vytky.slice(0, 20).map((v, i) => (
@@ -396,9 +397,9 @@ export function CzVykazyDph() {
             <section className="mb-6 rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Přiznání k DPH")}</div>
+                  <div className="font-medium">{t("Priznanie k DPH")}</div>
                   <div className="text-xs text-muted-foreground">
-                    {t("DPHDP3 · částky v celých korunách")}
+                    {t("DPHDP3 · sumy v celých korunách")}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -407,10 +408,10 @@ export function CzVykazyDph() {
                     onChange={(e) => setFormaDp(e.target.value as any)}
                     className="input w-auto"
                   >
-                    <option value="B">{t("Řádné")}</option>
-                    <option value="O">{t("Řádné opravné")}</option>
-                    <option value="D">{t("Dodatečné")}</option>
-                    <option value="E">{t("Dodatečné opravné")}</option>
+                    <option value="B">{t("Riadne")}</option>
+                    <option value="O">{t("Riadne opravné")}</option>
+                    <option value="D">{t("Dodatočné")}</option>
+                    <option value="E">{t("Dodatočné opravné")}</option>
                   </select>
                   <button
                     onClick={() =>
@@ -439,7 +440,7 @@ export function CzVykazyDph() {
                     {RIADKY.filter((x) => data.priznani[x.k] !== undefined).map((x) => (
                       <tr key={x.k} className="border-b border-border last:border-0">
                         <td className="w-14 px-4 py-2 text-muted-foreground">
-                          {t("ř. {r}", { r: x.r })}
+                          {t("r. {r}", { r: x.r })}
                         </td>
                         <td className="px-4 py-2">{t(x.popis)}</td>
                         <td className="px-4 py-2 text-right tabular-nums">
@@ -456,9 +457,9 @@ export function CzVykazyDph() {
             <section className="mb-6 rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Souhrnné hlášení")}</div>
+                  <div className="font-medium">{t("Súhrnné hlásenie")}</div>
                   <div className="text-xs text-muted-foreground">
-                    {t("DPHSHV · dodání zboží a služeb do EU · v celých korunách")}
+                    {t("DPHSHV · dodanie tovaru a služieb do EÚ · v celých korunách")}
                   </div>
                 </div>
                 {data.souhrnne.length > 0 && (
@@ -468,7 +469,7 @@ export function CzVykazyDph() {
                       onChange={(e) => setFormaSh(e.target.value as "R" | "N")}
                       className="input w-auto"
                     >
-                      <option value="R">{t("Řádné")}</option>
+                      <option value="R">{t("Riadne")}</option>
                       <option value="N">{t("Následné")}</option>
                     </select>
                     <button
@@ -497,15 +498,15 @@ export function CzVykazyDph() {
               </div>
               {data.souhrnne.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">
-                  {t("V období nejsou žádné dodávky do EU — souhrnné hlášení se nepodává.")}
+                  {t("V období nie sú žiadne dodávky do EÚ — súhrnné hlásenie sa nepodáva.")}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                        <th className="px-4 py-2">{t("Odběratel (VAT ID)")}</th>
-                        <th className="px-4 py-2">{t("Kód plnění")}</th>
+                        <th className="px-4 py-2">{t("Odberateľ (IČ DPH)")}</th>
+                        <th className="px-4 py-2">{t("Kód plnenia")}</th>
                         <th className="px-4 py-2 text-right">{t("Počet")}</th>
                         <th className="px-4 py-2 text-right">{t("Hodnota")}</th>
                       </tr>
@@ -522,9 +523,9 @@ export function CzVykazyDph() {
                           </td>
                           <td className="px-4 py-2">
                             {r.kod === 0
-                              ? t("0 – dodání zboží")
+                              ? t("0 – dodanie tovaru")
                               : r.kod === 2
-                                ? t("2 – třístranný obchod")
+                                ? t("2 – trojstranný obchod")
                                 : t("3 – služba")}
                           </td>
                           <td className="px-4 py-2 text-right tabular-nums">{r.pocet}</td>
@@ -540,7 +541,7 @@ export function CzVykazyDph() {
                 data.souhrnne.some((r) => r.kod !== 3) && (
                   <p className="border-t border-border px-4 py-2 text-xs text-amber-700 dark:text-amber-400">
                     {t(
-                      "Při dodání zboží se souhrnné hlášení podává za každý měsíc — přepněte období na měsíc.",
+                      "Pri dodaní tovaru sa súhrnné hlásenie podáva za každý mesiac — prepnite obdobie na mesiac.",
                     )}
                   </p>
                 )}
@@ -569,7 +570,7 @@ export function CzVykazyDph() {
                         ),
                       )
                     : toast.error(
-                        t("Vyberte kód předmětu plnění pro přenesení daňové povinnosti."),
+                        t("Vyberte kód predmetu plnenia pre prenesenie daňovej povinnosti."),
                       ))
                 }
                 onPodane={() => oznacPodane("cz_kh", formaKh, kh as any, m)}
@@ -595,8 +596,8 @@ function bezChybajucehoDic(
   toast.error(
     t(
       bez.length === 1
-        ? "Doplňte DIČ u dokladu {doklady} — v přenesení daňové povinnosti je povinné."
-        : "Doplňte DIČ u dokladů {doklady} — v přenesení daňové povinnosti je povinné.",
+        ? "Doplňte DIČ pri doklade {doklady} — pri prenesení daňovej povinnosti je povinné."
+        : "Doplňte DIČ pri dokladoch {doklady} — pri prenesení daňovej povinnosti je povinné.",
       { doklady: bez.slice(0, 5).join(", ") },
     ),
   );
@@ -622,33 +623,33 @@ function KontrolniHlaseniKarta({
   const c = kontrolniRadkyC(kh);
   const oddiely: { nazov: string; pocet: number; zaklad: number }[] = [
     {
-      nazov: "A.1 Přenesení daňové povinnosti — dodavatel",
+      nazov: "A.1 Prenesenie daňovej povinnosti — dodávateľ",
       pocet: kh.a1.length,
       zaklad: c.pln_rez_pren,
     },
-    { nazov: "A.2 Přijatá plnění ze zahraničí", pocet: kh.a2.length, zaklad: c.celk_zd_a2 },
+    { nazov: "A.2 Prijaté plnenia zo zahraničia", pocet: kh.a2.length, zaklad: c.celk_zd_a2 },
     {
-      nazov: "A.4 Vydané doklady nad 10 000 Kč",
+      nazov: "A.4 Vystavené doklady nad 10 000 Kč",
       pocet: kh.a4.length,
       zaklad: kh.a4.reduce((a, x) => a + x.zaklad1 + x.zaklad2, 0),
     },
     {
-      nazov: "A.5 Ostatní vydané (souhrnně)",
+      nazov: "A.5 Ostatné vystavené (súhrnne)",
       pocet: kh.a5.zaklad1 || kh.a5.zaklad2 ? 1 : 0,
       zaklad: kh.a5.zaklad1 + kh.a5.zaklad2,
     },
     {
-      nazov: "B.1 Přenesení daňové povinnosti — odběratel",
+      nazov: "B.1 Prenesenie daňovej povinnosti — odberateľ",
       pocet: kh.b1.length,
       zaklad: c.rez_pren23 + c.rez_pren5,
     },
     {
-      nazov: "B.2 Přijaté doklady nad 10 000 Kč",
+      nazov: "B.2 Prijaté doklady nad 10 000 Kč",
       pocet: kh.b2.length,
       zaklad: kh.b2.reduce((a, x) => a + x.zaklad1 + x.zaklad2, 0),
     },
     {
-      nazov: "B.3 Ostatní přijaté (souhrnně)",
+      nazov: "B.3 Ostatné prijaté (súhrnne)",
       pocet: kh.b3.zaklad1 || kh.b3.zaklad2 ? 1 : 0,
       zaklad: kh.b3.zaklad1 + kh.b3.zaklad2,
     },
@@ -658,9 +659,9 @@ function KontrolniHlaseniKarta({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div>
           <div className="font-medium">
-            {t("Kontrolní hlášení — {mesic}", { mesic: t(MESICE[mesiac - 1]) })}
+            {t("Kontrolné hlásenie — {mesic}", { mesic: t(MESICE[mesiac - 1]) })}
           </div>
-          <div className="text-xs text-muted-foreground">{t("DPHKH1 · částky na haléře")}</div>
+          <div className="text-xs text-muted-foreground">{t("DPHKH1 · sumy na halier")}</div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
@@ -668,8 +669,8 @@ function KontrolniHlaseniKarta({
             onChange={(e) => setForma(e.target.value as any)}
             className="input w-auto"
           >
-            <option value="B">{t("Řádné")}</option>
-            <option value="O">{t("Řádné opravné")}</option>
+            <option value="B">{t("Riadne")}</option>
+            <option value="O">{t("Riadne opravné")}</option>
             <option value="N">{t("Následné")}</option>
             <option value="E">{t("Následné opravné")}</option>
           </select>

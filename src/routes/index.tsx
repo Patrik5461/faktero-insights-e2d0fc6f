@@ -1579,7 +1579,11 @@ function MobileAppSection() {
               zvlášť, s vlastnou ikonou, tak aj tu.
             */}
             <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
-              <img src="/kniha-jazd-icon.png" alt="" className="h-12 w-12 shrink-0 rounded-[22%]" />
+              <img
+                src="/kniha-jazd-icon-168.png"
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-[22%]"
+              />
               <div className="min-w-0 flex-1 basis-48">
                 <div className="text-sm font-semibold">{t("Potrebujete len knihu jázd?")}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
@@ -1819,7 +1823,7 @@ function SiteFooter() {
         >
           <span className="text-xs text-muted-foreground">{t("Platby zabezpečuje:")}</span>
           <img
-            src="https://cdn.gopay.com/img/logo/gopay_logo.svg"
+            src="/platby/gopay.svg"
             alt={t("GoPay")}
             width={64}
             height={20}
@@ -1827,7 +1831,7 @@ function SiteFooter() {
             className="h-5 w-auto"
           />
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
+            src="/platby/visa.svg"
             alt={t("Visa")}
             width={40}
             height={16}
@@ -1835,7 +1839,7 @@ function SiteFooter() {
             className="h-4 w-auto"
           />
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
+            src="/platby/mastercard.svg"
             alt={t("Mastercard")}
             width={28}
             height={20}

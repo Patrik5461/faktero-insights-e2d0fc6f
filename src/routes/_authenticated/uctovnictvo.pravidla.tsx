@@ -470,7 +470,7 @@ function PravidlaPage() {
                     <th className="p-3">{t("Keď")}</th>
                     <th className="p-3">{t("Doplní")}</th>
                     <th className="p-3 text-right">{t("Sedí na")}</th>
-                    <th className="p-3" />
+                    <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody>

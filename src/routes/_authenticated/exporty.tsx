@@ -343,7 +343,9 @@ function ExportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
-                      <th className="w-10 p-3"></th>
+                      <th className="w-10 p-3">
+                        <span className="sr-only">{t("Výber")}</span>
+                      </th>
                       <th className="p-3">{t("Číslo")}</th>
                       <th className="p-3">{t("Odberateľ")}</th>
                       <th className="hidden p-3 md:table-cell">{t("Vystavená")}</th>
@@ -543,7 +545,7 @@ function ExportsPage() {
           </div>
 
           {/* RIGHT: formats sidebar */}
-          <aside className="min-w-0 space-y-3">
+          <aside aria-label={t("Podporované formáty")} className="min-w-0 space-y-3">
             <div className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-semibold uppercase tracking-wide">
                 {t("Podporované formáty")}

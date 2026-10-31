@@ -525,9 +525,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             </div>
           )}
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Dodávateľ")}
-            </h3>
+            </h2>
             <p className="mb-4 text-xs text-muted-foreground">
               {t("Faktúra je jeho — v hlavičke bude ako dodávateľ, vaša firma ako odberateľ.")}
             </p>
@@ -664,9 +664,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Údaje faktúry")}
-            </h3>
+            </h2>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block">
                 <span className="text-sm font-medium">{t("Dátum vyhotovenia")}</span>
@@ -779,9 +779,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
 
           {platitel && (
             <section className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("Režim DPH")}
-              </h3>
+              </h2>
               <p className="mb-4 text-xs text-muted-foreground">
                 {t("Podľa toho, čo dodávateľ dodáva — faktúra je jeho, režim určuje jeho plnenie.")}
               </p>
@@ -853,9 +853,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           )}
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Položky")}
-            </h3>
+            </h2>
             <label className="mb-4 block">
               <span className="text-sm font-medium">{t("Text nad položkami")}</span>
               <textarea

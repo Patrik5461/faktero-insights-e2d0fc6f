@@ -647,7 +647,7 @@ function VypisDoPohodyPage() {
                 <table className="w-full min-w-[1180px] text-sm">
                   <thead className="border-b border-border/70 text-left text-xs text-muted-foreground">
                     <tr>
-                      <th className="p-2"></th>
+                      <th className="p-2"><span className="sr-only">{t("Akcie")}</span></th>
                       <th className="p-2">{t("Dátum")}</th>
                       <th className="p-2">{t("Smer")}</th>
                       <th className="p-2 text-right">{t("Suma")}</th>

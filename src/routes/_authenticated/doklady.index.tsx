@@ -1106,6 +1106,7 @@ function DokladyPage() {
                       checked={rows.length > 0 && selected.size === rows.length}
                       onChange={toggleAll}
                     />
+                    <span className="sr-only">{t("Výber")}</span>
                   </th>
                   {je("datum") && <th className="px-3 py-2 text-left">{rad.hlavicka("datum", t("Dátum"))}</th>}
                   <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>
@@ -1121,7 +1122,7 @@ function DokladyPage() {
                   {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", t("Zdroj"))}</th>}
                   {je("spracoval") && <th className="hidden px-3 py-2 text-left md:table-cell">{t("Spracoval")}</th>}
                   {je("uhrada") && <th className="px-3 py-2 text-left">{t("Úhrada z účtu")}</th>}
-                  <th className="px-3 py-2"></th>
+                  <th className="px-3 py-2"><span className="sr-only">{t("Akcie")}</span></th>
                 </tr>
               </thead>
               <tbody>

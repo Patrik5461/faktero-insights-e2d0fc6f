@@ -323,7 +323,9 @@ export function DetailKontokorentu({
                   <th className="p-3 text-left font-medium">{t("Druh")}</th>
                   <th className="p-3 text-left font-medium">{t("Pohyb")}</th>
                   <th className="p-3 text-right font-medium">{t("Suma")}</th>
-                  <th className="p-3" />
+                  <th className="p-3">
+                    <span className="sr-only">{t("Akcie")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

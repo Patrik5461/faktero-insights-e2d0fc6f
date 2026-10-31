@@ -94,8 +94,9 @@ export const ustvaPdfFn = createServerFn({ method: "POST" })
     const r = await zostav(context.supabase as any, v);
     if (!r.ustva) throw new Error("Kleinunternehmer UStVA nepodáva.");
     const { pdfUstva } = await import("./ustva-pdf.server");
-    const { preloz } = await import("@/lib/i18n/jazyk");
+    const { preloz, nacitajSlovnik } = await import("@/lib/i18n/jazyk");
     const jazyk = data.jazyk ?? "de";
+    await nacitajSlovnik(jazyk);
     const obdobie = v.mesiac
       ? `${String(v.mesiac).padStart(2, "0")}/${v.rok}`
       : `${v.stvrtrok}. ${preloz(jazyk, "štvrťrok")} ${v.rok}`;

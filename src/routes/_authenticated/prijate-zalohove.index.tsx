@@ -220,7 +220,7 @@ function PrijateZalohovePage() {
                         <th className="p-3">{t("Splatnosť")}</th>
                         <th className="p-3 text-right">{t("Suma")}</th>
                         <th className="p-3">{t("Stav")}</th>
-                        <th className="p-3" />
+                        <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                       </tr>
                     </thead>
                     <tbody>

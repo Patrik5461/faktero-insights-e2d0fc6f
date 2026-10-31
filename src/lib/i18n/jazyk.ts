@@ -4,8 +4,9 @@
  * Kľúčom prekladu je **samotný slovenský text** — `t("Vystavené faktúry")`.
  * Nepreložený text tak ostane po slovensky a nič sa nerozbije; preklad sa dá
  * dopĺňať postupne. Slovníky sú v `src/lib/i18n/de/*.ts` a `src/lib/i18n/cs/*.ts`
- * (jeden súbor na oblasť webu, v `cs/` s rovnakými kľúčmi ako v `de/`), načítajú sa naraz cez `import.meta.glob`, takže pridanie
- * súboru nevyžaduje úpravu žiadneho zoznamu.
+ * (jeden súbor na oblasť webu, v `cs/` s rovnakými kľúčmi ako v `de/`), spája ich `slovnik-de.ts`/`slovnik-cs.ts`
+ * cez `import.meta.glob`, takže pridanie súboru nevyžaduje úpravu žiadneho zoznamu. Načítavajú sa
+ * až na požiadanie (`nacitajSlovnik`).
  *
  * Voľba jazyka je v cookie, aby server vykreslil stránku hneď v správnom
  * jazyku (bez bliknutia slovenčiny). Neskôr sa doplní aj do nastavení firmy.
@@ -55,15 +56,44 @@ export function nastavJazyk(j: Jazyk) {
 type Slovnik = Record<string, string>;
 
 /*
-  Glob na neexistujúci priečinok vráti prázdny objekt (Vite aj vitest), takže
-  jazyk bez slovníkov ostane po slovensky a nič nepadne.
+  Slovníky sa načítavajú až keď treba, každý jazyk ako jeden kúsok kódu
+  (`slovnik-de.ts`, `slovnik-cs.ts`). Kedysi boli priamo tu cez eager glob —
+  3,6 MB textu v hlavnom skripte, ktorý si sťahoval aj každý slovenský
+  návštevník a telefón ho parsoval niekoľko sekúnd pred prvou interakciou.
+
+  Kto ich načíta:
+  - koreňová trasa v `beforeLoad` (server aj navigácia v prehliadači),
+  - `hydrate` v `router.tsx` pred hydratáciou (podľa `<html lang>`), aby
+    prvé kreslenie v prehliadači sedelo so serverom,
+  - serverové funkcie mimo trás (webhooky, UStVA) samy pred prvým `preloz`.
+  Kým slovník nie je načítaný, `preloz` vráti slovenský text — nič nespadne.
 */
-const modulyDe = import.meta.glob<Slovnik>("./de/*.ts", { eager: true, import: "default" });
-const modulyCs = import.meta.glob<Slovnik>("./cs/*.ts", { eager: true, import: "default" });
-const SLOVNIKY: Record<Exclude<Jazyk, "sk">, Slovnik> = {
-  de: Object.assign({}, ...Object.values(modulyDe)),
-  cs: Object.assign({}, ...Object.values(modulyCs)),
+const SLOVNIKY: Partial<Record<Exclude<Jazyk, "sk">, Slovnik>> = {};
+const NACITAVANIE: Partial<Record<Exclude<Jazyk, "sk">, Promise<void>>> = {};
+const ZDROJE: Record<Exclude<Jazyk, "sk">, () => Promise<{ default: Slovnik }>> = {
+  de: () => import("./slovnik-de"),
+  cs: () => import("./slovnik-cs"),
 };
+
+/** Načíta slovník jazyka (raz; ďalšie volania vrátia ten istý sľub). */
+export function nacitajSlovnik(jazyk: Jazyk | string | null | undefined): Promise<void> {
+  if (!jeJazyk(jazyk) || jazyk === "sk") return Promise.resolve();
+  if (SLOVNIKY[jazyk]) return Promise.resolve();
+  NACITAVANIE[jazyk] ??= ZDROJE[jazyk]()
+    .then((m) => {
+      SLOVNIKY[jazyk] = m.default;
+    })
+    .catch((e) => {
+      // Ďalší pokus pri ďalšej navigácii; dovtedy ostane slovenčina.
+      delete NACITAVANIE[jazyk];
+      console.error("[jazyk] slovník sa nenačítal", jazyk, e);
+    });
+  return NACITAVANIE[jazyk]!;
+}
+
+/** Oba slovníky — server pri štarte a testy. */
+export const nacitajVsetkySlovniky = () =>
+  Promise.all([nacitajSlovnik("de"), nacitajSlovnik("cs")]).then(() => undefined);
 
 /**
  * Text v danom jazyku; `{meno}` sa nahradí hodnotou z `p`.
@@ -84,7 +114,8 @@ export function preloz(jazyk: Jazyk, text: string, p?: Record<string, string | n
 
 /** Počet slovníkových položiek — na kontrolu v testoch a diagnostike. */
 export const pocetPrekladov = (jazyk: Exclude<Jazyk, "sk"> = "de") =>
-  Object.keys(SLOVNIKY[jazyk]).length;
+  Object.keys(SLOVNIKY[jazyk] ?? {}).length;
 
 /** Celý slovník jazyka — len na kontroly v testoch. */
-export const slovnikJazyka = (jazyk: Exclude<Jazyk, "sk">): Readonly<Slovnik> => SLOVNIKY[jazyk];
+export const slovnikJazyka = (jazyk: Exclude<Jazyk, "sk">): Readonly<Slovnik> =>
+  SLOVNIKY[jazyk] ?? {};

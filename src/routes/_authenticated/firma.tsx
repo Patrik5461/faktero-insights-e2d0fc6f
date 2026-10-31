@@ -392,9 +392,9 @@ function CompanyPage() {
             />
           </label>
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("E-mail")}
-            </h3>
+            </h2>
           </div>
           <In
             label="Meno odosielateľa"
@@ -475,9 +475,9 @@ function CompanyPage() {
           </div>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Automatické upomienky po splatnosti")}
-            </h3>
+            </h2>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -708,7 +708,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                 <th className="p-3">{t("Rola")}</th>
                 <th className="p-3">{t("Telefón, číslo zamestnanca, projekt")}</th>
                 <th className="p-3">{t("Od")}</th>
-                <th className="p-3"></th>
+                <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -891,7 +891,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                 <th className="p-3">{t("Rola")}</th>
                 <th className="p-3">{t("Stav")}</th>
                 <th className="p-3">{t("Vytvorené")}</th>
-                <th className="p-3"></th>
+                <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

@@ -170,6 +170,7 @@ function QuotesPage() {
                     checked={list.allOnPageSelected}
                     onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                   />
+                  <span className="sr-only">{t("Výber")}</span>
                 </th>
                 <th className="p-3">{t("Číslo")}</th>
                 <th className="p-3">{t("Odberateľ")}</th>
@@ -177,7 +178,7 @@ function QuotesPage() {
                 <th className="p-3">{t("Platnosť do")}</th>
                 <th className="p-3 text-right">{t("Suma")}</th>
                 <th className="p-3">{t("Stav")}</th>
-                <th></th>
+                <th><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

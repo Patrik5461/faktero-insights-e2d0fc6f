@@ -412,7 +412,9 @@ export function VystavenaDetailKompaktna({
                     <th className="px-2 py-1.5 font-medium">{t("Protistrana")}</th>
                     <th className="px-2 py-1.5 font-medium">{t("VS")}</th>
                     <th className="px-2 py-1.5 text-right font-medium">{t("Suma")}</th>
-                    <th className="py-1.5 pl-2" />
+                    <th className="py-1.5 pl-2">
+                      <span className="sr-only">{t("Akcie")}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

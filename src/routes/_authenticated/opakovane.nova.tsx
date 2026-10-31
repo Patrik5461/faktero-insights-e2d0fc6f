@@ -354,7 +354,7 @@ function NewRecurring() {
                     <th className="py-2 pl-3 font-medium text-right">{t("Cena")}</th>
                     <th className="py-2 pl-3 font-medium">{t("DPH")}</th>
                     <th className="py-2 pl-3 font-medium text-right">{t("Spolu s DPH")}</th>
-                    <th />
+                    <th><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody>

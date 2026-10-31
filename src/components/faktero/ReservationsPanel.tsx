@@ -94,7 +94,9 @@ export function ReservationsPanel({
               <th className="p-2">{t("Stav")}</th>
               <th className="p-2">{t("Expiruje")}</th>
               <th className="p-2">{t("Poznámka")}</th>
-              <th className="p-2"></th>
+              <th className="p-2">
+                <span className="sr-only">{t("Akcie")}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">

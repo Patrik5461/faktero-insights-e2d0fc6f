@@ -24,129 +24,14 @@ export default {
   "Vlastné zoradenie": "Eigene Sortierung",
 
   // CzVykazyDph (české texty)
-  Leden: "Januar",
-  Únor: "Februar",
-  Březen: "März",
-  Duben: "April",
-  Květen: "Mai",
-  Červen: "Juni",
-  Červenec: "Juli",
-  Srpen: "August",
-  Září: "September",
-  Říjen: "Oktober",
-  Listopad: "November",
-  Prosinec: "Dezember",
-  "Tuzemská plnění — základní sazba, základ":
-    "Inländische Umsätze — Regelsatz, Bemessungsgrundlage",
-  "Tuzemská plnění — základní sazba, daň": "Inländische Umsätze — Regelsatz, Steuer",
-  "Tuzemská plnění — snížená sazba, základ":
-    "Inländische Umsätze — ermäßigter Satz, Bemessungsgrundlage",
-  "Tuzemská plnění — snížená sazba, daň": "Inländische Umsätze — ermäßigter Satz, Steuer",
-  "Pořízení zboží z EU — základní sazba, základ":
-    "Innergemeinschaftlicher Erwerb — Regelsatz, Bemessungsgrundlage",
-  "Pořízení zboží z EU — základní sazba, daň": "Innergemeinschaftlicher Erwerb — Regelsatz, Steuer",
-  "Přijetí služby z EU (§ 9/1) — základ":
-    "Bezogene Leistungen aus der EU (§ 9/1) — Bemessungsgrundlage",
-  "Přijetí služby z EU (§ 9/1) — daň": "Bezogene Leistungen aus der EU (§ 9/1) — Steuer",
-  "Přenesení daňové povinnosti — odběratel, základ":
-    "Reverse-Charge — Leistungsempfänger, Bemessungsgrundlage",
-  "Přenesení daňové povinnosti — odběratel, daň": "Reverse-Charge — Leistungsempfänger, Steuer",
-  "Plnění od osoby neusazené — základ":
-    "Leistungen nicht ansässiger Unternehmer — Bemessungsgrundlage",
-  "Plnění od osoby neusazené — daň": "Leistungen nicht ansässiger Unternehmer — Steuer",
-  "Dodání zboží do EU (§ 64)": "Innergemeinschaftliche Lieferungen (§ 64)",
-  "Služby do EU (§ 9/1)": "Dienstleistungen in die EU (§ 9/1)",
-  "Vývoz zboží (§ 66)": "Ausfuhrlieferungen (§ 66)",
-  "Přenesení daňové povinnosti — dodavatel (§ 92a)":
-    "Reverse-Charge — leistender Unternehmer (§ 92a)",
-  "Třístranný obchod — dodání": "Dreiecksgeschäft — Lieferung",
-  "Odpočet z tuzemska — základní sazba, základ":
-    "Vorsteuer Inland — Regelsatz, Bemessungsgrundlage",
-  "Odpočet z tuzemska — základní sazba, daň": "Vorsteuer Inland — Regelsatz, Steuer",
-  "Odpočet z tuzemska — snížená sazba, základ":
-    "Vorsteuer Inland — ermäßigter Satz, Bemessungsgrundlage",
-  "Odpočet z tuzemska — snížená sazba, daň": "Vorsteuer Inland — ermäßigter Satz, Steuer",
-  "Dovoz zboží (celní úřad) — základ": "Einfuhr (Zollamt) — Bemessungsgrundlage",
-  "Dovoz zboží (celní úřad) — odpočet": "Einfuhr (Zollamt) — Vorsteuer",
-  "Odpočet ze samovyměření — základní sazba, základ":
-    "Vorsteuer aus Selbstveranlagung — Regelsatz, Bemessungsgrundlage",
-  "Odpočet ze samovyměření — základní sazba, daň":
-    "Vorsteuer aus Selbstveranlagung — Regelsatz, Steuer",
-  "Odpočet daně celkem": "Vorsteuer gesamt",
-  "Daň na výstupu celkem": "Umsatzsteuer gesamt",
-  "Vlastní daňová povinnost": "Zahllast",
-  "Nadměrný odpočet": "Vorsteuerüberhang",
-  "Výkazy se nepodařilo sestavit.": "Die Meldungen konnten nicht erstellt werden.",
-  "Vyplňte kód finančního úřadu (3 číslice, např. 451 pro Prahu).":
-    "Geben Sie den Code des Finanzamts ein (3 Ziffern, z. B. 451 für Prag).",
-  "Firma nemá DIČ — doplňte ho v Nastavení firmy.":
-    "Das Unternehmen hat keine Steuernummer (DIČ) — ergänzen Sie sie in den Unternehmenseinstellungen.",
-  "Zapsáno jako podané.": "Als eingereicht vermerkt.",
-  "Nepodařilo se uložit.": "Speichern fehlgeschlagen.",
   "Výkazy k DPH": "MwSt.-Meldungen",
-  "Přiznání k DPH a kontrolní hlášení sestavené z dokladů, v XML pro portál MOJE daně.":
-    "MwSt.-Erklärung und Kontrollmeldung aus Ihren Belegen, als XML für das Portal MOJE daně.",
   Rok: "Jahr",
-  "Zdaňovací období": "Besteuerungszeitraum",
-  Měsíc: "Monat",
-  Čtvrtletí: "Quartal",
-  Období: "Zeitraum",
-  "{q}. čtvrtletí": "{q}. Quartal",
-  "Finanční úřad (kód)": "Finanzamt (Code)",
-  "např. {x}": "z. B. {x}",
-  "Územní pracoviště (kód)": "Dienststelle (Code)",
-  "CZ-NACE (hlavní činnost)": "CZ-NACE (Haupttätigkeit)",
-  "Podává — jméno": "Einreicher — Vorname",
-  "Podává — příjmení": "Einreicher — Nachname",
-  "Vztah k firmě": "Funktion im Unternehmen",
-  "Kód předmětu plnění (přenesení daňové povinnosti § 92a)":
-    "Code des Leistungsgegenstands (Reverse-Charge § 92a)",
-  "— nevybráno —": "— nicht ausgewählt —",
-  "Kódy finančních úřadů a pracovišť najdete v číselnících na portálu MOJE daně (např. 451 = Finanční úřad pro hlavní město Prahu). Kontrolní hlášení podává právnická osoba vždy za měsíc — u čtvrtletního přiznání se sestaví za každý měsíc zvlášť.":
-    "Die Codes der Finanzämter und Dienststellen finden Sie in den Verzeichnissen des Portals MOJE daně (z. B. 451 = Finanzamt für die Hauptstadt Prag). Juristische Personen reichen die Kontrollmeldung immer monatlich ein — bei vierteljährlicher Erklärung wird sie für jeden Monat einzeln erstellt.",
-  "Sestavuji z dokladů…": "Wird aus den Belegen erstellt…",
-  "V období je {vystavene} vydaných faktur, {prijate} přijatých a {doklady} dokladů s DPH.":
-    "Im Zeitraum: {vystavene} Ausgangsrechnungen, {prijate} Eingangsrechnungen und {doklady} Belege mit MwSt.",
-  "Před podáním doplňte ({n})": "Vor der Einreichung ergänzen ({n})",
-  "Přiznání k DPH": "MwSt.-Erklärung",
-  "DPHDP3 · částky v celých korunách": "DPHDP3 · Beträge in ganzen Kronen",
-  Řádné: "Ordentlich",
-  "Řádné opravné": "Ordentlich, berichtigt",
-  Dodatečné: "Nachträglich",
-  "Dodatečné opravné": "Nachträglich, berichtigt",
   Následné: "Nachfolgend",
   "Následné opravné": "Nachfolgend, berichtigt",
   Podané: "Eingereicht",
-  "ř. {r}": "Z. {r}",
-  "Souhrnné hlášení": "Zusammenfassende Meldung",
-  "DPHSHV · dodání zboží a služeb do EU · v celých korunách":
-    "DPHSHV · Lieferungen und Leistungen in die EU · in ganzen Kronen",
-  "V období nejsou žádné dodávky do EU — souhrnné hlášení se nepodává.":
-    "Im Zeitraum gibt es keine Lieferungen in die EU — keine Zusammenfassende Meldung erforderlich.",
-  "Odběratel (VAT ID)": "Kunde (USt-IdNr.)",
-  "Kód plnění": "Leistungscode",
   Počet: "Anzahl",
   Hodnota: "Wert",
-  "0 – dodání zboží": "0 – Warenlieferung",
-  "2 – třístranný obchod": "2 – Dreiecksgeschäft",
   "3 – služba": "3 – Dienstleistung",
-  "Při dodání zboží se souhrnné hlášení podává za každý měsíc — přepněte období na měsíc.":
-    "Bei Warenlieferungen wird die Zusammenfassende Meldung monatlich abgegeben — stellen Sie den Zeitraum auf Monat um.",
-  "Vyberte kód předmětu plnění pro přenesení daňové povinnosti.":
-    "Wählen Sie den Code des Leistungsgegenstands für Reverse-Charge.",
-  "Doplňte DIČ u dokladu {doklady} — v přenesení daňové povinnosti je povinné.":
-    "Ergänzen Sie die Steuernummer (DIČ) beim Beleg {doklady} — bei Reverse-Charge ist sie Pflicht.",
-  "Doplňte DIČ u dokladů {doklady} — v přenesení daňové povinnosti je povinné.":
-    "Ergänzen Sie die Steuernummer (DIČ) bei den Belegen {doklady} — bei Reverse-Charge ist sie Pflicht.",
-  "Kontrolní hlášení — {mesic}": "Kontrollmeldung — {mesic}",
-  "DPHKH1 · částky na haléře": "DPHKH1 · Beträge auf den Heller genau",
-  "A.1 Přenesení daňové povinnosti — dodavatel": "A.1 Reverse-Charge — leistender Unternehmer",
-  "A.2 Přijatá plnění ze zahraničí": "A.2 Bezogene Leistungen aus dem Ausland",
-  "A.4 Vydané doklady nad 10 000 Kč": "A.4 Ausgangsbelege über 10 000 Kč",
-  "A.5 Ostatní vydané (souhrnně)": "A.5 Sonstige Ausgangsbelege (zusammengefasst)",
-  "B.1 Přenesení daňové povinnosti — odběratel": "B.1 Reverse-Charge — Leistungsempfänger",
-  "B.2 Přijaté doklady nad 10 000 Kč": "B.2 Eingangsbelege über 10 000 Kč",
-  "B.3 Ostatní přijaté (souhrnně)": "B.3 Sonstige Eingangsbelege (zusammengefasst)",
 
   // ApiDocsContent
   Skopírované: "Kopiert",

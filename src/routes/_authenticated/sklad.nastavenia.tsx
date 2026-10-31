@@ -142,7 +142,9 @@ function WarehousesPage() {
                 <th className="p-3">{t("Názov")}</th>
                 <th className="p-3">{t("Adresa")}</th>
                 <th className="p-3">{t("Stav")}</th>
-                <th></th>
+                <th>
+                  <span className="sr-only">{t("Akcie")}</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

@@ -316,7 +316,9 @@ export function SadzbaZmluvy({
                   {pohybliva && <th className="p-3 text-right font-medium">{t("Marža")}</th>}
                   <th className="p-3 text-right font-medium">{t("Sadzba")}</th>
                   <th className="p-3 text-left font-medium">{t("Zdroj")}</th>
-                  <th className="p-3" />
+                  <th className="p-3">
+                    <span className="sr-only">{t("Akcie")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

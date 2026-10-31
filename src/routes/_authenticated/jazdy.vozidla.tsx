@@ -272,7 +272,9 @@ function VehiclesPage() {
                 <th className="p-3 text-right">{t("Spolu")}</th>
                 <th className="p-3 pl-6">{t("Stanica")}</th>
                 <th className="p-3">{t("Doklad")}</th>
-                <th className="p-3"></th>
+                <th className="p-3">
+                  <span className="sr-only">{t("Akcie")}</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

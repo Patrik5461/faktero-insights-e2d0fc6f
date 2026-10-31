@@ -395,7 +395,7 @@ function NewQuote() {
           </section>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">{t("Položky")}</h3>
+              <h2 className="font-semibold">{t("Položky")}</h2>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {produkty.length > 0 && (
                   <select aria-label={t("Pridať z katalógu")}

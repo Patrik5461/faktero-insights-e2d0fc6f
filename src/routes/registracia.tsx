@@ -134,7 +134,7 @@ function RegisterPage() {
 
   if (cakaNaPotvrdenie) {
     return (
-      <div className="grid min-h-screen place-items-center bg-background px-4">
+      <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 outline-none">
         <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
           <Link to="/" className="mb-6 inline-flex items-center">
             <Logo variant="header" className="h-8" />
@@ -164,12 +164,12 @@ function RegisterPage() {
             </Link>
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4">
+    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 outline-none">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
@@ -284,6 +284,6 @@ function RegisterPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }

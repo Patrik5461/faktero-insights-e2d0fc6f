@@ -60,7 +60,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Sidebar — desktop */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex">
+      <aside
+        aria-label="Menu administrácie"
+        className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex"
+      >
         <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
           <Logo variant="icon" />
           <div className="min-w-0">

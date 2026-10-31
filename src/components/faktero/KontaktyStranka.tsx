@@ -360,12 +360,13 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                       checked={list.allOnPageSelected}
                       onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
+                    <span className="sr-only">{t("Výber")}</span>
                   </th>
                   <th className="p-3">{t("Názov")}</th>
                   <th className="p-3">{t("IČO")}</th>
                   <th className="p-3">{t("DIČ")}</th>
                   <th className="p-3">{t("Email")}</th>
-                  <th className="p-3"></th>
+                  <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
