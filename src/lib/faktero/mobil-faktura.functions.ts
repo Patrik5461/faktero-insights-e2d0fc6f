@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { rezimFirmy } from "./dph-rezim";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { stavEfakturyZVyberu, VYBER_EFAKTURY_K_FAKTURE } from "./efaktura/stav-efaktury";
 
 /**
  * Čítanie pre mobilnú aplikáciu — podklady do formulára a zoznam faktúr.
@@ -77,7 +78,7 @@ export const vystaveneFakturyFn = createServerFn({ method: "POST" })
     const { data: rows, error } = await context.supabase
       .from("invoices")
       .select(
-        "id, invoice_number, customer_name, customer_email, total, currency, issue_date, due_date, status, type, paid_at, sent_at",
+        `id, invoice_number, customer_name, customer_email, total, currency, issue_date, due_date, status, type, paid_at, sent_at, ${VYBER_EFAKTURY_K_FAKTURE}`,
       )
       .eq("company_id", data.company_id)
       .is("deleted_at", null)
@@ -85,7 +86,15 @@ export const vystaveneFakturyFn = createServerFn({ method: "POST" })
       .order("invoice_number", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    /*
+      Stav eFaktúry ide v tom istom dotaze (vnorený výber), nie dotazom na
+      každú faktúru — a keďže je súčasťou zoznamu, appka ho má aj v pamäti
+      pre prácu bez signálu. Do telefónu ide len zhrnutý stav, nie riadky.
+    */
+    return (rows ?? []).map(({ efaktura_documents, ...f }: any) => ({
+      ...f,
+      efaktura: stavEfakturyZVyberu(efaktura_documents),
+    }));
   });
 
 /* ------------------------- Posledná faktúra odberateľa ------------------------- */

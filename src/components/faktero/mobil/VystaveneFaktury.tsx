@@ -42,6 +42,8 @@ import {
   type Ton,
 } from "./ui";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { prejdeFiltromEfaktury, type StavEfaktury } from "@/lib/faktero/efaktura/stav-efaktury";
+import { OdznakEfaktury, SekciaEfaktury } from "./EfakturaStav";
 /**
  * Vystavené faktúry v telefóne.
  *
@@ -65,6 +67,8 @@ type Faktura = {
   type: string;
   paid_at: string | null;
   sent_at: string | null;
+  /** Stav eFaktúry — server ho pribalí k zoznamu (`null` = neodišla eFaktúrou). */
+  efaktura?: StavEfaktury | null;
 };
 
 function suma(v: unknown, mena = "EUR", loc = "sk-SK"): string {
@@ -115,13 +119,22 @@ export function sucetMesiaca(
 }
 
 /** Filter nad zoznamom. Zodpovedá tomu, na čo sa človek pýta najčastejšie. */
-export type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "uhradene";
+export type Filter =
+  | "vsetky"
+  | "neuhradene"
+  | "poSplatnosti"
+  | "uhradene"
+  /* eFaktúra — chipy sa ukážu len firme, ktorá nejakú eFaktúru poslala. */
+  | "efOdoslane"
+  | "efChyba";
 
 export function prejdeFiltrom(
-  f: Pick<Faktura, "status" | "type" | "due_date">,
+  f: Pick<Faktura, "status" | "type" | "due_date" | "efaktura">,
   filter: Filter,
 ): boolean {
   if (filter === "vsetky") return true;
+  if (filter === "efOdoslane") return prejdeFiltromEfaktury(f.efaktura, "odoslane");
+  if (filter === "efChyba") return prejdeFiltromEfaktury(f.efaktura, "chyba");
   const den = dnesBratislava();
   if (filter === "uhradene") return f.status === "paid";
   if (f.status === "paid" || f.status === "cancelled" || f.status === "draft") return false;
@@ -154,6 +167,8 @@ export function VystaveneFaktury({
   const [nedostupne, setNedostupne] = useState(false);
   /** Faktúry vystavené bez signálu, ktoré ešte len čakajú na odoslanie. */
   const [cakajuce, setCakajuce] = useState<OdlozenaFaktura[]>([]);
+  /** Zoznam je z pamäte telefónu (čas uloženia) — stav eFaktúry nemusí byť čerstvý. */
+  const [zPamateKedy, setZPamateKedy] = useState<number | null>(null);
 
   async function obnov() {
     const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
@@ -184,6 +199,7 @@ export function VystaveneFaktury({
     try {
       const zoznam = (await nacitaj({ data: { company_id: firma.id } })) as Faktura[];
       setFaktury(zoznam);
+      setZPamateKedy(null);
       void ulozDoPamate(kluc, zoznam);
     } catch (e: any) {
       // Bez pripojenia sa ukáže posledný známy zoznam. Vystaviť ani odoslať sa
@@ -192,6 +208,7 @@ export function VystaveneFaktury({
       const zapamatane = await zPamate<Faktura[]>(kluc);
       if (zapamatane?.hodnota?.length) {
         setFaktury(zapamatane.hodnota);
+        setZPamateKedy(zapamatane.kedy);
         toast.message(t("faktury.bezPripojenia"), {
           description: new Date(zapamatane.kedy).toLocaleString(loc),
         });
@@ -221,7 +238,10 @@ export function VystaveneFaktury({
         .filter(Boolean)
         .some((x) => String(x).toLowerCase().includes(q)),
     );
-  }, [faktury, hladanie]);
+  }, [faktury, hladanie, filter]);
+
+  /* Chipy eFaktúry len vtedy, keď je čo filtrovať — inak by len zaberali miesto. */
+  const maEfaktury = useMemo(() => (faktury ?? []).some((f) => f.efaktura), [faktury]);
 
   const mesiace = useMemo(() => {
     const mapa = new Map<string, Faktura[]>();
@@ -249,6 +269,7 @@ export function VystaveneFaktury({
     return (
       <DetailFaktury
         faktura={otvorena}
+        zPamateKedy={zPamateKedy}
         onSpat={() => setOtvorena(null)}
         onUprav={onUprav}
         firmaId={firma.id}
@@ -291,6 +312,12 @@ export function VystaveneFaktury({
             { kod: "neuhradene", popis: t("faktury.filterNeuhradene") },
             { kod: "poSplatnosti", popis: t("faktury.filterPoSplatnosti") },
             { kod: "uhradene", popis: t("faktury.filterUhradene") },
+            ...(maEfaktury || filter === "efOdoslane" || filter === "efChyba"
+              ? [
+                  { kod: "efOdoslane" as const, popis: t("efs.filterOdoslane") },
+                  { kod: "efChyba" as const, popis: t("efs.filterChyba") },
+                ]
+              : []),
           ]}
         />
       </div>
@@ -382,6 +409,7 @@ export function VystaveneFaktury({
                         subtitle={
                           <span className="flex items-center gap-1.5">
                             <span className="truncate">{f.invoice_number}</span>
+                            <OdznakEfaktury stav={f.efaktura} />
                             {/* Uhradenej sa na splatnosť už nikto nepýta. */}
                             {f.status === "paid" || f.status === "cancelled" ? (
                               <StatusBadge text={t(s.kluc)} ton={s.ton} />
@@ -416,6 +444,7 @@ export function VystaveneFaktury({
 function DetailFaktury({
   faktura,
   firmaId,
+  zPamateKedy,
   onSpat,
   onZmena,
   onObnov,
@@ -423,6 +452,7 @@ function DetailFaktury({
 }: {
   faktura: Faktura;
   firmaId: string;
+  zPamateKedy: number | null;
   /** Obnoví zoznam bez zatvorenia detailu (napr. po odoslaní eFaktúry). */
   onObnov: () => void;
   onSpat: () => void;
@@ -644,6 +674,17 @@ function DetailFaktury({
             <Riadok label={t("faktury.odoslana")} value={datum(faktura.sent_at, loc)} />
           )}
         </div>
+
+        {/* Stav eFaktúry — koncept ešte nikam odísť nemôže. */}
+        {faktura.status !== "draft" && (
+          <SekciaEfaktury
+            fakturaId={faktura.id}
+            typ={faktura.type}
+            stav={faktura.efaktura}
+            zPamateKedy={zPamateKedy}
+            obnova={efakturaObnova}
+          />
+        )}
 
         <div className="space-y-2">
           <VelkeTlacidlo
