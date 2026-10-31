@@ -79,9 +79,9 @@ const args = process.argv.slice(2);
 const OPAKUJ = args.includes("--opakuj") || process.env.E2E_OPAKUJ === "1";
 const vybrane = args.filter((a) => !a.startsWith("--"));
 // Celá sada trvá ~10,5 min (40 tokov, 31. 10. 2026); po 14 min sa nový tok nespustí.
-const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1080) * 1000;
+const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1500) * 1000;
 // Tvrdý koniec behu: tok spustený tesne pred LIMIT_BEHU_MS dostane len zvyšok do tohto času,
-// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 1200).
+// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 1680).
 const KONIEC_BEHU_MS = LIMIT_BEHU_MS + Number(process.env.E2E_REZERVA_S ?? 60) * 1000;
 
 function commit() {

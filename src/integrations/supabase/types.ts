@@ -9448,6 +9448,9 @@ export type Database = {
           response_status: number | null
           status: string
           webhook_id: string
+          next_attempt_at: string | null
+          sending_until: string | null
+          last_attempt_at: string | null
         }
         Insert: {
           attempt_count?: number
@@ -9462,6 +9465,9 @@ export type Database = {
           response_status?: number | null
           status?: string
           webhook_id: string
+          next_attempt_at?: string | null
+          sending_until?: string | null
+          last_attempt_at?: string | null
         }
         Update: {
           attempt_count?: number
@@ -9476,6 +9482,9 @@ export type Database = {
           response_status?: number | null
           status?: string
           webhook_id?: string
+          next_attempt_at?: string | null
+          sending_until?: string | null
+          last_attempt_at?: string | null
         }
         Relationships: [
           {
@@ -12768,6 +12777,7 @@ export type Database = {
         }
         Relationships: []
       }
+
     }
     Views: {
       stock_items_with_availability: {
