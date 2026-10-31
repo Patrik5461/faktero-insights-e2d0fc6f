@@ -8,7 +8,7 @@
   - neaktívne pravidlo nič nedoplní, ručne zadaný kód pravidlo neprepíše,
   - „Uplatniť na doklady“ (RPC) doplní pravidlo aj starším dokladom,
   - webhook_outbox: invoice.paid a bank_transaction.created odídu z fronty cronom
-    a prijímač, ktorý vracia 404, sa skúsi trikrát (webhook_delivery_logs).
+    a prijímač, ktorý vracia 404, sa skúša znova podľa rozvrhu (od 31. 10.: 8 pokusov za ~2 dni).
   Upratanie zmaže všetko, čo tok založil.
 */
 import { zmazFakturuNatvrdo } from "../lib/doklady.mjs";
@@ -364,12 +364,12 @@ export default {
       return f;
     });
 
-    await t.krok("cron doručí z fronty obe udalosti, 404 skúsi trikrát", async () => {
+    await t.krok("cron doručí z fronty obe udalosti, po 404 naplánuje ďalší pokus", async () => {
       const logy = await t.cakajNa(
         "záznamy v webhook_delivery_logs",
         async () => {
           const r = await t.rest.get(
-            `webhook_delivery_logs?webhook_id=eq.${hook.id}&select=event_type,status,attempt_count,response_status,error_message,payload`,
+            `webhook_delivery_logs?webhook_id=eq.${hook.id}&select=event_type,status,attempt_count,response_status,error_message,payload,next_attempt_at`,
           );
           const l = r.data ?? [];
           const zaplatena = l.find(
@@ -386,8 +386,13 @@ export default {
         { limit: 150000, krok: 5000 },
       );
       for (const l of [logy.zaplatena, logy.pohyb]) {
-        t.over(l.status === "failed", `${l.event_type}: stav ${l.status}`);
-        t.over(l.attempt_count === 3, `${l.event_type}: pokusov ${l.attempt_count}`);
+        // Po prvom zlyhaní sa nevzdá — ďalší pokus o ~1 min (webhook-opakovanie.ts).
+        t.over(l.status === "retrying", `${l.event_type}: stav ${l.status}`);
+        t.over(l.attempt_count >= 1, `${l.event_type}: pokusov ${l.attempt_count}`);
+        t.over(
+          l.next_attempt_at && Date.parse(l.next_attempt_at) > Date.now() - 120000,
+          `${l.event_type}: chýba ďalší pokus (${l.next_attempt_at})`,
+        );
         t.over(
           l.response_status === 404 || l.error_message,
           `${l.event_type}: odpoveď ${l.response_status}`,

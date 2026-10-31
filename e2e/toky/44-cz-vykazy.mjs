@@ -549,18 +549,12 @@ export default {
       t.over(!chyba, `Pohoda XML neprešlo schémou: ${chyba}`);
       const text = textXml(buf);
       /*
-        Prenesenie § 92a bez členenia DPH pre prenesenie firma (QA Česká ho
-        nemá) do Pohody nepustí — povie prečo; ostatné doklady idú.
+        Od 31. 10. 2026 dostane § 92a aj česká firma bez nastavenia predvolené
+        členenie UDpdp (česká Pohoda ho má) — do Pohody idú všetky doklady.
       */
-      for (const f of vystavene.filter((x) => x.id !== d.v.pdp.id))
+      for (const f of vystavene)
         t.over(text.includes(f.invoice_number), `v Pohode chýba ${f.invoice_number}`);
-      t.over(
-        !text.includes(`>${d.v.pdp.invoice_number}<`),
-        "§ 92a bez členenia DPH prešiel do Pohody",
-      );
-      await t.cakajNa("hláška o vynechanom § 92a", async () =>
-        t.hlasky.some((h) => h.includes(d.v.pdp.invoice_number) && /členenia DPH/.test(h)),
-      );
+      t.over(text.includes("UDpdp"), "§ 92a nemá predvolené členenie UDpdp");
       t.over(!text.includes("classificationKVDPH"), "česká Pohoda nemá členenie KV DPH");
       t.over(
         text.includes(`Daňový doklad k přijaté platbě ${d.v.ddp.invoice_number}`),

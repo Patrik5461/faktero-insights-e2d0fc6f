@@ -123,8 +123,10 @@ export default {
         return /prejde kontrolou|Neodovzdané:/.test(text);
       });
       const text = (await blok.innerText()).replace(/\s+/g, " ");
+      // Upozornenie („prejde, ale skontrolujte v Pohode“, napr. KV B2 bez IČ DPH) faktúru nezastaví.
+      const okolie = text.slice(Math.max(0, text.indexOf(cislo) - 120), text.indexOf(cislo) + 40);
       t.over(
-        !text.includes(cislo),
+        !text.includes(cislo) || /skontrolujte v Pohode/.test(okolie),
         `kontrola zastavila našu faktúru: ${text.slice(text.indexOf(cislo) - 50, text.indexOf(cislo) + 200)}`,
       );
     });
