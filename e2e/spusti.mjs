@@ -223,18 +223,28 @@ function vytvorKontext(tok, pokus) {
       },
       [FIRMY[firma] ?? firma, jazyk ?? null],
     );
+    /*
+      Chyby, dialógy a hlášky sa sledujú na každej stránke kontextu — aj na tej,
+      ktorú si tok otvorí sám (napr. „zatvorenie a otvorenie appky" cez
+      ctx.newPage()). Inak by hlášky z novej stránky do t.hlasky nikdy neprišli.
+    */
+    const sleduj = (page) => {
+      page.on("pageerror", (e) => chybyStranky.push(`${page.url()} ${String(e).slice(0, 300)}`));
+      page.on("dialog", (d) => d.dismiss().catch(() => {}));
+      const zber = setInterval(async () => {
+        for (const x of await page
+          .locator("[data-sonner-toast]")
+          .allInnerTexts()
+          .catch(() => [])) {
+          const h = x.replace(/\s+/g, " ").trim();
+          if (h && !hlasky.includes(h)) hlasky.push(h);
+        }
+      }, 400);
+      page.on("close", () => clearInterval(zber));
+    };
+    ctx.on("page", sleduj);
     const page = await ctx.newPage();
     page.setDefaultTimeout(20000);
-    page.on("pageerror", (e) => chybyStranky.push(`${page.url()} ${String(e).slice(0, 300)}`));
-    page.on("dialog", (d) => d.dismiss().catch(() => {}));
-    const zber = setInterval(async () => {
-      for (const x of await page
-        .locator("[data-sonner-toast]")
-        .allInnerTexts()
-        .catch(() => []))
-        if (!hlasky.includes(x)) hlasky.push(x.replace(/\s+/g, " ").trim());
-    }, 400);
-    page.on("close", () => clearInterval(zber));
     return page;
   }
 
