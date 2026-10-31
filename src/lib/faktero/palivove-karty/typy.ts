@@ -113,4 +113,18 @@ export type KartaPoskytovatel = {
   /** Ako sa zákazník dostane k prístupu do API. */
   pristup: string;
   polia: KartaPole[];
+  /**
+   * Bez API — nákupy prídu nahratím výpisu alebo faktúry (CSV, XLSX, PDF).
+   * Pripojenie nemá tajomstvá, nesynchronizuje sa a v noci sa preskočí.
+   */
+  nahratie?: boolean;
+  /** Vydavateľ faktúr — do adresára a na spoznanie už zadanej faktúry. */
+  dodavatel?: {
+    nazov: string;
+    ico?: string;
+    dic?: string;
+    krajina?: string;
+    /** Názov dodávateľa na existujúcej faktúre (regulárny výraz, bez ohľadu na veľkosť). */
+    vzor: string;
+  };
 };

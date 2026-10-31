@@ -17,6 +17,7 @@ export const POSKYTOVATELIA: KartaPoskytovatel[] = [
       "https://developer.shell.com/api-catalog/b2b-mobility-card-transaction-data/api-overview",
     dostupne: true,
     faktury: true,
+    dodavatel: { nazov: "Shell", vzor: "shell" },
     pristup:
       "Prístup do API vydáva Shell na požiadanie: v Shell Card Online alebo cez obchodníka požiadajte o B2B Mobility API (Transaction Data a Invoice). Shell pošle e-mailom client ID a client secret. Payer number nájdete na faktúre Shell alebo v Shell Card Online.",
     polia: [
@@ -66,6 +67,34 @@ export const POSKYTOVATELIA: KartaPoskytovatel[] = [
           { hodnota: "produkcia", nazov: "Ostré (api.shell.com)" },
           { hodnota: "test", nazov: "Testovacie (api-test.shell.com)" },
         ],
+      },
+    ],
+  },
+  {
+    id: "up",
+    nazov: "Up Déjeuner (Shell karta)",
+    web: "https://www.up-dejeuner.sk",
+    dokumentacia: "https://www.up-dejeuner.sk",
+    dostupne: true,
+    faktury: true,
+    nahratie: true,
+    dodavatel: {
+      nazov: "Up Déjeuner, s. r. o.",
+      ico: "53528654",
+      dic: "2121424228",
+      krajina: "SK",
+      vzor: "up\\s*d[eé]jeuner|up\\s*slovensko",
+    },
+    pristup:
+      "Up Déjeuner verejné API nemá. Mesačný výpis transakcií (CSV alebo XLSX) alebo faktúru v PDF si stiahnete v klientskej zóne Up alebo vám ich Up pošle e-mailom (palivo@up-dejeuner.sk) — tu ich nahráte. Opakované nahratie toho istého výpisu nič nezdvojí.",
+    polia: [
+      {
+        kluc: "zmluva",
+        nazov: "Číslo zmluvy alebo zákazníka",
+        typ: "text",
+        povinne: false,
+        tajne: false,
+        pomoc: "Len na rozlíšenie, ak máte u Up viac zmlúv. Nikam sa neposiela.",
       },
     ],
   },

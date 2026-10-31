@@ -136,6 +136,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   vozidlo: "Vozový park (technický preukaz)",
   "ostatny-doklad": "Iné doklady",
   "bankovy-vypis": "Bankové výpisy",
+  "palivova-karta": "Palivové karty (výpisy a faktúry)",
   banka_notifikacia: "Bankové notifikácie (e-mail)",
   "import-dokladov": "Import dokladov",
   asistent: "AI asistent",

@@ -6,6 +6,7 @@ import type { KartaAdapter } from "./typy";
 
 const NACITAJ: Record<string, () => Promise<{ adapter: KartaAdapter }>> = {
   shell: () => import("./shell.server"),
+  up: () => import("./up.server"),
 };
 
 export async function nacitajAdapter(id: string): Promise<KartaAdapter> {
