@@ -68,6 +68,10 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   const t = useTKorena();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // Admin → Chyby. Dynamicky, aby chybová stránka nečakala na ďalší kúsok kódu.
+    void import("@/lib/systemove-chyby/klient")
+      .then((m) => m.nahlasChybu(error, "hranica"))
+      .catch(() => {});
   }, [error]);
 
   return (
@@ -285,6 +289,11 @@ function RootComponent() {
     const zAdresy = jazykZAdresy(window.location.search);
     if (zAdresy && !document.cookie.includes(`${COOKIE_JAZYKA}=${zAdresy}`))
       document.cookie = `${COOKIE_JAZYKA}=${zAdresy}; path=/; max-age=31536000; samesite=lax`;
+  }, []);
+
+  // Nezachytené chyby a odmietnuté sľuby z prehliadača → Admin → Chyby.
+  useEffect(() => {
+    void import("@/lib/systemove-chyby/klient").then((m) => m.zachytavajChyby({})).catch(() => {});
   }, []);
 
   return (

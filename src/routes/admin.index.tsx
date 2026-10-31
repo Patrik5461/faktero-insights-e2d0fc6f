@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { getAdminOverview } from "@/lib/faktero/admin.functions";
 import { AdminVyuzitieZdrojov } from "@/components/faktero/AdminVyuzitieZdrojov";
+import { SuhrnChyb24h } from "@/components/faktero/AdminSystemoveChyby";
 import {
   Building2,
   Users,
@@ -92,6 +93,7 @@ function AdminOverviewPage() {
         description="Kľúčové metriky o stave Faktero platformy."
       />
       <AdminPageBody>
+        <SuhrnChyb24h />
         {error && (
           <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
             {error}
