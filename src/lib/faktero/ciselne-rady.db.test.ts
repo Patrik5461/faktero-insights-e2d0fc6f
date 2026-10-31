@@ -205,6 +205,22 @@ describe.skipIf(bezPristupu)("číslovanie dokladov proti databáze", () => {
   });
 
   /*
+   * Odoslaná faktúra je u odberateľa — jej číslo nesmie dostať iná faktúra
+   * ani po zmazaní. Diera ostáva, nová dostane ďalšie číslo.
+   */
+  it("faktúry: zmazaná odoslaná faktúra si číslo podrží", async () => {
+    const { error } = await db
+      .from("invoices")
+      .update({ sent_at: new Date().toISOString() } as never)
+      .eq("company_id", firma)
+      .eq("invoice_number", "20270002");
+    if (error) throw new Error(error.message);
+
+    const f = await dalsiaFaktura("regular", "2027-01-10");
+    expect(f.invoice_number).toBe("20270004");
+  });
+
+  /*
    * Ponuky a objednávky to majú naopak: číslo už odišlo zákazníkovi, tak
    * ostáva obsadené aj po zmazaní. Ich unikátny index zmazané riadky
    * nevynecháva, takže zaplnenie diery by skončilo chybou pri zápise.

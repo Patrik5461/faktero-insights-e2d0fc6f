@@ -72,3 +72,28 @@ export function formatujDatum(d: unknown): string {
   if (!jeDatum(d)) return "—";
   return `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
 }
+
+/** Odmietol zápis spúšťač uzamknutého obdobia (`guard_locked_period*`)? */
+export function jeChybaUzamknutia(chyba: unknown): boolean {
+  const s =
+    typeof chyba === "string"
+      ? chyba
+      : String((chyba as { message?: unknown })?.message ?? chyba ?? "");
+  return /Obdobie je uzamknuté/i.test(s);
+}
+
+/** Hláška pre bloček v uzavretom období — čo sa nedá a čo áno. */
+export const HLASKA_ZAMKNUTY_BLOCEK =
+  "Obdobie je uzamknuté uzávierkou — sumu, dátum, dodávateľa ani číslo bločku už nemožno zmeniť a bloček sa nedá zmazať. Zaúčtovanie, úhradu, zákazku a poznámku zmeniť môžete.";
+
+/**
+ * Je bloček v uzavretom období? Nespracovaný (stav `new`) ešte nie je
+ * v účtovníctve, ten zámok nedrží — rovnako ako spúšťač v databáze.
+ */
+export function blocekJeUzamknuty(
+  b: { status?: string | null; issue_date?: string | null } | null | undefined,
+  uzamknuteDo: unknown,
+): boolean {
+  if (!b || (b.status ?? "new") === "new") return false;
+  return jeUzamknute(b.issue_date, uzamknuteDo);
+}

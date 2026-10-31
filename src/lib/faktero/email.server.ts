@@ -20,6 +20,11 @@ export type SendInvoiceEmailInput = {
    * ktorý sa zmeniť nedá (uzamknuté obdobie, vyvezený do účtovníctva).
    */
   potvrdeny_stary_datum?: boolean;
+  /**
+   * Číslo faktúry, s ktorým okno predvyplnilo predmet a text. Ak sa číslo
+   * medzitým zmenilo, nahradí sa v nich aktuálnym (`cislo-v-maile.ts`).
+   */
+  cislo_v_okne?: string | null;
 };
 
 function applyVars(s: string, inv: any, company: any) {
@@ -193,8 +198,12 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       krajinaDane(company?.country),
     );
     const vlastny = vlastnyMailFirmy(company, jazykFaktury(invoice, company));
-    const subject = input.subject ?? tplSubject ?? vlastny.predmet ?? predvoleny.predmet;
-    const message = input.message ?? tplBody ?? vlastny.text ?? predvoleny.text;
+    // Predmet a text z okna nesú číslo z chvíle otvorenia — tu sa zladí s aktuálnym.
+    const { sAktualnymCislom } = await import("./cislo-v-maile");
+    const zOkna = (text: string | undefined) =>
+      sAktualnymCislom(text, input.cislo_v_okne, invoice.invoice_number);
+    const subject = zOkna(input.subject) ?? tplSubject ?? vlastny.predmet ?? predvoleny.predmet;
+    const message = zOkna(input.message) ?? tplBody ?? vlastny.text ?? predvoleny.text;
     const finalSubject = applyVars(subject, invoice, company);
     const finalMessage = applyVars(message, invoice, company);
 
