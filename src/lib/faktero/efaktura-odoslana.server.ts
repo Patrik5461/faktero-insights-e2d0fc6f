@@ -21,7 +21,7 @@ export async function efakturaOdoslane(
     (kus, zac, kon) =>
       supabase
         .from("efaktura_deliveries")
-        .select("document_id, status, created_at")
+        .select("document_id, status, created_at, zlyhanie:raw_response->deliveryFailure")
         .in("document_id", kus)
         .order("created_at")
         .range(zac, kon),

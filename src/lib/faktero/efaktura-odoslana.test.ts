@@ -31,4 +31,14 @@ describe("množstvo pre Pohodu", async () => {
     expect(mnozstvoPohody(2)).toBe(2);
     expect(mnozstvoPohody(-0.00001)).toBe(0);
   });
+  it("doručenie so zlyhaním od ePoštáka (deliveryFailure) sa za odoslanie neráta", () => {
+    const r = prveOdoslanie(
+      [{ id: "d1", invoice_id: "f1" }],
+      [
+        { document_id: "d1", status: "pending", created_at: "2026-10-01T10:00:00Z", zlyhanie: { code: "participant_not_found" } },
+        { document_id: "d1", status: "delivered", created_at: "2026-10-02T10:00:00Z" },
+      ],
+    );
+    expect(r).toEqual({ f1: "2026-10-02T10:00:00Z" });
+  });
 });

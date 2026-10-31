@@ -15,7 +15,13 @@ export function intNoteSEfakturou(
   return povodna ? `${veta} ${povodna}` : veta;
 }
 
-type Dorucenie = { document_id: string; status: string | null; created_at: string };
+type Dorucenie = {
+  document_id: string;
+  status: string | null;
+  created_at: string;
+  /** `raw_response->deliveryFailure` — ePošták ho pošle pri stave `pending`, ak doklad nedošiel. */
+  zlyhanie?: unknown;
+};
 
 /** Kedy faktúra odišla ako eFaktúra (prvé neodmietnuté odoslanie), podľa id faktúry. */
 export function prveOdoslanie(
@@ -28,6 +34,7 @@ export function prveOdoslanie(
     const id = faktura.get(d.document_id);
     if (!id || out[id]) continue;
     if (["failed", "error", "rejected"].includes(String(d.status))) continue;
+    if (d.zlyhanie) continue;
     out[id] = d.created_at;
   }
   return out;
