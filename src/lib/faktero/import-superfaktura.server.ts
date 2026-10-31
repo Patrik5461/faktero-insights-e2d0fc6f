@@ -1135,11 +1135,15 @@ export async function runImport(args: {
   /* Sadzba pre položky, pri ktorých súbor žiadnu neuvádza — podľa firmy. */
   const { data: firma } = await supabaseAdmin
     .from("companies")
-    .select("vat_payer, country")
+    .select("vat_payer, country, default_currency")
     .eq("id", companyId)
     .maybeSingle();
   const predvolenaSadzba: PredvolenaSadzba = (den) =>
     firma?.vat_payer === false ? 0 : zakladnaSadzba(krajinaDane(firma?.country), den);
+  // Doklad bez meny je v mene firmy — česká firma v korunách, nie v eurách.
+  const menaFirmy = String(
+    firma?.default_currency || (await import("./kurzy")).domacaMena(firma?.country),
+  );
 
   // Pre-fetch existing customers + invoices for dup detection
   const { data: existingCustomers } = await supabaseAdmin
@@ -1285,7 +1289,7 @@ export async function runImport(args: {
         issue_date: issueDate,
         due_date: dueDate,
         delivery_date: deliveryDate,
-        currency: pick(head, mapping, "currency") || "EUR",
+        currency: pick(head, mapping, "currency") || menaFirmy,
         status: knownStatus,
         type: druh,
         subtotal,
