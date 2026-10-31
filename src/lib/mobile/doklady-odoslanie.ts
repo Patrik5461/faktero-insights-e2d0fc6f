@@ -1,7 +1,13 @@
 import type { BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { dokladNaZaznam, nahrajPrilohu } from "@/lib/faktero/mobil-doklad";
 import { ZDROJ_APKY } from "@/lib/faktero/blocek-z-appky";
-import { fronta, zapisChybu, zmazZFronty, type CakajuciDoklad } from "./doklady-fronta";
+import {
+  fronta,
+  zapisChybu,
+  zapisPrilohu,
+  zmazZFronty,
+  type CakajuciDoklad,
+} from "./doklady-fronta";
 import { isOnline } from "./offline-queue";
 
 /**
@@ -56,11 +62,15 @@ async function odosliJeden(d: CakajuciDoklad, nacitaj: NacitajFn, uloz: UlozFn):
    * ostáva vo fronte a skúsi sa znova — predtým sa uložil bez nej a v
    * Bločkoch by bol doklad, ku ktorému účtovník nemá čo založiť.
    */
-  const priloha = d.obrazok ? await nahrajPrilohu(d.company_id, d.obrazok) : null;
-  if (d.obrazok && !priloha) throw new Error("Fotku dokladu sa nepodarilo nahrať — skúsim to znova.");
+  const priloha = d.priloha ?? (d.obrazok ? await nahrajPrilohu(d.company_id, d.obrazok) : null);
+  if (priloha && !d.priloha) await zapisPrilohu(d.id, priloha).catch(() => {});
+  if (d.obrazok && !priloha)
+    throw new Error("Fotku dokladu sa nepodarilo nahrať — skúsim to znova.");
   await uloz({ data: zaznamZFronty(d, vysledok, priloha) });
   await zmazZFronty(d.id);
 }
+
+const JE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Záznam pre `vydavok-uloz` z dokladu vo fronte.
@@ -74,7 +84,16 @@ export function zaznamZFronty(
   vysledok: BlocekVysledok,
   priloha: { path: string; mime: string; size: number } | null,
 ) {
-  const zaznam = dokladNaZaznam(d.company_id, vysledok, d.uhrada, priloha, d.kategoria, d.predvolby);
+  const zaznam = {
+    ...dokladNaZaznam(d.company_id, vysledok, d.uhrada, priloha, d.kategoria, d.predvolby),
+    /*
+      Id z fronty je zároveň id dokladu: keď sa uloženie podarí, ale odpoveď
+      sa stratí, doklad ostáva vo fronte a ďalší pokus by inak zapísal druhý
+      výdavok (QR kód, ktorý to inak stráži, bloček z fotky nemá). Server pri
+      známom id vráti už uložený doklad.
+    */
+    ...(JE_UUID.test(d.id) ? { id: d.id } : {}),
+  };
   return d.fotkaPovinna || d.obrazok
     ? { ...zaznam, zdroj: ZDROJ_APKY, ...(vysledok.zalohova ? { zalohova: true } : {}) }
     : zaznam;

@@ -207,14 +207,24 @@ final class TripStore {
         }
     }
 
-    /// Zamietnuté ideme zmazať hneď, zvyšok si necháme týždeň — appka si ich
-    /// medzitým vyzdvihne a uloží do knihy jázd.
+    /// Zamietnuté ideme zmazať hneď, prevzaté po týždni a neprevzaté až po
+    /// 90 dňoch — appka si ich medzitým vyzdvihne a uloží do knihy jázd.
     func purge(olderThan seconds: TimeInterval, now: TimeInterval) {
         queue.sync {
             exec("delete from points where trip_id in (select id from trips where status = 'discarded');")
             exec("delete from trips where status = 'discarded';")
-            guard let stmt = prepare("select id from trips where status in ('ended','confirmed','synced') and coalesce(ended_at, started_at) < ?;") else { return }
+            /*
+              Neprevzatú jazdu (ended/confirmed) appka ešte nezapísala do knihy
+              jázd — kto týždeň neotvorí appku alebo nemá signál, by o ňu
+              prišiel. Tie sa držia 90 dní, týždeň platí len pre prevzaté.
+            */
+            guard let stmt = prepare("""
+                select id from trips where
+                  (status = 'synced' and coalesce(ended_at, started_at) < ?)
+                  or (status in ('ended','confirmed') and coalesce(ended_at, started_at) < ?);
+                """) else { return }
             sqlite3_bind_double(stmt, 1, now - seconds)
+            sqlite3_bind_double(stmt, 2, now - max(seconds, 90 * 24 * 3600))
             var ids: [String] = []
             while sqlite3_step(stmt) == SQLITE_ROW {
                 if let c = sqlite3_column_text(stmt, 0) { ids.append(String(cString: c)) }

@@ -21,6 +21,7 @@ export type LokalneVozidlo = {
   company_id: string;
   name: string;
   license_plate: string | null;
+  consumption_l_100km?: number | null;
 };
 
 export type LokalnaJazda = {
@@ -160,27 +161,81 @@ export async function ulozJazdy(companyId: string, jazdy: LokalnaJazda[]): Promi
   }
 }
 
-export function jazdyZPamate(companyId: string): Promise<LokalnaJazda[]> {
-  return vsetky<LokalnaJazda>(JAZDY, companyId);
+/**
+ * Jazdy z telefónu: posledné načítané z IndexedDB a k nim čakajúce zo zálohy.
+ * Čakajúca jazda tak ostane vidieť aj vtedy, keď WebView po reštarte appky
+ * IndexedDB vyprázdni.
+ */
+export async function jazdyZPamate(companyId: string): Promise<LokalnaJazda[]> {
+  const zIdb = await vsetky<LokalnaJazda>(JAZDY, companyId);
+  const ids = new Set(zIdb.map((j) => j.id));
+  const zalozne = (await zalohaCakajucich(companyId)).filter((j) => !ids.has(j.id));
+  return [...zIdb, ...zalozne];
+}
+
+/*
+  Záloha čakajúcich jázd v trvalom úložisku (v telefóne Preferences).
+
+  IndexedDB vo WebView reštart appky nemusí prežiť — po zabití appky je
+  prázdna, hoci tvrdí, že funguje. Pre zoznam jázd je to nepríjemnosť, pre
+  jazdu zapísanú bez signálu je to **strata záznamu**: kilometre z cesty sa
+  druhýkrát nenamerajú. Fronta dokladov sa preto ukladá aj do súborov a
+  faktúry do trvalého úložiska; jazdy sem.
+*/
+const kluceZalohy = (companyId: string) => `cakajuce-jazdy:${companyId}`;
+
+async function zalohaCakajucich(companyId: string): Promise<LokalnaJazda[]> {
+  try {
+    const z = await zPamate<LokalnaJazda[]>(kluceZalohy(companyId));
+    return Array.isArray(z?.hodnota) ? z.hodnota.map((j) => ({ ...j, caka: true })) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Jazda zapísaná bez pripojenia. Ostáva označená, kým sa neodošle. */
 export async function pridajCakajucuJazdu(jazda: LokalnaJazda): Promise<LokalnaJazda> {
   const zaznam: LokalnaJazda = { ...jazda, caka: true };
-  await transakcia(JAZDY, "readwrite", (s) => s.put(zaznam));
+  // Trvalé úložisko prvé — to je to, čo prežije zatvorenie appky.
+  const zaloha = (await zalohaCakajucich(zaznam.company_id)).filter((j) => j.id !== zaznam.id);
+  await ulozDoPamate(kluceZalohy(zaznam.company_id), [...zaloha, zaznam]);
+  try {
+    await transakcia(JAZDY, "readwrite", (s) => s.put(zaznam));
+  } catch {
+    /* bez IndexedDB ostáva jazda v zálohe — a z nej sa aj odošle */
+  }
   return zaznam;
 }
 
-export async function zmazJazdu(id: string): Promise<void> {
+export async function zmazJazdu(id: string, companyId?: string): Promise<void> {
   try {
     await transakcia(JAZDY, "readwrite", (s) => s.delete(id));
   } catch {
     /* nič — pri ďalšom načítaní sa zoznam prepíše */
   }
+  if (!companyId) return;
+  const zaloha = await zalohaCakajucich(companyId);
+  if (zaloha.some((j) => j.id === id)) {
+    await ulozDoPamate(
+      kluceZalohy(companyId),
+      zaloha.filter((j) => j.id !== id),
+    );
+  }
 }
 
 export async function cakajuceJazdy(companyId: string): Promise<LokalnaJazda[]> {
   return (await jazdyZPamate(companyId)).filter((j) => j.caka);
+}
+
+/**
+ * Riadok pre `trips` z čakajúcej jazdy. Nesie `id` jazdy z telefónu: keď
+ * zápis prejde, ale odpoveď sa cestou stratí, ďalší pokus skončí na
+ * duplicitnom kľúči (23505) a jazda sa z fronty vyhodí — namiesto toho, aby
+ * v knihe jázd bola dvakrát. Staršie záznamy vo fronte `id` v zápise nemajú,
+ * preto sa dopĺňa tu a nie len pri vzniku.
+ */
+export function zapisCakajucejJazdy(jazda: LokalnaJazda): Record<string, unknown> {
+  return { ...(jazda.zapis ?? {}), id: jazda.id };
 }
 
 /**
@@ -198,7 +253,22 @@ export function zoradJazdy(jazdy: LokalnaJazda[]): LokalnaJazda[] {
  * Odošle jazdy zapísané bez pripojenia. Vracia, koľko ich prešlo — appka to
  * môže povedať človeku, nech nemusí hádať, či sa jeho jazda niekam dostala.
  */
-export async function odosliCakajuceZapisy(companyId: string): Promise<number> {
+export function odosliCakajuceZapisy(companyId: string): Promise<number> {
+  /*
+    Frontu vyprázdňuje obrazovka Jazda aj poslucháč návratu signálu. Keby sa
+    stretli, obaja by poslali tú istú jazdu — kľúč `id` druhý zápis síce
+    odmietne, ale netreba ho vôbec skúšať.
+  */
+  const beziaci = odosielanieJazd.get(companyId);
+  if (beziaci) return beziaci;
+  const p = odosliCakajuceZapisyRaz(companyId).finally(() => odosielanieJazd.delete(companyId));
+  odosielanieJazd.set(companyId, p);
+  return p;
+}
+
+const odosielanieJazd = new Map<string, Promise<number>>();
+
+async function odosliCakajuceZapisyRaz(companyId: string): Promise<number> {
   const cakajuce = await cakajuceJazdy(companyId);
   if (cakajuce.length === 0) return 0;
 
@@ -206,11 +276,10 @@ export async function odosliCakajuceZapisy(companyId: string): Promise<number> {
   let odoslane = 0;
 
   for (const jazda of cakajuce) {
-    const zapis = jazda.zapis ?? {};
     // Bez siete zápis vyhodí; jazda vtedy ostáva vo fronte na ďalší pokus.
     const { data, error } = await supabase
       .from("trips")
-      .insert(zapis as never)
+      .insert(zapisCakajucejJazdy(jazda) as never)
       .select("id")
       .single()
       .then(
@@ -220,10 +289,10 @@ export async function odosliCakajuceZapisy(companyId: string): Promise<number> {
 
     if (error) {
       // 23505 = jazda tam už je z predošlého pokusu; taká sa má z fronty vyhodiť.
-      if ((error as any).code === "23505") await zmazJazdu(jazda.id);
+      if ((error as any).code === "23505") await zmazJazdu(jazda.id, companyId);
       continue;
     }
-    await zmazJazdu(jazda.id);
+    await zmazJazdu(jazda.id, companyId);
     if (data?.id) odoslane++;
   }
   return odoslane;

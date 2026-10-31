@@ -272,7 +272,20 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       })
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Dva pokusy naraz s tým istým id (fronta v appke a poslucháč siete): druhý
+      // narazí na primárny kľúč — vráti sa ten, čo prešiel.
+      if (error.code === "23505" && data.id) {
+        const { data: uz } = await supabase
+          .from("expense_documents")
+          .select("*")
+          .eq("id", data.id)
+          .eq("company_id", data.company_id)
+          .maybeSingle();
+        if (uz) return uz;
+      }
+      throw new Error(error.message);
+    }
     if (ciel === "presun-do-nespracovanych") {
       const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
       const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));

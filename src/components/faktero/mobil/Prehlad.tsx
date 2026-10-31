@@ -124,6 +124,14 @@ export function Prehlad({
   const [jazdaBezi, setJazdaBezi] = useState(false);
   /* Prijaté eFaktúry, ktoré ešte nikto nezaevidoval — to isté, čo počíta menu na webe. */
   const [efaktury, setEfaktury] = useState(0);
+  /*
+    Bez signálu: `kedy` = ukazujú sa naposledy načítané údaje z telefónu,
+    `nezname` = nie je z čoho brať. Predtým tu stálo „0 faktúr", „Nič nečaká"
+    a „Zatiaľ sa nič nedialo" — človek v teréne by uveril, že nemá dlžníkov.
+  */
+  const [bezSiete, setBezSiete] = useState<{ kedy: number | null; nezname: boolean } | null>(
+    null,
+  );
 
   useEffect(() => {
     let zrusene = false;
@@ -132,22 +140,42 @@ export function Prehlad({
       chyba pri dokladoch by zmazala aj faktúry — a práve tie sú dôvod,
       prečo sem človek ide.
     */
-    void (async () => {
+    setBezSiete(null);
+    /*
+      Zoznam faktúr si drží aj obrazovka Faktúry pod tým istým kľúčom — Prehľad
+      tak bez signálu ukáže to isté, čo človek videl naposledy.
+    */
+    const nacitajSPamatou = async <T,>(
+      kluc: string,
+      nacitaj: () => Promise<T[]>,
+      nastav: (z: T[]) => void,
+    ) => {
+      const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
       try {
-        const z = (await nacitajFaktury({ data: { company_id: firma.id } })) as Faktura[];
-        if (!zrusene) setFaktury(z);
+        const z = await nacitaj();
+        if (zrusene) return;
+        nastav(z);
+        void ulozDoPamate(kluc, z);
       } catch {
-        if (!zrusene) setFaktury([]);
+        const zapamatane = await zPamate<T[]>(kluc).catch(() => null);
+        if (zrusene) return;
+        nastav(zapamatane?.hodnota ?? []);
+        setBezSiete((b) => ({
+          kedy: zapamatane ? Math.min(zapamatane.kedy, b?.kedy ?? Infinity) : (b?.kedy ?? null),
+          nezname: (b?.nezname ?? false) || !zapamatane,
+        }));
       }
-    })();
-    void (async () => {
-      try {
-        const z = (await nacitajDoklady({ data: { company_id: firma.id } })) as Doklad[];
-        if (!zrusene) setDoklady(z);
-      } catch {
-        if (!zrusene) setDoklady([]);
-      }
-    })();
+    };
+    void nacitajSPamatou(
+      `faktury:${firma.id}`,
+      async () => (await nacitajFaktury({ data: { company_id: firma.id } })) as Faktura[],
+      setFaktury,
+    );
+    void nacitajSPamatou(
+      `doklady-prehlad:${firma.id}`,
+      async () => (await nacitajDoklady({ data: { company_id: firma.id } })) as Doklad[],
+      setDoklady,
+    );
     setMesiac(null);
     void nacitajCislaMesiaca(firma.id)
       .then((c) => !zrusene && setMesiac(c))
@@ -229,7 +257,7 @@ export function Prehlad({
       other: t("spolocne.faktura5"),
     })}`;
 
-  const nacitava = faktury === null || doklady === null;
+  const nacitava = faktury === null || doklady === null || !!bezSiete?.nezname;
   const maCoVybavit =
     poSplatnosti.pocet > 0 || naKontrolu > 0 || efaktury > 0 || (jazdaBezi && !!onJazda);
 
@@ -282,6 +310,20 @@ export function Prehlad({
 
       <main className="flex-1 space-y-5 px-4 pb-6 pt-3">
         <PrebiehaJazda onOtvor={onJazda} />
+
+        {bezSiete && (
+          <p
+            data-bez-siete
+            className="flex items-center gap-2 rounded-app-sm bg-app-karta px-3 py-2 text-[13px] text-app-text-2"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            {bezSiete.nezname || bezSiete.kedy == null
+              ? t("ph.bezPripojeniaNezname")
+              : t("ph.bezPripojeniaZPamate", {
+                  kedy: new Date(bezSiete.kedy).toLocaleString(loc),
+                })}
+          </p>
+        )}
 
         {/* Hlavná karta — jediná veľká plocha na obrazovke, preto zelená. */}
         <button
@@ -386,7 +428,7 @@ export function Prehlad({
                 <ListRow icon={Car} title={t("ph.jazdaNeukoncena")} chevron onClick={onJazda} />
               )}
             </ListCard>
-          ) : (
+          ) : bezSiete?.nezname ? null : (
             <Card className="px-4 py-5">
               <p className="text-[15px] font-semibold text-app-text">{t("ph.vsetkoVybavene")}</p>
               <p className="mt-1 text-[13px] text-app-text-2">{t("ph.vsetkoVybavenePopis")}</p>
@@ -410,7 +452,7 @@ export function Prehlad({
                 />
               ))}
             </ListCard>
-          ) : (
+          ) : bezSiete?.nezname ? null : (
             <PrazdnyStav
               icon={FileText}
               title={t("ph.ziadnaAktivita")}

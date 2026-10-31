@@ -67,6 +67,22 @@ export function riadkyNaZapis(invoiceId: string, riadky: RiadokFaktury[]) {
   });
 }
 
+/**
+ * Odmietla databáza opravu preto, že faktúru medzitým zmenil niekto iný?
+ * (`uloz_upravu_faktury` vtedy vráti PT409 — HTTP 409 — s nápovedou
+ * `faktura_zmenena` a textom FAKTERO_SUBEH.)
+ */
+export function jeKonfliktOpravy(
+  chyba: { code?: string; hint?: string | null; message?: string } | null,
+): boolean {
+  return (
+    !!chyba &&
+    (chyba.hint === "faktura_zmenena" ||
+      chyba.code === "PT409" ||
+      /FAKTERO_SUBEH/.test(chyba.message ?? ""))
+  );
+}
+
 export type MoznostUpravy = { ok: true } | { ok: false; dovod: string };
 
 /**
@@ -78,12 +94,20 @@ export type MoznostUpravy = { ok: true } | { ok: false; dovod: string };
 export function moznoUpravit(f: {
   status: string | null;
   maSkladovePolozky?: boolean;
+  /** Zľava na riadku či doklade alebo prenesenie po položkách — formulár v telefóne ich nepozná. */
+  maZlavuAleboPrenesenie?: boolean;
 }): MoznostUpravy {
   if (f.status === "cancelled") return { ok: false, dovod: "Stornovaná faktúra sa už neopravuje." };
   if (f.maSkladovePolozky)
     return {
       ok: false,
       dovod: "Faktúra hýbe skladom — opravte ju na počítači, nech sedia zásoby.",
+    };
+  if (f.maZlavuAleboPrenesenie)
+    return {
+      ok: false,
+      dovod:
+        "Faktúra má zľavu alebo prenesenie daňovej povinnosti — opravte ju na počítači, telefón by ich pri uložení stratil.",
     };
   return { ok: true };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { zoradJazdy, type LokalnaJazda } from "./jazdy-lokalne";
+import { zapisCakajucejJazdy, zoradJazdy, type LokalnaJazda } from "./jazdy-lokalne";
 
 function jazda(id: string, datum: string, caka = false): LokalnaJazda {
   return {
@@ -44,5 +44,21 @@ describe("poradie jázd na obrazovke", () => {
     const vstup = [jazda("a", "2026-08-01"), jazda("b", "2026-08-14")];
     zoradJazdy(vstup);
     expect(vstup.map((j) => j.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("zápis čakajúcej jazdy", () => {
+  it("nesie id jazdy z telefónu — opakovaný pokus skončí na duplicitnom kľúči", () => {
+    const j = { ...jazda("t-1", "2026-10-30", true), zapis: { company_id: "f1", distance_km: 3 } };
+    expect(zapisCakajucejJazdy(j)).toEqual({ company_id: "f1", distance_km: 3, id: "t-1" });
+  });
+
+  it("starý záznam bez zápisu aj bez id v zápise dostane id", () => {
+    expect(zapisCakajucejJazdy(jazda("t-2", "2026-10-30", true))).toEqual({ id: "t-2" });
+  });
+
+  it("id jazdy má prednosť pred id v starom zápise — online pokus aj fronta píšu pod tým istým", () => {
+    const j = { ...jazda("t-3", "2026-10-30", true), zapis: { id: "ine" } };
+    expect(zapisCakajucejJazdy(j).id).toBe("t-3");
   });
 });

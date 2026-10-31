@@ -72,7 +72,16 @@ public final class DriveDetectionEngine {
     /// istej sekunde, v ktorej sa obnovila. Lenže tým každé prebudenie
     /// nastavilo hodiny státia na nulu — otvorená jazda potom v knihe jázd
     /// zožrala aj hodinu státia a k nej kus ďalšej cesty.
-    public func resume(trip: BufferedTrip, debounceUntil: TimeInterval?, at now: TimeInterval) -> [DetectorEffect] {
+    public func resume(trip ulozena: BufferedTrip, debounceUntil: TimeInterval?, at now: TimeInterval) -> [DetectorEffect] {
+        /*
+          Vzdialenosť a najvyššia rýchlosť sa v úložisku píšu len pri založení
+          a na konci jazdy, body však priebežne. Jazda obnovená po zabití
+          procesu by si inak niesla kilometre z chvíle potvrdenia (pár stoviek
+          metrov) — a appka ju ako príliš krátku ticho zahodila. Prepočíta sa z bodov.
+        */
+        var trip = ulozena
+        trip.distanceMeters = max(ulozena.distanceMeters, Distance.total(of: ulozena.points))
+        trip.maxSpeedKmh = max(ulozena.maxSpeedKmh, Distance.maxSpeed(of: ulozena.points))
         self.trip = trip
         self.debounceUntil = debounceUntil
         state = .driving

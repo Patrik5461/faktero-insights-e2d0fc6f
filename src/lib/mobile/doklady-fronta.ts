@@ -40,6 +40,12 @@ export type CakajuciDoklad = {
   ts: number;
   /** Prečo posledný pokus zlyhal — nech sa to nemusí hádať. */
   chyba?: string | null;
+  /**
+   * Fotka už nahratá na server. Opakovaný pokus (stratená odpoveď pri
+   * ukladaní) ju potom nenahráva znova — inak by na serveri ostávali kópie,
+   * na ktoré nič neodkazuje.
+   */
+  priloha?: { path: string; mime: string; size: number } | null;
 };
 
 const DB = "faktero";
@@ -209,6 +215,22 @@ export async function zapisChybu(id: string, chyba: string): Promise<void> {
     await transakcia("readwrite", (s) => s.put(upraveny));
   } catch {
     /* nič */
+  }
+}
+
+/** Zapamätá si nahratú fotku k dokladu vo fronte. */
+export async function zapisPrilohu(
+  id: string,
+  priloha: { path: string; mime: string; size: number },
+): Promise<void> {
+  const doklad = (await fronta()).find((d) => d.id === id);
+  if (!doklad) return;
+  const upraveny = { ...doklad, priloha };
+  await zapisSubor(upraveny);
+  try {
+    await transakcia("readwrite", (s) => s.put(upraveny));
+  } catch {
+    /* nič — najhoršie sa fotka nahrá ešte raz */
   }
 }
 

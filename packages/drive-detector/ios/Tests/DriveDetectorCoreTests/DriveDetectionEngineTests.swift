@@ -374,6 +374,24 @@ final class DriveDetectionEngineTests: XCTestCase {
         XCTAssertNil(motor.trip)
     }
 
+    func testObnovenaJazdaPrepocitaKilometreZBodov() {
+        // V úložisku ostala vzdialenosť z chvíle potvrdenia (120 m), body sú
+        // ale z celej cesty — po obnove sa nesmie uložiť ako 120 m.
+        let motor = engine()
+        let body = (0..<3).map { i in
+            TripPoint(lat: 48.15 + Double(i) * 0.005, lng: 17.11, speedKmh: 70, accuracy: 10,
+                      altitude: nil, timestamp: start + Double(i) * 30)
+        }
+        let jazda = BufferedTrip(id: "dlha", startedAt: start, points: body,
+                                 distanceMeters: 120, maxSpeedKmh: 40)
+
+        let ukony = motor.resume(trip: jazda, debounceUntil: nil, at: start + 3_600)
+
+        let koniec = koniecJazdy(ukony)
+        XCTAssertGreaterThan(koniec?.distanceMeters ?? 0, 1_000)
+        XCTAssertEqual(koniec?.maxSpeedKmh, 70)
+    }
+
     func testObnovenaRucnaJazdaPokracujeAjPoDlhomTichu() {
         // Ručne spustenú jazdu ukončí človek, nie hodiny.
         let motor = engine()

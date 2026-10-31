@@ -50,3 +50,20 @@ describe("zaznamZFronty", () => {
     expect(z).toMatchObject({ zdroj: "apka", zalohova: true });
   });
 });
+
+describe("kľúč proti zdvojeniu", () => {
+  it("doklad z fronty sa zapíše pod id z fronty (aj bloček bez QR)", () => {
+    const id = "0b9c7f2e-4d1a-4c3b-9e8f-123456789abc";
+    const bezQr = { ...vysledok, qr_raw: undefined, zdroj: "nic" } as BlocekVysledok;
+    const z = zaznamZFronty(
+      doklad({ id, fotkaPovinna: true, obrazok: "data:image/jpeg;base64,AA" }),
+      bezQr,
+      priloha,
+    );
+    expect(z.id).toBe(id);
+  });
+
+  it("starý záznam s id, ktoré nie je uuid, ide bez id (server by ho odmietol)", () => {
+    expect(zaznamZFronty(doklad({ id: "x" }), vysledok, null)).not.toHaveProperty("id");
+  });
+});

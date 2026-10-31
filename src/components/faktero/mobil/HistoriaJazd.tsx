@@ -155,6 +155,12 @@ export function HistoriaJazd({
     zmena, ktorá sa neuložila, je pri podklade pre daňový výdavok horšia než
     hlásenie o chybe.
   */
+  /** Bez signálu povedať to, nie „TypeError: Failed to fetch". */
+  async function chybaZapisu(sprava: string): Promise<string> {
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    return (await isOnline()) ? sprava : t("jazdy.zmenaBezPripojenia");
+  }
+
   async function zmenCharakter(id: string, na: "business" | "private") {
     const povodne = (jazdy ?? []).find((j) => j.id === id)?.classification ?? "business";
     if (povodne === na) return;
@@ -170,7 +176,7 @@ export function HistoriaJazd({
       setJazdy((xs) =>
         (xs ?? []).map((j) => (j.id === id ? { ...j, classification: povodne } : j)),
       );
-      toast.error(error.message);
+      toast.error(await chybaZapisu(error.message));
       return;
     }
     const hlaska = t(na === "private" ? "jazdy.oznacenaSukromna" : "jazdy.oznacenaSluzobna");
@@ -197,7 +203,7 @@ export function HistoriaJazd({
       .eq("company_id", firma.id)
       .select("id");
     setMazem(null);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(await chybaZapisu(error.message));
     if (!data?.length) return toast.error(t("jazdy.mazeLenSpravca"));
 
     setJazdy((xs) => (xs ?? []).filter((j) => j.id !== id));
@@ -206,7 +212,7 @@ export function HistoriaJazd({
     // Aj z telefónu — inak sa jazda vráti pri prvom otvorení bez signálu.
     try {
       const { zmazJazdu: zmazLokalne } = await import("@/lib/mobile/jazdy-lokalne");
-      await zmazLokalne(id);
+      await zmazLokalne(id, firma.id);
     } catch {
       /* lokálna kópia je len vyrovnávacia pamäť, chyba tu nič nemení */
     }

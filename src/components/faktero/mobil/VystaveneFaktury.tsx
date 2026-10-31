@@ -435,6 +435,8 @@ function DetailFaktury({
 
   /** Má faktúra položky viazané na sklad? Vtedy sa opravuje na počítači. */
   const [skladove, setSkladove] = useState<boolean | null>(null);
+  /** Zľava alebo prenesenie po položkách — to sa opravuje len na počítači. */
+  const [naPocitac, setNaPocitac] = useState<boolean | null>(null);
   const [mazem, setMazem] = useState(false);
 
   useEffect(() => {
@@ -453,15 +455,34 @@ function DetailFaktury({
         ({ data }) => setOznacenie((data as any) ?? null),
         () => setOznacenie(null),
       );
-    supabase
-      .from("invoice_items")
-      .select("stock_item_id")
-      .eq("invoice_id", faktura.id)
-      .then(({ data, error }) =>
+    /*
+      Zľava (na riadku aj na doklade) a prenesenie daňovej povinnosti po
+      položkách sa v telefóne neopravujú: formulár ich nenačíta, takže uloženie
+      by ich ticho zmazalo a prepočítalo súčty bez nich.
+    */
+    Promise.all([
+      supabase
+        .from("invoice_items")
+        .select("stock_item_id, discount_percent, prenesenie")
+        .eq("invoice_id", faktura.id),
+      supabase.from("invoices").select("discount_total").eq("id", faktura.id).maybeSingle(),
+    ]).then(
+      ([{ data, error }, { data: hlavicka, error: chybaHlavicky }]) => {
         // Bez signálu to nevieme; vtedy sa oprava radšej neponúka, než by mala
         // rozhádzať sklad.
-        setSkladove(error ? true : (data ?? []).some((r) => r.stock_item_id)),
-      );
+        setSkladove(error ? true : (data ?? []).some((r) => r.stock_item_id));
+        setNaPocitac(
+          error || chybaHlavicky
+            ? true
+            : Number(hlavicka?.discount_total ?? 0) !== 0 ||
+                (data ?? []).some((r) => Number(r.discount_percent ?? 0) !== 0 || r.prenesenie),
+        );
+      },
+      () => {
+        setSkladove(true);
+        setNaPocitac(true);
+      },
+    );
   }, [faktura.id]);
   const [busy, setBusy] = useState<
     "pdf" | "mail" | "paid" | "zdielam" | "upomienka" | "mazem" | null
@@ -671,6 +692,7 @@ function DetailFaktury({
             const moze = moznoUpravit({
               status: faktura.status,
               maSkladovePolozky: skladove ?? true,
+              maZlavuAleboPrenesenie: naPocitac ?? false,
             });
             if (moze.ok)
               return (

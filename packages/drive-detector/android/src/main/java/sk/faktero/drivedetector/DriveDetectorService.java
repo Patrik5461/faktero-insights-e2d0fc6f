@@ -350,8 +350,10 @@ public class DriveDetectorService extends Service {
                     break;
                 }
                 case TRIP_ENDED:
-                    store.ulozAktivnu(null);
+                    // Najprv medzi nevyriešené, až potom preč z aktívnej — zabitie
+                    // procesu medzi týmito dvoma zápismi jazdu inak stratí.
                     store.pridajNevyriesenu(u.trip);
+                    store.ulozAktivnu(null);
                     DriveNotifications.zavriOtazku(this);
                     doPopredia();
                     if (poslucháč != null) poslucháč.naKoniecJazdy(u.trip);

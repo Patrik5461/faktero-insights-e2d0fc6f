@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { suctyFaktury, riadkyNaZapis, moznoUpravit, moznoZmazat } from "./faktura-uprava";
+import {
+  suctyFaktury,
+  riadkyNaZapis,
+  moznoUpravit,
+  moznoZmazat,
+  jeKonfliktOpravy,
+} from "./faktura-uprava";
 
 const R = (o: Partial<Parameters<typeof suctyFaktury>[0][number]>) => ({
   name: "Práca",
@@ -67,5 +73,21 @@ describe("oprava faktúry v telefóne", () => {
   it("zmazať sa dá to, čo ešte zmazané nie je", () => {
     expect(moznoZmazat({ deleted_at: null })).toBe(true);
     expect(moznoZmazat({ deleted_at: "2026-08-21T10:00:00Z" })).toBe(false);
+  });
+});
+
+describe("oprava v telefóne: zľava, prenesenie a súbeh s webom", () => {
+  it("faktúru so zľavou alebo prenesením pošle na počítač", () => {
+    const r = moznoUpravit({ status: "sent", maZlavuAleboPrenesenie: true });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.dovod).toMatch(/zľavu/);
+  });
+
+  it("konflikt pozná podľa nápovedy aj kódu z databázy", () => {
+    expect(jeKonfliktOpravy({ code: "PT409", hint: "faktura_zmenena" })).toBe(true);
+    expect(jeKonfliktOpravy({ code: "PT409" })).toBe(true);
+    expect(jeKonfliktOpravy({ message: "FAKTERO_SUBEH: Faktúru medzitým zmenil…" })).toBe(true);
+    expect(jeKonfliktOpravy({ code: "42501", hint: null })).toBe(false);
+    expect(jeKonfliktOpravy(null)).toBe(false);
   });
 });

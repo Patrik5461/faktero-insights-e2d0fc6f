@@ -12614,6 +12614,15 @@ export type Database = {
         Args: { _stock_item_id: string }
         Returns: Json
       }
+      uloz_upravu_faktury: {
+        Args: {
+          p_hlavicka: Json
+          p_id: string
+          p_polozky: Json
+          p_povodne_upravena?: string | null
+        }
+        Returns: string
+      }
     }
     Enums: {
       accounting_system: "pohoda" | "omega" | "money" | "alfa_plus" | "other"

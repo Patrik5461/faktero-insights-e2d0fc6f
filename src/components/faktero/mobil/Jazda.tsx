@@ -39,6 +39,8 @@ import {
   vozidlaZPamate,
   pridajCakajucuJazdu,
   odosliCakajuceZapisy,
+  ulozDoPamate,
+  zPamate,
 } from "@/lib/mobile/jazdy-lokalne";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { friendlyError } from "@/lib/faktero/plan-error";
@@ -62,7 +64,13 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
  * preto to stojí priamo na obrazovke a nie je to prekvapenie až po príchode.
  */
 
-type Vozidlo = { id: string; name: string; license_plate: string | null };
+type Vozidlo = {
+  id: string;
+  name: string;
+  license_plate: string | null;
+  /** Drží sa aj v telefóne — jazda uložená bez signálu by inak vyšla bez spotreby. */
+  consumption_l_100km?: number | null;
+};
 
 function trvanie(od: number): string {
   const minuty = Math.floor((Date.now() - od) / 60000);
@@ -127,7 +135,7 @@ export function Jazda({
     // nechala obrazovku navždy na „Načítavam vozidlá…".
     const { data, error } = await supabase
       .from("vehicles")
-      .select("id, name, license_plate")
+      .select("id, name, license_plate, consumption_l_100km")
       .eq("company_id", firma.id)
       .eq("active", true)
       .order("name")
@@ -185,9 +193,18 @@ export function Jazda({
   useEffect(() => {
     if (!vozidloId) return;
     let zrusene = false;
-    poslednaCenaPaliva(firma.id, vozidloId).then((c) => {
-      if (!zrusene) cenaPaliva.current = c;
-    });
+    /*
+      Bez signálu dotaz nevráti nič a jazda zapísaná v aute by mala náklad
+      nula. Posledná známa cena sa preto drží aj v telefóne.
+    */
+    const kluc = `cena-paliva:${vozidloId}`;
+    poslednaCenaPaliva(firma.id, vozidloId)
+      .catch(() => null)
+      .then(async (c) => {
+        if (c != null) void ulozDoPamate(kluc, c);
+        const cena = c ?? (await zPamate<number>(kluc))?.hodnota ?? null;
+        if (!zrusene) cenaPaliva.current = cena;
+      });
     return () => {
       zrusene = true;
     };
@@ -433,12 +450,19 @@ export function Jazda({
           (r) => r,
           () => ({ data: null }),
         );
-      const spotreba = plne?.consumption_l_100km
-        ? (vysledok.distance_km * Number(plne.consumption_l_100km)) / 100
-        : null;
+      // Bez signálu spotreba z posledného známeho zoznamu vozidiel v telefóne.
+      const naSto = plne?.consumption_l_100km ?? vozidlo?.consumption_l_100km ?? null;
+      const spotreba = naSto ? (vysledok.distance_km * Number(naSto)) / 100 : null;
 
       const dnes = dnesBratislava();
+      /*
+        Id jazdy vzniká v telefóne. Keď zápis prejde, ale odpoveď sa stratí,
+        jazda ide do fronty s tým istým id — a opakovaný pokus ju druhýkrát
+        nezapíše (duplicitný kľúč), namiesto dvoch rovnakých jázd v knihe.
+      */
+      const idJazdy = crypto.randomUUID();
       const zapis = {
+        id: idJazdy,
         company_id: firma.id,
         vehicle_id: vozidloId,
         trip_date: dnes,
@@ -466,15 +490,27 @@ export function Jazda({
       // Bez signálu nemá zmysel čakať na vypršanie spojenia — človek stojí nad
       // telefónom a jazda sa aj tak odloží.
       const { isOnline } = await import("@/lib/mobile/offline-queue");
+      /*
+        Pri slabom signáli systém hlási „online", ale dotaz neprejde. Bežne
+        vráti `error`, no keď sa cestou nepodarí obnoviť prihlásenie, môže aj
+        vyhodiť — a vo vonkajšom `catch` by nameraná jazda skončila s hláškou
+        o chybe, bez fronty, teda by sa stratila.
+      */
       const { error } = (await isOnline())
-        ? await supabase.from("trips").insert(zapis)
+        ? await supabase
+            .from("trips")
+            .insert(zapis)
+            .then(
+              (r) => r,
+              (e) => ({ error: { message: String(e?.message ?? e) } }),
+            )
         : { error: { message: "bez pripojenia" } as { message: string } };
 
       if (error) {
         // Bez pripojenia sa jazda nezahodí — odloží sa v telefóne a odošle sa
         // po pripojení. Kniha jázd je záznam z cesty, nie z kancelárie.
         await pridajCakajucuJazdu({
-          id: crypto.randomUUID(),
+          id: idJazdy,
           company_id: firma.id,
           vehicle_id: vozidloId,
           trip_date: dnes,

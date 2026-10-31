@@ -222,7 +222,7 @@ function ObsahJazd() {
       if (!(await isOnline())) return;
       const { data } = await supabase
         .from("vehicles")
-        .select("id, name, license_plate")
+        .select("id, name, license_plate, consumption_l_100km")
         .eq("company_id", companyId)
         .eq("active", true)
         .order("name")

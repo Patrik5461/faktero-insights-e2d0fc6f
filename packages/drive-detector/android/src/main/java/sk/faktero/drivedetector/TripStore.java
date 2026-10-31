@@ -139,17 +139,30 @@ public final class TripStore {
         return von;
     }
 
+    /*
+     * Zoznam mení služba (hlavné vlákno) aj plugin (jeho vlákno). Čítanie,
+     * úprava a zápis bez zámku by pri súbehu jeden zápis prepísali druhým —
+     * jazda by sa stratila, alebo by sa vybavená vrátila. Zámok je statický,
+     * lebo služba aj plugin majú vlastnú inštanciu TripStore.
+     */
+    private static final Object ZAMOK_NEVYRIESENYCH = new Object();
+
     public void pridajNevyriesenu(BufferedTrip trip) {
-        List<BufferedTrip> zoznam = nacitajNevyriesene();
-        zoznam.add(trip);
-        ulozNevyriesene(zoznam);
+        synchronized (ZAMOK_NEVYRIESENYCH) {
+            List<BufferedTrip> zoznam = nacitajNevyriesene();
+            for (BufferedTrip t : zoznam) if (t.id.equals(trip.id)) return;
+            zoznam.add(trip);
+            ulozNevyriesene(zoznam);
+        }
     }
 
     public void odoberNevyriesenu(String tripId) {
-        List<BufferedTrip> zoznam = nacitajNevyriesene();
-        List<BufferedTrip> zvysok = new ArrayList<>();
-        for (BufferedTrip t : zoznam) if (!t.id.equals(tripId)) zvysok.add(t);
-        ulozNevyriesene(zvysok);
+        synchronized (ZAMOK_NEVYRIESENYCH) {
+            List<BufferedTrip> zoznam = nacitajNevyriesene();
+            List<BufferedTrip> zvysok = new ArrayList<>();
+            for (BufferedTrip t : zoznam) if (!t.id.equals(tripId)) zvysok.add(t);
+            ulozNevyriesene(zvysok);
+        }
     }
 
     private void ulozNevyriesene(List<BufferedTrip> zoznam) {

@@ -28,7 +28,7 @@ import { historickeSadzby, sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
-import { riadkyNaZapis, suctyFaktury } from "@/lib/mobile/faktura-uprava";
+import { jeKonfliktOpravy, riadkyNaZapis, suctyFaktury } from "@/lib/mobile/faktura-uprava";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
@@ -213,6 +213,8 @@ export function NovaFaktura({
     reverse_charge: boolean;
     job_id: string | null;
     efaktura: boolean;
+    /** Kedy sa faktúra naposledy zmenila — oprava sa zapíše, len ak sa odvtedy nezmenila. */
+    updated_at: string | null;
   } | null>(null);
   /** Odberateľ sa mení z obrazovky Kontrola — po výbere sa vráti späť na ňu. */
   const [meniOdberatela, setMeniOdberatela] = useState(false);
@@ -284,7 +286,7 @@ export function NovaFaktura({
         supabase
           .from("invoices")
           .select(
-            "customer_id, customer_name, customer_ico, customer_dic, customer_ic_dph, customer_street, customer_city, customer_zip, customer_country, customer_email, issue_date, due_date, payment_method, notes, intro_note, status, reverse_charge, job_id",
+            "customer_id, customer_name, customer_ico, customer_dic, customer_ic_dph, customer_street, customer_city, customer_zip, customer_country, customer_email, issue_date, due_date, payment_method, notes, intro_note, status, reverse_charge, job_id, updated_at",
           )
           .eq("id", upravuje.id)
           .single(),
@@ -311,6 +313,7 @@ export function NovaFaktura({
         reverse_charge: !!(f as any).reverse_charge,
         job_id: (f as any).job_id ?? null,
         efaktura: (ef ?? []).length > 0,
+        updated_at: (f as any).updated_at ?? null,
       });
       setVystavenie(f.issue_date ?? dnes());
       setSplatnost(f.due_date ?? oDni(dnes(), 14));
@@ -459,9 +462,17 @@ export function NovaFaktura({
           }
         }
       }
-      const { error: chybaHlavicky } = await supabase
-        .from("invoices")
-        .update({
+      /*
+        Hlavička aj položky idú naraz jednou funkciou databázy, v jednej
+        transakcii. Predtým to boli tri zápisy za sebou: výpadok signálu medzi
+        nimi nechal faktúru s novými súčtami a bez položiek. A zapíše sa len
+        vtedy, keď sa faktúra od načítania nezmenila — inak by oprava z
+        telefónu ticho prepísala, čo medzitým niekto opravil na webe.
+      */
+      const { error: chybaOpravy } = await supabase.rpc("uloz_upravu_faktury", {
+        p_id: upravuje.id,
+        p_povodne_upravena: povodnaFaktura?.updated_at ?? null,
+        p_hlavicka: {
           issue_date: vystavenie,
           due_date: splatnost,
           payment_method: uhrada,
@@ -471,20 +482,18 @@ export function NovaFaktura({
           vat_total: s.vat_total,
           total: s.total,
           ...zmenaOdberatela,
-        })
-        .eq("id", upravuje.id);
-      if (chybaHlavicky) throw new Error(chybaHlavicky.message);
-
-      const { error: chybaMazania } = await supabase
-        .from("invoice_items")
-        .delete()
-        .eq("invoice_id", upravuje.id);
-      if (chybaMazania) throw new Error(chybaMazania.message);
-
-      const { error: chybaZapisu } = await supabase
-        .from("invoice_items")
-        .insert(riadkyNaZapis(upravuje.id, vstupy));
-      if (chybaZapisu) throw new Error(chybaZapisu.message);
+        },
+        p_polozky: riadkyNaZapis(upravuje.id, vstupy),
+      });
+      if (chybaOpravy) {
+        if (jeKonfliktOpravy(chybaOpravy)) {
+          // Späť do zoznamu — po otvorení sa faktúra načíta už s novými údajmi.
+          toast.error(t("nf.zmenenaInde"), { duration: 10000 });
+          onHotovo();
+          return;
+        }
+        throw new Error(chybaOpravy.message);
+      }
 
       toast.success(t("nf.opravena", { cislo: upravuje.invoice_number }));
       onHotovo();
