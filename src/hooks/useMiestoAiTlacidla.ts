@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   ODSTUP,
-  VELKOST,
+  SIRKA,
+  VYSKA,
   pisaciePole,
   zdvihTlacidla,
   type Prekazka,
@@ -32,14 +33,14 @@ export function useMiestoAiTlacidla(aktivne: boolean): { zdvih: number; skryte: 
       ramec = 0;
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const l = w - ODSTUP - VELKOST;
-      const t = h - ODSTUP - VELKOST;
+      const l = w - SIRKA;
+      const t = h - ODSTUP - VYSKA;
       const body: Array<[number, number]> = [
-        [l + VELKOST / 2, t + VELKOST / 2],
+        [l + SIRKA / 2, t + VYSKA / 2],
         [l + 4, t + 4],
-        [l + VELKOST - 4, t + 4],
-        [l + 4, t + VELKOST - 4],
-        [l + VELKOST - 4, t + VELKOST - 4],
+        [l + SIRKA - 4, t + 4],
+        [l + 4, t + VYSKA - 4],
+        [l + SIRKA - 4, t + VYSKA - 4],
       ];
       const videne = new Set<Element>();
       const prekazky: Prekazka[] = [];

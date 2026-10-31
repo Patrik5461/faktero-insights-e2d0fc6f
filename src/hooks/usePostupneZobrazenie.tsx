@@ -45,17 +45,22 @@ export function usePostupneZobrazenie<T extends { id?: unknown }>(
   );
   const zostava = riadky.length - viditelne.length;
 
+  // Zarážky môžu byť dve naraz (tabuľka pre počítač, karty pre telefón — jedna je skrytá);
+  // sleduje sa každá, skrytá sa s oknom nikdy nepretne.
   const zarazkaRef = useRef<HTMLElement | null>(null);
+  const zarazkaKartyRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    const el = zarazkaRef.current;
-    if (!el || zostava <= 0 || typeof IntersectionObserver === "undefined") return;
+    const prvky = [zarazkaRef.current, zarazkaKartyRef.current].filter(
+      (x): x is HTMLElement => !!x,
+    );
+    if (!prvky.length || zostava <= 0 || typeof IntersectionObserver === "undefined") return;
     const pozorovatel = new IntersectionObserver(
       (z) => {
         if (z.some((x) => x.isIntersecting)) setPocet((p) => Math.max(p, viditelnych) + krok);
       },
       { rootMargin: "800px 0px" },
     );
-    pozorovatel.observe(el);
+    for (const el of prvky) pozorovatel.observe(el);
     return () => pozorovatel.disconnect();
   }, [zostava, viditelnych, krok]);
 
@@ -89,7 +94,7 @@ export function usePostupneZobrazenie<T extends { id?: unknown }>(
     return (
       <div
         ref={(el) => {
-          zarazkaRef.current = el;
+          zarazkaKartyRef.current = el;
         }}
         className="p-3 text-center"
       >

@@ -32,6 +32,7 @@ import {
 } from "@/components/faktero/NalezyKontrolyEfaktury";
 import { nacitajUlozenuKontrolu } from "@/lib/faktero/efaktura/kontrola/ulozenie";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { odkazNaZaradenie } from "@/lib/faktero/efaktura/zaevidovanie-efaktury";
 
@@ -456,6 +457,52 @@ function ReceivedPage() {
   const lenOdosielanie = profilQ.data?.rezim === "len_odosielanie";
   const poskytovatel = profilQ.data?.prijem_poskytovatel ?? null;
 
+  /** Akcie riadku — rovnaké v tabuľke aj na kartách pre telefón. */
+  function akcieRiadku(r: any) {
+    return (
+      <>
+        <button
+          onClick={() => otvorNahlad(r.id)}
+          disabled={nacitavamNahlad === r.id}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+        >
+          <Eye className="h-3.5 w-3.5" />{" "}
+          {nacitavamNahlad === r.id ? t("Načítavam…") : t("Náhľad")}
+        </button>
+        <button
+          onClick={() => setPrilohyOkno({ id: r.id, cislo: r.document_number ?? "" })}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+        >
+          <Paperclip className="h-3.5 w-3.5" /> {t("Prílohy")}
+        </button>
+        {r.matched_supplier_invoice_id ? (
+          <a
+            href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť doklad")}
+          </a>
+        ) : r.nespracovany_id ? (
+          <a
+            href={`/nespracovane/${r.nespracovany_id}`}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> {t("V Nespracovaných")}
+          </a>
+        ) : (
+          <button
+            onClick={() => zaevidujDoklad(r.id)}
+            disabled={evidujem === r.id}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            <FileInput className="h-3.5 w-3.5" />{" "}
+            {evidujem === r.id ? t("Evidujem…") : t("Zaevidovať")}
+          </button>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -541,6 +588,38 @@ function ReceivedPage() {
           </div>
           )
         ) : (
+          <ResponsiveTable
+            items={zobrazene}
+            loading={q.isLoading}
+            emptyText="Nič nevyhovuje filtru."
+            mobileCard={(r: any) => (
+              <>
+                <MobileListCard
+                  title={r.document_number ?? "—"}
+                  subtitle={r.sender_name ?? "—"}
+                  status={<StavDokladu stav={r.status} />}
+                  meta={`${r.issue_date ? datumNaDoklade(r.issue_date) : "—"} · ${t("splat.")} ${r.due_date ? datumNaDoklade(r.due_date) : "—"}`}
+                  amount={suma(r.total, r.currency)}
+                  actions={
+                    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+                      <OdznakKontrolyEfaktury
+                        chyby={kontroly.get(r.id)?.kontrola_chyby}
+                        varovania={kontroly.get(r.id)?.kontrola_varovania}
+                        rozbalene={rozbalene === r.id}
+                        onClick={() => setRozbalene((x) => (x === r.id ? null : r.id))}
+                      />
+                      {akcieRiadku(r)}
+                    </div>
+                  }
+                />
+                {rozbalene === r.id && (
+                  <div className="mt-1 rounded-xl border border-border bg-muted/20 p-3">
+                    <NalezyPrijatej receivedId={r.id} />
+                  </div>
+                )}
+              </>
+            )}
+            desktop={
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -606,44 +685,7 @@ function ReceivedPage() {
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap justify-end gap-1.5">
-                        <button
-                          onClick={() => otvorNahlad(r.id)}
-                          disabled={nacitavamNahlad === r.id}
-                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
-                        >
-                          <Eye className="h-3.5 w-3.5" />{" "}
-                          {nacitavamNahlad === r.id ? t("Načítavam…") : t("Náhľad")}
-                        </button>
-                        <button
-                          onClick={() => setPrilohyOkno({ id: r.id, cislo: r.document_number ?? "" })}
-                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                        >
-                          <Paperclip className="h-3.5 w-3.5" /> {t("Prílohy")}
-                        </button>
-                        {r.matched_supplier_invoice_id ? (
-                          <a
-                            href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
-                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť doklad")}
-                          </a>
-                        ) : r.nespracovany_id ? (
-                          <a
-                            href={`/nespracovane/${r.nespracovany_id}`}
-                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" /> {t("V Nespracovaných")}
-                          </a>
-                        ) : (
-                          <button
-                            onClick={() => zaevidujDoklad(r.id)}
-                            disabled={evidujem === r.id}
-                            className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                          >
-                            <FileInput className="h-3.5 w-3.5" />{" "}
-                            {evidujem === r.id ? t("Evidujem…") : t("Zaevidovať")}
-                          </button>
-                        )}
+                        {akcieRiadku(r)}
                       </div>
                     </td>
                   </tr>
@@ -659,6 +701,8 @@ function ReceivedPage() {
               </tbody>
             </table>
           </div>
+            }
+          />
         )}
       </PageBody>
       {prilohyOkno && companyId && (

@@ -14,6 +14,7 @@ import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/Document
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 export const Route = createFileRoute("/_authenticated/opakovane/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Opakované faktúry — Faktero") }] }),
@@ -186,122 +187,192 @@ function RecurringList() {
             </Link>
           </div>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="w-10 p-3">
-                    <input
-                      type="checkbox"
-                      aria-label={t("Vybrať všetko")}
-                      checked={list.allOnPageSelected}
-                      onChange={(e) => list.toggleAllOnPage(e.target.checked)}
-                    />
-                    <span className="sr-only">{t("Výber")}</span>
-                  </th>
-                  <th className="p-3">{t("Názov")}</th>
-                  <th className="p-3">{t("Odberateľ")}</th>
-                  <th className="p-3">{t("Frekvencia")}</th>
-                  <th className="p-3">{t("Ďalší beh")}</th>
-                  <th className="p-3 text-right">{t("Suma")}</th>
-                  <th className="p-3">{t("Stav")}</th>
-                  <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {list.rows.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                      {t("Žiadne výsledky.")}
-                    </td>
-                  </tr>
-                )}
-                {list.rows.map((r) => (
-                  <tr key={r.id} className="hover:bg-muted/30">
-                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        aria-label={t("Vybrať riadok")}
-                        checked={!!list.selected[r.id]}
-                        onChange={(e) => list.toggleSelect(r.id, e.target.checked)}
-                      />
-                    </td>
-                    <td className="p-3">
-                      <Link
-                        to="/opakovane/$id"
-                        params={{ id: r.id }}
-                        className="font-medium hover:underline"
-                      >
-                        {r.name}
-                      </Link>
-                    </td>
-                    <td className="p-3">{r.customer_name ?? "—"}</td>
-                    <td className="p-3">{FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency}</td>
-                    <td className="p-3">{datumNaDoklade(r.next_run)}</td>
-                    <td className="p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
-                    <td className="p-3">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}`}
-                      >
-                        {r.active ? t("Aktívna") : t("Pozastavená")}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        {!list.showDeleted && (
-                          <>
-                            <button
-                              onClick={() => runNow(r.id)}
-                              disabled={busy === r.id || !r.active}
-                              title={t("Spustiť teraz")}
-                              className="rounded p-1.5 text-primary hover:bg-primary/10 disabled:opacity-40"
-                            >
-                              <Play className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => toggle(r.id, !r.active)}
-                              title={r.active ? t("Pozastaviť") : t("Aktivovať")}
-                              className="rounded p-1.5 hover:bg-muted"
-                            >
-                              {r.active ? (
-                                <PowerOff className="h-4 w-4" />
-                              ) : (
-                                <Power className="h-4 w-4" />
-                              )}
-                            </button>
-                          </>
-                        )}
-                        {list.showDeleted ? (
-                          <button
-                            title={t("Obnoviť")}
-                            onClick={async () => {
-                              try {
-                                await list.restore([r.id]);
-                                toast.success(t("Obnovené"));
-                              } catch (e: any) {
-                                toast.error(e?.message ?? t("Chyba"));
-                              }
-                            }}
-                            className="rounded p-1.5 text-primary hover:bg-primary/10"
+          <ResponsiveTable
+            className="mt-3"
+            items={list.rows}
+            emptyText="Žiadne výsledky."
+            desktop={
+              <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="w-10 p-3">
+                        <input
+                          type="checkbox"
+                          aria-label={t("Vybrať všetko")}
+                          checked={list.allOnPageSelected}
+                          onChange={(e) => list.toggleAllOnPage(e.target.checked)}
+                        />
+                        <span className="sr-only">{t("Výber")}</span>
+                      </th>
+                      <th className="p-3">{t("Názov")}</th>
+                      <th className="p-3">{t("Odberateľ")}</th>
+                      <th className="p-3">{t("Frekvencia")}</th>
+                      <th className="p-3">{t("Ďalší beh")}</th>
+                      <th className="p-3 text-right">{t("Suma")}</th>
+                      <th className="p-3">{t("Stav")}</th>
+                      <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {list.rows.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                          {t("Žiadne výsledky.")}
+                        </td>
+                      </tr>
+                    )}
+                    {list.rows.map((r) => (
+                      <tr key={r.id} className="hover:bg-muted/30">
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={t("Vybrať riadok")}
+                            checked={!!list.selected[r.id]}
+                            onChange={(e) => list.toggleSelect(r.id, e.target.checked)}
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Link
+                            to="/opakovane/$id"
+                            params={{ id: r.id }}
+                            className="font-medium hover:underline"
                           >
-                            <RotateCcw className="h-4 w-4" />
-                          </button>
+                            {r.name}
+                          </Link>
+                        </td>
+                        <td className="p-3">{r.customer_name ?? "—"}</td>
+                        <td className="p-3">{FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency}</td>
+                        <td className="p-3">{datumNaDoklade(r.next_run)}</td>
+                        <td className="p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
+                        <td className="p-3">
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}`}
+                          >
+                            {r.active ? t("Aktívna") : t("Pozastavená")}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            {!list.showDeleted && (
+                              <>
+                                <button
+                                  onClick={() => runNow(r.id)}
+                                  disabled={busy === r.id || !r.active}
+                                  title={t("Spustiť teraz")}
+                                  className="rounded p-1.5 text-primary hover:bg-primary/10 disabled:opacity-40"
+                                >
+                                  <Play className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => toggle(r.id, !r.active)}
+                                  title={r.active ? t("Pozastaviť") : t("Aktivovať")}
+                                  className="rounded p-1.5 hover:bg-muted"
+                                >
+                                  {r.active ? (
+                                    <PowerOff className="h-4 w-4" />
+                                  ) : (
+                                    <Power className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </>
+                            )}
+                            {list.showDeleted ? (
+                              <button
+                                title={t("Obnoviť")}
+                                onClick={async () => {
+                                  try {
+                                    await list.restore([r.id]);
+                                    toast.success(t("Obnovené"));
+                                  } catch (e: any) {
+                                    toast.error(e?.message ?? t("Chyba"));
+                                  }
+                                }}
+                                className="rounded p-1.5 text-primary hover:bg-primary/10"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <button
+                                title={t("Vymazať")}
+                                onClick={() => setRowDelete(r)}
+                                className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            }
+            mobileCard={(r: any) => (
+              <MobileListCard
+                onClick={() => navigate({ to: "/opakovane/$id", params: { id: r.id } })}
+                vybrane={!!list.selected[r.id]}
+                onVyber={(zapnut) => list.toggleSelect(r.id, zapnut)}
+                vyberPopis={t("Vybrať riadok")}
+                title={r.name}
+                subtitle={r.customer_name ?? "—"}
+                status={
+                  <span
+                    className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}`}
+                  >
+                    {r.active ? t("Aktívna") : t("Pozastavená")}
+                  </span>
+                }
+                meta={`${FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency} · ${t("Ďalší beh")} ${datumNaDoklade(r.next_run)}`}
+                amount={formatujMenu(r.total, r.currency)}
+                actions={
+                  list.showDeleted ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await list.restore([r.id]);
+                          toast.success(t("Obnovené"));
+                        } catch (e: any) {
+                          toast.error(e?.message ?? t("Chyba"));
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-hover hover:bg-primary/10"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
+                    </button>
+                  ) : (
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <button
+                        onClick={() => runNow(r.id)}
+                        disabled={busy === r.id || !r.active}
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-hover hover:bg-primary/10 disabled:opacity-40"
+                      >
+                        <Play className="h-3.5 w-3.5" /> {t("Spustiť teraz")}
+                      </button>
+                      <button
+                        onClick={() => toggle(r.id, !r.active)}
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      >
+                        {r.active ? (
+                          <PowerOff className="h-3.5 w-3.5" />
                         ) : (
-                          <button
-                            title={t("Vymazať")}
-                            onClick={() => setRowDelete(r)}
-                            className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          <Power className="h-3.5 w-3.5" />
+                        )}{" "}
+                        {r.active ? t("Pozastaviť") : t("Aktivovať")}
+                      </button>
+                      <button
+                        onClick={() => setRowDelete(r)}
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať")}
+                      </button>
+                    </div>
+                  )
+                }
+              />
+            )}
+          />
         )}
         {!list.loading && list.total > 0 && (
           <ListPagination

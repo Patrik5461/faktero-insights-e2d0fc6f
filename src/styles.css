@@ -316,6 +316,14 @@ html[data-dizajn="kompaktny"] .pole-dokladu-napoveda {
   background: var(--card);
   pointer-events: auto;
 }
+/* Začiarkávacie pole s popisom v rámčeku (Odpočítanie dane) — rámček ako ostatné polia. */
+html[data-dizajn="kompaktny"] .pole-dokladu > .pole-zaskrtnutie {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem 0.3rem;
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+  background: var(--background);
+}
 html[data-dizajn="kompaktny"] .pole-dokladu-doplnok {
   padding: 0 0.2rem;
   border-radius: 3px;

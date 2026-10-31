@@ -22,6 +22,7 @@ import { Landmark } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailPohybu } from "@/components/faktero/DetailPohybu";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { nazovVybavenia, stavPohybu } from "@/lib/faktero/pohyb-vybavenie";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
@@ -343,122 +344,233 @@ function TxPage() {
           </div>
         )}
 
-        <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2">{t("Dátum")}</th>
-                {!selected && <th className="px-3 py-2">{t("Účet")}</th>}
-                <th className="px-3 py-2">{t("Protistrana")}</th>
-                <th className="px-3 py-2">{t("VS")}</th>
-                <th className="px-3 py-2">{t("Popis")}</th>
-                <th className="px-3 py-2">{t("Párovanie")}</th>
-                <th className="px-3 py-2 text-right">{t("Suma")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {txs.map((tx) => (
-                <tr key={tx.id} className="border-t border-border">
-                  <td className="px-3 py-2 tabular-nums">{datumNaDoklade(tx.booking_date)}</td>
-                  {!selected && (
-                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                      {(() => {
-                        const a = accounts.find((x) => x.id === tx.bank_account_id);
-                        const iban = a?.iban as string | undefined;
-                        return iban ? `…${iban.slice(-6)}` : "—";
-                      })()}
-                    </td>
-                  )}
-                  <td className="px-3 py-2">{tx.counterparty ?? "—"}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{tx.variable_symbol ?? "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {/* Pohyb z e-mailovej notifikácie banky — nie z banky samotnej. */}
-                    {tx.zdroj === "email" && (
-                      <span
-                        className="mr-1.5 inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-                        title={t("Pohyb vznikol z e-mailovej notifikácie banky.")}
-                      >
-                        {t("z e-mailu")}
-                      </span>
-                    )}
-                    {tx.description ?? "—"}
-                  </td>
-                  <td className="px-3 py-2">
-                    {tx.matched_invoice_id ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Link
-                          to="/faktury/$id"
-                          params={{ id: tx.matched_invoice_id }}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {faktury[tx.matched_invoice_id] ?? t("faktúra")}
-                        </Link>
-                        <button
-                          onClick={() => odparuj(tx.id)}
-                          title={t("Zrušiť párovanie a vrátiť faktúru medzi otvorené")}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Unlink className="h-3.5 w-3.5" />
-                        </button>
-                      </span>
-                    ) : (
-                      (() => {
-                        const stav = stavPohybu(tx);
-                        const popis =
-                          stav === "sparovany"
-                            ? t("spárované")
-                            : stav === "nesparovany"
-                              ? t("nespárované")
-                              : t(nazovVybavenia(stav) ?? "");
-                        const farba =
-                          stav === "nesparovany"
-                            ? "text-muted-foreground"
-                            : stav === "sparovany"
-                              ? "text-emerald-700 dark:text-emerald-300"
-                              : "rounded-full bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300";
-                        return (
+        {/*
+          Na telefóne karty namiesto širokej tabuľky (suma bola za okrajom). Rámik
+          okolo tabuľky, prázdneho stavu a stránkovania ostáva len od `sm` vyššie —
+          karty majú vlastný.
+        */}
+        <div className="mt-4 sm:overflow-x-auto sm:rounded-xl sm:border sm:border-border sm:bg-card">
+          {(() => {
+            const tabulka = (
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2">{t("Dátum")}</th>
+                    {!selected && <th className="px-3 py-2">{t("Účet")}</th>}
+                    <th className="px-3 py-2">{t("Protistrana")}</th>
+                    <th className="px-3 py-2">{t("VS")}</th>
+                    <th className="px-3 py-2">{t("Popis")}</th>
+                    <th className="px-3 py-2">{t("Párovanie")}</th>
+                    <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {txs.map((tx) => (
+                    <tr key={tx.id} className="border-t border-border">
+                      <td className="px-3 py-2 tabular-nums">{datumNaDoklade(tx.booking_date)}</td>
+                      {!selected && (
+                        <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                          {(() => {
+                            const a = accounts.find((x) => x.id === tx.bank_account_id);
+                            const iban = a?.iban as string | undefined;
+                            return iban ? `…${iban.slice(-6)}` : "—";
+                          })()}
+                        </td>
+                      )}
+                      <td className="px-3 py-2">{tx.counterparty ?? "—"}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{tx.variable_symbol ?? "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {/* Pohyb z e-mailovej notifikácie banky — nie z banky samotnej. */}
+                        {tx.zdroj === "email" && (
+                          <span
+                            className="mr-1.5 inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+                            title={t("Pohyb vznikol z e-mailovej notifikácie banky.")}
+                          >
+                            {t("z e-mailu")}
+                          </span>
+                        )}
+                        {tx.description ?? "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {tx.matched_invoice_id ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Link
+                              to="/faktury/$id"
+                              params={{ id: tx.matched_invoice_id }}
+                              className="font-medium text-primary hover:underline"
+                            >
+                              {faktury[tx.matched_invoice_id] ?? t("faktúra")}
+                            </Link>
+                            <button
+                              onClick={() => odparuj(tx.id)}
+                              title={t("Zrušiť párovanie a vrátiť faktúru medzi otvorené")}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Unlink className="h-3.5 w-3.5" />
+                            </button>
+                          </span>
+                        ) : (
+                          (() => {
+                            const stav = stavPohybu(tx);
+                            const popis =
+                              stav === "sparovany"
+                                ? t("spárované")
+                                : stav === "nesparovany"
+                                  ? t("nespárované")
+                                  : t(nazovVybavenia(stav) ?? "");
+                            const farba =
+                              stav === "nesparovany"
+                                ? "text-muted-foreground"
+                                : stav === "sparovany"
+                                  ? "text-emerald-700 dark:text-emerald-300"
+                                  : "rounded-full bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300";
+                            return (
+                              <button
+                                onClick={() => setDetail(tx.id)}
+                                title={tx.vybavenie_poznamka ?? t("Detail pohybu")}
+                                className={`text-xs hover:underline ${farba}`}
+                              >
+                                {popis}
+                              </button>
+                            );
+                          })()
+                        )}
+                        {tx.matched_invoice_id && (
                           <button
                             onClick={() => setDetail(tx.id)}
-                            title={tx.vybavenie_poznamka ?? t("Detail pohybu")}
-                            className={`text-xs hover:underline ${farba}`}
+                            className="ml-2 text-xs text-muted-foreground hover:underline"
+                          >
+                            {t("detail")}
+                          </button>
+                        )}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right tabular-nums font-medium ${Number(tx.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
+                      >
+                        {fmtMoney(Number(tx.amount), tx.currency)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            );
+            if (!loading && txs.length === 0) return <div className="hidden sm:block">{tabulka}</div>;
+            return (
+              <ResponsiveTable
+                items={txs}
+                loading={loading && txs.length === 0}
+                desktop={tabulka}
+                mobileCard={(tx: any) => {
+                  const a = accounts.find((x) => x.id === tx.bank_account_id);
+                  const iban = a?.iban as string | undefined;
+                  const stav = stavPohybu(tx);
+                  const popis =
+                    stav === "sparovany"
+                      ? t("spárované")
+                      : stav === "nesparovany"
+                        ? t("nespárované")
+                        : t(nazovVybavenia(stav) ?? "");
+                  return (
+                    <MobileListCard
+                      onClick={() => setDetail(tx.id)}
+                      title={
+                        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {tx.counterparty ?? "—"}
+                          {tx.zdroj === "email" && (
+                            <span className="inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                              {t("z e-mailu")}
+                            </span>
+                          )}
+                        </span>
+                      }
+                      subtitle={tx.description ?? undefined}
+                      meta={[
+                        datumNaDoklade(tx.booking_date),
+                        !selected ? (iban ? `…${iban.slice(-6)}` : null) : null,
+                        tx.variable_symbol ? `${t("VS")} ${tx.variable_symbol}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      amount={
+                        <span
+                          className={`tabular-nums ${Number(tx.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
+                        >
+                          {fmtMoney(Number(tx.amount), tx.currency)}
+                        </span>
+                      }
+                      status={
+                        tx.matched_invoice_id ? (
+                          <span className="inline-flex rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                            {faktury[tx.matched_invoice_id] ?? t("faktúra")}
+                          </span>
+                        ) : (
+                          <span
+                            className={
+                              stav === "nesparovany"
+                                ? "text-xs text-muted-foreground"
+                                : stav === "sparovany"
+                                  ? "text-xs text-emerald-700 dark:text-emerald-300"
+                                  : "rounded-full bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+                            }
                           >
                             {popis}
+                          </span>
+                        )
+                      }
+                      actions={
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          {tx.matched_invoice_id && (
+                            <>
+                              <Link
+                                to="/faktury/$id"
+                                params={{ id: tx.matched_invoice_id }}
+                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                              >
+                                <Link2 className="h-3.5 w-3.5" />{" "}
+                                {faktury[tx.matched_invoice_id] ?? t("faktúra")}
+                              </Link>
+                              <button
+                                onClick={() => odparuj(tx.id)}
+                                title={t("Zrušiť párovanie a vrátiť faktúru medzi otvorené")}
+                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                              >
+                                <Unlink className="h-3.5 w-3.5" /> {t("Zrušiť párovanie")}
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setDetail(tx.id)}
+                            title={tx.vybavenie_poznamka ?? undefined}
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          >
+                            {t("Detail pohybu")}
                           </button>
-                        );
-                      })()
-                    )}
-                    {tx.matched_invoice_id && (
-                      <button
-                        onClick={() => setDetail(tx.id)}
-                        className="ml-2 text-xs text-muted-foreground hover:underline"
-                      >
-                        {t("detail")}
-                      </button>
-                    )}
-                  </td>
-                  <td
-                    className={`px-3 py-2 text-right tabular-nums font-medium ${Number(tx.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
-                  >
-                    {fmtMoney(Number(tx.amount), tx.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        </div>
+                      }
+                    />
+                  );
+                }}
+              />
+            );
+          })()}
           {!loading && txs.length === 0 && (
-            <EmptyState
-              icon={Landmark}
-              title={t("Žiadne transakcie")}
-              description={t("Pre vybraté obdobie a filtre nemáme žiadne výsledky.")}
-            />
+            <div className="rounded-xl border border-border bg-card sm:rounded-none sm:border-0 sm:bg-transparent">
+              <EmptyState
+                icon={Landmark}
+                title={t("Žiadne transakcie")}
+                description={t("Pre vybraté obdobie a filtre nemáme žiadne výsledky.")}
+              />
+            </div>
           )}
-          <ListFooter
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
+          <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card max-sm:[&>div]:border-t-0 sm:mt-0 sm:overflow-visible sm:rounded-none sm:border-0 sm:bg-transparent">
+            <ListFooter
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
         </div>
         {detail && getActiveCompanyId() && (
           <DetailPohybu
