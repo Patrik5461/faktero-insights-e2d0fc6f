@@ -75,12 +75,15 @@ export const ulozPripojenieKartyFn = createServerFn({ method: "POST" })
     }
 
     // Pred uložením over, že Shell údaje prijme — chyba ide človeku hneď.
-    const { nacitajAdapter } = await import("./palivove-karty/adaptery.server");
-    const adapter = await nacitajAdapter(data.poskytovatel);
-    try {
-      await adapter.test(hodnoty);
-    } catch (e: any) {
-      throw new Error(e?.message ?? "Pripojenie sa nepodarilo overiť.");
+    // Pripojenie bez API (nahratie výpisu, napr. Up) nemá čo overovať.
+    if (!meta.nahratie) {
+      const { nacitajAdapter } = await import("./palivove-karty/adaptery.server");
+      const adapter = await nacitajAdapter(data.poskytovatel);
+      try {
+        await adapter.test(hodnoty);
+      } catch (e: any) {
+        throw new Error(e?.message ?? "Pripojenie sa nepodarilo overiť.");
+      }
     }
 
     const tajne: Record<string, string> = {};
@@ -99,7 +102,8 @@ export const ulozPripojenieKartyFn = createServerFn({ method: "POST" })
       poskytovatel: data.poskytovatel,
       nazov: data.nazov || meta.nazov,
       rezim: meta.faktury ? data.rezim : "len_tankovania",
-      auto_sync: data.auto_sync,
+      // Bez API niet čo synchronizovať v noci.
+      auto_sync: meta.nahratie ? false : data.auto_sync,
       aktivne: true,
       prihlasenie_sifrovane: encryptSecret(JSON.stringify(tajne)),
       prihlasenie_verejne: verejne,
@@ -237,4 +241,126 @@ export const priradKartuFn = createServerFn({ method: "POST" })
     const { prepocitajKartu } = await import("./palivove-karty/sync.server");
     const zmenene = await prepocitajKartu(pripojenie, vazba.karta);
     return { zmenene };
+  });
+
+/* ------------------------------------------------- nahratie výpisu (Up) */
+
+const PoleVypisu = z.enum([
+  "datum",
+  "cas",
+  "karta",
+  "spz",
+  "vodic",
+  "stanica",
+  "krajina",
+  "produkt",
+  "mnozstvo",
+  "jednotka",
+  "jednCena",
+  "zaklad",
+  "dph",
+  "sadzba",
+  "spolu",
+  "mena",
+  "tachometer",
+  "faktura",
+  "transakcia",
+]);
+const Datum = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Suma = z.number().finite().gte(-10_000_000).lte(10_000_000);
+const Text = (n: number) => z.string().max(n).nullable();
+
+/** Strop base64 — 10 MB súbor je po zakódovaní ~13,4 MB. */
+const STROP_BASE64 = 14_000_000;
+
+export const nahladVypisuKartyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: Id,
+        id: Id,
+        nazov: z.string().trim().min(1).max(200),
+        base64: z.string().min(1).max(STROP_BASE64),
+        mapovanie: z.record(PoleVypisu, z.number().int().min(0).max(200)).nullish(),
+        hlavicka_index: z.number().int().min(0).max(1000).nullish(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { overPristup } = await import("./over-pristup");
+    await overPristup(context as any, data.company_id, { oblast: "jazdy", zapis: true });
+    const { pripojenieFirmy, nahladVypisu } = await import("./palivove-karty/nahratie.server");
+    const pripojenie = await pripojenieFirmy(data.company_id, data.id);
+    return nahladVypisu({
+      pripojenie,
+      nazov: data.nazov,
+      bajty: new Uint8Array(Buffer.from(data.base64, "base64")),
+      mapovanie: (data.mapovanie ?? null) as any,
+      hlavickaIndex: data.hlavicka_index ?? null,
+    });
+  });
+
+const RiadokVypisu = z.object({
+  cas: z.string().max(40),
+  datum: Datum,
+  karta: Text(40),
+  spz: Text(20),
+  vodic: Text(80),
+  produkt: Text(120),
+  produktKod: Text(40),
+  jePalivo: z.boolean(),
+  mnozstvo: z.number().finite().gte(0).lte(1_000_000).nullable(),
+  jednotka: Text(12),
+  zaklad: Suma,
+  dph: Suma,
+  sadzbaDph: z.number().finite().gte(0).lte(100).nullable(),
+  spolu: Suma,
+  mena: z.string().regex(/^[A-Z]{3}$/),
+  krajina: Text(2),
+  krajinaDph: Text(2),
+  miesto: Text(160),
+  tachometerKm: z.number().int().gte(0).lte(10_000_000).nullable(),
+  fakturaCislo: Text(40),
+  fakturaDatum: Datum.nullable(),
+  dobropis: z.boolean(),
+  transakciaId: Text(60),
+  odhadDph: z.boolean(),
+});
+
+export const ulozVypisKartyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: Id,
+        id: Id,
+        nazov_suboru: z.string().trim().max(200).default(""),
+        riadky: z.array(RiadokVypisu).max(3000),
+        faktura: z.object({
+          cislo: z.string().trim().max(40).nullable(),
+          datum: Datum.nullable(),
+          splatnost: Datum.nullable(),
+          spolu: Suma.nullable(),
+          dph: Suma.nullable(),
+          mena: z
+            .string()
+            .regex(/^[A-Z]{3}$/)
+            .nullable(),
+        }),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { overPristup } = await import("./over-pristup");
+    await overPristup(context as any, data.company_id, { oblast: "jazdy", zapis: true });
+    if (!data.riadky.length && !data.faktura.cislo) throw new Error("Vo výpise nie je čo uložiť.");
+    const { pripojenieFirmy, ulozVypis } = await import("./palivove-karty/nahratie.server");
+    const pripojenie = await pripojenieFirmy(data.company_id, data.id);
+    return ulozVypis({
+      pripojenie,
+      riadky: data.riadky,
+      faktura: data.faktura,
+      nazovSuboru: data.nazov_suboru,
+    });
   });

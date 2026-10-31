@@ -13,6 +13,7 @@
 import { decryptSecret } from "../payment-crypto.server";
 import { dnesBratislava } from "../datum-vystavenia";
 import { nacitajAdapter } from "./adaptery.server";
+import { poskytovatel as metaPoskytovatela } from "./register";
 import {
   duplicitneBlocky,
   existujuceTankovanie,
@@ -24,7 +25,7 @@ import {
   type VazbaKarty,
   type Vozidlo,
 } from "./spracovanie";
-import { KartaChyba, type KartaAdapter, type KartaFaktura, type KartaTransakcia } from "./typy";
+import { KartaChyba, type KartaFaktura, type KartaTransakcia } from "./typy";
 
 type Admin = any;
 
@@ -43,7 +44,7 @@ export type VysledokSync = {
   blocky: number;
 };
 
-type Kontext = {
+export type Kontext = {
   admin: Admin;
   pripojenie: any;
   companyId: string;
@@ -59,7 +60,7 @@ async function getAdmin(): Promise<Admin> {
   return supabaseAdmin;
 }
 
-async function log(
+export async function log(
   admin: Admin,
   p: any,
   druh: string,
@@ -159,7 +160,7 @@ function riadokTransakcie(k: Kontext, t: KartaTransakcia) {
 }
 
 /** Uloží transakcie (idempotentne) a založí k nim tankovania. */
-async function ulozTransakcie(k: Kontext, tx: KartaTransakcia[]) {
+export async function ulozTransakcie(k: Kontext, tx: KartaTransakcia[]) {
   if (!tx.length) return;
   await zabezpecVazby(k, tx);
   const podlaId = new Map(tx.map((t) => [t.externeId, t]));
@@ -230,7 +231,7 @@ async function zalozTankovania(
 }
 
 /** Bločky z pumpy, ktoré už vo Fakteri sú — označia sa pri transakcii. */
-async function oznacBlocky(k: Kontext, tx: KartaTransakcia[]) {
+export async function oznacBlocky(k: Kontext, tx: KartaTransakcia[]) {
   if (!tx.length) return;
   const dni = tx.map((t) => t.datum).sort();
   const { data: blocky } = await k.admin
@@ -303,18 +304,29 @@ async function prepojFakturu(k: Kontext, cislo: string, prijataId: string) {
     .eq("faktura_cislo", cislo);
 }
 
+export type VysledokFaktury = {
+  id: string | null;
+  /** nova = založená teraz, uz = táto faktúra už bola založená skôr, prepojena = našla sa zadaná ručne/e-mailom */
+  stav: "nova" | "uz" | "prepojena" | "zlyhala";
+};
+
 /**
  * Faktúra vydavateľa karty → jedna prijatá faktúra. Ak ju vo Fakteri už
  * niekto má (prišla e-mailom, nahratá ručne), nová sa nezakladá — nákupy sa
  * len prepoja na existujúcu, inak by bol náklad aj DPH dvakrát.
  */
-async function zalozFakturu(
+export async function zalozFakturu(
   k: Kontext,
-  adapter: KartaAdapter,
-  p: Record<string, string>,
   f: KartaFaktura,
   krajinaFirmy: string,
-): Promise<void> {
+  o: {
+    ico?: string | null;
+    dic?: string | null;
+    /** Transakcie faktúry, keď v evidencii ešte nie sú (staršie nákupy z API). */
+    doplnTransakcie?: () => Promise<KartaTransakcia[]>;
+  } = {},
+): Promise<VysledokFaktury> {
+  const meta = metaPoskytovatela(k.poskytovatel);
   const externeId = `${k.poskytovatel}:faktura:${f.externeId}`;
   const { data: uz } = await k.admin
     // aj-zmazane: idempotencia podľa external_id, zmazanú faktúru synchronizácia znova nezaloží
@@ -325,9 +337,10 @@ async function zalozFakturu(
     .maybeSingle();
   if (uz) {
     await prepojFakturu(k, f.cislo, uz.id);
-    return;
+    return { id: uz.id, stav: "uz" };
   }
-  const ico = String(p.dodavatel_ico ?? "").replace(/\D/g, "");
+  const ico = String(o.ico ?? meta?.dodavatel?.ico ?? "").replace(/\D/g, "");
+  const vzor = new RegExp(meta?.dodavatel?.vzor ?? k.poskytovatel, "i");
   const { data: rovnake } = await k.admin
     .from("purchase_invoices")
     .select("id, supplier_name, supplier_ico")
@@ -338,7 +351,7 @@ async function zalozFakturu(
   const duplicitna = (rovnake ?? []).find(
     (x: any) =>
       (ico && String(x.supplier_ico ?? "").replace(/\D/g, "") === ico) ||
-      /shell/i.test(String(x.supplier_name ?? "")) ||
+      vzor.test(String(x.supplier_name ?? "")) ||
       String(x.supplier_name ?? "")
         .trim()
         .toLowerCase() === f.dodavatel.nazov.trim().toLowerCase(),
@@ -355,12 +368,12 @@ async function zalozFakturu(
         purchase_invoice_id: duplicitna.id,
       },
     );
-    return;
+    return { id: duplicitna.id, stav: "prepojena" };
   }
 
   let riadky = await transakcieFaktury(k, f.cislo);
-  if (!riadky.length && adapter.transakcieFaktury) {
-    await ulozTransakcie(k, await adapter.transakcieFaktury(p, f));
+  if (!riadky.length && o.doplnTransakcie) {
+    await ulozTransakcie(k, await o.doplnTransakcie());
     riadky = await transakcieFaktury(k, f.cislo);
   }
   const navrh = prijataZFaktury(f, riadky.map(zDb), {
@@ -368,6 +381,7 @@ async function zalozFakturu(
     krajinaFirmy,
     poskytovatel: k.poskytovatel,
     dodavatelIco: ico || null,
+    dodavatelDic: o.dic ?? meta?.dodavatel?.dic ?? null,
     vozidla: k.vozidla,
     dnes: dnesBratislava(),
   });
@@ -379,17 +393,19 @@ async function zalozFakturu(
     .select("id")
     .single();
   if (error) {
-    if (/duplicate key|external_id/i.test(error.message)) return; // súbežný beh ju už založil
+    // súbežný beh ju už založil
+    if (/duplicate key|external_id/i.test(error.message)) return { id: null, stav: "uz" };
     throw new Error(`Faktúru ${f.cislo} sa nepodarilo uložiť: ${error.message}`);
   }
   await prepojFakturu(k, f.cislo, data.id);
   k.pocty.faktury++;
+  return { id: data.id as string, stav: "nova" };
 }
 
 /* ------------------------------------------------------------- beh */
 
 /** Kontext pre synchronizáciu aj pre prepočet vozidiel po ručnom priradení. */
-async function kontext(admin: Admin, pripojenie: any): Promise<Kontext> {
+export async function kontext(admin: Admin, pripojenie: any): Promise<Kontext> {
   const [{ data: vozidla }, { data: vazby }] = await Promise.all([
     admin
       .from("vehicles")
@@ -427,6 +443,13 @@ export async function synchronizujPripojenie(
   const prazdny = { transakcie: 0, tankovania: 0, faktury: 0, blocky: 0 };
   if (!pripojenie || !pripojenie.aktivne) {
     return { stav: "preskocene", sprava: "Pripojenie nie je aktívne.", ...prazdny };
+  }
+  if (metaPoskytovatela(pripojenie.poskytovatel)?.nahratie) {
+    return {
+      stav: "preskocene",
+      sprava: "Toto pripojenie nemá API — nákupy sa doplnia nahratím výpisu.",
+      ...prazdny,
+    };
   }
   if (
     pripojenie.stav === "prebieha" &&
@@ -489,7 +512,11 @@ export async function synchronizujPripojenie(
           ciastocne = true;
           break;
         }
-        await zalozFakturu(k, adapter, p, f, krajina);
+        const transakcieFaktury = adapter.transakcieFaktury;
+        await zalozFakturu(k, f, krajina, {
+          ico: p.dodavatel_ico,
+          doplnTransakcie: transakcieFaktury ? () => transakcieFaktury(p, f) : undefined,
+        });
       }
       if (vsetkyFaktury) {
         await admin

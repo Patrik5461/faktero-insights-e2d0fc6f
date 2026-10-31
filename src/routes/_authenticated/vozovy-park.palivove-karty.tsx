@@ -2,7 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, CreditCard, Fuel, Plug, RefreshCcw, Save, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CreditCard,
+  FileUp,
+  Fuel,
+  Plug,
+  RefreshCcw,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -12,6 +21,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { POSKYTOVATELIA, poskytovatel } from "@/lib/faktero/palivove-karty/register";
+import { NahratieVypisuKarty } from "@/components/faktero/palivove-karty/NahratieVypisuKarty";
 import {
   nastavPripojenieKartyFn,
   odpojKartuFn,
@@ -63,6 +73,7 @@ function PalivoveKarty() {
     null,
   );
   const [bezi, setBezi] = useState<string | null>(null);
+  const [nahratie, setNahratie] = useState<Pripojenie | null>(null);
 
   const _sync = useServerFn(synchronizujKartuFn);
   const _odpoj = useServerFn(odpojKartuFn);
@@ -237,11 +248,18 @@ function PalivoveKarty() {
                         <CreditCard className="h-4 w-4" /> {p.nazov}
                         <StavPripojenia stav={p.aktivne ? p.stav : "vypnute"} />
                       </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {t("Payer number")}: {p.prihlasenie_verejne?.payer_number ?? "—"} ·{" "}
-                        {t("Client ID")}: {p.prihlasenie_verejne?.client_id_koniec ?? "••••"} ·{" "}
-                        {t("Posledná synchronizácia")}: {cas(p.posledna_sync_at)}
-                      </p>
+                      {poskytovatel(p.poskytovatel)?.nahratie ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("Zmluva")}: {p.prihlasenie_verejne?.zmluva || "—"} ·{" "}
+                          {t("Posledné nahratie")}: {cas(p.posledna_sync_at)}
+                        </p>
+                      ) : (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {t("Payer number")}: {p.prihlasenie_verejne?.payer_number ?? "—"} ·{" "}
+                          {t("Client ID")}: {p.prihlasenie_verejne?.client_id_koniec ?? "••••"} ·{" "}
+                          {t("Posledná synchronizácia")}: {cas(p.posledna_sync_at)}
+                        </p>
+                      )}
                       {p.posledna_chyba && (
                         <p className="mt-1 text-xs text-destructive">{p.posledna_chyba}</p>
                       )}
@@ -263,32 +281,53 @@ function PalivoveKarty() {
                             </option>
                           </select>
                         </label>
-                        <label className="inline-flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={p.auto_sync}
-                            onChange={(e) => void nastav(p, { auto_sync: e.target.checked })}
-                          />
-                          {t("Každú noc")}
-                        </label>
+                        {!poskytovatel(p.poskytovatel)?.nahratie && (
+                          <label className="inline-flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={p.auto_sync}
+                              onChange={(e) => void nastav(p, { auto_sync: e.target.checked })}
+                            />
+                            {t("Každú noc")}
+                          </label>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className={TLACIDLO}
-                        disabled={bezi === p.id}
-                        onClick={() => void synchronizuj(p.id)}
-                      >
-                        <RefreshCcw className={`h-4 w-4 ${bezi === p.id ? "animate-spin" : ""}`} />
-                        {t("Synchronizovať teraz")}
-                      </button>
+                      {poskytovatel(p.poskytovatel)?.nahratie ? (
+                        <button
+                          type="button"
+                          className={TLACIDLO}
+                          disabled={!p.aktivne}
+                          onClick={() => {
+                            setFormular(null);
+                            setNahratie(p);
+                          }}
+                        >
+                          <FileUp className="h-4 w-4" />
+                          {t("Nahrať výpis")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={TLACIDLO}
+                          disabled={bezi === p.id}
+                          onClick={() => void synchronizuj(p.id)}
+                        >
+                          <RefreshCcw
+                            className={`h-4 w-4 ${bezi === p.id ? "animate-spin" : ""}`}
+                          />
+                          {t("Synchronizovať teraz")}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className={TLACIDLO}
                         onClick={() => setFormular({ poskytovatel: p.poskytovatel, id: p.id })}
                       >
-                        {t("Upraviť prístup")}
+                        {poskytovatel(p.poskytovatel)?.nahratie
+                          ? t("Upraviť")
+                          : t("Upraviť prístup")}
                       </button>
                       <button
                         type="button"
@@ -312,8 +351,30 @@ function PalivoveKarty() {
               pripojenie={pripojenia?.find((p) => p.id === formular.id) ?? null}
               onZavri={() => setFormular(null)}
               onUlozene={(id) => {
+                const nahratim = poskytovatel(formular.poskytovatel)?.nahratie;
                 setFormular(null);
-                void nacitaj().then(() => synchronizuj(id));
+                void nacitaj().then(() => {
+                  if (!nahratim) return synchronizuj(id);
+                  // Pripojenie bez API — rovno ponúkni nahratie výpisu.
+                  setNahratie({
+                    id,
+                    nazov: poskytovatel(formular.poskytovatel)?.nazov ?? "",
+                  } as Pripojenie);
+                });
+              }}
+            />
+          )}
+
+          {nahratie && cid && (
+            <NahratieVypisuKarty
+              key={nahratie.id}
+              companyId={cid}
+              pripojenieId={nahratie.id}
+              nazov={nahratie.nazov}
+              onZavri={() => setNahratie(null)}
+              onUlozene={() => {
+                setNahratie(null);
+                void nacitaj();
               }}
             />
           )}
@@ -347,7 +408,7 @@ function PalivoveKarty() {
                     rel="noreferrer"
                     className="mt-1 inline-block text-xs text-primary hover:underline"
                   >
-                    {t("Dokumentácia API")}
+                    {p.nahratie ? t("Web vydavateľa") : t("Dokumentácia API")}
                   </a>
                 </div>
               ))}
@@ -555,7 +616,7 @@ function FormularPripojenia({
           polia,
         },
       });
-      toast.success(t("Pripojenie funguje a je uložené"));
+      toast.success(meta?.nahratie ? t("Uložené") : t("Pripojenie funguje a je uložené"));
       onUlozene(r.id);
     } catch (e: any) {
       toast.error(e?.message ?? t("Uloženie zlyhalo"));
@@ -639,7 +700,8 @@ function FormularPripojenia({
             disabled={uklada}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            <Save className="h-4 w-4" /> {uklada ? t("Overujem…") : t("Overiť a uložiť")}
+            <Save className="h-4 w-4" />{" "}
+            {uklada ? t("Overujem…") : meta.nahratie ? t("Uložiť") : t("Overiť a uložiť")}
           </button>
           <button type="button" className={TLACIDLO} onClick={onZavri}>
             {t("Zrušiť")}

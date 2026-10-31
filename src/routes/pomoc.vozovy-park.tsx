@@ -194,6 +194,40 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "karta-up",
+    title: "Palivová karta Up Déjeuner",
+    body: (
+      <>
+        <p>
+          Shell kartu od Up Déjeuner vydáva a fakturuje Up. Up nemá verejné API, preto sa nákupy
+          nenačítajú samé — nahráte <strong>mesačný výpis transakcií</strong> (CSV alebo XLSX) alebo{" "}
+          <strong>faktúru v PDF</strong>. Výpis alebo faktúru nájdete v klientskej zóne Up, prípadne
+          vám ich Up pošle e-mailom.
+        </p>
+        <p>
+          V <Link to="/vozovy-park/palivove-karty">Palivových kartách</Link> pri Up Déjeuner
+          kliknite na <strong>Pripojiť</strong> — stačí názov, prípadne číslo zmluvy, žiadne heslá.
+          Potom tlačidlom <strong>Nahrať výpis</strong> vyberte súbor. Stĺpce výpisu (dátum, karta,
+          ŠPZ, pumpa, produkt, litre, suma bez DPH a s DPH, tachometer, číslo faktúry) Faktero
+          spozná samo; keď si nie je isté, ukáže stĺpce a priradíte ich sami. PDF faktúru prečíta
+          AI.
+        </p>
+        <p>
+          Pred uložením uvidíte <strong>náhľad</strong>: nákupy, litre, súčty, ku ktorým vozidlám
+          patria a čo je duplicitné. Ak sa súčet nákupov líši od sumy faktúry, rozdiel sa na faktúre
+          doplní dorovnávacím riadkom. Po uložení vznikne jedna prijatá faktúra od Up s rozpisom
+          nákupov, tankovania k vozidlám a bločky z pumpy sa označia rovnako ako pri karte Shell.
+        </p>
+        <p>
+          Ten istý výpis môžete nahrať aj viackrát — nič sa nezdvojí. Nákup, ktorý už je nahratý z
+          iného súboru (napríklad najprv výpis v CSV a potom faktúra v PDF), sa preskočí, a faktúra,
+          ktorú od Up už vo Fakteri máte, sa len prepojí. Kartu bez ŠPZ priradíte k vozidlu v časti{" "}
+          <strong>Karty a vozidlá</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "dokumenty",
     title: "Dokumenty k vozidlu",
     body: (

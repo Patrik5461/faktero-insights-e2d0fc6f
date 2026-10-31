@@ -14,6 +14,7 @@
        podľa dňa a sumy a označí ako možná duplicita — nemaže sa nič.
 */
 
+import { poskytovatel as metaPoskytovatela } from "./register";
 import type { KartaFaktura, KartaTransakcia } from "./typy";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -241,6 +242,7 @@ export type KontextFaktury = {
   krajinaFirmy: string;
   poskytovatel: string;
   dodavatelIco?: string | null;
+  dodavatelDic?: string | null;
   vozidla: Vozidlo[];
   dnes: string;
 };
@@ -414,6 +416,7 @@ export function prijataZFaktury(
     supplier_name: f.dodavatel.nazov || "Shell",
     supplier_ico: String(k.dodavatelIco ?? "").replace(/\D/g, "") || null,
     supplier_country: f.dodavatel.krajina?.toUpperCase() || null,
+    ...(k.dodavatelDic ? { supplier_dic: String(k.dodavatelDic).trim() } : {}),
     invoice_number: f.cislo,
     issue_date: f.datum,
     delivery_date: dodanie > f.datum ? f.datum : dodanie,
@@ -430,7 +433,7 @@ export function prijataZFaktury(
     vehicle_id: jedno,
     payment_method: "prevod",
     odpocet: true,
-    note: `Palivová karta ${k.poskytovatel === "shell" ? "Shell" : k.poskytovatel} — nákupov: ${transakcie.length}.`,
+    note: `Palivová karta ${metaPoskytovatela(k.poskytovatel)?.nazov ?? k.poskytovatel} — nákupov: ${transakcie.length}.`,
     // Upozornenia idú do internej poznámky; `na_kontrolu_at` patrí eFaktúram (text o Peppole).
     int_poznamka: poznamky.length
       ? `${naKontrolu ? "Skontrolovať: " : ""}${poznamky.join("\n")}`.slice(0, 4000)
