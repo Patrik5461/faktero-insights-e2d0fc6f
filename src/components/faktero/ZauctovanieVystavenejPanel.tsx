@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,7 +16,8 @@ import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KodPohody } from "./KodPohody";
 import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
-import type { Navrhy } from "./ZauctovaniePanel";
+import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
+import { NapovedaPredkontacii, SekciaZauctovania } from "./DetailDokladu";
 import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
@@ -374,15 +375,11 @@ export function ZauctovanieVystavenejPanel({
         </div>
       )}
 
-      <p className="mt-2 text-xs text-muted-foreground">
-        {t("Prázdne pole = predvolené z")}{" "}
-        <Link to="/uctovnictvo/predkontacie" className="underline">
-          {t("nastavení predkontácií")}
-        </Link>
+      <NapovedaPredkontacii>
         {t(
           ". Do Pohody ide faktúra konektorom alebo mesačným balíkom; hneď ju stiahnete tlačidlom.",
         )}
-      </p>
+      </NapovedaPredkontacii>
       <NastavitPredvolene
         companyId={inv.company_id}
         kluc={
@@ -640,16 +637,15 @@ export function ZauctovanieVystavenejPanel({
     );
   }
 
+  /*
+    Klasické rozloženie — tá istá karta a to isté poradie polí ako pri
+    nespracovanom doklade (SekciaZauctovania + PoliaZauctovania): predkontácia,
+    členenie DPH, KV DPH, stredisko, činnosť, interná poznámka.
+  */
   return (
-    <div
-      id="zauctovanie"
-      className="scroll-mt-24 rounded-xl border border-border bg-card p-5 text-sm transition-shadow"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-          <BookCheck className="h-3.5 w-3.5" /> {t("Zaúčtovanie")}
-        </div>
-        {vPohode ? (
+    <SekciaZauctovania
+      stav={
+        vPohode ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
             {vPohode.program
               ? t("V účtovníctve ({program}) od {kedy}", {
@@ -667,8 +663,9 @@ export function ZauctovanieVystavenejPanel({
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {t("Nezaúčtovaná")}
           </span>
-        )}
-      </div>
+        )
+      }
+    >
       <HistoriaOdovzdania
         row={inv}
         druh="faktura"
@@ -727,41 +724,24 @@ export function ZauctovanieVystavenejPanel({
         </>
       ) : (
         <>
-          <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
-            <label className="block">
-              <span className="text-sm font-medium text-foreground">
-                {t(de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)")}
-              </span>
-              {kodPredkontacia(vstup)}
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-foreground">{t("Členenie DPH")}</span>
-              {kodClenenie(vstup)}
-            </label>
-            {de ? null : (
-              <label className="block">
-                <span className="text-sm font-medium text-foreground">{t("Členenie KV DPH")}</span>
-                {kodKv(vstup)}
-              </label>
-            )}
-          </div>
+          <PoliaZauctovania
+            navrhy={navrhy}
+            hodnoty={de ? { ...h, kv: undefined } : h}
+            setHodnoty={(x) =>
+              setH({
+                predkontacia: x.predkontacia,
+                clenenie: x.clenenie,
+                kv: x.kv ?? h.kv,
+                stredisko: x.stredisko ?? "",
+                cinnost: x.cinnost ?? "",
+                intPoznamka: x.intPoznamka ?? "",
+              })
+            }
+            kvMoznosti={KV_VYDANE}
+            popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
+            priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
+          />
           {vyberPravidla}
-
-          <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
-            {poleStredisko}
-            {poleCinnost}
-            <label className="block">
-              <span className="text-sm font-medium text-foreground">
-                {t("Interná poznámka (do Pohody)")}
-              </span>
-              <input
-                value={h.intPoznamka}
-                onChange={(e) => setH({ ...h, intPoznamka: e.target.value })}
-                maxLength={240}
-                className={vstup}
-              />
-            </label>
-          </div>
 
           {poPolozkachANapoveda}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -809,6 +789,6 @@ export function ZauctovanieVystavenejPanel({
           </div>
         </>
       )}
-    </div>
+    </SekciaZauctovania>
   );
 }

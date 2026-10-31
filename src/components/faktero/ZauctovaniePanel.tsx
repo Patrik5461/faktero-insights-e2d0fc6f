@@ -45,6 +45,7 @@ import {
   useVarovanieVratenia,
 } from "./OdovzdanieDokladu";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
+import { NapovedaPredkontacii, SekciaZauctovania } from "./DetailDokladu";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
@@ -93,8 +94,17 @@ type Hodnoty = {
   intPoznamka?: string;
 };
 
-/** Spoločné polia zaúčtovania — na detaile aj v hromadnom okne. */
-export function PoliaZauctovania({
+/**
+ * Hodnoty pre PoliaZauctovania. Kategória nákladu je len pri nákladových
+ * dokladoch — vystavená faktúra ju nemá (pole sa vtedy nekreslí).
+ */
+type HodnotyPoli = Omit<Hodnoty, "kategoria"> & { kategoria?: string };
+
+/**
+ * Spoločné polia zaúčtovania — na detaile aj v hromadnom okne. Rovnaké poradie
+ * a vzhľad pri nespracovanom doklade, prijatej aj vystavenej faktúre.
+ */
+export function PoliaZauctovania<H extends HodnotyPoli>({
   navrhy,
   hodnoty,
   setHodnoty,
@@ -103,10 +113,13 @@ export function PoliaZauctovania({
   oznacenia,
   siroke = true,
   doklad,
+  kvMoznosti = KV_PRIJATE,
+  popisPredkontacie = "Predkontácia (Pohoda)",
+  priklady,
 }: {
   navrhy: Navrhy | null;
-  hodnoty: Hodnoty;
-  setHodnoty: (h: Hodnoty) => void;
+  hodnoty: H;
+  setHodnoty: (h: H) => void;
   /** Ktorá sadzba členenia KV sa dá automaticky — ukáže sa v ponuke. */
   kvAuto?: string;
   hromadne?: boolean;
@@ -119,6 +132,12 @@ export function PoliaZauctovania({
   siroke?: boolean;
   /** Typ dokladu a platby — účtovné položky pre ne sa ponúknu prvé. */
   doklad?: { typ?: TypDokladuPolozky | null; platba?: string | null };
+  /** Ponuka členení KV DPH — pri vystavenej faktúre A1, A2, C1, D1, D2. */
+  kvMoznosti?: readonly { kod: string; nazov: string }[];
+  /** Popis poľa predkontácie (kľúč pre t()) — napr. účet DATEV pri nemeckej firme. */
+  popisPredkontacie?: string;
+  /** Príklady kódov v prázdnom poli, keď firma nemá predvolené. */
+  priklady?: { predkontacia?: string; clenenie?: string };
 }) {
   const { t } = useT();
   const predkontacie = doklad
@@ -130,13 +149,15 @@ export function PoliaZauctovania({
     ? "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
     : "mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
   const popis = siroke ? "text-sm font-medium text-foreground" : "text-xs text-muted-foreground";
-  const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
+  const zKategorie = hodnoty.kategoria ? navrhy?.podlaKategorie?.[hodnoty.kategoria] : undefined;
+  const prikladPredkontacie = priklady?.predkontacia ?? t("napr. 1Fp");
+  const prikladClenenia = priklady?.clenenie ?? t("napr. PD");
   if (siroke) {
     return (
       <div className="max-w-2xl space-y-3 [&_label]:min-w-0">
         <label className="block">
           <span className={popis}>
-            {t("Predkontácia (Pohoda)")}
+            {t(popisPredkontacie)}
             {stitok("predkontacia")}
           </span>
           <KodPohody
@@ -146,7 +167,9 @@ export function PoliaZauctovania({
             placeholder={
               hromadne
                 ? t("nemeniť")
-                : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? t("napr. 1Fp"))
+                : (zKategorie?.predkontacia ??
+                  navrhy?.predvolenaPredkontacia ??
+                  prikladPredkontacie)
             }
             onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
             moznosti={predkontacie}
@@ -166,7 +189,7 @@ export function PoliaZauctovania({
               placeholder={
                 hromadne
                   ? t("nemeniť")
-                  : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? t("napr. PD"))
+                  : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? prikladClenenia)
               }
               onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
               moznosti={navrhy?.clenenia ?? []}
@@ -189,7 +212,7 @@ export function PoliaZauctovania({
                   {hromadne ? t("nemeniť") : `${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}
                 </option>
                 {hromadne && <option value="auto">{t("automaticky")}</option>}
-                {KV_PRIJATE.map((k) => (
+                {kvMoznosti.map((k) => (
                   <option key={k.kod} value={k.kod}>
                     {t(k.nazov)}
                   </option>
@@ -199,24 +222,26 @@ export function PoliaZauctovania({
           )}
         </div>
         <div className="grid grid-cols-1 gap-3">
-          <label className="block">
-            <span className={popis}>
-              {t("Kategória nákladu")}
-              {stitok("kategoria")}
-            </span>
-            <select
-              value={hodnoty.kategoria}
-              onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
-              className={vstup}
-            >
-              <option value="">{hromadne ? t("nemeniť") : "—"}</option>
-              {KATEGORIE_VYDAVKOV.map((k) => (
-                <option key={k.kod} value={k.kod}>
-                  {t(k.nazov)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {hodnoty.kategoria !== undefined && (
+            <label className="block">
+              <span className={popis}>
+                {t("Kategória nákladu")}
+                {stitok("kategoria")}
+              </span>
+              <select
+                value={hodnoty.kategoria}
+                onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
+                className={vstup}
+              >
+                <option value="">{hromadne ? t("nemeniť") : "—"}</option>
+                {KATEGORIE_VYDAVKOV.map((k) => (
+                  <option key={k.kod} value={k.kod}>
+                    {t(k.nazov)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {hodnoty.stredisko !== undefined && (
             <label className="block">
               <span className={popis}>{t("Stredisko")}</span>
@@ -282,7 +307,7 @@ export function PoliaZauctovania({
     >
       <label className="block">
         <span className={popis}>
-          {t("Predkontácia (Pohoda)")}
+          {t(popisPredkontacie)}
           {stitok("predkontacia")}
         </span>
         <KodPohody
@@ -292,7 +317,7 @@ export function PoliaZauctovania({
           placeholder={
             hromadne
               ? t("nemeniť")
-              : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? t("napr. 1Fp"))
+              : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? prikladPredkontacie)
           }
           onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
           moznosti={predkontacie}
@@ -311,7 +336,7 @@ export function PoliaZauctovania({
           placeholder={
             hromadne
               ? t("nemeniť")
-              : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? t("napr. PD"))
+              : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? prikladClenenia)
           }
           onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
           moznosti={navrhy?.clenenia ?? []}
@@ -319,24 +344,26 @@ export function PoliaZauctovania({
           className={vstup}
         />
       </label>
-      <label className="block">
-        <span className={popis}>
-          {t("Kategória nákladu")}
-          {stitok("kategoria")}
-        </span>
-        <select
-          value={hodnoty.kategoria}
-          onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
-          className={vstup}
-        >
-          <option value="">{hromadne ? t("nemeniť") : "—"}</option>
-          {KATEGORIE_VYDAVKOV.map((k) => (
-            <option key={k.kod} value={k.kod}>
-              {t(k.nazov)}
-            </option>
-          ))}
-        </select>
-      </label>
+      {hodnoty.kategoria !== undefined && (
+        <label className="block">
+          <span className={popis}>
+            {t("Kategória nákladu")}
+            {stitok("kategoria")}
+          </span>
+          <select
+            value={hodnoty.kategoria}
+            onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
+            className={vstup}
+          >
+            <option value="">{hromadne ? t("nemeniť") : "—"}</option>
+            {KATEGORIE_VYDAVKOV.map((k) => (
+              <option key={k.kod} value={k.kod}>
+                {t(k.nazov)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {hodnoty.kv !== undefined && (
         <label className="block">
           <span className={popis}>
@@ -352,7 +379,7 @@ export function PoliaZauctovania({
               {hromadne ? t("nemeniť") : `${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}
             </option>
             {hromadne && <option value="auto">{t("automaticky")}</option>}
-            {KV_PRIJATE.map((k) => (
+            {kvMoznosti.map((k) => (
               <option key={k.kod} value={k.kod}>
                 {t(k.nazov)}
               </option>
@@ -1115,16 +1142,11 @@ export function ZauctovaniePanel({
     );
   }
 
+  // Tá istá karta ako pri nespracovanom doklade a vystavenej faktúre (DetailDokladu.tsx).
   return (
-    <div
-      id="zauctovanie"
-      className="scroll-mt-24 rounded-xl border border-border bg-card p-5 text-sm transition-shadow"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-          <BookCheck className="h-3.5 w-3.5" /> {t("Zaúčtovanie")}
-        </div>
-        {odovzdana ? (
+    <SekciaZauctovania
+      stav={
+        odovzdana ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
             {program
               ? t("V účtovníctve ({program}) od {kedy}", {
@@ -1141,8 +1163,9 @@ export function ZauctovaniePanel({
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {t("Nezaúčtovaná")}
           </span>
-        )}
-      </div>
+        )
+      }
+    >
       <HistoriaOdovzdania row={row} druh="prijata" onZmena={onZmena} />
       <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
 
@@ -1232,11 +1255,7 @@ export function ZauctovaniePanel({
               }
               onPredloha={(p) => setH(uplatniPredlohu(h, p))}
             />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("Prázdne pole = predvolené z")}{" "}
-              <Link to="/uctovnictvo/predkontacie" className="underline">
-                {t("nastavení predkontácií")}
-              </Link>
+            <NapovedaPredkontacii>
               {row.pravidlo_id ? ` · ${t("doplnené pravidlom účtovania")}` : ""}.{" "}
               {navrhy?.maCiselnik === false ? (
                 <>
@@ -1249,7 +1268,7 @@ export function ZauctovaniePanel({
               ) : (
                 t("Kódy musia existovať v Pohode.")
               )}
-            </p>
+            </NapovedaPredkontacii>
             <NastavitPredvolene
               companyId={row.company_id}
               kluc="prijata"
@@ -1332,6 +1351,6 @@ export function ZauctovaniePanel({
           </>
         )}
       </div>
-    </div>
+    </SekciaZauctovania>
   );
 }

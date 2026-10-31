@@ -18,11 +18,16 @@ import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ExternalLink, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Plus, Trash2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { NahladSVyberom, poleZPrvku, zablikajPole } from "@/components/faktero/NahladSVyberom";
-import { PrepinacStranyNahladu, RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
+import {
+  KartaNahladu,
+  NapovedaPredkontacii,
+  RozlozenieDetailu,
+  SekciaZauctovania,
+} from "@/components/faktero/DetailDokladu";
 import { poliaPreDruh, zapisDoUdajov, type KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import {
@@ -541,15 +546,18 @@ function Detail() {
         action={prepinac}
       />
       <PageBody>
-        <RozlozenieSNahladom
-          className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
-          stlpceVlavo=""
-          stlpceVpravo=""
+        <RozlozenieDetailu
           nahlad={
           /* Doklad */
-          <div className="min-w-0 rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-auto">
+          <KartaNahladu
+            nazov={nadpis}
+            odkaz={
+              d.subor.url
+                ? { url: d.subor.url, text: t("Otvoriť {nazov}", { nazov: d.subor.nazov ?? t("súbor") }) }
+                : null
+            }
+          >
             {d.subor.url ? (
-              <>
                 <NahladSVyberom
                   dokladId={d.id}
                   subor={d.subor}
@@ -565,23 +573,10 @@ function Detail() {
                   zvyraznenie={{ ...zvyraznenie, aktivne: hoverPola.pole ?? vyberPole }}
                   onPrepniZvyraznenie={prepniZvyraznenie}
                 />
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <a
-                    href={d.subor.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />{" "}
-                    {t("Otvoriť {nazov}", { nazov: d.subor.nazov ?? t("súbor") })}
-                  </a>
-                  <PrepinacStranyNahladu />
-                </div>
-              </>
             ) : (
               <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>
             )}
-          </div>
+          </KartaNahladu>
           }
         >
           {/* Údaje — kliknutie do poľa zapne výber z náhľadu */}
@@ -633,8 +628,7 @@ function Detail() {
 
             {/* Poradie podľa dôležitosti: zaúčtovanie hneď za druhom, platobné údaje až na konci. */}
             {druh && druh !== "ostatny" ? (
-              <section className="rounded-xl border border-border bg-card p-4">
-                <h3 className="mb-3 text-base font-semibold">{t("Zaúčtovanie")}</h3>
+              <SekciaZauctovania>
                 <PoliaZauctovania
                   siroke
                   navrhy={navrhy}
@@ -682,14 +676,8 @@ function Detail() {
                 />
                 <NauceneZDodavatela u={u} />
                 <NavrhAiNespracovaneho u={u} setU={setU} stav={navrhAi?.stav} />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t("Prázdne pole = predvolené z")}{" "}
-                  <Link to="/uctovnictvo/predkontacie" className="underline">
-                    {t("nastavení predkontácií")}
-                  </Link>
-                  .
-                </p>
-              </section>
+                <NapovedaPredkontacii />
+              </SekciaZauctovania>
             ) : null}
 
             {!druh || druh === "ostatny" ? sekciaDodavatela : null}
@@ -968,7 +956,7 @@ function Detail() {
               </button>
             </div>
           </div>
-        </RozlozenieSNahladom>
+        </RozlozenieDetailu>
         <div className="mt-6 max-w-xl">
           <SchvalovaniePanel companyId={d.companyId} agenda="nespracovany" id={d.id} />
         </div>

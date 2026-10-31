@@ -6,6 +6,7 @@ import {
 } from "@/components/faktero/RozlozenieSNahladom";
 import { useStranaNahladu } from "@/hooks/useStranaNahladu";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
+import { KartaNahladu, RozlozenieDetailu } from "@/components/faktero/DetailDokladu";
 import { useT } from "@/lib/i18n/useT";
 
 /** Súbor na náhľad — PDF kreslí pdf.js, obrázok (sken bločku, fotka) ide cez `<img>`. */
@@ -260,8 +261,13 @@ export function useNahladVDetaile() {
 }
 
 /**
- * Detail dokladu s PDF stále vedľa údajov (len na širokej obrazovke; strana
- * podľa `useStranaNahladu`, predvolene vľavo). Bez náhľadu vráti obsah tak, ako bol.
+ * Detail dokladu s PDF stále vedľa údajov — rovnaké rozloženie ako
+ * nespracovaný doklad (`DetailDokladu.tsx`): náhľad na strane podľa
+ * `useStranaNahladu` (predvolene vľavo), údaje na druhej. Bez náhľadu vráti
+ * obsah tak, ako bol.
+ *
+ * `naMobile` — na úzkej obrazovke je náhľad nad/pod údajmi (podľa strany).
+ * Bez neho sa tam nekreslí (stránka má vtedy náhľad po svojom).
  */
 export function DetailSNahladom({
   zobrazit,
@@ -269,6 +275,7 @@ export function DetailSNahladom({
   nazov,
   onSkryt,
   akcie,
+  naMobile,
   children,
 }: {
   zobrazit: boolean;
@@ -277,55 +284,32 @@ export function DetailSNahladom({
   nazov?: string | null;
   onSkryt: () => void;
   akcie?: ReactNode;
+  naMobile?: boolean;
   children: ReactNode;
 }) {
   const { t } = useT();
   if (!zobrazit) return <>{children}</>;
   return (
-    <RozlozenieSNahladom
-      className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-6"
-      stlpceVlavo=""
-      stlpceVpravo=""
+    <RozlozenieDetailu
       nahlad={
-        <aside
-          aria-label={t("Náhľad dokladu")}
-          className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
-        >
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
-            <span className="min-w-0 flex-1 truncate font-medium">
-              {nazov ?? t("Náhľad dokladu")}
-            </span>
-            {akcie}
-            <PrepinacStranyNahladu />
-            <button
-              type="button"
-              aria-label={t("Skryť náhľad")}
-              title={t("Skryť náhľad")}
-              onClick={onSkryt}
-              className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
-            {subor === undefined ? (
-              <div className="flex justify-center p-6 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            ) : subor === null ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                {t("K dokladu nie je súbor na náhľad.")}
-              </p>
-            ) : subor.obrazok ? (
-              <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
-            ) : (
-              <NahladPdf key={subor.url} url={subor.url} />
-            )}
-          </div>
-        </aside>
+        <KartaNahladu nazov={nazov} akcie={akcie} onSkryt={onSkryt} lenSiroka={!naMobile}>
+          {subor === undefined ? (
+            <div className="flex justify-center p-6 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : subor === null ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">
+              {t("K dokladu nie je súbor na náhľad.")}
+            </p>
+          ) : subor.obrazok ? (
+            <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
+          ) : (
+            <NahladPdf key={subor.url} url={subor.url} />
+          )}
+        </KartaNahladu>
       }
     >
       <div className="min-w-0">{children}</div>
-    </RozlozenieSNahladom>
+    </RozlozenieDetailu>
   );
 }

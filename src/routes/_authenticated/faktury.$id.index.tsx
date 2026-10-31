@@ -7,7 +7,7 @@ import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
-import { UdajePreUctovnika, useSirokaPreNahlad, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
+import { UdajePreUctovnika, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
 import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
 import { useDizajn } from "@/hooks/useDizajn";
 import { VystavenaDetailKompaktna } from "@/components/faktero/VystavenaDetailKompaktna";
@@ -152,7 +152,6 @@ function InvoiceDetail() {
   const [nahladUrl, setNahladUrl] = useState<string | null>(null);
   // PDF stále vľavo vedľa údajov — pri účtovaní ho netreba otvárať zvlášť.
   const nahladDetail = useNahladVDetaile();
-  const sirokaPreNahlad = useSirokaPreNahlad();
   // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
   const kompaktne = useDizajn() === "kompaktny";
   /* Číslo faktúry v Pohode — kompaktná hlavička ho ukazuje ako interné číslo. */
@@ -786,7 +785,8 @@ function InvoiceDetail() {
   // Po úprave faktúry (nové PDF) sa náhľad načíta znova.
   const verziaPdf = inv ? `${inv.id}|${inv.pdf_url ?? ""}|${inv.updated_at ?? ""}` : "";
   useEffect(() => {
-    if (!verziaPdf || !nahladDetail.zapnuty || !nahladDetail.siroka()) return;
+    // Náhľad je aj na mobile (nad/pod údajmi), preto sa PDF načíta pri každej šírke.
+    if (!verziaPdf || !nahladDetail.zapnuty) return;
     let zive = true;
     odkazNaPdf()
       .then((u) => zive && setPdfVedla(u ? { url: u } : null))
@@ -1030,8 +1030,11 @@ function InvoiceDetail() {
   }
 
 
-  /* PDF vľavo a vpravo jeden stĺpec — len keď je náhľad zapnutý a obrazovka široká. */
-  const pdfRozlozenie = nahladDetail.zapnuty && sirokaPreNahlad;
+  /*
+    PDF na jednej strane a údaje na druhej (ako nespracovaný doklad) — vždy,
+    keď je náhľad zapnutý; na úzkej obrazovke je PDF nad/pod údajmi.
+  */
+  const pdfRozlozenie = nahladDetail.zapnuty;
   const jeZaloha = maZuctovanuZalohu(inv.advance_amount);
   const udajeUctovnika: UdajeUctovnika = {
     cislo: inv.invoice_number,
@@ -2055,20 +2058,25 @@ function InvoiceDetail() {
           subor={pdfVedla}
           nazov={inv.invoice_number}
           onSkryt={() => nahladDetail.prepni(false)}
+          naMobile
         >
         {kompaktnyDetail ? (
           kompaktnyDetail
         ) : pdfRozlozenie ? (
+          /*
+            Ako nespracovaný doklad: navrchu údaje, hneď pod nimi zaúčtovanie,
+            potom platba a záloha (daňový doklad k platbe, odpočet), zvyšok nižšie.
+          */
           <div className="min-w-0 space-y-4">
             <UdajePreUctovnika u={udajeUctovnika} />
+            {kartaZauctovanie}
             {kartaPlatba(true)}
+            {kartyZalohySklad}
             {kartaZasielkovna}
             {kartyOpravaSchvalovanie}
             {kartaStitky}
             {kartaPrilohy}
             {kartaKomentare}
-            {kartyZalohySklad}
-            {kartaZauctovanie}
             <ZbaleneK nadpis="Údaje faktúry">
               <div className="space-y-4">
                 {kartaUvod}
