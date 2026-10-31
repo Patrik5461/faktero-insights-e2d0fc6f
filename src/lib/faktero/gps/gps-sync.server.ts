@@ -290,7 +290,10 @@ export async function synchronizujPripojenie(
         teraz,
       );
       if (!skupina) break;
-      const { okno, ids } = skupina;
+      // Poskytovateľ, ktorý sa pýta po jednom vozidle, dostane naraz len dávku — veľký
+      // vozový park by inak jedným volaním adaptéra prešvihol strop 25 s (nginx 30 s).
+      const { okno } = skupina;
+      const ids = skupina.ids.slice(0, adapter.vozidielNaVolanie ?? skupina.ids.length);
       const vSkupine = sparovane.filter((vz: any) => ids.includes(vz.id));
       const podlaExt = new Map<string, any>(vSkupine.map((vz: any) => [String(vz.externe_id), vz]));
       const jazdy: GpsJazda[] = await adapter.jazdy(p, okno.od, okno.do_, [...podlaExt.keys()]);

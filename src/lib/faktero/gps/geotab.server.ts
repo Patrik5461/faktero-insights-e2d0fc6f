@@ -274,6 +274,8 @@ export function prevedTankovania(f: GeotabFuel[]): GpsTankovanie[] {
 
 export const adapter: GpsAdapter = {
   id: "geotab",
+  // Pýta sa po vozidlách (1 volanie Trip na vozidlo) — dávka sa zmestí do behu.
+  vozidielNaVolanie: 10,
   nazov: "Geotab",
   web: "https://www.geotab.com",
   dokumentacia: "https://developers.geotab.com/myGeotab/guides/concepts/",

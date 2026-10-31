@@ -94,6 +94,13 @@ function chybaZFaultu(text: string, p: Record<string, string>): GpsChyba {
       "limit",
       "Webdispečink zablokoval prístup k API (prekročený limit volaní). Treba požiadať prevádzkovateľa o odblokovanie.",
     );
+  // Naostro 31. 10. 2026: neexistujúci kód firmy aj firma bez objednaného API vrátia
+  // fault „API package is not activated“ — po anglicky by používateľovi nič nepovedal.
+  if (/package\s+is\s+not\s+activated|not\s+activated/i.test(text))
+    return new GpsChyba(
+      "prihlasenie",
+      "Webdispečink: pre tento kód firmy nie je aktivovaný balík API. Skontrolujte kód firmy, prípadne si API objednajte u Webdispečinku.",
+    );
   if (
     /log(ged)?\s*in|login|password|heslo|přihl|prihl|unauthori[sz]ed|autentiz|authenti/i.test(text)
   )

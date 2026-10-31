@@ -10,6 +10,7 @@ import {
   tankovanieNaRiadok,
   trebaSynchronizovat,
   zlucPrihlasenie,
+  uveritelnaSpotreba,
 } from "./gps-logika";
 import type { GpsJazda, GpsPole } from "./typy";
 
@@ -170,6 +171,29 @@ describe("jazdaNaTrip", () => {
       doLng: 17.2,
     });
   });
+  it("nezmyselná spotreba sa neuloží (GPS Dozor DEMO posiela litre = km)", () => {
+    expect(uveritelnaSpotreba(59.12, 59.12)).toBeNull(); // 100 l/100 km
+    expect(uveritelnaSpotreba(0.12, 118)).toBeNull(); // príklad z dokumentácie Dozoru
+    expect(uveritelnaSpotreba(3.5, 43.29)).toBe(3.5);
+    expect(uveritelnaSpotreba(30, 100)).toBe(30); // nákladné auto
+    expect(uveritelnaSpotreba(0.2, 0.8)).toBe(0.2); // krátka jazda
+    expect(uveritelnaSpotreba(null, 10)).toBeNull();
+    const r = jazdaNaTrip({ ...JAZDA, km: 59.12, spotrebaL: 59.12 }, CTX) as any;
+    expect(r.riadok.fuel_consumption).toBeNull();
+  });
+  it("deň jazdy a tankovania podľa Bratislavy, nie UTC", () => {
+    // 31. 10. 23:30 UTC = 1. 11. 00:30 v Bratislave → patrí do novembra
+    const r = jazdaNaTrip(
+      { ...JAZDA, zaciatok: "2026-10-31T23:30:00Z", koniec: "2026-11-01T00:10:00Z" },
+      CTX,
+    ) as any;
+    expect(r.riadok.trip_date).toBe("2026-11-01");
+    const tk = tankovanieNaRiadok(
+      { externeId: "t1", cas: "2026-06-30T22:15:00Z", litre: 40 },
+      { companyId: "c1", vehicleId: "v1", poskytovatel: "x", pripojenieId: "p1" },
+    );
+    expect(tk?.fuel_date).toBe("2026-07-01");
+  });
   it("súkromná jazda a vlastný účel", () => {
     const r = jazdaNaTrip({ ...JAZDA, sukromna: true }, CTX) as any;
     expect(r.riadok.classification).toBe("private");
@@ -248,6 +272,26 @@ describe("prihlasovacie údaje", () => {
       heslo: "s",
       server: "",
     });
+  });
+  it("po zmene adresy servera sa uložené heslo nepoužije", () => {
+    const ulozene = { login: "jan", heslo: "tajne", server: "https://gps.firma.sk" };
+    // rovnaká adresa (formulár ju predvyplní) → heslo ostáva
+    expect(
+      zlucPrihlasenie(POLIA, { login: "jan", heslo: "", server: "https://gps.firma.sk" }, ulozene)
+        .heslo,
+    ).toBe("tajne");
+    // iná adresa → heslo treba zadať znova, inak by odišlo na cudzí server
+    expect(
+      zlucPrihlasenie(POLIA, { login: "jan", heslo: "", server: "https://zly.example" }, ulozene)
+        .heslo,
+    ).toBe("");
+    expect(
+      zlucPrihlasenie(
+        POLIA,
+        { login: "jan", heslo: "nove", server: "https://zly.example" },
+        ulozene,
+      ).heslo,
+    ).toBe("nove");
   });
   it("chýbajúce povinné polia", () => {
     expect(chybajucePolia(POLIA, { login: "a" })).toEqual(["Heslo"]);

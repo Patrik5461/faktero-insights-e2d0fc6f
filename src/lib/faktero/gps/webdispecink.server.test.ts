@@ -160,6 +160,13 @@ describe("test (_login)", () => {
     await expect(adapter.test(P)).rejects.toMatchObject({ druh: "limit" });
   });
 
+  it("API package is not activated → prihlásenie s ľudskou hláškou (naostro so zlým kódom firmy)", async () => {
+    podvrhni({ _login: fault("API package is not activated") }, 500);
+    const e = await adapter.test(P).catch((x) => x);
+    expect(e).toMatchObject({ druh: "prihlasenie" });
+    expect(e.message).toMatch(/balík API/);
+  });
+
   it("výpadok siete → siet", async () => {
     vi.stubGlobal(
       "fetch",

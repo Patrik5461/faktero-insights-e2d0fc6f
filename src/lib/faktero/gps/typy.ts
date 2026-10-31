@@ -61,6 +61,12 @@ export interface GpsAdapter {
   web: string;
   dokumentacia: string;
   polia: GpsPole[];
+  /**
+   * Koľko vozidiel smie ísť do jedného volania `jazdy` — pre API, ktoré sa pýtajú
+   * po vozidlách (inak by prvé stiahnutie veľkej flotily trvalo dlhšie ako beh).
+   * Bez hodnoty idú všetky vozidlá s rovnakým oknom naraz (Webfleet: 1 volanie/min).
+   */
+  vozidielNaVolanie?: number;
   /** Overí prihlásenie; pri chybe hodí GpsChyba s ľudskou hláškou. */
   test(p: Record<string, string>): Promise<void>;
   vozidla(p: Record<string, string>): Promise<GpsVozidlo[]>;

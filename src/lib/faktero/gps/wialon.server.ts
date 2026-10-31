@@ -234,6 +234,8 @@ export function prevedJazdy(jednotka: string, trips: WialonTrip[]): GpsJazda[] {
 
 export const adapter: GpsAdapter = {
   id: "wialon",
+  // Pýta sa po vozidlách (3 volania na vozidlo) — dávka sa zmestí do behu.
+  vozidielNaVolanie: 5,
   nazov: "Wialon",
   web: "https://wialon.com",
   dokumentacia: "https://help.wialon.com/en/api/user-guide/introduction",

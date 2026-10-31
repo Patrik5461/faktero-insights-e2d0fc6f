@@ -177,6 +177,8 @@ type DozorVozidlo = { Code: string; Name?: string; SPZ?: string; Odometer?: numb
 
 export const adapter: GpsAdapter = {
   id: "gpsdozor",
+  // Pýta sa po vozidlách (pri prvom stiahnutí 2 volania na vozidlo, okno má najviac 29 dní) — dávka sa zmestí do behu.
+  vozidielNaVolanie: 8,
   nazov: "GPS Dozor",
   web: "https://www.gpsdozor.cz",
   dokumentacia: "https://www.gpsdozor.cz/documentation/api",

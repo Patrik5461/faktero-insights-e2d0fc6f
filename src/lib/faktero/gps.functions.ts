@@ -35,6 +35,16 @@ async function nacitajPripojenie(companyId: string, pripojenieId: string) {
   };
 }
 
+/**
+ * Novo spárované vozidlo stiahne jazdy najbližší beh cronu (do 15 minút), nie až
+ * ďalšiu noc — pripojenie po prvej synchronizácii už `neuplne` nemá a cron by ho
+ * cez deň vynechal, takže jazdy by prišli až po polnoci (ak človek neklikne).
+ */
+async function naRadeHned(db: any, pripojenieId: string | null | undefined) {
+  if (pripojenieId)
+    await db.from("gps_pripojenia").update({ neuplne: true }).eq("id", pripojenieId);
+}
+
 /** Zoznam podporovaných poskytovateľov (bez kódu adaptérov). */
 export const gpsKatalog = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -97,7 +107,7 @@ export const gpsStav = createServerFn({ method: "POST" })
       ids.length
         ? sb
             .from("gps_sync_logy")
-            .select("id, pripojenie_id, druh, stav, sprava, created_at")
+            .select("id, pripojenie_id, druh, stav, sprava, detail, created_at")
             .in("pripojenie_id", ids)
             .order("created_at", { ascending: false })
             .limit(30)
@@ -252,6 +262,7 @@ export const gpsUloz = createServerFn({ method: "POST" })
         "vozidla",
         "ok",
         `Vozidlá: ${r.vozidla}, nové: ${r.nove}.`,
+        { vozidla: r.vozidla, nove: r.nove },
       );
     } catch (e) {
       vozidlaChyba = spravaChyby(e, a, p).sprava;
@@ -340,7 +351,7 @@ export const gpsSparuj = createServerFn({ method: "POST" })
     const db = supabaseAdmin as any;
     const { data: vazba } = await db
       .from("gps_vozidla_vazby")
-      .select("id, vehicle_id")
+      .select("id, vehicle_id, pripojenie_id")
       .eq("id", data.vazbaId)
       .eq("company_id", data.companyId)
       .maybeSingle();
@@ -358,6 +369,7 @@ export const gpsSparuj = createServerFn({ method: "POST" })
     // Nové párovanie stiahne posledných 30 dní (duplicity stráži external_id).
     if (data.vehicleId && data.vehicleId !== vazba.vehicle_id) patch.jazdy_do = null;
     await db.from("gps_vozidla_vazby").update(patch).eq("id", data.vazbaId);
+    if (patch.jazdy_do === null) await naRadeHned(db, vazba.pripojenie_id);
     return { ok: true };
   });
 
@@ -373,7 +385,7 @@ export const gpsZalozVozidlo = createServerFn({ method: "POST" })
     const db = supabaseAdmin as any;
     const { data: vazba } = await db
       .from("gps_vozidla_vazby")
-      .select("id, externe_id, nazov, spz, vin, vehicle_id")
+      .select("id, externe_id, nazov, spz, vin, vehicle_id, pripojenie_id")
       .eq("id", data.vazbaId)
       .eq("company_id", data.companyId)
       .maybeSingle();
@@ -396,6 +408,7 @@ export const gpsZalozVozidlo = createServerFn({ method: "POST" })
       .from("gps_vozidla_vazby")
       .update({ vehicle_id: auto.id, jazdy_do: null })
       .eq("id", vazba.id);
+    await naRadeHned(db, vazba.pripojenie_id);
     return { ok: true, vehicleId: auto.id as string };
   });
 
