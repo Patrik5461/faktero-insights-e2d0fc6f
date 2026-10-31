@@ -4310,6 +4310,7 @@ export type Database = {
           external_id: string | null
           imported_at: string | null
           raw_provider_data: Json | null
+          odometer_km: number | null
         }
         Insert: {
           company_id: string
@@ -4326,6 +4327,7 @@ export type Database = {
           external_id?: string | null
           imported_at?: string | null
           raw_provider_data?: Json | null
+          odometer_km?: number | null
         }
         Update: {
           company_id?: string
@@ -4342,6 +4344,7 @@ export type Database = {
           external_id?: string | null
           imported_at?: string | null
           raw_provider_data?: Json | null
+          odometer_km?: number | null
         }
         Relationships: [
           {
@@ -12195,6 +12198,7 @@ export type Database = {
           updated_by: string | null
           created_at: string
           updated_at: string
+          obnova_zamok_do: string | null
         }
         Insert: {
           company_id: string
@@ -12214,6 +12218,7 @@ export type Database = {
           updated_by?: string | null
           created_at?: string
           updated_at?: string
+          obnova_zamok_do?: string | null
         }
         Update: {
           company_id?: string
@@ -12233,6 +12238,7 @@ export type Database = {
           updated_by?: string | null
           created_at?: string
           updated_at?: string
+          obnova_zamok_do?: string | null
         }
         Relationships: [
           {
@@ -12361,6 +12367,337 @@ export type Database = {
       }
 
 
+      palivove_karty_logy: {
+        Row: {
+          id: string
+          company_id: string
+          pripojenie_id: string
+          druh: string
+          stav: string
+          sprava: string | null
+          detail: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          pripojenie_id: string
+          druh: string
+          stav: string
+          sprava?: string | null
+          detail?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          pripojenie_id?: string
+          druh?: string
+          stav?: string
+          sprava?: string | null
+          detail?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "palivove_karty_logy_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_logy_pripojenie_id_fkey"
+            columns: ["pripojenie_id"]
+            isOneToOne: false
+            referencedRelation: "palivove_karty_pripojenia"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      palivove_karty_pripojenia: {
+        Row: {
+          id: string
+          company_id: string
+          poskytovatel: string
+          nazov: string
+          prihlasenie_sifrovane: string
+          prihlasenie_verejne: Json
+          rezim: string
+          aktivne: boolean
+          auto_sync: boolean
+          stav: string
+          posledna_sync_at: string | null
+          posledna_chyba: string | null
+          transakcie_do: string | null
+          faktury_do: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          poskytovatel: string
+          nazov?: string
+          prihlasenie_sifrovane: string
+          prihlasenie_verejne: Json
+          rezim?: string
+          aktivne?: boolean
+          auto_sync?: boolean
+          stav?: string
+          posledna_sync_at?: string | null
+          posledna_chyba?: string | null
+          transakcie_do?: string | null
+          faktury_do?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          poskytovatel?: string
+          nazov?: string
+          prihlasenie_sifrovane?: string
+          prihlasenie_verejne?: Json
+          rezim?: string
+          aktivne?: boolean
+          auto_sync?: boolean
+          stav?: string
+          posledna_sync_at?: string | null
+          posledna_chyba?: string | null
+          transakcie_do?: string | null
+          faktury_do?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "palivove_karty_pripojenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      palivove_karty_transakcie: {
+        Row: {
+          id: string
+          company_id: string
+          pripojenie_id: string
+          poskytovatel: string
+          externe_id: string
+          cas: string
+          datum: string
+          karta: string | null
+          spz: string | null
+          vodic: string | null
+          vehicle_id: string | null
+          produkt: string | null
+          produkt_kod: string | null
+          je_palivo: boolean
+          mnozstvo: number | null
+          jednotka: string | null
+          zaklad: number
+          dph: number
+          sadzba_dph: number | null
+          spolu: number
+          mena: string
+          krajina: string | null
+          krajina_dph: string | null
+          miesto: string | null
+          tachometer_km: number | null
+          faktura_cislo: string | null
+          faktura_datum: string | null
+          dobropis: boolean
+          purchase_invoice_id: string | null
+          fuel_record_id: string | null
+          blocek_id: string | null
+          surove: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          pripojenie_id: string
+          poskytovatel: string
+          externe_id: string
+          cas: string
+          datum: string
+          karta?: string | null
+          spz?: string | null
+          vodic?: string | null
+          vehicle_id?: string | null
+          produkt?: string | null
+          produkt_kod?: string | null
+          je_palivo?: boolean
+          mnozstvo?: number | null
+          jednotka?: string | null
+          zaklad?: number
+          dph?: number
+          sadzba_dph?: number | null
+          spolu?: number
+          mena?: string
+          krajina?: string | null
+          krajina_dph?: string | null
+          miesto?: string | null
+          tachometer_km?: number | null
+          faktura_cislo?: string | null
+          faktura_datum?: string | null
+          dobropis?: boolean
+          purchase_invoice_id?: string | null
+          fuel_record_id?: string | null
+          blocek_id?: string | null
+          surove?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          pripojenie_id?: string
+          poskytovatel?: string
+          externe_id?: string
+          cas?: string
+          datum?: string
+          karta?: string | null
+          spz?: string | null
+          vodic?: string | null
+          vehicle_id?: string | null
+          produkt?: string | null
+          produkt_kod?: string | null
+          je_palivo?: boolean
+          mnozstvo?: number | null
+          jednotka?: string | null
+          zaklad?: number
+          dph?: number
+          sadzba_dph?: number | null
+          spolu?: number
+          mena?: string
+          krajina?: string | null
+          krajina_dph?: string | null
+          miesto?: string | null
+          tachometer_km?: number | null
+          faktura_cislo?: string | null
+          faktura_datum?: string | null
+          dobropis?: boolean
+          purchase_invoice_id?: string | null
+          fuel_record_id?: string | null
+          blocek_id?: string | null
+          surove?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "palivove_karty_transakcie_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_transakcie_pripojenie_id_fkey"
+            columns: ["pripojenie_id"]
+            isOneToOne: false
+            referencedRelation: "palivove_karty_pripojenia"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_transakcie_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_transakcie_purchase_invoice_id_fkey"
+            columns: ["purchase_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_transakcie_fuel_record_id_fkey"
+            columns: ["fuel_record_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_transakcie_blocek_id_fkey"
+            columns: ["blocek_id"]
+            isOneToOne: false
+            referencedRelation: "expense_documents"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      palivove_karty_vazby: {
+        Row: {
+          id: string
+          company_id: string
+          pripojenie_id: string
+          karta: string
+          spz: string | null
+          vodic: string | null
+          vehicle_id: string | null
+          rucne: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          pripojenie_id: string
+          karta: string
+          spz?: string | null
+          vodic?: string | null
+          vehicle_id?: string | null
+          rucne?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          pripojenie_id?: string
+          karta?: string
+          spz?: string | null
+          vodic?: string | null
+          vehicle_id?: string | null
+          rucne?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "palivove_karty_vazby_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_vazby_pripojenie_id_fkey"
+            columns: ["pripojenie_id"]
+            isOneToOne: false
+            referencedRelation: "palivove_karty_pripojenia"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "palivove_karty_vazby_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {

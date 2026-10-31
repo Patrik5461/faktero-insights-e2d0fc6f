@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-30",
+ "vytvorene": "2026-10-31",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -1388,6 +1388,10 @@
     {
      "nadpis": "Náklady na vozidlo",
      "text": "<>\nPri bločku, prijatej faktúre aj v Nespracovaných dokladoch je pole\nVozidlo (ukáže sa, len keď má firma vo vozovom parku aspoň jedno auto).\nVyberte ho pri tankovaní, servise, umývaní alebo poistke.\nNa karte vozidla potom vidíte náklady za tento rok aj spolu bez DPH a\nposledné doklady s odkazom na ne.\nKeď má vozidlo odpočet DPH 50 % , doklad s ním sa rozúčtuje sám: polovica\nDPH sa odpočíta, druhá ide so základom do nákladu (v dani z príjmov je to nedaňový\nvýdavok). Takto ide do priznania DPH, kontrolného výkazu aj do exportu do Pohody, Omegy,\nMoney a ABRA Flexi. Vlastné rozúčtovanie dokladu, pravidlo účtovania alebo predkontácia s\npomerom majú prednosť. Kódy pre neodpočítateľnú časť sa berú z predkontácie s pomerom „DPH\n50/50“ v Predkontáciách (/uctovnictvo/predkontacie); bez nej ostane\npredkontácia dokladu s členením bez nároku na odpočet.\nDaň z príjmov je samostatná vec: kto nevedie knihu jázd, uplatní si PHM do výdavkov len\npaušálne 80 % — na to je predkontácia s pomerom „DPH 50/50 a vlastný podiel nákladu“ s\npodielom 80 %."
+    },
+    {
+     "nadpis": "Palivové karty (Shell)",
+     "text": "<>\nVo Vozovom parku → Palivové karty (/vozovy-park/palivove-karty) pripojíte\nkartu Shell. Od Shellu potrebujete prístup k B2B Mobility API (client ID a client secret,\nvydáva ich Shell na požiadanie) a payer number z faktúry. Pripojiť ju smie majiteľ alebo\nsprávca firmy; prístupové údaje sú uložené zašifrované a späť sa už neukážu.\nNákupy kartou sa načítajú každú noc aj tlačidlom Synchronizovať teraz\n(pri prvom pripojení za posledné 3 mesiace). Karta sa k vozidlu priradí sama podľa ŠPZ,\nktorú má Shell pri karte; kartu vodiča priradíte ručne. Tankovanie sa zapíše k vozidlu aj\nso stavom tachometra, ktorý vodič zadal pri platbe, a nákup sa pripočíta k nákladom\nvozidla.\nÚčtovným dokladom je faktúra od Shellu , nie jednotlivé tankovania — pri\nnákupe kartou je daňovým dokladom faktúra vydavateľa karty. Každá faktúra sa preto založí\nako jedna prijatá faktúra s rozpisom nákupov po riadkoch (dátum, palivo, ŠPZ, pumpa).\nPoplatky za karty dorovná samostatný riadok, aby suma sedela s faktúrou. Nákupy v\nzahraničí idú do nákladu celou sumou, lebo cudziu DPH si doma neodpočítate.\nKeď sú všetky nákupy na faktúre z jedného auta, dostane faktúra aj vozidlo a pri aute s\nodpočtom 50 % sa DPH rozdelí sama. Faktúra za viac áut s kráteným odpočtom má v internej\npoznámke rozpis po autách na kontrolu.\nAk tú istú faktúru Shell už vo Fakteri máte (prišla e-mailom alebo ste ju nahrali), druhá\nsa nezaloží — nákupy sa len prepoja na existujúcu. Bloček z pumpy s rovnakým dňom a sumou\nsa označí ako aj bloček : nezaúčtujte ho, inak bude náklad aj DPH dvakrát.\nKto chce z karty len tankovania bez dokladov, prepne pri karte\nLen tankovania, bez dokladov .\nKarty DKV, Eurowag a OMV pripravujeme; pri každej je na stránke napísané, ako u vydavateľa\nzískať prístup k údajom."
     },
     {
      "nadpis": "Dokumenty k vozidlu",

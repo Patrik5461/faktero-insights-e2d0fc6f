@@ -317,6 +317,7 @@ async function zalozFakturu(
 ): Promise<void> {
   const externeId = `${k.poskytovatel}:faktura:${f.externeId}`;
   const { data: uz } = await k.admin
+    // aj-zmazane: idempotencia podľa external_id, zmazanú faktúru synchronizácia znova nezaloží
     .from("purchase_invoices")
     .select("id")
     .eq("company_id", k.companyId)
