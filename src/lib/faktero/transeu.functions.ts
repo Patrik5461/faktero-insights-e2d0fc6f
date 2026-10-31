@@ -122,17 +122,28 @@ export const zacniPrihlasenieTranseuFn = createServerFn({ method: "POST" })
       });
       if (error) throw new Error(error.message);
     }
-    const { autorizacnaAdresa, COOKIE_TRANSEU, domenaCookie } = await import("./transeu.server");
+    const { autorizacnaAdresa, COOKIE_TRANSEU, COOKIE_TRANSEU_NAVRAT, domenaCookie } =
+      await import("./transeu.server");
     const { url, nonce } = await autorizacnaAdresa(data.company_id, context.userId);
-    // Callback prijme state len spolu s touto cookie — prihlásenie musí dokončiť ten istý prehliadač.
-    setCookie(COOKIE_TRANSEU, nonce, {
+    const host = getRequestHost();
+    const volby = {
       httpOnly: true,
       secure: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
       path: "/api/public/transeu",
       maxAge: 600,
-      domain: domenaCookie(getRequestHost()),
-    });
+      domain: domenaCookie(host),
+    };
+    // Callback prijme state len spolu s touto cookie — prihlásenie musí dokončiť ten istý prehliadač.
+    setCookie(COOKIE_TRANSEU, nonce, volby);
+    // Odkiaľ človek začal (faktero.sk / www) — callback ho vráti tam, kde je prihlásený.
+    setCookie(
+      COOKIE_TRANSEU_NAVRAT,
+      String(host ?? "")
+        .toLowerCase()
+        .replace(/:\d+$/, ""),
+      volby,
+    );
     return { url };
   });
 

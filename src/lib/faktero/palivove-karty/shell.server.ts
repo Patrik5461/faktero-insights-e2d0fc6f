@@ -30,10 +30,24 @@
   InvoiceDate, DueDate, InvoicedBy, Net/VAT/GrossAmountCustomerCurrency, CustomerCurrencyCode,
   Type (Original/Reversal/Replacement), DocumentType, IsInternational.
 
+  PDF faktúry: POST /invoice-management/v1/download — Filters { ColCoCode (číslo, povinné),
+  PayerNumber, AccountNumber [] (povinné pre používateľa zákazníka), InvoiceOrSOANumber
+  alebo DocumentReference [] }. Odpoveď je ZIP s PDF faktúry a XML „proofing elements“
+  (SDK: invoiceController.download, models/invoiceDownloadReq.ts) — berie sa z neho PDF.
+  Naostro zatiaľ neoverené: prvý ostrý prístup ukáže, či Shell nevracia rovno PDF
+  (to sa zvládne tiež) a či mu stačí číslo faktúry bez DocumentReference.
+
   Server-only.
 */
 import { randomUUID } from "crypto";
-import { KartaChyba, type KartaAdapter, type KartaFaktura, type KartaTransakcia } from "./typy";
+import {
+  KartaChyba,
+  type KartaAdapter,
+  type KartaFaktura,
+  type KartaSubor,
+  type KartaTransakcia,
+} from "./typy";
+import { jeZip, novyRozpocet, rozbalZip } from "../bezpecny-zip";
 import { casVBratislave, maskaKarty, rozdelSumy } from "./spracovanie";
 
 type Prihlasenie = Record<string, string>;
@@ -149,6 +163,84 @@ async function volaj<T>(p: Prihlasenie, cesta: string, telo: unknown, znova = tr
     throw new KartaChyba("api", `Shell API vrátilo chybu${popis ? `: ${popis}` : ""}.`);
   }
   return j as T;
+}
+
+/** Najväčšie PDF faktúry, ktoré sa k prijatej faktúre uloží (kôš purchase-invoices). */
+const MAX_PDF = 15 * 1024 * 1024;
+
+/** Ako `volaj`, ale odpoveď je súbor (ZIP alebo PDF). null = Shell ho k faktúre nemá. */
+async function volajSubor(
+  p: Prihlasenie,
+  cesta: string,
+  telo: unknown,
+  znova = true,
+): Promise<Uint8Array | null> {
+  const r = await siet(`${zakladneUrl(p).api}${cesta}`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${await token(p)}`,
+      RequestId: randomUUID(),
+      "content-type": "application/json",
+      accept: "application/octet-stream, application/zip, application/pdf, application/json",
+    },
+    body: JSON.stringify(telo),
+  });
+  if (r.status === 401 && znova) {
+    tokeny.delete(`${p.prostredie ?? ""}|${String(p.client_id ?? "").trim()}`);
+    return volajSubor(p, cesta, telo, false);
+  }
+  if (r.status === 401 || r.status === 403) {
+    throw new KartaChyba(
+      "prihlasenie",
+      "Shell odmietol stiahnutie PDF faktúry. Overte, že prístup má povolené Invoice API.",
+    );
+  }
+  if (r.status === 429)
+    throw new KartaChyba("limit", "Shell dočasne obmedzil počet volaní. Skúste to neskôr.");
+  if (r.status === 404 || r.status === 204) return null;
+  if (!r.ok) {
+    const popis = popisChyby(await r.text().catch(() => ""));
+    throw new KartaChyba("api", `Shell API odpovedalo ${r.status}${popis ? `: ${popis}` : ""}.`);
+  }
+  if (Number(r.headers.get("content-length")) > 4 * MAX_PDF) return null;
+  const bajty = new Uint8Array(await r.arrayBuffer());
+  if (jeZip(bajty) || jePdf(bajty)) return bajty;
+  // JSON obálka namiesto súboru — chyba alebo „nič sa nenašlo“.
+  const textOdpovede = new TextDecoder().decode(bajty.slice(0, 4000));
+  if (/fail/i.test(textOdpovede)) {
+    const popis = popisChyby(textOdpovede);
+    throw new KartaChyba("api", `Shell nevydal PDF faktúry${popis ? `: ${popis}` : ""}.`);
+  }
+  return null;
+}
+
+/** Začína obsah hlavičkou PDF? */
+export function jePdf(b: Uint8Array): boolean {
+  return b.length >= 5 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46;
+}
+
+/**
+ * Z odpovede /invoice-management/v1/download vyberie PDF faktúry. Shell posiela
+ * ZIP s PDF a XML; ak by poslal rovno PDF, berie sa ono. Pri viacerých PDF má
+ * prednosť to, ktorého meno nesie číslo faktúry.
+ */
+export function pdfZOdpovede(bajty: Uint8Array, cisloFaktury: string): KartaSubor | null {
+  const bezpecne = (m: string) => m.replace(/[^\w.\-]+/g, "_");
+  if (jePdf(bajty)) {
+    return bajty.length > MAX_PDF
+      ? null
+      : { bajty, nazov: bezpecne(`${cisloFaktury}.pdf`), mime: "application/pdf" };
+  }
+  if (!jeZip(bajty)) return null;
+  const subory = rozbalZip(bajty, novyRozpocet({ maxBajtov: 4 * MAX_PDF, maxSuborov: 100 }));
+  const pdfka = Object.entries(subory).filter(([, b]) => jePdf(b) && b.length <= MAX_PDF);
+  if (!pdfka.length) return null;
+  const [meno, obsah] = pdfka.find(([m]) => m.includes(cisloFaktury)) ?? pdfka[0]!;
+  return {
+    bajty: obsah,
+    nazov: bezpecne(meno.split("/").pop() || `${cisloFaktury}.pdf`),
+    mime: "application/pdf",
+  };
 }
 
 /* ------------------------------------------------------------ pomocné */
@@ -389,5 +481,20 @@ export const adapter: KartaAdapter = {
       PageSize: STRANA,
     }));
     return data.map(transakciaZoShellu).filter((x): x is KartaTransakcia => !!x);
+  },
+
+  async pdfFaktury(p, f) {
+    // ColCo a účet sú pre sťahovanie povinné — keď ich človek nezadal, berú sa z hlavičky faktúry.
+    const s = (f.surove ?? {}) as Record<string, unknown>;
+    const ucet = text(p.account_number) ?? text(s.AccountNumber);
+    const bajty = await volajSubor(p, "/invoice-management/v1/download", {
+      Filters: {
+        ColCoCode: cislo(p.colco_code) ?? cislo(s.ColCoId) ?? cislo(s.ColCoCode),
+        PayerNumber: String(p.payer_number ?? "").trim(),
+        ...(ucet ? { AccountNumber: [ucet] } : {}),
+        InvoiceOrSOANumber: f.cislo,
+      },
+    });
+    return bajty ? pdfZOdpovede(bajty, f.cislo) : null;
   },
 };

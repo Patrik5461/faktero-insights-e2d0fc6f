@@ -180,6 +180,10 @@ const sections: HelpSection[] = [
           poznámke rozpis po autách na kontrolu.
         </p>
         <p>
+          K prijatej faktúre sa priloží aj PDF faktúry, ak ho Shell cez API vydá. Súbor, ktorý už
+          pri faktúre je (napríklad z e-mailu), sa neprepíše.
+        </p>
+        <p>
           Ak tú istú faktúru Shell už vo Fakteri máte (prišla e-mailom alebo ste ju nahrali), druhá
           sa nezaloží — nákupy sa len prepoja na existujúcu. Bloček z pumpy s rovnakým dňom a sumou
           sa označí ako <strong>aj bloček</strong>: nezaúčtujte ho, inak bude náklad aj DPH dvakrát.

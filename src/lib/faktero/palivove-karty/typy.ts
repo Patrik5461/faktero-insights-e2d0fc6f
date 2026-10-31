@@ -81,6 +81,9 @@ export type KartaFaktura = {
   surove?: unknown;
 };
 
+/** Súbor od poskytovateľa (PDF faktúry) — ide k prijatej faktúre ako jej doklad. */
+export type KartaSubor = { bajty: Uint8Array; nazov: string; mime: string };
+
 export interface KartaAdapter {
   id: string;
   test(p: Record<string, string>): Promise<void>;
@@ -89,6 +92,8 @@ export interface KartaAdapter {
   faktury?(p: Record<string, string>, od: Date, do_: Date): Promise<KartaFaktura[]>;
   /** Transakcie jednej faktúry, keď ich v okne transakcií nebolo (staršie nákupy). */
   transakcieFaktury?(p: Record<string, string>, f: KartaFaktura): Promise<KartaTransakcia[]>;
+  /** PDF faktúry; null, keď ho poskytovateľ k faktúre nemá. */
+  pdfFaktury?(p: Record<string, string>, f: KartaFaktura): Promise<KartaSubor | null>;
 }
 
 export class KartaChyba extends Error {

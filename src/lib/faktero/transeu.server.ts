@@ -166,6 +166,25 @@ export function domenaCookie(host: string | null | undefined): string | undefine
   return h === "faktero.sk" || h.endsWith(".faktero.sk") ? "faktero.sk" : undefined;
 }
 
+/** Cookie s adresou, z ktorej človek prihlásenie začal — tam sa po ňom vráti. */
+export const COOKIE_TRANSEU_NAVRAT = "faktero_transeu_navrat";
+
+/** Adresy, na ktoré sa po prihlásení smie vrátiť (inak by cookie bola otvorené presmerovanie). */
+const NAVRATOVE_HOSTY = new Set(["faktero.sk", "www.faktero.sk"]);
+
+/**
+ * Kam sa vrátiť po prihlásení do Trans.eu. Návratová adresa pre Trans.eu je
+ * pevná (www), ale prihlásenie do Faktera drží prehliadač zvlášť pre každú
+ * adresu — kto začal na faktero.sk bez www, by sa po návrate na www ocitol
+ * odhlásený. Preto späť tam, kde začal; cudziu adresu z cookie neprijme.
+ */
+export function navratovyHost(zCookie: string | null | undefined, callback: string): string {
+  const h = String(zCookie ?? "")
+    .trim()
+    .toLowerCase();
+  return NAVRATOVE_HOSTY.has(h) && domenaCookie(callback) === "faktero.sk" ? h : callback;
+}
+
 export async function autorizacnaAdresa(
   companyId: string,
   userId: string,
@@ -573,8 +592,39 @@ async function sadzbaPrepravy(sb: Klient, companyId: string, zakaznik: any, datu
   return { sadzba: zakladnaSadzba(krajinaDane(firma?.country), datum), navrh: navrh.druh };
 }
 
+/** Akcie nad jednou objednávkou Trans.eu, ktoré práve bežia v tomto procese. */
+const akcieBezia = new Map<string, Promise<unknown>>();
+
+/**
+ * Akcie nad tou istou objednávkou idú po sebe. Dvojklik (alebo dve karty) na
+ * novú objednávku by inak naraz zakladali dve prijaté objednávky — druhá
+ * skončila chybou čísla z radu namiesto toho, aby vrátila tú istú faktúru.
+ * Druhé volanie počká na prvé a potom už nájde hotovú objednávku aj faktúru.
+ * Medzi procesmi stráži to isté podmienený zápis `sales_order_id` nižšie.
+ */
+async function poJednom<T>(companyId: string, id: string, fn: () => Promise<T>): Promise<T> {
+  const kluc = `${companyId}:${id}`;
+  const pred = akcieBezia.get(kluc) ?? Promise.resolve();
+  const p = pred.catch(() => undefined).then(fn);
+  akcieBezia.set(kluc, p);
+  try {
+    return await p;
+  } finally {
+    if (akcieBezia.get(kluc) === p) akcieBezia.delete(kluc);
+  }
+}
+
 /** Prijatá objednávka (Fakturácia → Prijaté objednávky) z objednávky Trans.eu. */
-export async function zalozObjednavku(
+export function zalozObjednavku(
+  sb: Klient,
+  companyId: string,
+  userId: string,
+  id: string,
+): Promise<{ sales_order_id: string; nova: boolean }> {
+  return poJednom(companyId, id, () => zalozObjednavkuTeraz(sb, companyId, userId, id));
+}
+
+async function zalozObjednavkuTeraz(
   sb: Klient,
   companyId: string,
   userId: string,
@@ -642,10 +692,34 @@ export async function zalozObjednavku(
     .insert({ sales_order_id: so.id, position: 0, ...polozka });
   if (e2) throw new Error(e2.message);
   const a = await admin();
-  await a
+  /*
+    Podmienený zápis: keď objednávku medzitým založilo iné volanie (iný
+    proces), vyhráva to prvé — naša sa zmaže a vráti sa tá jeho.
+  */
+  const podmienka = a
     .from("transeu_objednavky")
     .update({ sales_order_id: so.id, chyba: null, updated_at: new Date().toISOString() })
     .eq("id", r.id);
+  const { data: zapisane } = await (
+    r.sales_order_id
+      ? podmienka.eq("sales_order_id", r.sales_order_id)
+      : podmienka.is("sales_order_id", null)
+  ).select("id");
+  if (!zapisane?.length) {
+    const { data: teraz } = await a
+      .from("transeu_objednavky")
+      .select("sales_order_id")
+      .eq("id", r.id)
+      .maybeSingle();
+    if (teraz?.sales_order_id && teraz.sales_order_id !== so.id) {
+      await sb
+        .from("sales_orders")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", so.id)
+        .eq("company_id", companyId);
+      return { sales_order_id: teraz.sales_order_id, nova: false };
+    }
+  }
   return { sales_order_id: so.id, nova: true };
 }
 
@@ -656,13 +730,22 @@ export async function zalozObjednavku(
  * správajú všade rovnako. Tá istá objednávka druhú faktúru nedostane
  * (`external_id = transeu:<id>`).
  */
-export async function vystavFakturu(
+export function vystavFakturu(
   sb: Klient,
   companyId: string,
   userId: string,
   id: string,
 ): Promise<{ invoice_id: string; invoice_number: string; nova: boolean }> {
-  const { sales_order_id } = await zalozObjednavku(sb, companyId, userId, id);
+  return poJednom(companyId, id, () => vystavFakturuTeraz(sb, companyId, userId, id));
+}
+
+async function vystavFakturuTeraz(
+  sb: Klient,
+  companyId: string,
+  userId: string,
+  id: string,
+): Promise<{ invoice_id: string; invoice_number: string; nova: boolean }> {
+  const { sales_order_id } = await zalozObjednavkuTeraz(sb, companyId, userId, id);
   const r = await riadok(sb, companyId, id);
   const { data: so } = await sb
     .from("sales_orders")

@@ -250,6 +250,18 @@ describe("transeu.server", () => {
     expect(domenaCookie("localhost:3000")).toBeUndefined();
     expect(domenaCookie("zlefaktero.sk")).toBeUndefined();
   });
+
+  it("po prihlásení späť na adresu, kde človek začal — len faktero.sk alebo www", async () => {
+    const { navratovyHost } = await import("./transeu.server");
+    expect(navratovyHost("faktero.sk", "www.faktero.sk")).toBe("faktero.sk");
+    expect(navratovyHost("www.faktero.sk", "www.faktero.sk")).toBe("www.faktero.sk");
+    expect(navratovyHost(null, "www.faktero.sk")).toBe("www.faktero.sk");
+    // Cudzia adresa v cookie nesmie byť otvorené presmerovanie.
+    expect(navratovyHost("zly.example.com", "www.faktero.sk")).toBe("www.faktero.sk");
+    expect(navratovyHost("faktero.sk.zly.com", "www.faktero.sk")).toBe("www.faktero.sk");
+    // Mimo produkcie (localhost) sa nič neprepína.
+    expect(navratovyHost("faktero.sk", "localhost:3000")).toBe("localhost:3000");
+  });
   // Súbežné obnovy (zámok) overuje transeu.db.test.ts proti databáze — súbežný dynamický
   // import podvrhnutého modulu vitest nezvládne a vráti skutočný klient.
 });
