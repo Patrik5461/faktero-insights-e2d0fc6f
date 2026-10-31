@@ -995,24 +995,29 @@ export async function zaznamenajOpravu(
 /** Podiel automaticky zaúčtovaných dokladov v mesiaci (dashboard). */
 export async function statistikaMesiaca(sb: Klient, companyId: string, od: string) {
   const out = { spolu: 0, automaticky: 0, naKontrolu: 0 };
-  for (const typ of ["prijata", "blocek", "vystavena"] as TypDokladu[]) {
-    const m = TABULKY[typ];
-    const zaklad = () => {
-      let q = sb
-        .from(m.tabulka)
-        .select("id", { count: "exact", head: true })
-        .eq("company_id", companyId);
-      if (typ !== "blocek") q = q.is("deleted_at", null);
-      return q;
-    };
-    const [spolu, auto, cakaju] = await Promise.all([
-      zaklad().gte("zauctovane_at", od),
-      zaklad().gte("zauctovane_at", od).in("zauctovanie_zdroj", ["pravidlo", "zvyk", "ai"]),
-      zaklad()
-        .is("zauctovane_at", null)
-        .is("exported_at", null)
-        .not("auto_uctovanie_navrh", "is", null),
-    ]);
+  // Všetkých 9 počtov naraz — po typoch za sebou to boli tri kolá k databáze (Prehľad).
+  const typy = await Promise.all(
+    (["prijata", "blocek", "vystavena"] as TypDokladu[]).map((typ) => {
+      const m = TABULKY[typ];
+      const zaklad = () => {
+        let q = sb
+          .from(m.tabulka)
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId);
+        if (typ !== "blocek") q = q.is("deleted_at", null);
+        return q;
+      };
+      return Promise.all([
+        zaklad().gte("zauctovane_at", od),
+        zaklad().gte("zauctovane_at", od).in("zauctovanie_zdroj", ["pravidlo", "zvyk", "ai"]),
+        zaklad()
+          .is("zauctovane_at", null)
+          .is("exported_at", null)
+          .not("auto_uctovanie_navrh", "is", null),
+      ]);
+    }),
+  );
+  for (const [spolu, auto, cakaju] of typy) {
     out.spolu += spolu.count ?? 0;
     out.automaticky += auto.count ?? 0;
     out.naKontrolu += cakaju.count ?? 0;
