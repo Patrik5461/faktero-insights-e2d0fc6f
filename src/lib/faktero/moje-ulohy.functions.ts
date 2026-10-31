@@ -213,7 +213,13 @@ export const pocetMojichUlohFn = createServerFn({ method: "POST" })
       efaktury: efak.error ? 0 : (efak.count ?? 0),
     };
     const { spoluUloh } = await import("./moje-ulohy");
-    return { ...pocty, spolu: spoluUloh(pocty) };
+    return {
+      ...pocty,
+      // Odznaky v menu zvlášť: Nespracované ukazujú len doklady, Bločky svoje nespracované.
+      doklady: nesp.count ?? 0,
+      blocky: bloc.count ?? 0,
+      spolu: spoluUloh(pocty),
+    };
   });
 
 /**

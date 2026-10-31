@@ -248,7 +248,7 @@ export function AppShell({
     len keď sú staršie než 30 s.
   */
   const nacitajPocty = useServerFn(pocetMojichUlohFn);
-  const [pocty, setPocty] = useState({ nespracovane: 0, efaktury: 0, spolu: 0 });
+  const [pocty, setPocty] = useState({ nespracovane: 0, blocky: 0, efaktury: 0, spolu: 0 });
   const poctyRef = useRef({ cesta: null as string | null, kedy: 0, firma: null as string | null });
   const obnovPocty = useRef<() => void>(() => {});
   useEffect(() => {
@@ -263,7 +263,12 @@ export function AppShell({
       const r = await nacitajPocty({ data: { company_id: cid } });
       // Staršia odpoveď nesmie prepísať novšiu (alebo počty inej firmy).
       if (zrusene || moje !== poradie || getActiveCompanyId() !== cid) return;
-      setPocty({ nespracovane: r.nespracovane, efaktury: r.efaktury, spolu: r.spolu });
+      setPocty({
+        nespracovane: r.doklady,
+        blocky: r.blocky,
+        efaktury: r.efaktury,
+        spolu: r.spolu,
+      });
     };
     /*
       Zapamätaná firma medzičasom zmizla (zmazaná, človeka z nej vyradili):
@@ -304,14 +309,17 @@ export function AppShell({
     p.cesta = pathname;
   }, [pathname, activeId]);
   const pocetNespracovanych = pocty.nespracovane;
+  const pocetBlockov = pocty.blocky;
   const pocetEfaktur = pocty.efaktury;
   const pocetUloh = pocty.spolu;
   const pocetPriPolozke = (to: string) =>
     to === "/nespracovane"
       ? pocetNespracovanych
-      : to === CESTA_PRIJATYCH_EFAKTUR
-        ? pocetEfaktur
-        : undefined;
+      : to === "/doklady"
+        ? pocetBlockov
+        : to === CESTA_PRIJATYCH_EFAKTUR
+          ? pocetEfaktur
+          : undefined;
 
   /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
@@ -404,6 +412,7 @@ export function AppShell({
               <SheetContent side="left" className="w-80 overflow-y-auto p-0">
                 <MobileNav
                   pocetNespracovanych={pocetNespracovanych}
+                  pocetBlockov={pocetBlockov}
                   pocetEfaktur={pocetEfaktur}
                   pocetUloh={pocetUloh}
                   pathname={pathname}
@@ -771,6 +780,7 @@ function MobileNav({
   onAddCompany,
   onClose,
   pocetNespracovanych,
+  pocetBlockov,
   pocetEfaktur,
   pocetUloh,
 }: {
@@ -787,6 +797,7 @@ function MobileNav({
   onAddCompany: () => void;
   onClose: () => void;
   pocetNespracovanych?: number;
+  pocetBlockov?: number;
   pocetEfaktur?: number;
   pocetUloh?: number;
 }) {
@@ -805,9 +816,11 @@ function MobileNav({
       pocet:
         c.to === "/nespracovane"
           ? pocetNespracovanych
-          : c.to === CESTA_PRIJATYCH_EFAKTUR
-            ? pocetEfaktur
-            : undefined,
+          : c.to === "/doklady"
+            ? pocetBlockov
+            : c.to === CESTA_PRIJATYCH_EFAKTUR
+              ? pocetEfaktur
+              : undefined,
     })),
   }));
   const aktivnaSekcia = nav.find((g) => isPathActive(pathname, g))?.key ?? null;
