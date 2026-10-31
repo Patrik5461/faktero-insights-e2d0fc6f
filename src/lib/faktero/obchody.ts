@@ -59,18 +59,18 @@ export const ANDROID_STRANKA = "/android";
 
 export const ANDROID_FAKTERO = apk(
   "Faktero",
-  "1.6.9",
-  "faktero-1.6.9.apk",
-  16,
-  "5bec9feb2b642fed95c1e5576ff038c558587757e118f26f3357a1ffd7d8ba71",
+  "1.7.0",
+  "faktero-1.7.0.apk",
+  15,
+  "4c81e11ebe38826f3c3f033d957e3fd944409e21bd49f80d1a22a5b1e47ef77e",
 );
 
 export const ANDROID_KNIHA_JAZD = apk(
   "Kniha jázd",
-  "1.0.6",
-  "kniha-jazd-1.0.6.apk",
-  8,
-  "3a3308c276e0acdd809136def769ffd0bc33fb65d1b564b95af13b9199f8304b",
+  "1.0.7",
+  "kniha-jazd-1.0.7.apk",
+  7,
+  "e080994a4a2445879d11ff3b56b239f77e7452bc84585b3aacbd85557d0e26c5",
 );
 
 /** Odtlačok podpisového certifikátu — rovnaký pre obe appky. */
