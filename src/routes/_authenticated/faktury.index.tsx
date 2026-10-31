@@ -1212,7 +1212,7 @@ function InvoicesPage() {
             <MobileListCard
               onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
               title={
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                   {i.invoice_number}
                   <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                   {i.type === "credit_note" || i.type === "debit_note" ? (

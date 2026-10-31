@@ -87,7 +87,10 @@ export function MobileListCard({
       >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-foreground">{title}</div>
+            {/* Bez `truncate` — štítky pri čísle (Dobropis, eFaktúra) sa radšej zalomia, než by ich orezal okraj. */}
+            <div className="text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
+              {title}
+            </div>
             {subtitle && (
               <div className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</div>
             )}

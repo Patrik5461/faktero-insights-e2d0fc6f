@@ -243,16 +243,18 @@ html[data-dizajn="kompaktny"] :is(input:not([type="checkbox"]):not([type="radio"
     A) <label><span|div>Popis</span><input/></label>
     B) <div><label>Popis</label><div><input/></div></div>
     C) <div><label>Popis</label><input/></div>
+  Vo vzore A je poľom aj výber s hľadaním (button role=combobox — KodPohody,
+  VyberKodu), inak by predkontácia mala popis nad rámčekom a KV DPH v ňom.
   Pole musí nasledovať hneď za popisom; zaškrtávacie polia sa nemenia.
   Pozor: `:has()` sa nesmie vnárať — prehliadač by celé pravidlo zahodil.
 */
-html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)),
+html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button[role="combobox"])),
 html[data-dizajn="kompaktny"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child),
 html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) {
   position: relative;
   display: block;
 }
-html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(span, div):first-child,
+html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button[role="combobox"])) > :is(span, div):first-child,
 html[data-dizajn="kompaktny"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > label:first-child,
 html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > label:first-child {
   position: absolute;
@@ -276,7 +278,7 @@ html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type=
   text-overflow: ellipsis;
   pointer-events: none;
 }
-html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea),
+html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button[role="combobox"])) > :is(input, select, textarea, button[role="combobox"]),
 html[data-dizajn="kompaktny"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > div,
 html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea) {
   margin-top: 0 !important;

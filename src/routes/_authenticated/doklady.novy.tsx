@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
-import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
+import { useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
@@ -808,7 +808,7 @@ function NovyDokladPage() {
                     {t("Vytlačiť / stiahnuť doklad")}
                   </MenuAkcia>
                 ) : null}
-                {preview && !nahladDetail.zapnuty ? (
+                {!nahladDetail.zapnuty ? (
                   <MenuAkcia ikona={Eye} onClick={() => nahladDetail.prepni(true)}>
                     {t("Zobraziť vedľa údajov")}
                   </MenuAkcia>
@@ -824,65 +824,76 @@ function NovyDokladPage() {
         />
         <PageBody>
           {pasZamku}
-          {ulozeny.inbox_message_id ? (
-            <div className="mx-auto mb-3 flex max-w-6xl justify-end">
-              <ZdrojovyMailTlacidlo druh="doklad" id={ulozeny.id} inboxMessageId={ulozeny.inbox_message_id} />
-            </div>
-          ) : null}
-          {/* Štítky a stav dokladu ako v detaile prijatej faktúry — inak by sa v Kompaktnom rozložení nedali nastaviť. */}
-          {cid ? (
-            <div className="mx-auto mb-4 flex max-w-6xl flex-wrap items-start gap-3 [&>*]:min-w-0">
-              <StitkyDokladu
-                tabulka="expense_documents"
-                id={ulozeny.id}
-                stitky={ulozeny.stitky ?? []}
-                zamknute={Boolean(ulozeny.exported_at || ulozeny.locked_at)}
-                companyId={cid}
-              />
-              {ciselnikyFirmy.stavy.length ? (
-                <label className="block w-full sm:w-64">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Stav dokladu")}</span>
-                  <VyberStavuDokladu
-                    key={ulozeny.id}
-                    tabulka="expense_documents"
-                    id={ulozeny.id}
-                    stavId={ulozeny.stav_id}
-                    stavy={ciselnikyFirmy.stavy}
-                  />
-                </label>
-              ) : null}
-            </div>
-          ) : null}
-          <DetailSNahladom
-            zobrazit={nahladDetail.zapnuty && !!ulozeny.file_path}
-            subor={preview ? { url: preview, obrazok: !nahladJePdf } : undefined}
-            nazov={[ulozeny.supplier_name, ulozeny.document_number].filter(Boolean).join(" · ") || t("Bloček")}
-            onSkryt={() => nahladDetail.prepni(false)}
-            akcie={
-              preview ? (
-                <button
-                  type="button"
-                  onClick={stiahniSubor}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť súbor")}
-                </button>
+          {/*
+            Ako nespracovaný doklad a detail faktúr v kompaktnom rozložení:
+            náhľad skenu s nástrojmi a panel so sekciami (KompaktnyDetail).
+            Štítky, stav dokladu, zdrojový mail a schvaľovanie sú navrchu panelu.
+          */}
+          <BlocekDetailKompaktny
+            row={ulozeny}
+            nahlad={
+              nahladDetail.zapnuty
+                ? {
+                    // Bez súboru ostáva prázdny náhľad s textom — ako pri prijatej faktúre.
+                    subor: !ulozeny.file_path
+                      ? null
+                      : preview
+                      ? {
+                          url: preview,
+                          nazov: [ulozeny.supplier_name, ulozeny.document_number]
+                            .filter(Boolean)
+                            .join(" · ") || t("Bloček"),
+                          mime: nahladJePdf ? "application/pdf" : "image/jpeg",
+                        }
+                      : undefined,
+                    onSkryt: () => nahladDetail.prepni(false),
+                  }
+                : null
+            }
+            nahladUrl={preview}
+            kody={kody}
+            onZmena={() => void obnovUlozeny()}
+            onStiahni={stiahniSubor}
+            hore={
+              cid ? (
+                <>
+                  {ulozeny.inbox_message_id ? (
+                    <div className="flex justify-end">
+                      <ZdrojovyMailTlacidlo
+                        druh="doklad"
+                        id={ulozeny.id}
+                        inboxMessageId={ulozeny.inbox_message_id}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="flex flex-wrap items-start gap-3 [&>*]:min-w-0">
+                    <StitkyDokladu
+                      tabulka="expense_documents"
+                      id={ulozeny.id}
+                      stitky={ulozeny.stitky ?? []}
+                      zamknute={Boolean(ulozeny.exported_at || ulozeny.locked_at)}
+                      companyId={cid}
+                    />
+                    {ciselnikyFirmy.stavy.length ? (
+                      <label className="block w-full sm:w-64">
+                        <span className="mb-1 block text-xs text-muted-foreground">
+                          {t("Stav dokladu")}
+                        </span>
+                        <VyberStavuDokladu
+                          key={ulozeny.id}
+                          tabulka="expense_documents"
+                          id={ulozeny.id}
+                          stavId={ulozeny.stav_id}
+                          stavy={ciselnikyFirmy.stavy}
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                  <SchvalovaniePanel companyId={cid} agenda="doklad" id={ulozeny.id} />
+                </>
               ) : null
             }
-          >
-            <BlocekDetailKompaktny
-              row={ulozeny}
-              nahladUrl={preview}
-              kody={kody}
-              onZmena={() => void obnovUlozeny()}
-              onStiahni={stiahniSubor}
-            />
-          </DetailSNahladom>
-          {cid ? (
-            <div className="mx-auto mt-4 max-w-6xl">
-              <SchvalovaniePanel companyId={cid} agenda="doklad" id={ulozeny.id} />
-            </div>
-          ) : null}
+          />
           {presunPrilohy && cid ? (
             <PresunAkoPrilohuOkno
               companyId={cid}
