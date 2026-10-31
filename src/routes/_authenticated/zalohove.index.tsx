@@ -199,7 +199,7 @@ function ProformaListPage() {
                           toast.error(e?.message ?? t("Chyba"));
                         }
                       }}
-                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-hover hover:bg-primary/10"
                     >
                       <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
                     </button>

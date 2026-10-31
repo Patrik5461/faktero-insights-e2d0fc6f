@@ -38,7 +38,7 @@ export function WhatsAppAdminKarta() {
     <section className="mb-4 rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <WhatsAppIkona className="h-4 w-4 text-emerald-600" /> WhatsApp
+          <WhatsAppIkona className="h-4 w-4 text-emerald-700" /> WhatsApp
         </h2>
         {!stav && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>

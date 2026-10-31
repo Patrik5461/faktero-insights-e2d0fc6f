@@ -127,7 +127,7 @@ function ApiKeysPage() {
               <code className="flex-1 rounded bg-background p-2 font-mono text-sm">
                 {revealed.plaintext}
               </code>
-              <button
+              <button aria-label={t("Kopírovať")}
                 onClick={() => {
                   navigator.clipboard.writeText(revealed.plaintext);
                   toast.success(t("Skopírované"));
@@ -181,7 +181,7 @@ function ApiKeysPage() {
                   </td>
                   <td className="p-3">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs ${k.mode === "live" ? "bg-primary/15 text-primary" : "bg-accent/30"}`}
+                      className={`rounded-full px-2 py-0.5 text-xs ${k.mode === "live" ? "bg-primary/15 text-primary-hover" : "bg-accent/30"}`}
                     >
                       {k.mode}
                     </span>

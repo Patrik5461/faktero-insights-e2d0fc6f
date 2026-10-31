@@ -414,7 +414,7 @@ function PravidlaPage() {
           {t(
             "Pravidlo zaberie pri každom novom doklade — naskenovanom, z e-mailu, z appky aj z importu. Dopĺňa len to, čo je prázdne; čo vyplníte sami, neprepíše. Predkontácia a členenie DPH idú do Pohody namiesto spoločných z",
           )}{" "}
-          <Link to="/uctovnictvo/pohoda" className="text-primary hover:underline">
+          <Link to="/uctovnictvo/pohoda" className="text-primary underline underline-offset-2">
             {t("nastavení prepojenia")}
           </Link>
           {t(

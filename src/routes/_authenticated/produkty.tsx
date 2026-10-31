@@ -264,6 +264,7 @@ function ProductsPage() {
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
+                      aria-label={t("Vybrať riadok")}
                       checked={!!list.selected[p.id]}
                       onChange={(e) => list.toggleSelect(p.id, e.target.checked)}
                     />

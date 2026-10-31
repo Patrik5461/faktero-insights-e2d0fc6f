@@ -103,7 +103,7 @@ function ApprovalPage() {
         <div className="max-w-md rounded-2xl border border-border bg-card p-8 text-center">
           {done === "approved" ? (
             <>
-              <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
+              <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-700" />
               <h1 className="mt-4 text-lg font-semibold">{t("Ďakujeme, faktúra je schválená")}</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {t("Dodávateľ dostal upozornenie o schválení.")}
@@ -283,6 +283,7 @@ function ApprovalPage() {
                 <div>
                   <label className="block text-sm font-medium">{t("Dôvod zamietnutia")}</label>
                   <textarea
+                    aria-label={t("Dôvod zamietnutia")}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     rows={4}
@@ -320,7 +321,7 @@ function ApprovalPage() {
                   <button
                     disabled={busy}
                     onClick={() => submit("approved")}
-                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

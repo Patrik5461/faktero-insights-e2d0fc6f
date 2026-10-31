@@ -408,7 +408,7 @@ export function FormularZmluvy({
   const poleVypoctu = (
     <div>
       <label className={popis}>{t("Výpočet úroku")}</label>
-      <select
+      <select aria-label={t("Výpočet úroku")}
         className={pole}
         value={dayCount}
         onChange={(e) => setDayCount(e.target.value as "ACT/365")}
@@ -473,7 +473,7 @@ export function FormularZmluvy({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={popis}>{t("Názov")}</label>
-            <input
+            <input aria-label={t("Názov")}
               className={pole}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -482,7 +482,7 @@ export function FormularZmluvy({
           </div>
           <div>
             <label className={popis}>{t("Leasingovka alebo banka")}</label>
-            <input
+            <input aria-label={t("Leasingovka alebo banka")}
               className={pole}
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
@@ -491,7 +491,7 @@ export function FormularZmluvy({
           </div>
           <div>
             <label className={popis}>{t("Číslo zmluvy")}</label>
-            <input
+            <input aria-label={t("Číslo zmluvy")}
               className={pole}
               value={contractNumber}
               onChange={(e) => setContractNumber(e.target.value)}
@@ -500,7 +500,7 @@ export function FormularZmluvy({
           {!kontokorent && (
             <div>
               <label className={popis}>{t("Variabilný symbol splátok")}</label>
-              <input className={pole} value={vs} onChange={(e) => setVs(e.target.value)} />
+              <input aria-label={t("Variabilný symbol splátok")} className={pole} value={vs} onChange={(e) => setVs(e.target.value)} />
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Podľa neho sa platba spozná v banke. Bez neho sa páruje podľa mena protistrany a sporné prípady necháme na vás.")}
               </p>
@@ -512,7 +512,7 @@ export function FormularZmluvy({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={popis}>{t("Úverový rámec (limit)")}</label>
-              <input
+              <input aria-label={t("Úverový rámec (limit)")}
                 className={pole}
                 inputMode="decimal"
                 value={limit}
@@ -525,7 +525,7 @@ export function FormularZmluvy({
             </div>
             <div>
               <label className={popis}>{t("Účet, na ktorom je rámec")}</label>
-              <select
+              <select aria-label={t("Účet, na ktorom je rámec")}
                 className={pole}
                 value={ucetId}
                 onChange={(e) => {
@@ -548,7 +548,7 @@ export function FormularZmluvy({
             {!ucetId && (
               <div className="sm:col-span-2">
                 <label className={popis}>{t("IBAN účtu")}</label>
-                <input
+                <input aria-label={t("IBAN účtu")}
                   className={pole}
                   value={iban}
                   onChange={(e) => setIban(e.target.value)}
@@ -561,7 +561,7 @@ export function FormularZmluvy({
             )}
             <div>
               <label className={popis}>{t("Rámec platí od")}</label>
-              <input
+              <input aria-label={t("Rámec platí od")}
                 type="date"
                 className={pole}
                 value={ramecOd}
@@ -573,7 +573,7 @@ export function FormularZmluvy({
             </div>
             <div>
               <label className={popis}>{t("Poplatok za rámec ročne")}</label>
-              <input
+              <input aria-label={t("Poplatok za rámec ročne")}
                 className={pole}
                 inputMode="decimal"
                 value={poplatokRocne}
@@ -586,7 +586,7 @@ export function FormularZmluvy({
             </div>
             <div>
               <label className={popis}>{t("Rámec platí do")}</label>
-              <input
+              <input aria-label={t("Rámec platí do")}
                 type="date"
                 className={pole}
                 value={platnostDo}
@@ -598,7 +598,7 @@ export function FormularZmluvy({
             </div>
             <div>
               <label className={popis}>{t("Úrok banka strhne")}</label>
-              <select
+              <select aria-label={t("Úrok banka strhne")}
                 className={pole}
                 value={obdobie}
                 onChange={(e) => setObdobie(e.target.value as ObdobieUrocenia)}
@@ -618,7 +618,7 @@ export function FormularZmluvy({
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className={popis}>{t("Financovaná suma (istina)")}</label>
-                <input
+                <input aria-label={t("Financovaná suma (istina)")}
                   className={pole}
                   inputMode="decimal"
                   value={principal}
@@ -628,7 +628,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("Počet splátok")}</label>
-                <input
+                <input aria-label={t("Počet splátok")}
                   className={pole}
                   inputMode="numeric"
                   value={months}
@@ -637,7 +637,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("Prvá splátka")}</label>
-                <input
+                <input aria-label={t("Prvá splátka")}
                   type="date"
                   className={pole}
                   value={firstDue}
@@ -646,7 +646,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("Deň čerpania")}</label>
-                <input
+                <input aria-label={t("Deň čerpania")}
                   type="date"
                   className={pole}
                   value={interestFrom}
@@ -658,7 +658,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("Výpočet úroku")}</label>
-                <select
+                <select aria-label={t("Výpočet úroku")}
                   className={pole}
                   value={dayCount}
                   onChange={(e) => setDayCount(e.target.value as "ACT/365")}
@@ -673,7 +673,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("Splátka zo zmluvy")}</label>
-                <input
+                <input aria-label={t("Splátka zo zmluvy")}
                   className={pole}
                   inputMode="decimal"
                   value={payment}
@@ -686,7 +686,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("DPH v splátke")}</label>
-                <select
+                <select aria-label={t("DPH v splátke")}
                   className={pole}
                   value={vat}
                   onChange={(e) => setVat(Number(e.target.value))}
@@ -706,7 +706,7 @@ export function FormularZmluvy({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={popis}>{t("Akontácia")}</label>
-                <input
+                <input aria-label={t("Akontácia")}
                   className={pole}
                   inputMode="decimal"
                   value={downPayment}
@@ -719,7 +719,7 @@ export function FormularZmluvy({
               </div>
               <div>
                 <label className={popis}>{t("Zostatková cena")}</label>
-                <input
+                <input aria-label={t("Zostatková cena")}
                   className={pole}
                   inputMode="decimal"
                   value={residual}
@@ -762,7 +762,7 @@ export function FormularZmluvy({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={popis}>{t("Úrok % p. a.")}</label>
-                <input
+                <input aria-label={t("Úrok % p. a.")}
                   className={pole}
                   inputMode="decimal"
                   value={rate}
@@ -777,7 +777,7 @@ export function FormularZmluvy({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={popis}>{t("Referenčný index")}</label>
-                  <select
+                  <select aria-label={t("Referenčný index")}
                     className={pole}
                     value={refIndex}
                     onChange={(e) => {
@@ -795,7 +795,7 @@ export function FormularZmluvy({
                 </div>
                 <div>
                   <label className={popis}>{t("Marža % p. a.")}</label>
-                  <input
+                  <input aria-label={t("Marža % p. a.")}
                     className={pole}
                     inputMode="decimal"
                     value={marza}
@@ -808,7 +808,7 @@ export function FormularZmluvy({
                 </div>
                 <div>
                   <label className={popis}>{t("Dolná hranica indexu %")}</label>
-                  <input
+                  <input aria-label={t("Dolná hranica indexu %")}
                     className={pole}
                     inputMode="decimal"
                     value={floor}
@@ -821,7 +821,7 @@ export function FormularZmluvy({
                 </div>
                 <div>
                   <label className={popis}>{t("Sadzba sa mení")}</label>
-                  <select
+                  <select aria-label={t("Sadzba sa mení")}
                     className={pole}
                     value={frekvencia}
                     onChange={(e) => setFrekvencia(e.target.value as FrekvenciaZmeny)}
@@ -892,7 +892,7 @@ export function FormularZmluvy({
 
         <div>
           <label className={popis}>{t("Poznámka")}</label>
-          <textarea
+          <textarea aria-label={t("Poznámka")}
             className={pole}
             rows={2}
             value={note}
@@ -941,7 +941,7 @@ export function FormularZmluvy({
             {t("Kontokorent nemá splátkový kalendár. Istinu splácajú príjmy na účet; Faktero sleduje čerpanie podľa zostatku účtu a úroky a poplatky, ktoré banka z účtu strhne, si k zmluve páruje samo.")}
           </p>
           {(zoZmluvy?.vyhrady ?? []).length > 0 && (
-            <ul className="list-disc space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 pl-8 text-xs text-amber-700 dark:text-amber-400">
+            <ul className="list-disc space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 pl-8 text-xs text-amber-800 dark:text-amber-400">
               {zoZmluvy!.vyhrady.map((v) => (
                 <li key={v}>{v}</li>
               ))}

@@ -40,7 +40,7 @@ export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" }) 
     </span>
   ) : (
     <span
-      className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-medium text-primary"
+      className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-medium text-primary-hover"
       title={t("Podľa predchádzajúcich dokladov od dodávateľa.")}
     >
       {t("naučené")}

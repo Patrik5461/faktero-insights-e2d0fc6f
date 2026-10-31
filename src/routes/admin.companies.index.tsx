@@ -37,7 +37,7 @@ function StatusBadge({ row }: { row: Row }) {
     );
   }
   return (
-    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-hover">
       Aktívna
     </span>
   );
@@ -264,14 +264,14 @@ function AdminCompaniesPage() {
                   <Link
                     to="/admin/companies/$id"
                     params={{ id: r.id }}
-                    className="rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                    className="rounded-md px-2 py-1 text-xs text-primary-hover hover:bg-primary/10"
                   >
                     Detail
                   </Link>
                   {r.suspended_at ? (
                     <button
                       onClick={() => handleReactivate(r)}
-                      className="rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                      className="rounded-md px-2 py-1 text-xs text-primary-hover hover:bg-primary/10"
                     >
                       Obnoviť
                     </button>

@@ -137,7 +137,7 @@ function DiagnostikaPage() {
                         </div>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-700" : "bg-destructive/10 text-destructive"}`}
                       >
                         {r.status}
                       </span>
@@ -165,7 +165,7 @@ function DiagnostikaPage() {
                       )}
                     </div>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${l.status === "success" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${l.status === "success" ? "bg-emerald-500/10 text-emerald-700" : "bg-destructive/10 text-destructive"}`}
                     >
                       {l.status}
                     </span>

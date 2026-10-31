@@ -506,12 +506,10 @@ function Stranka() {
             <div
               key={r.kluc}
               {...posledny.karta(r.id)}
-              role="button"
-              tabIndex={0}
+              /* Klik kamkoľvek na kartu otvorí doklad (myš, prst). Klávesnica a
+                 čítačka idú cez tlačidlo s názvom — karta s role="button" by
+                 obsahovala ďalší ovládací prvok (zaškrtávacie pole). */
               onClick={() => void otvor(r)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void otvor(r);
-              }}
               className={`block cursor-pointer rounded-xl border border-border p-3 hover:bg-muted/30 ${posledny.karta(r.id).className || "bg-card"}`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -526,7 +524,16 @@ function Stranka() {
                   />
                 ) : null}
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium">{druhText(r)}</div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void otvor(r);
+                    }}
+                    className="block rounded text-left font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {druhText(r)}
+                  </button>
                   {r.subor ? <div className="truncate text-xs text-muted-foreground">{r.subor}</div> : null}
                 </div>
                 <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">{sumaText(r)}</div>

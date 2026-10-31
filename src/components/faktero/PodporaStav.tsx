@@ -3,8 +3,8 @@ import { useT } from "@/lib/i18n/useT";
 
 const FARBA: Record<string, string> = {
   nova: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  otvorena: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  caka_na_zakaznika: "bg-primary/10 text-primary",
+  otvorena: "bg-amber-500/10 text-amber-800 dark:text-amber-300",
+  caka_na_zakaznika: "bg-primary/10 text-primary-hover",
   vyriesena: "bg-muted text-muted-foreground",
 };
 

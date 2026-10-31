@@ -108,7 +108,9 @@ export function SekcieNavigacie({
                 title={t(s.label)}
                 aria-label={t(s.label)}
                 className={`relative mx-auto grid h-11 w-11 place-items-center rounded-xl ${
-                  aktivna ? "bg-primary/12 text-primary" : "text-foreground/70 hover:bg-secondary"
+                  aktivna
+                    ? "bg-primary/12 text-primary-hover"
+                    : "text-foreground/70 hover:bg-secondary"
                 }`}
               >
                 <Ikona className="h-5 w-5" />
@@ -136,7 +138,7 @@ export function SekcieNavigacie({
                   zbaleny ? "justify-center" : ""
                 } ${
                   aktivna
-                    ? "bg-primary/10 font-medium text-primary"
+                    ? "bg-primary/10 font-medium text-primary-hover"
                     : "text-foreground/80 hover:bg-secondary"
                 }`}
               >
@@ -165,7 +167,7 @@ export function SekcieNavigacie({
                 zbaleny ? "justify-center" : ""
               } ${
                 aktivna
-                  ? "bg-primary/10 font-medium text-primary"
+                  ? "bg-primary/10 font-medium text-primary-hover"
                   : "text-foreground/80 hover:bg-secondary"
               }`}
             >
@@ -196,7 +198,7 @@ export function SekcieNavigacie({
                         onClick={onPrejdi}
                         className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
                           je
-                            ? "bg-primary/10 font-medium text-primary"
+                            ? "bg-primary/10 font-medium text-primary-hover"
                             : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >

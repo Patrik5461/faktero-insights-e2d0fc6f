@@ -379,6 +379,7 @@ function NewRecurring() {
                       </td>
                       <td className="py-2 pl-3">
                         <input
+                          aria-label={t("Merná jednotka")}
                           value={it.unit}
                           onChange={(e) => setItem(idx, { unit: e.target.value })}
                           className={`${bunka} w-14`}
@@ -411,7 +412,7 @@ function NewRecurring() {
                         />
                       </td>
                       <td className="py-2 pl-2">
-                        <button
+                        <button aria-label={t("Odstrániť")}
                           type="button"
                           onClick={() => setItems(items.filter((_, i) => i !== idx))}
                           className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
@@ -444,6 +445,7 @@ function NewRecurring() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     />
                     <input
+                      aria-label={t("Merná jednotka")}
                       value={it.unit}
                       onChange={(e) => setItem(idx, { unit: e.target.value })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
@@ -469,7 +471,7 @@ function NewRecurring() {
                         form.currency,
                       )}
                     </span>
-                    <button
+                    <button aria-label={t("Odstrániť")}
                       type="button"
                       onClick={() => setItems(items.filter((_, i) => i !== idx))}
                       className="text-destructive"

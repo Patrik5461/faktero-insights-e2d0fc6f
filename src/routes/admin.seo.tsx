@@ -205,7 +205,7 @@ function Page() {
                       key={p}
                       onClick={() => setSelected(p)}
                       className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                        active ? "bg-primary/10 text-primary" : "hover:bg-muted"
+                        active ? "bg-primary/10 text-primary-hover" : "hover:bg-muted"
                       }`}
                     >
                       <div className="font-medium truncate">{p}</div>

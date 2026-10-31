@@ -292,6 +292,7 @@ function TripsPage() {
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <label className="text-sm font-medium">{t("Vozidlo")}</label>
           <select
+            aria-label={t("Vozidlo")}
             value={vehicle_id ?? ""}
             onChange={(e) => {
               const v = e.target.value || undefined;

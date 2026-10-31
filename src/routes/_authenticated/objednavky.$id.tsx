@@ -41,8 +41,8 @@ export const Route = createFileRoute("/_authenticated/objednavky/$id")({
 const FARBA: Record<StavPrijatejObjednavky, string> = {
   draft: "bg-muted text-muted-foreground",
   confirmed: "bg-blue-500/10 text-blue-600",
-  partially_invoiced: "bg-amber-500/10 text-amber-600",
-  completed: "bg-emerald-500/10 text-emerald-600",
+  partially_invoiced: "bg-amber-500/10 text-amber-800",
+  completed: "bg-emerald-500/10 text-emerald-700",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
@@ -218,7 +218,7 @@ function OrderDetail() {
             </Karta>
             <Karta popis={t("Hodnota objednávky")}>{suma(o.total)}</Karta>
             <Karta popis={t("Zostáva vyfakturovať")}>
-              <span className={o.zostava > 0 ? "" : "text-emerald-600"}>{suma(o.zostava)}</span>
+              <span className={o.zostava > 0 ? "" : "text-emerald-700"}>{suma(o.zostava)}</span>
             </Karta>
             <Karta popis={t("Vybavené")}>
               <div className="flex items-center gap-2">
@@ -304,7 +304,7 @@ function OrderDetail() {
                         {formatujMnozstvo(p.invoiced_quantity, lokalJazyka(jazyk))}
                       </td>
                       <td
-                        className={`px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "text-emerald-600"}`}
+                        className={`px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "text-emerald-700"}`}
                       >
                         {zostava > 0 ? zostava : t("vybavené")}
                       </td>

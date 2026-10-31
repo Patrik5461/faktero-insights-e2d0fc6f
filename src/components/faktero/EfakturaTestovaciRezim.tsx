@@ -29,7 +29,7 @@ export function EfakturaTestovaciRezim({ className = "" }: { className?: string 
       role="status"
       className={`flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm ${className}`}
     >
-      <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+      <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-400" />
       <div>
         <div className="font-semibold text-foreground">{t("eFaktúra beží v testovacom režime")}</div>
         <p className="mt-0.5 text-muted-foreground">

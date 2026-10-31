@@ -377,7 +377,10 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                 )}
               </p>
 
-              <div className="mt-4 overflow-x-auto">
+              <div
+                className="mt-4 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                tabIndex={0}
+              >
                 <table className="w-full min-w-[40rem] text-sm">
                   <caption className="sr-only">{t("Súhrn po mesiacoch")}</caption>
                   <thead>

@@ -156,7 +156,7 @@ function AdminPodporaPage() {
                           )}
                           {r.zdroj === "whatsapp" && (
                             <WhatsAppIkona
-                              className="mr-1 inline h-3.5 w-3.5 text-emerald-600"
+                              className="mr-1 inline h-3.5 w-3.5 text-emerald-700"
                               aria-label="WhatsApp"
                             />
                           )}

@@ -174,7 +174,7 @@ function RecurringDetail() {
       <DocumentDetailHeader
         title={rec.name}
         status={
-          <StavOdznak className={rec.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}>
+          <StavOdznak className={rec.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}>
             {rec.active ? t("Aktívna") : t("Pozastavená")}
           </StavOdznak>
         }
@@ -338,7 +338,7 @@ function RecurringDetail() {
                       rec.currency,
                     )}
                   </div>
-                  <button
+                  <button aria-label={t("Odstrániť")}
                     type="button"
                     onClick={() => setItems(items.filter((_, i) => i !== idx))}
                     className="rounded p-1.5 text-destructive hover:bg-destructive/10"
@@ -391,7 +391,7 @@ function RecurringDetail() {
                   <div key={l.id} className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-3">
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${l.status === "success" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${l.status === "success" ? "bg-primary/15 text-primary-hover" : "bg-destructive/15 text-destructive"}`}
                       >
                         {l.status === "success" ? t("Úspech") : t("Chyba")}
                       </span>

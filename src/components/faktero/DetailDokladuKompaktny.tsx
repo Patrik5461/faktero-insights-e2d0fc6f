@@ -89,7 +89,7 @@ export function Avatar({ meno }: { meno: string | null | undefined }) {
   return (
     <span
       aria-hidden="true"
-      className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary"
+      className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary-hover"
     >
       {ini || "?"}
     </span>

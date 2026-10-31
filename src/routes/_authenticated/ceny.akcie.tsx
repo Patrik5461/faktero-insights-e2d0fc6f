@@ -196,7 +196,7 @@ function AkciePage() {
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs ${
                             bezi
-                              ? "bg-emerald-500/10 text-emerald-600"
+                              ? "bg-emerald-500/10 text-emerald-700"
                               : skoncila
                                 ? "bg-muted text-muted-foreground"
                                 : "bg-blue-500/10 text-blue-600"
@@ -205,7 +205,7 @@ function AkciePage() {
                           {bezi ? t("beží") : skoncila ? t("skončila") : !a.active ? t("vypnutá") : t("čaká")}
                         </span>
                         {cislo(a.discount_percent) > 0 && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary-hover">
                             −{cislo(a.discount_percent)} %
                           </span>
                         )}
@@ -298,7 +298,7 @@ function AkciePage() {
               )}
               <div>
                 <label className={popis}>{t("Názov akcie")}</label>
-                <input
+                <input aria-label={t("Názov akcie")}
                   className={pole}
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -310,7 +310,7 @@ function AkciePage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <label className={popis}>{t("Platí od")}</label>
-                  <input
+                  <input aria-label={t("Platí od")}
                     type="date"
                     className={pole}
                     value={form.valid_from}
@@ -320,7 +320,7 @@ function AkciePage() {
                 </div>
                 <div>
                   <label className={popis}>{t("Platí do")}</label>
-                  <input
+                  <input aria-label={t("Platí do")}
                     type="date"
                     className={pole}
                     value={form.valid_to}
@@ -330,7 +330,7 @@ function AkciePage() {
                 </div>
                 <div>
                   <label className={popis}>{t("Zľava (%)")}</label>
-                  <input
+                  <input aria-label={t("Zľava (%)")}
                     type="number"
                     step="0.01"
                     min="0"

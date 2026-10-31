@@ -229,7 +229,7 @@ export function VendorImportPage(props: {
               <h2 className="text-base font-semibold">{t("Potvrdenie a možnosti")}</h2>
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-800" />
                   <div>
                     <p className="font-medium">{t("Upozornenie")}</p>
                     <p className="text-muted-foreground">

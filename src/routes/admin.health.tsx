@@ -15,12 +15,12 @@ type Data = Awaited<ReturnType<typeof getSystemHealth>>;
 const STATUS_META: Record<string, { icon: any; cls: string; label: string }> = {
   ok: {
     icon: CheckCircle2,
-    cls: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+    cls: "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
     label: "OK",
   },
   warn: {
     icon: AlertTriangle,
-    cls: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+    cls: "text-amber-800 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
     label: "WARN",
   },
   fail: {

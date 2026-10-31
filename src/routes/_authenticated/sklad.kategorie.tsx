@@ -212,6 +212,7 @@ function CategoriesPage() {
             </div>
             <label className="block text-xs font-medium text-muted-foreground">{t("Názov")}</label>
             <input
+              aria-label={t("Názov")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

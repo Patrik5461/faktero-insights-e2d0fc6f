@@ -741,7 +741,7 @@ function PlanCard({
         <div className="flex items-center gap-2 text-sm font-medium">
           {icon} {p.name}
           {wanted && !current && (
-            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary-hover">
               {t("Vami vybraný")}
             </span>
           )}
@@ -774,7 +774,7 @@ function PlanCard({
         <ul className="space-y-1.5 text-sm">
           {features.map((f) => (
             <li key={f} className="flex items-start gap-2">
-              <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
+              <Check className="mt-0.5 h-4 w-4 text-emerald-700" />
               <span>{f}</span>
             </li>
           ))}
@@ -805,7 +805,7 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
         <p>
           {t("Predplatné pre")} <strong>{t("Knihu jázd")}</strong>{" "}
           {t("je zatiaľ dostupné na vyžiadanie. Napíšte nám a aktivujeme vám vybraný plán.")}
@@ -828,7 +828,7 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
               <ul className="space-y-1.5 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
-                    <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
+                    <Check className="mt-0.5 h-4 w-4 text-emerald-700" />
                     <span>{t(f)}</span>
                   </li>
                 ))}

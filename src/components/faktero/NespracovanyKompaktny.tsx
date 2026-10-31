@@ -76,7 +76,7 @@ function Pole({
       {chyba ? (
         <AlertCircle className="pointer-events-none absolute right-2.5 top-3 h-4 w-4 fill-red-500 text-white" />
       ) : ok ? (
-        <Check className="pointer-events-none absolute right-2.5 top-3 h-4 w-4 text-emerald-600" />
+        <Check className="pointer-events-none absolute right-2.5 top-3 h-4 w-4 text-emerald-700" />
       ) : null}
     </label>
   );
@@ -88,7 +88,7 @@ function Sekcia({ nadpis, ok, children }: { nadpis: string; ok?: boolean; childr
     <section className="border-b border-border px-4 py-4 last:border-b-0">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-medium">{t(nadpis)}</h2>
-        {ok ? <Check className="h-5 w-5 text-emerald-600" /> : null}
+        {ok ? <Check className="h-5 w-5 text-emerald-700" /> : null}
       </div>
       <div className="space-y-3.5">{children}</div>
     </section>
@@ -197,7 +197,7 @@ export function NespracovanyKompaktny({
       {/* Náhľad s nástrojmi */}
       <div className="min-w-0 rounded-2xl border border-border bg-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-          <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+          <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
             {t("Náhľad")}
           </span>
           <div className="flex items-center gap-1 text-muted-foreground">
@@ -867,7 +867,7 @@ export function NespracovanyKompaktny({
             type="button"
             disabled={busy}
             onClick={onUloz}
-            className="w-full rounded-lg border border-primary/40 bg-primary/5 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+            className="w-full rounded-lg border border-primary/40 bg-primary/5 py-2.5 text-sm font-medium text-primary-hover hover:bg-primary/10 disabled:opacity-60"
           >
             {t("Uložiť zmeny")}
           </button>

@@ -27,8 +27,8 @@ export const Route = createFileRoute("/_authenticated/objednavky/")({
 const FARBA: Record<StavPrijatejObjednavky, string> = {
   draft: "bg-muted text-muted-foreground",
   confirmed: "bg-blue-500/10 text-blue-600",
-  partially_invoiced: "bg-amber-500/10 text-amber-600",
-  completed: "bg-emerald-500/10 text-emerald-600",
+  partially_invoiced: "bg-amber-500/10 text-amber-800",
+  completed: "bg-emerald-500/10 text-emerald-700",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 

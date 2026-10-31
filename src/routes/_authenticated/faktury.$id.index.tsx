@@ -1166,7 +1166,7 @@ function InvoiceDetail() {
                   <div className="whitespace-pre-line text-xs text-muted-foreground">{it.description}</div>
                 )}
                 {Number((it as any).discount_percent ?? 0) > 0 && (
-                  <div className="text-xs text-emerald-600">
+                  <div className="text-xs text-emerald-700">
                     {t("Zľava {n} %", { n: Number((it as any).discount_percent) })}
                   </div>
                 )}
@@ -1586,7 +1586,7 @@ function InvoiceDetail() {
                     </div>
                   </div>
                   <div
-                    className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-600" : "text-destructive"}`}
+                    className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-700" : "text-destructive"}`}
                   >
                     {reversed ? "+" : "−"}
                     {Math.abs(Number(m.quantity))}

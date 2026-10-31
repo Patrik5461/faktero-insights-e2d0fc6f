@@ -314,7 +314,7 @@ function CennikPage() {
                               {suma(dohodnuta)}
                               {rozdiel !== 0 && (
                                 <span
-                                  className={`ml-2 text-xs ${rozdiel > 0 ? "text-emerald-600" : "text-amber-600"}`}
+                                  className={`ml-2 text-xs ${rozdiel > 0 ? "text-emerald-700" : "text-amber-700"}`}
                                 >
                                   {rozdiel > 0 ? "−" : "+"}
                                   {suma(Math.abs(rozdiel))}
@@ -368,7 +368,7 @@ function CennikPage() {
           <form onSubmit={ulozSkupinuKlik} className="mt-4 space-y-4">
             <div>
               <label className={popis}>{t("Názov")}</label>
-              <input
+              <input aria-label={t("Názov")}
                 className={pole}
                 value={skupinaForm.name ?? ""}
                 onChange={(e) => setSkupinaForm({ ...skupinaForm, name: e.target.value })}
@@ -379,7 +379,7 @@ function CennikPage() {
             </div>
             <div>
               <label className={popis}>{t("Zľava (%)")}</label>
-              <input
+              <input aria-label={t("Zľava (%)")}
                 type="number"
                 step="0.01"
                 min="0"
@@ -407,7 +407,7 @@ function CennikPage() {
           <form onSubmit={ulozCenuKlik} className="mt-4 space-y-4">
             <div>
               <label className={popis}>{t("Produkt")}</label>
-              <select
+              <select aria-label={t("Produkt")}
                 className={pole}
                 value={cenaForm.product_id ?? ""}
                 onChange={(e) => setCenaForm({ ...cenaForm, product_id: e.target.value })}
@@ -422,7 +422,7 @@ function CennikPage() {
             </div>
             <div>
               <label className={popis}>{t("Cena platí pre")}</label>
-              <select
+              <select aria-label={t("Cena platí pre")}
                 className={pole}
                 value={cenaForm.adresat}
                 onChange={(e) => setCenaForm({ ...cenaForm, adresat: e.target.value })}
@@ -454,7 +454,7 @@ function CennikPage() {
             ) : (
               <div>
                 <label className={popis}>{t("Odberateľ")}</label>
-                <select
+                <select aria-label={t("Odberateľ")}
                   className={pole}
                   value={cenaForm.customer_id ?? ""}
                   onChange={(e) => setCenaForm({ ...cenaForm, customer_id: e.target.value })}
@@ -471,7 +471,7 @@ function CennikPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={popis}>{t("Cena bez DPH ({mena})", { mena: mena.symbol })}</label>
-                <input
+                <input aria-label={t("Cena bez DPH ({mena})", { mena: mena.symbol })}
                   type="number"
                   step={KROK_CENY}
                   min="0"
@@ -483,7 +483,7 @@ function CennikPage() {
               </div>
               <div>
                 <label className={popis}>{t("Od množstva")}</label>
-                <input
+                <input aria-label={t("Od množstva")}
                   type="number"
                   step="0.001"
                   min="0"

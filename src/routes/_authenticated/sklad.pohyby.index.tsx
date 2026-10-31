@@ -271,7 +271,7 @@ function MovementsPage() {
                     onClick={() => setNewOpen(false)}
                     className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
                   >
-                    <ArrowDownToLine className="h-4 w-4 text-emerald-600" /> {t("Príjem")}
+                    <ArrowDownToLine className="h-4 w-4 text-emerald-700" /> {t("Príjem")}
                   </Link>
                   <Link
                     to="/sklad/vydaj"
@@ -296,6 +296,7 @@ function MovementsPage() {
       <PageBody>
         <div className="mb-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <select
+            aria-label={t("Typ pohybu")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
@@ -308,6 +309,7 @@ function MovementsPage() {
             ))}
           </select>
           <select
+            aria-label={t("Sklad")}
             value={warehouseFilter}
             onChange={(e) => setWarehouseFilter(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
@@ -406,7 +408,7 @@ function MovementsPage() {
                   </td>
                   <td className="p-3 text-muted-foreground">{warehouses[m.warehouse_id] ?? "—"}</td>
                   <td
-                    className={`p-3 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
+                    className={`p-3 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"}`}
                   >
                     {pohybText(m.type, m.quantity)}
                   </td>
@@ -499,7 +501,7 @@ function MovementsPage() {
                 <div
                   className={
                     pohybDelta(m.type, m.quantity) >= 0
-                      ? "text-emerald-600 font-semibold"
+                      ? "text-emerald-700 font-semibold"
                       : "text-destructive font-semibold"
                   }
                 >

@@ -112,6 +112,7 @@ function NewJob() {
           <div className="rounded-xl border border-border bg-card p-4">
             <label className={popis}>{t("Názov zákazky")}</label>
             <input
+              aria-label={t("Názov zákazky")}
               className={pole}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -123,6 +124,7 @@ function NewJob() {
               <div className="sm:col-span-2">
                 <label className={popis}>{t("Odberateľ")}</label>
                 <select
+                  aria-label={t("Odberateľ")}
                   className={pole}
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
@@ -138,6 +140,7 @@ function NewJob() {
               <div>
                 <label className={popis}>{t("Začiatok")}</label>
                 <input
+                  aria-label={t("Začiatok")}
                   type="date"
                   className={pole}
                   value={startDate}
@@ -147,6 +150,7 @@ function NewJob() {
               <div>
                 <label className={popis}>{t("Predpokladaný koniec")}</label>
                 <input
+                  aria-label={t("Predpokladaný koniec")}
                   type="date"
                   className={pole}
                   value={endDate}
@@ -191,7 +195,7 @@ function NewJob() {
                 {t("Plánovaný zisk:")}{" "}
                 <span
                   className={`font-medium tabular-nums ${
-                    planovanyZisk < 0 ? "text-destructive" : "text-emerald-600"
+                    planovanyZisk < 0 ? "text-destructive" : "text-emerald-700"
                   }`}
                 >
                   {formatujMenu(planovanyZisk, mena.kod)}
@@ -203,6 +207,7 @@ function NewJob() {
           <div className="rounded-xl border border-border bg-card p-4">
             <label className={popis}>{t("Poznámka")}</label>
             <textarea
+              aria-label={t("Poznámka")}
               className={`${pole} min-h-24`}
               value={note}
               onChange={(e) => setNote(e.target.value)}

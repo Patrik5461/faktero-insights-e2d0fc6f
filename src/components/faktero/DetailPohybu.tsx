@@ -237,9 +237,9 @@ export function DetailPohybu({
             <div className="mt-4 rounded-lg border border-border/70 p-3">
               <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
                 {stav === "sparovany" ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                 ) : stav === "nesparovany" ? (
-                  <CircleDashed className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <CircleDashed className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                 ) : (
                   <Receipt className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                 )}

@@ -314,9 +314,9 @@ function GpsIntegraciaPage() {
                         <span
                           className={
                             l.stav === "ok"
-                              ? "text-emerald-600"
+                              ? "text-emerald-700"
                               : l.stav === "ciastocne"
-                                ? "text-amber-600"
+                                ? "text-amber-700"
                                 : "text-destructive"
                           }
                         >
@@ -399,7 +399,7 @@ function PripojenieKarta(props: {
       </div>
 
       {p.prihlasenieNeplatne && (
-        <div className="mt-3 flex items-start gap-2 rounded-md bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+        <div className="mt-3 flex items-start gap-2 rounded-md bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {t("Prihlasovacie údaje treba zadať znova (zmenil sa bezpečnostný kľúč systému).")}
         </div>

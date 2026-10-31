@@ -45,9 +45,9 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
 
 function Method({ m }: { m: "GET" | "POST" | "PUT" | "DELETE" }) {
   const cls: Record<string, string> = {
-    GET: "bg-primary/15 text-primary",
+    GET: "bg-primary/15 text-primary-hover",
     POST: "bg-emerald-500/15 text-emerald-500",
-    PUT: "bg-amber-500/15 text-amber-600",
+    PUT: "bg-amber-500/15 text-amber-800",
     DELETE: "bg-destructive/15 text-destructive",
   };
   return (
@@ -202,7 +202,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
                     href={`#${s.id}`}
                     className={`block rounded-md border-l-2 px-3 py-1.5 text-sm transition-colors ${
                       active === s.id
-                        ? "border-primary bg-primary/10 font-medium text-primary"
+                        ? "border-primary bg-primary/10 font-medium text-primary-hover"
                         : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >

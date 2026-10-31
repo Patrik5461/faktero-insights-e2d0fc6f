@@ -1264,7 +1264,7 @@ function NovyDokladPage() {
                     </span>
                   )}
                 </label>
-                <select
+                <select aria-label={t("Platené")}
                   value={form.payment_method}
                   onChange={(e) => updateForm("payment_method", e.target.value as never)}
                   className={`w-full rounded-md border bg-background px-3 py-2 text-sm ${
@@ -1629,7 +1629,7 @@ function NovyDokladPage() {
                     </button>
                   )}
                 </div>
-                <textarea
+                <textarea aria-label={t("Poznámka")}
                   value={form.note}
                   onChange={(e) => updateForm("note", e.target.value)}
                   rows={2}

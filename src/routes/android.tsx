@@ -71,7 +71,7 @@ function AndroidPage() {
   return (
     <MarketingShell>
       <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-hover">
           <Smartphone className="h-3.5 w-3.5" /> {t("Android")}
         </div>
         <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -159,7 +159,7 @@ function AndroidPage() {
             </p>
             <p className="mt-3 text-sm text-muted-foreground">
               {t("Máte iPhone? Appky sú v")}{" "}
-              <Link to="/pomoc/apka" className="text-primary hover:underline">
+              <Link to="/pomoc/apka" className="text-primary underline underline-offset-2">
                 {t("App Store")}
               </Link>
               .

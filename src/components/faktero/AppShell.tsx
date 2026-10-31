@@ -529,7 +529,10 @@ export function AppShell({
               {/* Quick create — the only filled element */}
               {view !== "logbook" && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90 max-md:bg-white max-md:text-primary">
+                  {/* Na telefóne je vidieť len „+“ — meno tlačidla musí niesť aria-label. */}
+                  <DropdownMenuTrigger
+                    aria-label={t("Vytvoriť")}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90 max-md:bg-white max-md:text-primary">
                     <Plus className="h-3.5 w-3.5" />{" "}
                     <span className="hidden sm:inline">{t("Vytvoriť")}</span>
                   </DropdownMenuTrigger>
@@ -673,7 +676,7 @@ export function AppShell({
                         to={c.to as any}
                         search={c.search as any}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
-                          je ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          je ? "bg-primary/10 font-medium text-primary-hover" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
                         {t(c.label)}

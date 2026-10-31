@@ -9,17 +9,36 @@ const logoFull = "/faktero-logo-full.png";
 */
 const logoFullSvetle = "/faktero-logo-full-svetle.png";
 const logoIcon = "/faktero-icon.png";
+const logoFull480 = "/faktero-logo-full-480.png";
+const logoFullSvetle480 = "/faktero-logo-full-svetle-480.png";
 
 /** Logo, ktoré si vyberie verziu podľa motívu. Prepína CSS, nie JavaScript —
  *  pri prepnutí motívu tak nepreblikne a na serveri sa vykreslí rovnako. */
 function LogoObrazok({ className }: { className?: string }) {
+  /*
+    Logo je najviac 40 px vysoké (~170 px široké) — prehliadač si vezme 480 px
+    verziu (9 kB) a pôvodnú 1600 px (45–85 kB) len pri hustote obrazovky nad 2,8.
+    Svetlá verzia je `loading="lazy"`: v svetlom motíve je skrytá, takže ju
+    prehliadač vôbec nestiahne.
+  */
   return (
     <>
-      <img src={logoFull} alt="Faktero" className={cn("object-contain dark:hidden", className)} />
+      <img
+        src={logoFull}
+        srcSet={`${logoFull480} 480w, ${logoFull} 1600w`}
+        sizes="170px"
+        alt="Faktero"
+        decoding="async"
+        className={cn("object-contain dark:hidden", className)}
+      />
       <img
         src={logoFullSvetle}
+        srcSet={`${logoFullSvetle480} 480w, ${logoFullSvetle} 1600w`}
+        sizes="170px"
         alt="Faktero"
         aria-hidden
+        loading="lazy"
+        decoding="async"
         className={cn("hidden object-contain dark:block", className)}
       />
     </>

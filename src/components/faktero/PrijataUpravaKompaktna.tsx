@@ -39,7 +39,7 @@ export function NahladDokladuNastroje({
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-        <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+        <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
           {t("Náhľad")}
         </span>
         <div className="flex flex-wrap items-center gap-1 text-muted-foreground">

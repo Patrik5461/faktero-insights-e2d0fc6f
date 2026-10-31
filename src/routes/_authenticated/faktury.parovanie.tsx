@@ -235,6 +235,7 @@ function ParovaniePage() {
                           <td className="px-3 py-3">
                             <input
                               type="checkbox"
+                              aria-label={t("Vybrať riadok")}
                               checked={vybrane.has(z.transactionId)}
                               onChange={() => prepni(z.transactionId)}
                             />
@@ -265,7 +266,7 @@ function ParovaniePage() {
                               className={`mr-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                                 z.istota === "auto"
                                   ? "bg-emerald-500/10 text-emerald-700"
-                                  : "bg-amber-500/10 text-amber-700"
+                                  : "bg-amber-500/10 text-amber-800"
                               }`}
                             >
                               {z.istota === "auto" ? t("isté") : t("na rozhodnutie")}
@@ -299,7 +300,7 @@ function ParovaniePage() {
                   <button
                     onClick={zapisVybrane}
                     disabled={busy || vybrane.size === 0}
-                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

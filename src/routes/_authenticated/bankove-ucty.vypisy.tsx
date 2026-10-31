@@ -242,7 +242,7 @@ function BankStatementsPage() {
         {maVlastne && (
           <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40">
             <div className="flex gap-2">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300" />
               <div className="text-sm text-amber-900 dark:text-amber-100">
                 <p className="font-medium">{t("Výpisy označené „Zostavené Fakterom“")}</p>
                 <p className="mt-1">

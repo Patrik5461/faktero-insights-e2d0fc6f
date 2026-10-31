@@ -267,6 +267,7 @@ function CategoriesTab({ onChanged }: { onChanged?: () => void }) {
         </div>
         <label className="block text-xs font-medium text-muted-foreground">{t("Názov")}</label>
         <input
+          aria-label={t("Názov")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -402,7 +403,7 @@ function WarehousesTab({ onChanged }: { onChanged?: () => void }) {
                 <td className="p-2 text-muted-foreground">{w.address ?? "—"}</td>
                 <td className="p-2">
                   {w.active ? (
-                    <span className="text-emerald-600">{t("Aktívny")}</span>
+                    <span className="text-emerald-700">{t("Aktívny")}</span>
                   ) : (
                     <span className="text-muted-foreground">{t("Neaktívny")}</span>
                   )}

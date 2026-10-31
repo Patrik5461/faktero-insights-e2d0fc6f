@@ -466,7 +466,7 @@ function FakturaZadarmoStranka() {
       {/* Úvod */}
       <section className="border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-hover">
             <ShieldCheck className="h-3.5 w-3.5" /> {t("Zadarmo a bez registrácie")}
           </span>
           <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">

@@ -190,7 +190,7 @@ function StavFirmyPopis({ stav }: { stav?: StavFirmy }) {
     return <span className="shrink-0 text-[11px] text-muted-foreground">{t("bez balíčka")}</span>;
   }
   if (!stav.naposledy) {
-    return <span className="shrink-0 text-[11px] text-amber-600">{t("vydaný, zatiaľ ticho")}</span>;
+    return <span className="shrink-0 text-[11px] text-amber-700">{t("vydaný, zatiaľ ticho")}</span>;
   }
   return (
     <span className="shrink-0 text-[11px] text-muted-foreground">

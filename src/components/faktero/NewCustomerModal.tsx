@@ -154,7 +154,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
                 onClick={() => setF((p) => ({ ...p, typ: volba.kod }))}
                 className={`rounded-md border px-3 py-1.5 text-sm ${
                   f.typ === volba.kod
-                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    ? "border-primary bg-primary/10 font-medium text-primary-hover"
                     : "border-border hover:bg-secondary"
                 }`}
               >

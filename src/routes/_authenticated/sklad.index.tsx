@@ -66,13 +66,13 @@ function SkladDashboard() {
                 icon={TrendingUp}
                 label="Hodnota skladu"
                 value={formatujMenu(data.total_value, mena.kod)}
-                accent="text-emerald-600"
+                accent="text-emerald-700"
               />
               <Stat
                 icon={AlertTriangle}
                 label="Pod minimom"
                 value={String(data.below_min_count)}
-                accent={data.below_min_count ? "text-amber-600" : "text-muted-foreground"}
+                accent={data.below_min_count ? "text-amber-700" : "text-muted-foreground"}
               />
             </div>
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -95,7 +95,7 @@ function SkladDashboard() {
                             <span className="ml-1 text-xs text-muted-foreground">{it.sku}</span>
                           )}
                         </Link>
-                        <span className="whitespace-nowrap tabular-nums text-amber-600">
+                        <span className="whitespace-nowrap tabular-nums text-amber-700">
                           {formatujCislo(it.current, 0, 2)} / {formatujCislo(it.min, 0, 2)}{" "}
                           {it.unit ?? ""}
                         </span>

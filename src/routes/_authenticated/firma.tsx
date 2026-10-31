@@ -165,7 +165,7 @@ function CompanyPage() {
                 {t("Registergericht, číslo HRB a konateľ sa vytlačia do päty faktúry.")}
               </p>
               {chybyDe.length > 0 && (
-                <ul className="sm:col-span-2 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                <ul className="sm:col-span-2 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-400">
                   {chybyDe.map((ch) => (
                     <li key={ch}>{t(ch)}</li>
                   ))}
@@ -345,7 +345,7 @@ function CompanyPage() {
                 "Tokeny: {YYYY} rok, {YY} rok 2-cif., {MM} mesiac, {NN}–{NNNN} poradie (počet N = počet číslic). Ak formát obsahuje {MM}, poradie sa resetuje mesačne, inak ročne.",
               )}
             </p>
-            <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-400">
               {t(
                 "Pozor: zmena šablóny uprostred roka rozdelí číselný rad — nové faktúry budú číslované podľa novej šablóny, staré zostanú nezmenené. Ak by nové číslo kolidovalo s existujúcim, poradie sa automaticky posunie na najbližšie voľné.",
               )}
@@ -733,7 +733,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                       </div>
                     ) : (
                       <>
-                        <select
+                        <select aria-label={t("Rola")}
                           value={upravuje?.userId === m.user_id ? "custom" : m.role}
                           onChange={(e) =>
                             // Vlastný prístup potrebuje oblasti — najprv sa vyklikajú, uloží sa potom.

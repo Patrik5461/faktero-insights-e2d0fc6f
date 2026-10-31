@@ -36,8 +36,8 @@ const TON_PAS: Record<Ton, string> = {
   cervena: "bg-destructive",
 };
 const TON_TEXT: Record<Ton, string> = {
-  zelena: "text-emerald-600 dark:text-emerald-400",
-  oranzova: "text-amber-600 dark:text-amber-400",
+  zelena: "text-emerald-700 dark:text-emerald-400",
+  oranzova: "text-amber-700 dark:text-amber-400",
   cervena: "text-destructive",
 };
 
@@ -525,7 +525,7 @@ export function AdminVyuzitieZdrojov() {
                         <td className="py-1 pr-2">
                           <span className="font-mono text-xs">{b.name}</span>
                           {b.docasny && (
-                            <span className="ml-1.5 rounded bg-amber-500/20 px-1 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                            <span className="ml-1.5 rounded bg-amber-500/20 px-1 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300">
                               {t("dočasný")}
                             </span>
                           )}

@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/zakazky/$id")({
 
 const FARBA_STAVU: Record<StavZakazky, string> = {
   active: "bg-blue-500/10 text-blue-600",
-  closed: "bg-emerald-500/10 text-emerald-600",
+  closed: "bg-emerald-500/10 text-emerald-700",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
@@ -282,7 +282,7 @@ function JobDetail() {
           >
             <div>
               <label className={popis}>{t("Názov")}</label>
-              <input
+              <input aria-label={t("Názov")}
                 className={pole}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -291,7 +291,7 @@ function JobDetail() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={popis}>{t("Odberateľ")}</label>
-                <select
+                <select aria-label={t("Odberateľ")}
                   className={pole}
                   value={form.customer_id}
                   onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
@@ -307,7 +307,7 @@ function JobDetail() {
               <div />
               <div>
                 <label className={popis}>{t("Začiatok")}</label>
-                <input
+                <input aria-label={t("Začiatok")}
                   type="date"
                   className={pole}
                   value={form.start_date}
@@ -316,7 +316,7 @@ function JobDetail() {
               </div>
               <div>
                 <label className={popis}>{t("Koniec")}</label>
-                <input
+                <input aria-label={t("Koniec")}
                   type="date"
                   className={pole}
                   value={form.end_date}
@@ -352,7 +352,7 @@ function JobDetail() {
             </div>
             <div>
               <label className={popis}>{t("Manažér zákazky")}</label>
-              <select
+              <select aria-label={t("Manažér zákazky")}
                 className={pole}
                 value={form.manazer_id}
                 onChange={(e) => setForm({ ...form, manazer_id: e.target.value })}
@@ -372,7 +372,7 @@ function JobDetail() {
             </div>
             <div>
               <label className={popis}>{t("Poznámka")}</label>
-              <textarea
+              <textarea aria-label={t("Poznámka")}
                 className={`${pole} min-h-20`}
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
@@ -403,7 +403,7 @@ function JobDetail() {
           <Karta
             titulok="Zisk"
             hodnota={suma(v.zisk)}
-            farba={v.zisk < 0 ? "text-destructive" : "text-emerald-600"}
+            farba={v.zisk < 0 ? "text-destructive" : "text-emerald-700"}
           />
           <Karta
             titulok="Marža"
@@ -469,7 +469,7 @@ function JobDetail() {
             {v.planovany_zisk != null && (
               <div className="mt-3 text-sm text-muted-foreground">
                 {t("Plánovaný zisk {suma}, skutočný", { suma: suma(v.planovany_zisk) })}{" "}
-                <span className={v.zisk < 0 ? "text-destructive" : "text-emerald-600"}>
+                <span className={v.zisk < 0 ? "text-destructive" : "text-emerald-700"}>
                   {suma(v.zisk)}
                 </span>
                 .

@@ -164,7 +164,7 @@ function PokladnaPage() {
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
               {t("Príjmy spolu")}
             </div>
-            <div className="mt-1 text-xl font-semibold tabular-nums text-emerald-600">
+            <div className="mt-1 text-xl font-semibold tabular-nums text-emerald-700">
               {suma(stav?.prijmy ?? 0)}
             </div>
           </div>
@@ -310,7 +310,7 @@ function PokladnaPage() {
                       <td className="p-3">
                         <span className="inline-flex items-center gap-1.5">
                           {r.typ === "prijem" ? (
-                            <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
+                            <ArrowDownCircle className="h-4 w-4 text-emerald-700" />
                           ) : (
                             <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
                           )}
@@ -328,7 +328,7 @@ function PokladnaPage() {
                       </td>
                       <td
                         className={`p-3 text-right tabular-nums ${
-                          r.typ === "prijem" ? "text-emerald-600" : ""
+                          r.typ === "prijem" ? "text-emerald-700" : ""
                         }`}
                       >
                         {sumaSoZnamienkom(r)}
@@ -365,7 +365,7 @@ function PokladnaPage() {
                   <div className="flex items-start justify-between gap-2">
                     <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
                       {r.typ === "prijem" ? (
-                        <ArrowDownCircle className="h-4 w-4 shrink-0 text-emerald-600" />
+                        <ArrowDownCircle className="h-4 w-4 shrink-0 text-emerald-700" />
                       ) : (
                         <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
@@ -373,7 +373,7 @@ function PokladnaPage() {
                     </span>
                     <span
                       className={`shrink-0 whitespace-nowrap font-semibold tabular-nums ${
-                        r.typ === "prijem" ? "text-emerald-600" : ""
+                        r.typ === "prijem" ? "text-emerald-700" : ""
                       }`}
                     >
                       {sumaSoZnamienkom(r)}

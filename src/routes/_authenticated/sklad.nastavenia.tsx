@@ -166,7 +166,7 @@ function WarehousesPage() {
                   <td className="p-3 text-muted-foreground">{w.address ?? "—"}</td>
                   <td className="p-3">
                     {w.active ? (
-                      <span className="text-emerald-600">{t("Aktívny")}</span>
+                      <span className="text-emerald-700">{t("Aktívny")}</span>
                     ) : (
                       <span className="text-muted-foreground">{t("Neaktívny")}</span>
                     )}

@@ -137,7 +137,7 @@ export function MarketingNav() {
 
           <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
             <PrepinacJazyka className="hidden sm:inline-flex" />
-            <span className="hidden 2xl:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <span className="hidden 2xl:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-hover">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               {t("30 dní zdarma")}
             </span>

@@ -30,10 +30,10 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_CLS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
   sent: "bg-secondary text-secondary-foreground",
-  accepted: "bg-primary/15 text-primary",
+  accepted: "bg-primary/15 text-primary-hover",
   rejected: "bg-destructive/15 text-destructive",
   expired: "bg-muted text-muted-foreground",
-  converted: "bg-primary/15 text-primary",
+  converted: "bg-primary/15 text-primary-hover",
 };
 
 function QuotesPage() {
@@ -166,6 +166,7 @@ function QuotesPage() {
                 <th className="w-10 p-3">
                   <input
                     type="checkbox"
+                    aria-label={t("Vybrať všetko")}
                     checked={list.allOnPageSelected}
                     onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                   />
@@ -209,6 +210,7 @@ function QuotesPage() {
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
+                      aria-label={t("Vybrať riadok")}
                       checked={!!list.selected[q.id]}
                       onChange={(e) => list.toggleSelect(q.id, e.target.checked)}
                     />
@@ -243,7 +245,7 @@ function QuotesPage() {
                         <RotateCcw className="h-4 w-4" />
                       </button>
                     ) : (
-                      <button
+                      <button aria-label={t("Zmazať")}
                         onClick={() => setRowDelete(q)}
                         className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                       >

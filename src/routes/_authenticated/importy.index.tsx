@@ -271,14 +271,14 @@ function ImportHistoryPage() {
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
-    completed: "bg-primary/10 text-primary",
-    running: "bg-amber-500/10 text-amber-700",
+    completed: "bg-primary/10 text-primary-hover",
+    running: "bg-amber-500/10 text-amber-800",
     uploaded: "bg-secondary text-foreground/70",
     failed: "bg-destructive/10 text-destructive",
     error: "bg-destructive/10 text-destructive",
-    success: "bg-primary/10 text-primary",
-    duplicate: "bg-amber-500/10 text-amber-700",
-    warning: "bg-amber-500/10 text-amber-700",
+    success: "bg-primary/10 text-primary-hover",
+    duplicate: "bg-amber-500/10 text-amber-800",
+    warning: "bg-amber-500/10 text-amber-800",
   };
   return (
     <span

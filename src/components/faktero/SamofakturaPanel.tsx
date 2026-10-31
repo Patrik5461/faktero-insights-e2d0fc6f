@@ -400,7 +400,7 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
                 type="button"
                 onClick={oznac}
                 disabled={busy !== null}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
               >
                 {busy === "ok" && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t("Označiť ako odsúhlasenú")}

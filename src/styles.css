@@ -118,6 +118,8 @@
   --popover-foreground: oklch(0.22 0.008 80);
   /* Deep saturated green ~#0F7A4D */
   --primary: oklch(0.52 0.13 155);
+  /* Aj text na zelenom podklade (bg-primary/10–15): `text-primary` tam má len
+     4,2–4,5:1, tento odtieň 5,2–5,7:1 (WCAG AA). */
   --primary-hover: oklch(0.46 0.13 155);
   --primary-foreground: oklch(0.99 0 0);
   /* Warm stone secondary */
@@ -321,6 +323,9 @@ html[data-dizajn="kompaktny"] .pole-dokladu-doplnok {
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
   --primary: oklch(0.929 0.013 255.508);
+  /* Tmavší odtieň v svetlom režime slúži aj ako text na zelenom podklade
+     (bg-primary/10 + text-primary-hover); v tme musí byť naopak svetlý. */
+  --primary-hover: oklch(0.86 0.02 255.5);
   --primary-foreground: oklch(0.208 0.042 265.755);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);

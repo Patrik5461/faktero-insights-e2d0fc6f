@@ -103,7 +103,7 @@ export function AktualnyDatumOkno({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 rounded-full bg-amber-500/15 p-2 text-amber-700 dark:text-amber-400">
+          <span className="mt-0.5 rounded-full bg-amber-500/15 p-2 text-amber-800 dark:text-amber-400">
             {k.mozno ? <CalendarClock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
           </span>
           <div className="min-w-0 space-y-1">

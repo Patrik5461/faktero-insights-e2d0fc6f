@@ -1119,7 +1119,7 @@ function PurchaseInvoicesPage() {
                 <button
                   disabled={parujem === z.transactionId}
                   onClick={() => sparuj(z)}
-                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary disabled:opacity-60"
+                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary-hover disabled:opacity-60"
                 >
                   {z.istota === "auto" ? t("Spárovať") : t("Áno, patrí k sebe")}
                 </button>
@@ -1161,6 +1161,7 @@ function PurchaseInvoicesPage() {
                 <th className="w-8 p-3">
                   <input
                     type="checkbox"
+                    aria-label={t("Vybrať všetko")}
                     checked={rows.length > 0 && selected.size === rows.length}
                     onChange={toggleAll}
                   />
@@ -1225,6 +1226,7 @@ function PurchaseInvoicesPage() {
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
+                      aria-label={t("Vybrať riadok")}
                       checked={selected.has(r.id)}
                       onChange={() => toggle(r.id)}
                     />
@@ -1689,7 +1691,7 @@ function StatCard({
         : "border-border bg-card";
   return (
     <div className={`rounded-xl border p-4 ${toneCls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
+      <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
   );

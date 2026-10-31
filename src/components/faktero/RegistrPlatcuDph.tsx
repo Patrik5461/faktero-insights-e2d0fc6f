@@ -84,9 +84,9 @@ export function RegistrPlatcuDph({
           ) : v.nespolehlivy ? (
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           ) : zle || !v.nalezen ? (
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
           ) : (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
           )}
           <div>
             <div className="font-medium">

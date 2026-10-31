@@ -258,7 +258,7 @@ function ScannerPage() {
                       onClick={() => setUhrada(id)}
                       className={`rounded-md border px-3 py-2 text-sm ${
                         uhrada === id
-                          ? "border-primary bg-primary/10 font-medium text-primary"
+                          ? "border-primary bg-primary/10 font-medium text-primary-hover"
                           : uhrada
                             ? "border-border hover:bg-secondary"
                             : "border-primary/40 font-medium hover:bg-secondary"
@@ -321,7 +321,7 @@ function ScannerPage() {
           {result && result.zdroj === "nic" && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
               <div className="flex items-start gap-2">
-                <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-600" />
+                <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-800" />
                 <div>
                   <p className="font-medium">{t("Doklad sa nepodarilo prečítať")}</p>
                   <p className="text-muted-foreground">{result.poznamka ? t(result.poznamka) : null}</p>
@@ -348,7 +348,7 @@ function Povod({ result }: { result: BlocekVysledok }) {
   if (result.zdroj === "ekasa") {
     return (
       <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
-        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
+        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-700" />
         <div>
           <p className="font-medium text-emerald-800 dark:text-emerald-300">
             {t("Načítané z Finančnej správy")}
@@ -362,7 +362,7 @@ function Povod({ result }: { result: BlocekVysledok }) {
   }
   return (
     <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-      <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-600" />
+      <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-800" />
       <div>
         <p className="font-medium">
           {result.zdroj === "qr" ? t("Len z QR kódu") : t("Odhadnuté z fotky")}

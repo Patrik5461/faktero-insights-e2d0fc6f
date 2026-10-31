@@ -286,7 +286,7 @@ function InventoryPage() {
                           />
                         </td>
                         <td
-                          className={`p-3 text-right ${diff != null && diff !== 0 ? (diff > 0 ? "text-emerald-600" : "text-destructive") : "text-muted-foreground"}`}
+                          className={`p-3 text-right ${diff != null && diff !== 0 ? (diff > 0 ? "text-emerald-700" : "text-destructive") : "text-muted-foreground"}`}
                         >
                           {diff == null ? "—" : (diff > 0 ? "+" : "") + formatujCislo(diff, 0, 2)}
                         </td>

@@ -1,4 +1,8 @@
 import { useEffect, useRef } from "react";
+import { drzFokusVOkne, vrchneOkno } from "@/lib/faktero/fokus-okna";
+
+/** Okná, ktorých fokus už niekto drží (otvorené skôr, pod novým oknom). */
+const drzane = new WeakSet<HTMLElement>();
 
 /**
  * Zavrie ručne kreslené modálne okno klávesou Esc.
@@ -15,7 +19,9 @@ import { useEffect, useRef } from "react";
  * volať nepodmienene aj nad zavretým dialógom a poradie hookov ostane rovnaké.
  *
  * Používa sa spolu s `role="dialog"` a `aria-modal="true"` na paneli — bez toho
- * o okne nevie čítačka obrazovky ani testy.
+ * o okne nevie čítačka obrazovky ani testy. Také okno hook navyše drží vo
+ * fokuse (Tab neodíde pod okno, po zatvorení sa fokus vráti), pozri
+ * `fokus-okna.ts`. Plávajúce panely bez `aria-modal` fokus nedržia.
  */
 export function useZatvorNaEscape(onClose: (() => void) | undefined | null) {
   const drzak = useRef(onClose);
@@ -28,6 +34,18 @@ export function useZatvorNaEscape(onClose: (() => void) | undefined | null) {
       if (e.key === "Escape") drzak.current?.();
     };
     window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
+    const okno = vrchneOkno();
+    let uvolni: (() => void) | null = null;
+    if (okno && !drzane.has(okno)) {
+      drzane.add(okno);
+      uvolni = drzFokusVOkne(okno);
+    }
+    return () => {
+      window.removeEventListener("keydown", h);
+      if (okno && uvolni) {
+        drzane.delete(okno);
+        uvolni();
+      }
+    };
   }, [aktivne]);
 }

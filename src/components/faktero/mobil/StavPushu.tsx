@@ -82,9 +82,9 @@ export function StavPushu() {
         <div className="mt-2 space-y-1 text-[13px]">
           <div className="flex items-center gap-2">
             {hotovo ? (
-              <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+              <Check className="h-4 w-4 shrink-0 text-emerald-700" />
             ) : (
-              <TriangleAlert className="h-4 w-4 shrink-0 text-amber-600" />
+              <TriangleAlert className="h-4 w-4 shrink-0 text-amber-700" />
             )}
             <span>
               {hotovo

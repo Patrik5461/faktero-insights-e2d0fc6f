@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/zakazky/")({
 
 const FARBA_STAVU: Record<StavZakazky, string> = {
   active: "bg-blue-500/10 text-blue-600",
-  closed: "bg-emerald-500/10 text-emerald-600",
+  closed: "bg-emerald-500/10 text-emerald-700",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
@@ -168,7 +168,7 @@ function JobsPage() {
                     </td>
                     <td
                       className={`p-3 text-right font-medium tabular-nums ${
-                        j.zisk < 0 ? "text-destructive" : "text-emerald-600"
+                        j.zisk < 0 ? "text-destructive" : "text-emerald-700"
                       }`}
                     >
                       {suma(j.zisk)}
@@ -197,7 +197,7 @@ function JobsPage() {
                   <td className="p-3 text-right tabular-nums">{suma(spolu.naklady)}</td>
                   <td
                     className={`p-3 text-right tabular-nums ${
-                      spolu.zisk < 0 ? "text-destructive" : "text-emerald-600"
+                      spolu.zisk < 0 ? "text-destructive" : "text-emerald-700"
                     }`}
                   >
                     {suma(spolu.zisk)}

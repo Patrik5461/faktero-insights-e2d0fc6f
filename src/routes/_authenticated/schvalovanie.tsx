@@ -103,7 +103,7 @@ function Stranka() {
               <button
                 onClick={() => hromadne("schvalit")}
                 disabled={busy || !vyber.size}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} {t("Schváliť ({n})", { n: vyber.size })}
               </button>
@@ -151,6 +151,7 @@ function Stranka() {
                         <td className="py-1.5">
                           <input
                             type="checkbox"
+                            aria-label={t("Vybrať riadok")}
                             checked={vyber.has(k)}
                             onChange={(e) => {
                               const n = new Set(vyber);

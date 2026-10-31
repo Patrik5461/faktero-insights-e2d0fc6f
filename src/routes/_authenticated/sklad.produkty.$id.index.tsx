@@ -332,7 +332,7 @@ function ProductStockDetail() {
                     </td>
                     <td className="p-2">{t(TYPE_LABEL[m.type] ?? m.type)}</td>
                     <td
-                      className={`p-2 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
+                      className={`p-2 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"}`}
                     >
                       {pohybText(m.type, m.quantity)}
                     </td>

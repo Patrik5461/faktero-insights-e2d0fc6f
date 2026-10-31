@@ -294,7 +294,7 @@ function TxPage() {
               <button
                 onClick={onSync}
                 disabled={accounts.length === 0 || busy}
-                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> {t("Synchronizovať")}
               </button>

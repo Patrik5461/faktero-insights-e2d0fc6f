@@ -61,7 +61,7 @@ export function stavPonuky(p: Ponuka): { kluc: Kluc; trieda: string } {
   if (p.status === "rejected")
     return { kluc: "ponuky.stav.zamietnuta", trieda: "bg-app-chyba-jemna text-app-chyba" };
   if (p.status === "accepted")
-    return { kluc: "ponuky.stav.prijata", trieda: "bg-app-zelena-jemna text-emerald-600" };
+    return { kluc: "ponuky.stav.prijata", trieda: "bg-app-zelena-jemna text-emerald-700" };
   if (p.valid_until && p.valid_until < dnesBratislava()) {
     return {
       kluc: "ponuky.stav.poPlatnosti",

@@ -891,7 +891,7 @@ export function Jazda({
         */}
         {detekcia.dostupna && detekcia.zapnuta && detekcia.prekazka && (
           <div className="flex items-start gap-3 rounded-app border border-app-ramik bg-app-zelena-jemna p-4">
-            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
             <div className="min-w-0">
               <div className="text-sm font-medium">{t("jz.detekciaNemaAkoBezat")}</div>
               <div className="mt-1 text-xs text-app-text-2">{detekcia.prekazka}</div>
