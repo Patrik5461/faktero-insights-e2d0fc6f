@@ -336,22 +336,22 @@ describe("česká firma a prenesenie", () => {
     },
   ];
 
-  it("predvolené UDpdp dostane len slovenská firma", () => {
+  // Od 31. 10. 2026: aj česká Pohoda má UDpdp (portal.pohoda.cz), predvolené členenie
+  // dostane aj CZ firma — predtým jej doklad v § 92a bez nastavenia z exportu vypadol.
+  it("predvolené UDpdp dostane aj česká firma", () => {
     expect(clenenieVydanejPdp(null, { country: "SK" })).toBe("UDpdp");
-    expect(clenenieVydanejPdp(null, cz)).toBe("");
+    expect(clenenieVydanejPdp(null, cz)).toBe("UDpdp");
     expect(clenenieVydanejPdp({ clenenieDphPdp: "UDA5" }, cz)).toBe("UDA5");
   });
 
-  it("bez členenia sa faktúra ohlási a do XML nejde", () => {
-    expect(prekazkaVydanej(faktura, polozky, cz)).toMatch(
-      /^20260006 — prenesenie daňovej povinnosti \(§ 92a\) bez členenia/,
-    );
+  it("bez nastaveného členenia ide faktúra s predvoleným UDpdp", () => {
+    expect(prekazkaVydanej(faktura, polozky, cz)).toBeNull();
     const xml = buildPohodaInvoiceXml({
       company: cz,
       invoices: [{ invoice: faktura, items: polozky }],
     });
-    expect(xml).not.toContain("UDpdp");
-    expect(xml).not.toContain(">20260006<");
+    expect(xml).toContain("UDpdp");
+    expect(xml).toContain(">20260006<");
   });
 
   it("s členením firmy alebo dokladu prejde a UDpdp v ňom nie je", () => {
@@ -365,12 +365,10 @@ describe("česká firma a prenesenie", () => {
     expect(prekazkaVydanej({ ...faktura, pohoda_clenenie_dph: "UDA5" }, polozky, cz)).toBeNull();
   });
 
-  it("položka v prenesení na bežnej českej faktúre tiež potrebuje členenie", () => {
+  it("položka v prenesení na bežnej českej faktúre dostane predvolené členenie", () => {
     const f = { ...faktura, reverse_charge: false, reverse_charge_type: null };
     const p = [{ ...polozky[0], prenesenie: true }];
-    expect(prekazkaVydanej(f, p, cz)).toMatch(/§ 92a/);
+    expect(prekazkaVydanej(f, p, cz)).toBeNull();
     expect(prekazkaVydanej(f, [{ ...p[0], pohoda_clenenie_dph: "UDA5" }], cz)).toBeNull();
-    const xml = buildPohodaInvoiceXml({ company: cz, invoices: [{ invoice: f, items: p }] });
-    expect(xml).not.toContain("UDpdp");
   });
 });
