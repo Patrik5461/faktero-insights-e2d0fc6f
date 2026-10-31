@@ -1182,7 +1182,7 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
             <h3 className="mt-6 font-semibold">{t("Opakovanie pri zlyhaní")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
-                "Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero doručenie hneď zopakuje — celkovo 3 pokusy počas niekoľkých sekúnd. Neskôr sa už neposiela, preto pri výpadku dočítajte zmeny cez API (napr. updated_since alebo GET /bank-transactions). Všetky pokusy a ich stavy nájdete v sekcii Webhooky → Logy. Adresa musí byť https na verejnom serveri (port 443).",
+                "Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero doručenie zopakuje po 1 min, 5 min, 30 min, 2 h, 6 h, 12 h a 24 h — spolu 8 pokusov počas necelých dvoch dní. Potom ho vzdá a upozorní správcu firmy; z nastavení Webhooky ho možno poslať znova. Každý pokus nesie hlavičky Idempotency-Key a X-Faktero-Delivery-Id (pri opakovaní tej istej udalosti rovnaké) a X-Faktero-Attempt s číslom pokusu — podľa kľúča spoznáte, že udalosť už máte spracovanú. Adresa musí byť https na verejnom serveri (port 443) a overuje sa pri každom pokuse.",
               )}
             </p>
           </section>

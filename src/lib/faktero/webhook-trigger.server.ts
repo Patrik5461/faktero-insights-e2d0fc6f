@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { createHmac } from "crypto";
-import { overAdresuWebhooku } from "./webhook-adresa.server";
+import { posliPokusWebhooku } from "./webhook-odoslanie.server";
+import { ZAMOK_POKUSU_MS, poNeuspechu } from "./webhook-opakovanie";
 
 export type FakteroEvent =
   | "invoice.created"
@@ -10,43 +10,6 @@ export type FakteroEvent =
   | "customer.created"
   | "efaktura.received"
   | "bank_transaction.created";
-
-const RETRY_DELAYS_MS = [0, 1500, 4000];
-
-function sign(secret: string, body: string) {
-  return createHmac("sha256", secret).update(body).digest("hex");
-}
-
-async function deliverOne(opts: {
-  url: string;
-  secret: string | null;
-  event: FakteroEvent;
-  body: string;
-}) {
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-    "x-faktero-event": opts.event,
-    "user-agent": "Faktero-Webhooks/1.0",
-  };
-  if (opts.secret) headers["x-faktero-signature"] = sign(opts.secret, opts.body);
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 10_000);
-  try {
-    await overAdresuWebhooku(opts.url);
-    const res = await fetch(opts.url, {
-      method: "POST",
-      headers,
-      body: opts.body,
-      signal: ctrl.signal,
-      // Presmerovanie by obišlo kontrolu adresy.
-      redirect: "manual",
-    });
-    const text = await res.text().catch(() => "");
-    return { status: res.status, body: text.slice(0, 2000), ok: res.ok };
-  } finally {
-    clearTimeout(t);
-  }
-}
 
 export async function triggerEvent(opts: {
   company_id: string;
@@ -100,6 +63,8 @@ export async function triggerEvent(opts: {
   const tasks = hooks
     .filter((h: any) => h.active && (h.events?.includes(opts.event) || h.events?.includes("*")))
     .map(async (h: any) => {
+      // Riadok sa založí rovno so zámkom — cron ho počas prvého pokusu nevezme.
+      const teraz = Date.now();
       const { data: logRow } = await supabaseAdmin
         .from("webhook_delivery_logs")
         .insert({
@@ -109,57 +74,168 @@ export async function triggerEvent(opts: {
           payload,
           status: "pending",
           attempt_count: 0,
-        })
-        .select("id")
+          next_attempt_at: new Date(teraz).toISOString(),
+          sending_until: new Date(teraz + ZAMOK_POKUSU_MS).toISOString(),
+        } as any)
+        .select("id, attempt_count")
         .single();
-
-      let lastStatus: number | null = null;
-      let lastBody: string | null = null;
-      let lastErr: string | null = null;
-      let lastDuration: number | null = null;
-
-      for (let i = 0; i < RETRY_DELAYS_MS.length; i++) {
-        if (RETRY_DELAYS_MS[i]) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[i]));
-        const t0 = Date.now();
-        try {
-          const r = await deliverOne({ url: h.url, secret: h.secret, event: opts.event, body });
-          lastDuration = Date.now() - t0;
-          lastStatus = r.status;
-          lastBody = r.body;
-          if (r.ok) {
-            await supabaseAdmin
-              .from("webhook_delivery_logs")
-              .update({
-                status: "success",
-                response_status: r.status,
-                response_body: r.body,
-                attempt_count: i + 1,
-                error_message: null,
-                duration_ms: lastDuration,
-              })
-              .eq("id", logRow!.id);
-            return;
-          }
-        } catch (e: any) {
-          lastDuration = Date.now() - t0;
-          lastErr = e?.message ?? "fetch_failed";
-        }
-      }
-      await supabaseAdmin
-        .from("webhook_delivery_logs")
-        .update({
-          status: "failed",
-          response_status: lastStatus,
-          response_body: lastBody,
-          attempt_count: RETRY_DELAYS_MS.length,
-          error_message: lastErr,
-          duration_ms: lastDuration,
-        })
-        .eq("id", logRow!.id);
+      if (!logRow) return;
+      await dorucZaznam({ id: logRow.id, attempt_count: 0, event_type: opts.event, payload }, h);
     });
 
   // Fire-and-forget but don't lose errors silently
   await Promise.allSettled(tasks);
+}
+
+type ZaznamDorucenia = {
+  id: string;
+  attempt_count: number;
+  event_type: string;
+  payload: unknown;
+};
+type Webhook = { id: string; url: string; secret: string | null; active: boolean };
+
+/**
+ * Jeden pokus pre už zabratý riadok (`sending_until` drží volajúci) a zápis
+ * výsledku: úspech, ďalší pokus podľa rozvrhu, alebo vzdané.
+ */
+export async function dorucZaznam(z: ZaznamDorucenia, hook: Webhook) {
+  const pokus = (z.attempt_count ?? 0) + 1;
+  const r = await posliPokusWebhooku({
+    url: hook.url,
+    secret: hook.secret,
+    event: z.event_type,
+    // Telo je pri každom pokuse to isté — aj čas `created_at` v ňom je čas udalosti.
+    body: JSON.stringify(z.payload),
+    dorucenieId: z.id,
+    pokus,
+  });
+  const teraz = new Date();
+  const zaklad = {
+    attempt_count: pokus,
+    response_status: r.status,
+    response_body: r.body,
+    error_message: r.chyba,
+    duration_ms: r.trvanieMs,
+    last_attempt_at: teraz.toISOString(),
+    sending_until: null,
+  };
+  const zmena = r.ok
+    ? { ...zaklad, status: "success", next_attempt_at: null }
+    : { ...zaklad, ...poNeuspechu(pokus, teraz) };
+  await supabaseAdmin
+    .from("webhook_delivery_logs")
+    .update(zmena as any)
+    .eq("id", z.id);
+  return { ...r, status: zmena.status as string, pokus, http: r.status };
+}
+
+/**
+ * Zaberie riadok na pokus. Vráti ho len vtedy, keď ho nikto iný práve
+ * neposiela — cron a tlačidlo „Poslať znova“ sa tak nikdy neprekryjú.
+ */
+async function zaberZaznam(id: string, opts: { len_na_rade: boolean; stavy: string[] }) {
+  const teraz = new Date();
+  let q = supabaseAdmin
+    .from("webhook_delivery_logs")
+    .update({ sending_until: new Date(teraz.getTime() + ZAMOK_POKUSU_MS).toISOString() } as any)
+    .eq("id", id)
+    .in("status", opts.stavy)
+    .or(`sending_until.is.null,sending_until.lt."${teraz.toISOString()}"`);
+  if (opts.len_na_rade) q = q.lte("next_attempt_at", teraz.toISOString());
+  const { data } = await q.select("id, company_id, webhook_id, event_type, payload, attempt_count");
+  return (
+    (data?.[0] as (ZaznamDorucenia & { company_id: string; webhook_id: string }) | undefined) ??
+    null
+  );
+}
+
+async function nacitajWebhook(id: string): Promise<Webhook | null> {
+  const { data } = await supabaseAdmin
+    .from("webhooks")
+    .select("id, url, secret, active")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as Webhook | null) ?? null;
+}
+
+/** Webhook medzitým vypli — ďalej sa neskúša, ale nie je to porucha prijímateľa. */
+async function ukonciPreVypnutyWebhook(id: string) {
+  await supabaseAdmin
+    .from("webhook_delivery_logs")
+    .update({
+      status: "failed",
+      next_attempt_at: null,
+      sending_until: null,
+      error_message: "Webhook je vypnutý — doručenie sa ďalej neopakuje.",
+    } as any)
+    .eq("id", id);
+}
+
+/**
+ * Cron: doručenia, ktorým nadišiel čas ďalšieho pokusu (aj tie, ktorých
+ * prvý pokus prerušil pád procesu — po vypršaní zámku).
+ */
+export async function spracujOpakovaniaWebhookov(opts: { dokedy?: number } = {}) {
+  const dokedy = opts.dokedy ?? Date.now() + 40_000;
+  const teraz = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("webhook_delivery_logs")
+    .select("id")
+    .in("status", ["pending", "retrying"])
+    .lte("next_attempt_at", teraz)
+    .or(`sending_until.is.null,sending_until.lt."${teraz}"`)
+    .order("next_attempt_at")
+    .limit(100);
+  if (error) throw new Error(error.message);
+  const hooky = new Map<string, Promise<Webhook | null>>();
+  let dorucenych = 0;
+  let neuspesnych = 0;
+  const riadky = (data ?? []) as { id: string }[];
+  for (let i = 0; i < riadky.length; i += 5) {
+    if (Date.now() > dokedy) break;
+    await Promise.all(
+      riadky.slice(i, i + 5).map(async ({ id }) => {
+        const z = await zaberZaznam(id, { len_na_rade: true, stavy: ["pending", "retrying"] });
+        if (!z) return;
+        if (!hooky.has(z.webhook_id)) hooky.set(z.webhook_id, nacitajWebhook(z.webhook_id));
+        const hook = await hooky.get(z.webhook_id)!;
+        if (!hook?.active) return ukonciPreVypnutyWebhook(z.id);
+        const r = await dorucZaznam(z, hook);
+        if (r.ok) dorucenych++;
+        else neuspesnych++;
+      }),
+    );
+  }
+  return { na_rade: riadky.length, dorucenych, neuspesnych };
+}
+
+/**
+ * „Poslať znova“ z nastavení — hneď jeden pokus pre opakované alebo vzdané
+ * doručenie, s tým istým `Idempotency-Key` ako predtým. Úspešné sa znova
+ * neposiela: prijímateľ ho už má.
+ */
+export async function posliWebhookZnova(id: string) {
+  const z = await zaberZaznam(id, { len_na_rade: false, stavy: ["retrying", "failed"] });
+  if (!z) {
+    const { data } = await supabaseAdmin
+      .from("webhook_delivery_logs")
+      .select("status")
+      .eq("id", id)
+      .maybeSingle();
+    if (data?.status === "success") throw new Error("Udalosť už bola doručená.");
+    throw new Error("Doručenie práve prebieha — skúste to o chvíľu.");
+  }
+  const hook = await nacitajWebhook(z.webhook_id);
+  if (!hook) throw new Error("Webhook už neexistuje");
+  if (!hook.active) {
+    await supabaseAdmin
+      .from("webhook_delivery_logs")
+      .update({ sending_until: null } as any)
+      .eq("id", z.id);
+    throw new Error("Webhook je vypnutý.");
+  }
+  return dorucZaznam(z, hook);
 }
 
 /** Build a standard invoice payload */

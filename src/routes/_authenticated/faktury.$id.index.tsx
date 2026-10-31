@@ -1008,7 +1008,11 @@ function InvoiceDetail() {
       toast.success(t("E-mail odoslaný"));
       if (odoslane?.vynechane?.length) {
         /* Mail odišiel, ale nie celý — to sa musí povedať nahlas. */
-        toast.warning(t("Do mailu sa nezmestili: {subory}", { subory: odoslane.vynechane.join(", ") }), {
+        toast.warning((odoslane as any).odkaz_prilohy
+          ? t("Do mailu sa nezmestili: {subory} — príjemca ich dostal ako odkaz na stiahnutie (platí 30 dní).", {
+              subory: odoslane.vynechane.join(", "),
+            })
+          : t("Do mailu sa nezmestili: {subory}", { subory: odoslane.vynechane.join(", ") }), {
           duration: 12000,
         });
       }

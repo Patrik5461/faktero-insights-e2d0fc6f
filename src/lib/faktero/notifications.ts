@@ -301,6 +301,60 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
   return out;
 }
 
+export type WebhookVzdany = {
+  id: string;
+  webhook_id: string;
+  event_type: string;
+  created_at: string;
+  error_message: string | null;
+};
+
+/**
+ * Vzdané doručenia webhookov, jedna položka na webhook. Prečítaná je, keď
+ * sú prečítané všetky jej doručenia — nové zlyhanie ju vráti.
+ */
+export function webhookyVzdane(
+  zlyhane: WebhookVzdany[],
+  hooky: { id: string; url: string }[],
+): AppNotification[] {
+  const url = new Map(hooky.map((h) => [h.id, h.url]));
+  const podlaHooku = new Map<string, WebhookVzdany[]>();
+  for (const z of zlyhane) {
+    if (!url.has(z.webhook_id)) continue;
+    podlaHooku.set(z.webhook_id, [...(podlaHooku.get(z.webhook_id) ?? []), z]);
+  }
+  return [...podlaHooku.entries()].map(([hookId, zoznam]) => {
+    const najnovsie = zoznam.reduce((a, b) => (a.created_at > b.created_at ? a : b));
+    let host = url.get(hookId) ?? "";
+    try {
+      host = new URL(host).host;
+    } catch {
+      /* necháme celú adresu */
+    }
+    return {
+      // Najnovšie doručenie v kľúči: nové zlyhanie po prečítaní je nový oznam.
+      key: `webhook_vzdane:${hookId}:${najnovsie.id}`,
+      kluceClenov: zoznam.map((z) => `webhook_vzdane:${hookId}:${z.id}`),
+      severity: "danger" as const,
+      title:
+        zoznam.length === 1
+          ? "Webhook {adresa} sa nepodarilo doručiť"
+          : "Webhook {adresa}: {n} udalostí sa nepodarilo doručiť",
+      detail: najnovsie.error_message
+        ? "{udalost} · {chyba}"
+        : "{udalost} · po všetkých opakovaniach",
+      params: {
+        adresa: host,
+        n: zoznam.length,
+        udalost: najnovsie.event_type,
+        chyba: najnovsie.error_message ?? "",
+      },
+      to: "/webhooky",
+      date: najnovsie.created_at.slice(0, 10),
+    };
+  });
+}
+
 /*
   Dôvody zamietnutia platby podľa ISO 20022 (reasonCode z banky). Banka ich
   niekedy pošle len ako kód, niekedy s textom za ním.

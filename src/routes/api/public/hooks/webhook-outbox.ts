@@ -2,6 +2,9 @@
  * Cron: doručenie webhookov z fronty `webhook_outbox` (invoice.paid,
  * bank_transaction.created). Volaný každú minútu cez pg_cron s hlavičkou
  * `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
+ *
+ * Ten istý beh posiela aj opakovania neúspešných doručení všetkých udalostí
+ * (rozvrh v `webhook-opakovanie.ts`) — samostatný cron by len pribudol.
  */
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -19,9 +22,13 @@ export const Route = createFileRoute("/api/public/hooks/webhook-outbox")({
           });
         }
         try {
+          const zaciatok = Date.now();
           const { spracujWebhookOutbox } = await import("@/lib/faktero/webhook-outbox.server");
           const r = await spracujWebhookOutbox();
-          return new Response(JSON.stringify({ ok: true, ...r }), {
+          const { spracujOpakovaniaWebhookov } =
+            await import("@/lib/faktero/webhook-trigger.server");
+          const opakovania = await spracujOpakovaniaWebhookov({ dokedy: zaciatok + 50_000 });
+          return new Response(JSON.stringify({ ok: true, ...r, opakovania }), {
             status: 200,
             headers: { "content-type": "application/json" },
           });

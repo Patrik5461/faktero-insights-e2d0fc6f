@@ -159,9 +159,16 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     */
     const { podpisHtml, podpisText } = await import("./email-podpis");
 
-    const { prilohy, vynechane } = data.s_prilohami
-      ? await (await import("./prilohy-mail.server")).prilohyDoMailu("quote", q.company_id, q.id)
-      : { prilohy: [], vynechane: [] as string[] };
+    const prilohyMail = await import("./prilohy-mail.server");
+    const { prilohy, vynechane, odkaz } = data.s_prilohami
+      ? await prilohyMail.prilohyDoMailu("quote", q.company_id, q.id)
+      : { prilohy: [], vynechane: [] as string[], odkaz: null };
+    // Čo sa do mailu nezmestí, dostane príjemca ako podpísaný odkaz na stiahnutie.
+    const { predvolenyJazykFirmy: jazykPonuky } = await import("./faktura-jazyk");
+    const odkazPriloh = prilohyMail.odkazNaPrilohyDoMailu(
+      odkaz,
+      jazykPonuky((company as any)?.country),
+    );
 
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     // Ponuka ide z vlastného SMTP firmy, keď ho má zapnutý; inak Resend.
@@ -177,10 +184,16 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         to: [data.recipient_email],
         subject,
         reply_to: company?.email_reply_to || undefined,
-        text: message + "\n" + tlacidlaDoTextu(token, q.valid_until) + podpisText(company ?? {}),
+        text:
+          message +
+          "\n" +
+          tlacidlaDoTextu(token, q.valid_until) +
+          odkazPriloh.text +
+          podpisText(company ?? {}),
         html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px">
           <div style="white-space:pre-wrap">${escapeHtml(message)}</div>
           ${tlacidlaDoMailu({ token, cislo: q.quote_number, suma: q.total, mena: q.currency, platiDo: q.valid_until })}
+          ${odkazPriloh.html}
           ${podpisHtml(company ?? {})}
         </div>`,
         attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }, ...prilohy],
@@ -213,7 +226,7 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       quote_id: q.id,
       recipient_email: data.recipient_email,
       subject,
-      message,
+      message: message + odkazPriloh.text,
       status: "sent",
       provider_message_id: json?.id ?? null,
       sent_at: new Date().toISOString(),
@@ -226,5 +239,5 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         sent_at: new Date().toISOString(),
       })
       .eq("id", q.id);
-    return { ok: true, message_id: json?.id ?? null, vynechane };
+    return { ok: true, message_id: json?.id ?? null, vynechane, odkaz_prilohy: odkaz?.url ?? null };
   });
