@@ -1,6 +1,10 @@
 /**
  * Návrat z prihlásenia do Trans.eu (OAuth 2.0 authorization code).
- * `state` je podpísaný a nesie firmu; kód platí len minútu, preto sa hneď vymení.
+ * `state` je podpísaný a nesie firmu, používateľa a nonce; ten istý nonce musí
+ * prísť v httpOnly cookie z prehliadača, ktorý prihlásenie začal (ochrana pred
+ * CSRF). Kód platí len minútu, preto sa hneď vymení.
+ *
+ * Kódy chýb v `?chyba=` prekladá na vety stránka Nastavenia → Trans.eu.
  */
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -13,24 +17,57 @@ export const Route = createFileRoute("/api/public/transeu/callback")({
         const state = url.searchParams.get("state");
         const error = url.searchParams.get("error");
         const back = `${url.protocol}//${url.host}/nastavenia/transeu`;
-        if (error) return presmeruj(`${back}?chyba=${encodeURIComponent(error.slice(0, 60))}`);
-        if (!code || !state) return presmeruj(`${back}?chyba=missing_code`);
+        const {
+          overStavTranseu,
+          dokonciPrihlasenie,
+          cookieSedi,
+          cookieZPoziadavky,
+          smiePripojit,
+          zapisChybuPrihlasenia,
+          COOKIE_TRANSEU,
+          domenaCookie,
+        } = await import("@/lib/faktero/transeu.server");
+        // Cookie je jednorazová — zmaže sa pri každom návrate.
+        const zmaz = [
+          `${COOKIE_TRANSEU}=; Path=/api/public/transeu; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
+        ];
+        const domena = domenaCookie(url.host);
+        if (domena) zmaz.push(`${zmaz[0]}; Domain=${domena}`);
+        const presmeruj = (kod: string | null) =>
+          odpoved(`${back}?${kod ? `chyba=${encodeURIComponent(kod)}` : "pripojene=1"}`, zmaz);
+
+        if (error) {
+          // Len známe kódy OAuth — do adresy nepustíme ľubovoľný text.
+          const kod = /^[a-z_]{1,40}$/.test(error) ? error : "oauth_error";
+          return presmeruj(kod);
+        }
+        if (!code || !state) return presmeruj("missing_code");
         try {
-          const { overStavTranseu, dokonciPrihlasenie } =
-            await import("@/lib/faktero/transeu.server");
-          const companyId = overStavTranseu(state);
-          if (!companyId) return presmeruj(`${back}?chyba=invalid_state`);
-          await dokonciPrihlasenie(companyId, code);
-          return presmeruj(`${back}?pripojene=1`);
+          const st = overStavTranseu(state);
+          if (!st) return presmeruj("invalid_state");
+          if (!cookieSedi(cookieZPoziadavky(request.headers.get("cookie")), st.nonce))
+            return presmeruj("csrf");
+          if (!(await smiePripojit(st.companyId, st.userId))) return presmeruj("invalid_state");
+          try {
+            await dokonciPrihlasenie(st.companyId, code);
+          } catch (e: any) {
+            // Firma je overená — dôvod ukáže stránka pri účte.
+            await zapisChybuPrihlasenia(st.companyId, String(e?.message ?? e)).catch(() => {});
+            console.error("[transeu callback]", e?.message ?? e);
+            return presmeruj("callback_failed");
+          }
+          return presmeruj(null);
         } catch (e: any) {
           console.error("[transeu callback]", e?.message ?? e);
-          return presmeruj(`${back}?chyba=callback_failed`);
+          return presmeruj("callback_failed");
         }
       },
     },
   },
 });
 
-function presmeruj(to: string): Response {
-  return new Response(null, { status: 302, headers: { Location: to } });
+function odpoved(to: string, cookies: string[]): Response {
+  const h = new Headers({ Location: to, "Cache-Control": "no-store" });
+  for (const c of cookies) h.append("Set-Cookie", c);
+  return new Response(null, { status: 302, headers: h });
 }

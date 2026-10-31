@@ -95,38 +95,111 @@ function kluc(): string {
   return k;
 }
 
-/** Podpísaný `state` s firmou; platí 10 minút (kód z Trans.eu aj tak len minútu). */
-export function podpisanyStavTranseu(companyId: string): string {
-  const telo = `${companyId}.${Date.now()}.${randomBytes(8).toString("hex")}`;
+/** Cookie, ktorá viaže prihlásenie na prehliadač, v ktorom začalo (ochrana pred CSRF). */
+export const COOKIE_TRANSEU = "faktero_transeu_oauth";
+const PLATNOST_STAVU_MS = 10 * 60 * 1000;
+
+export type StavTranseu = { companyId: string; userId: string; nonce: string };
+
+/**
+ * Podpísaný `state` s firmou, používateľom a náhodným `nonce`; platí 10 minút
+ * (kód z Trans.eu aj tak len minútu). Ten istý `nonce` dostane prehliadač do
+ * httpOnly cookie — callback prijme len state z prehliadača, ktorý prihlásenie
+ * začal. Inak by útočník mohol poslať obeti svoj odkaz na prihlásenie a jej
+ * účet Trans.eu by sa pripojil k firme útočníka (OAuth login CSRF).
+ */
+export function podpisanyStavTranseu(
+  companyId: string,
+  userId: string,
+  nonce = randomBytes(16).toString("hex"),
+): string {
+  const telo = `${companyId}.${userId}.${Date.now()}.${nonce}`;
   const mac = createHmac("sha256", kluc()).update(`transeu.${telo}`).digest("hex").slice(0, 32);
   return Buffer.from(`${telo}.${mac}`).toString("base64url");
 }
 
-export function overStavTranseu(stav: string): string | null {
-  let surovy: string;
-  try {
-    surovy = Buffer.from(stav, "base64url").toString("utf8");
-  } catch {
-    return null;
-  }
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function overStavTranseu(stav: string): StavTranseu | null {
+  const surovy = Buffer.from(String(stav ?? ""), "base64url").toString("utf8");
   const casti = surovy.split(".");
-  if (casti.length !== 4) return null;
-  const [id, ts, nonce, mac] = casti;
+  if (casti.length !== 5) return null;
+  const [companyId, userId, ts, nonce, mac] = casti;
   const ocakavany = createHmac("sha256", kluc())
-    .update(`transeu.${id}.${ts}.${nonce}`)
+    .update(`transeu.${companyId}.${userId}.${ts}.${nonce}`)
     .digest("hex")
     .slice(0, 32);
   const a = Buffer.from(mac);
   const b = Buffer.from(ocakavany);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   const vek = Date.now() - Number(ts);
-  if (!Number.isFinite(vek) || vek < 0 || vek > 10 * 60 * 1000) return null;
-  return /^[0-9a-f-]{36}$/i.test(id) ? id : null;
+  if (!Number.isFinite(vek) || vek < 0 || vek > PLATNOST_STAVU_MS) return null;
+  if (!UUID.test(companyId) || !UUID.test(userId) || !/^[0-9a-f]{32}$/.test(nonce)) return null;
+  return { companyId, userId, nonce };
 }
 
-export async function autorizacnaAdresa(companyId: string): Promise<string> {
+/** Zhoduje sa nonce z cookie s tým v `state`? (porovnanie v konštantnom čase) */
+export function cookieSedi(cookie: string | null | undefined, nonce: string): boolean {
+  if (!cookie) return false;
+  const a = Buffer.from(cookie);
+  const b = Buffer.from(nonce);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/** Hodnota cookie z hlavičky `Cookie`. */
+export function cookieZPoziadavky(hlavicka: string | null, meno = COOKIE_TRANSEU): string | null {
+  for (const c of String(hlavicka ?? "").split(";")) {
+    const i = c.indexOf("=");
+    if (i > 0 && c.slice(0, i).trim() === meno) return c.slice(i + 1).trim();
+  }
+  return null;
+}
+
+/**
+ * Doména cookie: na faktero.sk aj www.faktero.sk tá istá, lebo návratová
+ * adresa je pevná (www) a človek mohol začať aj na adrese bez www.
+ */
+export function domenaCookie(host: string | null | undefined): string | undefined {
+  const h = String(host ?? "")
+    .toLowerCase()
+    .replace(/:\d+$/, "");
+  return h === "faktero.sk" || h.endsWith(".faktero.sk") ? "faktero.sk" : undefined;
+}
+
+export async function autorizacnaAdresa(
+  companyId: string,
+  userId: string,
+): Promise<{ url: string; nonce: string }> {
   const k = await konfigTranseu(companyId);
-  return autorizacnaUrl(k.clientId, k.redirectUri, podpisanyStavTranseu(companyId));
+  const nonce = randomBytes(16).toString("hex");
+  return {
+    url: autorizacnaUrl(k.clientId, k.redirectUri, podpisanyStavTranseu(companyId, userId, nonce)),
+    nonce,
+  };
+}
+
+/**
+ * Kto prihlásenie začal, musí byť vo firme stále majiteľ alebo admin — state
+ * platí 10 minút a medzitým ho mohli z firmy odobrať.
+ */
+export async function smiePripojit(companyId: string, userId: string): Promise<boolean> {
+  const a = await admin();
+  const { data } = await a
+    .from("company_users")
+    .select("role")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return Boolean(data && ["owner", "admin"].includes(String(data.role)));
+}
+
+/** Chyba prihlásenia pri napojení — ukáže sa v Nastavenia → Trans.eu. */
+export async function zapisChybuPrihlasenia(companyId: string, sprava: string) {
+  const a = await admin();
+  await a
+    .from("transeu_napojenia")
+    .update({ posledna_chyba: sprava.slice(0, 300), updated_at: new Date().toISOString() })
+    .eq("company_id", companyId);
 }
 
 type Tokeny = { access_token: string; refresh_token?: string; expires_in?: number };
@@ -152,7 +225,7 @@ async function ulozTokeny(companyId: string, t: Tokeny, stareObnovenie?: string 
   const a = await admin();
   // Trans.eu pri obnove posiela nový refresh token — vždy platí ten najnovší.
   const obnova = t.refresh_token ?? stareObnovenie ?? null;
-  await a
+  const { data, error } = await a
     .from("transeu_napojenia")
     .update({
       access_token_sifrovany: encryptSecret(t.access_token),
@@ -160,9 +233,14 @@ async function ulozTokeny(companyId: string, t: Tokeny, stareObnovenie?: string 
       token_plati_do: new Date(Date.now() + (t.expires_in ?? 21_599) * 1000).toISOString(),
       stav: "pripojene",
       posledna_chyba: null,
+      obnova_zamok_do: null,
       updated_at: new Date().toISOString(),
-    })
-    .eq("company_id", companyId);
+    } as any)
+    .eq("company_id", companyId)
+    .select("company_id");
+  if (error) throw new Error(error.message);
+  // Napojenie medzitým niekto odpojil — tokeny nemajú kam patriť.
+  if (!data?.length) throw new Error("Napojenie na Trans.eu medzitým zrušili — pripojte ho znova.");
 }
 
 /** Výmena kódu z presmerovania za tokeny (callback). */
@@ -186,19 +264,75 @@ export async function dokonciPrihlasenie(companyId: string, code: string): Promi
   }
 }
 
-async function platnyToken(companyId: string, vynutitObnovu = false) {
+type TokenyRiadok = {
+  access_token_sifrovany: string | null;
+  refresh_token_sifrovany: string | null;
+  token_plati_do: string | null;
+  obnova_zamok_do: string | null;
+  stav: string | null;
+  posledna_chyba: string | null;
+};
+
+async function nacitajTokeny(companyId: string): Promise<TokenyRiadok | null> {
   const a = await admin();
   const { data } = await a
     .from("transeu_napojenia")
-    .select("access_token_sifrovany, refresh_token_sifrovany, token_plati_do")
+    .select(
+      "access_token_sifrovany, refresh_token_sifrovany, token_plati_do, obnova_zamok_do, stav, posledna_chyba",
+    )
     .eq("company_id", companyId)
     .maybeSingle();
+  return (data as TokenyRiadok | null) ?? null;
+}
+
+/** Obnovy, ktoré práve bežia v tomto procese — druhé volanie počká na prvé. */
+const obnovyBezia = new Map<string, Promise<string>>();
+/** Ako dlho drží obnova zámok v databáze (pád procesu ho tak neblokuje navždy). */
+const ZAMOK_OBNOVY_MS = 30_000;
+
+/**
+ * Platný access token. Trans.eu pri obnove refresh token vymení a starý
+ * zneplatní — keby dve volania (cron + klik, dve karty, dva procesy) obnovovali
+ * naraz, druhé pošle už neplatný token, dostane invalid_grant a napojenie by
+ * spadlo do „treba sa prihlásiť znova“. Obnova preto beží len raz: v procese
+ * cez `obnovyBezia`, medzi procesmi cez zámok `obnova_zamok_do` v databáze;
+ * ostatní počkajú na nový token.
+ */
+async function platnyToken(companyId: string, vynutitObnovu = false, zlyToken?: string) {
+  const data = await nacitajTokeny(companyId);
   if (!data?.access_token_sifrovany) throw new Error("Trans.eu nie je pripojený.");
   const { decryptSecret } = await import("./payment-crypto.server");
   const plati = data.token_plati_do ? Date.parse(data.token_plati_do) - Date.now() > 60_000 : false;
   if (plati && !vynutitObnovu) return decryptSecret(data.access_token_sifrovany);
+  // Po 401: ak token medzitým vymenil niekto iný, stačí ten nový.
+  if (plati && zlyToken) {
+    const aktualny = decryptSecret(data.access_token_sifrovany);
+    if (aktualny !== zlyToken) return aktualny;
+  }
+  const bezi = obnovyBezia.get(companyId);
+  if (bezi) return bezi;
+  const p = obnovToken(companyId, data).finally(() => obnovyBezia.delete(companyId));
+  obnovyBezia.set(companyId, p);
+  return p;
+}
+
+async function obnovToken(companyId: string, data: TokenyRiadok, pokus = 0): Promise<string> {
   if (!data.refresh_token_sifrovany)
     throw new Error("Prihlásenie do Trans.eu vypršalo — pripojte účet znova.");
+  const a = await admin();
+  const teraz = new Date().toISOString();
+  // Zámok dostane len ten, kto ešte vidí ten istý refresh token a nikto iný ho nedrží.
+  const { data: zamok, error } = await a
+    .from("transeu_napojenia")
+    .update({ obnova_zamok_do: new Date(Date.now() + ZAMOK_OBNOVY_MS).toISOString() } as any)
+    .eq("company_id", companyId)
+    .eq("refresh_token_sifrovany", data.refresh_token_sifrovany)
+    .or(`obnova_zamok_do.is.null,obnova_zamok_do.lt.${teraz}`)
+    .select("company_id");
+  if (error) throw new Error(error.message);
+  if (!zamok?.length) return pockajNaObnovu(companyId, data.refresh_token_sifrovany, pokus);
+
+  const { decryptSecret } = await import("./payment-crypto.server");
   const k = await konfigTranseu(companyId);
   const stary = decryptSecret(data.refresh_token_sifrovany);
   try {
@@ -211,10 +345,43 @@ async function platnyToken(companyId: string, vynutitObnovu = false) {
   } catch (e: any) {
     await a
       .from("transeu_napojenia")
-      .update({ stav: "chyba", posledna_chyba: String(e?.message ?? e).slice(0, 300) })
+      .update({
+        stav: "chyba",
+        posledna_chyba: String(e?.message ?? e).slice(0, 300),
+        obnova_zamok_do: null,
+      } as any)
       .eq("company_id", companyId);
     throw e;
   }
+}
+
+/** Obnovu robí iný proces — počká na nový token (alebo na uvoľnenie zámku). */
+async function pockajNaObnovu(companyId: string, staryRefresh: string, pokus: number) {
+  const { decryptSecret } = await import("./payment-crypto.server");
+  const koniec = Date.now() + ZAMOK_OBNOVY_MS + 5_000;
+  while (Date.now() < koniec) {
+    await new Promise((r) => setTimeout(r, 250));
+    const d = await nacitajTokeny(companyId);
+    if (!d?.access_token_sifrovany) throw new Error("Trans.eu nie je pripojený.");
+    if (d.refresh_token_sifrovany !== staryRefresh) {
+      if (d.stav === "chyba" || !d.refresh_token_sifrovany)
+        throw new Error(
+          d.posledna_chyba ?? "Prihlásenie do Trans.eu vypršalo — pripojte účet znova.",
+        );
+      return decryptSecret(d.access_token_sifrovany);
+    }
+    const drzany = d.obnova_zamok_do && Date.parse(d.obnova_zamok_do) > Date.now();
+    if (!drzany) {
+      // Ten druhý skončil bez nového tokenu.
+      if (d.stav === "chyba")
+        throw new Error(
+          d.posledna_chyba ?? "Prihlásenie do Trans.eu vypršalo — pripojte účet znova.",
+        );
+      if (pokus >= 2) break;
+      return obnovToken(companyId, d, pokus + 1);
+    }
+  }
+  throw new Error("Trans.eu neodpovedá — obnova prihlásenia trvá príliš dlho.");
 }
 
 /**
@@ -254,7 +421,7 @@ export async function transeuApi<T = any>(
     }
     if (r.ok) return j as T;
     if (r.status === 401 && pokus === 0) {
-      token = await platnyToken(companyId, true);
+      token = await platnyToken(companyId, true, token);
       continue;
     }
     if (r.status >= 500 && pokus < 2) continue;

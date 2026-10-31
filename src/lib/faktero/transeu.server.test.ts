@@ -17,6 +17,7 @@ function dotaz(tabulka: string) {
     select: () => q,
     eq: () => q,
     is: () => q,
+    or: () => q,
     maybeSingle: async () => ({ data: tabulka === "transeu_napojenia" ? db.napojenie : null }),
     update: (v: Riadok) => {
       db.aktualizacie.push({ tabulka, ...v });
@@ -27,7 +28,12 @@ function dotaz(tabulka: string) {
       db.upserty.push(...v);
       return { error: null };
     },
-    then: (ok: (x: unknown) => unknown) => ok({ data: null, error: null }),
+    // update(...).select() vráti zmenený riadok (napojenie je v teste jedno)
+    then: (ok: (x: unknown) => unknown) =>
+      ok({
+        data: tabulka === "transeu_napojenia" && db.napojenie ? [db.napojenie] : null,
+        error: null,
+      }),
   };
   return q;
 }
@@ -41,6 +47,7 @@ vi.mock("./payment-crypto.server", () => ({
 }));
 
 const FIRMA = "11111111-2222-3333-4444-555555555555";
+const POUZIVATEL = "66666666-7777-4888-9999-000000000000";
 const OBJEDNAVKA = {
   id: "efc4dea5-ddd2-44d7-834d-d53d433a4de8",
   number: "123xy4z",
@@ -204,13 +211,45 @@ describe("transeu.server", () => {
     });
   });
 
-  it("podpísaný state vráti firmu; podvrhnutý neprejde", async () => {
+  it("podpísaný state vráti firmu, používateľa a nonce; podvrhnutý neprejde", async () => {
     const { podpisanyStavTranseu, overStavTranseu } = await import("./transeu.server");
-    const s = podpisanyStavTranseu(FIRMA);
-    expect(overStavTranseu(s)).toBe(FIRMA);
+    const s = podpisanyStavTranseu(FIRMA, POUZIVATEL, "a".repeat(32));
+    expect(overStavTranseu(s)).toEqual({
+      companyId: FIRMA,
+      userId: POUZIVATEL,
+      nonce: "a".repeat(32),
+    });
     const surovy = Buffer.from(s, "base64url").toString("utf8").split(".");
-    surovy[0] = "99999999-2222-3333-4444-555555555555";
-    expect(overStavTranseu(Buffer.from(surovy.join(".")).toString("base64url"))).toBeNull();
+    const podvrh = (i: number, v: string) => {
+      const c = [...surovy];
+      c[i] = v;
+      return Buffer.from(c.join(".")).toString("base64url");
+    };
+    expect(overStavTranseu(podvrh(0, "99999999-2222-3333-4444-555555555555"))).toBeNull();
+    expect(overStavTranseu(podvrh(1, "99999999-2222-3333-4444-555555555555"))).toBeNull();
+    expect(overStavTranseu(podvrh(3, "b".repeat(32)))).toBeNull();
+    // starý tvar (bez používateľa) a starý čas
+    expect(overStavTranseu(podvrh(2, String(Date.now() - 11 * 60_000)))).toBeNull();
     expect(overStavTranseu("nezmysel")).toBeNull();
+    expect(overStavTranseu("")).toBeNull();
   });
+
+  it("cookie proti CSRF: zhoda nonce, čítanie z hlavičky a doména", async () => {
+    const { cookieSedi, cookieZPoziadavky, domenaCookie, COOKIE_TRANSEU } =
+      await import("./transeu.server");
+    const n = "c".repeat(32);
+    expect(cookieSedi(n, n)).toBe(true);
+    expect(cookieSedi("d".repeat(32), n)).toBe(false);
+    expect(cookieSedi(null, n)).toBe(false);
+    expect(cookieSedi("", n)).toBe(false);
+    expect(cookieZPoziadavky(`a=1; ${COOKIE_TRANSEU}=${n}; b=2`)).toBe(n);
+    expect(cookieZPoziadavky("a=1")).toBeNull();
+    expect(cookieZPoziadavky(null)).toBeNull();
+    expect(domenaCookie("www.faktero.sk")).toBe("faktero.sk");
+    expect(domenaCookie("faktero.sk:443")).toBe("faktero.sk");
+    expect(domenaCookie("localhost:3000")).toBeUndefined();
+    expect(domenaCookie("zlefaktero.sk")).toBeUndefined();
+  });
+  // Súbežné obnovy (zámok) overuje transeu.db.test.ts proti databáze — súbežný dynamický
+  // import podvrhnutého modulu vitest nezvládne a vráti skutočný klient.
 });

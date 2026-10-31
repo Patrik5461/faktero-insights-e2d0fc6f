@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getRequestHost, setCookie } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /*
@@ -121,8 +122,18 @@ export const zacniPrihlasenieTranseuFn = createServerFn({ method: "POST" })
       });
       if (error) throw new Error(error.message);
     }
-    const { autorizacnaAdresa } = await import("./transeu.server");
-    return { url: await autorizacnaAdresa(data.company_id) };
+    const { autorizacnaAdresa, COOKIE_TRANSEU, domenaCookie } = await import("./transeu.server");
+    const { url, nonce } = await autorizacnaAdresa(data.company_id, context.userId);
+    // Callback prijme state len spolu s touto cookie — prihlásenie musí dokončiť ten istý prehliadač.
+    setCookie(COOKIE_TRANSEU, nonce, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/api/public/transeu",
+      maxAge: 600,
+      domain: domenaCookie(getRequestHost()),
+    });
+    return { url };
   });
 
 export const odpojTranseuFn = createServerFn({ method: "POST" })
@@ -234,12 +245,14 @@ export const objednavkyTranseuFn = createServerFn({ method: "POST" })
 
 const Akcia = Firma.extend({ id: z.string().uuid() });
 
-async function zapisChybu(id: string, e: any) {
+async function zapisChybu(companyId: string, id: string, e: any) {
   const a = await admin();
+  // Admin klient obchádza RLS — bez firmy by šlo zapísať chybu k cudzej objednávke.
   await a
     .from("transeu_objednavky")
     .update({ chyba: String(e?.message ?? e).slice(0, 300) })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("company_id", companyId);
 }
 
 export const zalozObjednavkuTranseuFn = createServerFn({ method: "POST" })
@@ -251,7 +264,7 @@ export const zalozObjednavkuTranseuFn = createServerFn({ method: "POST" })
     try {
       return await zalozObjednavku(context.supabase, data.company_id, context.userId, data.id);
     } catch (e) {
-      await zapisChybu(data.id, e);
+      await zapisChybu(data.company_id, data.id, e);
       throw e;
     }
   });
@@ -265,7 +278,7 @@ export const vystavFakturuTranseuFn = createServerFn({ method: "POST" })
     try {
       return await vystavFakturu(context.supabase, data.company_id, context.userId, data.id);
     } catch (e) {
-      await zapisChybu(data.id, e);
+      await zapisChybu(data.company_id, data.id, e);
       throw e;
     }
   });
@@ -279,7 +292,7 @@ export const odosliFakturuTranseuFn = createServerFn({ method: "POST" })
     try {
       return await odosliFakturu(context.supabase, data.company_id, data.id);
     } catch (e) {
-      await zapisChybu(data.id, e);
+      await zapisChybu(data.company_id, data.id, e);
       throw e;
     }
   });
