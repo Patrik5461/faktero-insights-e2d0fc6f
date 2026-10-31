@@ -23,10 +23,10 @@ const SOURCES: { value: Source; label: string }[] = [
 
 const SOURCE_COLOR: Record<string, string> = {
   api: "bg-destructive/15 text-destructive",
-  webhook: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  webhook: "bg-amber-500/15 text-amber-800 dark:text-amber-400",
   email: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   finstat: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
-  efaktura: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  efaktura: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
 };
 
 function fmtDateTime(s: string) {

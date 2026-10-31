@@ -2293,6 +2293,7 @@ function NewInvoice() {
                           value={it.name}
                           onChange={(e) => setItem(idx, { name: e.target.value })}
                           placeholder={t("Názov položky")}
+                          aria-label={t("Názov položky")}
                           className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
                         <PoznamkaPolozky value={it.description} onChange={(v) => setItem(idx, { description: v })} />
@@ -2304,12 +2305,14 @@ function NewInvoice() {
                           value={it.quantity}
                           onChange={(v) => setItem(idx, { quantity: v })}
                           w="w-16"
+                          label={t("Množstvo")}
                         />
                       </td>
                       <td className="py-2 pl-3">
                         <input
                           value={it.unit}
                           onChange={(e) => setItem(idx, { unit: e.target.value })}
+                          aria-label={t("Merná jednotka")}
                           className="w-14 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         />
                       </td>
@@ -2320,9 +2323,10 @@ function NewInvoice() {
                           w="w-24"
                           align="right"
                           step={KROK_CENY}
+                          label={t("Jednotková cena")}
                         />
                         {it._dovod && (
-                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-600">
+                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-700">
                             {it._zakladna != null && it._zakladna !== it.unit_price && (
                               <span className="mr-1 text-muted-foreground line-through">
                                 {formatujMenu(it._zakladna, mena.kod)}
@@ -2338,6 +2342,7 @@ function NewInvoice() {
                           onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
                           w="w-16"
                           align="right"
+                          label={t("Zľava %")}
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -2361,6 +2366,7 @@ function NewInvoice() {
                                   })
                             }
                             title={it.prenesenie ? t("Prenesenie daňovej povinnosti — daň priznáva odberateľ") : undefined}
+                            aria-label={t("Sadzba DPH")}
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                           >
                             {sadzbyPolozky.map((r) => (
@@ -2396,6 +2402,8 @@ function NewInvoice() {
                         <button
                           type="button"
                           onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                          aria-label={t("Odstrániť položku")}
+                          title={t("Odstrániť položku")}
                           className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -2415,6 +2423,7 @@ function NewInvoice() {
                     value={it.name}
                     onChange={(e) => setItem(idx, { name: e.target.value })}
                     placeholder={t("Názov položky")}
+                    aria-label={t("Názov položky")}
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                   {/* Dva odkazy vedľa seba s medzerou — inak sa zliali do „+ Poznámka k položke+ Colný kód“. */}
@@ -2512,6 +2521,7 @@ function NewInvoice() {
                     <button
                       type="button"
                       onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                      aria-label={t("Odstrániť položku")}
                       className="text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -2598,6 +2608,7 @@ function NewInvoice() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, discount_type: e.target.value as TypZlavy }))
                     }
+                    aria-label={t("Typ zľavy")}
                     className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                   >
                     <option value="percent">%</option>
@@ -2863,6 +2874,7 @@ function CellNum({
   /* Množstvo si vystačí s dvoma miestami, cena ich potrebuje päť. */
   step = "0.01",
   title,
+  label,
 }: {
   value: number;
   onChange: (v: number) => void;
@@ -2870,6 +2882,8 @@ function CellNum({
   align?: "left" | "right";
   step?: string;
   title?: string;
+  /** Meno poľa pre čítačku — v tabuľke položiek ho nedáva žiadny `<label>`. */
+  label?: string;
 }) {
   /*
     Nula sa v poli nezobrazuje — je len sivo ako nápoveda, aby sa po kliknutí
@@ -2883,6 +2897,7 @@ function CellNum({
       step={step}
       inputMode="decimal"
       title={title}
+      aria-label={label ?? title}
       placeholder="0"
       value={rozpisane ?? (Number(value) === 0 ? "" : value)}
       onChange={(e) => {
@@ -2919,6 +2934,7 @@ function CellSpolu({
       step="0.01"
       inputMode="decimal"
       title={t("Suma s DPH — cena bez dane sa dopočíta")}
+      aria-label={t("Spolu s DPH")}
       placeholder="0.00"
       // Nulová suma sa nepíše do poľa, je len nápovedou — klik a hneď sa píše.
       value={rozpisane ?? (Number.isFinite(hodnota) && hodnota !== 0 ? hodnota.toFixed(2) : "")}
@@ -3237,7 +3253,7 @@ function InvoicePickerModal({
                 ? t("Ktorú faktúru dobropis opravuje")
                 : t("Vybrať zálohovú faktúru")}
           </h3>
-          <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted">
+          <button aria-label={t("Zavrieť")} type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted">
             <X className="h-4 w-4" />
           </button>
         </div>

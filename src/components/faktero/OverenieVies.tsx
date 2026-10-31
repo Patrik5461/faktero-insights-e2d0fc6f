@@ -85,7 +85,7 @@ export function OverenieVies({
       {stav && (
         <span
           className={`ml-2 inline-flex items-center gap-1 text-xs ${
-            stav.platne ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+            stav.platne ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"
           }`}
         >
           {stav.platne ? (

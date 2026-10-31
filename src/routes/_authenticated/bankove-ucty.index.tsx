@@ -298,7 +298,7 @@ function BankAccountsPage() {
             </Link>
             <Link
               to="/bankove-ucty/pripojit"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
             >
               <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
             </Link>
@@ -345,7 +345,7 @@ function BankAccountsPage() {
             <p className="mt-2 text-sm text-muted-foreground">{t("Žiadna banka nie je pripojená.")}</p>
             <Link
               to="/bankove-ucty/pripojit"
-              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
+              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
             >
               <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
             </Link>
@@ -366,7 +366,7 @@ function BankAccountsPage() {
                         <CheckCircle2 className="h-3 w-3" /> {t("Pripojené")}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300">
                         <AlertCircle className="h-3 w-3" /> {c.status}
                       </span>
                     )}
@@ -541,7 +541,7 @@ function BankAccountsPage() {
                               nech to človek vidí a nečaká na pohyby zbytočne. */}
                           {a.unavailable_since && (
                             <div
-                              className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400"
+                              className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-400"
                               title={a.unavailable_reason ?? undefined}
                             >
                               {t("Banka ho nepozná — obnovte súhlas")}

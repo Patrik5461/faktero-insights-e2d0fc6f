@@ -278,7 +278,7 @@ function Detail() {
         status={
           f.id ? (
             uzavrete ? (
-              <StavOdznak className="bg-primary/15 text-primary">{t("Uzavreté")}</StavOdznak>
+              <StavOdznak className="bg-primary/15 text-primary-hover">{t("Uzavreté")}</StavOdznak>
             ) : (
               <StavOdznak>{t("Rozpracované")}</StavOdznak>
             )

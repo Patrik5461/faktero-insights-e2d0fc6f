@@ -215,7 +215,7 @@ export function CompanyNameAutocomplete({
         </div>
       )}
       {enabled && success && (
-        <p className="mt-1 flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+        <p className="mt-1 flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-3 w-3 shrink-0" />
           {success}
         </p>

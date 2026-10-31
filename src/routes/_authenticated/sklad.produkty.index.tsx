@@ -758,7 +758,7 @@ function StockItemsPage() {
               ))}
             </select>
             {urlFilter === "low_stock" && (
-              <div className="inline-flex items-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+              <div className="inline-flex items-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle className="h-3.5 w-3.5" /> {t("Filter: pod minimom")}
                 <Link to="/sklad/produkty" className="text-primary hover:underline">
                   × {t("zrušiť")}
@@ -911,6 +911,7 @@ function StockItemsPage() {
                             className="w-full rounded border border-input bg-background px-2 py-1 text-sm"
                           />
                           <button
+                            aria-label={t("Uložiť")}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => commitInlineName(s)}
                             className="rounded p-1 hover:bg-muted"
@@ -929,7 +930,7 @@ function StockItemsPage() {
                       {reserved > 0 ? formatujCislo(reserved, 0, 2) : "—"}
                     </td>
                     <td
-                      className={`p-3 text-right tabular-nums whitespace-nowrap ${belowAvail ? "font-semibold text-amber-600" : ""}`}
+                      className={`p-3 text-right tabular-nums whitespace-nowrap ${belowAvail ? "font-semibold text-amber-700" : ""}`}
                     >
                       {belowAvail && <AlertTriangle className="mr-1 inline h-3 w-3" />}
                       {formatujCislo(available, 0, 2)}
@@ -1214,7 +1215,7 @@ function StockItemsPage() {
                         <span
                           className={
                             pohybDelta(m.type, m.quantity) >= 0
-                              ? "text-emerald-600 tabular-nums"
+                              ? "text-emerald-700 tabular-nums"
                               : "text-destructive tabular-nums"
                           }
                         >

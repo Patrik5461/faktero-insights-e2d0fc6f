@@ -215,7 +215,7 @@ function CiselneRadyPage() {
                           <span className="min-w-[10rem] flex-1 font-medium">
                             {r.name}
                             {r.is_default && (
-                              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary-hover">
                                 <Star className="h-3 w-3" /> {t("predvolený")}
                               </span>
                             )}

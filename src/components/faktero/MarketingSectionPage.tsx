@@ -56,7 +56,7 @@ export function HubPage({ hub }: { hub: HubContent }) {
               </div>
               <h2 className="mt-4 text-lg font-semibold">{t(item.label)}</h2>
               <p className="mt-1.5 text-sm text-muted-foreground">{t(item.summary)}</p>
-              <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary opacity-80 group-hover:opacity-100">
+              <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary group-hover:underline">
                 {t("Zistiť viac")} <ChevronRight className="h-4 w-4" />
               </span>
             </a>

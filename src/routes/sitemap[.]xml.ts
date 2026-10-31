@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { odkazyJazykov } from "@/lib/i18n/jazyk-adresa";
 
 const BASE_URL = "https://www.faktero.sk";
 
@@ -133,13 +134,18 @@ export const Route = createFileRoute("/sitemap.xml")({
               `    <loc>${BASE_URL}${path}</loc>`,
               meta.lastmod ? `    <lastmod>${meta.lastmod.slice(0, 10)}</lastmod>` : null,
               `    <priority>${meta.priority.toFixed(1)}</priority>`,
+              // Jazykové verzie (?lang=cs / ?lang=de) — tie isté ako hreflang v hlavičke stránky.
+              ...odkazyJazykov(`${BASE_URL}${path}`).map(
+                (o) =>
+                  `    <xhtml:link rel="alternate" hreflang="${o.hrefLang}" href="${o.href}"/>`,
+              ),
             ].filter(Boolean);
             return `  <url>\n${parts.join("\n")}\n  </url>`;
           });
 
         const xml =
           `<?xml version="1.0" encoding="UTF-8"?>\n` +
-          `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+          `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
           urls.join("\n") +
           `\n</urlset>`;
 

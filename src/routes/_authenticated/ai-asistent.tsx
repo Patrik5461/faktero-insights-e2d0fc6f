@@ -194,7 +194,7 @@ function ChatView({ companyId }: { companyId: string }) {
         <div
           key={c.id}
           className={`group flex items-center gap-2 rounded-md px-2 py-2 text-sm ${
-            activeId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+            activeId === c.id ? "bg-primary/10 text-primary-hover" : "hover:bg-secondary"
           }`}
         >
           <button onClick={() => setActiveId(c.id)} className="min-w-0 flex-1 truncate text-left">
@@ -295,7 +295,7 @@ function ChatView({ companyId }: { companyId: string }) {
               autoFocus
               className="min-h-[44px] max-h-40 flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
-            <button
+            <button aria-label={t("Odoslať")}
               type="submit"
               disabled={!input.trim() || sendMut.isPending}
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
@@ -416,7 +416,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
       ? [
           {
             icon: AlertTriangle,
-            color: "text-amber-600",
+            color: "text-amber-700",
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
             hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
@@ -452,7 +452,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: TrendingUp,
-              color: "text-emerald-600",
+              color: "text-emerald-700",
               title: "Top dlžníci",
               value: data.topDebtors.length,
               hint: data.topDebtors[0]?.name ?? t("Žiadni dlžníci"),
@@ -462,7 +462,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
         : [
             {
               icon: AlertTriangle,
-              color: "text-amber-600",
+              color: "text-amber-700",
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
               hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
@@ -504,7 +504,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: TrendingUp,
-              color: "text-emerald-600",
+              color: "text-emerald-700",
               title: "Top dlžníci",
               value: data.topDebtors.length,
               hint: data.topDebtors[0]?.name ?? "—",

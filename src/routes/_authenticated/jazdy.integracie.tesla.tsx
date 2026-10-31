@@ -183,7 +183,7 @@ function TeslaPage() {
         {(state.credentials_invalid || conn?.credentials_invalid) && (
           <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-800 dark:text-amber-400" />
               <div className="flex-1">
                 <div className="font-medium text-amber-900 dark:text-amber-200">
                   {t("Tesla účet je potrebné znova pripojiť")}
@@ -210,7 +210,7 @@ function TeslaPage() {
             {/* Connection */}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                   <Car className="h-5 w-5" />
                 </div>
                 <div>
@@ -452,7 +452,7 @@ function TeslaPage() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{l.sync_type}</span>
                         <span
-                          className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}
+                          className={l.status === "ok" ? "text-emerald-700" : "text-destructive"}
                         >
                           {t(popisStavuSync(l.status))}
                         </span>

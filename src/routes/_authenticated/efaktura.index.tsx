@@ -42,7 +42,7 @@ function LenOdosielanie({
         <div className="flex items-start gap-3">
           <Send className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div className="min-w-0">
-            <span className="inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+            <span className="inline-flex rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-hover">
               {poskytovatel
                 ? t("Len odosielanie — prijaté eFaktúry prichádzajú k {poskytovatel}", { poskytovatel })
                 : t("Len odosielanie — prijaté eFaktúry prichádzajú k vášmu poskytovateľovi príjmu")}
@@ -209,7 +209,7 @@ function StatusPill({ status }: { status: Status }) {
   const { t } = useT();
   if (status === "done") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-hover">
         <CheckCircle2 className="h-3.5 w-3.5" /> {t("Hotovo")}
       </span>
     );

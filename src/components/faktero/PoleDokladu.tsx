@@ -145,7 +145,7 @@ export function SplatnostPole({
               title={t("Splatnosť o {n} dní", { n: d })}
               className={`h-5 border-l border-border px-1 text-[11px] leading-none tabular-nums first:border-l-0 hover:bg-secondary ${
                 value === za(d)
-                  ? "bg-primary/10 font-semibold text-primary"
+                  ? "bg-primary/10 font-semibold text-primary-hover"
                   : "text-muted-foreground"
               }`}
             >

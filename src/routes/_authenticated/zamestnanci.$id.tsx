@@ -121,7 +121,7 @@ function KartaZamestnanca() {
                     className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
                       p.zavaznost === "danger"
                         ? "border-destructive/30 bg-destructive/10 text-destructive"
-                        : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
                     }`}
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

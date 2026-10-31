@@ -319,9 +319,9 @@ function WebhookLogsPage() {
 function StatusBadge({ status }: { status: string }) {
   const { t } = useT();
   const map: Record<string, { label: string; cls: string }> = {
-    success: { label: "Úspech", cls: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20" },
+    success: { label: "Úspech", cls: "bg-emerald-500/10 text-emerald-700 ring-emerald-500/20" },
     failed: { label: "Zlyhalo", cls: "bg-destructive/10 text-destructive ring-destructive/20" },
-    pending: { label: "Čaká", cls: "bg-amber-500/10 text-amber-600 ring-amber-500/20" },
+    pending: { label: "Čaká", cls: "bg-amber-500/10 text-amber-800 ring-amber-500/20" },
   };
   const m = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground ring-border" };
   return (
@@ -345,9 +345,9 @@ function SummaryCard({
   icon: any;
 }) {
   const tones = {
-    success: "from-emerald-500/15 to-emerald-500/0 text-emerald-600 border-emerald-500/20",
+    success: "from-emerald-500/15 to-emerald-500/0 text-emerald-700 border-emerald-500/20",
     failed: "from-destructive/15 to-destructive/0 text-destructive border-destructive/20",
-    pending: "from-amber-500/15 to-amber-500/0 text-amber-600 border-amber-500/20",
+    pending: "from-amber-500/15 to-amber-500/0 text-amber-700 border-amber-500/20",
   } as const;
   return (
     <div className={`rounded-xl border bg-gradient-to-br ${tones[tone]} p-4`}>

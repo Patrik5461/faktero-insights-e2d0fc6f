@@ -901,7 +901,7 @@ function AiScanOverlay({
                       (done
                         ? "border-primary bg-primary text-primary-foreground"
                         : active
-                          ? "border-primary/50 bg-primary/10 text-primary"
+                          ? "border-primary/50 bg-primary/10 text-primary-hover"
                           : "border-border bg-background text-muted-foreground")
                     }
                   >

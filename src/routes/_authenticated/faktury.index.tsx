@@ -1006,7 +1006,7 @@ function InvoicesPage() {
               <button
                 onClick={bulkExport}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary-hover hover:bg-primary/15 disabled:opacity-50"
               >
                 {busy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1023,7 +1023,7 @@ function InvoicesPage() {
               >
                 <Landmark className="h-4 w-4" /> {t("Spárovať platby")}
                 {cakaNaParovanie > 0 && (
-                  <span className="rounded-full bg-emerald-600 px-1.5 text-xs font-medium text-white">
+                  <span className="rounded-full bg-emerald-700 px-1.5 text-xs font-medium text-white">
                     {cakaNaParovanie}
                   </span>
                 )}
@@ -1158,7 +1158,7 @@ function InvoicesPage() {
               <button
                 disabled={busy || efakturaCount === 0}
                 onClick={() => setBulkAction("efaktura")}
-                className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary-hover hover:bg-primary/15 disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5" /> {efakturaTest ? t("Odoslať eFaktúrou (test)") : t("Odoslať eFaktúrou")}{" "}
                 {efakturaCount > 0 ? `(${efakturaCount})` : ""}
@@ -1196,7 +1196,7 @@ function InvoicesPage() {
                 />
               ) : null}
               {progress && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary-hover">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: progress.current, b: progress.total })}
                 </span>
               )}
@@ -1245,7 +1245,7 @@ function InvoicesPage() {
                         toast.error(e?.message ?? t("Chyba"));
                       }
                     }}
-                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-hover hover:bg-primary/10"
                   >
                     <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
                   </button>
@@ -1287,6 +1287,7 @@ function InvoicesPage() {
                     <th className="w-10 p-3">
                       <input
                         type="checkbox"
+                        aria-label={t("Vybrať všetko")}
                         checked={list.allOnPageSelected}
                         onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                       />
@@ -1337,6 +1338,7 @@ function InvoicesPage() {
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
+                          aria-label={t("Vybrať riadok")}
                           checked={!!list.selected[i.id]}
                           onChange={(e) => list.toggleSelect(i.id, e.target.checked)}
                         />

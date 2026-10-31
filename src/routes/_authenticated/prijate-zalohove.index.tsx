@@ -300,7 +300,7 @@ function StavZalohy({ riadok, zuctovanaNa }: { riadok: Riadok; zuctovanaNa?: str
   const { t } = useT();
   if (zuctovanaNa) {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
+      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700">
         {t("Zúčtovaná — {cislo}", { cislo: zuctovanaNa })}
       </span>
     );
@@ -313,7 +313,7 @@ function StavZalohy({ riadok, zuctovanaNa }: { riadok: Riadok; zuctovanaNa?: str
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600">
+    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-800">
       {t("Čaká na úhradu")}
     </span>
   );

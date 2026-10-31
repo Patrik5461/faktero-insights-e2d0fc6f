@@ -333,7 +333,7 @@ function ImportPage() {
                 </div>
               </div>
               {detection?.confidenceLabel === "low" && (
-                <p className="mt-3 text-xs text-amber-600">
+                <p className="mt-3 text-xs text-amber-700">
                   {t("Nízka zhoda detekcie. Skontrolujte a doplňte mapovanie pred importom.")}
                 </p>
               )}
@@ -404,7 +404,7 @@ function ImportPage() {
               </div>
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-800" />
                   <div>
                     <p className="font-medium">{t("Upozornenie")}</p>
                     <p className="text-muted-foreground">
@@ -473,7 +473,7 @@ function Stepper({ step }: { step: number }) {
             className={`flex items-center gap-2 ${active ? "min-w-0 flex-1" : "shrink-0 sm:flex-1"}`}
           >
             <div
-              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/10 text-primary ring-2 ring-primary/30" : "bg-secondary text-muted-foreground"}`}
+              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/10 text-primary-hover ring-2 ring-primary/30" : "bg-secondary text-muted-foreground"}`}
             >
               {n}
             </div>
@@ -506,8 +506,8 @@ function Stat({ label, value }: { label: string; value: any }) {
 function ConfidenceBadge({ label, value }: { label: "high" | "medium" | "low"; value: number }) {
   const { t } = useT();
   const map = {
-    high: { text: "Vysoká zhoda", cls: "border-primary/40 bg-primary/10 text-primary" },
-    medium: { text: "Stredná zhoda", cls: "border-amber-500/40 bg-amber-500/10 text-amber-700" },
+    high: { text: "Vysoká zhoda", cls: "border-primary/40 bg-primary/10 text-primary-hover" },
+    medium: { text: "Stredná zhoda", cls: "border-amber-500/40 bg-amber-500/10 text-amber-800" },
     low: { text: "Nízka zhoda", cls: "border-destructive/40 bg-destructive/10 text-destructive" },
   } as const;
   const v = map[label] ?? map.medium;
@@ -533,7 +533,7 @@ function ValidationCard({
     kind === "ok"
       ? "border-primary/30 bg-primary/5 text-primary"
       : kind === "warn"
-        ? "border-amber-500/30 bg-amber-500/5 text-amber-700"
+        ? "border-amber-500/30 bg-amber-500/5 text-amber-800"
         : "border-destructive/30 bg-destructive/5 text-destructive";
   return (
     <div className={`rounded-lg border p-3 ${color}`}>

@@ -48,9 +48,9 @@ export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
 });
 
 const STAV_STYLE: Record<string, string> = {
-  new: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  new: "bg-amber-500/10 text-amber-800 dark:text-amber-400",
   processed: "bg-secondary text-foreground/70",
-  exported: "bg-primary/10 text-primary",
+  exported: "bg-primary/10 text-primary-hover",
 };
 
 function OstatneDokladyPage() {
@@ -305,7 +305,7 @@ function OstatneDokladyPage() {
             >
               {t(z.nazov)}
               {z.kluc === "nespracovane" && nespracovanych ? (
-                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
                   {nespracovanych}
                 </span>
               ) : null}
@@ -401,7 +401,7 @@ function OstatneDokladyPage() {
               >
                 {zalozka === "nespracovane" ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {t("Označiť ako spracované")} (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-700" /> {t("Označiť ako spracované")} (
                     {selected.size})
                   </>
                 ) : (

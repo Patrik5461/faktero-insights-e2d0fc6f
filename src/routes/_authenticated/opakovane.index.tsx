@@ -193,6 +193,7 @@ function RecurringList() {
                   <th className="w-10 p-3">
                     <input
                       type="checkbox"
+                      aria-label={t("Vybrať všetko")}
                       checked={list.allOnPageSelected}
                       onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
@@ -219,6 +220,7 @@ function RecurringList() {
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
+                        aria-label={t("Vybrať riadok")}
                         checked={!!list.selected[r.id]}
                         onChange={(e) => list.toggleSelect(r.id, e.target.checked)}
                       />
@@ -238,7 +240,7 @@ function RecurringList() {
                     <td className="p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
                     <td className="p-3">
                       <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
+                        className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}`}
                       >
                         {r.active ? t("Aktívna") : t("Pozastavená")}
                       </span>

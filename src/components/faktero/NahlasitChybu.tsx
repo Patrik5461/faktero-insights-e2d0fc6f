@@ -356,7 +356,7 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
                 aria-pressed={vybrane}
                 className={`flex select-none items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                   vybrane
-                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    ? "border-primary bg-primary/10 font-medium text-primary-hover"
                     : "border-border hover:bg-secondary"
                 }`}
               >

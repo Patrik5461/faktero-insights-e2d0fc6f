@@ -149,7 +149,7 @@ export function OdznakKontrolyEfaktury({
       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
       : z.stav === "chyby"
         ? "border-destructive/40 bg-destructive/10 text-destructive"
-        : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400";
+        : "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-400";
   const Ikona = z.stav === "ok" ? CheckCircle2 : z.stav === "chyby" ? XCircle : AlertTriangle;
   const obsah = (
     <>

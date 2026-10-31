@@ -267,7 +267,7 @@ function CommanderPage() {
         {(state.credentials_invalid || conn?.credentials_invalid || needsReauth) && (
           <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-800 dark:text-amber-400" />
               <div className="flex-1">
                 <div className="font-medium text-amber-900 dark:text-amber-200">
                   {t("Prihlasovacie údaje Commander GPS je potrebné znova zadať")}
@@ -297,7 +297,7 @@ function CommanderPage() {
           <div className="lg:col-span-2 space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                   <Satellite className="h-5 w-5" />
                 </div>
                 <div>
@@ -324,7 +324,7 @@ function CommanderPage() {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium">{t("Heslo do Commandera")}</label>
-                  <input
+                  <input aria-label={t("Heslo do Commandera")}
                     type="password"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={password}
@@ -458,7 +458,7 @@ function CommanderPage() {
               <div className="flex flex-wrap items-end gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium">{t("Obdobie")}</label>
-                  <select
+                  <select aria-label={t("Obdobie")}
                     value={preset}
                     onChange={(e) => setPreset(e.target.value as any)}
                     className="rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -474,7 +474,7 @@ function CommanderPage() {
                   <>
                     <div>
                       <label className="mb-1 block text-xs font-medium">{t("Od")}</label>
-                      <input
+                      <input aria-label={t("Od")}
                         type="date"
                         value={from}
                         onChange={(e) => setFrom(e.target.value)}
@@ -483,7 +483,7 @@ function CommanderPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium">{t("Do")}</label>
-                      <input
+                      <input aria-label={t("Do")}
                         type="date"
                         value={to}
                         onChange={(e) => setTo(e.target.value)}
@@ -557,7 +557,7 @@ function CommanderPage() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{l.sync_type}</span>
                         <span
-                          className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}
+                          className={l.status === "ok" ? "text-emerald-700" : "text-destructive"}
                         >
                           {t(popisStavuSync(l.status))}
                         </span>

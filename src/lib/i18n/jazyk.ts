@@ -44,7 +44,12 @@ export function jazykZCookie(cookie: string | null | undefined): Jazyk {
 /** Uloží voľbu na rok a načíta stránku znova — prekreslí sa všetko vrátane servera. */
 export function nastavJazyk(j: Jazyk) {
   document.cookie = `${COOKIE_JAZYKA}=${j}; path=/; max-age=31536000; samesite=lax`;
-  window.location.reload();
+  // `?lang=` v adrese by cookie prebil — pri ručnej voľbe ho treba zahodiť.
+  const u = new URL(window.location.href);
+  if (u.searchParams.has("lang")) {
+    u.searchParams.delete("lang");
+    window.location.replace(u.toString());
+  } else window.location.reload();
 }
 
 type Slovnik = Record<string, string>;

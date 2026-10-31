@@ -183,7 +183,7 @@ export function SadzbaZmluvy({
           </p>
         )}
         {pohybliva && a.predbezna && (
-          <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+          <p className="mt-2 text-xs text-amber-800 dark:text-amber-400">
             {t(
               "Predbežné: hodnota indexu k dňu fixingu ešte nie je zverejnená, použitá je posledná známa.",
             )}

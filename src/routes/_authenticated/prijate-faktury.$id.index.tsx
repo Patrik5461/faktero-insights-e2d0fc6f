@@ -1077,7 +1077,7 @@ function PurchaseInvoiceDetail() {
               <button
                 onClick={payViaBank}
                 disabled={paying}
-                className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
               >
                 <Landmark className="h-4 w-4" />
                 {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}

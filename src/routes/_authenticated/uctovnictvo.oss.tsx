@@ -136,10 +136,10 @@ function OssPage() {
 
             {data.prehlad.vytky.length > 0 && (
               <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
+                <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" /> {t("Pred podaním treba doplniť")}
                 </div>
-                <ul className="mt-2 space-y-1 text-sm text-amber-700 dark:text-amber-400">
+                <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
                   {data.prehlad.vytky.map((v, i) => (
                     <li key={i}>
                       <span className="font-medium">{v.doklad}</span>: {t(v.text)}

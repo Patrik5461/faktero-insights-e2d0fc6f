@@ -115,7 +115,7 @@ function MovementDetail() {
                 label="Množstvo"
                 value={pohybText(m.type, m.quantity)}
                 accent={
-                  pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"
+                  pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"
                 }
               />
               <Pair

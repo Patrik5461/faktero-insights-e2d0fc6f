@@ -398,7 +398,7 @@ function NewQuote() {
               <h3 className="font-semibold">{t("Položky")}</h3>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {produkty.length > 0 && (
-                  <select
+                  <select aria-label={t("Pridať z katalógu")}
                     value=""
                     onChange={(e) => {
                       if (e.target.value) zKatalogu(e.target.value);
@@ -445,7 +445,7 @@ function NewQuote() {
                       onChange={(v) => setItem(idx, { unit_price: Number(v), _cena_rucne: true })}
                     />
                     {it._dovod && (
-                      <div className="mt-1 text-[10px] leading-tight text-emerald-600">
+                      <div className="mt-1 text-[10px] leading-tight text-emerald-700">
                         {it._dovod}
                       </div>
                     )}
@@ -469,7 +469,7 @@ function NewQuote() {
                       form.currency,
                     )}
                   </div>
-                  <button
+                  <button aria-label={t("Odstrániť")}
                     type="button"
                     onClick={() => setItems(items.filter((_, i) => i !== idx))}
                     className="rounded p-1.5 text-destructive hover:bg-destructive/10"
@@ -500,7 +500,7 @@ function NewQuote() {
                   }}
                   className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
                 />
-                <select
+                <select aria-label={t("Typ zľavy")}
                   value={form.discount_type || "percent"}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, discount_type: e.target.value as TypZlavy }))

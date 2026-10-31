@@ -147,9 +147,9 @@ const ZDROJ_DOKLADU: Record<string, string> = {
   import: "import",
 };
 const STATUS_STYLE: Record<string, string> = {
-  new: "bg-amber-500/10 text-amber-700",
+  new: "bg-amber-500/10 text-amber-800",
   processed: "bg-secondary text-foreground/70",
-  exported: "bg-primary/10 text-primary",
+  exported: "bg-primary/10 text-primary-hover",
 };
 
 function DokladyPage() {
@@ -792,7 +792,7 @@ function DokladyPage() {
             >
               {t(z.nazov)}
               {z.kluc === "nespracovane" && nespracovanych ? (
-                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
                   {nespracovanych}
                 </span>
               ) : null}
@@ -901,7 +901,7 @@ function DokladyPage() {
             >
               {zalozka === "nespracovane" ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {t("Označiť ako spracované")} (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700" /> {t("Označiť ako spracované")} (
                   {selected.size})
                 </>
               ) : (
@@ -1009,7 +1009,7 @@ function DokladyPage() {
                 <button
                   disabled={parujem === z.transactionId}
                   onClick={() => sparuj(z)}
-                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary disabled:opacity-60"
+                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary-hover disabled:opacity-60"
                 >
                   {z.istota === "auto" ? t("Spárovať") : t("Áno, patrí k sebe")}
                 </button>
@@ -1102,6 +1102,7 @@ function DokladyPage() {
                   <th className="w-8 px-3 py-2">
                     <input
                       type="checkbox"
+                      aria-label={t("Vybrať všetko")}
                       checked={rows.length > 0 && selected.size === rows.length}
                       onChange={toggleAll}
                     />
@@ -1142,6 +1143,7 @@ function DokladyPage() {
                     <td className="px-3 py-2">
                       <input
                         type="checkbox"
+                        aria-label={t("Vybrať riadok")}
                         checked={selected.has(r.id)}
                         onChange={() => toggle(r.id)}
                       />

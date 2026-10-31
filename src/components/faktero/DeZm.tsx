@@ -222,14 +222,14 @@ export function DeZm() {
         {zm && data && !data.kleinunternehmer && (
           <>
             {data.bezUstIdNr && (
-              <div className="mx-4 mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+              <div className="mx-4 mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
                 {t(
                   "Firma nemá vyplnené USt-IdNr. — bez neho sa dodania do EÚ oslobodiť ani ZM podať nedá. Doplňte ho v Nastaveniach firmy.",
                 )}
               </div>
             )}
             {zm.nadHranicou && (
-              <div className="mx-4 mb-4 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+              <div className="mx-4 mb-4 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   {t(
@@ -253,11 +253,11 @@ export function DeZm() {
             )}
             {data.vytky.length > 0 && (
               <div className="mx-4 mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
+                <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
                   {t("Pred podaním skontrolujte ({n})", { n: data.vytky.length })}
                 </div>
-                <ul className="mt-2 space-y-1 text-sm text-amber-700 dark:text-amber-400">
+                <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
                   {data.vytky.slice(0, 20).map((v, i) => (
                     <li key={i}>
                       <span className="font-medium">{v.doklad}</span>: {t(v.text)}

@@ -36,8 +36,8 @@ export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
 const FARBA_STAVU: Record<StavObjednavky, string> = {
   draft: "bg-muted text-muted-foreground",
   sent: "bg-blue-500/10 text-blue-600",
-  partially_received: "bg-amber-500/10 text-amber-600",
-  received: "bg-emerald-500/10 text-emerald-600",
+  partially_received: "bg-amber-500/10 text-amber-800",
+  received: "bg-emerald-500/10 text-emerald-700",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
@@ -279,7 +279,7 @@ function PurchaseOrderDetail() {
                     <td className="p-3">
                       {it.name}
                       {!it.stock_item_id && (
-                        <span className="ml-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-600">
+                        <span className="ml-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-800">
                           {t("bez skladovej karty")}
                         </span>
                       )}

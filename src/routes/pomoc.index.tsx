@@ -399,11 +399,11 @@ function Page() {
           {t(
             "Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám na",
           )}{" "}
-          <a href="mailto:info@faktero.sk" className="text-primary hover:underline">
+          <a href="mailto:info@faktero.sk" className="text-primary underline underline-offset-2">
             info@faktero.sk
           </a>{" "}
           {t("alebo zavolajte na")}{" "}
-          <a href="tel:+421902101967" className="text-primary hover:underline">
+          <a href="tel:+421902101967" className="text-primary underline underline-offset-2">
             +421 902 101 967
           </a>
           .
@@ -484,7 +484,7 @@ function Page() {
           <h2 className="font-semibold">{t("Právne dokumenty")}</h2>
           <p className="text-muted-foreground mt-1">
             {t("Obchodné podmienky, GDPR, GoPay podmienky a ďalšie nájdete v sekcii")}{" "}
-            <Link to="/pravne" className="text-primary hover:underline">
+            <Link to="/pravne" className="text-primary underline underline-offset-2">
               {t("Právne")}
             </Link>
             .

@@ -356,6 +356,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                   <th className="w-10 p-3">
                     <input
                       type="checkbox"
+                      aria-label={t("Vybrať všetko")}
                       checked={list.allOnPageSelected}
                       onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
@@ -387,6 +388,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
+                        aria-label={t("Vybrať riadok")}
                         checked={!!list.selected[c.id]}
                         onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
                       />
@@ -625,7 +627,7 @@ function CustomerDialog({
                 onClick={() => setC((prev) => ({ ...(prev as Customer), typ: t.kod }))}
                 className={`rounded-md border px-3 py-1.5 text-sm ${
                   (c.typ ?? "firma") === t.kod
-                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    ? "border-primary bg-primary/10 font-medium text-primary-hover"
                     : "border-border hover:bg-secondary"
                 }`}
               >

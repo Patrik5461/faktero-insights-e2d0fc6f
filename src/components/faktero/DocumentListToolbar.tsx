@@ -158,7 +158,7 @@ export function DocumentListToolbar({
                   onClick={() => previewToggle.prepni(!previewToggle.zapnuty)}
                   className={`ml-auto hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border lg:inline-flex ${
                     previewToggle.zapnuty
-                      ? "border-primary/40 bg-primary/10 text-primary"
+                      ? "border-primary/40 bg-primary/10 text-primary-hover"
                       : "border-input bg-background hover:bg-secondary"
                   }`}
                 >

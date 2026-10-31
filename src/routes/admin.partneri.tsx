@@ -217,6 +217,7 @@ function Formular({
       <div>
         <label className="mb-1 block text-xs text-muted-foreground">Názov</label>
         <input
+          aria-label="Názov"
           className={vstup}
           value={hodnota.name}
           onChange={(e) => onZmena({ ...hodnota, name: e.target.value })}
@@ -227,6 +228,7 @@ function Formular({
       <div>
         <label className="mb-1 block text-xs text-muted-foreground">Web (nepovinné)</label>
         <input
+          aria-label="Web (nepovinné)"
           className={vstup}
           value={hodnota.website ?? ""}
           onChange={(e) => onZmena({ ...hodnota, website: e.target.value || null })}
@@ -237,6 +239,7 @@ function Formular({
       <div>
         <label className="mb-1 block text-xs text-muted-foreground">Poradie</label>
         <input
+          aria-label="Poradie"
           type="number"
           className={vstup}
           value={hodnota.sort_order}

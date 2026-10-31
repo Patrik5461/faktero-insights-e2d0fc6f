@@ -401,7 +401,7 @@ function DphPage() {
             oprava staršej faktúry ticho zmení číslo, ktoré je už odovzdané. */}
         <div className="text-sm text-muted-foreground">
           {t("Máte priznanie podané?")}{" "}
-          <Link to="/uctovnictvo/uzavierka" className="text-primary hover:underline">
+          <Link to="/uctovnictvo/uzavierka" className="text-primary underline underline-offset-2">
             {t("Uzamknite obdobie")}
           </Link>
           {t(", aby sa doklady v ňom už nedali zmeniť.")}
@@ -421,7 +421,7 @@ function DphPage() {
                   setPeriodIdx(0);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("Typ obdobia")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -435,7 +435,7 @@ function DphPage() {
                 {mode === "month" ? t("Mesiac") : t("Kvartál")}
               </label>
               <Select value={String(periodIdx)} onValueChange={(v) => setPeriodIdx(Number(v))}>
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("Obdobie")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -456,7 +456,7 @@ function DphPage() {
             <div className="w-32">
               <label className="text-xs text-muted-foreground">{t("Rok")}</label>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("Rok")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

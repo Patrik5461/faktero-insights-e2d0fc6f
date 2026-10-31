@@ -27,7 +27,7 @@ const MAP: Record<EfakturaUiStatus, { label: string; cls: string; Icon: typeof C
   },
   generated: {
     label: "eFaktúra: vygenerovaná",
-    cls: "bg-primary/10 text-primary border-primary/30",
+    cls: "bg-primary/10 text-primary-hover border-primary/30",
     Icon: FileCode2,
   },
   validation_failed: {
@@ -37,7 +37,7 @@ const MAP: Record<EfakturaUiStatus, { label: string; cls: string; Icon: typeof C
   },
   ready_to_send: {
     label: "eFaktúra: pripravená",
-    cls: "bg-primary/15 text-primary border-primary/40",
+    cls: "bg-primary/15 text-primary-hover border-primary/40",
     Icon: Send,
   },
 };

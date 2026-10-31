@@ -58,7 +58,7 @@ type Row = {
 /** Farby štítkov podľa vážnosti — rovnaké ako doteraz pri banke. */
 const TON: Record<Ton, string> = {
   ok: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  pozor: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  pozor: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
   chyba: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
   neutralny: "bg-secondary text-foreground",
 };
@@ -439,7 +439,7 @@ function CompanyManagementPage() {
                 <AvatarFirmy nazov={r.name} />
                 {nazovFirmy(r)}
                 {r.id === activeId && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary-hover">
                     <Check className="h-3 w-3" /> {t("Aktívna")}
                   </span>
                 )}
@@ -510,7 +510,7 @@ function CompanyManagementPage() {
                       <AvatarFirmy nazov={r.name} />
                       {nazovFirmy(r)}
                       {r.id === activeId && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary-hover">
                           <Check className="h-3 w-3" /> {t("Aktívna")}
                         </span>
                       )}

@@ -5,8 +5,9 @@ import {
   createRootRouteWithContext,
   useRouter,
   useRouterState,
-  HeadContent,
+  Asset,
   Scripts,
+  useTags,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -20,8 +21,9 @@ import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { PreskocitNaObsah } from "@/components/faktero/PreskocitNaObsah";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
-import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { COOKIE_JAZYKA, preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { zistiJazyk } from "@/lib/i18n/zisti-jazyk";
+import { jazykZAdresy, upravZnackyHlavicky } from "@/lib/i18n/jazyk-adresa";
 import { JazykProvider } from "@/lib/i18n/useT";
 import { SKRIPT_DIZAJNU } from "@/lib/faktero/dizajn";
 import { SKRIPT_SUHLASU, SKRIPT_GTM, GTM_NOSCRIPT_SRC } from "@/lib/faktero/gtm";
@@ -208,6 +210,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/*
+  `HeadContent` z TanStacku, len kanonická adresa ukazuje na jazykovú verziu
+  stránky a hneď za ňou idú odkazy hreflang (sk, cs, de, x-default).
+*/
+function HlavickaStranky({ jazyk }: { jazyk: Jazyk }) {
+  const router = useRouter();
+  const nonce = router.options.ssr?.nonce;
+  const znacky = upravZnackyHlavicky(useTags(), jazyk);
+  return (
+    <>
+      {znacky.map((z) => (
+        <Asset {...z} key={`tsr-meta-${JSON.stringify(z)}`} nonce={nonce} />
+      ))}
+    </>
+  );
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   const { jazyk } = Route.useRouteContext();
   return (
@@ -225,7 +244,7 @@ function RootShell({ children }: { children: ReactNode }) {
     */
     <html lang={jazyk ?? "sk"} suppressHydrationWarning>
       <head>
-        <HeadContent />
+        <HlavickaStranky jazyk={jazyk ?? "sk"} />
         {/*
           Motív sa nasadzuje pred prvým vykreslením, inak by tmavý režim začal
           bielym bliknutím. Preto je to obyčajný skript v hlavičke a nie efekt
@@ -259,6 +278,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient, jazyk } = Route.useRouteContext();
+
+  // Jazyk z odkazu `?lang=de` si prehliadač zapamätá — ďalšie stránky bez
+  // parametra potom ostanú v tom istom jazyku.
+  useEffect(() => {
+    const zAdresy = jazykZAdresy(window.location.search);
+    if (zAdresy && !document.cookie.includes(`${COOKIE_JAZYKA}=${zAdresy}`))
+      document.cookie = `${COOKIE_JAZYKA}=${zAdresy}; path=/; max-age=31536000; samesite=lax`;
+  }, []);
 
   return (
     <JazykProvider jazyk={jazyk ?? "sk"}>

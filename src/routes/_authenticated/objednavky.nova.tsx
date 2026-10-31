@@ -447,7 +447,7 @@ function NewOrder() {
                         }
                       />
                       {p._dovod && (
-                        <span className="mt-0.5 block text-[10px] leading-tight text-emerald-600">
+                        <span className="mt-0.5 block text-[10px] leading-tight text-emerald-700">
                           {p._dovod}
                         </span>
                       )}
@@ -530,7 +530,7 @@ function NewOrder() {
                           }
                         />
                         {p._dovod && (
-                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-600">
+                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-700">
                             {p._dovod}
                           </div>
                         )}
@@ -603,7 +603,7 @@ function NewOrder() {
               {t("Po potvrdení rezervovať tovar na sklade")}
             </label>
             <label className={`${popis} mt-4`}>{t("Poznámka")}</label>
-            <textarea
+            <textarea aria-label={t("Poznámka")}
               className={`${pole} min-h-20`}
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}

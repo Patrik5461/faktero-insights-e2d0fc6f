@@ -172,7 +172,7 @@ function Page() {
                   <td className="p-3 font-medium">
                     {u.email}
                     {!u.ucet_existuje && (
-                      <span className="ml-2 inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                      <span className="ml-2 inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
                         <TriangleAlert className="h-3 w-3" /> účet zatiaľ neexistuje
                       </span>
                     )}

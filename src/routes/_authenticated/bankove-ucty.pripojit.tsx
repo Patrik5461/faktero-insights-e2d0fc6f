@@ -86,7 +86,7 @@ function ConnectPage() {
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-8 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-600 text-white">
+              <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-700 text-white">
                 <Building2 className="h-6 w-6" />
               </div>
               <div>
@@ -117,7 +117,7 @@ function ConnectPage() {
             <button
               onClick={connect}
               disabled={busy}
-              className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
             >
               <ExternalLink className="h-4 w-4" />
               {busy ? t("Presmerovanie…") : t("Pripojiť cez Tatra banku")}

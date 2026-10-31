@@ -124,7 +124,7 @@ function ConnectionCard({
           {loading ? (
             <div className="text-xs text-muted-foreground">{t("Načítavam…")}</div>
           ) : conn ? (
-            <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
+            <div className="text-xs text-emerald-700 flex items-center gap-1 mt-1">
               <CheckCircle2 className="h-3 w-3" /> {t("Pripojené")}
               {conn.property_id ? ` — ${conn.property_id}` : " " + t("(vyberte property)")}
             </div>

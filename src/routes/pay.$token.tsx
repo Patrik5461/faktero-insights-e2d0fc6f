@@ -94,7 +94,7 @@ function PayPage() {
 
           {paid ? (
             <div className="rounded-lg bg-emerald-50 text-emerald-900 p-4 flex items-center gap-2 dark:bg-emerald-950/30 dark:text-emerald-100">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <CheckCircle2 className="h-5 w-5 text-emerald-700" />
               <span className="text-sm font-medium">{t("Faktúra je už uhradená. Ďakujeme!")}</span>
             </div>
           ) : (
@@ -127,7 +127,7 @@ function PayPage() {
           )}
 
           <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
+            <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-700 shrink-0" />
             <span>
               {t(
                 "Platba prebieha priamo cez GoPay. Peniaze idú na účet príjemcu — nie cez Faktero.",

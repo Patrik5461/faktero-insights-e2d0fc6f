@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/zamestnanci/")({
 
 const FARBA: Record<Pripomienka["zavaznost"], string> = {
   danger: "border-destructive/30 bg-destructive/10 text-destructive",
-  warning: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  warning: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400",
   info: "border-border bg-muted/40 text-foreground",
 };
 
@@ -146,7 +146,7 @@ function ZamestnanciPage() {
                           <td className="p-3">
                             <span
                               className={`rounded-full px-2 py-0.5 text-xs ${
-                                z.status === "active" ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+                                z.status === "active" ? "bg-emerald-500/10 text-emerald-700" : "bg-muted text-muted-foreground"
                               }`}
                             >
                               {z.status === "active" ? t("Aktívny") : t("Ukončený")}

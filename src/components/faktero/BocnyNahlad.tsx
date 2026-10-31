@@ -59,7 +59,7 @@ export function PrepinacNahladu({
       )}
       className={`hidden items-center gap-1.5 rounded-md border px-3 py-2 text-sm lg:inline-flex ${
         zapnuty
-          ? "border-primary/40 bg-primary/10 text-primary"
+          ? "border-primary/40 bg-primary/10 text-primary-hover"
           : "border-border hover:bg-secondary"
       }`}
     >

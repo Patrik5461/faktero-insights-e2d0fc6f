@@ -758,6 +758,7 @@ function EditInvoice() {
                       </td>
                       <td className="py-2 pl-3">
                         <input
+                          aria-label={t("Merná jednotka")}
                           value={it.unit}
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { unit: e.target.value })}
@@ -792,6 +793,7 @@ function EditInvoice() {
                       </td>
                       <td className="py-2 pl-3">
                         <select
+                          aria-label={t("Sadzba DPH")}
                           value={it.prenesenie ? "pdp" : it.vat_rate}
                           disabled={it._locked}
                           onChange={(e) =>
@@ -900,6 +902,7 @@ function EditInvoice() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     />
                     <input
+                      aria-label={t("Merná jednotka")}
                       value={it.unit}
                       disabled={it._locked}
                       onChange={(e) => setItem(idx, { unit: e.target.value })}
@@ -929,6 +932,7 @@ function EditInvoice() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     />
                     <select
+                      aria-label={t("Sadzba DPH")}
                       value={it.prenesenie ? "pdp" : it.vat_rate}
                       disabled={it._locked}
                       onChange={(e) =>
@@ -977,7 +981,7 @@ function EditInvoice() {
                       />
                       <span className="text-muted-foreground">{form.currency}</span>
                     </span>
-                    <button
+                    <button aria-label={t("Odstrániť")}
                       type="button"
                       disabled={it._locked}
                       onClick={() => !it._locked && setItems(items.filter((_, i) => i !== idx))}
@@ -1040,6 +1044,7 @@ function EditInvoice() {
                     className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
                   />
                   <select
+                    aria-label={t("Typ zľavy")}
                     value={form.discount_type || "percent"}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, discount_type: e.target.value as TypZlavy }))

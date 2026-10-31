@@ -146,7 +146,7 @@ function StavPoskytovatela({
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2">
         {kluc ? (
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
         ) : (
           <XCircle className="h-4 w-4 text-destructive" />
         )}
@@ -156,7 +156,7 @@ function StavPoskytovatela({
         <div>{kluc ? "Kľúč je nastavený" : "Kľúč chýba — nevolá sa"}</div>
         <div>Model: {model}</div>
         {poznamka && (
-          <div className="flex items-start gap-1 text-amber-600 dark:text-amber-400">
+          <div className="flex items-start gap-1 text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>{poznamka}</span>
           </div>

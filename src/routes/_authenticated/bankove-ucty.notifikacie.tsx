@@ -161,7 +161,7 @@ function NotifikaciePage() {
                       <Check className="h-3 w-3" /> {t("Prijíma")}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                       {t("Vypnuté")}
                     </span>
                   )}
@@ -225,6 +225,7 @@ function NotifikaciePage() {
                 <div className="mt-4">
                   <label className="text-xs font-medium text-muted-foreground">{t("Banka")}</label>
                   <select
+                    aria-label={t("Banka")}
                     value={a.banka}
                     disabled={busy !== null}
                     onChange={(e) =>
@@ -308,6 +309,7 @@ function NotifikaciePage() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t("Banka")}</label>
                 <select
+                  aria-label={t("Banka")}
                   value={banka}
                   onChange={(e) => setBanka(e.target.value)}
                   className={`${vstup} mt-1`}
@@ -323,6 +325,7 @@ function NotifikaciePage() {
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t("Účet")}</label>
                 <select
+                  aria-label={t("Účet")}
                   value={ucet}
                   onChange={(e) => setUcet(e.target.value)}
                   className={`${vstup} mt-1`}
@@ -340,6 +343,7 @@ function NotifikaciePage() {
                   <div className="sm:col-span-2">
                     <label className="text-xs font-medium text-muted-foreground">IBAN</label>
                     <input
+                      aria-label="IBAN"
                       value={iban}
                       onChange={(e) => setIban(e.target.value)}
                       placeholder="SK00 0000 0000 0000 0000 0000"
@@ -360,6 +364,7 @@ function NotifikaciePage() {
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">{t("Mena")}</label>
                     <select
+                      aria-label={t("Mena")}
                       value={mena}
                       onChange={(e) => setMena(e.target.value)}
                       className={`${vstup} mt-1`}
@@ -581,7 +586,7 @@ function MailNaKontrolu({
             mail.stav === "spracovane"
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
               : caka
-                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
                 : "bg-muted text-muted-foreground"
           }`}
         >
@@ -639,6 +644,7 @@ function MailNaKontrolu({
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t("Smer")}</label>
                 <select
+                  aria-label={t("Smer")}
                   value={f.smer}
                   onChange={(e) => setF({ ...f, smer: e.target.value })}
                   className={`${vstup} mt-1`}
@@ -652,6 +658,7 @@ function MailNaKontrolu({
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t("Dátum")}</label>
                 <input
+                  aria-label={t("Dátum")}
                   type="date"
                   value={f.datum}
                   onChange={(e) => setF({ ...f, datum: e.target.value })}

@@ -284,6 +284,7 @@ function ExportsPage() {
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">{t("Od")}</label>
                   <input
+                    aria-label={t("Od")}
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
@@ -293,6 +294,7 @@ function ExportsPage() {
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">{t("Do")}</label>
                   <input
+                    aria-label={t("Do")}
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
@@ -362,6 +364,7 @@ function ExportsPage() {
                         <td className="p-3">
                           <input
                             type="checkbox"
+                            aria-label={t("Vybrať riadok")}
                             checked={!!picked[i.id]}
                             onChange={(e) => setPicked({ ...picked, [i.id]: e.target.checked })}
                           />
@@ -446,6 +449,7 @@ function ExportsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
+                    aria-label={t("Formát exportu")}
                     value={format}
                     onChange={(e) => setFormat(e.target.value as ExportFormat)}
                     className="rounded-md border border-border bg-background px-3 py-2 text-sm"
@@ -555,7 +559,7 @@ function ExportsPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{t(f.label)}</span>
                       {format === f.format && (
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary-hover">
                           {t("Vybrané")}
                         </span>
                       )}
@@ -774,6 +778,7 @@ function OdovzdanieZaMesiac() {
             {t("Odovzdať za mesiac")}
           </label>
           <input
+            aria-label={t("Odovzdať za mesiac")}
             type="month"
             value={mesiac}
             onChange={(e) => setMesiac(e.target.value)}
@@ -1218,6 +1223,7 @@ function ZauctovaneDoProgramu() {
                     <td className="p-2">
                       <input
                         type="checkbox"
+                        aria-label={t("Vybrať riadok")}
                         checked={!!vyber[r.id]}
                         onChange={(e) => setVyber({ ...vyber, [r.id]: e.target.checked })}
                       />

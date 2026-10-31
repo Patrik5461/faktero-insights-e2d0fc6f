@@ -96,7 +96,7 @@ function LowStockPage() {
                       )}
                     </td>
                     <td className="p-3 whitespace-nowrap text-muted-foreground">{r.sku ?? "—"}</td>
-                    <td className="p-3 text-right tabular-nums text-amber-600">
+                    <td className="p-3 text-right tabular-nums text-amber-700">
                       <AlertTriangle className="mr-1 inline h-3 w-3" />
                       {formatujCislo(r.current, 0, 2)}
                     </td>

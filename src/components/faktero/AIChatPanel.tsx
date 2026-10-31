@@ -132,6 +132,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
           </button>
           {onClose && (
             <button
+              aria-label={t("Zavrieť")}
               onClick={onClose}
               className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary"
             >
@@ -149,7 +150,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
               <div
                 key={c.id}
                 className={`group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs ${
-                  activeId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                  activeId === c.id ? "bg-primary/10 text-primary-hover" : "hover:bg-secondary"
                 }`}
               >
                 <button onClick={() => setActiveId(c.id)} className="flex-1 truncate text-left">
@@ -219,6 +220,7 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
                 className="min-h-[44px] max-h-32 flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button
+                aria-label={t("Odoslať")}
                 type="submit"
                 disabled={!input.trim() || sendMut.isPending}
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"

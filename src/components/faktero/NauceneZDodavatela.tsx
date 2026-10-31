@@ -13,7 +13,7 @@ export function NauceneZDodavatela({ u }: { u: UdajeNespracovaneho }) {
   if (!polia.length) return null;
   return (
     <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
+      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary-hover">
         {t("naučené")}
       </span>
       {t("Podľa predchádzajúcich dokladov od dodávateľa: {polia}. Skontrolujte, prípadne zmeňte.", {

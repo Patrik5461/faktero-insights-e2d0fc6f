@@ -290,7 +290,7 @@ function Stranka() {
                           {riesim === k.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            <CheckCircle2 className="h-4 w-4 text-emerald-700" />
                           )}
                           {t("Vyriešiť")}
                         </button>

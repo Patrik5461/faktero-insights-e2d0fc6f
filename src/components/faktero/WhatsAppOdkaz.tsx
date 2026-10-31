@@ -75,7 +75,7 @@ export function WhatsAppTlacidlo() {
         data-whatsapp-tlacidlo=""
         className="inline-flex h-10 max-w-full items-center gap-2 rounded-md border border-primary/40 bg-card px-4 text-sm font-medium text-foreground shadow-sm transition hover:border-primary hover:bg-secondary"
       >
-        <WhatsAppIkona className="h-4 w-4 shrink-0 text-emerald-600" />
+        <WhatsAppIkona className="h-4 w-4 shrink-0 text-emerald-700" />
         <span className="truncate">{t("Napíšte nám na WhatsApp")}</span>
       </a>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground lg:justify-end">

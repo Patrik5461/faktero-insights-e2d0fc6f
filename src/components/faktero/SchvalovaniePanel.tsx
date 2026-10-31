@@ -118,7 +118,7 @@ export function SchvalovaniePanel({
                   <span
                     className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
                       z.stav === "schvaleny" || i < z.schvalenaUroven
-                        ? "bg-emerald-600 text-white"
+                        ? "bg-emerald-700 text-white"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -151,7 +151,7 @@ export function SchvalovaniePanel({
                       <button
                         onClick={() => akcia("schvalit")}
                         disabled={busy}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
                       >
                         {busy ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

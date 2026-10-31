@@ -771,7 +771,7 @@ export function ZauctovaniePanel({
             ) : null}
           </h2>
           {odovzdana ? (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-hover">
               {program
                 ? t("V účtovníctve ({program}) od {kedy}", {
                     program,
@@ -1304,7 +1304,7 @@ export function ZauctovaniePanel({
                   title={t(
                     "Stiahne XML na import do Pohody a označí faktúru ako odovzdanú, aby ju konektor neposlal druhýkrát.",
                   )}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary-hover hover:bg-primary/10 disabled:opacity-50"
                 >
                   <Download className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
                 </button>

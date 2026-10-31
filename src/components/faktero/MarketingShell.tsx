@@ -7,6 +7,7 @@ import { Mail, Phone, Send, ShieldCheck, Lock } from "lucide-react";
 import { TELEGRAM_PODPORA_BOT, odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
 import { WhatsAppVerejnyOdkaz } from "@/components/faktero/WhatsAppOdkaz";
 import { useT } from "@/lib/i18n/useT";
+import { MastercardZnacka } from "@/components/faktero/MastercardZnacka";
 
 export function MarketingShell({ children }: { children: React.ReactNode }) {
   const { t } = useT();
@@ -70,8 +71,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
                   VISA
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-semibold">
-                  <span className="text-[#eb001b]">Master</span>
-                  <span className="text-[#f79e1b]">card</span>
+                  <MastercardZnacka />
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-semibold text-foreground">
                   <Lock className="h-3 w-3" />
@@ -153,7 +153,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               Tesla Fleet API
             </Link>
           </div>
-          <div className="text-xs text-muted-foreground/80 space-y-1">
+          <div className="text-xs text-muted-foreground space-y-1">
             <div>
               {t("Prevádzkovateľ:")} {LEGAL_COMPANY.name}, {LEGAL_COMPANY.address}
             </div>

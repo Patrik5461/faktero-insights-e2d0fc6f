@@ -38,7 +38,7 @@ function IntegrationsPage() {
             className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+              <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                 <Satellite className="h-5 w-5" />
               </div>
               <div>
@@ -55,7 +55,7 @@ function IntegrationsPage() {
             className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+              <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                 <Car className="h-5 w-5" />
               </div>
               <div>
@@ -77,7 +77,7 @@ function IntegrationsPage() {
               className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
             >
               <div className="flex min-w-0 items-start gap-3">
-                <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                   <Satellite className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">

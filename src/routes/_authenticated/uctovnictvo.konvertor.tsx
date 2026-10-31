@@ -134,7 +134,7 @@ function KonvertorPage() {
                   }}
                   className={`rounded-md border px-3 py-1.5 text-sm ${
                     druh === d.kod
-                      ? "border-primary bg-primary/10 font-medium text-primary"
+                      ? "border-primary bg-primary/10 font-medium text-primary-hover"
                       : "border-border hover:bg-secondary"
                   }`}
                 >

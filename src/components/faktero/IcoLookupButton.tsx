@@ -146,7 +146,7 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         <span className="whitespace-nowrap text-left leading-tight">
           {loading ? t("Vyhľadávam...") : t("Načítať")}
           {!loading && (
-            <span className="block whitespace-nowrap text-[10px] uppercase tracking-wider opacity-60">
+            <span className="block whitespace-nowrap text-[10px] uppercase tracking-wider text-muted-foreground">
               {t("podľa IČO")}
             </span>
           )}
@@ -159,7 +159,7 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         </p>
       )}
       {success && !error && (
-        <p className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+        <p className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-3 w-3 shrink-0" />
           {success}
         </p>
@@ -171,7 +171,7 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         </p>
       )}
       {missing && !error && (
-        <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+        <p className="flex items-start gap-1 text-[11px] text-amber-700 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           {t(
             missing.dic && missing.ic_dph

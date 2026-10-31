@@ -201,6 +201,7 @@ function NewTransferPage() {
             <div>
               <label className="text-xs font-medium text-muted-foreground">{t("Zo skladu")}</label>
               <select
+                aria-label={t("Zo skladu")}
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 value={warehouseFrom}
                 onChange={(e) => setWarehouseFrom(e.target.value)}
@@ -437,6 +438,7 @@ function NewTransferPage() {
           <div>
             <label className="text-xs font-medium text-muted-foreground">{t("Poznámka")}</label>
             <textarea
+              aria-label={t("Poznámka")}
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               rows={2}
               value={note}

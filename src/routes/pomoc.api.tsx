@@ -103,7 +103,10 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>Príklad cURL volania:</p>
-        <pre className="rounded-md border border-border bg-muted p-3 text-xs overflow-x-auto">
+        <pre
+          className="rounded-md border border-border bg-muted p-3 text-xs overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          tabIndex={0}
+        >
           {`curl -X POST https://www.faktero.sk/api/v1/invoices \\
   -H "Authorization: Bearer fk_live_…" \\
   -H "Content-Type: application/json" \\

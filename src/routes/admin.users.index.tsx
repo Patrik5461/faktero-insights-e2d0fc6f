@@ -27,10 +27,10 @@ function StavUctu({ row }: { row: any }) {
   const [text, trieda] = row.zakazane
     ? ["Zakázaný", "bg-destructive/10 text-destructive"]
     : row.deletion_scheduled_for
-      ? ["Ruší sa", "bg-amber-500/10 text-amber-700 dark:text-amber-400"]
+      ? ["Ruší sa", "bg-amber-500/10 text-amber-800 dark:text-amber-400"]
       : !row.email_potvrdeny
         ? ["Nepotvrdený", "bg-muted text-muted-foreground"]
-        : ["Aktívny", "bg-primary/10 text-primary"];
+        : ["Aktívny", "bg-primary/10 text-primary-hover"];
   return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trieda}`}>{text}</span>;
 }
 

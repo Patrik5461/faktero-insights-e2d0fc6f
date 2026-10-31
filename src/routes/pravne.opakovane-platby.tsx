@@ -9,6 +9,7 @@ import {
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { kanonicka } from "@/lib/faktero/kanonicka";
+import { MastercardZnacka } from "@/components/faktero/MastercardZnacka";
 
 export const Route = createFileRoute("/pravne/opakovane-platby")({
   head: ({ match }) => ({
@@ -126,8 +127,7 @@ function Sk() {
           VISA
         </span>
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold">
-          <span className="text-[#eb001b]">Master</span>
-          <span className="text-[#f79e1b]">card</span>
+          <MastercardZnacka />
         </span>
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
           <Lock className="h-3.5 w-3.5" /> 3-D Secure
@@ -249,8 +249,7 @@ function De() {
           VISA
         </span>
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold">
-          <span className="text-[#eb001b]">Master</span>
-          <span className="text-[#f79e1b]">card</span>
+          <MastercardZnacka />
         </span>
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
           <Lock className="h-3.5 w-3.5" /> 3-D Secure

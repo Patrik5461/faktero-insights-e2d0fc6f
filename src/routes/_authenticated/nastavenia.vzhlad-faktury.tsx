@@ -331,7 +331,7 @@ function InvoiceAppearancePage() {
                   className="h-9 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
                   aria-label={t("Farba akcentu")}
                 />
-                <input
+                <input aria-label={t("Farba akcentu (HEX)")}
                   value={accent}
                   onChange={(e) => setC({ ...c, invoice_accent_color: e.target.value })}
                   className="h-9 w-32 rounded-md border border-input bg-background px-3 font-mono text-sm"
@@ -377,7 +377,7 @@ function InvoiceAppearancePage() {
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("Napr. zápis v OR SR, poznámka o prenose daňovej povinnosti, ďakovná veta.")}
               </p>
-              <textarea
+              <textarea aria-label={t("Pätička dokladu")}
                 value={c.invoice_footer ?? ""}
                 onChange={(e) => setC({ ...c, invoice_footer: e.target.value })}
                 rows={3}

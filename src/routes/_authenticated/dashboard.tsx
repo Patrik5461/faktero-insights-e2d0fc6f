@@ -439,7 +439,7 @@ function Dashboard() {
                     <Sparkles className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-semibold">{t("eFaktúra 2027")}</h3>
                   </div>
-                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-400">
                     {t("Pripravujeme")}
                   </span>
                 </div>
@@ -473,7 +473,8 @@ function Dashboard() {
           )}
 
           <Panel title="Rozdelenie faktúr" icon={Activity}>
-            <div className="h-72">
+            {/* Graf je len obrázok k zoznamu pod ním — čítačka prečíta zoznam. */}
+            <div className="h-72" aria-hidden="true">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -546,7 +547,7 @@ function Dashboard() {
             >
               <div className="flex items-center gap-4">
                 <div
-                  className={`grid h-12 w-12 place-items-center rounded-xl ${lowStockCount > 0 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : "bg-muted text-muted-foreground"}`}
+                  className={`grid h-12 w-12 place-items-center rounded-xl ${lowStockCount > 0 ? "bg-amber-500/15 text-amber-800 dark:text-amber-400" : "bg-muted text-muted-foreground"}`}
                 >
                   <Package className="h-5 w-5" />
                 </div>
@@ -568,7 +569,7 @@ function Dashboard() {
               </div>
               <div className="flex items-center gap-3">
                 <div
-                  className={`text-2xl font-bold tabular-nums ${lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
+                  className={`text-2xl font-bold tabular-nums ${lowStockCount > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}
                 >
                   {lowStockCount}
                 </div>
@@ -639,7 +640,7 @@ function Dashboard() {
               {activeRecurring.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground">
                   {t("Žiadne aktívne šablóny.")}{" "}
-                  <Link to="/opakovane/nova" className="text-primary hover:underline">
+                  <Link to="/opakovane/nova" className="text-primary underline underline-offset-2">
                     {t("Vytvoriť")}
                   </Link>
                 </div>
@@ -680,7 +681,7 @@ function Dashboard() {
               {pendingQuotes.length === 0 ? (
                 <div className="py-4 text-sm text-muted-foreground">
                   {t("Žiadne otvorené ponuky.")}{" "}
-                  <Link to="/ponuky/nova" className="text-primary hover:underline">
+                  <Link to="/ponuky/nova" className="text-primary underline underline-offset-2">
                     {t("Vytvoriť")}
                   </Link>
                 </div>
@@ -789,7 +790,7 @@ function Delta({ pct }: { pct: number | null }) {
   return (
     <span
       className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${
-        up ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+        up ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"
       }`}
     >
       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -1022,7 +1023,7 @@ export function StatusBadge({ status }: { status: string }) {
     draft: "border border-border bg-muted text-muted-foreground",
     issued: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
     sent: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
-    paid: "bg-primary/15 text-primary",
+    paid: "bg-primary/15 text-primary-hover",
     overdue: "bg-destructive/15 text-destructive",
     cancelled: "bg-muted text-muted-foreground line-through",
   };
@@ -1087,7 +1088,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
   invoices.slice(0, 30).forEach((i) => {
     items.push({
       icon: FilePlus2,
-      tone: "bg-primary/15 text-primary",
+      tone: "bg-primary/15 text-primary-hover",
       title: "Faktúra {cislo} vytvorená",
       titleP: { cislo: i.invoice_number },
       subtitle: "{v}",
@@ -1100,7 +1101,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
     if (i.status === "sent" || i.status === "paid") {
       items.push({
         icon: Send,
-        tone: "bg-primary/15 text-primary",
+        tone: "bg-primary/15 text-primary-hover",
         title: "Faktúra {cislo} odoslaná",
         titleP: { cislo: i.invoice_number },
         subtitle: "{v}",
@@ -1188,14 +1189,14 @@ function buildAging(kose: KosVeku[]): AgingBucket[] {
       label: "V termíne",
       count: 0,
       amount: 0,
-      tone: "text-emerald-600 dark:text-emerald-400",
+      tone: "text-emerald-700 dark:text-emerald-400",
     },
     {
       key: "1_30",
       label: "1–30 dní",
       count: 0,
       amount: 0,
-      tone: "text-amber-600 dark:text-amber-400",
+      tone: "text-amber-700 dark:text-amber-400",
     },
     {
       key: "31_60",
@@ -1346,7 +1347,7 @@ function AgingPanel({
           </button>
 
           {rozpis && (
-            <div className="mt-2 overflow-x-auto">
+            <div className="mt-2 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[12px] text-muted-foreground">
@@ -1390,9 +1391,9 @@ function DsoCard({
   const { t } = useT();
   const tone =
     dso.days < 30
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-emerald-700 dark:text-emerald-400"
       : dso.days <= 60
-        ? "text-amber-600 dark:text-amber-400"
+        ? "text-amber-700 dark:text-amber-400"
         : "text-destructive";
   const badge = dso.days < 30 ? "Vynikajúce" : dso.days <= 60 ? "Priemerné" : "Kritické";
   return (
@@ -1449,7 +1450,7 @@ function ForecastPanel({
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
           <table className="w-full min-w-[26rem] text-sm">
             <thead>
               <tr className="text-left text-[12px] text-muted-foreground">
@@ -1466,14 +1467,14 @@ function ForecastPanel({
                     <div className="font-medium">{t("Týždeň {n}", { n: r.tyzden })}</div>
                     <div className="text-xs text-muted-foreground">{r.range}</div>
                   </td>
-                  <td className="py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                  <td className="py-2 text-right tabular-nums text-emerald-700 dark:text-emerald-400">
                     {fmt(r.income)}
                   </td>
                   <td className="py-2 text-right tabular-nums text-destructive">
                     {r.expense > 0 ? `−${fmt(r.expense)}` : fmt(0)}
                   </td>
                   <td
-                    className={`py-2 text-right font-semibold tabular-nums ${r.balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                    className={`py-2 text-right font-semibold tabular-nums ${r.balance >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}
                   >
                     {fmt(r.balance)}
                   </td>
@@ -1483,7 +1484,7 @@ function ForecastPanel({
             <tfoot>
               <tr className="border-t border-border">
                 <td className="pt-2 text-[12px] text-muted-foreground">{t("Spolu 4 týždne")}</td>
-                <td className="pt-2 text-right text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
+                <td className="pt-2 text-right text-xs tabular-nums text-emerald-700 dark:text-emerald-400">
                   {fmt(rows.reduce((a, r) => a + r.income, 0))}
                 </td>
                 <td className="pt-2 text-right text-xs tabular-nums text-destructive">
@@ -1491,7 +1492,7 @@ function ForecastPanel({
                   {fmt(rows.reduce((a, r) => a + r.expense, 0))}
                 </td>
                 <td
-                  className={`pt-2 text-right font-bold tabular-nums ${rows.reduce((a, r) => a + r.balance, 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`pt-2 text-right font-bold tabular-nums ${rows.reduce((a, r) => a + r.balance, 0) >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}
                 >
                   {fmt(rows.reduce((a, r) => a + r.balance, 0))}
                 </td>

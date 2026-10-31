@@ -129,7 +129,7 @@ function UzavierkaPage() {
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-3">
               {zamknute ? (
-                <Lock className="h-6 w-6 text-emerald-600" />
+                <Lock className="h-6 w-6 text-emerald-700" />
               ) : (
                 <Unlock className="h-6 w-6 text-muted-foreground" />
               )}
