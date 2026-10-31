@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, Download, Info, Loader2 } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -52,28 +52,34 @@ export function DeZm() {
   const [data, setData] = useState<Vysledok | null>(null);
   const [nacitavam, setNacitavam] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
+  /*
+    Poradové číslo požiadavky. Zmena mesiaca a hneď nato zaškrtnutie „Služby
+    hlásim mesačne“ pošle dve požiadavky naraz; keď staršia dobehla neskôr,
+    prepísala novší výsledok a CSV vyšlo bez služieb (riadok S chýbal).
+  */
+  const poradie = useRef(0);
 
   const nacitaj = useCallback(async () => {
     const companyId = getActiveCompanyId();
     if (!companyId) return;
+    const moje = ++poradie.current;
     setNacitavam(true);
     setChyba(null);
     try {
-      setData(
-        await zostav({
-          data: {
-            company_id: companyId,
-            rok,
-            mesiac: rezim === "mesiac" ? mesiac : null,
-            stvrtrok: rezim === "stvrtrok" ? stvrtrok : null,
-            sluzby_mesacne: sluzbyMesacne,
-          },
-        }),
-      );
+      const vysledok = await zostav({
+        data: {
+          company_id: companyId,
+          rok,
+          mesiac: rezim === "mesiac" ? mesiac : null,
+          stvrtrok: rezim === "stvrtrok" ? stvrtrok : null,
+          sluzby_mesacne: sluzbyMesacne,
+        },
+      });
+      if (moje === poradie.current) setData(vysledok);
     } catch (e: any) {
-      setChyba(e?.message ?? t("Prehľad sa nepodarilo zostaviť."));
+      if (moje === poradie.current) setChyba(e?.message ?? t("Prehľad sa nepodarilo zostaviť."));
     } finally {
-      setNacitavam(false);
+      if (moje === poradie.current) setNacitavam(false);
     }
   }, [zostav, rok, rezim, mesiac, stvrtrok, sluzbyMesacne, t]);
 

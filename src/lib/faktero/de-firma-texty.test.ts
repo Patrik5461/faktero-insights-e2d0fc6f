@@ -1,6 +1,6 @@
 /**
  * Nemecká firma v rozhraní a na doklade (E2E test 30. 10. 2026, tok
- * e2e/toky/31-de-firma.mjs): lehota vystavenia podľa UStG, merná jednotka
+ * e2e/toky/36-de-firma.mjs): lehota vystavenia podľa UStG, merná jednotka
  * v jazyku dokladu, 0 % namiesto „RC“ pri oslobodenom dodaní a texty
  * daňového režimu bez slovenských paragrafov.
  */

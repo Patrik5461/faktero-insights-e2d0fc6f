@@ -462,12 +462,23 @@ export default {
     });
 
     await t.krok("ZM CSV pre BZSt", async () => {
+      // Zmena mesiaca a zaškrtnutie posielajú každé vlastnú požiadavku — čaká sa na
+      // odpoveď každej zvlášť (pred opravou poradia v DeZm staršia odpoveď, ktorá dobehla
+      // neskôr, prepísala novšiu a v CSV chýbali služby).
+      const odpoved = () =>
+        page
+          .waitForResponse((r) => r.url().includes("/_serverFn/"), { timeout: 20000 })
+          .catch(() => null);
+      let o = odpoved();
       await page
         .locator(`select:has(option:text("${mesiac}"))`)
         .nth(1)
         .selectOption({ label: mesiac });
+      await o;
+      o = odpoved();
       await page.getByText(/Sonstige Leistungen monatlich melden/).click();
-      await page.waitForTimeout(2000);
+      await o;
+      await page.waitForTimeout(500);
       const s = await t.stiahni(
         () => page.getByRole("button", { name: /CSV für das BZSt/ }).click(),
         "zm",

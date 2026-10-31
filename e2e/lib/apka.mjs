@@ -1,5 +1,5 @@
 /*
-  Mobilná appka (`/app`) v prehliadači — spoločné kroky tokov 27-apka-*.
+  Mobilná appka (`/app`) v prehliadači — spoločné kroky tokov *-apka-*.
 
   Do telefónu ide tá istá trasa zabalená do balíčka, takže čo sa tu preklikne,
   platí aj pre appku (okrem natívnych pluginov: kamera, GPS na pozadí, push).
@@ -34,6 +34,20 @@ export async function zalozka(page, i) {
 export const tlacidlo = (page, meno) => page.getByRole("button", { name: meno }).first();
 
 /**
+ * Ťuknutie na tlačidlo, cez ktoré môže sedieť hláška. Na webe `/app` kreslí hlášky
+ * spoločný Toaster vpravo dole — presne cez tlačidlá sprievodcu (v telefóne sú hore).
+ * Bez signálu appka hlási „Bez pripojenia…“ a bežný klik by zachytila hláška.
+ */
+export async function tukni(loc) {
+  await loc.waitFor({ state: "visible" });
+  await loc.scrollIntoViewIfNeeded().catch(() => {});
+  // dispatchEvent klikne aj na zakázané tlačidlo — počká sa, kým je aktívne.
+  const el = await loc.elementHandle();
+  await loc.page().waitForFunction((e) => !e.disabled, el, { timeout: 20000 });
+  await loc.dispatchEvent("click");
+}
+
+/**
  * Vystaví faktúru sprievodcom (odberateľ → položka → Kontrola → Vystaviť).
  * `predVystavenim` dostane stránku na obrazovke Kontrola. Vráti text obrazovky
  * po vystavení (číslo faktúry alebo „odložená").
@@ -54,13 +68,13 @@ export async function vystavVApke(
   if (mnozstvo !== 1)
     await page.locator('input[inputmode="decimal"]').first().fill(String(mnozstvo));
   await page.getByPlaceholder("0,00").first().fill(String(cena).replace(".", ","));
-  await tlacidlo(page, /^Ďalej$/).click();
+  await tukni(tlacidlo(page, /^Ďalej$/));
   await page
     .getByPlaceholder(/Napríklad: podľa objednávky/)
     .first()
     .fill(text);
   if (predVystavenim) await predVystavenim(page);
-  await tlacidlo(page, /^Vystaviť faktúru$/).click();
+  await tukni(tlacidlo(page, /^Vystaviť faktúru$/));
   const hotovo = tlacidlo(page, /^Hotovo$/);
   await hotovo.waitFor({ timeout: 40000 });
   return (await page.locator("main").last().innerText()).trim();

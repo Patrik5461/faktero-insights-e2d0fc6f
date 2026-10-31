@@ -47,6 +47,23 @@ async function vypadok(page, vzor, { strataOdpovede = false, metoda = "POST" } =
   return () => page.unroute(vzor, h);
 }
 
+/**
+ * Opakované vystavenie po chybe. Hláška sa kreslí vpravo dole cez tlačidlo
+ * vystavenia a kým je nad ňou myš (ostala tam po kliknutí), nezmizne — preto sa
+ * použije jej „Skúsiť znova“, a keď ho nemá, myš ide preč a čaká sa, kým zmizne.
+ */
+async function znovaVystav(page) {
+  const akcia = page.locator("[data-sonner-toast] button", { hasText: "Skúsiť znova" }).first();
+  if (await akcia.isVisible().catch(() => false)) return akcia.click();
+  await page.mouse.move(5, 5);
+  await page
+    .locator("[data-sonner-toast]")
+    .first()
+    .waitFor({ state: "detached", timeout: 20000 })
+    .catch(() => {});
+  await page.locator("#invoice-submit").click();
+}
+
 async function vyplnFakturu(t, page, odberatel, nazov) {
   await t.go("/faktury/nova", page);
   await page.locator("#odberatel-dokladu").waitFor();
@@ -83,7 +100,7 @@ export default {
       await overHlasku(t, "výpadku položiek");
       await pusti();
       t.over(/\/faktury\/nova/.test(page.url()), "formulár sa zavrel");
-      await page.locator("#invoice-submit").click();
+      await znovaVystav(page);
       await page.waitForURL(/\/faktury\/[0-9a-f-]{36}$/, { timeout: 30000 });
       const f = await fakturyOdberatela();
       t.over(
@@ -102,7 +119,7 @@ export default {
       await page.locator("#invoice-submit").click();
       await overHlasku(t, "stratenej odpovedi");
       await pusti();
-      await page.locator("#invoice-submit").click();
+      await znovaVystav(page);
       await page.waitForURL(/\/faktury\/[0-9a-f-]{36}$/, { timeout: 30000 });
       const f = await fakturyOdberatela();
       t.over(f.length === pred + 1, `pribudlo faktúr ${f.length - pred}, čakal som 1`);

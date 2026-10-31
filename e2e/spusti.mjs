@@ -54,9 +54,19 @@ if (!process.env.E2E_VNUTRI) {
     const lib = readFileSync(ldpath, "utf8").trim();
     env.LD_LIBRARY_PATH = [lib, process.env.LD_LIBRARY_PATH].filter(Boolean).join(":");
   }
+  // E2E_CAKAJ_S: koľko sekúnd čakať na zámok (po nasadení), inak sa hneď končí kódom 75.
+  const cakaj = Number(process.env.E2E_CAKAJ_S ?? 0);
   const r = spawnSync(
     "flock",
-    ["-n", "-E", "75", ZAMOK, process.execPath, process.argv[1], ...process.argv.slice(2)],
+    [
+      ...(cakaj > 0 ? ["-w", String(cakaj)] : ["-n"]),
+      "-E",
+      "75",
+      ZAMOK,
+      process.execPath,
+      process.argv[1],
+      ...process.argv.slice(2),
+    ],
     { stdio: "inherit", env },
   );
   if (r.status === 75) console.error(`Iný beh E2E ešte prebieha (${ZAMOK}), končím.`);
@@ -68,9 +78,10 @@ if (!process.env.E2E_VNUTRI) {
 const args = process.argv.slice(2);
 const OPAKUJ = args.includes("--opakuj") || process.env.E2E_OPAKUJ === "1";
 const vybrane = args.filter((a) => !a.startsWith("--"));
-const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1080) * 1000;
+// Celá sada trvá ~10,5 min (40 tokov, 31. 10. 2026); po 14 min sa nový tok nespustí.
+const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 840) * 1000;
 // Tvrdý koniec behu: tok spustený tesne pred LIMIT_BEHU_MS dostane len zvyšok do tohto času,
-// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 1200).
+// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 960).
 const KONIEC_BEHU_MS = LIMIT_BEHU_MS + Number(process.env.E2E_REZERVA_S ?? 60) * 1000;
 
 function commit() {
@@ -439,12 +450,28 @@ if (rest && !chybaPrihlasenia) {
     ["api_keys", "name"],
     ["doklad_navyky", "nazov_dodavatela"],
     ["pravidla_uctovania", "nazov"],
+    ["predlohy_uctovania", "nazov"],
+    ["bank_transactions", "counterparty"],
+    ["bank_transactions", "description"],
+    ["cash_entries", "description"],
+    ["other_documents", "subject"],
+    ["products", "name"],
+    ["sales_orders", "order_number"],
+    ["sales_orders", "customer_name"],
+    ["purchase_orders", "order_number"],
+    ["vyuctovania_vydavkov", "nazov"],
+    ["financing_contracts", "name"],
+    ["recurring_invoices", "name"],
+    ["company_bank_accounts", "name"],
   ]) {
     const r = await rest
       .get(`${tabulka}?company_id=in.(${firmy})&${stlpec}=like.${vzor}&select=company_id&limit=50`)
       .catch(() => null);
     if (r?.status === 200 && r.data?.length) zvysky.push(`${tabulka}.${stlpec}: ${r.data.length}`);
   }
+  // Firma založená tokom (nemecká firma v de-firma) — firmy nemajú company_id.
+  const f = await rest.get(`companies?name=like.${vzor}&select=id&limit=50`).catch(() => null);
+  if (f?.status === 200 && f.data?.length) zvysky.push(`companies.name: ${f.data.length}`);
   if (zvysky.length) log(`! po behu ostali dáta so značkou ${ZNACKA}: ${zvysky.join(", ")}`);
 }
 
