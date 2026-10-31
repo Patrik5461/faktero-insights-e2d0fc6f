@@ -33,6 +33,15 @@ import { kodPreDoklad } from "./uctovanie-agenda";
 import { rozdelUcet } from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { kodStatu } from "./company-autofill";
+import { krajinaDane } from "./vat-rates";
+
+/**
+ * Jazyková verzia Money S3 (`MoneyData/@JazykVerze`, schéma pozná CZ a SK).
+ * Česká firma účtuje v českom Money — predtým jej išlo vždy „SK“.
+ */
+export function jazykVerzieMoney(krajina: string | null | undefined): "CZ" | "SK" {
+  return krajinaDane(krajina) === "CZ" ? "CZ" : "SK";
+}
 
 export type NastaveniaMoney = {
   /** Zkratky číselných řad v Money (max. 5 znakov). */
@@ -492,7 +501,7 @@ export function buildMoneyS3Uctovanie(opts: {
     polozky.length ? `\n  <${tag}>${polozky.join("")}\n  </${tag}>` : "";
   // Poradie zoznamov podľa `_Document.xsd`: FaktPrij, FaktVyd, IntDokl, PokDokl.
   const xml = `<?xml version="1.0" encoding="utf-8"?>
-<MoneyData ICAgendy="${esc(opts.firma?.ico ?? "")}" JazykVerze="SK" description="Doklady z Faktero">${zoznam(
+<MoneyData ICAgendy="${esc(opts.firma?.ico ?? "")}" JazykVerze="${jazykVerzieMoney(opts.firma?.country)}" description="Doklady z Faktero">${zoznam(
     "SeznamFaktPrij",
     prijate,
   )}${zoznam("SeznamFaktVyd", vydane)}${zoznam("SeznamIntDokl", interne)}${zoznam("SeznamPokDokl", pokladna)}

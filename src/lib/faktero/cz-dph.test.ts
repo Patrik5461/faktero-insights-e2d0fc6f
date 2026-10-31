@@ -136,6 +136,36 @@ describe("kontrolní hlášení", () => {
     expect(kh.b3).toEqual({ zaklad1: 1000, dan1: 210, zaklad2: 0, dan2: 0 });
   });
 
+  it("neplátca s DIČ ide nad hranicou tiež do A.4 (pokyny: DIČ podľa daňového poriadku)", () => {
+    const k = kontrolniHlaseni({
+      obdobie: { rok: 2026, mesiac: 9 },
+      vystavene: [
+        {
+          cislo: "FV-NEPL",
+          typ: "regular",
+          datumDodania: "2026-09-10",
+          // ARES dá DIČ každému, IČ DPH len plátcovi.
+          odberatelDic: "CZ27082440",
+          odberatelIcDph: null,
+          riadky: [{ sadzba: 21, zaklad: 20000, dan: 4200 }],
+        },
+        {
+          cislo: "FV-PLAT",
+          typ: "regular",
+          datumDodania: "2026-09-10",
+          odberatelDic: "CZ27082440",
+          odberatelIcDph: "CZ27082440",
+          riadky: [{ sadzba: 21, zaklad: 20000, dan: 4200 }],
+        },
+      ],
+      prijate: [],
+      doklady: [],
+    });
+    expect(k.a4.map((r) => r.doklad)).toEqual(["FV-NEPL", "FV-PLAT"]);
+    expect(k.a4[0].dic).toBe("27082440");
+    expect(k.a5).toEqual({ zaklad1: 0, dan1: 0, zaklad2: 0, dan2: 0 });
+  });
+
   it("služba z EÚ ide do A.2 so samozdanením 21 %", () => {
     expect(kh.a2).toEqual([
       {
@@ -343,5 +373,15 @@ describe("souhrnné hlášení", () => {
     expect(overSchemou(xml, "dphshv_epo2.xsd")).toBeNull();
     expect(xml).toContain('ctvrt="3"');
     expect(xml).toContain('por_c_stran="2" c_rad="21"');
+  });
+});
+
+describe("dátum podania", () => {
+  it("berie pražský deň, nie UTC", async () => {
+    const { datumPodania } = await import("./cz-dph-xml");
+    // 30. 10. 2026 23:30 v Prahe (CET) = 22:30 UTC — stále 30. 10.; 31. 10. 00:30 CET = 30. 10. 23:30 UTC.
+    expect(datumPodania(new Date("2026-10-30T22:30:00Z"))).toBe("30.10.2026");
+    expect(datumPodania(new Date("2026-10-30T23:30:00Z"))).toBe("31.10.2026");
+    expect(datumPodania(new Date("2026-07-14T22:30:00Z"))).toBe("15.07.2026");
   });
 });

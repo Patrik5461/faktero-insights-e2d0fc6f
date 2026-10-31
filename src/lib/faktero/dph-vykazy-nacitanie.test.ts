@@ -255,3 +255,52 @@ describe("česká firma — prijatá faktúra od českého dodávateľa", () => 
     expect(kh.b2).toHaveLength(1);
   });
 });
+
+describe("vyúčtovanie zálohy v cudzej mene", () => {
+  it("zdanená záloha sa odpočíta v korunách kurzom dňa platby, nie v eurách", async () => {
+    const polozka = (z: number) => ({ vat_rate: 21, subtotal: z, quantity: 1, unit_price: z });
+    const { vstup } = await nacitajVstup(
+      klient({
+        companies: [{ country: "CZ" }],
+        invoices: [
+          {
+            id: "zf",
+            invoice_number: "ZF1",
+            type: "proforma",
+            status: "paid",
+            delivery_date: "2026-08-20",
+            currency: "EUR",
+            invoice_items: [polozka(1000)],
+          },
+          {
+            id: "ddp",
+            invoice_number: "DD1",
+            type: "advance_payment",
+            status: "paid",
+            advance_invoice_id: "zf",
+            delivery_date: "2026-08-25",
+            currency: "EUR",
+            exchange_rate: 24.5,
+            invoice_items: [polozka(1000)],
+          },
+          {
+            id: "fa",
+            invoice_number: "FA1",
+            type: "regular",
+            status: "issued",
+            delivery_date: "2026-09-15",
+            currency: "EUR",
+            exchange_rate: 25,
+            invoice_items: [polozka(2000)],
+          },
+        ],
+        invoice_advances: [{ invoice_id: "fa", advance_invoice_id: "zf" }],
+      }) as any,
+      "f-cz",
+      obdobie,
+    );
+    const fa = vstup.vystavene.find((f) => f.cislo === "FA1")!;
+    // 2 000 € × 25 − 1 000 € × 24,5 = 25 500 Kč; daň 420 × 25 − 210 × 24,5 = 5 355 Kč
+    expect(fa.riadky).toEqual([{ sadzba: 21, zaklad: 25500, dan: 5355 }]);
+  });
+});

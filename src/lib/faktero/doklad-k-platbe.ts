@@ -12,6 +12,34 @@
   dokladu tak vždy presne sedí s prijatou sumou.
 */
 
+import { datumNaDoklade, jazykDokladu } from "./faktura-jazyk";
+
+/**
+ * Poznámka na doklade k prijatej platbe v jazyku dokladu (preberá ho zo
+ * zálohy). Predtým bola vždy slovenská a s dátumom „2026-10-30“ — aj na
+ * českom doklade.
+ */
+export function poznamkaDokladuKPlatbe(
+  jazyk: unknown,
+  datumPlatby: string,
+  cisloZalohy: string,
+): string {
+  const j = jazykDokladu(jazyk);
+  const d = datumNaDoklade(datumPlatby, j);
+  switch (j) {
+    case "cs":
+      return `Daňový doklad k platbě přijaté ${d} k zálohové faktuře ${cisloZalohy}.`;
+    case "en":
+      return `Tax document for the payment received on ${d} for advance invoice ${cisloZalohy}.`;
+    case "de":
+      return `Rechnung über die am ${d} erhaltene Anzahlung zur Vorauszahlungsrechnung ${cisloZalohy}.`;
+    case "hu":
+      return `Adóügyi bizonylat a(z) ${cisloZalohy} számú előlegszámlához ${d}-án/én beérkezett fizetésről.`;
+    default:
+      return `Daňový doklad k platbe prijatej ${d} k zálohovej faktúre ${cisloZalohy}.`;
+  }
+}
+
 export type PolozkaZalohy = {
   quantity: number;
   unit_price: number;

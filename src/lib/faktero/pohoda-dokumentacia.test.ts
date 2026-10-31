@@ -371,3 +371,36 @@ describe("storno (vzor invoiceStorno.xml na stormware.sk)", () => {
     expect(chybySchemy(xml)).toEqual([]);
   });
 });
+
+describe("česká Pohoda dostane české texty", () => {
+  it("doklad k prijatej platbe a faktúra bez textu nad položkami", () => {
+    const xml = buildPohodaInvoiceXml({
+      company: firmaCz,
+      invoices: [
+        {
+          invoice: faktura({
+            id: "d1",
+            invoice_number: "DDP1",
+            type: "advance_payment",
+            currency: "CZK",
+          }),
+          items: [polozka({ vat_rate: 21, vat_amount: 21, total: 121 })],
+        },
+        {
+          invoice: faktura({ id: "f2", invoice_number: "FA2", currency: "CZK" }),
+          items: [polozka({ vat_rate: 21, vat_amount: 21, total: 121 })],
+        },
+      ],
+    });
+    expect(xml).toContain("Daňový doklad k přijaté platbě DDP1");
+    expect(xml).toContain("<inv:text>Faktura FA2</inv:text>");
+    expect(xml).not.toContain("prijatej");
+    expect(xml).not.toContain("Faktúra");
+    // Slovenská firma ostáva po slovensky.
+    const sk = buildPohodaInvoiceXml({
+      company: firmaSk,
+      invoices: [{ invoice: faktura({ id: "f3", invoice_number: "FA3" }), items: [polozka()] }],
+    });
+    expect(sk).toContain("<inv:text>Faktúra FA3</inv:text>");
+  });
+});

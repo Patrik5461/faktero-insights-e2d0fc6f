@@ -595,12 +595,13 @@ export function buildPohodaInvoiceXml(opts: {
  * Text vystavenej faktúry v Pohode podľa nastavenia firmy. Predvolene „text
  * nad položkami" (to, čo sa fakturuje), inak poznámka, inak „Faktúra …".
  */
-function textVystavenej(invoice: InvoiceRow, ex: NastaveniaExportu): string {
+function textVystavenej(invoice: InvoiceRow, ex: NastaveniaExportu, cz = false): string {
   const inv = invoice as any;
+  // Česká Pohoda dostane český text, nie slovenský.
   const cislo =
     inv.type === "advance_payment"
-      ? `Daňový doklad k prijatej platbe ${inv.invoice_number ?? ""}`.trim()
-      : `Faktúra ${inv.invoice_number}`;
+      ? `${cz ? "Daňový doklad k přijaté platbě" : "Daňový doklad k prijatej platbe"} ${inv.invoice_number ?? ""}`.trim()
+      : `${cz ? "Faktura" : "Faktúra"} ${inv.invoice_number}`;
   const auto = String(inv.intro_note ?? "").trim() || String(inv.notes ?? "").trim() || cislo;
   if (ex.textVystavene === "poznamka") return String(inv.notes ?? "").trim() || auto;
   if (ex.textVystavene === "odberatel_cislo")
@@ -650,7 +651,7 @@ export function polozkyFaktur(opts: {
   const interne = kPlatbe.length
     ? polozkyDokladov({
         company,
-        doklady: kPlatbe.map(({ invoice, items }) => dokladKPlatbeAkoDoklad(invoice, items, nastavenia)),
+        doklady: kPlatbe.map(({ invoice, items }) => dokladKPlatbeAkoDoklad(invoice, items, nastavenia, cz)),
         nastavenia: { ...nastavenia, radInterne: nastavenia?.radInterne },
       })
     : "";
@@ -1027,7 +1028,7 @@ export function polozkyFaktur(opts: {
           "inv:text",
           // „Text nad položkami" je to, čo sa fakturuje — patrí do textu
           // dokladu v Pohode. Poznámka ide do poznámky.
-          skrat(textVystavenej(invoice, ex), 240),
+          skrat(textVystavenej(invoice, ex, cz), 240),
           "        ",
         )}${el("inv:note", poznamky, "        ")}${
           predkontacia
@@ -1432,6 +1433,7 @@ function dokladKPlatbeAkoDoklad(
   invoice: InvoiceRow,
   items: ItemRow[],
   nastavenia?: PohodaNastavenia,
+  cz = false,
 ): DokladRow {
   const po = new Map<number, { sadzba: number; zaklad: number; dph: number }>();
   for (const it of items) {
@@ -1470,7 +1472,7 @@ function dokladKPlatbeAkoDoklad(
     _povodneCislo: inv.invoice_number,
     _symVar: vsVystavenej(inv),
     _datumDph: inv.delivery_date || inv.issue_date,
-    _text: `Daňový doklad k prijatej platbe ${inv.invoice_number ?? ""}`.trim(),
+    _text: `${cz ? "Daňový doklad k přijaté platbě" : "Daňový doklad k prijatej platbe"} ${inv.invoice_number ?? ""}`.trim(),
   } as DokladRow;
 }
 
@@ -3474,7 +3476,7 @@ ${odsadenie}</SouhrnDPH>`;
   }
 
   const xml = `<?xml version="1.0" encoding="utf-8"?>
-<MoneyData ICAgendy="${esc(company?.ico ?? "")}" JazykVerze="SK">
+<MoneyData ICAgendy="${esc(company?.ico ?? "")}" JazykVerze="${krajinaDane(company?.country) === "CZ" ? "CZ" : "SK"}">
   <SeznamFaktVyd>${doklady.join("")}
   </SeznamFaktVyd>
 </MoneyData>`;

@@ -205,6 +205,22 @@ function doVykazov(f: VystavenaFaktura): boolean {
  * len rozdiel. Odpočítava sa po sadzbách — záloha aj dodanie môžu mať viac
  * sadzieb a miešať ich by rozhodilo riadky priznania.
  */
+/**
+ * Riadky dokladu k prijatej platbe v domácej mene firmy. Vyúčtovanie v cudzej
+ * mene sa do výkazu prepočíta svojím kurzom — záloha sa od neho musí odpočítať
+ * v korunách (eurách) kurzom dňa platby, nie v cudzej mene. `zaJednotku` je
+ * počet jednotiek domácej meny za jednotku meny dokladu; bez kurzu (0) ostanú
+ * riadky, ako sú — chýbajúci prepočet výkaz hlási pri samotnom doklade.
+ */
+export function riadkyZalohyVDomacej(riadky: SadzbovyRiadok[], zaJednotku: number): SadzbovyRiadok[] {
+  if (!(zaJednotku > 0) || zaJednotku === 1) return riadky;
+  return riadky.map((r) => ({
+    sadzba: r.sadzba,
+    zaklad: Math.round(r.zaklad * zaJednotku * 100) / 100,
+    dan: Math.round(r.dan * zaJednotku * 100) / 100,
+  }));
+}
+
 export function odpocitajZdanenuZalohu(
   riadky: SadzbovyRiadok[],
   zaloha: SadzbovyRiadok[],

@@ -73,7 +73,15 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     if (!(prijate > 0)) throw new Error("Prijatá suma musí byť kladná.");
     // Daň sa počíta z prijatej sumy s DPH (nie zo základu zálohy), a pri
     // čiastočnej platbe sa suma rozdelí podľa položiek — súčet sedí na halier.
-    const { rozpisDokladuKPlatbe } = await import("./doklad-k-platbe");
+    const { rozpisDokladuKPlatbe, poznamkaDokladuKPlatbe } = await import("./doklad-k-platbe");
+    // Záloha bez jazyka má jazyk podľa krajiny firmy (česká firma → čeština).
+    const { data: firmaZf } = await supabase
+      .from("companies")
+      .select("country")
+      .eq("id", zf.company_id)
+      .maybeSingle();
+    const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
+    const jazykDokladu = zf.language || predvolenyJazykFirmy(firmaZf?.country);
     const rozpis = rozpisDokladuKPlatbe(
       polozky.map((p: any) => ({
         quantity: Number(p.quantity),
@@ -116,6 +124,21 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       enriched: rozpis.riadky,
     };
 
+    /*
+      Cudzia mena: daň aj v domácej mene firmy kurzom ku dňu prijatia platby
+      (SK ECB, CZ ČNB). Predtým ho doklad dostal až pri prvom PDF — kým ho
+      nikto nestiahol, výkaz k DPH ho hlásil ako doklad bez prepočtu.
+    */
+    const { doplnovacKurzov } = await import("./kurz-dokladu.server");
+    const kurz = await doplnovacKurzov(zf.company_id)("invoices", {
+      currency: zf.currency,
+      issue_date: data.datum_platby,
+      delivery_date: data.datum_platby,
+      subtotal: sumy.subtotal,
+      vat_total: sumy.vat_total,
+      total: sumy.total,
+    });
+
     // Číslo sa pri kolízii so súbežne vystavenou faktúrou vypýta znova.
     const { sOpakovanimPriKoliziiCisla } = await import("./kolizia-cisla");
     const { data: doklad, error: chyba } = await sOpakovanimPriKoliziiCisla<any>(async () => {
@@ -123,6 +146,7 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       return supabase
         .from("invoices")
         .insert({
+          ...kurz,
           company_id: zf.company_id,
           created_by: userId,
           customer_id: zf.customer_id,
@@ -158,7 +182,13 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
           total: sumy.total,
           advance_invoice_id: zf.id,
           advance_amount: prijate,
-          notes: `Daňový doklad k platbe prijatej ${data.datum_platby} k zálohovej faktúre ${zf.invoice_number}.`,
+          // Jazyk zálohy sa prenesie, inak by český doklad mal slovenské popisky aj poznámku.
+          language: zf.language ?? null,
+          notes: poznamkaDokladuKPlatbe(
+            jazykDokladu,
+            data.datum_platby,
+            String(zf.invoice_number ?? ""),
+          ),
         })
         .select("id, invoice_number, total, currency")
         .single();

@@ -226,7 +226,12 @@ export function kontrolniHlaseni(vstup: Vstup, m: Moznosti = {}): KontrolniHlase
       }
       continue;
     }
-    // Nad hranicu (aj dobropis v absolútnej hodnote) a s českým DIČ → A.4, inak súhrnne A.5.
+    /*
+      Nad hranicu (aj dobropis v absolútnej hodnote) a s českým DIČ → A.4, inak
+      súhrnne A.5. A.4 platí pre plátcu aj neplátcu (osobu povinnú k dani či
+      právnickú osobu) — neplátca sa uvádza DIČ podľa daňového poriadku (pokyny
+      k DPHKH1, časť A.4), preto stačí DIČ aj bez IČ DPH.
+    */
     if (dic && dic !== vlastne && Math.abs(spolu(s)) > HRANICA_KH) {
       kh.a4.push({ dic, doklad: f.cislo, dppd: f.datumDodania, ...s });
     } else {

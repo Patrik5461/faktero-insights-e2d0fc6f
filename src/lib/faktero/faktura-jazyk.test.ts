@@ -64,4 +64,32 @@ describe("vety k preneseniu pre českú firmu", () => {
     expect(vetyPreneseniaCz("cs").euTovar).toContain("§ 64");
     expect(vetyPreneseniaCz("cs").vyvoz).toContain("§ 66");
   });
+
+  it("služba mimo EÚ nie je „v jiném členském státě“, trojstranný obchod cituje § 17", async () => {
+    const { vetaPreneseniaCz } = await import("./faktura-jazyk");
+    const mimo = vetaPreneseniaCz("export", "sluzba", "cs");
+    expect(mimo).toContain("mimo Evropskou unii");
+    expect(mimo).not.toContain("členském státě");
+    expect(mimo).not.toContain("Daň odvede zákazník");
+    expect(vetaPreneseniaCz("export", "tovar", "cs")).toContain("§ 66");
+    expect(vetaPreneseniaCz("eu_b2b", "sluzba", "cs")).toContain("v jiném členském státě");
+    expect(vetaPreneseniaCz("eu_b2b", "tovar", "cs")).toContain("§ 64");
+    const troj = vetaPreneseniaCz("eu_b2b", "trojstranny", "cs");
+    expect(troj).toContain("§ 17");
+    expect(troj).toContain("třístranného obchodu");
+    expect(vetaPreneseniaCz("domestic_69", null, "cs")).toContain("§ 92a");
+    expect(vetaPreneseniaCz("export", "sluzba", "en")).toContain("outside the European Union");
+  });
+});
+
+describe("úvod opravného dokladu českej firmy", () => {
+  it("český dobropis nemá slovenský úvod", async () => {
+    const { uvodOpravnehoDokladu } = await import("./faktura-jazyk");
+    expect(uvodOpravnehoDokladu("credit_note", "20260007", "cs", "CZ")).toBe(
+      "Dobropis k faktuře č. 20260007",
+    );
+    expect(uvodOpravnehoDokladu("debit_note", "20260007", "cs", "CZ")).toBe(
+      "Vrubopis k faktuře č. 20260007",
+    );
+  });
 });
