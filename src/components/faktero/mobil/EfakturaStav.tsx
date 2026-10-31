@@ -96,8 +96,24 @@ export function SekciaEfaktury({
   /** Čerstvý stav sa nepodarilo zistiť — ukazuje sa ten zo zoznamu. */
   const [nedopytany, setNedopytany] = useState(false);
 
+  /** Zvýši sa, keď sa telefón znova pripojí — stav sa vtedy dopýta. */
+  const [pripojenie, setPripojenie] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const naPripojenie = () => setPripojenie((n) => n + 1);
+    window.addEventListener("online", naPripojenie);
+    return () => window.removeEventListener("online", naPripojenie);
+  }, []);
+
   useEffect(() => {
     let zrusene = false;
+    /* Bez signálu sa nepýtať vôbec: postgrest pri chybe siete skúša znova
+       (1 + 2 + 4 s) a poznámka o poslednom známom stave by naskočila až po
+       ~7 sekundách. Po pripojení sa efekt spustí znova (`pripojenie`). */
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setNedopytany(true);
+      return;
+    }
     supabase
       .from("efaktura_documents")
       .select(`efaktura_deliveries(${STLPCE_DORUCENIA})`)
@@ -122,7 +138,7 @@ export function SekciaEfaktury({
       zrusene = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fakturaId, obnova]);
+  }, [fakturaId, obnova, pripojenie]);
 
   /* Poznámka len keď je naozaj bez signálu (alebo zoznam prišiel z pamäte) —
      iná chyba dotazu nie je dôvod tvrdiť, že telefón je offline. */

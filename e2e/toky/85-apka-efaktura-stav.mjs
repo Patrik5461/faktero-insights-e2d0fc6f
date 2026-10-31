@@ -206,7 +206,19 @@ export default {
           (await odznak(page, zlyhala.cislo)) === "zlyhala",
           "bez signálu zmizol odznak zlyhanej",
         );
-        const text = await otvorDetail(page, zlyhala.cislo);
+        let text = await otvorDetail(page, zlyhala.cislo);
+        /* Poznámka má byť hneď (appka sa bez signálu nepýta) — najviac 3 s.
+           Dlhšie čakanie by zakrylo opakovanie dotazu v postgrest (~7 s). */
+        await page
+          .locator("[data-efaktura-sekcia]")
+          .getByText(/Bez pripojenia — posledný známy stav/)
+          .first()
+          .waitFor({ timeout: 3000 })
+          .catch(() => {});
+        text = (await page.locator("[data-efaktura-sekcia]").first().innerText()).replace(
+          /\s+/g,
+          " ",
+        );
         t.over(/Odoslanie eFaktúry zlyhalo/.test(text), `offline bez stavu: ${text}`);
         t.over(/Bez pripojenia — posledný známy stav/.test(text), `offline bez poznámky: ${text}`);
         await snimka(page, "detail-offline");
