@@ -4,6 +4,7 @@ import { VyberPoznamky } from "./DokladOznacenie";
 import { SablonaMailu, type VybranaSablona } from "./SablonaMailu";
 import { vlozDoPoznamky } from "@/lib/faktero/preddefinovane-poznamky";
 import { useDatumPredOdoslanim } from "./datum-pred-odoslanim";
+import { OdoslanieEfaktury } from "./OdoslanieEfaktury";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
@@ -616,7 +617,7 @@ export function NovaFaktura({
   if (ukladam) return <Pracujem text={upravuje ? t("nf.ukladamZmeny") : t("nf.vystavujem")} />;
 
   if (krok === "hotovo" && hotova) {
-    return <Vystavena faktura={hotova} onHotovo={onHotovo} />;
+    return <Vystavena faktura={hotova} firmaId={firma.id} druh={druh} onHotovo={onHotovo} />;
   }
 
   if (krok === "odlozena" && odlozena) {
@@ -1938,8 +1939,13 @@ function Odlozena({
 
 function Vystavena({
   faktura,
+  firmaId,
+  druh,
   onHotovo,
 }: {
+  firmaId: string;
+  /** Zálohová sa eFaktúrou neposiela — tlačidlo povie prečo. */
+  druh: "regular" | "proforma";
   faktura: {
     id: string;
     invoice_number: string;
@@ -2038,6 +2044,16 @@ function Vystavena({
           {faktura.customer_email && !odoslane && (
             <SablonaMailu fakturaId={faktura.id} onZmena={setSablona} />
           )}
+          {/* eFaktúra vedľa e-mailu — rovnaké podmienky a kontrola ako na webe. */}
+          <OdoslanieEfaktury
+            firmaId={firmaId}
+            faktura={{
+              id: faktura.id,
+              invoice_number: faktura.invoice_number,
+              status: "issued",
+              type: druh,
+            }}
+          />
           <VelkeTlacidlo
             icon={Share2}
             label={t("nf.zdielat")}

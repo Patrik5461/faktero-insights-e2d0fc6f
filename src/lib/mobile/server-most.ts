@@ -71,6 +71,8 @@ import {
   stavOznamuEfakturyFn,
   zaznamenajOznamEfakturyFn,
 } from "@/lib/faktero/efaktura-oznam.functions";
+import { pripravOdoslanieEfakturyFn } from "@/lib/faktero/efaktura/mobil-odoslanie.functions";
+import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
 import type { Operacia } from "./operacie";
 
 /** Jediné miesto, kde sa kľúč operácie stretáva so serverovou funkciou. */
@@ -131,6 +133,9 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "efaktura-oznam-stav": stavOznamuEfakturyFn,
   "efaktura-oznam-akcia": zaznamenajOznamEfakturyFn,
   "efaktura-pozvi-uctovnika": pozviUctovnikaEfakturyFn,
+  // Odoslanie eFaktúry z appky (apka-efaktura-odoslanie).
+  "efaktura-priprav": pripravOdoslanieEfakturyFn,
+  "efaktura-posli": posliEfakturuFn,
 };
 
 export function useOperacia<T = any>(kluc: Operacia): (vstup: { data: any }) => Promise<T> {

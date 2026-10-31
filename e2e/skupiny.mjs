@@ -51,6 +51,7 @@ export const SKUPINY = [
       "odovzdanie-uctovania",
       "faktura-eu",
       "apka-faktura",
+      "apka-efaktura-odoslanie",
       "apka-offline",
       "apka-sken",
       "chyby-vypadky",

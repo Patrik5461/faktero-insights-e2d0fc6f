@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { PrilohyAppka } from "./PrilohyAppka";
+import { OdoslanieEfaktury } from "./OdoslanieEfaktury";
 import { SablonaMailu, type VybranaSablona } from "./SablonaMailu";
 import { OznacenieDokladu, type OznacenieDokladu as Oznacenie } from "./DokladOznacenie";
 import { useDatumPredOdoslanim } from "./datum-pred-odoslanim";
@@ -250,6 +251,8 @@ export function VystaveneFaktury({
         faktura={otvorena}
         onSpat={() => setOtvorena(null)}
         onUprav={onUprav}
+        firmaId={firma.id}
+        onObnov={() => void obnov()}
         onZmena={async () => {
           setOtvorena(null);
           setFaktury(null);
@@ -412,11 +415,16 @@ export function VystaveneFaktury({
 
 function DetailFaktury({
   faktura,
+  firmaId,
   onSpat,
   onZmena,
+  onObnov,
   onUprav,
 }: {
   faktura: Faktura;
+  firmaId: string;
+  /** Obnoví zoznam bez zatvorenia detailu (napr. po odoslaní eFaktúry). */
+  onObnov: () => void;
   onSpat: () => void;
   onZmena: () => void;
   onUprav: (faktura: { id: string; invoice_number: string }) => void;
@@ -439,6 +447,8 @@ function DetailFaktury({
   /** Zľava alebo prenesenie po položkách — to sa opravuje len na počítači. */
   const [naPocitac, setNaPocitac] = useState<boolean | null>(null);
   const [mazem, setMazem] = useState(false);
+  /** Zvýši sa po odoslaní eFaktúry — stav eFaktúry v detaile sa podľa neho načíta znova. */
+  const [efakturaObnova, setEfakturaObnova] = useState(0);
 
   useEffect(() => {
     supabase
@@ -659,6 +669,19 @@ function DetailFaktury({
               <SablonaMailu fakturaId={faktura.id} onZmena={setSablona} />
             </>
           )}
+          {/*
+            eFaktúra — rovnaké podmienky a kontrola ako na webe. Po odoslaní
+            ostáva detail otvorený, obnoví sa len zoznam (a stav eFaktúry,
+            ktorý počúva na `efakturaObnova`).
+          */}
+          <OdoslanieEfaktury
+            firmaId={firmaId}
+            faktura={faktura}
+            onOdoslane={() => {
+              setEfakturaObnova((n) => n + 1);
+              onObnov();
+            }}
+          />
           {/*
             Upomienka má zmysel len po splatnosti a len keď je kam písať —
             inak je to tlačidlo, ktoré vždy skončí chybou.

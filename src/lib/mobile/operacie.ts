@@ -90,6 +90,13 @@ export const OPERACIE = [
   "efaktura-oznam-stav",
   "efaktura-oznam-akcia",
   "efaktura-pozvi-uctovnika",
+  /*
+    Odoslanie eFaktúry z appky (apka-efaktura-odoslanie): príprava (aktivácia,
+    posledné doručenie, kontrola pred odoslaním) a samotné odoslanie — tá istá
+    funkcia ako okno na webe.
+  */
+  "efaktura-priprav",
+  "efaktura-posli",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];
