@@ -20,6 +20,8 @@ async function assertAdmin(userId: string, lenSuperadmin = false) {
   // Zmenu (kľúče brány, účty zdarma) smie len superadmin; čítať smie každý admin.
   if (lenSuperadmin && admin.role !== "superadmin")
     throw new Error("Túto akciu smie urobiť len superadmin.");
+  // Od ADMIN_2FA_POVINNE_OD len s reláciou aal2 (admin-dvojfaktor.ts).
+  (await import("@/lib/faktero/admin-dvojfaktor.server")).vyzadujAal2Admina();
   return supabaseAdmin;
 }
 

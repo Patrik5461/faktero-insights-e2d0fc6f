@@ -1,4 +1,5 @@
 import { Logo } from "@/components/faktero/Logo";
+import { AdminDvojfaktorPas } from "@/components/faktero/AdminDvojfaktorPas";
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n/useT";
@@ -136,6 +137,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
+        <AdminDvojfaktorPas />
         <main className="flex-1">{children}</main>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { KeyRound, Loader2, LogOut, ShieldCheck, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +16,9 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/zabezpecenie")({
+  // `?admin=1` — sem posiela /admin administrátora bez dvojfaktorového overenia.
+  validateSearch: (s: Record<string, unknown>): { admin?: 1 } =>
+    s.admin === 1 || s.admin === "1" ? { admin: 1 } : {},
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Zabezpečenie účtu — Faktero") }],
   }),
@@ -24,11 +27,25 @@ export const Route = createFileRoute("/_authenticated/nastavenia/zabezpecenie")(
 
 function ZabezpeceniePage() {
   const { t } = useT();
+  const { admin } = Route.useSearch();
   return (
     <>
       <PageHeader title={t("Zabezpečenie účtu")} description={t("Heslo a dvojfaktorové overenie vášho účtu.")} />
       <PageBody>
         <div className="mx-auto grid max-w-2xl gap-6">
+          {admin === 1 && (
+            <div
+              role="alert"
+              className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"
+            >
+              {t(
+                "Administrácia platformy je prístupná len s dvojfaktorovým overením. Zapnite ho nižšie — hneď potom sa do administrácie dostanete. Ak ho už máte zapnuté, odhláste sa a prihláste znova s kódom.",
+              )}{" "}
+              <Link to="/admin" className="font-medium underline">
+                {t("Späť do administrácie")}
+              </Link>
+            </div>
+          )}
           <Dvojfaktor />
           <ZmenaHesla />
           <OdhlasitOstatne />
