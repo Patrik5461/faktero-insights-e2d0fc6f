@@ -4,8 +4,8 @@
 #
 #   e2e/po-nasadeni.sh <commit>
 #
-# - celá sada trvá ~10,5 min (40 tokov, 31. 10. 2026); beh má strop 16 minút (E2E_STROP_S 960;
-#   spusti.mjs nové toky nespúšťa po E2E_LIMIT_S 840 a bežiaci tok utne do 60 s po ňom, aby stihol
+# - celá sada trvá ~13 min (48 tokov, 31. 10. 2026); beh má strop 20 minút (E2E_STROP_S 1200;
+#   spusti.mjs nové toky nespúšťa po E2E_LIMIT_S 1080 a bežiaci tok utne do 60 s po ňom, aby stihol
 #   upratať), súbežne beží najviac jeden (zámok v spusti.mjs);
 # - keď zámok drží iný beh (napr. po predošlom nasadení), počká naň najviac E2E_CAKAJ_S (900 s)
 #   — predtým sa beh preskočil a posledné nasadenie ostalo neotestované;
@@ -26,9 +26,9 @@ COMMIT=${1:-$(git -C "$(dirname "$0")/.." rev-parse --short HEAD 2>/dev/null || 
 E2E=$(cd "$(dirname "$0")" && pwd)
 VYSLEDKY=${E2E_VYSLEDKY:-/home/patrik/e2e-vysledky}
 LOG=${E2E_DEPLOY_LOG:-/home/patrik/webhook/poll-deploy.log}
-STROP=${E2E_STROP_S:-960}
+STROP=${E2E_STROP_S:-1200}
 CAKAJ=${E2E_CAKAJ_S:-900}
-export E2E_LIMIT_S=${E2E_LIMIT_S:-840}
+export E2E_LIMIT_S=${E2E_LIMIT_S:-1080}
 
 export HOME=${HOME:-/home/patrik}
 export PATH=/usr/local/bin:/usr/bin:/bin:${PATH:-}
