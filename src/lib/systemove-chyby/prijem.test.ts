@@ -45,6 +45,43 @@ describe("posudChybuZKlienta", () => {
     expect(r.ok && r.uroven).toBe("stare_vydanie");
   });
 
+  it("chyba počas obnovy po nasadení je staré vydanie (router bez modulu trasy)", () => {
+    // Admin → Chyby 31. 10. 2026: /podpora a /faktury/<id> po nasadení.
+    for (const sprava of [
+      "TypeError: Cannot read properties of undefined (reading 'component')",
+      'TypeError: can\'t access property "component", k is undefined',
+    ]) {
+      const r = posudChybuZKlienta(telo({ sprava, stare_vydanie: true }), {
+        ip: null,
+        limity: noveLimityPrijmu(),
+      });
+      expect(r.ok && r.uroven).toBe("stare_vydanie");
+    }
+    // Bez značky obnovy ostáva tá istá správa chybou.
+    const r = posudChybuZKlienta(
+      telo({ sprava: "TypeError: Cannot read properties of undefined (reading 'component')" }),
+      { ip: null, limity: noveLimityPrijmu() },
+    );
+    expect(r.ok && r.uroven).toBe("chyba");
+  });
+
+  it("chyba, z ktorej sa React zotavil (#520), je varovanie; s príčinou zo starého vydania staré vydanie", () => {
+    const l = noveLimityPrijmu();
+    const r = posudChybuZKlienta(
+      telo({ sprava: "Minified React error #520 — príčina: TypeError: x is undefined" }),
+      { ip: null, limity: l },
+    );
+    expect(r.ok && r.uroven).toBe("varovanie");
+    const s = posudChybuZKlienta(
+      telo({
+        sprava:
+          "Minified React error #520 — príčina: TypeError: Failed to fetch dynamically imported module: https://www.faktero.sk/assets/a.js",
+      }),
+      { ip: null, limity: l },
+    );
+    expect(s.ok && s.uroven).toBe("stare_vydanie");
+  });
+
   it("skúšobná chyba z E2E je varovanie", () => {
     const r = posudChybuZKlienta(telo({ sprava: "[E2E] skúšobná chyba" }), {
       ip: null,

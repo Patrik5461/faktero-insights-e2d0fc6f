@@ -11,6 +11,17 @@ describe("politikaCsp", () => {
     expect(p).toContain("report-uri /api/public/csp-report");
     expect(p).toContain("object-src 'none'");
   });
+  it("povolí Google Ads z GTM (hlásenia z 31. 10. 2026)", () => {
+    const p = politikaCsp("https://abc.supabase.co");
+    const smer = (d: string) => p.split("; ").find((x) => x.startsWith(`${d} `)) ?? "";
+    expect(smer("script-src")).toContain("https://googleads.g.doubleclick.net");
+    for (const povod of [
+      "https://www.google.com",
+      "https://*.doubleclick.net",
+      "https://pagead2.googlesyndication.com",
+    ])
+      expect(smer("connect-src")).toContain(povod);
+  });
   it("je len Report-Only", () => {
     const h = Object.fromEntries(hlavickyCsp());
     expect(h["content-security-policy-report-only"]).toBeTruthy();

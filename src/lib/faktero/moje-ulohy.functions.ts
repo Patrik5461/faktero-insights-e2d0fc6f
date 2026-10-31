@@ -170,7 +170,28 @@ export const pocetMojichUlohFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { overPristup } = await import("./over-pristup");
-    const rola = await overPristup(context as any, data.company_id);
+    let rola: string;
+    try {
+      rola = await overPristup(context as any, data.company_id);
+    } catch (e: any) {
+      /*
+        Zapamätaná firma zmizla (zmazaná, človeka vyradili). Odznaky sa pýtajú
+        každú minútu — s výnimkou to bolo z jednej karty 600 odmietnutí za deň
+        (Admin → Chyby, 31. 10. 2026). Nuly a príznak; rozloženie podľa neho
+        načíta firmy znova a prepne na platnú.
+      */
+      if (!/nemáte prístup/.test(String(e?.message ?? ""))) throw e;
+      return {
+        schvalenie: 0,
+        komentare: 0,
+        nespracovane: 0,
+        efaktury: 0,
+        doklady: 0,
+        blocky: 0,
+        spolu: 0,
+        bezPristupu: true as boolean,
+      };
+    }
     const uid = context.userId;
     const { nastavenieFirmy } = await import("./schvalovanie.server");
 
@@ -219,6 +240,7 @@ export const pocetMojichUlohFn = createServerFn({ method: "POST" })
       doklady: nesp.count ?? 0,
       blocky: bloc.count ?? 0,
       spolu: spoluUloh(pocty),
+      bezPristupu: false as boolean,
     };
   });
 

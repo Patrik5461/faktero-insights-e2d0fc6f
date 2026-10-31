@@ -263,6 +263,7 @@ export function AppShell({
       const r = await nacitajPocty({ data: { company_id: cid } });
       // Staršia odpoveď nesmie prepísať novšiu (alebo počty inej firmy).
       if (zrusene || moje !== poradie || getActiveCompanyId() !== cid) return;
+      if (r.bezPristupu) return firmaZmizla();
       setPocty({
         nespracovane: r.doklady,
         blocky: r.blocky,
@@ -276,13 +277,16 @@ export function AppShell({
       Rozloženie znova načíta firmy a prepne na takú, do ktorej človek patrí.
     */
     let odmietnuta: string | null = null;
+    function firmaZmizla() {
+      const cid = getActiveCompanyId();
+      if (cid && cid !== odmietnuta) {
+        odmietnuta = cid;
+        oznamZmenuFiriem();
+      }
+    }
     obnovPocty.current = () =>
       void nacitaj().catch((e) => {
-        const cid = getActiveCompanyId();
-        if (cid && cid !== odmietnuta && /nemáte prístup/.test(String(e?.message ?? ""))) {
-          odmietnuta = cid;
-          oznamZmenuFiriem();
-        }
+        if (/nemáte prístup/.test(String(e?.message ?? ""))) firmaZmizla();
       });
     const naKarte = () => {
       if (document.visibilityState === "visible") obnovPocty.current();

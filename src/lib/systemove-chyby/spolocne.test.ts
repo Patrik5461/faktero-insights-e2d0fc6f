@@ -10,6 +10,7 @@ import {
   miestoZoStacku,
   odtlacokChyby,
   rozoberChybu,
+  jeObalReactu,
 } from "./spolocne";
 
 describe("bezTajomstiev", () => {
@@ -180,6 +181,25 @@ describe("rozoberChybu a cistyStack", () => {
     expect(rozoberChybu({ message: "y", code: "PGRST" }).sprava).toBe("y");
     expect(rozoberChybu("z").sprava).toBe("z");
     expect(rozoberChybu(undefined).sprava).toBe("(prázdna chyba)");
+  });
+
+  it("príčina (cause) ide do stacku; pri obale Reactu aj do správy", () => {
+    // Presne ako React 19 hlási #520: obal s príčinou v `cause`.
+    const pricina = new TypeError("x is not a function");
+    const obal = new Error(
+      "Minified React error #520; visit https://react.dev/errors/520 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.",
+      { cause: pricina },
+    );
+    const r = rozoberChybu(obal);
+    expect(r.sprava).toBe("Minified React error #520 — príčina: TypeError: x is not a function");
+    expect(r.stack).toContain("Caused by: TypeError: x is not a function");
+    expect(jeObalReactu(obal.message)).toBe(true);
+
+    // Bežná chyba s príčinou: správa ostáva, príčina len v stacku.
+    const db = new Error("Uloženie zlyhalo", { cause: new Error("duplicate key") });
+    expect(rozoberChybu(db).sprava).toBe("Uloženie zlyhalo");
+    expect(rozoberChybu(db).stack).toContain("Caused by: duplicate key");
+    expect(jeObalReactu("TypeError: x")).toBe(false);
   });
 
   it("stack bez query a tajomstiev, najviac 41 riadkov", () => {

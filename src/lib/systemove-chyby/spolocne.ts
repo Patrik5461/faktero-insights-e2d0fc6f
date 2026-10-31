@@ -263,12 +263,8 @@ export class OknoPokusov {
 
 /* ------------------------------------------------------------ chyba → text */
 
-/** Správa a stack z čohokoľvek, čo sa dá hodiť. */
-export function rozoberChybu(e: unknown): {
-  sprava: string;
-  stack: string | null;
-  meno: string | null;
-} {
+/** Správa a stack jednej chyby bez príčiny. */
+function rozoberJednu(e: unknown): { sprava: string; stack: string | null; meno: string | null } {
   if (e instanceof Error) {
     const meno = e.name && e.name !== "Error" ? e.name : null;
     return {
@@ -295,6 +291,46 @@ export function rozoberChybu(e: unknown): {
     }
   }
   return { sprava: String(e ?? "(prázdna chyba)"), stack: null, meno: null };
+}
+
+/**
+ * Obal, ktorým React hlási chybu, z ktorej sa sám zotavil (#418–#425
+ * hydratácia, #520 súbežné kreslenie). Skutočná chyba je v `cause` — bez nej
+ * je hlásenie nepoužiteľné („Minified React error #520“ a stack Reactu).
+ */
+export function jeObalReactu(sprava: string): boolean {
+  return /Minified React error #(41[89]|42[0-5]|520)\b|React was able to recover|error while hydrating|Hydration failed/i.test(
+    sprava,
+  );
+}
+
+/**
+ * Správa a stack z čohokoľvek, čo sa dá hodiť. Príčina (`cause`) sa pripojí:
+ * do stacku celá (skrátená), do správy len pri obale Reactu — tam je správa
+ * obalu všade rovnaká a o chybe nehovorí nič.
+ */
+export function rozoberChybu(e: unknown): {
+  sprava: string;
+  stack: string | null;
+  meno: string | null;
+} {
+  const hlavna = rozoberJednu(e);
+  const pricina =
+    e && typeof e === "object" && "cause" in e && (e as { cause?: unknown }).cause != null
+      ? rozoberJednu((e as { cause?: unknown }).cause)
+      : null;
+  if (!pricina) return hlavna;
+  const riadky = (s: string, n: number) => s.split("\n").slice(0, n).join("\n");
+  // V8 začína stack riadkom „Meno: správa“, Firefox a Safari rovno rámcami.
+  const ramce = (pricina.stack ?? "").split("\n").filter((r) => /^\s*at\s|@/.test(r));
+  const stackPriciny = [pricina.sprava, ...ramce.slice(0, 11)].join("\n");
+  return {
+    sprava: jeObalReactu(hlavna.sprava)
+      ? `${hlavna.sprava.replace(/;? ?visit https:\/\/react\.dev\S*.*$/i, "")} — príčina: ${pricina.sprava}`
+      : hlavna.sprava,
+    stack: `${riadky(hlavna.stack ?? hlavna.sprava, 25)}\nCaused by: ${stackPriciny}`.trim(),
+    meno: hlavna.meno,
+  };
 }
 
 /** Vyčistí stack: bez tajomstiev, bez query v adresách, najviac 40 rámcov. */

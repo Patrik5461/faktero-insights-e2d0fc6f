@@ -10,7 +10,7 @@
   Zoznam zdrojov je zistený z kódu aj z produkčného HTML (31. 10. 2026):
   - Supabase (REST, Auth, Storage, Realtime cez wss) — obrázky a PDF,
   - Cloudflare Turnstile (registrácia, faktúra zadarmo) — skript + iframe,
-  - Google Tag Manager / Analytics (len po súhlase) — skript, iframe noscript, beacony,
+  - Google Tag Manager / Analytics / Ads (len po súhlase) — skript, iframe noscript, beacony,
   - Zásielkovňa (widget.packeta.com) — skript + iframe výberu výdajného miesta,
   - GoPay — presmerovanie platobnej brány (form-action / frame), logo z cdn.gopay.com,
   - dlaždice OpenStreetMap (mapa jazdy), logá Visa/Mastercard z upload.wikimedia.org
@@ -40,22 +40,29 @@ export function politikaCsp(supabase = supabasePovod()): string {
   const gopay = "https://*.gopay.cz https://*.gopay.com";
   const google =
     "https://www.googletagmanager.com https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com";
+  /*
+    Google Ads (konverzná značka AW-… v GTM, len po súhlase s marketingom).
+    Hlásenia z 31. 10. 2026: script-src-elem googleads.g.doubleclick.net,
+    connect-src www.google.com, ad.doubleclick.net, pagead2.googlesyndication.com.
+  */
+  const googleAds =
+    "https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.googleadservices.com https://pagead2.googlesyndication.com https://www.google.com";
   const direktivy: [string, string][] = [
     ["default-src", "'self'"],
     [
       "script-src",
-      `'self' 'unsafe-inline' https://challenges.cloudflare.com https://widget.packeta.com ${google}`,
+      `'self' 'unsafe-inline' https://challenges.cloudflare.com https://widget.packeta.com ${google} ${googleAds}`,
     ],
     ["style-src", "'self' 'unsafe-inline' https://fonts.googleapis.com https://widget.packeta.com"],
     ["font-src", "'self' data: https://fonts.gstatic.com"],
     ["img-src", "'self' data: blob: https:"],
     [
       "connect-src",
-      `'self' data: blob: ${supabase} ${wss} https://challenges.cloudflare.com https://widget.packeta.com ${google}`,
+      `'self' data: blob: ${supabase} ${wss} https://challenges.cloudflare.com https://widget.packeta.com ${google} ${googleAds}`,
     ],
     [
       "frame-src",
-      `'self' blob: https://challenges.cloudflare.com https://widget.packeta.com https://www.googletagmanager.com ${gopay}`,
+      `'self' blob: https://challenges.cloudflare.com https://widget.packeta.com https://www.googletagmanager.com https://td.doubleclick.net ${gopay}`,
     ],
     ["worker-src", "'self' blob:"],
     ["media-src", `'self' blob: ${supabase}`],
