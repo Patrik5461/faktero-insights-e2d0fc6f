@@ -476,7 +476,8 @@ function Dashboard() {
             {/* Graf je len obrázok k zoznamu pod ním — čítačka prečíta zoznam. */}
             <div className="h-72" aria-hidden="true">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                {/* Bez accessibilityLayer: inak má graf tabIndex=0 a fokus by skončil v skrytom prvku. */}
+                <PieChart accessibilityLayer={false}>
                   <Pie
                     data={statusData}
                     dataKey="value"

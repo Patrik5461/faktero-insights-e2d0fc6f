@@ -71,10 +71,10 @@ export function MarketingNav() {
         className="block w-full bg-primary/10 text-center text-sm text-foreground hover:bg-primary/15 transition-colors print:hidden"
       >
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-6 py-2">
-          <Rocket className="h-3.5 w-3.5 text-primary" />
+          <Rocket className="h-3.5 w-3.5 text-primary-hover" />
           <span>
             {t("Faktero je pripravené na povinnú eFaktúru od")}{" "}
-            <span className="font-semibold text-primary">1.1.2027</span>
+            <span className="font-semibold text-primary-hover">1.1.2027</span>
           </span>
         </div>
       </Link>
