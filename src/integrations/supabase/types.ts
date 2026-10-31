@@ -12699,6 +12699,75 @@ export type Database = {
         ]
       }
 
+      systemove_chyby: {
+        Row: {
+          id: string
+          odtlacok: string
+          zdroj: string
+          uroven: string
+          sprava: string
+          stack: string | null
+          trasa: string | null
+          metoda: string | null
+          http_status: number | null
+          company_id: string | null
+          user_id: string | null
+          user_agent: string | null
+          vydanie: string | null
+          pocet: number
+          prvy_vyskyt: string
+          posledny_vyskyt: string
+          vyriesene_at: string | null
+          vyriesil: string | null
+          znovu_otvorene: number
+          posledne_upozornenie_at: string | null
+        }
+        Insert: {
+          id?: string
+          odtlacok: string
+          zdroj: string
+          uroven?: string
+          sprava: string
+          stack?: string | null
+          trasa?: string | null
+          metoda?: string | null
+          http_status?: number | null
+          company_id?: string | null
+          user_id?: string | null
+          user_agent?: string | null
+          vydanie?: string | null
+          pocet?: number
+          prvy_vyskyt?: string
+          posledny_vyskyt?: string
+          vyriesene_at?: string | null
+          vyriesil?: string | null
+          znovu_otvorene?: number
+          posledne_upozornenie_at?: string | null
+        }
+        Update: {
+          id?: string
+          odtlacok?: string
+          zdroj?: string
+          uroven?: string
+          sprava?: string
+          stack?: string | null
+          trasa?: string | null
+          metoda?: string | null
+          http_status?: number | null
+          company_id?: string | null
+          user_id?: string | null
+          user_agent?: string | null
+          vydanie?: string | null
+          pocet?: number
+          prvy_vyskyt?: string
+          posledny_vyskyt?: string
+          vyriesene_at?: string | null
+          vyriesil?: string | null
+          znovu_otvorene?: number
+          posledne_upozornenie_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       stock_items_with_availability: {
