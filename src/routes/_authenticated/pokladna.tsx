@@ -299,7 +299,7 @@ function PokladnaPage() {
                     <th className="p-3">{t("Zdroj")}</th>
                     <th className="p-3 text-right">{t("Suma")}</th>
                     <th className="p-3 text-right">{t("Zostatok")}</th>
-                    <th className="p-3"></th>
+                    <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

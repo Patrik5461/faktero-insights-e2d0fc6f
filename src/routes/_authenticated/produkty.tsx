@@ -233,6 +233,7 @@ function ProductsPage() {
                     onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     aria-label={t("Vybrať všetky")}
                   />
+                  <span className="sr-only">{t("Výber")}</span>
                 </th>
                 <th className="p-3">{t("Názov")}</th>
                 {/* Na mobile sú kód, MJ a DPH pod názvom — inak sa riadok
@@ -241,7 +242,9 @@ function ProductsPage() {
                 <th className="hidden p-3 sm:table-cell">{t("MJ")}</th>
                 <th className="p-3 text-right">{t("Cena")}</th>
                 <th className="hidden p-3 text-right sm:table-cell">{t("DPH")}</th>
-                <th></th>
+                <th>
+                  <span className="sr-only">{t("Akcie")}</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

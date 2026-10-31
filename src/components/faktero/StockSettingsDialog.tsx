@@ -203,7 +203,9 @@ function CategoriesTab({ onChanged }: { onChanged?: () => void }) {
             <tr>
               <th className="p-2">{t("Kategória")}</th>
               <th className="p-2 text-right">{t("Produkty")}</th>
-              <th className="p-2"></th>
+              <th className="p-2">
+                <span className="sr-only">{t("Akcie")}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -379,7 +381,9 @@ function WarehousesTab({ onChanged }: { onChanged?: () => void }) {
               <th className="p-2">{t("Názov")}</th>
               <th className="p-2">{t("Adresa")}</th>
               <th className="p-2">{t("Stav")}</th>
-              <th></th>
+              <th>
+                <span className="sr-only">{t("Akcie")}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">

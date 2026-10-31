@@ -145,7 +145,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
+    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 py-10 outline-none">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
@@ -254,7 +254,7 @@ function LoginPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
 

@@ -227,7 +227,7 @@ function ProformaListPage() {
                     <th className="p-3 text-right">{t("Suma")}</th>
                     <th className="p-3">{t("Stav")}</th>
                     <th className="p-3">{t("Zúčtovaná v")}</th>
-                    <th className="p-3"></th>
+                    <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

@@ -88,7 +88,7 @@ export function PolozkyNespracovaneho({
                 >
                   {t("PDP")}
                 </th>
-                <th className="w-8" />
+                <th className="w-8"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody>

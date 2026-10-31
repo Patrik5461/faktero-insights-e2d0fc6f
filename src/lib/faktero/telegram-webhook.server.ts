@@ -16,7 +16,7 @@
 */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCronToken } from "./cron-auth.server";
-import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { nacitajVsetkySlovniky, preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { cisloPoziadavky, predmetZoSpravy, type KategoriaPoziadavky } from "./podpora";
 import {
   KOS_PODPORY,
@@ -167,6 +167,8 @@ export type Vysledok =
   | "rozhodnute";
 
 export async function spracujUpdate(u: TgUpdate): Promise<Vysledok> {
+  // Slovníky sa načítavajú na požiadanie (`jazyk.ts`); jazyk chatu sa zistí až nižšie.
+  await nacitajVsetkySlovniky();
   if (u.callback_query) return spracujTlacidlo(u.callback_query);
   const msg = u.message;
   // Len súkromné chaty s človekom — skupiny a kanály ignorujeme.

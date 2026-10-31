@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useServerFn } from "@tanstack/react-start";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n/useT";
 
 import { oznamSuhlas } from "@/lib/faktero/gtm";
@@ -59,6 +59,15 @@ function saveConsent(consent: CookieConsent) {
   }
 }
 
+/**
+ * Skript do `<head>`: kto už súhlas dal, tomu lištu skryje ešte pred prvým
+ * kreslením (atribút na `<html>` + pravidlo v `styles.css`). Lišta sa totiž
+ * kreslí už na serveri — ten nevidí `localStorage`, takže ju pošle každému.
+ */
+export const SKRIPT_LISTY_COOKIES = `(function(){try{if(localStorage.getItem(${JSON.stringify(
+  STORAGE_KEY,
+)}))document.documentElement.setAttribute("data-cookie-suhlas","");}catch(e){}})();`;
+
 const defaultConsent: CookieConsent = {
   necessary: true,
   analytics: false,
@@ -70,7 +79,15 @@ const defaultConsent: CookieConsent = {
 export function CookieConsentBanner() {
   const { t } = useT();
   const [mounted, setMounted] = useState(false);
-  const [consent, setConsent] = useState<CookieConsent | null>(null);
+  /*
+    `undefined` = ešte nevieme (server a prvé kreslenie v prehliadači). Lišta sa
+    vtedy kreslí — na serveri, spolu so stránkou. Keby prišla až po hydratácii,
+    na pomalom telefóne sa objaví o sekundy neskôr ako obsah a prehliadač ju
+    započíta ako najväčší prvok stránky (LCP 8 s na /prihlasenie). Kto súhlas
+    už dal, tomu ju dovtedy skryje `SKRIPT_LISTY_COOKIES`.
+  */
+  const [consent, setConsent] = useState<CookieConsent | null | undefined>(undefined);
+  const cesta = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const recordAcceptance = useServerFn(recordLegalAcceptance);
@@ -103,7 +120,7 @@ export function CookieConsentBanner() {
    */
   useEffect(() => {
     const el = bannerRef.current;
-    if (!mounted || consent || okno || !el) return;
+    if (!mounted || consent !== null || okno || !el) return;
     const uprav = () => {
       document.body.style.paddingBottom = okno ? "" : `${el.offsetHeight}px`;
     };
@@ -169,13 +186,18 @@ export function CookieConsentBanner() {
     setOpen(false);
   };
 
-  if (!mounted || consent) return null;
+  if (consent) return null;
   /*
    * V mobilnej aplikácii lišta nemá čo robiť: appka nič nemeria ani neinzeruje
    * a jediné, čo ukladá, je prihlásenie — teda nevyhnutné. Navyše prekrývala
    * spodné tlačidlo, ktorým sa doklad ukladá.
    */
-  if (typeof window !== "undefined" && window.location.pathname.startsWith("/app")) return null;
+  if (cesta.startsWith("/app")) return null;
+  /*
+   * Pred hydratáciou tlačidlá ešte nič nerobia. `aria-disabled` to povie
+   * čítačke aj Playwrightu (ten s klikom počká), vzhľad nemení.
+   */
+  const nefunkcne = mounted ? undefined : true;
 
   return (
     <>
@@ -184,6 +206,7 @@ export function CookieConsentBanner() {
         aria-live="polite"
         aria-label={t("Cookies súhlas")}
         data-plavajuce=""
+        data-cookie-lista=""
         hidden={okno}
         ref={bannerRef}
         /*
@@ -222,14 +245,15 @@ export function CookieConsentBanner() {
               onClick={() => setOpen(true)}
               className="gap-2"
               disabled={pending}
+              aria-disabled={nefunkcne}
             >
               <Settings2 className="h-4 w-4" />
               {t("Nastaviť")}
             </Button>
-            <Button variant="secondary" size="sm" onClick={acceptNecessaryOnly} disabled={pending}>
+            <Button variant="secondary" size="sm" onClick={acceptNecessaryOnly} disabled={pending} aria-disabled={nefunkcne}>
               {t("Iba nevyhnutné")}
             </Button>
-            <Button size="sm" onClick={acceptAll} disabled={pending}>
+            <Button size="sm" onClick={acceptAll} disabled={pending} aria-disabled={nefunkcne}>
               {t("Prijať všetko")}
             </Button>
           </div>

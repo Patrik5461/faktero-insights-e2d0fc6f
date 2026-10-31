@@ -1,7 +1,8 @@
 /*
   Prístupnosť: axe-core na 10 hlavných stránkach (8 v aplikácii, 2 verejné) musí
   nájsť 0 porušení so závažnosťou „critical“ a „serious“ (kontrast, mená
-  tlačidiel a polí, aria, jazyk stránky…). Dve stránky aj na šírke telefónu.
+  tlačidiel a polí, aria, jazyk stránky…) a 0 porušení štyroch miernych
+  pravidiel v STRAZENE_MIERNE. Dve stránky aj na šírke telefónu.
   Nič nezapisuje.
 
   axe-core sa berie z node_modules, ak tam je, inak sa raz stiahne z jsDelivr
@@ -26,7 +27,7 @@ const STRANKY_APP = [
   "/exporty",
   "/nastavenia",
 ];
-const STRANKY_WEB = ["/cennik", "/prihlasenie"];
+const STRANKY_WEB = ["/cennik", "/prihlasenie", "/registracia", "/zabudnute-heslo"];
 const MOBIL = ["/faktury", "/cennik"];
 
 async function zdrojAxe() {
@@ -46,14 +47,21 @@ async function zdrojAxe() {
   return js;
 }
 
-/** Spustí axe na otvorenej stránke a vráti porušenia critical/serious. */
+/*
+  Z miernejších pravidiel sa strážia tie, ktoré sú opravené všade (vlna
+  31. 10.): obsah mimo orientačných bodov, dva rovnaké orientačné body bez
+  mena, preskočená úroveň nadpisu a prázdna hlavička stĺpca.
+*/
+const STRAZENE_MIERNE = ["region", "landmark-unique", "heading-order", "empty-table-header"];
+
+/** Spustí axe na otvorenej stránke a vráti porušenia critical/serious a strážené mierne. */
 async function zavazne(page, axe) {
   await page.evaluate(axe);
-  return page.evaluate(async () => {
+  return page.evaluate(async (mierne) => {
     // eslint-disable-next-line no-undef
     const r = await window.axe.run(document, { resultTypes: ["violations"] });
     return r.violations
-      .filter((v) => v.impact === "critical" || v.impact === "serious")
+      .filter((v) => v.impact === "critical" || v.impact === "serious" || mierne.includes(v.id))
       .map((v) => ({
         id: v.id,
         impact: v.impact,
@@ -63,7 +71,7 @@ async function zavazne(page, axe) {
           .map((n) => n.target.join(" "))
           .join(" ; "),
       }));
-  });
+  }, STRAZENE_MIERNE);
 }
 
 async function nacitaj(t, page, cesta) {
@@ -78,7 +86,8 @@ async function nacitaj(t, page, cesta) {
 }
 
 export default {
-  popis: "prístupnosť: 0 critical/serious porušení axe na 10 hlavných stránkach",
+  popis:
+    "prístupnosť: 0 critical/serious (+ 4 strážené mierne) porušení axe na 12 hlavných stránkach",
   limit: 240000,
   async spusti(t) {
     const axe = await zdrojAxe();

@@ -216,6 +216,14 @@
 }
 
 /*
+  Lišta súhlasu s cookies sa kreslí už na serveri; kto súhlas dal, tomu ju
+  skript v hlavičke skryje pred prvým kreslením (`SKRIPT_LISTY_COOKIES`).
+*/
+html[data-cookie-suhlas] [data-cookie-lista] {
+  display: none;
+}
+
+/*
   Kompaktné rozloženie (Nastavenia účtu → Rozloženie aplikácie). Mení len
   tvary — väčšie zaoblenia, popisy polí v rámčeku. Farby ostávajú Faktero.
 */

@@ -415,6 +415,7 @@ function Stranka() {
                     checked={vyberatelne.length > 0 && vyberatelne.every((r) => vybrane.has(r.id))}
                     onChange={(e) => setVybrane(e.target.checked ? new Set(vyberatelne.map((r) => r.id)) : new Set())}
                   />
+                  <span className="sr-only">{t("Výber")}</span>
                 </th>
                 <th className="p-3">{t("Druh")}</th>
                 <th className="p-3">{t("Dodávateľ")}</th>

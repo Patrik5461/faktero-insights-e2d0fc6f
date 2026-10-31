@@ -76,7 +76,9 @@ function LowStockPage() {
                   <th className="p-3 text-right">{t("Optimum")}</th>
                   <th className="p-3 text-right">{t("Objednať")}</th>
                   <th className="p-3">{t("Sklady")}</th>
-                  <th></th>
+                  <th>
+                    <span className="sr-only">{t("Akcie")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

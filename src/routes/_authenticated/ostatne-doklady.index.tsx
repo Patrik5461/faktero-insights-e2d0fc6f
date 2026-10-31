@@ -452,6 +452,7 @@ function OstatneDokladyPage() {
                           )
                         }
                       />
+                      <span className="sr-only">{t("Výber")}</span>
                     </th>
                     <th className="px-3 py-2 text-left">{t("Doručené")}</th>
                     <th className="px-3 py-2 text-left">{t("Druh")}</th>
@@ -459,7 +460,7 @@ function OstatneDokladyPage() {
                     <th className="px-3 py-2 text-right">{t("Suma")}</th>
                     <th className="px-3 py-2 text-left">{t("Lehota")}</th>
                     <th className="px-3 py-2 text-left">{t("Stav")}</th>
-                    <th className="px-3 py-2"></th>
+                    <th className="px-3 py-2"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody>

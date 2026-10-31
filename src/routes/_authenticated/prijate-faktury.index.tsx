@@ -1165,6 +1165,7 @@ function PurchaseInvoicesPage() {
                     checked={rows.length > 0 && selected.size === rows.length}
                     onChange={toggleAll}
                   />
+                  <span className="sr-only">{t("Výber")}</span>
                 </th>
                 <th className="p-3">{rad.hlavicka("cislo", t("Číslo"))}</th>
                 <th className="p-3">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>

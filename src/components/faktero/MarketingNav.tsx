@@ -65,19 +65,22 @@ export function MarketingNav() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   return (
     <div className="border-b border-border/60 bg-background">
-      {/* Announcement bar */}
-      <Link
-        to="/efaktura"
-        className="block w-full bg-primary/10 text-center text-sm text-foreground hover:bg-primary/15 transition-colors print:hidden"
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-6 py-2">
-          <Rocket className="h-3.5 w-3.5 text-primary-hover" />
-          <span>
-            {t("Faktero je pripravené na povinnú eFaktúru od")}{" "}
-            <span className="font-semibold text-primary-hover">1.1.2027</span>
-          </span>
-        </div>
-      </Link>
+      {/* Announcement bar — v orientačnom bode, inak ho čítačka ohlási mimo
+          všetkých oblastí stránky (axe `region`). */}
+      <aside aria-label={t("Oznam")}>
+        <Link
+          to="/efaktura"
+          className="block w-full bg-primary/10 text-center text-sm text-foreground hover:bg-primary/15 transition-colors print:hidden"
+        >
+          <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-6 py-2">
+            <Rocket className="h-3.5 w-3.5 text-primary-hover" />
+            <span>
+              {t("Faktero je pripravené na povinnú eFaktúru od")}{" "}
+              <span className="font-semibold text-primary-hover">1.1.2027</span>
+            </span>
+          </div>
+        </Link>
+      </aside>
 
       {/* Main nav */}
       <header className="border-t border-border/40">
@@ -86,7 +89,10 @@ export function MarketingNav() {
             <Logo className="h-8 w-[124px] sm:h-9 sm:w-[144px] md:h-10 md:w-[160px]" />
           </Link>
 
-          <nav className="hidden xl:flex items-center gap-0.5 text-sm">
+          <nav
+            aria-label={t("Hlavné menu")}
+            className="hidden xl:flex items-center gap-0.5 text-sm"
+          >
             {menus.map((menu) => (
               <div
                 key={menu.label}

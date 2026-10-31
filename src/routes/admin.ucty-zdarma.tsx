@@ -150,7 +150,7 @@ function Page() {
               <th className="p-3">Plán</th>
               <th className="p-3 text-right">Firiem</th>
               <th className="p-3">Poznámka</th>
-              <th className="p-3" />
+              <th className="p-3"><span className="sr-only">Akcie</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">

@@ -163,7 +163,9 @@ export function RozuctovaniePanel({
               <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
               <th className="py-1 pr-2 text-right font-medium">{t("DPH")}</th>
               <th className="py-1 pr-2 font-medium">{t("Text")}</th>
-              <th />
+              <th>
+                <span className="sr-only">{t("Akcie")}</span>
+              </th>
             </tr>
           </thead>
           <tbody>

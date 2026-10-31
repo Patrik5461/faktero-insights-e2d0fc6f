@@ -289,6 +289,7 @@ function NaKontroluPage() {
                         setVybrane(vsetkyVybrane ? new Set() : new Set(zobrazene.map(kluc)))
                       }
                     />
+                    <span className="sr-only">{t("Výber")}</span>
                   </th>
                   <th className="p-3">{t("Doklad")}</th>
                   <th className="p-3">{t("Partner")}</th>

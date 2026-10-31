@@ -213,7 +213,7 @@ function CennikPage() {
                       <th className="px-4 py-2 text-right font-medium">{t("Zľava")}</th>
                       <th className="px-4 py-2 text-right font-medium">{t("Odberateľov")}</th>
                       <th className="px-4 py-2 text-right font-medium">{t("Dohodnutých cien")}</th>
-                      <th className="px-4 py-2" />
+                      <th className="px-4 py-2"><span className="sr-only">{t("Akcie")}</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -281,7 +281,7 @@ function CennikPage() {
                         <th className="px-4 py-2 text-right font-medium">{t("Od množstva")}</th>
                         <th className="px-4 py-2 text-right font-medium">{t("Základná")}</th>
                         <th className="px-4 py-2 text-right font-medium">{t("Dohodnutá")}</th>
-                        <th className="px-4 py-2" />
+                        <th className="px-4 py-2"><span className="sr-only">{t("Akcie")}</span></th>
                       </tr>
                     </thead>
                     <tbody>

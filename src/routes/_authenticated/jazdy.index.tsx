@@ -363,6 +363,7 @@ function TripsPage() {
                         onChange={(e) => prepniVsetky(e.target.checked)}
                         className="h-4 w-4 cursor-pointer accent-primary"
                       />
+                      <span className="sr-only">{t("Výber")}</span>
                     </th>
                     <th className="p-3">{t("Dátum jazdy")}</th>
                     <th className="p-3">{t("Vozidlo")}</th>
@@ -376,7 +377,9 @@ function TripsPage() {
                     <th className="p-3 text-right">{t("Trvanie jazdy")}</th>
                     <th className="p-3">{t("Typ jazdy")}</th>
                     <th className="p-3">{t("Zdroj")}</th>
-                    <th className="p-3"></th>
+                    <th className="p-3">
+                      <span className="sr-only">{t("Akcie")}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

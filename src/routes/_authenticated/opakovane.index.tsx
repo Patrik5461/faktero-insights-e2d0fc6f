@@ -197,6 +197,7 @@ function RecurringList() {
                       checked={list.allOnPageSelected}
                       onChange={(e) => list.toggleAllOnPage(e.target.checked)}
                     />
+                    <span className="sr-only">{t("Výber")}</span>
                   </th>
                   <th className="p-3">{t("Názov")}</th>
                   <th className="p-3">{t("Odberateľ")}</th>
@@ -204,7 +205,7 @@ function RecurringList() {
                   <th className="p-3">{t("Ďalší beh")}</th>
                   <th className="p-3 text-right">{t("Suma")}</th>
                   <th className="p-3">{t("Stav")}</th>
-                  <th className="p-3"></th>
+                  <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

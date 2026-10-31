@@ -86,14 +86,14 @@ function AndroidPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <Appka
             a={ANDROID_FAKTERO}
-            ikona="/faktero-icon.png"
+            ikona="/faktero-icon-168.png"
             popis={t(
               "Faktúry, skenovanie bločkov a dokladov aj bez signálu, banka a automatická kniha jázd.",
             )}
           />
           <Appka
             a={ANDROID_KNIHA_JAZD}
-            ikona="/kniha-jazd-icon.png"
+            ikona="/kniha-jazd-icon-168.png"
             popis={t(
               "Samostatná appka len na jazdy — pre vodičov, ktorí s faktúrami nerobia. Jazdu rozpozná a zapíše sama.",
             )}

@@ -153,7 +153,7 @@ function ApiKeysPage() {
                 <th className="p-3">{t("Režim")}</th>
                 <th className="p-3">{t("Prefix")}</th>
                 <th className="p-3">{t("Vytvorený")}</th>
-                <th></th>
+                <th><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

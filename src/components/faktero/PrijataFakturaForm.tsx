@@ -1003,38 +1003,38 @@ export function PrijataFakturaForm({
       <PageBody>
         <form onSubmit={submit} className="mx-auto grid max-w-4xl gap-6">
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Dodávateľ")}
-            </h3>
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2">{poliaDodavatela}</div>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Faktúra")}
-            </h3>
+            </h2>
             <div className="grid gap-3 sm:grid-cols-3">{poliaFaktury}</div>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Sumy")}
-            </h3>
+            </h2>
             <div className="grid gap-3 sm:grid-cols-4">{poliaSum}</div>
           </section>
 
           {/* Platobné údaje až za dokladom a sumami — sú najmenej dôležité. */}
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Platobné údaje")}
-            </h3>
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2">{poliaPlatby}</div>
           </section>
 
           <section className="space-y-4 rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t("Príloha & poznámka")}
-            </h3>
+            </h2>
             {poliaPrilohy}
             {poliaOstatne}
           </section>

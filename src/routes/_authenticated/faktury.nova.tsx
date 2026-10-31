@@ -2294,7 +2294,7 @@ function NewInvoice() {
                     <th className="py-2 pl-3 font-medium text-right">{t("Zľava %")}</th>
                     <th className="py-2 pl-3 font-medium">{t("DPH")}</th>
                     <th className="py-2 pl-3 font-medium text-right">{t("Spolu s DPH")}</th>
-                    <th></th>
+                    <th><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2871,7 +2871,7 @@ function SectionHeader({
     <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
       <div className="flex min-w-0 items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-primary" />
-        <h3 className="text-sm font-semibold uppercase tracking-wide">{title}</h3>
+        <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
       </div>
       {children}
     </div>

@@ -491,7 +491,7 @@ function DphPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold mb-2">{t("DPH na výstupe (vystavené faktúry)")}</h3>
+              <h2 className="font-semibold mb-2">{t("DPH na výstupe (vystavené faktúry)")}</h2>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -521,7 +521,7 @@ function DphPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">{t("DPH na vstupe (prijaté faktúry)")}</h3>
+              <h2 className="font-semibold mb-2">{t("DPH na vstupe (prijaté faktúry)")}</h2>
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -321,7 +321,7 @@ function ProductStockDetail() {
                   <th className="p-2 text-right">{t("Cena/MJ")}</th>
                   <th className="p-2 text-right">{t("Hodnota")}</th>
                   <th className="p-2">{t("Zdroj")}</th>
-                  <th className="p-2"></th>
+                  <th className="p-2"><span className="sr-only">{t("Akcie")}</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

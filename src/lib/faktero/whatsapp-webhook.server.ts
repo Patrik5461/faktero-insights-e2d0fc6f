@@ -17,7 +17,7 @@
 */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { secureEquals } from "./cron-auth.server";
-import { preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { nacitajSlovnik, preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { cisloPoziadavky, predmetZoSpravy, type KategoriaPoziadavky } from "./podpora";
 import {
   KOS_PODPORY,
@@ -273,6 +273,7 @@ export async function spracujSpravu(
     return "strop";
   }
   const j = jazykPodlaCisla(waId);
+  await nacitajSlovnik(j);
   const meno = menoZWhatsAppu(profil, waId);
   const odZakaznika = casSpravy(s);
   await zapisStav({ posledna_sprava_at: teraz() });

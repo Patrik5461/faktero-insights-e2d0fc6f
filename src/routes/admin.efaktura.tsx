@@ -186,7 +186,9 @@ function Page() {
                   <th className="p-3">Kontakt</th>
                   <th className="p-3">Stav</th>
                   <th className="p-3">Vo Fakteri</th>
-                  <th className="p-3" />
+                  <th className="p-3">
+                    <span className="sr-only">Akcie</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -403,7 +405,9 @@ function Page() {
                   <th className="p-3">Firma</th>
                   <th className="p-3">Stav</th>
                   <th className="p-3">Posledná udalosť</th>
-                  <th className="p-3" />
+                  <th className="p-3">
+                    <span className="sr-only">Akcie</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -723,7 +727,9 @@ function OdosielanieSekcia({
                 <th className="p-3">Stav</th>
                 <th className="p-3">Príjem u</th>
                 <th className="p-3">Kľúč firmy</th>
-                <th className="p-3" />
+                <th className="p-3">
+                  <span className="sr-only">Akcie</span>
+                </th>
               </tr>
             </thead>
             <tbody>

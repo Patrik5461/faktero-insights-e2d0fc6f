@@ -96,7 +96,9 @@ export function PredlohyUctovania({ companyId }: { companyId: string }) {
                 <th className="p-3">{t("Predloha")}</th>
                 <th className="p-3">{t("Pre")}</th>
                 <th className="p-3">{t("Doplní")}</th>
-                <th className="p-3" />
+                <th className="p-3">
+                  <span className="sr-only">{t("Akcie")}</span>
+                </th>
               </tr>
             </thead>
             <tbody>

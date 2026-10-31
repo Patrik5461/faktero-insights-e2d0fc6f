@@ -16,12 +16,12 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import "@/lib/faktero/toast-chyby";
 import { PotvrdzovacieOkno } from "@/components/faktero/PotvrdzovacieOkno";
-import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
+import { CookieConsentBanner, SKRIPT_LISTY_COOKIES } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { PreskocitNaObsah } from "@/components/faktero/PreskocitNaObsah";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
-import { COOKIE_JAZYKA, preloz, type Jazyk } from "@/lib/i18n/jazyk";
+import { COOKIE_JAZYKA, nacitajSlovnik, preloz, type Jazyk } from "@/lib/i18n/jazyk";
 import { zistiJazyk } from "@/lib/i18n/zisti-jazyk";
 import { jazykZAdresy, upravZnackyHlavicky } from "@/lib/i18n/jazyk-adresa";
 import { JazykProvider } from "@/lib/i18n/useT";
@@ -42,7 +42,11 @@ function useTKorena() {
 function NotFoundComponent() {
   const t = useTKorena();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main
+      id="obsah"
+      tabIndex={-1}
+      className="flex min-h-screen items-center justify-center bg-background px-4 outline-none"
+    >
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">{t("Stránka sa nenašla")}</h2>
@@ -58,7 +62,7 @@ function NotFoundComponent() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -107,7 +111,12 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   // Jazyk webu z cookie — server tak vykreslí stránku hneď v zvolenom jazyku.
-  beforeLoad: async () => ({ jazyk: await zistiJazyk() }),
+  beforeLoad: async () => {
+    const jazyk = await zistiJazyk();
+    // Slovník sa načítava až na požiadanie (`jazyk.ts`) — skôr než sa začne kresliť.
+    await nacitajSlovnik(jazyk);
+    return { jazyk };
+  },
   loader: async () => {
     try {
       const rows = await listSeoPagesPublic();
@@ -120,13 +129,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       return { googleVerification: null, gaMeasurementId: null };
     }
   },
-  head: ({ loaderData, match }) => {
+  head: ({ loaderData, match, matches }) => {
     const jazyk: Jazyk = match.context.jazyk ?? "sk";
-    const nazov = preloz(jazyk, "Faktero — Moderná fakturácia pre SK a CZ firmy");
-    const popis = preloz(
-      jazyk,
-      "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+    /*
+      Neexistujúca adresa (404) mala titulok a popis úvodnej stránky —
+      vo vyhľadávači aj na karte prehliadača to vyzeralo ako úvod.
+    */
+    const nenajdene = matches.some(
+      (m) => m.status === "notFound" || (m as { _notFound?: boolean })._notFound,
     );
+    const nazov = nenajdene
+      ? preloz(jazyk, "Stránka sa nenašla — Faktero")
+      : preloz(jazyk, "Faktero — Moderná fakturácia pre SK a CZ firmy");
+    const popis = nenajdene
+      ? preloz(jazyk, "Táto adresa neexistuje alebo sa presunula inam.")
+      : preloz(
+          jazyk,
+          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+        );
     const gv = loaderData?.googleVerification;
     const ga = loaderData?.gaMeasurementId;
     const meta: any[] = [
@@ -168,6 +188,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ];
     if (gv) meta.push({ name: "google-site-verification", content: gv });
+    if (nenajdene) meta.push({ name: "robots", content: "noindex" });
 
     const scripts: any[] = [
       {
@@ -254,7 +275,11 @@ function RootShell({ children }: { children: ReactNode }) {
           bielym bliknutím. Preto je to obyčajný skript v hlavičke a nie efekt
           v komponente — ten beží až po prvom kresle.
         */}
-        <script dangerouslySetInnerHTML={{ __html: SKRIPT_DO_HLAVICKY + SKRIPT_DIZAJNU }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: SKRIPT_DO_HLAVICKY + SKRIPT_DIZAJNU + SKRIPT_LISTY_COOKIES,
+          }}
+        />
         {/*
           Google Tag Manager. Režim súhlasu musí byť v dataLayer **pred**
           kontajnerom — keby prišiel po ňom, značky by sa medzitým stihli

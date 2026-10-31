@@ -437,7 +437,7 @@ function Detail() {
                         <th className="py-1 pr-2">{t("Dodávateľ")}</th>
                         <th className="py-1 pr-2">{t("Doklad")}</th>
                         <th className="py-1 pr-2 text-right">{t("Spolu")}</th>
-                        <th />
+                        <th><span className="sr-only">{t("Akcie")}</span></th>
                       </tr>
                     </thead>
                     <tbody>

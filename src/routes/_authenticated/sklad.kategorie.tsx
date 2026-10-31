@@ -150,7 +150,9 @@ function CategoriesPage() {
                   <th className="p-3">{t("Kategória")}</th>
                   <th className="p-3">{t("Poznámka")}</th>
                   <th className="p-3 text-right">{t("Produkty")}</th>
-                  <th className="p-3"></th>
+                  <th className="p-3">
+                    <span className="sr-only">{t("Akcie")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

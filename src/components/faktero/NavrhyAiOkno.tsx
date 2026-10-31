@@ -194,7 +194,9 @@ export function NavrhyAiOkno({
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-card text-left text-xs text-muted-foreground">
               <tr>
-                <th className="w-8 py-1.5" />
+                <th className="w-8 py-1.5">
+                  <span className="sr-only">{t("Výber")}</span>
+                </th>
                 <th className="py-1.5 pr-2">{t("Faktúra")}</th>
                 <th className="py-1.5 pr-2 text-right">{t("Suma")}</th>
                 <th className="py-1.5 pr-2">{t("Predkontácia")}</th>
