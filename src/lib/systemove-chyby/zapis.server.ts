@@ -14,6 +14,7 @@
 */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { jeOdpojenieKlienta } from "@/lib/odpojenie-klienta";
 import {
   StropZapisov,
   bezTajomstiev,
@@ -153,6 +154,9 @@ async function upozorni(r: ReturnType<typeof pripravRiadok>, nova: boolean) {
  */
 export function zaznamenajChybu(v: VstupChyby): boolean {
   try {
+    // Klient odišiel (zavrel kartu, prešiel inam) — nie je to chyba aplikácie.
+    // Server funkcie ho hlásia ako AbortError/„aborted“ cez middleware, nie cez server.ts.
+    if (jeOdpojenieKlienta(v.chyba)) return false;
     const riadok = pripravRiadok(v);
     const pocet = strop.pust(riadok.zdroj, riadok.odtlacok);
     if (pocet == null) return false;

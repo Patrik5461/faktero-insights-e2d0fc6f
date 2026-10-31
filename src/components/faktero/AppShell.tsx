@@ -59,7 +59,7 @@ export { manualPre };
 import { PrepinacFiriem, ZoznamFiriem } from "@/components/faktero/PrepinacFiriem";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
-import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { getActiveCompanyId, oznamZmenuFiriem } from "@/lib/faktero/active-company";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import {
   DropdownMenu,
@@ -265,7 +265,20 @@ export function AppShell({
       if (zrusene || moje !== poradie || getActiveCompanyId() !== cid) return;
       setPocty({ nespracovane: r.nespracovane, efaktury: r.efaktury, spolu: r.spolu });
     };
-    obnovPocty.current = () => void nacitaj().catch(() => {});
+    /*
+      Zapamätaná firma medzičasom zmizla (zmazaná, človeka z nej vyradili):
+      server odmietne prístup a bez zásahu by sa to opakovalo každú minútu.
+      Rozloženie znova načíta firmy a prepne na takú, do ktorej človek patrí.
+    */
+    let odmietnuta: string | null = null;
+    obnovPocty.current = () =>
+      void nacitaj().catch((e) => {
+        const cid = getActiveCompanyId();
+        if (cid && cid !== odmietnuta && /nemáte prístup/.test(String(e?.message ?? ""))) {
+          odmietnuta = cid;
+          oznamZmenuFiriem();
+        }
+      });
     const naKarte = () => {
       if (document.visibilityState === "visible") obnovPocty.current();
     };
