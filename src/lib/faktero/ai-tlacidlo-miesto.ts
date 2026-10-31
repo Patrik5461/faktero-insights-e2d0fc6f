@@ -1,14 +1,19 @@
 /**
  * Kam s plávajúcim tlačidlom AI na úzkej obrazovke, aby nič neprekrývalo.
  *
- * Tlačidlo sedí vpravo dole (`ODSTUP` od okraja, `VELKOST` veľké). Obsah stránky
+ * Tlačidlo je na telefóne úzka záložka prilepená k pravému okraju (`SIRKA` × `VYSKA`,
+ * `ODSTUP` od spodku). Sedí v pásiku, ktorý tvorí okraj stránky (16 px) a vnútorný
+ * okraj karty (16 px) — sumy a ikony zarovnané doprava v kartách ho teda nekryjú,
+ * ani keď stránka stojí hore a obsah pod tlačidlom práve je. Obsah stránky
  * pod neho nikdy nezapadne natrvalo — `main` má na telefóne rezervu na spodku
  * (`html[data-ai-tlacidlo]` v styles.css), takže posledné tlačidlo stránky sa
  * dá vždy odrolovať nad neho. Čo sa odrolovať nedá, sú pevné (`fixed`) alebo
  * prilepené (`sticky`) lišty pri spodku obrazovky — pätička s Uložiť/Zaúčtovať,
  * súčtová lista výberu… Nad takú lištu sa tlačidlo zdvihne.
  */
-export const VELKOST = 40;
+export const SIRKA = 32;
+export const VYSKA = 44;
+/** Odstup od spodku obrazovky. Od pravého okraja nie je žiadny. */
 export const ODSTUP = 16;
 /** Medzera medzi lištou a zdvihnutým tlačidlom. */
 export const MEDZERA = 8;
@@ -26,9 +31,9 @@ export function zdvihTlacidla(
   okno: { sirka: number; vyska: number },
 ): number {
   const tlacidlo = {
-    left: okno.sirka - ODSTUP - VELKOST,
-    right: okno.sirka - ODSTUP,
-    top: okno.vyska - ODSTUP - VELKOST,
+    left: okno.sirka - SIRKA,
+    right: okno.sirka,
+    top: okno.vyska - ODSTUP - VYSKA,
     bottom: okno.vyska - ODSTUP,
   };
   let najvyssie = Infinity;
@@ -40,7 +45,7 @@ export function zdvihTlacidla(
   }
   if (najvyssie === Infinity) return 0;
   const zdvih = tlacidlo.bottom - najvyssie + MEDZERA;
-  return Math.max(0, Math.min(zdvih, okno.vyska - VELKOST - 2 * ODSTUP - 56));
+  return Math.max(0, Math.min(zdvih, okno.vyska - VYSKA - 2 * ODSTUP - 56));
 }
 
 /** Je fokus v poli, nad ktorým sa na telefóne otvára klávesnica? */

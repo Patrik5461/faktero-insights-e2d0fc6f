@@ -12,6 +12,7 @@ import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/Document
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { filtrujObdobie } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 export const Route = createFileRoute("/_authenticated/ponuky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové ponuky — Faktero") }] }),
@@ -159,106 +160,159 @@ function QuotesPage() {
           }}
           onClear={list.clearSelection}
         />
-        <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="w-10 p-3">
-                  <input
-                    type="checkbox"
-                    aria-label={t("Vybrať všetko")}
-                    checked={list.allOnPageSelected}
-                    onChange={(e) => list.toggleAllOnPage(e.target.checked)}
-                  />
-                  <span className="sr-only">{t("Výber")}</span>
-                </th>
-                <th className="p-3">{t("Číslo")}</th>
-                <th className="p-3">{t("Odberateľ")}</th>
-                <th className="p-3">{t("Vystavená")}</th>
-                <th className="p-3">{t("Platnosť do")}</th>
-                <th className="p-3 text-right">{t("Suma")}</th>
-                <th className="p-3">{t("Stav")}</th>
-                <th><span className="sr-only">{t("Akcie")}</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {list.loading && (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {t("Načítavam…")}
-                  </td>
-                </tr>
-              )}
-              {!list.loading && list.rows.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {list.showDeleted ? t("Žiadne vymazané ponuky.") : t("Žiadne cenové ponuky.")}
-                  </td>
-                </tr>
-              )}
-              {list.rows.map((q) => (
-                /*
-                  Detail otvárali jednotlivé bunky a robili to cez
-                  `window.location`, teda celým znovunačítaním stránky. Stav
-                  ani akcie na ťuknutie nereagovali. Preklikateľný je po novom
-                  celý riadok a ide to cez router — rovnako ako inde.
-                */
-                <tr
-                  key={q.id}
-                  className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => navigate({ to: "/ponuky/$id", params: { id: q.id } })}
+        <ResponsiveTable
+          className="mt-3"
+          items={list.rows}
+          loading={list.loading}
+          emptyText={list.showDeleted ? t("Žiadne vymazané ponuky.") : t("Žiadne cenové ponuky.")}
+          mobileCard={(q: any) => (
+            <MobileListCard
+              onClick={() => navigate({ to: "/ponuky/$id", params: { id: q.id } })}
+              vybrane={!!list.selected[q.id]}
+              onVyber={(zapnut) => list.toggleSelect(q.id, zapnut)}
+              vyberPopis={t("Vybrať riadok")}
+              title={q.quote_number}
+              subtitle={q.customer_name ?? "—"}
+              status={
+                <span
+                  className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
                 >
-                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      aria-label={t("Vybrať riadok")}
-                      checked={!!list.selected[q.id]}
-                      onChange={(e) => list.toggleSelect(q.id, e.target.checked)}
-                    />
-                  </td>
-                  <td className="p-3 font-medium">{q.quote_number}</td>
-                  <td className="p-3">{q.customer_name ?? "—"}</td>
-                  <td className="p-3">{datumNaDoklade(q.issue_date)}</td>
-                  <td className="p-3">{q.valid_until ? datumNaDoklade(q.valid_until) : "—"}</td>
-                  <td className="p-3 text-right">{formatujMenu(q.total, q.currency)}</td>
-                  <td className="p-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
+                  {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
+                </span>
+              }
+              meta={`${datumNaDoklade(q.issue_date)}${q.valid_until ? ` · ${t("Platnosť do")} ${datumNaDoklade(q.valid_until)}` : ""}`}
+              amount={formatujMenu(q.total, q.currency)}
+              actions={
+                list.showDeleted ? (
+                  <button
+                    aria-label={t("Obnoviť")}
+                    title={t("Obnoviť")}
+                    onClick={async () => {
+                      try {
+                        await list.restore([q.id]);
+                        toast.success(t("Obnovené"));
+                      } catch (e: any) {
+                        toast.error(e?.message ?? t("Chyba"));
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary-hover hover:bg-primary/10"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setRowDelete(q)}
+                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> {t("Zmazať")}
+                  </button>
+                )
+              }
+            />
+          )}
+          desktop={
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="w-10 p-3">
+                      <input
+                        type="checkbox"
+                        aria-label={t("Vybrať všetko")}
+                        checked={list.allOnPageSelected}
+                        onChange={(e) => list.toggleAllOnPage(e.target.checked)}
+                      />
+                      <span className="sr-only">{t("Výber")}</span>
+                    </th>
+                    <th className="p-3">{t("Číslo")}</th>
+                    <th className="p-3">{t("Odberateľ")}</th>
+                    <th className="p-3">{t("Vystavená")}</th>
+                    <th className="p-3">{t("Platnosť do")}</th>
+                    <th className="p-3 text-right">{t("Suma")}</th>
+                    <th className="p-3">{t("Stav")}</th>
+                    <th><span className="sr-only">{t("Akcie")}</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {list.loading && (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                        {t("Načítavam…")}
+                      </td>
+                    </tr>
+                  )}
+                  {!list.loading && list.rows.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                        {list.showDeleted ? t("Žiadne vymazané ponuky.") : t("Žiadne cenové ponuky.")}
+                      </td>
+                    </tr>
+                  )}
+                  {list.rows.map((q) => (
+                    /*
+                      Detail otvárali jednotlivé bunky a robili to cez
+                      `window.location`, teda celým znovunačítaním stránky. Stav
+                      ani akcie na ťuknutie nereagovali. Preklikateľný je po novom
+                      celý riadok a ide to cez router — rovnako ako inde.
+                    */
+                    <tr
+                      key={q.id}
+                      className="cursor-pointer hover:bg-muted/30"
+                      onClick={() => navigate({ to: "/ponuky/$id", params: { id: q.id } })}
                     >
-                      {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    {list.showDeleted ? (
-                      <button
-                        aria-label={t("Obnoviť")}
-                        title={t("Obnoviť")}
-                        onClick={async () => {
-                          try {
-                            await list.restore([q.id]);
-                            toast.success(t("Obnovené"));
-                          } catch (e: any) {
-                            toast.error(e?.message ?? t("Chyba"));
-                          }
-                        }}
-                        className="rounded p-1.5 text-primary hover:bg-primary/10"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </button>
-                    ) : (
-                      <button aria-label={t("Zmazať")}
-                        onClick={() => setRowDelete(q)}
-                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={t("Vybrať riadok")}
+                          checked={!!list.selected[q.id]}
+                          onChange={(e) => list.toggleSelect(q.id, e.target.checked)}
+                        />
+                      </td>
+                      <td className="p-3 font-medium">{q.quote_number}</td>
+                      <td className="p-3">{q.customer_name ?? "—"}</td>
+                      <td className="p-3">{datumNaDoklade(q.issue_date)}</td>
+                      <td className="p-3">{q.valid_until ? datumNaDoklade(q.valid_until) : "—"}</td>
+                      <td className="p-3 text-right">{formatujMenu(q.total, q.currency)}</td>
+                      <td className="p-3">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
+                        >
+                          {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        {list.showDeleted ? (
+                          <button
+                            aria-label={t("Obnoviť")}
+                            title={t("Obnoviť")}
+                            onClick={async () => {
+                              try {
+                                await list.restore([q.id]);
+                                toast.success(t("Obnovené"));
+                              } catch (e: any) {
+                                toast.error(e?.message ?? t("Chyba"));
+                              }
+                            }}
+                            className="rounded p-1.5 text-primary hover:bg-primary/10"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button aria-label={t("Zmazať")}
+                            onClick={() => setRowDelete(q)}
+                            className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          }
+        />
         {/* Prázdny zoznam už má hlášku v tabuľke — „Žiadne výsledky“ zo stránkovania by ju len zopakovalo. */}
         {list.total > 0 && (
           <ListPagination

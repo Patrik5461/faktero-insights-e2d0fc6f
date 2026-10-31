@@ -6,6 +6,7 @@ import { PageBody } from "@/components/faktero/AppShell";
 import {
   DocumentDetailHeader,
   MenuAkcia,
+  SekundarnaAkcia,
   MenuSkupina,
   MetaRiadok,
   PrimarnaAkcia,
@@ -53,9 +54,11 @@ function Karta({
 }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(titulok)}</div>
-      <div className={`mt-1 text-xl font-semibold tabular-nums ${farba ?? ""}`}>{hodnota}</div>
+      <div className={`mt-1 text-lg font-semibold tabular-nums sm:text-xl ${farba ?? ""}`}>
+        {hodnota}
+      </div>
       {poznamka && <div className="mt-1 text-xs text-muted-foreground">{t(poznamka)}</div>}
     </div>
   );
@@ -217,14 +220,18 @@ function JobDetail() {
             >
               <Lock /> {t("Uzavrieť")}
             </PrimarnaAkcia>
-          ) : (
-            <PrimarnaAkcia
-              variant="outline"
+          ) : null
+        }
+        secondaryActions={
+          // Uzavretá zákazka nemá hlavnú akciu: znovu otvorenie je ikona ako úpravy
+          // na bločku či prijatej faktúre, nie tlačidlo cez celú šírku telefónu.
+          otvorena ? null : (
+            <SekundarnaAkcia
+              ikona={Unlock}
+              label={t("Znovu otvoriť")}
               onClick={() => akcia(() => doStatus({ data: { company_id: cid!, id, status: "active" } }))}
               disabled={busy}
-            >
-              <Unlock /> {t("Znovu otvoriť")}
-            </PrimarnaAkcia>
+            />
           )
         }
         menuActions={
@@ -397,7 +404,8 @@ function JobDetail() {
           </form>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Na telefóne dve karty vedľa seba ako súhrny v ostatných agendách, nie sedem pod sebou. */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Karta titulok="Výnosy" hodnota={suma(v.vynosy)} />
           <Karta titulok="Náklady" hodnota={suma(v.naklady)} />
           <Karta
@@ -412,7 +420,7 @@ function JobDetail() {
           />
         </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Karta
             titulok="Materiál zo skladu"
             hodnota={suma(v.naklad_material)}

@@ -67,6 +67,56 @@ export function DocumentDetailHeader({
   const sipka = back && podstranka;
   const celyNadpis = number ? `${title} ${number}` : title;
   const maMenu = Boolean(manual) || Children.toArray(menuActions).length > 0;
+  /*
+    Len „…“ bez ďalších akcií (nové vyúčtovanie, detail bez hlavnej akcie): ide do riadku
+    s nadpisom vpravo. Inak by na telefóne ostal sám v prázdnom riadku pod nadpisom.
+  */
+  const lenMenu = maMenu && !primaryAction && Children.toArray(secondaryActions).length === 0;
+  const ponuka = (
+    <DropdownMenu modal={false}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={t("Ďalšie akcie")}
+              className={cn("shrink-0", !primaryAction && "ml-auto @2xl:ml-0")}
+            >
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("Ďalšie akcie")}</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent
+        align="end"
+        className={cn(
+          "w-64",
+          // Prázdna skupina nenechá po sebe dvojitú ani krajnú čiaru.
+          "[&>[role=separator]:first-child]:hidden [&>[role=separator]:last-child]:hidden [&>[role=separator]+[role=separator]]:hidden",
+        )}
+        onCloseAutoFocus={nevracajFokusDoOkna}
+      >
+        {menuActions}
+        {manual && (
+          <MenuSkupina>
+            <DropdownMenuItem asChild>
+              <a
+                href={manual}
+                target="_blank"
+                rel="noreferrer"
+                title={t("Otvoriť manuál v novom okne")}
+              >
+                <BookOpen className="h-4 w-4" /> {t("Manuál")}
+              </a>
+            </DropdownMenuItem>
+          </MenuSkupina>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -104,6 +154,7 @@ export function DocumentDetailHeader({
                 </h1>
                 {status ? <div className="flex shrink-0 items-center gap-1.5">{status}</div> : null}
               </div>
+              {lenMenu ? ponuka : null}
             </div>
             {meta ? (
               <div
@@ -118,7 +169,7 @@ export function DocumentDetailHeader({
           </div>
 
           {/* Pravá časť: jedna primárna, sekundárne, „…“ */}
-          {(primaryAction || secondaryActions || maMenu) && (
+          {!lenMenu && (primaryAction || secondaryActions || maMenu) && (
             <div className="flex w-full flex-wrap items-center gap-2 @2xl:w-auto @2xl:shrink-0 @2xl:flex-nowrap @2xl:justify-end">
               {/*
                 Hlavná akcia sa nikdy neskracuje: má šírku podľa textu (aj v DE/CS)
@@ -142,51 +193,7 @@ export function DocumentDetailHeader({
                 )}
               >
                 {secondaryActions}
-                {maMenu && (
-                  <DropdownMenu modal={false}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            aria-label={t("Ďalšie akcie")}
-                            className={cn("shrink-0", !primaryAction && "ml-auto @2xl:ml-0")}
-                          >
-                            <MoreHorizontal />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>{t("Ďalšie akcie")}</TooltipContent>
-                    </Tooltip>
-                    <DropdownMenuContent
-                      align="end"
-                      className={cn(
-                        "w-64",
-                        // Prázdna skupina nenechá po sebe dvojitú ani krajnú čiaru.
-                        "[&>[role=separator]:first-child]:hidden [&>[role=separator]:last-child]:hidden [&>[role=separator]+[role=separator]]:hidden",
-                      )}
-                      onCloseAutoFocus={nevracajFokusDoOkna}
-                    >
-                      {menuActions}
-                      {manual && (
-                        <MenuSkupina>
-                          <DropdownMenuItem asChild>
-                            <a
-                              href={manual}
-                              target="_blank"
-                              rel="noreferrer"
-                              title={t("Otvoriť manuál v novom okne")}
-                            >
-                              <BookOpen className="h-4 w-4" /> {t("Manuál")}
-                            </a>
-                          </DropdownMenuItem>
-                        </MenuSkupina>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                {maMenu && ponuka}
               </div>
             </div>
           )}

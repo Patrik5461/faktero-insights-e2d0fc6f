@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -17,6 +17,7 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 export const Route = createFileRoute("/_authenticated/objednavky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté objednávky — Faktero") }] }),
@@ -50,6 +51,7 @@ function datum(s?: string | null) {
 
 function OrdersPage() {
   const { t } = useT();
+  const navigate = useNavigate();
   const nacitaj = useServerFn(listSalesOrders);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,78 +160,117 @@ function OrdersPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="px-4 py-2 text-left font-medium">{t("Číslo")}</th>
-                  <th className="px-4 py-2 text-left font-medium">{t("Odberateľ")}</th>
-                  <th className="px-4 py-2 text-left font-medium">{t("Objednané")}</th>
-                  <th className="px-4 py-2 text-left font-medium">{t("Termín")}</th>
-                  <th className="px-4 py-2 text-left font-medium">{t("Stav")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Vybavené")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Hodnota")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {zobrazene.map((o) => {
-                  const stav = (o.stav_vypocitany ?? o.status) as StavPrijatejObjednavky;
-                  const meska = jePoTermine(o.requested_date, stav, dnes);
-                  const percento = percentoVybavenia(o.sales_order_items ?? []);
-                  return (
-                    <tr
-                      key={o.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/40"
-                    >
-                      <td className="px-4 py-2">
-                        <Link
-                          to="/objednavky/$id"
-                          params={{ id: o.id }}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {o.order_number}
-                        </Link>
-                        {o.customer_order_number && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {t("u odberateľa {cislo}", { cislo: o.customer_order_number })}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">{o.customers?.name ?? o.customer_name ?? "—"}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">{datum(o.order_date)}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        {datum(o.requested_date)}
-                        {meska && (
-                          <span className="ml-1.5 inline-flex items-center gap-1 text-xs text-destructive">
-                            <AlertTriangle className="h-3 w-3" /> {t("po termíne")}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${FARBA[stav]}`}>
-                          {t(STAV_POPIS[stav])}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-primary"
-                              style={{ width: `${percento}%` }}
-                            />
-                          </div>
-                          <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
-                            {percento} %
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">{suma(o.total)}</td>
+          <ResponsiveTable
+            items={zobrazene}
+            desktop={
+              <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-muted-foreground">
+                    <tr className="border-b border-border">
+                      <th className="px-4 py-2 text-left font-medium">{t("Číslo")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("Odberateľ")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("Objednané")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("Termín")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("Stav")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Vybavené")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("Hodnota")}</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {zobrazene.map((o) => {
+                      const stav = (o.stav_vypocitany ?? o.status) as StavPrijatejObjednavky;
+                      const meska = jePoTermine(o.requested_date, stav, dnes);
+                      const percento = percentoVybavenia(o.sales_order_items ?? []);
+                      return (
+                        <tr
+                          key={o.id}
+                          className="border-b border-border last:border-0 hover:bg-muted/40"
+                        >
+                          <td className="px-4 py-2">
+                            <Link
+                              to="/objednavky/$id"
+                              params={{ id: o.id }}
+                              className="font-medium text-primary hover:underline"
+                            >
+                              {o.order_number}
+                            </Link>
+                            {o.customer_order_number && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {t("u odberateľa {cislo}", { cislo: o.customer_order_number })}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">{o.customers?.name ?? o.customer_name ?? "—"}</td>
+                          <td className="px-4 py-2 whitespace-nowrap">{datum(o.order_date)}</td>
+                          <td className="px-4 py-2 whitespace-nowrap">
+                            {datum(o.requested_date)}
+                            {meska && (
+                              <span className="ml-1.5 inline-flex items-center gap-1 text-xs text-destructive">
+                                <AlertTriangle className="h-3 w-3" /> {t("po termíne")}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className={`rounded-full px-2 py-0.5 text-xs ${FARBA[stav]}`}>
+                              {t(STAV_POPIS[stav])}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className="h-full rounded-full bg-primary"
+                                  style={{ width: `${percento}%` }}
+                                />
+                              </div>
+                              <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
+                                {percento} %
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-right tabular-nums">{suma(o.total)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            }
+            mobileCard={(o: any) => {
+              const stav = (o.stav_vypocitany ?? o.status) as StavPrijatejObjednavky;
+              const meska = jePoTermine(o.requested_date, stav, dnes);
+              const percento = percentoVybavenia(o.sales_order_items ?? []);
+              return (
+                <MobileListCard
+                  onClick={() => navigate({ to: "/objednavky/$id", params: { id: o.id } })}
+                  title={
+                    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                      {o.order_number}
+                      {o.customer_order_number && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {t("u odberateľa {cislo}", { cislo: o.customer_order_number })}
+                        </span>
+                      )}
+                    </span>
+                  }
+                  subtitle={o.customers?.name ?? o.customer_name ?? "—"}
+                  status={
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${FARBA[stav]}`}>
+                      {t(STAV_POPIS[stav])}
+                    </span>
+                  }
+                  meta={
+                    <>
+                      {datum(o.order_date)} · {t("Termín")} {datum(o.requested_date)}
+                      {meska && <span className="text-destructive"> · {t("po termíne")}</span>}
+                      {` · ${t("Vybavené")} ${percento} %`}
+                    </>
+                  }
+                  amount={<span className="tabular-nums">{suma(o.total)}</span>}
+                />
+              );
+            }}
+          />
         )}
       </PageBody>
     </>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -9,6 +9,7 @@ import { Plus, HardHat } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 export const Route = createFileRoute("/_authenticated/zakazky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazky — Faktero") }] }),
@@ -27,6 +28,7 @@ function suma(n: number) {
 
 function JobsPage() {
   const { t } = useT();
+  const navigate = useNavigate();
   const fetchJobs = useServerFn(listJobs);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,90 +125,141 @@ function JobsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full min-w-[860px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="p-3">{t("Číslo")}</th>
-                  <th className="p-3">{t("Názov")}</th>
-                  <th className="p-3">{t("Odberateľ")}</th>
-                  <th className="p-3 text-right">{t("Výnosy")}</th>
-                  <th className="p-3 text-right">{t("Náklady")}</th>
-                  <th className="p-3 text-right">{t("Zisk")}</th>
-                  <th className="p-3 text-right">{t("Marža")}</th>
-                  <th className="p-3">{t("Stav")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map((j) => (
-                  <tr key={j.id} className="hover:bg-muted/30">
-                    <td className="p-3 font-medium">
-                      <Link
-                        to="/zakazky/$id"
-                        params={{ id: j.id }}
-                        className="text-primary hover:underline"
-                      >
-                        {j.job_number}
-                      </Link>
-                    </td>
-                    <td className="p-3">{j.name}</td>
-                    <td className="p-3 text-muted-foreground">{j.customer_name ?? "—"}</td>
-                    <td className="p-3 text-right tabular-nums">{suma(j.vynosy)}</td>
-                    <td
-                      className={`p-3 text-right tabular-nums ${
-                        prekrocenyRozpocet(j) ? "font-medium text-destructive" : ""
+          <>
+            <ResponsiveTable
+              items={rows}
+              desktop={
+                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                  <table className="w-full min-w-[860px] text-sm">
+                    <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="p-3">{t("Číslo")}</th>
+                        <th className="p-3">{t("Názov")}</th>
+                        <th className="p-3">{t("Odberateľ")}</th>
+                        <th className="p-3 text-right">{t("Výnosy")}</th>
+                        <th className="p-3 text-right">{t("Náklady")}</th>
+                        <th className="p-3 text-right">{t("Zisk")}</th>
+                        <th className="p-3 text-right">{t("Marža")}</th>
+                        <th className="p-3">{t("Stav")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {rows.map((j) => (
+                        <tr key={j.id} className="hover:bg-muted/30">
+                          <td className="p-3 font-medium">
+                            <Link
+                              to="/zakazky/$id"
+                              params={{ id: j.id }}
+                              className="text-primary hover:underline"
+                            >
+                              {j.job_number}
+                            </Link>
+                          </td>
+                          <td className="p-3">{j.name}</td>
+                          <td className="p-3 text-muted-foreground">{j.customer_name ?? "—"}</td>
+                          <td className="p-3 text-right tabular-nums">{suma(j.vynosy)}</td>
+                          <td
+                            className={`p-3 text-right tabular-nums ${
+                              prekrocenyRozpocet(j) ? "font-medium text-destructive" : ""
+                            }`}
+                            title={
+                              prekrocenyRozpocet(j)
+                                ? t("Prekročený plánovaný náklad {suma}", {
+                                    suma: suma(j.planovany_naklad),
+                                  })
+                                : undefined
+                            }
+                          >
+                            {suma(j.naklady)}
+                          </td>
+                          <td
+                            className={`p-3 text-right font-medium tabular-nums ${
+                              j.zisk < 0 ? "text-destructive" : "text-emerald-700"
+                            }`}
+                          >
+                            {suma(j.zisk)}
+                          </td>
+                          <td className="p-3 text-right tabular-nums text-muted-foreground">
+                            {j.marza == null ? "—" : `${j.marza} %`}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`inline-block rounded px-2 py-0.5 text-xs ${
+                                FARBA_STAVU[j.status as StavZakazky] ?? ""
+                              }`}
+                            >
+                              {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="border-t-2 border-border bg-muted/20 font-medium">
+                      <tr>
+                        <td className="p-3" colSpan={3}>
+                          {t("Spolu ({n})", { n: rows.length })}
+                        </td>
+                        <td className="p-3 text-right tabular-nums">{suma(spolu.vynosy)}</td>
+                        <td className="p-3 text-right tabular-nums">{suma(spolu.naklady)}</td>
+                        <td
+                          className={`p-3 text-right tabular-nums ${
+                            spolu.zisk < 0 ? "text-destructive" : "text-emerald-700"
+                          }`}
+                        >
+                          {suma(spolu.zisk)}
+                        </td>
+                        <td className="p-3" colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              }
+              mobileCard={(j: any) => (
+                <MobileListCard
+                  onClick={() => navigate({ to: "/zakazky/$id", params: { id: j.id } })}
+                  title={j.job_number}
+                  subtitle={j.customer_name ? `${j.name} · ${j.customer_name}` : j.name}
+                  status={
+                    <span
+                      className={`inline-block rounded px-2 py-0.5 text-xs ${
+                        FARBA_STAVU[j.status as StavZakazky] ?? ""
                       }`}
-                      title={
-                        prekrocenyRozpocet(j)
-                          ? t("Prekročený plánovaný náklad {suma}", {
-                              suma: suma(j.planovany_naklad),
-                            })
-                          : undefined
-                      }
                     >
-                      {suma(j.naklady)}
-                    </td>
-                    <td
-                      className={`p-3 text-right font-medium tabular-nums ${
-                        j.zisk < 0 ? "text-destructive" : "text-emerald-700"
-                      }`}
+                      {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
+                    </span>
+                  }
+                  meta={
+                    <>
+                      {t("Výnosy")} {suma(j.vynosy)} ·{" "}
+                      <span className={prekrocenyRozpocet(j) ? "font-medium text-destructive" : ""}>
+                        {t("Náklady")} {suma(j.naklady)}
+                      </span>
+                      {j.marza != null && ` · ${t("Marža")} ${j.marza} %`}
+                    </>
+                  }
+                  amount={
+                    <span
+                      className={`tabular-nums ${j.zisk < 0 ? "text-destructive" : "text-emerald-700"}`}
                     >
                       {suma(j.zisk)}
-                    </td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {j.marza == null ? "—" : `${j.marza} %`}
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`inline-block rounded px-2 py-0.5 text-xs ${
-                          FARBA_STAVU[j.status as StavZakazky] ?? ""
-                        }`}
-                      >
-                        {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="border-t-2 border-border bg-muted/20 font-medium">
-                <tr>
-                  <td className="p-3" colSpan={3}>
-                    {t("Spolu ({n})", { n: rows.length })}
-                  </td>
-                  <td className="p-3 text-right tabular-nums">{suma(spolu.vynosy)}</td>
-                  <td className="p-3 text-right tabular-nums">{suma(spolu.naklady)}</td>
-                  <td
-                    className={`p-3 text-right tabular-nums ${
-                      spolu.zisk < 0 ? "text-destructive" : "text-emerald-700"
-                    }`}
-                  >
-                    {suma(spolu.zisk)}
-                  </td>
-                  <td className="p-3" colSpan={2} />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                    </span>
+                  }
+                />
+              )}
+            />
+            {/* Súčtový riadok tabuľky — na telefóne ako samostatná karta pod zoznamom. */}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-border bg-muted/20 p-3 text-sm font-medium sm:hidden">
+              <span>{t("Spolu ({n})", { n: rows.length })}</span>
+              <span
+                className={`tabular-nums ${spolu.zisk < 0 ? "text-destructive" : "text-emerald-700"}`}
+              >
+                {suma(spolu.zisk)}
+              </span>
+              <span className="w-full text-xs font-normal text-muted-foreground">
+                {t("Výnosy")} {suma(spolu.vynosy)} · {t("Náklady")} {suma(spolu.naklady)}
+              </span>
+            </div>
+          </>
         )}
       </PageBody>
     </>

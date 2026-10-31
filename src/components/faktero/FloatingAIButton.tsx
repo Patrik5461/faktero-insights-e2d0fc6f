@@ -93,7 +93,8 @@ export function FloatingAIButton() {
     !(oknoOtvorene && !open) &&
     !pathname.startsWith("/ai-asistent") &&
     !(availability.data && !availability.data.available);
-  // Na telefóne: rezerva na spodku stránky, zdvih nad pevné lišty, skrytie pri písaní.
+  // Na telefóne: úzka záložka pri pravom okraji (nekryje sumy v kartách), rezerva na
+  // spodku stránky, zdvih nad pevné lišty, skrytie pri písaní.
   const miesto = useMiestoAiTlacidla(zobrazene && !siroka && !pt);
 
   // Na menšej obrazovke sedí tlačidlo presne na tlačidlách v päte okna a klik
@@ -117,7 +118,7 @@ export function FloatingAIButton() {
       <div
         ref={tlacidlo.nastavPrvok}
         data-plavajuce=""
-        className={`fixed ${VRSTVA_AI} ${pt ? "" : "bottom-4 right-4 sm:bottom-6 sm:right-6"}`}
+        className={`fixed ${VRSTVA_AI} ${pt ? "" : "bottom-4 right-0 sm:bottom-6 sm:right-6"}`}
         style={
           pt
             ? { left: pt.x, top: pt.y }
@@ -139,7 +140,7 @@ export function FloatingAIButton() {
           title={
             siroka ? t("Faktero AI asistent — potiahnutím ho presuniete") : t("Faktero AI asistent")
           }
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 p-3 text-sm sm:px-4 font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform hover:scale-105 sm:touch-none"
+          className="inline-flex h-11 w-8 items-center justify-center gap-2 rounded-l-xl bg-gradient-to-br from-primary to-primary/80 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform sm:h-auto sm:w-auto sm:touch-none sm:rounded-full sm:p-3 sm:px-4 sm:hover:scale-105"
         >
           {open ? <X className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
           <span className="sr-only sm:not-sr-only">{open ? t("Zavrieť") : "AI"}</span>

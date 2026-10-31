@@ -68,6 +68,9 @@ export function MobileListCard({
   amount,
   actions,
   onClick,
+  vybrane,
+  onVyber,
+  vyberPopis,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -76,36 +79,54 @@ export function MobileListCard({
   amount?: ReactNode;
   actions?: ReactNode;
   onClick?: () => void;
+  /** Začiarknutie pre hromadné akcie (export, odovzdanie…). Bez `onVyber` sa nekreslí. */
+  vybrane?: boolean;
+  onVyber?: (zapnut: boolean) => void;
+  /** Popis začiarkávacieho poľa pre čítačku, napr. „Vybrať doklad 123“. */
+  vyberPopis?: string;
 }) {
   const Tag: any = onClick ? "button" : "div";
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
-      <Tag
-        type={onClick ? "button" : undefined}
-        onClick={onClick}
-        className={`block w-full text-left ${onClick ? "active:opacity-80" : ""}`}
-      >
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-          <div className="min-w-0">
-            {/* Bez `truncate` — štítky pri čísle (Dobropis, eFaktúra) sa radšej zalomia, než by ich orezal okraj. */}
-            <div className="text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
-              {title}
-            </div>
-            {subtitle && (
-              <div className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</div>
-            )}
-          </div>
-          {status && <div className="shrink-0">{status}</div>}
-        </div>
-        {(meta || amount) && (
-          <div className="mt-2 flex items-end justify-between gap-2 text-xs">
-            <div className="min-w-0 truncate text-muted-foreground">{meta}</div>
-            {amount && (
-              <div className="shrink-0 text-sm font-semibold text-foreground">{amount}</div>
-            )}
-          </div>
+    <div
+      className={`rounded-xl border bg-card p-3 shadow-sm ${vybrane ? "border-primary/50 ring-1 ring-primary/30" : "border-border"}`}
+    >
+      <div className={onVyber ? "flex items-start gap-2.5" : undefined}>
+        {onVyber && (
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0"
+            aria-label={vyberPopis}
+            checked={!!vybrane}
+            onChange={(e) => onVyber(e.target.checked)}
+          />
         )}
-      </Tag>
+        <Tag
+          type={onClick ? "button" : undefined}
+          onClick={onClick}
+          className={`block w-full min-w-0 text-left ${onClick ? "active:opacity-80" : ""}`}
+        >
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+            <div className="min-w-0">
+              {/* Bez `truncate` — štítky pri čísle (Dobropis, eFaktúra) sa radšej zalomia, než by ich orezal okraj. */}
+              <div className="text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
+                {title}
+              </div>
+              {subtitle && (
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</div>
+              )}
+            </div>
+            {status && <div className="shrink-0">{status}</div>}
+          </div>
+          {(meta || amount) && (
+            <div className="mt-2 flex items-end justify-between gap-2 text-xs">
+              <div className="min-w-0 truncate text-muted-foreground">{meta}</div>
+              {amount && (
+                <div className="shrink-0 text-sm font-semibold text-foreground">{amount}</div>
+              )}
+            </div>
+          )}
+        </Tag>
+      </div>
       {actions && (
         <div className="mt-2 flex items-center justify-end gap-1 border-t border-border/60 pt-2">
           {actions}

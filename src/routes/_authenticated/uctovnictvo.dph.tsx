@@ -445,62 +445,86 @@ function DphPage() {
           <CardContent className="space-y-6">
             <div>
               <h2 className="font-semibold mb-2">{t("DPH na výstupe (vystavené faktúry)")}</h2>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Sadzba DPH")}</TableHead>
-                    <TableHead className="text-right">{t("Základ dane")}</TableHead>
-                    <TableHead className="text-right">{t("Suma DPH")}</TableHead>
-                    <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rateOrder.map((r) => (
-                    <TableRow key={r}>
-                      <TableCell>{nazovSadzby(r)}</TableCell>
-                      <TableCell className="text-right">{fmt(riadok(output, r).base)}</TableCell>
-                      <TableCell className="text-right">{fmt(riadok(output, r).vat)}</TableCell>
-                      <TableCell className="text-right">{riadok(output, r).count}</TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("Sadzba DPH")}</TableHead>
+                      <TableHead className="text-right">{t("Základ dane")}</TableHead>
+                      <TableHead className="text-right">{t("Suma DPH")}</TableHead>
+                      <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
                     </TableRow>
-                  ))}
-                  <TableRow className="font-bold bg-muted/40">
-                    <TableCell>{t("SPOLU")}</TableCell>
-                    <TableCell className="text-right">{fmt(totalOutputBase)}</TableCell>
-                    <TableCell className="text-right">{fmt(totalOutputVat)}</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rateOrder.map((r) => (
+                      <TableRow key={r}>
+                        <TableCell>{nazovSadzby(r)}</TableCell>
+                        <TableCell className="text-right">{fmt(riadok(output, r).base)}</TableCell>
+                        <TableCell className="text-right">{fmt(riadok(output, r).vat)}</TableCell>
+                        <TableCell className="text-right">{riadok(output, r).count}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-bold bg-muted/40">
+                      <TableCell>{t("SPOLU")}</TableCell>
+                      <TableCell className="text-right">{fmt(totalOutputBase)}</TableCell>
+                      <TableCell className="text-right">{fmt(totalOutputVat)}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+              <MobilnySuhrnSadzieb
+                riadky={rateOrder.map((r) => ({
+                  nazov: nazovSadzby(r),
+                  zaklad: fmt(riadok(output, r).base),
+                  dph: fmt(riadok(output, r).vat),
+                  pocet: riadok(output, r).count,
+                }))}
+                zaklad={fmt(totalOutputBase)}
+                dph={fmt(totalOutputVat)}
+              />
             </div>
 
             <div>
               <h2 className="font-semibold mb-2">{t("DPH na vstupe (prijaté faktúry)")}</h2>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Sadzba DPH")}</TableHead>
-                    <TableHead className="text-right">{t("Základ dane")}</TableHead>
-                    <TableHead className="text-right">{t("Suma DPH")}</TableHead>
-                    <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rateOrder.map((r) => (
-                    <TableRow key={r}>
-                      <TableCell>{nazovSadzby(r)}</TableCell>
-                      <TableCell className="text-right">{fmt(riadok(input, r).base)}</TableCell>
-                      <TableCell className="text-right">{fmt(riadok(input, r).vat)}</TableCell>
-                      <TableCell className="text-right">{riadok(input, r).count}</TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("Sadzba DPH")}</TableHead>
+                      <TableHead className="text-right">{t("Základ dane")}</TableHead>
+                      <TableHead className="text-right">{t("Suma DPH")}</TableHead>
+                      <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
                     </TableRow>
-                  ))}
-                  <TableRow className="font-bold bg-muted/40">
-                    <TableCell>{t("SPOLU")}</TableCell>
-                    <TableCell className="text-right">{fmt(totalInputBase)}</TableCell>
-                    <TableCell className="text-right">{fmt(totalInputVat)}</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rateOrder.map((r) => (
+                      <TableRow key={r}>
+                        <TableCell>{nazovSadzby(r)}</TableCell>
+                        <TableCell className="text-right">{fmt(riadok(input, r).base)}</TableCell>
+                        <TableCell className="text-right">{fmt(riadok(input, r).vat)}</TableCell>
+                        <TableCell className="text-right">{riadok(input, r).count}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-bold bg-muted/40">
+                      <TableCell>{t("SPOLU")}</TableCell>
+                      <TableCell className="text-right">{fmt(totalInputBase)}</TableCell>
+                      <TableCell className="text-right">{fmt(totalInputVat)}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+              <MobilnySuhrnSadzieb
+                riadky={rateOrder.map((r) => ({
+                  nazov: nazovSadzby(r),
+                  zaklad: fmt(riadok(input, r).base),
+                  dph: fmt(riadok(input, r).vat),
+                  pocet: riadok(input, r).count,
+                }))}
+                zaklad={fmt(totalInputBase)}
+                dph={fmt(totalInputVat)}
+              />
             </div>
 
             <div className="rounded-md border p-4 flex items-center justify-between bg-muted/30">
@@ -676,6 +700,47 @@ function MobilnyZoznam({
           </div>
         </li>
       ))}
+    </ul>
+  );
+}
+
+/**
+ * Súhrn podľa sadzieb na telefóne — štyri stĺpce sa na 390 px nezmestili
+ * (počet faktúr bol orezaný), preto sadzba a pod ňou základ, DPH a počet.
+ */
+function MobilnySuhrnSadzieb({
+  riadky,
+  zaklad,
+  dph,
+}: {
+  riadky: { nazov: string; zaklad: string; dph: string; pocet: number }[];
+  zaklad: string;
+  dph: string;
+}) {
+  const { t } = useT();
+  return (
+    <ul className="divide-y divide-border rounded-md border border-border text-sm sm:hidden">
+      {riadky.map((r) => (
+        <li key={r.nazov} className="px-3 py-2">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{r.nazov}</span>
+            <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+              {t("Počet faktúr")}: {r.pocet}
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs tabular-nums">
+            <span className="whitespace-nowrap">{t("Základ {suma}", { suma: r.zaklad })}</span>
+            <span className="whitespace-nowrap">{t("DPH {suma}", { suma: r.dph })}</span>
+          </div>
+        </li>
+      ))}
+      <li className="bg-muted/40 px-3 py-2 font-bold">
+        <div>{t("SPOLU")}</div>
+        <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs tabular-nums">
+          <span className="whitespace-nowrap">{t("Základ {suma}", { suma: zaklad })}</span>
+          <span className="whitespace-nowrap">{t("DPH {suma}", { suma: dph })}</span>
+        </div>
+      </li>
     </ul>
   );
 }

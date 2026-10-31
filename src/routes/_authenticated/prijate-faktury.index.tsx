@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { nacitajNesedi } from "@/lib/faktero/cudzia-faktura";
 import { stavOdovzdania, textOdznaku } from "@/lib/faktero/stav-odovzdania";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
@@ -855,6 +856,27 @@ function PurchaseInvoicesPage() {
                     ]);
   }
 
+  // Súčtový riadok pod zoznamom — rovnaký pod tabuľkou aj pod kartami na telefóne.
+  const paticka =
+    rows.length > 0 ? (
+      /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
+         vyfiltrovaný zoznam so základom a DPH, rovnako ako vo vystavených. */
+      <SuctovaPatickaZoznamu
+        nadpis={t("Spolu:")}
+        suhrn={suhrnZPoloziek(
+          rad.zoradene.map((r: any) =>
+            polozkaPrijatej(r, { zapocitatelna: zapocitatelna(r), zaplateneNaMieste: ZAPLATENE_NA_MIESTE }),
+          ),
+        )}
+        doplnok={
+          <span title={t("Zaúčtované a ešte neodovzdané do účtovníctva")}>
+            {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
+            {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
+          </span>
+        }
+      />
+    ) : null;
+
   return (
     <>
       {volbyExportu ? (
@@ -1137,6 +1159,67 @@ function PurchaseInvoicesPage() {
         )}
 
         <div className="mt-4">
+        <ResponsiveTable
+          items={postupne.viditelne}
+          loading={loading}
+          emptyText={"Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra\"."}
+          mobileCard={(r: any) => (
+            <MobileListCard
+              onClick={() => {
+                posledny.zapamataj(r.id);
+                navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
+              }}
+              vybrane={selected.has(r.id)}
+              onVyber={() => toggle(r.id)}
+              vyberPopis={t("Vybrať riadok")}
+              title={
+                <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {r.invoice_number}
+                  <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
+                  {duplicity.has(r.id) && (
+                    <span
+                      title={t("Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu.")}
+                      className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                    >
+                      Duplicita?
+                    </span>
+                  )}
+                  {r.na_kontrolu_at ? (
+                    <span
+                      title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}
+                      className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                    >
+                      {t("Na kontrolu")}
+                    </span>
+                  ) : null}
+                </span>
+              }
+              subtitle={
+                <>
+                  {r.odberatel_nesedi ? (
+                    <CudziaFakturaZnak nesedi={nacitajNesedi(r.odberatel_nesedi)} className="mr-1.5 align-middle" />
+                  ) : null}
+                  {r.supplier_name ?? "—"}
+                </>
+              }
+              status={
+                <div className="flex flex-col items-end gap-1">
+                  <StatusBadge status={r.status} />
+                  {jeCiastocneUhradena(r, uhradene[r.id]) && (
+                    <span
+                      className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
+                      title={formatujMenu(uhradene[r.id], r.currency ?? "EUR")}
+                    >
+                      {t("Čiastočne uhradená")}
+                    </span>
+                  )}
+                </div>
+              }
+              meta={`${datumNaDoklade(r.issue_date)} · ${t("splat.")} ${datumNaDoklade(r.due_date)}`}
+              amount={fmtMoney(Number(r.amount_total ?? 0), r.currency)}
+            />
+          )}
+          desktop={
         <SNahladom
           zapnuty={bocny.zapnuty}
           vybrany={bocny.vybrany}
@@ -1461,26 +1544,18 @@ function PurchaseInvoicesPage() {
               {postupne.zarazkaRiadok(pocetStlpcov)}
             </tbody>
           </table>
-          {rows.length > 0 ? (
-            /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
-               vyfiltrovaný zoznam so základom a DPH, rovnako ako vo vystavených. */
-            <SuctovaPatickaZoznamu
-              nadpis={t("Spolu:")}
-              suhrn={suhrnZPoloziek(
-                rad.zoradene.map((r: any) =>
-                  polozkaPrijatej(r, { zapocitatelna: zapocitatelna(r), zaplateneNaMieste: ZAPLATENE_NA_MIESTE }),
-                ),
-              )}
-              doplnok={
-                <span title={t("Zaúčtované a ešte neodovzdané do účtovníctva")}>
-                  {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
-                  {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
-                </span>
-              }
-            />
-          ) : null}
+          {paticka}
         </div>
         </SNahladom>
+          }
+        />
+        {/* Na telefóne dokreslenie ďalších kariet a súčty pod kartami. */}
+        <div className="sm:hidden">
+          {postupne.zarazka()}
+          {paticka ? (
+            <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">{paticka}</div>
+          ) : null}
+        </div>
         </div>
         {/* Súčet označených + úhrada z výberu (lišta drží spodok obrazovky). */}
         <SuctovaListaVyberu

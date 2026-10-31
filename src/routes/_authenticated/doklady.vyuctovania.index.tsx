@@ -1,6 +1,6 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -12,6 +12,7 @@ import { zoznamVyuctovaniFn } from "@/lib/faktero/vyuctovanie-vydavkov.functions
 import { nazovTypu, TYPY_VYUCTOVANIA } from "@/lib/faktero/vyuctovanie-vydavkov";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 /**
  * Súhrnné vyúčtovanie výdavkov zamestnancov (ako modul Vyúčtovanie výdavkov
@@ -42,6 +43,7 @@ function vysledokVyuctovania(
 
 function Zoznam() {
   const { t } = useT();
+  const navigate = useNavigate();
   const cid = useMemo(() => getActiveCompanyId(), []);
   const nacitaj = useServerFn(zoznamVyuctovaniFn);
   const [rows, setRows] = useState<any[] | null>(null);
@@ -135,58 +137,95 @@ function Zoznam() {
             {t("Nič nevyhovuje filtru.")}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="p-3">{t("Vyúčtovanie")}</th>
-                  <th className="p-3">{t("Zamestnanec")}</th>
-                  <th className="p-3">{t("Typ")}</th>
-                  <th className="p-3 text-right">{t("Doklady")}</th>
-                  <th className="p-3 text-right">{t("Spolu")}</th>
-                  <th className="p-3">{t("Výsledok")}</th>
-                  <th className="p-3">{t("Stav")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {zobrazene.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-border last:border-0 hover:bg-secondary/40"
-                  >
-                    <td className="p-3">
-                      <Link
-                        to="/doklady/vyuctovania/$id"
-                        params={{ id: r.id }}
-                        className="font-medium text-primary hover:underline"
+          // Na telefóne karty — v tabuľke na 390 px nebolo vidieť sumu.
+          <ResponsiveTable
+            items={zobrazene}
+            mobileCard={(r: any) => (
+              <MobileListCard
+                onClick={() => navigate({ to: "/doklady/vyuctovania/$id", params: { id: r.id } })}
+                title={r.nazov}
+                subtitle={r.zamestnanec_meno ?? "—"}
+                meta={[
+                  datum(r.created_at),
+                  t(nazovTypu(r.typ)).replace("Vyúčtovanie ", "").replace("Abrechnung ", ""),
+                  `${t("Doklady")}: ${r.suhrn.pocet}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                amount={formatujMenu(r.suhrn.spolu, r.mena)}
+                status={
+                  <span className="text-xs">
+                    {r.stav === "uzavrete" ? (
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
+                        {t("uzavreté")}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-secondary px-2 py-0.5">{t("otvorené")}</span>
+                    )}
+                  </span>
+                }
+                actions={
+                  <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+                    {vysledokVyuctovania(t, r.typ, Number(r.suhrn.rozdiel) || 0, r.mena)}
+                  </span>
+                }
+              />
+            )}
+            desktop={
+              <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-border text-left text-xs text-muted-foreground">
+                    <tr>
+                      <th className="p-3">{t("Vyúčtovanie")}</th>
+                      <th className="p-3">{t("Zamestnanec")}</th>
+                      <th className="p-3">{t("Typ")}</th>
+                      <th className="p-3 text-right">{t("Doklady")}</th>
+                      <th className="p-3 text-right">{t("Spolu")}</th>
+                      <th className="p-3">{t("Výsledok")}</th>
+                      <th className="p-3">{t("Stav")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {zobrazene.map((r) => (
+                      <tr
+                        key={r.id}
+                        className="border-b border-border last:border-0 hover:bg-secondary/40"
                       >
-                        {r.nazov}
-                      </Link>
-                      <div className="text-xs text-muted-foreground">{datum(r.created_at)}</div>
-                    </td>
-                    <td className="p-3">{r.zamestnanec_meno ?? "—"}</td>
-                    <td className="p-3 text-xs">{t(nazovTypu(r.typ)).replace("Vyúčtovanie ", "").replace("Abrechnung ", "")}</td>
-                    <td className="p-3 text-right tabular-nums">{r.suhrn.pocet}</td>
-                    <td className="p-3 text-right tabular-nums">
-                      {formatujMenu(r.suhrn.spolu, r.mena)}
-                    </td>
-                    <td className="p-3 text-xs">
-                      {vysledokVyuctovania(t, r.typ, Number(r.suhrn.rozdiel) || 0, r.mena)}
-                    </td>
-                    <td className="p-3 text-xs">
-                      {r.stav === "uzavrete" ? (
-                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
-                          {t("uzavreté")}
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-secondary px-2 py-0.5">{t("otvorené")}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td className="p-3">
+                          <Link
+                            to="/doklady/vyuctovania/$id"
+                            params={{ id: r.id }}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {r.nazov}
+                          </Link>
+                          <div className="text-xs text-muted-foreground">{datum(r.created_at)}</div>
+                        </td>
+                        <td className="p-3">{r.zamestnanec_meno ?? "—"}</td>
+                        <td className="p-3 text-xs">{t(nazovTypu(r.typ)).replace("Vyúčtovanie ", "").replace("Abrechnung ", "")}</td>
+                        <td className="p-3 text-right tabular-nums">{r.suhrn.pocet}</td>
+                        <td className="p-3 text-right tabular-nums">
+                          {formatujMenu(r.suhrn.spolu, r.mena)}
+                        </td>
+                        <td className="p-3 text-xs">
+                          {vysledokVyuctovania(t, r.typ, Number(r.suhrn.rozdiel) || 0, r.mena)}
+                        </td>
+                        <td className="p-3 text-xs">
+                          {r.stav === "uzavrete" ? (
+                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
+                              {t("uzavreté")}
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-secondary px-2 py-0.5">{t("otvorené")}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            }
+          />
         )}
       </PageBody>
     </>

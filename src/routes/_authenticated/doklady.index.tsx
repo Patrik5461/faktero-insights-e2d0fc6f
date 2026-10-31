@@ -62,6 +62,7 @@ import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
@@ -212,6 +213,8 @@ function DokladyPage() {
   // Číselník predkontácií sa načíta raz (len keď je stĺpec zapnutý), stavy a uzávierka vždy.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "doklad", je("predkontacia"));
   const stavPodlaId = useMemo(() => new Map(cis.stavy.map((s) => [s.id, s])), [cis.stavy]);
+  // Bez vlastných stavov firmy (Nastavenia → Stavy dokladov) by stĺpec ostal prázdny — rovnako ako v prijatých.
+  const stlpecStavDokladu = je("stavDokladu") && cis.stavy.length > 0;
   /* Predkontácie pre výber v riadku — líšia sa len podľa spôsobu platby, tak
      nech sa celý číselník nezoraďuje pre každý riadok pri každom prekreslení. */
   const moznostiPredkontacie = useMemo(() => {
@@ -1054,7 +1057,10 @@ function DokladyPage() {
           }}
           onZavriet={() => bocny.setVybrany(null)}
         >
-        <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+        {/* Na telefóne sú riadky samostatné karty (ako vo vystavených faktúrach) — rám zoznamu len pre tabuľku a prázdny stav. */}
+        <div
+          className={`overflow-x-auto rounded-2xl border border-border bg-card ${!loading && rows.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
+        >
           {loading ? (
             <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
           ) : rows.length === 0 ? (
@@ -1096,7 +1102,113 @@ function DokladyPage() {
             </div>
           ) : (
             <>
-            <table className="w-full text-sm">
+            <div className="space-y-2 sm:hidden">
+              {postupne.viditelne.map((r) => (
+                <MobileListCard
+                  key={r.id}
+                  vybrane={selected.has(r.id)}
+                  onVyber={() => toggle(r.id)}
+                  vyberPopis={t("Vybrať riadok")}
+                  onClick={() => {
+                    posledny.zapamataj(r.id);
+                    navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                  }}
+                  title={
+                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                      {r.supplier_name ?? (
+                        <span className="font-normal text-muted-foreground italic">{t("bez názvu")}</span>
+                      )}
+                      <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
+                      {r.locked_at ? (
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label={t("Zamknutý doklad")} />
+                      ) : null}
+                    </span>
+                  }
+                  subtitle={
+                    [r.document_number, r.supplier_ico ? `${t("IČO")} ${r.supplier_ico}` : null]
+                      .filter(Boolean)
+                      .join(" · ") || undefined
+                  }
+                  status={
+                    <span className="flex flex-col items-end gap-1">
+                      <span
+                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[r.status]}`}
+                      >
+                        {t(STATUS_LABEL[r.status] ?? r.status)}
+                      </span>
+                      <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
+                    </span>
+                  }
+                  meta={
+                    <>
+                      {datumNaDoklade(r.issue_date)}
+                      {r.pohoda_predkontacia ? ` · ${r.pohoda_predkontacia}` : ""}
+                      {r.status === "new" && chybajuceUdaje(r).length > 0 ? (
+                        <span className="block truncate text-amber-700 dark:text-amber-400">
+                          {t("Chýba: {polia}", { polia: chybajuceUdaje(r).map((x) => t(x)).join(", ") })}
+                        </span>
+                      ) : null}
+                    </>
+                  }
+                  amount={r.total_amount != null ? formatujMenu(r.total_amount, r.currency) : "—"}
+                  actions={
+                    <>
+                      {r.status === "new" && daSaSpracovat(r) ? (
+                        <button
+                          onClick={() => zmenStav([r.id], "processed")}
+                          disabled={menimStav}
+                          className="mr-auto inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-1 text-xs font-medium text-emerald-700 disabled:opacity-50 dark:text-emerald-400"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
+                        </button>
+                      ) : null}
+                      {r.status === "processed" && (
+                        <button
+                          onClick={() => zmenStav([r.id], "new")}
+                          disabled={menimStav}
+                          aria-label={t("Vrátiť medzi nespracované")}
+                          title={t("Vrátiť medzi nespracované")}
+                          className="mr-auto rounded-md p-1.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </button>
+                      )}
+                      {r.file_path && (
+                        <button
+                          onClick={() => void openFile(r.file_path)}
+                          aria-label={t("Náhľad dokladu")}
+                          title={t("Náhľad dokladu")}
+                          className="rounded-md p-1.5 hover:bg-secondary"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </button>
+                      )}
+                      {daSaPresunutMedziPrijate(r) && (
+                        <button
+                          onClick={() => doPrijatych(r)}
+                          disabled={presuvam === r.id}
+                          aria-label={t("Presunúť medzi prijaté faktúry")}
+                          title={t("Presunúť medzi prijaté faktúry")}
+                          className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
+                        >
+                          <FileInput className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => del(r.id)}
+                        aria-label={t("Zmazať")}
+                        title={t("Zmazať")}
+                        className="rounded-md p-1.5 hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </button>
+                    </>
+                  }
+                />
+              ))}
+              {postupne.zarazka()}
+            </div>
+            <table className="w-full text-sm max-sm:hidden">
               <thead className="bg-secondary/40 text-xs text-muted-foreground">
                 <tr>
                   <th className="w-8 px-3 py-2">
@@ -1112,7 +1224,7 @@ function DokladyPage() {
                   <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>
                   {je("cislo") && <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", t("Číslo"))}</th>}
                   {je("predkontacia") && <th className="px-3 py-2 text-left">{t("Účtovná položka")}</th>}
-                  {je("stavDokladu") && <th className="px-3 py-2 text-left">{t("Stav dokladu")}</th>}
+                  {stlpecStavDokladu && <th className="px-3 py-2 text-left">{t("Stav dokladu")}</th>}
                   {je("kategoria") && <th className="px-3 py-2 text-left">{rad.hlavicka("kategoria", t("Kategória"))}</th>}
                   {je("zaklad") && <th className="px-3 py-2 text-right">{rad.hlavicka("zaklad", t("Základ"))}</th>}
                   {je("dph") && <th className="px-3 py-2 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
@@ -1222,7 +1334,7 @@ function DokladyPage() {
                         })()}
                       </td>
                     )}
-                    {je("stavDokladu") && (
+                    {stlpecStavDokladu && (
                       <td className="px-3 py-2">
                         {cis.stavy.length ? (
                           <VyberStavuDokladu

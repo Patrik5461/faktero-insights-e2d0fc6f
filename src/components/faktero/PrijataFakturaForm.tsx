@@ -594,7 +594,7 @@ export function PrijataFakturaForm({
           className="input"
         />
       </Field>
-      <Field label="IČO">
+      <Field label="IČO" ramcek>
         {/* Úzky stĺpec (Kompaktné rozloženie): tlačidlo radšej pod pole, než aby sa IČO orezalo. */}
         <div className="flex flex-wrap -space-x-px items-start">
           <input
@@ -900,8 +900,8 @@ export function PrijataFakturaForm({
           )}
         </span>
       </Field>
-      <Field label="Odpočítanie dane">
-        <label className="flex items-center gap-2 text-sm">
+      <Field label="Odpočítanie dane" ramcek>
+        <span className="pole-zaskrtnutie flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={form.odpocet}
@@ -909,7 +909,7 @@ export function PrijataFakturaForm({
             className="h-4 w-4 rounded border-input"
           />
           {t("Daň si z tejto faktúry odpočítavam")}
-        </label>
+        </span>
       </Field>
       <Field label="Opravuje faktúru číslo">
         <input
@@ -1070,8 +1070,31 @@ function sumaZPola(v: string): number {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  ramcek,
+  children,
+}: {
+  label: string;
+  /**
+   * Zložené pole (IČO + tlačidlo, začiarkávacie pole): kompaktné rozloženie by
+   * popis nechalo nad poľom, lebo nesedí na žiadny zo vzorov v styles.css.
+   * Triedy `pole-dokladu*` ho dajú do rámčeka ako v `PoleDokladu`; klasické
+   * rozloženie ostáva bez zmeny.
+   */
+  ramcek?: boolean;
+  children: React.ReactNode;
+}) {
   const { t } = useT();
+  if (ramcek)
+    return (
+      <label className="pole-dokladu block">
+        <div className="pole-dokladu-hlavicka mb-1 text-xs font-medium text-muted-foreground">
+          <span className="pole-dokladu-popis">{t(label)}</span>
+        </div>
+        {children}
+      </label>
+    );
   return (
     <label className="block">
       <div className="mb-1 text-xs font-medium text-muted-foreground">{t(label)}</div>
