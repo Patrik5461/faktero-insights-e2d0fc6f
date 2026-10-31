@@ -118,6 +118,7 @@ import { datumNaDoklade, uvodOpravnehoDokladu } from "@/lib/faktero/faktura-jazy
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 import { sOpakovanimPriKoliziiCisla } from "@/lib/faktero/kolizia-cisla";
 import { textRezimuDe } from "@/lib/faktero/rezim-texty-de";
+import { textRezimuCz } from "@/lib/faktero/rezim-texty-cz";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová faktúra — Faktero") }] }),
   /**
@@ -229,6 +230,8 @@ function NewInvoice() {
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
   const rezim = useRezimDph();
   const krajina = rezim.krajina;
+  /* Česká firma: upozornenie na režim cituje zákon 235/2004 Sb., nie slovenský. */
+  const czFirma = krajina === "CZ";
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [stockByProduct, setStockByProduct] = useState<Record<string, StockMeta>>({});
@@ -683,9 +686,11 @@ function NewInvoice() {
   /*
     Texty daňového režimu odkazujú na slovenský zákon (§ 69, § 47, riadky
     priznania). Nemecká firma sa riadi UStG a podáva UStVA/ZM — dostane
-    vlastné znenie (`rezim-texty-de.ts`).
+    vlastné znenie (`rezim-texty-de.ts`), česká podľa zákona 235/2004 Sb.
+    (`rezim-texty-cz.ts`).
   */
-  const textRezimu = (sk: string) => (krajina === "DE" ? textRezimuDe(sk) : sk);
+  const textRezimu = (sk: string) =>
+    krajina === "DE" ? textRezimuDe(sk) : krajina === "CZ" ? textRezimuCz(sk) : sk;
   const rezimRucneRef = useRef(false);
   const odberatelFormulara = customers.find((c) => c.id === form.customer_id) as any;
   const signalTovaru = druhPlneniaZPoloziek(items).plnenie === "tovar";
@@ -1946,6 +1951,7 @@ function NewInvoice() {
             <UpozornenieRezimu
               navrh={navrhRezimu}
               form={form}
+              cz={czFirma}
               onNastav={() => {
                 rezimRucne();
                 setForm((f) => ({ ...f, ...poliaZNavrhu(navrhRezimu), oss: false, oss_country: "" }));
@@ -3294,10 +3300,13 @@ function UpozornenieRezimu({
   navrh,
   form,
   onNastav,
+  cz = false,
 }: {
   navrh: NavrhRezimu;
   form: { reverse_charge: boolean; reverse_charge_type: string; eu_plnenie: string; oss: boolean };
   onNastav: () => void;
+  /** Česká firma — paragrafy zákona 235/2004 Sb. namiesto slovenských. */
+  cz?: boolean;
 }) {
   const { t } = useT();
   if (navrh.druh === "tuzemsko") return null;
@@ -3321,10 +3330,15 @@ function UpozornenieRezimu({
       >
         <span className="min-w-0 flex-1">
           {navrh.druh === "eu_b2b"
-            ? t(
-                "Odberateľ má IČ DPH iného štátu EÚ ({ic}), faktúra však nie je nastavená ako dodanie do EÚ. Firme z EÚ sa DPH zvyčajne neúčtuje — tovar je oslobodený podľa § 43, pri službe daň prizná odberateľ.",
-                { ic: navrh.icDph },
-              )
+            ? cz
+              ? t(
+                  "Odberateľ má IČ DPH iného štátu EÚ ({ic}), faktúra však nie je nastavená ako dodanie do EÚ. Firme z EÚ sa DPH zvyčajne neúčtuje — tovar je oslobodený podľa § 64, pri službe daň prizná odberateľ.",
+                  { ic: navrh.icDph },
+                )
+              : t(
+                  "Odberateľ má IČ DPH iného štátu EÚ ({ic}), faktúra však nie je nastavená ako dodanie do EÚ. Firme z EÚ sa DPH zvyčajne neúčtuje — tovar je oslobodený podľa § 43, pri službe daň prizná odberateľ.",
+                  { ic: navrh.icDph },
+                )
             : t(
                 "Odberateľ je mimo EÚ ({krajina}), faktúra však nie je nastavená ako vývoz ani služba mimo EÚ. DPH sa mu zvyčajne neúčtuje.",
                 { krajina: navrh.krajina },
@@ -3346,27 +3360,47 @@ function UpozornenieRezimu({
       <p>
         {navrh.druh === "eu_b2b"
           ? sluzba
-            ? t(
-                "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: služba s miestom dodania u odberateľa (§ 15 ods. 1), daň prizná odberateľ (prenesenie daňovej povinnosti). Veta o tom sa vytlačí na faktúru.",
-                { ic: navrh.icDph },
-              )
+            ? cz
+              ? t(
+                  "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: služba s miestom plnenia u odberateľa (§ 9 ods. 1), daň prizná odberateľ (prenesenie daňovej povinnosti). Veta o tom sa vytlačí na faktúru.",
+                  { ic: navrh.icDph },
+                )
+              : t(
+                  "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: služba s miestom dodania u odberateľa (§ 15 ods. 1), daň prizná odberateľ (prenesenie daňovej povinnosti). Veta o tom sa vytlačí na faktúru.",
+                  { ic: navrh.icDph },
+                )
             : form.eu_plnenie === "trojstranny"
               ? t("Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH ako trojstranný obchod.", {
                   ic: navrh.icDph,
                 })
-              : t(
-                  "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: dodanie tovaru do iného členského štátu oslobodené podľa § 43. Veta o tom sa vytlačí na faktúru.",
-                  { ic: navrh.icDph },
-                )
+              : cz
+                ? t(
+                    "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: dodanie tovaru do iného členského štátu oslobodené podľa § 64. Veta o tom sa vytlačí na faktúru.",
+                    { ic: navrh.icDph },
+                  )
+                : t(
+                    "Odberateľ má IČ DPH iného štátu EÚ ({ic}) — faktúra je bez DPH: dodanie tovaru do iného členského štátu oslobodené podľa § 43. Veta o tom sa vytlačí na faktúru.",
+                    { ic: navrh.icDph },
+                  )
           : sluzba
-            ? t(
-                "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: služba s miestom dodania mimo EÚ (§ 15 ods. 1). Veta o tom sa vytlačí na faktúru.",
-                { krajina: navrh.krajina },
-              )
-            : t(
-                "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: vývoz tovaru oslobodený podľa § 47. Doklad o vývoze (colné vyhlásenie) si odložte.",
-                { krajina: navrh.krajina },
-              )}
+            ? cz
+              ? t(
+                  "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: služba s miestom plnenia mimo EÚ (§ 9 ods. 1). Veta o tom sa vytlačí na faktúru.",
+                  { krajina: navrh.krajina },
+                )
+              : t(
+                  "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: služba s miestom dodania mimo EÚ (§ 15 ods. 1). Veta o tom sa vytlačí na faktúru.",
+                  { krajina: navrh.krajina },
+                )
+            : cz
+              ? t(
+                  "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: vývoz tovaru oslobodený podľa § 66. Doklad o vývoze (colné vyhlásenie) si odložte.",
+                  { krajina: navrh.krajina },
+                )
+              : t(
+                  "Odberateľ je mimo EÚ ({krajina}) — faktúra je bez DPH: vývoz tovaru oslobodený podľa § 47. Doklad o vývoze (colné vyhlásenie) si odložte.",
+                  { krajina: navrh.krajina },
+                )}
       </p>
       {!navrh.isteZPoloziek && sluzba && (
         <p className="mt-1 text-xs text-muted-foreground">

@@ -19,6 +19,7 @@ import {
   popisky,
   datumNaDoklade,
   vetyPreneseniaCz,
+  vetaPreneseniaCz,
   vetyDe,
   vetaPreneseniaDe,
   predvolenyJazykFirmy,
@@ -508,15 +509,7 @@ async function vykresliFakturu(
     : jeDe
       ? (vetaPreneseniaDe(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk) ?? vetyDe(jazyk).tuzemsko)
     : vetyCz
-      ? invoice.reverse_charge_type === "eu_b2b"
-        ? invoice.eu_plnenie === "sluzba"
-          ? vetyCz.euSluzba
-          : vetyCz.euTovar
-        : invoice.reverse_charge_type === "export"
-          ? invoice.eu_plnenie === "sluzba"
-            ? vetyCz.euSluzba
-            : vetyCz.vyvoz
-          : vetyCz.tuzemsko
+      ? vetaPreneseniaCz(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk)
       : invoice.reverse_charge_type === "eu_b2b"
       ? cudziVystavovatel
         ? invoice.eu_plnenie === "sluzba"

@@ -45,6 +45,7 @@ import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { domacaMena } from "@/lib/faktero/kurzy";
 import {
   createExpenseFn,
   updateExpenseFn,
@@ -317,6 +318,22 @@ function NovyDokladPage() {
     })();
     // eslint-disable-next-line
   }, [search.id]);
+
+  /*
+    Nový doklad dostane domácu menu a základnú sadzbu krajiny firmy — česká
+    firma predtým zakladala bloček v eurách s 23 %, takže by sa do výkazu
+    dostal ako cudzia mena prepočítaná kurzom a so slovenskou sadzbou.
+  */
+  useEffect(() => {
+    if (search.id) return;
+    const mena = domacaMena(krajina);
+    const sadzba = String(sadzbyKrajiny(krajina, dnesBratislava())[0] ?? EMPTY.vat_rate);
+    setForm((f) =>
+      f.currency === EMPTY.currency && f.vat_rate === EMPTY.vat_rate
+        ? { ...f, currency: mena, vat_rate: sadzba }
+        : f,
+    );
+  }, [krajina, search.id]);
 
   function updateForm<K extends keyof Form>(k: K, v: Form[K]) {
     setForm((f) => ({ ...f, [k]: v }));

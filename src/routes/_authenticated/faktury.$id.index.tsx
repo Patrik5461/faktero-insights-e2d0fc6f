@@ -538,9 +538,12 @@ function InvoiceDetail() {
             .maybeSingle(),
         ]);
         setSettledIn(consumer ?? null);
+        /*
+          Doklad k prijatej platbe sa tu predtým hneď znova vynuloval — záloha
+          ho nikdy neukázala a ponúkala „Vystaviť daňový doklad“ aj po vystavení.
+        */
         setDokladKPlatbe(ddp ?? null);
         setAdvanceProforma(null);
-        setDokladKPlatbe(null);
       } else {
         const { data: odpocty } = await supabase
           .from("invoice_advances")
@@ -565,6 +568,7 @@ function InvoiceDetail() {
         }
         setAdvanceProforma(null);
         setSettledIn(null);
+        setDokladKPlatbe(null);
       }
       const { data: rems } = await supabase
         .from("invoice_reminders")

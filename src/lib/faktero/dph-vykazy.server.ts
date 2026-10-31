@@ -27,6 +27,7 @@ import {
   kvVystavenej,
 } from "./dph-vykazy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
+import { riadkyZalohyVDomacej } from "./dph-vykazy";
 import { KV_PREDVOLENE, kvSPredvolenym } from "./kv-clenenie";
 import { clenenieDphPrijateho, odberatelPodnikatel } from "./kv-urcenie";
 import { jeNezahrnovat } from "./uctovanie-agenda";
@@ -277,7 +278,10 @@ export async function nacitajVstup(
     if (f.type !== "advance_payment" || !f.advance_invoice_id) continue;
     zdaneneZalohy.set(
       f.advance_invoice_id,
-      riadkyZPoloziek(riadkySoZlavou(f.invoice_items ?? [], f.discount_total)),
+      riadkyZalohyVDomacej(
+        riadkyZPoloziek(riadkySoZlavou(f.invoice_items ?? [], f.discount_total)),
+        f.currency && f.currency !== domaca ? domacejZaJednotku(f.exchange_rate, (firmaKody as any)?.country) : 1,
+      ),
     );
   }
 

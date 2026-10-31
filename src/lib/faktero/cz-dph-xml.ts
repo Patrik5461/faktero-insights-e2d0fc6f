@@ -64,6 +64,14 @@ function atributy(o: Record<string, unknown>): string {
     .join("");
 }
 
+/**
+ * Deň podania podľa pražského času — `toISOString()` je UTC, takže večer po
+ * 23:00 (v lete po 22:00) by podanie nieslo včerajší dátum.
+ */
+export function datumPodania(d: Date): string {
+  return datumCz(new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Prague" }).format(d));
+}
+
 const hal = (n: number) => (Math.round((Number(n) + Number.EPSILON) * 100) / 100).toFixed(2);
 const sKorun = (n: number) => String(Math.round(Number(n)));
 
@@ -191,7 +199,7 @@ export function dp3NaXml(
     dapdph_forma: forma,
     typ_platce: h.typPlatce,
     ...obdobieAtr(obdobie),
-    d_poddp: datumCz(dnes.toISOString()),
+    d_poddp: datumPodania(dnes),
     c_okec: h.okec,
     trans: dan || odp ? "A" : "N",
   })}/>`;
@@ -311,7 +319,7 @@ export function kh1NaXml(
       khdph_forma: forma,
       rok: obdobie.rok,
       mesic: obdobie.mesiac,
-      d_poddp: datumCz((opts.dnes ?? new Date()).toISOString()),
+      d_poddp: datumPodania(opts.dnes ?? new Date()),
     })}/>`,
     vetaP(h),
     ...riadky,
@@ -354,7 +362,7 @@ export function shvNaXml(
       k_uladis: "DPH",
       shvies_forma: opts.forma ?? "R",
       ...obdobieAtr(obdobie),
-      d_poddp: datumCz((opts.dnes ?? new Date()).toISOString()),
+      d_poddp: datumPodania(opts.dnes ?? new Date()),
     })}/>`,
     vetaP(h, false),
     ...riadky,

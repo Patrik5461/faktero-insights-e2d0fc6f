@@ -511,13 +511,29 @@ export function localeDokladu(jazyk: unknown): string {
  * služba s miestom plnenia v inom štáte § 9 odst. 1 a vývoz § 66. Pri
  * prenesení musí na doklade byť „daň odvede zákazník“ (§ 29 odst. 2).
  */
-export type VetyPreneseniaCz = { euTovar: string; euSluzba: string; vyvoz: string; tuzemsko: string };
+export type VetyPreneseniaCz = {
+  euTovar: string;
+  euSluzba: string;
+  /**
+   * Služba s miestom plnenia mimo EÚ (§ 9 odst. 1) — nie je predmetom českej
+   * dane; veta o službe „v jiném členském státě“ by tu klamala.
+   */
+  mimoEuSluzba: string;
+  /** Prostredná osoba v trojstrannom obchode (§ 17 odst. 6) — daň priznáva posledný odberateľ. */
+  trojstranny: string;
+  vyvoz: string;
+  tuzemsko: string;
+};
 
 const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
   cs: {
     euTovar: "Dodání zboží do jiného členského státu osvobozené od daně podle § 64 zákona č. 235/2004 Sb., o DPH.",
     euSluzba:
       "Poskytnutí služby s místem plnění v jiném členském státě podle § 9 odst. 1 zákona č. 235/2004 Sb., o DPH. Daň odvede zákazník.",
+    mimoEuSluzba:
+      "Poskytnutí služby s místem plnění mimo Evropskou unii podle § 9 odst. 1 zákona č. 235/2004 Sb., o DPH — plnění není předmětem daně v tuzemsku.",
+    trojstranny:
+      "Zjednodušený postup při dodání zboží formou třístranného obchodu podle § 17 zákona č. 235/2004 Sb., o DPH. Daň odvede zákazník (osoba povinná přiznat daň).",
     vyvoz: "Vývoz zboží osvobozený od daně podle § 66 zákona č. 235/2004 Sb., o DPH.",
     tuzemsko: "Přenesení daňové povinnosti podle § 92a zákona č. 235/2004 Sb., o DPH. Daň odvede zákazník.",
   },
@@ -525,6 +541,10 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
     euTovar: "Dodanie tovaru do iného členského štátu oslobodené od dane podľa § 64 českého zákona č. 235/2004 Sb. o DPH.",
     euSluzba:
       "Služba s miestom plnenia v inom členskom štáte podľa § 9 ods. 1 českého zákona č. 235/2004 Sb. o DPH. Daň odvedie zákazník.",
+    mimoEuSluzba:
+      "Služba s miestom plnenia mimo Európskej únie podľa § 9 ods. 1 českého zákona č. 235/2004 Sb. o DPH — plnenie nie je predmetom dane v Českej republike.",
+    trojstranny:
+      "Zjednodušený postup pri trojstrannom obchode podľa § 17 českého zákona č. 235/2004 Sb. o DPH. Daň odvedie zákazník.",
     vyvoz: "Vývoz tovaru oslobodený od dane podľa § 66 českého zákona č. 235/2004 Sb. o DPH.",
     tuzemsko: "Prenesenie daňovej povinnosti podľa § 92a českého zákona č. 235/2004 Sb. o DPH. Daň odvedie zákazník.",
   },
@@ -532,6 +552,10 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
     euTovar: "Exempt intra-Community supply of goods under Section 64 of Czech VAT Act No. 235/2004 Coll.",
     euSluzba:
       "Supply of services with place of supply in another Member State under Section 9(1) of Czech VAT Act No. 235/2004 Coll. Reverse charge — VAT to be paid by the customer.",
+    mimoEuSluzba:
+      "Supply of services with place of supply outside the European Union under Section 9(1) of Czech VAT Act No. 235/2004 Coll. — not subject to Czech VAT.",
+    trojstranny:
+      "Triangular transaction — simplified procedure under Section 17 of Czech VAT Act No. 235/2004 Coll. VAT to be paid by the customer.",
     vyvoz: "Export of goods exempt from VAT under Section 66 of Czech VAT Act No. 235/2004 Coll.",
     tuzemsko: "Reverse charge under Section 92a of Czech VAT Act No. 235/2004 Coll. VAT to be paid by the customer.",
   },
@@ -539,6 +563,10 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
     euTovar: "Steuerfreie innergemeinschaftliche Lieferung nach § 64 des tschechischen Gesetzes Nr. 235/2004 Slg. über die MwSt.",
     euSluzba:
       "Leistung mit Leistungsort in einem anderen Mitgliedstaat nach § 9 Abs. 1 des tschechischen Gesetzes Nr. 235/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
+    mimoEuSluzba:
+      "Leistung mit Leistungsort außerhalb der Europäischen Union nach § 9 Abs. 1 des tschechischen Gesetzes Nr. 235/2004 Slg. — in Tschechien nicht steuerbar.",
+    trojstranny:
+      "Innergemeinschaftliches Dreiecksgeschäft – vereinfachtes Verfahren nach § 17 des tschechischen Gesetzes Nr. 235/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
     vyvoz: "Steuerfreie Ausfuhrlieferung nach § 66 des tschechischen Gesetzes Nr. 235/2004 Slg. über die MwSt.",
     tuzemsko:
       "Übergang der Steuerschuld nach § 92a des tschechischen Gesetzes Nr. 235/2004 Slg. Die Steuer schuldet der Leistungsempfänger.",
@@ -547,6 +575,10 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
     euTovar: "Adómentes Közösségen belüli termékértékesítés a 235/2004. sz. cseh áfatörvény 64. §-a alapján.",
     euSluzba:
       "Szolgáltatás, amelynek teljesítési helye másik tagállam, a 235/2004. sz. cseh áfatörvény 9. § (1) bekezdése alapján. Az adót a vevő fizeti.",
+    mimoEuSluzba:
+      "Szolgáltatás, amelynek teljesítési helye az Európai Unión kívül van, a 235/2004. sz. cseh áfatörvény 9. § (1) bekezdése alapján — Csehországban nem tárgya az adónak.",
+    trojstranny:
+      "Háromszögügylet — egyszerűsített eljárás a 235/2004. sz. cseh áfatörvény 17. §-a alapján. Az adót a vevő fizeti.",
     vyvoz: "Adómentes termékexport a 235/2004. sz. cseh áfatörvény 66. §-a alapján.",
     tuzemsko: "Fordított adózás a 235/2004. sz. cseh áfatörvény 92a. §-a alapján. Az adót a vevő fizeti.",
   },
@@ -554,6 +586,24 @@ const VETY_CZ: Record<JazykDokladu, VetyPreneseniaCz> = {
 
 export function vetyPreneseniaCz(jazyk: unknown): VetyPreneseniaCz {
   return VETY_CZ[jazykDokladu(jazyk)];
+}
+
+/**
+ * Veta k preneseniu / oslobodeniu na doklade českej firmy podľa druhu
+ * prenesenia a plnenia faktúry. Služba odberateľovi mimo EÚ nie je „služba
+ * v jiném členském státě“ a trojstranný obchod potrebuje vetu podľa § 17
+ * (inak by doklad prostrednej osoby nemal náležitosť z § 17 odst. 6).
+ */
+export function vetaPreneseniaCz(
+  typ: string | null | undefined,
+  plnenie: string | null | undefined,
+  jazyk: unknown,
+): string {
+  const v = vetyPreneseniaCz(jazyk);
+  if (typ === "eu_b2b")
+    return plnenie === "sluzba" ? v.euSluzba : plnenie === "trojstranny" ? v.trojstranny : v.euTovar;
+  if (typ === "export") return plnenie === "sluzba" ? v.mimoEuSluzba : v.vyvoz;
+  return v.tuzemsko;
 }
 
 /**

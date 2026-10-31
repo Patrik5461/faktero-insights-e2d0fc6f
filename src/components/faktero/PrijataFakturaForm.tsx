@@ -18,6 +18,7 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
 import { useT } from "@/lib/i18n/useT";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
@@ -93,6 +94,18 @@ export function PrijataFakturaForm({
     /** Prijatá záloha, ktorú táto faktúra zúčtováva. */
     advance_invoice_id: "",
   });
+  /*
+    Nová faktúra dostane domácu menu firmy — česká firma predtým zakladala
+    prijatú faktúru v eurách a koruny by výkaz prepočítal kurzom ČNB ako
+    cudziu menu (1 000 Kč ako 1 000 € ≈ 24 000 Kč).
+  */
+  const menaFirmy = useMenaFirmy();
+  useEffect(() => {
+    if (upravujeme) return;
+    setForm((f) =>
+      f.currency === "EUR" && menaFirmy.kod !== "EUR" ? { ...f, currency: menaFirmy.kod } : f,
+    );
+  }, [menaFirmy.kod, upravujeme]);
   /** Nezúčtované prijaté zálohy toho istého dodávateľa. */
   const [zalohy, setZalohy] = useState<
     { id: string; invoice_number: string; amount_total: number; currency: string }[]

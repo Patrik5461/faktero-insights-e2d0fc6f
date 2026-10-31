@@ -285,3 +285,31 @@ describe("Money S3 — nebezpečný text z dokladu", () => {
     expect(chybaSchemy(xml)).toBeNull();
   });
 });
+
+describe("Money S3 — jazyková verzia podľa krajiny firmy", () => {
+  it("česká firma CZ, slovenská SK", async () => {
+    const { jazykVerzieMoney } = await import("./export-money-uctovanie");
+    expect(jazykVerzieMoney("CZ")).toBe("CZ");
+    expect(jazykVerzieMoney("Česká republika")).toBe("CZ");
+    expect(jazykVerzieMoney("SK")).toBe("SK");
+    expect(jazykVerzieMoney(null)).toBe("SK");
+    const { buildMoneyS3Xml } = await import("./export.server");
+    const fa = {
+      id: "f1",
+      invoice_number: "FV1",
+      type: "regular",
+      issue_date: "2026-10-10",
+      delivery_date: "2026-10-10",
+      due_date: "2026-10-24",
+      currency: "CZK",
+      total: 121,
+      customer_name: "Odběratel",
+    };
+    const pol = { name: "Služba", quantity: 1, unit_price: 100, subtotal: 100, vat_rate: 21, vat_amount: 21, total: 121 };
+    const cz = buildMoneyS3Xml({
+      company: { ico: "25097563", country: "CZ", default_currency: "CZK" } as any,
+      invoices: [{ invoice: fa, items: [pol] }] as any,
+    });
+    expect(cz.xml).toContain('JazykVerze="CZ"');
+  });
+});

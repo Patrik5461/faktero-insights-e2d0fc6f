@@ -84,7 +84,7 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
   {
     format: "flexi_xml",
     label: "ABRA Flexi XML",
-    note: "Import v ABRA Flexi: Nástroje → Import → XML. Zálohové faktúry a doklady v cudzej mene vynechá.",
+    note: "Import v ABRA Flexi: Nástroje → Import → XML. Faktúru v cudzej mene pošle s kurzom; zálohové faktúry a daňové doklady k prijatej platbe vynechá.",
   },
   {
     format: "mrp_xml",

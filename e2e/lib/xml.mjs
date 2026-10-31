@@ -37,6 +37,13 @@ export const SCHEMY = {
   kvDph: () => path.join(schemyRepa(), "kv_dph_2025.xsd"),
   dph: () => path.join(schemyRepa(), "dph2025.xsd"),
   camt053: () => path.join(schemyRepa(), "camt.053.001.02.xsd"),
+  // České výkazy (EPO, MOJE daně) a české účtovné formáty.
+  czDp3: () => path.join(schemyRepa(), "dphdp3_epo2.xsd"),
+  czKh1: () => path.join(schemyRepa(), "dphkh1_epo2.xsd"),
+  czShv: () => path.join(schemyRepa(), "dphshv_epo2.xsd"),
+  isdoc: () => path.join(schemyRepa(), "isdoc-invoice-6.0.2.xsd"),
+  moneyS3: () =>
+    path.join(schemyRepa(), "..", "__fixtures__", "money-s3-uct-schemas", "_Document.xsd"),
 };
 
 const validatory = new Map();
