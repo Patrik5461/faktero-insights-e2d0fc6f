@@ -67,6 +67,33 @@ const DRUHY_LOGU: Record<string, string> = {
   vozidla: "Vozidlá",
 };
 
+/**
+ * Správa logu v jazyku používateľa. Server ukladá text po slovensky (čítajú ho aj
+ * admin a podpora); známe správy sa poskladajú znova z čísel v `detail`.
+ * Chyby poskytovateľov ostávajú tak, ako prišli.
+ */
+function textLogu(
+  l: { druh: string; stav: string; sprava: string; detail?: any },
+  vieTankovania: boolean,
+  t: (k: string, p?: Record<string, string | number>) => string,
+): string {
+  const d = l.detail && typeof l.detail === "object" ? l.detail : {};
+  if ((l.druh === "rucne" || l.druh === "noc") && typeof d.importovane === "number") {
+    if (l.stav === "ciastocne")
+      return t("Stiahnutá časť: {n} nových jázd. Zvyšok dokončí ďalší beh.", {
+        n: d.importovane,
+      });
+    if (l.stav === "ok")
+      return vieTankovania && typeof d.tankovania === "number"
+        ? t("Hotovo: {n} nových jázd, {m} tankovaní.", { n: d.importovane, m: d.tankovania })
+        : t("Hotovo: {n} nových jázd.", { n: d.importovane });
+  }
+  if (l.druh === "vozidla" && l.stav === "ok" && typeof d.vozidla === "number")
+    return t("Vozidlá: {n}, nové: {nove}.", { n: d.vozidla, nove: d.nove ?? 0 });
+  if (l.druh === "test" && l.stav === "ok") return t("Pripojenie funguje.");
+  return l.sprava;
+}
+
 function GpsIntegraciaPage() {
   const { t } = useT();
   const { poskytovatel } = Route.useParams();
@@ -323,7 +350,9 @@ function GpsIntegraciaPage() {
                           {t(STAVY[l.stav] ?? l.stav)}
                         </span>
                       </div>
-                      <div className="mt-1 break-words text-muted-foreground">{l.sprava}</div>
+                      <div className="mt-1 break-words text-muted-foreground">
+                        {textLogu(l, a.vieTankovania, t)}
+                      </div>
                       <div className="mt-1 text-muted-foreground">{fmt(l.created_at)}</div>
                     </li>
                   ))}

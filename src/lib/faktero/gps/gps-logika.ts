@@ -4,6 +4,7 @@
  * aby sa dali testovať.
  */
 import type { GpsJazda, GpsPole, GpsTankovanie } from "./typy";
+import { dnesBratislava } from "../datum-vystavenia";
 
 export const DEN_MS = 24 * 3600 * 1000;
 /** Pri pripojení sa sťahuje posledných 30 dní. */
@@ -137,7 +138,8 @@ export function jazdaNaTrip(
     riadok: {
       company_id: ctx.companyId,
       vehicle_id: ctx.vehicleId,
-      trip_date: z.toISOString().slice(0, 10),
+      // Deň podľa Bratislavy — jazda o 00:30 by v UTC padla na predošlý deň (a mesiac).
+      trip_date: dnesBratislava(z),
       driver_name: (j.vodic ?? "").trim() || null,
       start_location: (j.odAdresa ?? "").trim() || null,
       end_location: (j.doAdresa ?? "").trim() || null,
@@ -146,10 +148,7 @@ export function jazdaNaTrip(
       start_odometer: start,
       end_odometer: end,
       distance_km: Math.round(km * 100) / 100,
-      fuel_consumption:
-        j.spotrebaL != null && Number.isFinite(j.spotrebaL) && j.spotrebaL >= 0
-          ? j.spotrebaL
-          : null,
+      fuel_consumption: uveritelnaSpotreba(j.spotrebaL, km),
       start_time: z.toISOString(),
       end_time: k.toISOString(),
       duration_seconds: trvanie,
@@ -171,6 +170,20 @@ export function jazdaNaTrip(
       },
     },
   };
+}
+
+/**
+ * Spotreba jazdy v litroch, len ak dáva zmysel. GPS Dozor bez merania z CAN
+ * posiela vo `FuelConsumed` číslo rovné kilometrom (100 l/100 km, DEMO účet)
+ * a v dokumentácii 0,12 l na 118 km — také číslo by v knihe jázd nafúklo alebo
+ * vynulovalo náklady na palivo. Vtedy radšej nič.
+ */
+export function uveritelnaSpotreba(litre: number | null | undefined, km: number): number | null {
+  if (litre == null || !Number.isFinite(litre) || litre < 0) return null;
+  const naSto = km > 0 ? (litre / km) * 100 : Infinity;
+  // Krátka jazda (štart, státie) môže mať vysokú spotrebu na 100 km.
+  if (km >= 5 ? naSto < 1 || naSto > 80 : naSto > 150) return null;
+  return Math.round(litre * 100) / 100;
 }
 
 export type TankovanieRiadok = {
@@ -205,7 +218,7 @@ export function tankovanieNaRiadok(
   return {
     company_id: ctx.companyId,
     vehicle_id: ctx.vehicleId,
-    fuel_date: cas.toISOString().slice(0, 10),
+    fuel_date: dnesBratislava(cas),
     liters: Math.round(litre * 100) / 100,
     price_per_liter: suma > 0 ? Math.round((suma / litre) * 1000) / 1000 : 0,
     total_amount: Math.round(suma * 100) / 100,
@@ -249,10 +262,19 @@ export function zlucPrihlasenie(
   nove: Record<string, string>,
   ulozene: Record<string, string>,
 ): Record<string, string> {
+  // Zmenená adresa servera (Traccar, Wialon) = uložené heslo/token sa nepoužije.
+  // Inak by sa dalo uložené tajomstvo poslať na ľubovoľný server len prepísaním adresy.
+  const inaAdresa = polia.some(
+    (p) =>
+      p.typ === "url" &&
+      (nove[p.kluc] ?? "").trim() !== "" &&
+      (nove[p.kluc] ?? "").trim() !== (ulozene[p.kluc] ?? "").trim(),
+  );
   const out: Record<string, string> = {};
   for (const p of polia) {
     const v = (nove[p.kluc] ?? "").trim();
-    out[p.kluc] = v || ulozene[p.kluc] || "";
+    const zUlozenych = p.typ === "heslo" && inaAdresa ? "" : ulozene[p.kluc] || "";
+    out[p.kluc] = v || zUlozenych;
   }
   return out;
 }

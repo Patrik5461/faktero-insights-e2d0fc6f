@@ -67,11 +67,35 @@ export async function nastavenieSmtp(companyId: string): Promise<NastavenieSmtp 
  * by z nastavenia spravila nástroj na skúšanie služieb na našom serveri.
  */
 export function jeVnutornaAdresa(ip: string): boolean {
-  const v = ip.toLowerCase().replace(/^::ffff:/, "");
-  if (v === "::1" || v === "::" || v.startsWith("fe80:") || /^f[cd][0-9a-f]{2}:/.test(v))
-    return true;
+  const v = ip
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/%.*$/, "");
+  if (!v.includes(":")) return jeVnutornaIpv4(v);
+  const h = rozbalIpv6(v);
+  // Nečitateľná adresa sa radšej odmietne.
+  if (!h) return true;
+  const ipv4 = (i: number) => `${h[i] >> 8}.${h[i] & 255}.${h[i + 1] >> 8}.${h[i + 1] & 255}`;
+  const nuly = (od: number, po: number) => h.slice(od, po).every((x) => x === 0);
+  // ::, ::1 a IPv4 vnorené do IPv6 — `::ffff:7f00:1` je 127.0.0.1 (Node ho tak aj pripojí).
+  if (nuly(0, 7) && h[7] <= 1) return true;
+  if (nuly(0, 5) && h[5] === 0xffff) return jeVnutornaIpv4(ipv4(6)); // ::ffff:a.b.c.d
+  if (nuly(0, 4) && h[4] === 0xffff && h[5] === 0) return jeVnutornaIpv4(ipv4(6)); // ::ffff:0:a.b.c.d
+  if (nuly(0, 6)) return jeVnutornaIpv4(ipv4(6)); // ::a.b.c.d (zastarané)
+  if (h[0] === 0x64 && h[1] === 0xff9b && nuly(2, 6)) return jeVnutornaIpv4(ipv4(6)); // NAT64
+  if (h[0] === 0x2002) return jeVnutornaIpv4(ipv4(1)); // 6to4
+  return (
+    (h[0] & 0xfe00) === 0xfc00 || // fc00::/7 lokálne
+    (h[0] & 0xffc0) === 0xfe80 || // fe80::/10 linkové
+    (h[0] & 0xffc0) === 0xfec0 || // fec0::/10 site-local
+    (h[0] & 0xff00) === 0xff00 // multicast
+  );
+}
+
+function jeVnutornaIpv4(v: string): boolean {
   const c = v.split(".").map(Number);
-  if (c.length !== 4 || c.some((x) => !Number.isInteger(x))) return false;
+  if (c.length !== 4 || c.some((x) => !Number.isInteger(x) || x < 0 || x > 255)) return false;
   const [a, b] = c;
   return (
     a === 0 ||
@@ -81,8 +105,30 @@ export function jeVnutornaAdresa(ip: string): boolean {
     (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19)) ||
     a >= 224
   );
+}
+
+/** IPv6 → 8 čísel po 16 bitoch (aj so zápisom `::` a IPv4 na konci), inak null. */
+function rozbalIpv6(v: string): number[] | null {
+  let s = v;
+  const m = s.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/);
+  if (m) {
+    const c = m[2].split(".").map(Number);
+    if (c.some((x) => x > 255)) return null;
+    s = `${m[1]}${((c[0] << 8) | c[1]).toString(16)}:${((c[2] << 8) | c[3]).toString(16)}`;
+  }
+  const casti = s.split("::");
+  if (casti.length > 2) return null;
+  const hex = (x: string) => (x ? x.split(":") : []);
+  const pred = hex(casti[0]);
+  const za = casti.length === 2 ? hex(casti[1]) : [];
+  const chyba = 8 - pred.length - za.length;
+  if (casti.length === 2 ? chyba < 1 : chyba !== 0) return null;
+  const vsetko = [...pred, ...Array(casti.length === 2 ? chyba : 0).fill("0"), ...za];
+  if (vsetko.some((x) => !/^[0-9a-f]{1,4}$/.test(x))) return null;
+  return vsetko.map((x) => parseInt(x, 16));
 }
 
 export async function overVerejnyServer(host: string): Promise<string> {
