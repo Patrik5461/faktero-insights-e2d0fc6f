@@ -29,6 +29,8 @@ async function getAdmin(context: { userId: string }) {
     .maybeSingle();
   if (error) throw new Error("Overenie administrátora zlyhalo.");
   if (!data) throw new Error("Prístup zamietnutý: nie ste administrátor platformy.");
+  // Od ADMIN_2FA_POVINNE_OD len s reláciou aal2 (admin-dvojfaktor.ts).
+  (await import("@/lib/faktero/admin-dvojfaktor.server")).vyzadujAal2Admina();
   return { supabaseAdmin, role: data.role as "admin" | "superadmin" };
 }
 

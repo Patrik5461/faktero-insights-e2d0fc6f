@@ -4,6 +4,7 @@ import "./lib/sucet-presne";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { metodaApiNaJson } from "./lib/faktero/api-metoda";
+import { hlavickyCsp } from "./lib/systemove-chyby/csp";
 import { jeOdpojenieKlienta } from "./lib/odpojenie-klienta";
 import {
   pouzivatelZHlaviciek,
@@ -84,13 +85,18 @@ function sPlatnostou(request: Request, response: Response): Response {
   if (!jeKusok && !jeHtml) return response;
 
   const hodnota = jeKusok ? "public, max-age=31536000, immutable" : "no-cache";
+  // CSP zatiaľ len hlási porušenia (Admin → Chyby), nič neblokuje — viď lib/systemove-chyby/csp.ts.
+  const nastav = (h: Headers) => {
+    h.set("cache-control", hodnota);
+    if (jeHtml) for (const [k, v] of hlavickyCsp()) h.set(k, v);
+  };
   try {
-    response.headers.set("cache-control", hodnota);
+    nastav(response.headers);
     return response;
   } catch {
     // Odpoveď z fetchu má hlavičky uzamknuté — vtedy sa poskladá nová.
     const hlavicky = new Headers(response.headers);
-    hlavicky.set("cache-control", hodnota);
+    nastav(hlavicky);
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,

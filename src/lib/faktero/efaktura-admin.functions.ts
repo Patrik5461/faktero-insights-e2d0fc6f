@@ -16,6 +16,8 @@ async function overAdmina(userId: string) {
     .eq("user_id", userId)
     .maybeSingle();
   if (!data) throw new Error("Forbidden: not a platform admin");
+  // Od ADMIN_2FA_POVINNE_OD len s reláciou aal2 (admin-dvojfaktor.ts).
+  (await import("@/lib/faktero/admin-dvojfaktor.server")).vyzadujAal2Admina();
   return { db: supabaseAdmin as any, role: data.role as "admin" | "superadmin" };
 }
 
