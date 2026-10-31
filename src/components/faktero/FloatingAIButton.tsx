@@ -20,6 +20,7 @@ import {
 import { getAiAvailabilityFn } from "@/lib/faktero/ai-availability.functions";
 import { useT } from "@/lib/i18n/useT";
 import { usePresuvanie } from "@/hooks/usePresuvanie";
+import { useMiestoAiTlacidla } from "@/hooks/useMiestoAiTlacidla";
 import {
   KLUC_OKNO,
   KLUC_TLACIDLO,
@@ -87,13 +88,18 @@ export function FloatingAIButton() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  const pt = tlacidlo.poloha;
+  const zobrazene =
+    !(oknoOtvorene && !open) &&
+    !pathname.startsWith("/ai-asistent") &&
+    !(availability.data && !availability.data.available);
+  // Na telefóne: rezerva na spodku stránky, zdvih nad pevné lišty, skrytie pri písaní.
+  const miesto = useMiestoAiTlacidla(zobrazene && !siroka && !pt);
+
   // Na menšej obrazovke sedí tlačidlo presne na tlačidlách v päte okna a klik
   // chytá ono. Kým je okno otvorené, uhne.
-  if (oknoOtvorene && !open) return null;
-  if (pathname.startsWith("/ai-asistent")) return null;
-  if (availability.data && !availability.data.available) return null;
-
-  const pt = tlacidlo.poloha;
+  if (!zobrazene) return null;
+  if (miesto.skryte && !open) return null;
 
   return (
     <>
@@ -105,13 +111,20 @@ export function FloatingAIButton() {
           tlacidloPoloha={pt}
           tlacidloPrvok={tlacidlo.prvok}
           vratitTlacidlo={tlacidlo.vratit}
+          zdvih={miesto.zdvih}
         />
       )}
       <div
         ref={tlacidlo.nastavPrvok}
         data-plavajuce=""
         className={`fixed ${VRSTVA_AI} ${pt ? "" : "bottom-4 right-4 sm:bottom-6 sm:right-6"}`}
-        style={pt ? { left: pt.x, top: pt.y } : undefined}
+        style={
+          pt
+            ? { left: pt.x, top: pt.y }
+            : miesto.zdvih
+              ? { transform: `translateY(-${miesto.zdvih}px)` }
+              : undefined
+        }
       >
         <button
           type="button"
@@ -143,6 +156,7 @@ function CompactChat({
   tlacidloPoloha,
   tlacidloPrvok,
   vratitTlacidlo,
+  zdvih,
 }: {
   companyId: string | null;
   onClose: () => void;
@@ -150,6 +164,8 @@ function CompactChat({
   tlacidloPoloha: Poloha | null;
   tlacidloPrvok: RefObject<HTMLElement | null>;
   vratitTlacidlo: () => void;
+  /** Zdvih tlačidla nad spodnú lištu (telefón) — okno ide s ním. */
+  zdvih: number;
 }) {
   const { t } = useT();
   const okno = usePresuvanie({ kluc: KLUC_OKNO, povolene: presuvatelne, ignorujTlacidla: true });
@@ -202,7 +218,10 @@ function CompactChat({
       className={`fixed ${VRSTVA_AI} flex w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 ${
         p ? "" : "bottom-[4.25rem] right-4 sm:bottom-[4.75rem] sm:right-6"
       }`}
-      style={{ maxHeight: "min(560px, 70vh)", ...(p ? { left: p.x, top: p.y } : {}) }}
+      style={{
+        maxHeight: "min(560px, 70vh)",
+        ...(p ? { left: p.x, top: p.y } : zdvih ? { transform: `translateY(-${zdvih}px)` } : {}),
+      }}
     >
       <Header
         onClose={onClose}

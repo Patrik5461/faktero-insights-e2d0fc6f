@@ -625,3 +625,26 @@ select.input {
     font-size: max(16px, 1em) !important;
   }
 }
+
+/*
+  Plávajúce tlačidlo AI na telefóne sedí vpravo dole nad obsahom. Rezerva na
+  spodku hlavného obsahu dovolí odrolovať posledné ovládače stránky (pätička
+  formulára, Uložiť/Zaúčtovať v kompaktnom paneli…) nad neho. Atribút nastavuje
+  `useMiestoAiTlacidla`, len kým je tlačidlo na svojom mieste.
+*/
+@media (max-width: 639px) {
+  html[data-ai-tlacidlo] main#obsah {
+    padding-bottom: 4.5rem;
+  }
+}
+
+/*
+  Skrytý text pre čítačku (`sr-only`, position: absolute) v posúvacom obale
+  tabuľky: keď obal nie je `relative`, opora prvku leží mimo neho, obal ho
+  neoreže a 1px prvok na pravom konci širokej tabuľky roztiahne celú stránku
+  (nespracovaný doklad na telefóne: 481 px pri šírke 390). Vodorovne sa preto
+  drží na ľavom okraji opory — čítačke na polohe nezáleží.
+*/
+:where(.overflow-x-auto, .overflow-auto, .overflow-x-scroll) .sr-only {
+  left: 0;
+}

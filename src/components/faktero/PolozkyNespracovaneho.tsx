@@ -74,7 +74,8 @@ export function PolozkyNespracovaneho({
         </div>
       )}
       {u.polozky.length ? (
-        <div className={`overflow-x-auto ${vypnute ? "pointer-events-none opacity-50" : ""}`}>
+        // `relative`: opora pre sr-only popis stĺpca, inak roztiahol stránku (styles.css).
+        <div className={`relative overflow-x-auto ${vypnute ? "pointer-events-none opacity-50" : ""}`}>
           <table className="w-full min-w-[30rem] text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">

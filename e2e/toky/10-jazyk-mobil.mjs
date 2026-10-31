@@ -59,11 +59,15 @@ export default {
         // Skutočné posúvanie: stránka sa dá odsunúť doprava (overflow-x: hidden ho neprepustí).
         const m = await mobil.evaluate(() => {
           window.scrollTo(10000, window.scrollY);
-          const posun = window.scrollX;
+          // Mobilný prehliadač pri širšom obsahu roztiahne layout viewport (innerWidth
+          // = scrollWidth), stránku oddiali a scrollX ostane 0 — preto aj porovnanie
+          // so šírkou zariadenia.
+          const sirka = Math.min(window.screen.width, document.documentElement.clientWidth);
+          const posun = Math.max(window.scrollX, document.documentElement.scrollWidth - sirka);
           window.scrollTo(0, window.scrollY);
           return {
             posun,
-            sirka: document.documentElement.clientWidth,
+            sirka,
             obsah: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
             url: location.pathname,
           };
