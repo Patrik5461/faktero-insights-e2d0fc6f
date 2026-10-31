@@ -58,28 +58,37 @@ export default {
 
     await t.krok("odznak Nespracované = databáza", async () => {
       const id = t.firmy.test;
-      const nesp = await t.rest.pocet(`nespracovane_doklady?company_id=eq.${id}&select=id`);
-      const bloc = await t.rest.pocet(
-        `expense_documents?company_id=eq.${id}&status=eq.new&select=id`,
-      );
-      const ocak = nesp + bloc;
-      t.over(Number.isFinite(ocak), "počet z databázy sa nepodarilo zistiť");
+      // Počet sa zisťuje v každom kole znova: súbežné skupiny (e2e/skupiny.mjs)
+      // smú vo firme Test práve zakladať alebo mazať nespracované doklady.
+      const zDatabazy = async () => {
+        const nesp = await t.rest.pocet(`nespracovane_doklady?company_id=eq.${id}&select=id`);
+        const bloc = await t.rest.pocet(
+          `expense_documents?company_id=eq.${id}&status=eq.new&select=id`,
+        );
+        return { nesp, bloc, ocak: nesp + bloc };
+      };
+      let db = await zDatabazy();
+      t.over(Number.isFinite(db.ocak), "počet z databázy sa nepodarilo zistiť");
       // Odznak sa načítava zvlášť (server funkcia) — počkáme naň.
       const odkaz = page.locator('a[href^="/nespracovane"]').first();
       await odkaz.waitFor();
+      let kolo = 0;
       const vidim = await t
         .cakajNa(
-          `odznak ${ocak}`,
+          `odznak ${db.ocak}`,
           async () => {
+            // Odznak sa obnovuje pri načítaní stránky — po čase ju načítame znova.
+            if (++kolo % 8 === 0) await t.go("/nespracovane");
             const label = await odkaz
               .locator('[aria-label$=" čaká"]')
               .first()
               .getAttribute("aria-label")
               .catch(() => null);
             const n = label ? Number(label.replace(/\D+/g, "")) : 0;
-            return n === ocak ? { n } : null;
+            db = await zDatabazy();
+            return n === db.ocak ? { n } : null;
           },
-          { limit: 15000 },
+          { limit: 30000 },
         )
         .catch(async () => {
           const label = await odkaz
@@ -88,7 +97,7 @@ export default {
             .getAttribute("aria-label")
             .catch(() => "žiadny");
           throw new Error(
-            `odznak ukazuje „${label}“, databáza ${ocak} (nespracované ${nesp} + bločky ${bloc})`,
+            `odznak ukazuje „${label}“, databáza ${db.ocak} (nespracované ${db.nesp} + bločky ${db.bloc})`,
           );
         });
       t.log(`odznak Nespracované ${vidim.n}`);

@@ -100,8 +100,9 @@ export default {
     const okno = page.getByRole("dialog", { name: "Hromadný príkaz na úhradu" });
     const subor = await t.krok("výber všetkých a príkaz", async () => {
       await t.go("/prijate-faktury");
-      await page.getByPlaceholder("Dodávateľ…").fill(t.znacka);
-      await page.locator("tbody tr", { hasText: t.znacka }).first().waitFor({ timeout: 30000 });
+      // Celé meno dodávateľa, nie len značka behu — tú majú aj doklady súbežných tokov.
+      await page.getByPlaceholder("Dodávateľ…").fill(dodavatel);
+      await page.locator("tbody tr", { hasText: dodavatel }).first().waitFor({ timeout: 30000 });
       // Počkať, kým filter dobehne na všetky riadky (zoznam sa kreslí po stovkách).
       await page.waitForTimeout(2500);
       await page.locator("thead input[type=checkbox]").first().check();

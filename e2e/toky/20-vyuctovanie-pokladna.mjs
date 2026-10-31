@@ -85,7 +85,7 @@ export default {
     await t.krok("pokladňa: +200 −50", async () => {
       const s = await stavPokladne();
       t.over(Math.abs(s - (pred + 150)) < 0.005, `stav ${s}, čakal som ${pred + 150}`);
-      await page.locator("main").getByText(obchod).first().waitFor();
+      await page.locator("main").getByText(obchod).filter({ visible: true }).first().waitFor();
     });
 
     const prijata = await prijataCezRest(

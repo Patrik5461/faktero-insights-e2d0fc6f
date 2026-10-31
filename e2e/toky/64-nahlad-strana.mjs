@@ -59,6 +59,27 @@ export async function metadataUctu(jwt, zmena) {
   return (await r.json()).user_metadata ?? {};
 }
 
+/**
+ * Nastavenia účtu (user_metadata) na tok. V behu spusti.mjs ich tok dostane len
+ * pre seba (t.nastavUcet — skutočný účet sa nemení, súbežné skupiny to neovplyvní);
+ * inak sa zmení skutočný účet a po toku sa vráti pôvodná voľba.
+ */
+export async function nastavUcetToku(t, zmeny) {
+  if (t.nastavUcet) {
+    try {
+      t.nastavUcet(zmeny);
+      return;
+    } catch {
+      /* tok mení skutočný účet */
+    }
+  }
+  const { jwt } = await prihlasRest(qaHeslo());
+  const m = await metadataUctu(jwt);
+  const povodne = Object.fromEntries(Object.keys(zmeny).map((k) => [k, m[k] ?? null]));
+  await metadataUctu(jwt, zmeny);
+  t.uprac("nastavenia účtu", () => metadataUctu(jwt, povodne));
+}
+
 /** Zapamätá si voľbu účtu, nastaví „vľavo“ a po toku ju vráti. */
 export async function pripravStranu(t) {
   const { jwt } = await prihlasRest(qaHeslo());

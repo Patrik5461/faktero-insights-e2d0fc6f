@@ -6,12 +6,11 @@
   Príčina pôvodnej chyby: tabuľka položiek má `min-w-[30rem]` v posúvacom obale
   a skrytý popis stĺpca „Akcie“ (sr-only, position: absolute) sa oň neopieral —
   obal ho neorezal a stránka mala scrollWidth 481 px. Preto tu treba aspoň
-  jednu položku. Doklad sa založí cez REST a na konci zmaže; QA účtu sa
-  vzhľad vráti.
+  jednu položku. Doklad sa založí cez REST a na konci zmaže; vzhľad sa QA
+  účtu nastaví len pre tento tok (t.nastavUcet).
 */
-import { metadataUctu } from "./64-nahlad-strana.mjs";
+import { nastavUcetToku } from "./64-nahlad-strana.mjs";
 import { posuvStranky, prekryteAi } from "./70-mobil-ai-hlavicka.mjs";
-import { prihlasRest, qaHeslo } from "../lib/prostredie.mjs";
 
 export default {
   popis: "nespracovaný doklad na 390 px: bez posuvu do strany, AI nekryje ovládače",
@@ -55,18 +54,9 @@ export default {
     );
     t.uprac("nespracovaný doklad", () => t.rest.delete(`nespracovane_doklady?id=eq.${doklad.id}`));
 
-    const { jwt } = await prihlasRest(qaHeslo());
-    const m = await metadataUctu(jwt);
-    t.uprac("vzhľad v účte", () =>
-      metadataUctu(jwt, {
-        dizajn: m.dizajn ?? null,
-        vzhlad_nespracovanych: m.vzhlad_nespracovanych ?? null,
-      }),
-    );
-
     for (const vzhlad of ["klasicky", "kompaktny"]) {
       await t.krok(`${vzhlad}: bez posuvu do strany, AI nič nekryje`, async () => {
-        await metadataUctu(jwt, {
+        await nastavUcetToku(t, {
           dizajn: vzhlad === "kompaktny" ? "kompaktny" : "faktero",
           vzhlad_nespracovanych: vzhlad,
         });

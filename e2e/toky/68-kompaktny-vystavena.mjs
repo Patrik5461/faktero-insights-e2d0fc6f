@@ -10,12 +10,11 @@
   - predkontácia z číselníka sa uloží (Uložiť bez zaúčtovania → invoices);
   - úzka obrazovka (390 px): náhľad nad panelom, bez vodorovného posuvu.
   QA účet sa na tok prepne do kompaktného dizajnu (user_metadata.dizajn
-  a vzhlad_nespracovanych) a potom sa mu vráti pôvodná voľba; faktúra sa
-  zmaže natvrdo. Tok 69 robí to isté so zálohovou faktúrou.
+  a vzhlad_nespracovanych — v spusti.mjs len pre tento tok, skutočný účet sa
+  nemení); faktúra sa zmaže natvrdo. Tok 69 robí to isté so zálohovou faktúrou.
 */
-import { metadataUctu, rozlozenie } from "./64-nahlad-strana.mjs";
+import { nastavUcetToku, rozlozenie } from "./64-nahlad-strana.mjs";
 import { zalozFakturu } from "./66-detail-vystavenej.mjs";
-import { prihlasRest, qaHeslo } from "../lib/prostredie.mjs";
 
 export const SEKCIE = [
   "Základné údaje",
@@ -27,22 +26,13 @@ export const SEKCIE = [
   "Položky",
 ];
 
-/** Prepne QA účet do kompaktného dizajnu (náhľad vľavo) a po toku vráti pôvodné voľby. */
+/** Prepne QA účet (pre tento tok) do kompaktného dizajnu s náhľadom vľavo. */
 export async function pripravKompaktny(t) {
-  const { jwt } = await prihlasRest(qaHeslo());
-  const m = await metadataUctu(jwt);
-  const povodne = {
-    dizajn: m.dizajn ?? null,
-    vzhlad_nespracovanych: m.vzhlad_nespracovanych ?? null,
-    strana_nahladu: m.strana_nahladu ?? null,
-  };
-  await metadataUctu(jwt, {
+  await nastavUcetToku(t, {
     dizajn: "kompaktny",
     vzhlad_nespracovanych: "kompaktny",
     strana_nahladu: "vlavo",
   });
-  t.uprac("dizajn a strana náhľadu v účte", () => metadataUctu(jwt, povodne));
-  return jwt;
 }
 
 /** Nová stránka s kompaktným dizajnom aj v localStorage (dizajn sa nasadzuje bez bliknutia odtiaľ). */

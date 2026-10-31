@@ -59,7 +59,12 @@ export default {
 
     await t.krok("bloček je v zozname Doklady", async () => {
       // Po uložení appka otvorí zoznam na správnom mesiaci a záložke.
-      await page.locator("main").getByText(dodavatel).first().waitFor({ timeout: 20000 });
+      await page
+        .locator("main")
+        .getByText(dodavatel)
+        .filter({ visible: true })
+        .first()
+        .waitFor({ timeout: 20000 });
     });
   },
 };

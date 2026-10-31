@@ -12,15 +12,14 @@
   - nová faktúra na 1440 px: lepkavá lišta akcií sa dá odrolovať z každej
     sekcie („Daňový režim“ celý nad lištou);
   - zoznam bločkov: stĺpec „Stav dokladu“ len keď firma má vlastné stavy.
-  QA účet sa na tok prepne do daného rozloženia a potom sa mu vráti pôvodná
-  voľba. Nič iné sa nezapisuje.
+  QA účet sa na tok prepne do daného rozloženia (v spusti.mjs len pre tento
+  tok cez t.nastavUcet, skutočný účet sa nemení). Nič iné sa nezapisuje.
   So `E2E_SNIMKY=<priečinok>` uloží snímky (390 px celé stránky, 1440 nová faktúra).
 */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { metadataUctu } from "./64-nahlad-strana.mjs";
+import { nastavUcetToku } from "./64-nahlad-strana.mjs";
 import { posuvStranky } from "./70-mobil-ai-hlavicka.mjs";
-import { prihlasRest, qaHeslo } from "../lib/prostredie.mjs";
 
 export const ZOZNAMY = [
   ["blocky", "/doklady?stav=vsetky"],
@@ -202,13 +201,6 @@ export default {
     "mobil 390 px: zoznamy ako karty so sumou, AI nič nekryje, hlavičky a polia v rámčeku (kompaktné aj klasické)",
   limit: 900000,
   async spusti(t) {
-    const { jwt } = await prihlasRest(qaHeslo());
-    const m = await metadataUctu(jwt);
-    const povodne = {
-      dizajn: m.dizajn ?? "faktero",
-      vzhlad_nespracovanych: m.vzhlad_nespracovanych ?? "klasicky",
-    };
-    t.uprac("rozloženie účtu", () => metadataUctu(jwt, povodne));
     const snimky = process.env.E2E_SNIMKY || null;
     if (snimky) mkdirSync(snimky, { recursive: true });
     const nalezy = [];
@@ -222,7 +214,7 @@ export default {
     });
 
     for (const dizajn of ["kompaktny", "faktero"]) {
-      await metadataUctu(jwt, {
+      await nastavUcetToku(t, {
         dizajn,
         vzhlad_nespracovanych: dizajn === "kompaktny" ? "kompaktny" : "klasicky",
       });

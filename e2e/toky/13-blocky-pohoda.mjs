@@ -132,7 +132,12 @@ export default {
     const zoznam = `/doklady?mesiac=${MESIAC}&stav=vsetky`;
     const stiahnute = await t.krok("XML pre Pohodu — všetko v mesiaci", async () => {
       await t.go(zoznam);
-      await page.locator("main").getByText(t.znacka).first().waitFor({ timeout: 30000 });
+      await page
+        .locator("main")
+        .getByText(t.znacka)
+        .filter({ visible: true })
+        .first()
+        .waitFor({ timeout: 30000 });
       const subor = await t.stiahni(
         () =>
           page
@@ -186,7 +191,12 @@ export default {
 
     await t.krok("Odovzdať účtovníkovi — všetko z XML je odovzdané", async () => {
       await t.go(zoznam);
-      await page.locator("main").getByText(t.znacka).first().waitFor({ timeout: 30000 });
+      await page
+        .locator("main")
+        .getByText(t.znacka)
+        .filter({ visible: true })
+        .first()
+        .waitFor({ timeout: 30000 });
       await page.getByRole("button", { name: "Odovzdať účtovníkovi" }).click();
       const okno = page.getByRole("dialog", { name: "Export do účtovníctva" });
       await okno.waitFor();
