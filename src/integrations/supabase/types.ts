@@ -12778,6 +12778,44 @@ export type Database = {
         Relationships: []
       }
 
+      bank_suhlas_upozornenia: {
+        Row: {
+          id: string
+          company_id: string
+          ref_id: string
+          druh: string
+          termin: string
+          prijemca: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          ref_id: string
+          druh: string
+          termin: string
+          prijemca?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          ref_id?: string
+          druh?: string
+          termin?: string
+          prijemca?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_suhlas_upozornenia_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       stock_items_with_availability: {
