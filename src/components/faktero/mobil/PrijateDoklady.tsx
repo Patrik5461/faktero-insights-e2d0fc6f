@@ -146,9 +146,12 @@ function nazovMesiaca(kluc: string, loc: string): string {
 export function PrijateDoklady({
   firma,
   onSpat,
+  uvodnaAgenda = "blocky",
 }: {
   firma: { id: string; name: string };
   onSpat: () => void;
+  /** Po zaevidovaní eFaktúry sa Doklady otvoria rovno na prijatých faktúrach. */
+  uvodnaAgenda?: AgendaDokladov;
 }) {
   const { t, mnozne, locale: loc } = usePreklad();
   const nacitaj = useOperacia("vydavky-zoznam");
@@ -168,7 +171,7 @@ export function PrijateDoklady({
   const [odosielam, setOdosielam] = useState(false);
   const [hladanie, setHladanie] = useState("");
   const [otvoreny, setOtvoreny] = useState<Doklad | null>(null);
-  const [agenda, setAgenda] = useState<AgendaDokladov>("blocky");
+  const [agenda, setAgenda] = useState<AgendaDokladov>(uvodnaAgenda);
   /** Zoznam sa nepodarilo načítať, lebo nie je signál. */
   const [nedostupne, setNedostupne] = useState(false);
   /*

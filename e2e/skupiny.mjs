@@ -79,6 +79,8 @@ export const SKUPINY = [
       "webhooky-opakovanie",
       "prilohy-odkaz",
       "pohoda-spatny-chod",
+      // Zakladá prijatú faktúru so značkou behu v test2 — za sebou s 22/25.
+      "apka-efaktury-prijate",
       "pohoda-storno-25a",
       "pohoda-pokladna-prijem",
       "dobropis-dph",

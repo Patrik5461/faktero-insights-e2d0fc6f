@@ -97,6 +97,13 @@ export const OPERACIE = [
   */
   "efaktura-priprav",
   "efaktura-posli",
+  /*
+    Prijaté eFaktúry (oblasť efp) — zoznam, náhľad dokladu a zaevidovanie.
+    Tie isté serverové funkcie ako obrazovka Prijaté eFaktúry na webe.
+  */
+  "efaktury-prijate-zoznam",
+  "efaktura-prijata-nahlad",
+  "efaktura-prijata-zaeviduj",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];

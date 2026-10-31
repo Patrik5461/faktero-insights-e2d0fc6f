@@ -24,6 +24,7 @@ async function panel() {
       firma={firma}
       viacFiriem={false}
       onZmenitFirmu={nic}
+      onEfaktury={nic}
       onUcet={nic}
       onZmazatUcet={nic}
       onOdhlasit={nic}
@@ -116,5 +117,11 @@ describe("štart Knihy jázd", () => {
       expect(text).not.toContain("Faktero");
       expect(text).not.toContain("app.spustamJazdy");
     }
+  });
+
+  /* Prijaté eFaktúry patria k fakturácii — Kniha jázd ich neponúka ani keď dostane odkaz. */
+  it("Prijaté eFaktúry sa neponúkajú", async () => {
+    const html = await panel();
+    expect(html).not.toContain("Prijaté eFaktúry");
   });
 });

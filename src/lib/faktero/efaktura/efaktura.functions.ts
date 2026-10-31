@@ -713,7 +713,8 @@ export const listPrijateEfakturyFn = createServerFn({ method: "POST" })
     const { data: riadky, error } = await supabase
       .from("efaktura_received_documents")
       .select(
-        "id, sender_name, sender_participant_id, document_number, issue_date, due_date, currency, total, vat_total, status, received_at, matched_supplier_invoice_id, nespracovany_id",
+        // Kontrola a druh dokladu potrebuje appka (potvrdenie pri chybách, samofaktúra sa nezaeviduje).
+        "id, sender_name, sender_participant_id, document_number, issue_date, due_date, currency, total, vat_total, status, received_at, matched_supplier_invoice_id, nespracovany_id, kontrola_chyby, kontrola_varovania, druh:parsed_data->>documentKind",
       )
       .eq("company_id", data.company_id)
       .order("received_at", { ascending: false })

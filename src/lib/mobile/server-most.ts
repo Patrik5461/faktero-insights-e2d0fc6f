@@ -72,7 +72,12 @@ import {
   zaznamenajOznamEfakturyFn,
 } from "@/lib/faktero/efaktura-oznam.functions";
 import { pripravOdoslanieEfakturyFn } from "@/lib/faktero/efaktura/mobil-odoslanie.functions";
-import { posliEfakturuFn } from "@/lib/faktero/efaktura/efaktura.functions";
+import {
+  posliEfakturuFn,
+  listPrijateEfakturyFn,
+  nahladPrijatejEfakturyFn,
+  zaevidujPrijatuEfakturuFn,
+} from "@/lib/faktero/efaktura/efaktura.functions";
 import type { Operacia } from "./operacie";
 
 /** Jediné miesto, kde sa kľúč operácie stretáva so serverovou funkciou. */
@@ -136,6 +141,9 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   // Odoslanie eFaktúry z appky (apka-efaktura-odoslanie).
   "efaktura-priprav": pripravOdoslanieEfakturyFn,
   "efaktura-posli": posliEfakturuFn,
+  "efaktury-prijate-zoznam": listPrijateEfakturyFn,
+  "efaktura-prijata-nahlad": nahladPrijatejEfakturyFn,
+  "efaktura-prijata-zaeviduj": zaevidujPrijatuEfakturuFn,
 };
 
 export function useOperacia<T = any>(kluc: Operacia): (vstup: { data: any }) => Promise<T> {

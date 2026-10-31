@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FileText,
   Fingerprint,
+  Inbox,
   Globe,
   LayoutGrid,
   LogOut,
@@ -60,6 +61,7 @@ export function MobilPanel({
   onZmenitFirmu,
   onPrehlad,
   onDoklady,
+  onEfaktury,
   onFaktury,
   onPonuky,
   onBanka,
@@ -78,6 +80,8 @@ export function MobilPanel({
   onPrehlad?: () => void;
   /* Nepovinné: appka Kniha jázd panel používa tiež, ale fakturáciu v sebe nemá. */
   onDoklady?: () => void;
+  /** Prijaté eFaktúry — len vo Fakteri, Kniha jázd ich nemá. */
+  onEfaktury?: () => void;
   onFaktury?: () => void;
   /** Cenové ponuky. Nie sú v spodnej lište — tá má päť agend a je plná. */
   onPonuky?: () => void;
@@ -248,6 +252,16 @@ export function MobilPanel({
               onClick={() => {
                 onZavri();
                 onDoklady();
+              }}
+            />
+          )}
+          {onEfaktury && !JE_KNIHA_JAZD && (
+            <Polozka
+              icon={Inbox}
+              label={t("efp.nazov")}
+              onClick={() => {
+                onZavri();
+                onEfaktury();
               }}
             />
           )}

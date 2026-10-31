@@ -64,7 +64,8 @@ import { coChybaBlocku } from "@/lib/faktero/blocek-z-appky";
 import { kameraVStrankeMozna } from "@/lib/mobile/kamera-dokladu";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
 import { CislaDopredu } from "@/components/faktero/mobil/CislaDopredu";
-import { datum } from "@/components/faktero/mobil/PrijateDoklady";
+import { datum, type AgendaDokladov } from "@/components/faktero/mobil/PrijateDoklady";
+import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 /**
@@ -103,6 +104,11 @@ const Banka = lazy(() =>
 );
 const Prehlad = lazy(() =>
   import("@/components/faktero/mobil/Prehlad").then((m) => ({ default: m.Prehlad })),
+);
+const PrijateEfaktury = lazy(() =>
+  import("@/components/faktero/mobil/PrijateEfaktury").then((m) => ({
+    default: m.PrijateEfaktury,
+  })),
 );
 
 /**
@@ -212,7 +218,8 @@ export type Krok =
   | "jazda"
   | "banka"
   | "ucet"
-  | "zmazanieUctu";
+  | "zmazanieUctu"
+  | "efaktury";
 type Zachyt = "blocek" | "pdf" | "strany" | "davka";
 
 /** Obrazovky bez rozpísaných údajov — z nich smie rýchla akcia odskočiť na skener. */
@@ -226,10 +233,19 @@ const KROKY_PRE_RYCHLU_AKCIU = new Set<Krok>([
   "jazda",
   "banka",
   "ucet",
+  "efaktury",
 ]);
 
 /** Obrazovky, na ktoré sa smie skener po zavretí vrátiť. */
-const NAVRAT_ZO_SKENERA = new Set<Krok>(["prehlad", "faktury", "doklady", "banka", "jazda", "ponuky"]);
+const NAVRAT_ZO_SKENERA = new Set<Krok>([
+  "prehlad",
+  "faktury",
+  "doklady",
+  "banka",
+  "jazda",
+  "ponuky",
+  "efaktury",
+]);
 
 /** Doklad, ktorý vo firme už je — toľko z neho stačí, aby sa dal spoznať. */
 type NajdenyDoklad = {
@@ -341,6 +357,11 @@ function ObsahApky() {
   const [zachytZo, setZachytZo] = useState<Krok>("prehlad");
   /** Spúšť na skeneri, keď kamera v stránke nejde — na telefóne sa hneď otvorí fotoaparát. */
   const [zachytHned, setZachytHned] = useState(false);
+  /** S akou agendou sa otvoria Doklady — po zaevidovaní eFaktúry rovno prijaté faktúry. */
+  const [agendaDokladov, setAgendaDokladov] = useState<AgendaDokladov>("blocky");
+  useEffect(() => {
+    if (krok !== "doklady") setAgendaDokladov("blocky");
+  }, [krok]);
   /** Strany odfotené a upravené už na skeneri — zachytávanie ich len spracuje. */
   const [stranyZoSkenera, setStranyZoSkenera] = useState<string[] | null>(null);
 
@@ -885,6 +906,13 @@ function ObsahApky() {
     if (naJazdu) naJazdu();
   }
   const naNovuFakturu = () => setKrok("novaFaktura");
+  /* Prijaté eFaktúry — Kniha jázd fakturáciu nemá, tak ani tento vstup. */
+  const naEfaktury = JE_KNIHA_JAZD ? undefined : () => setKrok("efaktury");
+  /** Zaevidovaná eFaktúra je prijatá faktúra — Doklady sa otvoria rovno na nich. */
+  const naPrijateFaktury = () => {
+    setAgendaDokladov("faktury");
+    setKrok("doklady");
+  };
   /** Otvorí zachytávanie dokladu a zapamätá si, kam sa z neho vrátiť. */
   const doZachytu = (druh: Zachyt, odkial: Krok, hnedSkenovat = false, strany?: string[]) => {
     setZachyt(druh);
@@ -909,6 +937,7 @@ function ObsahApky() {
       onZmenitFirmu={() => setKrok("firma")}
       onPrehlad={() => setKrok(DOMOV)}
       onDoklady={() => setKrok("doklady")}
+      onEfaktury={naEfaktury}
       onFaktury={() => setKrok("faktury")}
       onPonuky={() => setKrok("ponuky")}
       onBanka={() => setKrok("banka")}
@@ -981,6 +1010,7 @@ function ObsahApky() {
               onBanka={() => setKrok("banka")}
               onFaktury={() => setKrok("faktury")}
               onDoklady={() => setKrok("doklady")}
+              onEfaktury={naEfaktury}
             />
           </div>
         </Obrazovka>
@@ -1043,7 +1073,25 @@ function ObsahApky() {
     return (
       <SoSpodnouListou aktivna="doklady" {...listaProps}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
-          <PrijateDoklady firma={firma} onSpat={() => setKrok(DOMOV)} />
+          <PrijateDoklady
+            /* Nová agenda pri každom vstupe — inak by si obrazovka nechala starú. */
+            key={agendaDokladov}
+            firma={firma}
+            uvodnaAgenda={agendaDokladov}
+            onSpat={() => setKrok(DOMOV)}
+          />
+        </Obrazovka>
+      </SoSpodnouListou>
+    );
+  if (krok === "efaktury" && firma && naEfaktury)
+    return (
+      <SoSpodnouListou aktivna="doklady" {...listaProps}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <PrijateEfaktury
+            firma={firma}
+            onSpat={() => setKrok(DOMOV)}
+            onOtvorPrijate={naPrijateFaktury}
+          />
         </Obrazovka>
       </SoSpodnouListou>
     );

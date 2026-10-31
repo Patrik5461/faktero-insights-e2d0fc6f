@@ -99,6 +99,7 @@ export function Prehlad({
   onBanka,
   onFaktury,
   onDoklady,
+  onEfaktury,
 }: {
   firma: { id: string; name: string };
   /** Pri viacerých firmách sa dá názov firmy ťuknutím prepnúť. */
@@ -114,6 +115,8 @@ export function Prehlad({
   onBanka?: () => void;
   onFaktury: () => void;
   onDoklady: () => void;
+  /** Prijaté eFaktúry v appke. Bez neho riadok len informuje (Kniha jázd ho nemá). */
+  onEfaktury?: () => void;
 }) {
   const { t, mnozne, locale: loc } = usePreklad();
   const nacitajFaktury = useOperacia("faktury-zoznam");
@@ -422,6 +425,8 @@ export function Prehlad({
                   ikonaTon="pozor"
                   title={t("ph.efakturyNaZaevidovanie", { pocet: efaktury })}
                   subtitle={t("ph.efakturyNaZaevidovaniePopis")}
+                  chevron={!!onEfaktury}
+                  onClick={onEfaktury}
                 />
               )}
               {jazdaBezi && onJazda && (
