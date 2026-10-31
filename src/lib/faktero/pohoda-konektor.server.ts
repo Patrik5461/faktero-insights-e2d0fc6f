@@ -16,6 +16,7 @@
  * vystavovať mimo vnútornej siete.
  */
 import type { OdpocetZalohy, PohodaNastavenia } from "./export.server";
+import { rozoberBalikOdpovede, type VysledokDokladu } from "./pohoda-odpoved";
 import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
 
 /** Riadky z databázy sa tu netypujú — modul ich len prekladá do XML. */
@@ -1025,90 +1026,15 @@ async function zapisOdovzdanie(
   return job.id as string;
 }
 
-/** Jeden doklad tak, ako o ňom Pohoda referuje v `responsePack`. */
-export type VysledokDokladu = {
-  id: string;
-  stav: "ok" | "warning" | "error";
-  cislo: string | null;
-  poznamka: string | null;
-};
+/*
+  Rozbor `responsePack` je v `pohoda-odpoved.ts` (čistá časť — testy, skript
+  na vyhodnotenie skúšky `scripts/pohoda-odpoved.ts`). Tu sa len zapisuje.
+*/
+export type { VysledokDokladu } from "./pohoda-odpoved";
 
-function atribut(znacka: string, nazov: string): string | null {
-  const m = znacka.match(new RegExp(`\\b${nazov}\\s*=\\s*"([^"]*)"`, "i"));
-  return m ? m[1] : null;
-}
-
-/** Obsah prvého elementu s daným lokálnym názvom (bez ohľadu na predponu). */
-function vnutro(xml: string, nazov: string): string | null {
-  const m = xml.match(
-    new RegExp(
-      `<(?:[A-Za-z0-9_.-]+:)?${nazov}\\b[^>]*>([\\s\\S]*?)</(?:[A-Za-z0-9_.-]+:)?${nazov}>`,
-      "i",
-    ),
-  );
-  return m ? m[1] : null;
-}
-
-/** Všetky texty elementu s daným lokálnym názvom. */
-function vsetkyTexty(xml: string, nazov: string): string[] {
-  const re = new RegExp(
-    `<(?:[A-Za-z0-9_.-]+:)?${nazov}\\b[^>]*>([\\s\\S]*?)</(?:[A-Za-z0-9_.-]+:)?${nazov}>`,
-    "gi",
-  );
-  const von: string[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xml))) von.push(m[1]);
-  return von;
-}
-
-function bezZnaciek(s: string): string {
-  return s
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Rozoberie `responsePack` z Pohody.
- *
- * Parsuje sa reťazcom, nie XML knižnicou: odpoveď má vyše tridsať menných
- * priestorov podľa agendy a jediné, čo z nej potrebujeme, je pri každej položke
- * jej `id`, stav, pridelené číslo a text chyby.
- */
+/** Výsledky položiek odpovede (kompatibilita so staršími volaniami). */
 export function rozoberOdpoved(xml: string): VysledokDokladu[] {
-  const vysledky: VysledokDokladu[] = [];
-  const re =
-    /<(?:[A-Za-z0-9_.-]+:)?responsePackItem\b([^>]*)>([\s\S]*?)<\/(?:[A-Za-z0-9_.-]+:)?responsePackItem>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xml))) {
-    const id = atribut(m[1], "id");
-    if (!id) continue;
-    const telo = m[2];
-    const stavAtr = (atribut(m[1], "state") ?? "").toLowerCase();
-
-    const vyrobene = vnutro(telo, "producedDetails");
-    const cislo = vyrobene ? bezZnaciek(vnutro(vyrobene, "number") ?? "") || null : null;
-
-    // Chyby a upozornenia sú v `importDetails/detail/note`. Do histórie ide
-    // dôvod, prečo doklad neprešiel — bez neho by sa len ticho stratil.
-    const detaily = vnutro(telo, "importDetails");
-    const poznamka = detaily
-      ? vsetkyTexty(detaily, "note").map(bezZnaciek).filter(Boolean).join(" · ").slice(0, 400) ||
-        bezZnaciek(detaily).slice(0, 400) ||
-        null
-      : null;
-
-    const stav: VysledokDokladu["stav"] =
-      stavAtr === "error" ? "error" : stavAtr === "warning" ? "warning" : "ok";
-
-    vysledky.push({ id, stav, cislo, poznamka: stav === "ok" ? null : poznamka });
-  }
-  return vysledky;
+  return rozoberBalikOdpovede(xml).polozky;
 }
 
 /**
@@ -1129,6 +1055,10 @@ export type SpracovanieOdpovede = {
   zalozenych: number;
   chybnych: number;
   chyby: string[];
+  /** Upozornenia Pohody (doklad prešiel, ale niečo upravila) — na kontrolu. */
+  upozornenia?: string[];
+  /** Pohoda odmietla celý balík (prihlásenie, práva, IČO). */
+  chybaBaliku?: string | null;
   /** Načítané predkontácie a členenia DPH, ak sa na ne dávka pýtala. */
   ciselniky?: { predkontacii: number; cleneni: number; vypnutych: number } | null;
 };
@@ -1149,15 +1079,24 @@ export async function spracujOdpoved(
   const { ulozCiselnikyZPohody } = await import("./predkontacie.server");
   const ciselniky = await ulozCiselnikyZPohody(supabase, vstup);
 
-  const vysledky = rozoberOdpoved(vstup.xml).filter((v) => !jeIdCiselnika(v.id));
+  const balik = rozoberBalikOdpovede(vstup.xml);
+  const vysledky = balik.polozky.filter((v) => !jeIdCiselnika(v.id));
   const teraz = new Date().toISOString();
   const chyby: string[] = [];
+  const upozornenia: string[] = [];
   let zalozenych = 0;
+  const chybaBaliku =
+    balik.stav === "error" && !balik.polozky.length
+      ? `Pohoda odmietla celý balík: ${balik.poznamka ?? "bez popisu"}`
+      : null;
+  if (chybaBaliku) chyby.push(chybaBaliku);
 
   for (const v of vysledky) {
-    const chyba = v.stav === "error";
+    // Duplicita dávky = doklad už v Pohode je; vrátiť ho do fronty by ho posielalo donekonečna.
+    const chyba = v.stav === "error" && !v.duplicita;
     if (chyba) chyby.push(`${v.cislo ?? v.id}: ${v.poznamka ?? "neznáma chyba"}`);
     else zalozenych++;
+    if (v.stav === "warning" && v.poznamka) upozornenia.push(`${v.cislo ?? v.id}: ${v.poznamka}`);
 
     // Číselníky nesú v identifikátore aj verziu záznamu — späť sa mapujú na
     // holé id.
@@ -1181,7 +1120,8 @@ export async function spracujOdpoved(
           potvrdene_at: teraz,
           // `ok` je pre nás „odovzdané" — chybný doklad sa musí vrátiť do fronty.
           status: chyba ? "error" : "ok",
-          error: chyba ? v.poznamka : null,
+          // Pri upozornení text ostáva — Pohoda doklad zapísala inak, než prišiel.
+          error: v.stav === "ok" ? null : v.poznamka,
         })
         .eq("id", log.id);
       continue;
@@ -1253,6 +1193,8 @@ export async function spracujOdpoved(
     zalozenych,
     chybnych: chyby.length,
     chyby: chyby.slice(0, 20),
+    upozornenia: upozornenia.slice(0, 20),
+    chybaBaliku,
     ciselniky,
   };
 }

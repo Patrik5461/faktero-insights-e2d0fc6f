@@ -14,6 +14,7 @@
 */
 
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
+import { kvPrijatehoDokladu } from "./kv-urcenie";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { rozpisBlocku } from "./rozuctovanie";
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
@@ -31,10 +32,22 @@ import {
  * firma vlastné nenastavila. Kód zo základných členení SK Pohody
  * (`ZAKLADNE_CLENENIA_DPH` v `predkontacie.ts`); Stormware ho opisuje ako
  * členenie typu „pdp“, ktoré nuluje daň a doplní text o prenesení.
- * Len pre slovenské firmy — česká Pohoda má vlastný číselník a kód „UDpdp“
- * v ňom nie je; českej firme bez nastaveného členenia sa doklad ohlási.
+ * Česká Pohoda má pre § 92a tú istú skratku: „UDpdp“ (ř. 25, KH A.1) —
+ * Portál POHODA, https://portal.pohoda.cz/dane-ucetnictvi-mzdy/dph/samovymereni-dph-v-programu-pohoda
+ * (overené 31. 10. 2026; predtým sa českej firme bez nastavenia doklad zastavil).
  */
 export const PREDVOLENE_CLENENIE_PDP_VYDANE = "UDpdp";
+/**
+ * Česká Pohoda, prijaté plnenie v režime § 92a: „DDpdp“ (povinnosť priznať
+ * daň, ř. 10/11, KH B.1); odpočet si Pohoda dopočíta (PDpdp). Slovenská
+ * firma predvolené nemá — kód samozdanenia SK Pohody sa verejne overiť nedal.
+ */
+export const PREDVOLENE_CLENENIE_PDP_PRIJATE_CZ = "DDpdp";
+
+/** Členenie prijatého dokladu v prenesení: nastavenie firmy, CZ inak DDpdp. */
+export function clenenieprijatejPdp(nastavenia: Riadok | null | undefined, cz: boolean): string {
+  return kod(nastavenia?.clenenieDphPdpPrijata) || (cz ? PREDVOLENE_CLENENIE_PDP_PRIJATE_CZ : "");
+}
 /** Kontrolný výkaz DPH — vydané faktúry v prenesení (§ 69 ods. 12 písm. f) až j)). */
 export const KV_PDP_VYDANE = "A2";
 /** Kontrolný výkaz DPH — prijaté plnenie, pri ktorom daň platí odberateľ (§ 69 ods. 12). */
@@ -81,6 +94,134 @@ export function dphSedi(zaklad: number, dph: number, sadzba: number, poloziek = 
 const kod = (v: unknown) => String(v ?? "").trim();
 const jePdpKod = (v: unknown) => /pdp/i.test(kod(v));
 
+/*
+  Dĺžky polí podľa schém Stormware (type.xsd, invoice.xsd version_2). Export
+  dlhšiu hodnotu skráti — pri čísle dokladu či IČ DPH by to bola tichá chyba
+  (iné číslo v Pohode, nesprávne IČ DPH v kontrolnom výkaze), preto sa taký
+  doklad radšej zastaví.
+*/
+export const DLZKY_POHODY = {
+  /** `numberRequested` (string32NotEmpty), `originalDocument` (documentNumberType). */
+  cislo: 32,
+  ico: 15,
+  dic: 18,
+  icDph: 18,
+} as const;
+
+const dlzka = (v: unknown) => kod(v).length;
+
+/** Spoločné pravidlá partnera: dĺžky IČO, DIČ a IČ DPH. */
+function prekazkaPartnera(
+  cislo: string,
+  kto: string,
+  ico: unknown,
+  dic: unknown,
+  icDph: unknown,
+): string | null {
+  if (dlzka(ico) > DLZKY_POHODY.ico)
+    return `${cislo} — IČO ${kto} „${kod(ico)}“ je dlhšie ako ${DLZKY_POHODY.ico} znakov — Pohoda ho neprijme, opravte ho`;
+  if (dlzka(dic) > DLZKY_POHODY.dic)
+    return `${cislo} — DIČ ${kto} „${kod(dic)}“ je dlhšie ako ${DLZKY_POHODY.dic} znakov — opravte ho`;
+  if (dlzka(icDph) > DLZKY_POHODY.icDph)
+    return `${cislo} — IČ DPH ${kto} „${kod(icDph)}“ je dlhšie ako ${DLZKY_POHODY.icDph} znakov — opravte ho`;
+  if (kod(icDph) && !/^[A-Z]{2}[0-9A-Z+*.]{1,16}$/i.test(kod(icDph).replace(/\s/g, "")))
+    return `${cislo} — IČ DPH ${kto} „${kod(icDph)}“ nemá tvar IČ DPH (kód štátu a číslo) — kontrolný výkaz ho neprijme`;
+  return null;
+}
+
+/**
+ * Polia, ktoré by Pohoda (alebo kontrolný výkaz z nej) odmietla: číslo
+ * dokladu, dátum, mena, dĺžky a tvar údajov partnera.
+ */
+export function prekazkaPoliVydanej(invoice: Riadok, company: Riadok): string | null {
+  const cisloRaw = kod(invoice?.invoice_number);
+  const cislo = cisloRaw || "?";
+  if (!cisloRaw) return `? — faktúra bez čísla — Pohoda doklad bez čísla nezaloží`;
+  if (cisloRaw.length > DLZKY_POHODY.cislo)
+    return `${cislo} — číslo dokladu má ${cisloRaw.length} znakov, Pohoda prijme najviac ${DLZKY_POHODY.cislo} — skráťte formát číselného radu`;
+  if (kod(invoice?.issue_date) && !/^\d{4}-\d{2}-\d{2}/.test(kod(invoice?.issue_date)))
+    return `${cislo} — dátum vystavenia „${kod(invoice?.issue_date)}“ nie je platný dátum — Pohoda by doklad zaradila k dnešnému dňu`;
+  const mena = kod(invoice?.currency);
+  if (mena && !/^[A-Z]{3}$/.test(mena.toUpperCase()))
+    return `${cislo} — mena „${mena}“ nie je kód ISO (EUR, CZK…) — Pohoda ju nepozná`;
+  const p = prekazkaPartnera(
+    cislo,
+    "odberateľa",
+    invoice?.customer_ico,
+    invoice?.customer_dic,
+    invoice?.customer_ic_dph,
+  );
+  if (p) return p;
+  // KV A.2 (ručne zvolené) chce IČ DPH odberateľa — prenesenie overuje prekazkaVydanej.
+  if (
+    krajinaDane(company?.country) !== "CZ" &&
+    kod(invoice?.kv_clenenie).toUpperCase() === KV_PDP_VYDANE &&
+    !kod(invoice?.customer_ic_dph)
+  )
+    return `${cislo} — členenie KV A.2 bez IČ DPH odberateľa — doplňte IČ DPH alebo zmeňte členenie`;
+  return null;
+}
+
+/**
+ * To isté pre prijatú faktúru (číslo dodávateľa, dátum, IČO/DIČ/IČ DPH
+ * dodávateľa). Chýbajúce číslo či IČ DPH pri KV hlási `varovanieKvPrijatej`.
+ */
+export function prekazkaPoliPrijateho(d: Riadok): string | null {
+  /*
+    Bloček nie: číslo bločku je identifikátor eKasa (dlhší ako 32 znakov
+    a do Pohody ide skrátený len na dohľadanie) a do KV ide sumárne (B.3).
+  */
+  if (!d?._typPohody) return null;
+  const cisloRaw = kod(d?._povodneCislo || d?.document_number);
+  const cislo = cisloRaw || "?";
+  if (cisloRaw.length > DLZKY_POHODY.cislo)
+    return `${cislo} — číslo faktúry dodávateľa má ${cisloRaw.length} znakov, Pohoda prijme najviac ${DLZKY_POHODY.cislo} — opravte ho`;
+  if (kod(d?.issue_date) && !/^\d{4}-\d{2}-\d{2}/.test(kod(d?.issue_date)))
+    return `${cislo} — dátum dokladu „${kod(d?.issue_date)}“ nie je platný dátum — Pohoda by ho zaradila k dnešnému dňu`;
+  return prekazkaPartnera(
+    cislo,
+    "dodávateľa",
+    d?.supplier_ico,
+    d?.supplier_dic,
+    d?.supplier_ic_dph,
+  );
+}
+
+/**
+ * Prijatá faktúra v kontrolnom výkaze (B.1, B.2, C.2) bez čísla faktúry alebo
+ * IČ DPH dodávateľa. Pohoda ju prijme, ale kontrolný výkaz z nej finančná
+ * správa vráti — preto upozornenie (doklad sa nezastaví: AI pri čítaní
+ * IČ DPH občas nenájde a účtovníčka ho doplní v Pohode).
+ */
+export function varovanieKvPrijatej(d: Riadok, company?: Riadok | null): string | null {
+  const blocek = !d?._typPohody;
+  const cisloRaw = kod(d?._povodneCislo || d?.document_number);
+  const cislo = cisloRaw || "?";
+  if (blocek || !company || krajinaDane(company?.country) === "CZ") return null;
+  const rozpis: { dph?: number; pdp?: boolean }[] = Array.isArray(d?.vat_breakdown)
+    ? d.vat_breakdown
+    : rozpisBlocku(d);
+  const dobropis = d?._typPohody === "receivedCreditNotice";
+  const kv = kvPrijatehoDokladu({
+    kvDokladu: d?.kv_clenenie,
+    blocek: false,
+    dobropis,
+    pdp: Boolean(d?._pdp),
+    rezim: d?._rezim ?? null,
+    maDph: rozpis.some((r) => Math.abs(Number(r?.dph ?? 0)) > 0.005) || Boolean(d?._pdp),
+    odpocet: d?.odpocet,
+    clenenieDph: d?.pohoda_clenenie_dph,
+    nadobudnutieDoB1: false,
+  });
+  if (/^(B1|B2|C2)$/.test(kv)) {
+    if (!cisloRaw)
+      return `${cislo} — prijatá faktúra v kontrolnom výkaze (${kv}) bez čísla faktúry dodávateľa — doplňte ho`;
+    if (!kod(d?.supplier_ic_dph))
+      return `${cislo} — prijatá faktúra v kontrolnom výkaze (${kv}) bez IČ DPH dodávateľa — doplňte ho, alebo ak dodávateľ nie je platiteľ, faktúra nemá mať DPH`;
+  }
+  return null;
+}
+
 /**
  * Dôvod, prečo vydaná faktúra do Pohody nesmie ísť — alebo `null`.
  * `nastavenia` sú tie isté ako pre `polozkyFaktur` (predvolené kódy firmy).
@@ -97,6 +238,11 @@ export function prekazkaVydanej(
   const zalohova = typ === "proforma";
   const tuzemskePdp = jeTuzemskePdp(invoice, company);
   const pdpPolozky = maPdpPolozky(invoice, items);
+
+  {
+    const dovod = prekazkaPoliVydanej(invoice, company);
+    if (dovod) return dovod;
+  }
 
   // Prenesenie: odberateľ musí mať IČ DPH (SK KV A.2, CZ KH A.1 chce DIČ).
   if ((tuzemskePdp || pdpPolozky) && !zalohova) {
@@ -195,7 +341,8 @@ export function prekazkaVydanej(
 export function clenenieVydanejPdp(nastavenia?: Riadok | null, company?: Riadok | null): string {
   const vlastne = kod(nastavenia?.clenenieDphPdp);
   if (vlastne) return vlastne;
-  return krajinaDane(company?.country) === "CZ" ? "" : PREDVOLENE_CLENENIE_PDP_VYDANE;
+  void company;
+  return PREDVOLENE_CLENENIE_PDP_VYDANE;
 }
 
 /**
@@ -211,6 +358,10 @@ export function prekazkaDokladu(
   const cislo = d?._povodneCislo || d?.document_number || (blocek ? "bloček" : "?");
   // Faktúra inej firmy (iný odberateľ) — kým človek nepotvrdí, že patrí tejto firme.
   if (d?._odberatelNesedi) return `${cislo} — ${DOVOD_CUDZIA}`;
+  {
+    const dovod = prekazkaPoliPrijateho(d);
+    if (dovod) return dovod;
+  }
   const cz = krajinaDane(company?.country) === "CZ";
   const domaca = domacaMena(company?.country);
   const mena = String(d?.currency ?? domaca).toUpperCase() || domaca;
@@ -342,8 +493,16 @@ export function prekazkaDokladu(
  * v rozúčtovaní (`varovanieZavazku`) alebo predkontácia, ktorú číselník
  * Pohody nepozná (`varovanieNeznamehoKodu`).
  */
-export function varovanieDokladu(d: Riadok, nastavenia?: Riadok | null): string | null {
-  return varovanieZavazku(d, nastavenia) ?? varovanieNeznamehoKodu(d, nastavenia);
+export function varovanieDokladu(
+  d: Riadok,
+  nastavenia?: Riadok | null,
+  company?: Riadok | null,
+): string | null {
+  return (
+    varovanieZavazku(d, nastavenia) ??
+    varovanieNeznamehoKodu(d, nastavenia) ??
+    varovanieKvPrijatej(d, company)
+  );
 }
 
 /**

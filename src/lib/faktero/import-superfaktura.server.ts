@@ -333,7 +333,22 @@ export type FieldKey =
   /** Zúčtovaná záloha na doklade — znižuje sumu na úhradu, nie základ. */
   | "advance_amount"
   /** Druh dokladu (faktúra, dobropis, zálohová…) — ISDOC ho nesie v `DocumentType`. */
-  | "document_type";
+  | "document_type"
+  /*
+    Polia, ktoré nesie len Pohoda XML (spätný chod export → import musí
+    sedieť na cent): kurz v zápise Faktera, kódy zaúčtovania, väzby a DPH
+    riadku zo súboru (pri prenesení je nula, hoci sadzba ostáva).
+  */
+  | "exchange_rate"
+  | "kv_clenenie"
+  | "pohoda_predkontacia"
+  | "pohoda_clenenie_dph"
+  | "reverse_charge"
+  | "opravuje_cislo"
+  | "zaloha_cislo"
+  | "oss_country"
+  | "item_vat_amount"
+  | "item_pdp";
 
 const HEURISTICS: Record<FieldKey, RegExp[]> = {
   invoice_number: [/^(invoice_)?number$/i, /\bfakt(u|ú)ra\b/i, /^cislo/i, /\bnumber\b/i],
@@ -369,6 +384,16 @@ const HEURISTICS: Record<FieldKey, RegExp[]> = {
   item_discount_percent: [/^(z[lľ]ava|discount)\s*(%|percent|v %)/i],
   advance_amount: [/uhraden[aá] z[aá]loha|odpo[cč]et z[aá]loh|advance.?amount/i],
   document_type: [/^document.?type$|^typ dokladu$|^druh dokladu$/i],
+  exchange_rate: [/^exchange.?rate$|^kurz$/i],
+  kv_clenenie: [/^kv.?clenenie$|^clenenie kv/i],
+  pohoda_predkontacia: [/^predkont/i],
+  pohoda_clenenie_dph: [/^clenenie dph$/i],
+  reverse_charge: [/^reverse.?charge$|^prenesenie/i],
+  opravuje_cislo: [/^povodne cislo dokladu$|^opravuje/i],
+  zaloha_cislo: [/^cislo zalohovej/i],
+  oss_country: [/^oss.?(country|stat)$/i],
+  item_vat_amount: [/^item.?vat.?amount$|^dph polozky$/i],
+  item_pdp: [/^item.?pdp$/i],
 };
 
 export function suggestMapping(headers: string[]): Partial<Record<FieldKey, string>> {
@@ -521,6 +546,16 @@ const SYNONYMS: Record<FieldKey, string[]> = {
   item_discount_percent: ["zlava %", "zlava v %", "discount %"],
   advance_amount: ["uhradena zaloha", "odpocet zalohy", "advance amount"],
   document_type: ["document type", "typ dokladu", "druh dokladu"],
+  exchange_rate: ["kurz", "exchange rate"],
+  kv_clenenie: ["clenenie kv dph", "kv clenenie"],
+  pohoda_predkontacia: ["predkontacia"],
+  pohoda_clenenie_dph: ["clenenie dph"],
+  reverse_charge: ["prenesenie danovej povinnosti", "reverse charge"],
+  opravuje_cislo: ["povodne cislo dokladu"],
+  zaloha_cislo: ["cislo zalohovej faktury"],
+  oss_country: ["oss stat"],
+  item_vat_amount: ["dph polozky", "item vat amount"],
+  item_pdp: ["item pdp"],
 };
 
 /**
@@ -1220,65 +1255,18 @@ export async function runImport(args: {
         continue;
       }
 
-      // Build items: prefer per-row item mapping; else synthesize a single line from totals
-      // Záporný riadok (zľava, položka dobropisu) je platná položka — predtým
-      // vypadol a súčet položiek nesedel so sumou faktúry.
-      let items = group
-        .map((r) => buildItem(r, mapping, predvolenaSadzba))
-        .filter((it) => it.quantity !== 0 || it.unit_price !== 0 || it.total !== 0);
-      let subtotal = num(pick(head, mapping, "subtotal"));
-      let vatTotal = num(pick(head, mapping, "vat_total"));
-      let total = sumaSDph(head, mapping);
-      if (items.length === 0) {
-        const jeden = jednaPolozkaZoSuctov({
-          subtotal,
-          vatTotal,
-          total,
-          // Kto nebol platiteľ, píše to do poznámky; inak sadzba firmy k dátumu vystavenia.
-          bezDph: jeNeplatitelPoznamka(pick(head, mapping, "notes")),
-          sadzba: predvolenaSadzba(normDate(pick(head, mapping, "issue_date"))),
-        });
-        // Prázdny súčet sa dopočíta až z položky — inak by základ ostal nula.
-        if (!subtotal && !vatTotal) {
-          subtotal = jeden.subtotal;
-          vatTotal = jeden.vat_amount;
-        }
-        items.push({
-          // Súbor nemal rozpis položiek — faktúra príde ako jeden riadok.
-          name: nazovJedinejPolozky(head, mapping) || `Položky faktúry ${invNo}`,
-          description: null,
-          discount_percent: 0,
-          quantity: 1,
-          unit: "ks",
-          unit_price: jeden.subtotal,
-          ...jeden,
-        });
-      }
-      if (subtotal === 0) subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-      /*
-        DPH z položiek len vtedy, keď súbor DPH vôbec neuvádza. Nula v súbore
-        je platná hodnota (neplatiteľ, oslobodené) — prepísaná súčtom položiek
-        vyrábala vymyslenú DPH (MaxiTicket CZ: 9,00 + 1,89 = „9,00“). Ak suma
-        sedí so základom, DPH je nula, nech položky hovoria čokoľvek.
-      */
-      const dphUvedena = (pick(head, mapping, "vat_total") ?? "").toString().trim() !== "";
-      const sumaBezDph = subtotal > 0 && total > 0 && Math.abs(total - subtotal) <= 0.02;
-      if (vatTotal === 0 && !dphUvedena && !sumaBezDph) {
-        vatTotal = items.reduce((s, i) => s + i.vat_amount, 0);
-      }
-      if (total === 0) total = items.reduce((s, i) => s + i.total, 0);
-      const druh = druhDokladu(pick(head, mapping, "document_type"));
-      if (druh === "credit_note") {
-        const z = dobropisZaporne({ subtotal, vat_total: vatTotal, total }, items);
-        ({ subtotal, vat_total: vatTotal, total } = z.hlavicka);
-        items = z.polozky;
-      }
-
-      const issueDate = normDate(pick(head, mapping, "issue_date")) || dnesBratislava();
-      const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
-      const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
-      const knownStatus = stavDokladu(pick(head, mapping, "status")) as
-        "draft" | "issued" | "sent" | "paid" | "cancelled";
+      const f = fakturaZRiadkov(group, mapping, predvolenaSadzba, invNo);
+      const {
+        items,
+        subtotal,
+        vatTotal,
+        total,
+        druh,
+        issueDate,
+        dueDate,
+        deliveryDate,
+        knownStatus,
+      } = f;
 
       const payload = {
         company_id: companyId,
@@ -1309,7 +1297,15 @@ export async function runImport(args: {
         import_source: zdroj,
         imported_at: new Date().toISOString(),
         original_external_id: externalId || null,
+        ...f.pohoda,
+        ...(f.opravujeCislo && invByNumber.get(f.opravujeCislo)
+          ? { opravuje_fakturu_id: invByNumber.get(f.opravujeCislo) }
+          : {}),
+        ...(druh === "advance_payment" && f.zalohaCislo && invByNumber.get(f.zalohaCislo)
+          ? { advance_invoice_id: invByNumber.get(f.zalohaCislo) }
+          : {}),
       };
+      // Kurz zo súboru (Pohoda) má prednosť — doplňovač dopočíta len prepočet.
       Object.assign(payload, await kurzDoRiadku("invoices", payload));
 
       let invoiceId: string;
@@ -1341,10 +1337,29 @@ export async function runImport(args: {
         subtotal: it.subtotal,
         vat_amount: it.vat_amount,
         total: it.total,
+        ...((it as any).prenesenie ? { prenesenie: true } : {}),
       }));
       if (itemRows.length) {
         const { error: itErr } = await supabaseAdmin.from("invoice_items").insert(itemRows);
         if (itErr) throw new Error(`Položky: ${itErr.message}`);
+      }
+
+      /*
+        Odpočet zálohy zo zálohovej faktúry, ktorá už vo firme je (Pohoda:
+        `invoiceAdvancePaymentItem` s číslom zálohovej) — exporty čítajú odpočet
+        z `invoice_advances`, bez väzby by išla záloha len ako suma.
+      */
+      const zalohovaId =
+        druh !== "advance_payment" && f.zalohaCislo ? invByNumber.get(f.zalohaCislo) : undefined;
+      if (zalohovaId && Number(payload.advance_amount) > 0) {
+        await supabaseAdmin.from("invoice_advances").delete().eq("invoice_id", invoiceId);
+        const { error: zErr } = await supabaseAdmin.from("invoice_advances").insert({
+          company_id: companyId,
+          invoice_id: invoiceId,
+          advance_invoice_id: zalohovaId,
+          amount: Number(payload.advance_amount),
+        });
+        if (zErr) console.warn("[import] odpočet zálohy:", zErr.message);
       }
 
       result.imported_invoices++;
@@ -1388,6 +1403,114 @@ export async function runImport(args: {
 }
 
 /**
+ * Faktúra z riadkov jedného dokladu (riadok = položka, hlavička sa opakuje).
+ * Čistá časť `runImport` — spätný chod Pohody ju skúša bez databázy.
+ */
+export function fakturaZRiadkov(
+  group: Record<string, string>[],
+  mapping: Partial<Record<FieldKey, string>>,
+  predvolenaSadzba: PredvolenaSadzba,
+  invNo: string,
+) {
+  const head = group[0] ?? {};
+  // Build items: prefer per-row item mapping; else synthesize a single line from totals
+  // Záporný riadok (zľava, položka dobropisu) je platná položka — predtým
+  // vypadol a súčet položiek nesedel so sumou faktúry.
+  let items = group
+    .map((r) => buildItem(r, mapping, predvolenaSadzba))
+    .filter((it) => it.quantity !== 0 || it.unit_price !== 0 || it.total !== 0);
+  let subtotal = num(pick(head, mapping, "subtotal"));
+  let vatTotal = num(pick(head, mapping, "vat_total"));
+  let total = sumaSDph(head, mapping);
+  if (items.length === 0) {
+    const jeden = jednaPolozkaZoSuctov({
+      subtotal,
+      vatTotal,
+      total,
+      // Kto nebol platiteľ, píše to do poznámky; inak sadzba firmy k dátumu vystavenia.
+      bezDph: jeNeplatitelPoznamka(pick(head, mapping, "notes")),
+      sadzba: predvolenaSadzba(normDate(pick(head, mapping, "issue_date"))),
+    });
+    // Prázdny súčet sa dopočíta až z položky — inak by základ ostal nula.
+    if (!subtotal && !vatTotal) {
+      subtotal = jeden.subtotal;
+      vatTotal = jeden.vat_amount;
+    }
+    items.push({
+      // Súbor nemal rozpis položiek — faktúra príde ako jeden riadok.
+      name: nazovJedinejPolozky(head, mapping) || `Položky faktúry ${invNo}`,
+      description: null,
+      discount_percent: 0,
+      quantity: 1,
+      unit: "ks",
+      unit_price: jeden.subtotal,
+      ...jeden,
+    });
+  }
+  if (subtotal === 0) subtotal = items.reduce((s, i) => s + i.subtotal, 0);
+  /*
+    DPH z položiek len vtedy, keď súbor DPH vôbec neuvádza. Nula v súbore
+    je platná hodnota (neplatiteľ, oslobodené) — prepísaná súčtom položiek
+    vyrábala vymyslenú DPH (MaxiTicket CZ: 9,00 + 1,89 = „9,00“). Ak suma
+    sedí so základom, DPH je nula, nech položky hovoria čokoľvek.
+  */
+  const dphUvedena = (pick(head, mapping, "vat_total") ?? "").toString().trim() !== "";
+  const sumaBezDph = subtotal > 0 && total > 0 && Math.abs(total - subtotal) <= 0.02;
+  if (vatTotal === 0 && !dphUvedena && !sumaBezDph) {
+    vatTotal = items.reduce((s, i) => s + i.vat_amount, 0);
+  }
+  if (total === 0) total = items.reduce((s, i) => s + i.total, 0);
+  const druh = druhDokladu(pick(head, mapping, "document_type"));
+  if (druh === "credit_note") {
+    const z = dobropisZaporne({ subtotal, vat_total: vatTotal, total }, items);
+    ({ subtotal, vat_total: vatTotal, total } = z.hlavicka);
+    items = z.polozky;
+  }
+
+  const issueDate = normDate(pick(head, mapping, "issue_date")) || dnesBratislava();
+  const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
+  const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
+  const knownStatus = stavDokladu(pick(head, mapping, "status")) as
+    "draft" | "issued" | "sent" | "paid" | "cancelled";
+
+  // Údaje, ktoré nesie Pohoda XML — prázdne sa nezapisujú (stĺpce majú predvolené hodnoty).
+  const pohoda: Record<string, unknown> = {};
+  const kurz = num(pick(head, mapping, "exchange_rate"));
+  if (kurz > 0) pohoda.exchange_rate = kurz;
+  for (const k of ["kv_clenenie", "pohoda_predkontacia", "pohoda_clenenie_dph"] as const) {
+    const v = pick(head, mapping, k);
+    if (v) pohoda[k] = v;
+  }
+  if (/^(true|1|ano|áno|yes|a)$/i.test(pick(head, mapping, "reverse_charge")))
+    pohoda.reverse_charge = true;
+  const oss = pick(head, mapping, "oss_country");
+  if (/^[A-Z]{2}$/i.test(oss)) {
+    pohoda.oss = true;
+    pohoda.oss_country = oss.toUpperCase();
+  }
+  const prenesenie = group.map((r) => /^(true|1)$/i.test(pick(r, mapping, "item_pdp")));
+  const itemsSPdp =
+    prenesenie.some(Boolean) && items.length === prenesenie.length
+      ? items.map((it, i) => (prenesenie[i] ? { ...it, prenesenie: true } : it))
+      : items;
+
+  return {
+    items: itemsSPdp,
+    subtotal,
+    vatTotal,
+    total,
+    druh,
+    issueDate,
+    dueDate,
+    deliveryDate,
+    knownStatus,
+    pohoda,
+    opravujeCislo: pick(head, mapping, "opravuje_cislo") || null,
+    zalohaCislo: pick(head, mapping, "zaloha_cislo") || null,
+  };
+}
+
+/**
  * Sadzba, keď ju súbor vôbec neuvádza. Platiteľ dostane základnú sadzbu svojej
  * krajiny ku dňu vystavenia, neplatiteľ nulu — fakturovať DPH nesmie.
  */
@@ -1425,7 +1548,15 @@ export function buildItem(
       ? num(zoSuboru)
       : quantity * unit_price * (1 - discount_percent / 100) ||
         (total ? total / (1 + vat_rate / 100) : 0);
-  const vat_amount = subtotal * (vat_rate / 100);
+  /*
+   * DPH riadku zo súboru (Pohoda `priceVAT`) má prednosť pred výpočtom: pri
+   * prenesení je nula, hoci sadzba ostáva, a zaokrúhlenie riadku robí zdroj.
+   */
+  const danZoSuboru = pick(row, mapping, "item_vat_amount");
+  const vat_amount =
+    danZoSuboru != null && String(danZoSuboru).trim() !== ""
+      ? num(danZoSuboru)
+      : subtotal * (vat_rate / 100);
   return {
     name: pick(row, mapping, "item_name") || "Položka",
     description: pick(row, mapping, "item_description") || null,

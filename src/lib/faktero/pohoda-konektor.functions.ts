@@ -245,3 +245,26 @@ export const stavKonektoraFn = createServerFn({ method: "POST" })
       })),
     };
   });
+
+/**
+ * Odpoveď z Pohody nahratá ručne (`responsePack` po importe mesačného balíka
+ * alebo skúšobného balíka). Spracuje sa rovnako ako odpoveď konektora:
+ * odmietnuté doklady sa vrátia do fronty, potvrdené dostanú číslo z Pohody a
+ * používateľ uvidí chyby aj upozornenia po slovensky.
+ */
+export const nahrajOdpovedPohodyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { companyId: string; xml: string }) => {
+    if (!input?.companyId || typeof input.xml !== "string") throw new Error("Chýba súbor.");
+    if (input.xml.length > 20_000_000) throw new Error("Súbor je príliš veľký.");
+    return input;
+  })
+  .handler(async ({ data, context }) => {
+    const { overPristup } = await import("./over-pristup");
+    await overPristup(context, data.companyId, { oblast: "uctovnictvo", zapis: true });
+    if (!/responsePack/i.test(data.xml.slice(0, 5000)))
+      throw new Error("Súbor nie je odpoveď z Pohody (responsePack).");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { spracujOdpoved } = await import("./pohoda-konektor.server");
+    return await spracujOdpoved(supabaseAdmin, { companyId: data.companyId, xml: data.xml });
+  });

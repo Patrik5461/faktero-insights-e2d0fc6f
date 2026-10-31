@@ -322,3 +322,16 @@ mPohodu Pro už používa.
 
 Bod 1 funguje s každou radou Pohody a účtovníčka neinštaluje nič, preto má
 prednosť pred 2 a 3.
+
+## Spätný chod a skúška bez Pohody (2026-10-31)
+
+- `src/lib/faktero/pohoda-spatny-chod.test.ts` — každý druh dokladu (vydané SK/CZ,
+  dobropis, vrubopis, zálohová, odpočet zálohy aj v cudzej mene, daňový doklad k platbe,
+  zľavy, PDP/§ 92a, EÚ, OSS, prijaté, bločky, pokladňa, banka) ide exportom do XML,
+  cez schému Stormware a späť naším importom z Pohody; sumy, DPH, sadzby, kurz,
+  KV a väzby musia sedieť na cent. Spoločné čítanie je v `pohoda-citanie.ts`.
+- Odpoveď Pohody (`responsePack`) rozoberá `pohoda-odpoved.ts`: upozornenia (603…)
+  sa už nezahadzujú, duplicita dávky nevracia doklad do fronty, chyba celého balíka
+  sa ohlási. Ručne sa dá nahrať v Prepojení s Pohodou.
+- Skúšobný balík pre skutočnú Pohodu: `node scripts/pohoda-skuska.mjs`, návod
+  `docs/pohoda-skuska.md`, vyhodnotenie odpovede `npx jiti scripts/pohoda-odpoved.ts`.

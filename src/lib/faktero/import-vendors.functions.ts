@@ -39,7 +39,15 @@ export const previewVendorImport = createServerFn({ method: "POST" })
     if (error || !blob) throw new Error(error?.message ?? "Súbor sa nepodarilo načítať.");
     const bytes = new Uint8Array(await blob.arrayBuffer());
     const { parseVendorFile, summarize } = await import("./import-vendors.server");
-    const rows = parseVendorFile(data.source, data.fileName, bytes);
+    // Krajina firmy rozhoduje o sadzbe priehradky Pohody (SK high 23 %, CZ 21 %).
+    const { data: firmaKrajina } = await supabaseAdmin
+      .from("companies")
+      .select("country")
+      .eq("id", data.companyId)
+      .maybeSingle();
+    const rows = parseVendorFile(data.source, data.fileName, bytes, {
+      krajina: firmaKrajina?.country ?? null,
+    });
     if (rows.length === 0)
       throw new Error("V súbore sa nenašli žiadne faktúry v očakávanom formáte.");
     return { preview: summarize(rows), rowCount: rows.length };
@@ -59,46 +67,22 @@ export const executeVendorImport = createServerFn({ method: "POST" })
     const { parseVendorFile, summarize } = await import("./import-vendors.server");
     const { runImport } = await import("./import-superfaktura.server");
 
-    const rows = parseVendorFile(data.source, data.fileName, bytes);
+    // Krajina firmy rozhoduje o sadzbe priehradky Pohody (SK high 23 %, CZ 21 %).
+    const { data: firmaKrajina } = await supabaseAdmin
+      .from("companies")
+      .select("country")
+      .eq("id", data.companyId)
+      .maybeSingle();
+    const rows = parseVendorFile(data.source, data.fileName, bytes, {
+      krajina: firmaKrajina?.country ?? null,
+    });
     if (rows.length === 0)
       throw new Error("V súbore sa nenašli žiadne faktúry v očakávanom formáte.");
     const preview = summarize(rows);
 
     // Identity mapping — canonical row keys are already FieldKey names.
-    const canonicalKeys: string[] = [
-      "invoice_number",
-      "variable_symbol",
-      "issue_date",
-      "due_date",
-      "delivery_date",
-      "status",
-      "currency",
-      "subtotal",
-      "vat_total",
-      "total",
-      "notes",
-      "external_id",
-      "customer_name",
-      "customer_ico",
-      "customer_dic",
-      "customer_ic_dph",
-      "customer_email",
-      "customer_phone",
-      "customer_street",
-      "customer_city",
-      "customer_zip",
-      "customer_country",
-      "item_name",
-      "item_description",
-      "item_quantity",
-      "item_unit",
-      "item_unit_price",
-      "item_vat_rate",
-      "item_total",
-      "item_subtotal",
-      "item_discount_percent",
-      "advance_amount",
-    ];
+    const { KANONICKE_POLIA } = await import("./import-vendors.server");
+    const canonicalKeys: string[] = [...KANONICKE_POLIA];
     const mapping = Object.fromEntries(canonicalKeys.map((k) => [k, k])) as any;
 
     // Rows must be Record<string,string> for runImport; drop undefineds and stringify.
