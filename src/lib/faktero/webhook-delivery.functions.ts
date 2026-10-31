@@ -4,87 +4,31 @@ import { z } from "zod";
 
 const IdInput = z.object({ id: z.string().uuid() });
 
-/** Retry a single webhook delivery. Creates a new log row to preserve history. */
+/**
+ * „Poslať znova“ — jeden pokus hneď teraz pre opakované alebo vzdané
+ * doručenie. Ide do toho istého záznamu s tým istým `Idempotency-Key`, takže
+ * prijímateľ, ktorý udalosť medzičasom dostal, ju nespracuje druhý raz.
+ */
 export const retryWebhookDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => IdInput.parse(d))
   .handler(async ({ data, context }) => {
-    // Use the user-scoped client so RLS verifies access to this log row.
+    // Používateľský klient — RLS pustí k záznamu len správcu firmy.
     const { data: log, error } = await context.supabase
       .from("webhook_delivery_logs")
-      .select("id, company_id, webhook_id, event_type, payload")
+      .select("id")
       .eq("id", data.id)
       .maybeSingle();
     if (error || !log) throw new Error("Záznam nenájdený");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: hook } = await supabaseAdmin
-      .from("webhooks")
-      .select("id, url, secret, active")
-      .eq("id", log.webhook_id)
-      .maybeSingle();
-    if (!hook) throw new Error("Webhook už neexistuje");
-    if (!hook.active) throw new Error("Webhook je vypnutý.");
-
-    const { createHmac } = await import("crypto");
-    const body = JSON.stringify(log.payload);
-    const headers: Record<string, string> = {
-      "content-type": "application/json",
-      "x-faktero-event": log.event_type as string,
-      "user-agent": "Faktero-Webhooks/1.0",
-      "x-faktero-retry": "1",
+    const { posliWebhookZnova } = await import("./webhook-trigger.server");
+    const r = await posliWebhookZnova(log.id);
+    return {
+      ok: r.ok,
+      log_id: log.id,
+      status: r.status,
+      response_status: r.http,
+      duration_ms: r.trvanieMs,
+      pokus: r.pokus,
     };
-    if (hook.secret) {
-      headers["x-faktero-signature"] = createHmac("sha256", hook.secret).update(body).digest("hex");
-    }
-
-    const t0 = Date.now();
-    let response_status: number | null = null;
-    let response_body: string | null = null;
-    let status: "success" | "failed" = "failed";
-    let error_message: string | null = null;
-
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10_000);
-    try {
-      const { overAdresuWebhooku } = await import("./webhook-adresa.server");
-      await overAdresuWebhooku(hook.url);
-      // Presmerovanie by obišlo kontrolu adresy.
-      const res = await fetch(hook.url, {
-        method: "POST",
-        headers,
-        body,
-        signal: ctrl.signal,
-        redirect: "manual",
-      });
-      const text = await res.text().catch(() => "");
-      response_status = res.status;
-      response_body = text.slice(0, 2000);
-      status = res.ok ? "success" : "failed";
-      if (!res.ok) error_message = `HTTP ${res.status}`;
-    } catch (e: any) {
-      error_message = e?.message ?? "fetch_failed";
-    } finally {
-      clearTimeout(timer);
-    }
-    const duration_ms = Date.now() - t0;
-
-    const { data: inserted } = await supabaseAdmin
-      .from("webhook_delivery_logs")
-      .insert({
-        company_id: log.company_id,
-        webhook_id: hook.id,
-        event_type: log.event_type,
-        payload: log.payload,
-        status,
-        response_status,
-        response_body,
-        duration_ms,
-        attempt_count: 1,
-        error_message,
-      })
-      .select("id")
-      .single();
-
-    return { ok: status === "success", log_id: inserted?.id, response_status, duration_ms };
   });

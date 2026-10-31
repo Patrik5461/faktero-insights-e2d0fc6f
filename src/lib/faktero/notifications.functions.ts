@@ -420,6 +420,29 @@ async function notifikacieDph(companyId: string): Promise<AppNotification[]> {
   return upozorneniaDph(firma, (zaznamy ?? []) as any[], dnesBratislava());
 }
 
+/**
+ * Webhooky, ktoré to po všetkých opakovaniach vzdali (stav `failed`) za
+ * posledné dva týždne — jedna položka na webhook. Keď správca udalosť pošle
+ * znova a prejde, položka zmizne sama.
+ */
+async function notifikacieWebhookov(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const od = new Date(Date.now() - 14 * 86_400_000).toISOString();
+  const [{ data: zlyhane }, { data: hooky }] = await Promise.all([
+    supabaseAdmin
+      .from("webhook_delivery_logs")
+      .select("id, webhook_id, event_type, created_at, error_message")
+      .eq("company_id", companyId)
+      .eq("status", "failed")
+      .gte("created_at", od)
+      .order("created_at", { ascending: false })
+      .limit(LIMIT),
+    supabaseAdmin.from("webhooks").select("id, url").eq("company_id", companyId),
+  ]);
+  const { webhookyVzdane } = await import("./notifications");
+  return webhookyVzdane((zlyhane ?? []) as any[], (hooky ?? []) as any[]);
+}
+
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // Rola a krajina sa pýtajú súčasne so signálmi, nie až po nich.
@@ -433,7 +456,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
   ]);
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph, webhooky] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
@@ -443,6 +466,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       notifikaciaSchvalovania(companyId, userId).catch(() => [] as AppNotification[]),
       notifikacieEfaktur(companyId).catch(() => [] as AppNotification[]),
       notifikacieDph(companyId).catch(() => [] as AppNotification[]),
+      notifikacieWebhookov(companyId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
@@ -456,6 +480,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       ...schvalovanie,
       ...efaktury,
       ...dph,
+      ...webhooky,
     ].sort(
       (a, b) => {
         const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
@@ -476,8 +501,11 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     na stránku s vysvetlením, že agenda pre ňu nie je.
   */
   const krajina = krajinaDane(firma?.country);
-  const preKrajinu = zoznam.filter((n) =>
-    agendaPreKrajinu(String(n.to ?? "").split("?")[0]!, krajina),
+  const preKrajinu = zoznam.filter(
+    (n) =>
+      agendaPreKrajinu(String(n.to ?? "").split("?")[0]!, krajina) &&
+      // Webhooky spravuje len majiteľ a správca (rovnako ako RLS denníka doručení).
+      (!n.key.startsWith("webhook_vzdane:") || clen?.role === "owner" || clen?.role === "admin"),
   );
   if (clen?.role !== "custom") return preKrajinu;
   const { oblastPodlaCesty, vidiOblast } = await import("./opravnenia");

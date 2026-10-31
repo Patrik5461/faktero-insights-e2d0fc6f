@@ -11,6 +11,7 @@ import { CheckCircle2, XCircle, Clock, RefreshCw, Eye, FileJson, Webhook } from 
 import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
 import { useT } from "@/lib/i18n/useT";
+import { StavDoruceniaWebhooku, mozeSaPoslatZnova } from "@/components/faktero/StavDoruceniaWebhooku";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/webhooky-logy")({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/webhooky-logy")({
   component: WebhookLogsPage,
 });
 
-type Filter = "all" | "success" | "failed" | "pending";
+type Filter = "all" | "success" | "failed" | "retrying" | "pending";
 type LogRow = {
   id: string;
   webhook_id: string;
@@ -66,12 +67,12 @@ function WebhookLogsPage() {
     (async () => {
       const [{ data: h }, ...countQueries] = await Promise.all([
         supabase.from("webhooks").select("id, url").eq("company_id", cid),
-        ...(["success", "failed", "pending"] as const).map((s) =>
+        ...([["success"], ["failed"], ["pending", "retrying"]] as const).map((s) =>
           supabase
             .from("webhook_delivery_logs")
             .select("id", { count: "exact", head: true })
             .eq("company_id", cid)
-            .eq("status", s),
+            .in("status", [...s]),
         ),
       ]);
       setHooks(Object.fromEntries((h ?? []).map((w: any) => [w.id, { url: w.url }])));
@@ -123,12 +124,12 @@ function WebhookLogsPage() {
             icon={CheckCircle2}
           />
           <SummaryCard
-            label={t("Neúspešné doručenia")}
+            label={t("Vzdané doručenia")}
             value={counts.failed}
             tone="failed"
             icon={XCircle}
           />
-          <SummaryCard label={t("Čakajúce")} value={counts.pending} tone="pending" icon={Clock} />
+          <SummaryCard label={t("Čakajú na ďalší pokus")} value={counts.pending} tone="pending" icon={Clock} />
         </div>
 
         <div className="mb-4">
@@ -144,7 +145,8 @@ function WebhookLogsPage() {
                 options: [
                   { value: "all", label: t("Všetky") },
                   { value: "success", label: t("Úspešné") },
-                  { value: "failed", label: t("Neúspešné") },
+                  { value: "retrying", label: t("Opakuje sa") },
+                  { value: "failed", label: t("Vzdané") },
                   { value: "pending", label: t("Čakajúce") },
                 ],
               },
@@ -214,7 +216,7 @@ function WebhookLogsPage() {
                     logs.map((l) => (
                       <tr key={l.id} className="hover:bg-muted/30">
                         <td className="px-3 py-2.5">
-                          <StatusBadge status={l.status} />
+                          <StavDoruceniaWebhooku status={l.status} />
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs">{l.event_type}</td>
                         <td
@@ -247,9 +249,13 @@ function WebhookLogsPage() {
                               <Eye className="h-3.5 w-3.5" />
                             </IconBtn>
                             <IconBtn
-                              title={t("Opakovať doručenie")}
+                              title={
+                                mozeSaPoslatZnova(l.status)
+                                  ? t("Poslať znova")
+                                  : t("Udalosť už bola doručená.")
+                              }
                               onClick={() => onRetry(l.id)}
-                              disabled={retryingId === l.id}
+                              disabled={retryingId === l.id || !mozeSaPoslatZnova(l.status)}
                             >
                               <RefreshCw
                                 className={`h-3.5 w-3.5 ${retryingId === l.id ? "animate-spin" : ""}`}
@@ -313,23 +319,6 @@ function WebhookLogsPage() {
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const { t } = useT();
-  const map: Record<string, { label: string; cls: string }> = {
-    success: { label: "Úspech", cls: "bg-emerald-500/10 text-emerald-700 ring-emerald-500/20" },
-    failed: { label: "Zlyhalo", cls: "bg-destructive/10 text-destructive ring-destructive/20" },
-    pending: { label: "Čaká", cls: "bg-amber-500/10 text-amber-800 ring-amber-500/20" },
-  };
-  const m = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground ring-border" };
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${m.cls}`}
-    >
-      {t(m.label)}
-    </span>
   );
 }
 

@@ -198,7 +198,11 @@ function QuoteDetail() {
       toast.success(t("E-mail odoslaný"));
       if (r?.vynechane?.length) {
         /* Mail odišiel, ale nie celý — to sa musí povedať nahlas. */
-        toast.warning(t("Do mailu sa nezmestili: {subory}", { subory: r.vynechane.join(", ") }), { duration: 12000 });
+        toast.warning((r as any).odkaz_prilohy
+          ? t("Do mailu sa nezmestili: {subory} — príjemca ich dostal ako odkaz na stiahnutie (platí 30 dní).", {
+              subory: r.vynechane.join(", "),
+            })
+          : t("Do mailu sa nezmestili: {subory}", { subory: r.vynechane.join(", ") }), { duration: 12000 });
       }
       setEmailOpen(false);
       load();

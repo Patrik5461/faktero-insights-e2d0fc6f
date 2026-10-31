@@ -143,6 +143,7 @@ import { Route as PravneOpakovanePlatbyRouteImport } from './routes/pravne.opako
 import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
 import { Route as PravneSpracovanieUdajovRouteImport } from './routes/pravne.spracovanie-udajov'
 import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
+import { Route as PrilohyTokenRouteImport } from './routes/prilohy.$token'
 import { Route as SamofakturaTokenRouteImport } from './routes/samofaktura.$token'
 import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
 import { Route as UctovniciIndexRouteImport } from './routes/uctovnici.index'
@@ -1076,6 +1077,11 @@ const PravneSpracovanieUdajovRoute = PravneSpracovanieUdajovRouteImport.update({
 const PravneTeslaPodmienkyRoute = PravneTeslaPodmienkyRouteImport.update({
   id: '/pravne/tesla-podmienky',
   path: '/pravne/tesla-podmienky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrilohyTokenRoute = PrilohyTokenRouteImport.update({
+  id: '/prilohy/$token',
+  path: '/prilohy/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SamofakturaTokenRoute = SamofakturaTokenRouteImport.update({
@@ -2627,6 +2633,7 @@ export interface FileRoutesByFullPath {
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/prilohy/$token': typeof PrilohyTokenRoute
   '/samofaktura/$token': typeof SamofakturaTokenRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
@@ -3005,6 +3012,7 @@ export interface FileRoutesByTo {
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/prilohy/$token': typeof PrilohyTokenRoute
   '/samofaktura/$token': typeof SamofakturaTokenRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
@@ -3392,6 +3400,7 @@ export interface FileRoutesById {
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/prilohy/$token': typeof PrilohyTokenRoute
   '/samofaktura/$token': typeof SamofakturaTokenRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
@@ -3780,6 +3789,7 @@ export interface FileRouteTypes {
     | '/pravne/reklamacny-poriadok'
     | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
+    | '/prilohy/$token'
     | '/samofaktura/$token'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
@@ -4158,6 +4168,7 @@ export interface FileRouteTypes {
     | '/pravne/reklamacny-poriadok'
     | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
+    | '/prilohy/$token'
     | '/samofaktura/$token'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
@@ -4544,6 +4555,7 @@ export interface FileRouteTypes {
     | '/pravne/reklamacny-poriadok'
     | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
+    | '/prilohy/$token'
     | '/samofaktura/$token'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
@@ -4890,6 +4902,7 @@ export interface RootRouteChildren {
   PravneReklamacnyPoriadokRoute: typeof PravneReklamacnyPoriadokRoute
   PravneSpracovanieUdajovRoute: typeof PravneSpracovanieUdajovRoute
   PravneTeslaPodmienkyRoute: typeof PravneTeslaPodmienkyRoute
+  PrilohyTokenRoute: typeof PrilohyTokenRoute
   SamofakturaTokenRoute: typeof SamofakturaTokenRoute
   SchvalitTokenRoute: typeof SchvalitTokenRoute
   PomocIndexRoute: typeof PomocIndexRoute
@@ -5918,6 +5931,13 @@ declare module '@tanstack/react-router' {
       path: '/pravne/tesla-podmienky'
       fullPath: '/pravne/tesla-podmienky'
       preLoaderRoute: typeof PravneTeslaPodmienkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prilohy/$token': {
+      id: '/prilohy/$token'
+      path: '/prilohy/$token'
+      fullPath: '/prilohy/$token'
+      preLoaderRoute: typeof PrilohyTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/samofaktura/$token': {
@@ -8542,6 +8562,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneReklamacnyPoriadokRoute: PravneReklamacnyPoriadokRoute,
   PravneSpracovanieUdajovRoute: PravneSpracovanieUdajovRoute,
   PravneTeslaPodmienkyRoute: PravneTeslaPodmienkyRoute,
+  PrilohyTokenRoute: PrilohyTokenRoute,
   SamofakturaTokenRoute: SamofakturaTokenRoute,
   SchvalitTokenRoute: SchvalitTokenRoute,
   PomocIndexRoute: PomocIndexRoute,

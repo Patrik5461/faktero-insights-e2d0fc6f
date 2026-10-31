@@ -222,11 +222,12 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       ctaHtml +
       podpisHtml(company ?? {});
 
-    const { prilohy, vynechane } = input.s_prilohami
-      ? await (
-          await import("./prilohy-mail.server")
-        ).prilohyDoMailu("invoice", input.company_id, input.invoice_id)
-      : { prilohy: [], vynechane: [] as string[] };
+    const prilohyMail = await import("./prilohy-mail.server");
+    const { prilohy, vynechane, odkaz } = input.s_prilohami
+      ? await prilohyMail.prilohyDoMailu("invoice", input.company_id, input.invoice_id)
+      : { prilohy: [], vynechane: [] as string[], odkaz: null };
+    // Čo sa do mailu nezmestí, dostane príjemca ako podpísaný odkaz na stiahnutie.
+    const odkazPriloh = prilohyMail.odkazNaPrilohyDoMailu(odkaz, jazykFaktury(invoice, company));
 
     const senderName = menoOdosielatela(company?.email_sender_name || company?.name);
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
@@ -240,8 +241,8 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       to: [input.recipient_email],
       subject: finalSubject,
       reply_to: company?.email_reply_to || undefined,
-      text: finalPlain,
-      html: bodyHtml,
+      text: finalPlain + odkazPriloh.text,
+      html: bodyHtml + odkazPriloh.html,
       attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfB64 }, ...prilohy],
       ochrana: {
         userId: input.user_id ?? null,
@@ -258,7 +259,8 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
         // Predmet a text sa dopĺňajú až tu — pri založení záznamu ešte nie sú
         // zostavené zo šablóny firmy.
         subject: finalSubject,
-        message: finalPlain,
+        // S odkazom na veľké prílohy — odosielateľ ho tak nájde aj v histórii.
+        message: finalPlain + odkazPriloh.text,
         provider_message_id: json?.id ?? null,
         sent_at: new Date().toISOString(),
       })
@@ -283,7 +285,13 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       data: invoicePayload(updated ?? invoice),
     });
 
-    return { ok: true, message_id: json?.id ?? null, log_id: log.id, vynechane };
+    return {
+      ok: true,
+      message_id: json?.id ?? null,
+      log_id: log.id,
+      vynechane,
+      odkaz_prilohy: odkaz?.url ?? null,
+    };
   } catch (e: any) {
     await supabaseAdmin
       .from("invoice_email_logs")

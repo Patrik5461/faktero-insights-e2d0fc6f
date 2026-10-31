@@ -1,11 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { retryWebhookDelivery } from "@/lib/faktero/webhook-delivery.functions";
+import { StavDoruceniaWebhooku, mozeSaPoslatZnova } from "@/components/faktero/StavDoruceniaWebhooku";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { Plus, Trash2, Copy, RefreshCw } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -40,6 +43,8 @@ function WebhooksPage() {
   const [hooks, setHooks] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
+  const [posielam, setPosielam] = useState<string | null>(null);
+  const posliZnova = useServerFn(retryWebhookDelivery);
   useZatvorNaEscape(editing ? () => setEditing(null) : null);
 
   async function reload() {
@@ -87,6 +92,19 @@ function WebhooksPage() {
     toast.success(t("Uložené"));
     setEditing(null);
     reload();
+  }
+  async function znova(id: string) {
+    setPosielam(id);
+    try {
+      const r = await posliZnova({ data: { id } });
+      if (r.ok) toast.success(t("Doručené ({http})", { http: r.response_status ?? "—" }));
+      else toast.error(t("Zlyhalo ({http})", { http: r.response_status ?? "—" }));
+    } catch (e: any) {
+      toast.error(e?.message ? t(e.message) : t("Chyba pri opakovaní"));
+    } finally {
+      setPosielam(null);
+      reload();
+    }
   }
   async function remove(id: string) {
     if (!(await potvrd(t("Zmazať webhook?")))) return;
@@ -158,9 +176,19 @@ function WebhooksPage() {
           </div>
 
           <div>
-            <h3 className="mb-2 text-sm font-semibold">{t("Posledné doručenia")}</h3>
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-sm font-semibold">{t("Posledné doručenia")}</h3>
+              <Link to="/webhooky-logy" className="text-xs text-primary hover:underline">
+                {t("Celá história doručení")}
+              </Link>
+            </div>
+            <p className="mb-2 text-xs text-muted-foreground">
+              {t(
+                "Neúspešné doručenie skúšame znova po 1 min, 5 min, 30 min, 2 h, 6 h, 12 h a 24 h. Potom ho vzdáme a upozorníme vás v zvončeku. Každé doručenie nesie hlavičku Idempotency-Key — pri opakovaní je rovnaká.",
+              )}
+            </p>
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" data-testid="webhook-historia">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="p-3">{t("Čas")}</th>
@@ -168,25 +196,56 @@ function WebhooksPage() {
                     <th className="p-3">{t("Stav")}</th>
                     <th className="p-3">HTTP</th>
                     <th className="p-3">{t("Pokusy")}</th>
+                    <th className="p-3">{t("Ďalší pokus")}</th>
+                    <th className="p-3 text-right">{t("Akcie")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {logs.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                      <td colSpan={7} className="p-6 text-center text-muted-foreground">
                         {t("Žiadne doručenia.")}
                       </td>
                     </tr>
                   )}
                   {logs.map((l) => (
-                    <tr key={l.id}>
+                    <tr key={l.id} data-dorucenie={l.id}>
                       <td className="p-3 text-xs">
                         {new Date(l.created_at).toLocaleString("sk-SK")}
                       </td>
                       <td className="p-3 font-mono text-xs">{l.event_type}</td>
-                      <td className="p-3">{l.status}</td>
+                      <td className="p-3">
+                        <StavDoruceniaWebhooku status={l.status} />
+                        {l.error_message && l.status !== "success" && (
+                          <div
+                            className="mt-1 max-w-[260px] truncate text-xs text-muted-foreground"
+                            title={l.error_message}
+                          >
+                            {l.error_message}
+                          </div>
+                        )}
+                      </td>
                       <td className="p-3">{l.response_status ?? "—"}</td>
                       <td className="p-3">{l.attempt_count}</td>
+                      <td className="p-3 text-xs">
+                        {l.status === "retrying" && l.next_attempt_at
+                          ? new Date(l.next_attempt_at).toLocaleString("sk-SK")
+                          : "—"}
+                      </td>
+                      <td className="p-3 text-right">
+                        {mozeSaPoslatZnova(l.status) && (
+                          <button
+                            onClick={() => znova(l.id)}
+                            disabled={posielam === l.id}
+                            className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                          >
+                            <RefreshCw
+                              className={`h-3.5 w-3.5 ${posielam === l.id ? "animate-spin" : ""}`}
+                            />
+                            {t("Poslať znova")}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
