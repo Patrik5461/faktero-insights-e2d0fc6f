@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { dnesBratislava } from "./datum-vystavenia";
 import {
   emptySkipBreakdown,
   zalogovatPreskocenu,
@@ -610,7 +611,11 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
             );
             continue;
           }
-          const trip_date = start.toISOString().slice(0, 10);
+          // Deň podľa Bratislavy — jazda o 00:30 by v UTC padla na predošlý deň (a mesiac).
+          const trip_date = dnesBratislava(start);
+          // Staršie importy mali deň podľa UTC; kontrola duplicity bez external_id
+          // sa preto pozerá na oba, inak by tú istú nočnú jazdu zapísala druhýkrát.
+          const trip_date_utc = start.toISOString().slice(0, 10);
           const start_time_iso = start.toISOString();
           const end_time_iso = end ? end.toISOString() : null;
           const duration_seconds = end
@@ -689,7 +694,7 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
               .select("id")
               .eq("company_id", data.companyId)
               .eq("vehicle_id", mappedLink.faktero_vehicle_id!)
-              .eq("trip_date", trip_date)
+              .in("trip_date", [...new Set([trip_date, trip_date_utc])])
               .eq("distance_km", distance);
             dupQuery =
               startLocation === null

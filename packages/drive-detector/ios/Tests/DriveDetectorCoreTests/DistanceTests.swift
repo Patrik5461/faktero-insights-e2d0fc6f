@@ -42,4 +42,21 @@ final class DistanceTests: XCTestCase {
         let jazda = BufferedTrip(id: "x", startedAt: 100, endedAt: 100, distanceMeters: 500)
         XCTAssertEqual(jazda.avgSpeedKmh, 0)
     }
+
+    func testSkokPolohySaDoTrasyNezapocita() {
+        // Dva úseky po ~111 m za 10 s (40 km/h) a medzi nimi skok o 2 km tam a späť.
+        let body = [
+            bod(48.150, 17.110, cas: 0, speed: 40),
+            bod(48.151, 17.110, cas: 10, speed: 40),
+            bod(48.170, 17.110, cas: 20, speed: 40),
+            bod(48.152, 17.110, cas: 30, speed: 40),
+            bod(48.153, 17.110, cas: 40, speed: 40),
+        ]
+        XCTAssertEqual(Distance.total(of: body), 222, accuracy: 5)
+    }
+
+    func testNezmyselnaRychlostSaDoNajvyssejNepocita() {
+        let body = [bod(48.150, 17.110, cas: 0, speed: 50), bod(48.151, 17.110, cas: 10, speed: 400)]
+        XCTAssertEqual(Distance.maxSpeed(of: body), 50)
+    }
 }

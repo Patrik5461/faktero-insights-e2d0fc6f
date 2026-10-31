@@ -10,7 +10,7 @@
  * `external_id`, na ktorých je v databáze jedinečný index — keď sa uloženie
  * podarí a označenie v pluginu už nie, druhý pokus nevyrobí duplicitu.
  */
-import type { BufferedTrip, Classification } from "@faktero/drive-detector";
+import type { BufferedTrip, Classification, TripPoint } from "@faktero/drive-detector";
 import type { TablesInsert } from "@/integrations/supabase/types";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
 
@@ -25,6 +25,71 @@ export function miestnyDatum(cas: number): string {
   const mesiac = String(d.getMonth() + 1).padStart(2, "0");
   const den = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mesiac}-${den}`;
+}
+
+/**
+ * Nad touto rýchlosťou to už nie je jazda, ale skok polohy. Tá istá hranica
+ * je v `gps-tracker.ts` aj v jadre pluginu (iOS aj Android).
+ */
+export const MAX_ROZUMNA_KMH = 250;
+
+function metre(a: TripPoint, b: TripPoint): number {
+  const R = 6_371_000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLng / 2) ** 2 * Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat));
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * Vzdialenosť trasy v metroch bez úsekov, ktoré by auto nemohlo prejsť,
+ * a či sa v trase nejaký taký skok vôbec našiel.
+ */
+export function vzdialenostBezSkokov(body: TripPoint[]): { metre: number; skoky: number } {
+  let spolu = 0;
+  let skoky = 0;
+  for (let i = 1; i < body.length; i++) {
+    const d = metre(body[i - 1], body[i]);
+    const sekundy = (body[i].timestamp - body[i - 1].timestamp) / 1000;
+    // Bez času sa úsek posúdiť nedá — radšej sa započíta.
+    if (sekundy <= 0 || (d / sekundy) * 3.6 <= MAX_ROZUMNA_KMH) spolu += d;
+    else skoky++;
+  }
+  return { metre: spolu, skoky };
+}
+
+/**
+ * Jazda z pluginu očistená od skokov polohy.
+ *
+ * GPS v meste, v tuneli alebo pri chytaní signálu občas hodí polohu o stovky
+ * metrov vedľa a plugin (v buildoch pred 31. 10. 2026) taký úsek pripočítal
+ * do kilometrov — kniha jázd potom tvrdila cestu, ktorú auto nešlo. Kilometre
+ * sa preto prepočítajú z bodov trasy znova, a to aj pre jazdy zo starších
+ * buildov, ktoré v telefónoch ešte bežia. Body trasy ostávajú, zahadzuje sa
+ * len ich započítanie.
+ */
+export function ocistiJazdu(jazda: BufferedTrip): BufferedTrip {
+  const body = jazda.points ?? [];
+  // Bez skoku v trase sa hodnota pluginu nechá — prepočet by ju len posunul
+  // o rozdiel v zaokrúhľovaní. So skokom sa prepočíta z bodov; nový plugin
+  // skok vynechal tiež, takže vyjde to isté číslo (prepočet je opakovateľný).
+  const { metre: bezSkokov, skoky } = vzdialenostBezSkokov(body);
+  const distanceMeters =
+    skoky > 0 ? Math.min(jazda.distanceMeters, bezSkokov) : jazda.distanceMeters;
+  const zBodov = body.reduce(
+    (m, b) => (b.speedKmh >= 0 && b.speedKmh <= MAX_ROZUMNA_KMH ? Math.max(m, b.speedKmh) : m),
+    0,
+  );
+  const maxSpeedKmh =
+    jazda.maxSpeedKmh <= MAX_ROZUMNA_KMH ? jazda.maxSpeedKmh : body.length ? zBodov : 0;
+  // Priemer rovnako ako v pluginu: vzdialenosť cez čas od začiatku po koniec.
+  const koniec = jazda.endedAt ?? body[body.length - 1]?.timestamp ?? jazda.startedAt;
+  const trvanie = (koniec - jazda.startedAt) / 1000;
+  const avgSpeedKmh = trvanie > 0 ? (distanceMeters / trvanie) * 3.6 : 0;
+  return { ...jazda, distanceMeters, maxSpeedKmh, avgSpeedKmh };
 }
 
 function zaokruhli(hodnota: number, desatinne = 2): number {
@@ -50,7 +115,7 @@ export function riadokZJazdy(args: {
   /** Odberateľ, za ktorým sa išlo. Nepovinné — súkromná jazda ho nemá vôbec. */
   odberatel?: { id: string; name: string } | null;
 }): TablesInsert<"trips"> {
-  const { jazda } = args;
+  const jazda = ocistiJazdu(args.jazda);
   const km = zaokruhli(jazda.distanceMeters / 1000);
   const koniec = jazda.endedAt ?? jazda.startedAt;
   const trvanieSekundy = Math.max(0, Math.round((koniec - jazda.startedAt) / 1000));
@@ -136,7 +201,7 @@ export function cakaNaCloveka(jazda: BufferedTrip): boolean {
 
 /** Príliš krátky záznam, ktorý nemá zmysel nikomu ukazovať. */
 export function jePrikratka(jazda: BufferedTrip): boolean {
-  return jazda.distanceMeters < MIN_VZDIALENOST_M;
+  return ocistiJazdu(jazda).distanceMeters < MIN_VZDIALENOST_M;
 }
 
 /**

@@ -162,6 +162,55 @@ export async function synchronizujVozidla(
   return { vozidla: zoznam.length, nove };
 }
 
+/**
+ * Stav tachometra vozidla u poskytovateľa — pre „Založiť vozidlo“.
+ *
+ * Vozidlo sa dovtedy zakladalo s tachometrom 0, hoci GPS stav pozná (napr.
+ * 541 358 km); ručné jazdy potom začínali od nuly. Ide o jedno volanie
+ * zoznamu vozidiel so stropom, aby tlačidlo nevisilo na pomalom API. Keď stav
+ * zistiť nejde (poskytovateľ ho nedáva, chyba, strop), vráti `null` a vozidlo
+ * sa založí ako doteraz.
+ */
+export async function tachometerUPoskytovatela(
+  pripojenieId: string,
+  externeId: string,
+  stropMs = 8_000,
+): Promise<number | null> {
+  try {
+    const { data: pr } = await db
+      .from("gps_pripojenia")
+      .select("poskytovatel, prihlasenie_sifrovane")
+      .eq("id", pripojenieId)
+      .maybeSingle();
+    if (!pr) return null;
+    const adapter = adapterPodlaId(pr.poskytovatel);
+    if (!adapter) return null;
+    const p = desifrujPrihlasenie(pr.prihlasenie_sifrovane);
+    let casovac: ReturnType<typeof setTimeout> | undefined;
+    const zoznam = await Promise.race([
+      adapter.vozidla(p),
+      new Promise<null>((res) => {
+        casovac = setTimeout(() => res(null), stropMs);
+      }),
+    ]).finally(() => clearTimeout(casovac));
+    return tachometerZoZoznamu(zoznam, externeId);
+  } catch {
+    return null;
+  }
+}
+
+/** Vyberie z poskytovateľovho zoznamu tachometer daného vozidla (zaokrúhlený na km). */
+export function tachometerZoZoznamu(
+  zoznam: Array<{ externeId: string; tachometerKm?: number | null }> | null,
+  externeId: string,
+): number | null {
+  const km = zoznam?.find((v) => String(v.externeId) === String(externeId))?.tachometerKm;
+  if (km == null || !Number.isFinite(Number(km)) || Number(km) <= 0) return null;
+  // Nezmysel nad 10 mil. km (napr. metre namiesto km) sa radšej nepoužije.
+  if (Number(km) > 10_000_000) return null;
+  return Math.round(Number(km));
+}
+
 function jeDuplicita(sprava: string | null | undefined) {
   const m = (sprava ?? "").toLowerCase();
   return m.includes("duplicate key") || m.includes("_external_unique");

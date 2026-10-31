@@ -320,7 +320,9 @@ async function stopNative(): Promise<VysledokMerania> {
 
   try {
     const { DriveDetector } = await import("@faktero/drive-detector");
-    const jazda = await DriveDetector.endTrip();
+    const surova = await DriveDetector.endTrip();
+    // Staršie buildy pluginu pripočítali do kilometrov aj skoky polohy.
+    const jazda = surova ? (await import("./auto-jazdy")).ocistiJazdu(surova) : null;
     if (jazda) {
       kmSpolu = jazda.distanceMeters / 1000;
       // Plugin meria rýchlosť priamo z GPS, nie dopočtom z bodov — je to
