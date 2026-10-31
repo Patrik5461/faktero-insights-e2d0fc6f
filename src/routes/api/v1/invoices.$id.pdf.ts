@@ -13,7 +13,8 @@ export const Route = createFileRoute("/api/v1/invoices/$id/pdf")({
             .eq("company_id", ctx.company_id)
             .maybeSingle();
           if (error) {
-            console.error("[api/pdf] db error", error);
+            // Neplatné id (22P02) prebalí `chybaNeplatnehoId` na 404 — nie je to chyba servera.
+            if (error.code !== "22P02") console.error("[api/pdf] db error", error);
             return err("db_error", error.message, 500);
           }
           if (!inv) return err("not_found", "Faktúra nenájdená.", 404);

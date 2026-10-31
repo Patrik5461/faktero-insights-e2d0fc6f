@@ -5,12 +5,15 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { metodaApiNaJson } from "./lib/faktero/api-metoda";
 import { hlavickyCsp } from "./lib/systemove-chyby/csp";
-import { jeOdpojenieKlienta } from "./lib/odpojenie-klienta";
+import { jeOdpojenieKlienta, stisOdpojeniaVLogu } from "./lib/odpojenie-klienta";
 import {
   pouzivatelZHlaviciek,
   zaznamenajChybu,
   zdrojPodlaCesty,
 } from "./lib/systemove-chyby/zapis.server";
+
+// Odpojenie klienta nie je chyba — h3/srvx ho inak vypíšu do logu pm2 ako pád.
+stisOdpojeniaVLogu();
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;

@@ -3,6 +3,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { stavSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
 import type { AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
 
+/** Koľko dokladov sa pošle naraz (server prijme najviac 1 000). */
+export const DAVKA_SCHVALOVANIA = 500;
+
+/** Rozdelí zoznam na dávky po `n`. */
+export function poDavkach<T>(zoznam: T[], n: number): T[][] {
+  const von: T[][] = [];
+  for (let i = 0; i < zoznam.length; i += n) von.push(zoznam.slice(i, i + n));
+  return von;
+}
+
 export type StavRiadku = { stav: string; odznak: string; mozem: boolean };
 
 /**
@@ -24,9 +34,28 @@ export function useStavSchvalovania(
   useEffect(() => {
     if (!companyId || !ids.length) return;
     let zrusene = false;
-    nacitaj({ data: { company_id: companyId, agenda, ids } })
-      .then((v) => !zrusene && setR(v as any))
-      .catch(() => {});
+    /*
+      Server prijme najviac 1 000 dokladov naraz — zoznam s viac riadkami
+      (doklady za celý rok) predtým spadol na ZodError a odznaky nebolo vidieť
+      nikde (Admin → Chyby, 31. 10. 2026). Pýta sa preto po dávkach.
+    */
+    void (async () => {
+      const spolu: { zapnute: boolean; stavy: Record<string, StavRiadku> } = {
+        zapnute: false,
+        stavy: {},
+      };
+      for (const davka of poDavkach(ids, DAVKA_SCHVALOVANIA)) {
+        const v = (await nacitaj({ data: { company_id: companyId, agenda, ids: davka } })) as {
+          zapnute: boolean;
+          stavy: Record<string, StavRiadku>;
+        };
+        if (zrusene) return;
+        if (!v.zapnute) return setR({ zapnute: false, stavy: {} });
+        spolu.zapnute = true;
+        Object.assign(spolu.stavy, v.stavy);
+      }
+      if (!zrusene) setR(spolu);
+    })().catch(() => {});
     return () => {
       zrusene = true;
     };

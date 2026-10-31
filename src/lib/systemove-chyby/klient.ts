@@ -34,6 +34,20 @@ let nastavenie: Nastavenie | null = null;
 let odoslane = 0;
 const videne = new Set<string>();
 
+/**
+ * Karta sa práve obnovuje, lebo jej chýba kúsok stránky z nového vydania —
+ * značku nastaví `lib/faktero/stara-verzia.ts` (`ZNACKA_OBNOVY`). Chyby, ktoré
+ * do obnovenia ešte vyskočia (router nedostal modul trasy → „reading
+ * 'component'“), sa zapíšu ako staré vydanie.
+ */
+function obnovujeSaPoNasadeni(): boolean {
+  try {
+    return (window as unknown as Record<string, unknown>).__fakteroObnovaPoNasadeni === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Pošle chybu, ak nie je šum a ešte nebola poslaná. Nikdy nehodí. */
 export function nahlasChybu(
   chyba: unknown,
@@ -61,6 +75,7 @@ export function nahlasChybu(
       subor: subor ? cistaTrasa(subor) : null,
       trasa: cistaTrasa(window.location.pathname),
       vydanie: n.vydanie ?? null,
+      ...(obnovujeSaPoNasadeni() ? { stare_vydanie: true } : {}),
     });
     void fetch(n.adresa ?? "/api/public/chyby", {
       method: "POST",

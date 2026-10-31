@@ -14,6 +14,7 @@ import { z } from "zod";
 import {
   OknoPokusov,
   bezTajomstiev,
+  jeObalReactu,
   jeStareVydanie,
   jeSumPrehliadaca,
   odtlacokChyby,
@@ -30,6 +31,12 @@ export const TeloChybyZ = z.object({
   subor: z.string().max(500).nullish(),
   trasa: z.string().max(1000).nullish(),
   vydanie: z.string().max(60).nullish(),
+  /**
+   * Karta sa práve obnovuje kvôli novému vydaniu (`stara-verzia.ts`). Chyby
+   * z tej chvíle sú následok chýbajúceho kúska stránky, nie chyba kódu — napr.
+   * „Cannot read properties of undefined (reading 'component')“ z routera.
+   */
+  stare_vydanie: z.boolean().nullish(),
 });
 export type TeloChyby = z.infer<typeof TeloChybyZ>;
 
@@ -62,11 +69,13 @@ export function posudChybuZKlienta(
   if (jeSumPrehliadaca({ sprava: telo.sprava, stack: telo.stack, subor: telo.subor }))
     return { ok: false, dovod: "sum" };
   // Skúšobná chyba z E2E testov ide ako varovanie — bez upozornenia do Telegramu.
-  const uroven: UrovenChyby = jeStareVydanie(telo.sprava)
-    ? "stare_vydanie"
-    : telo.sprava.startsWith("[E2E]")
-      ? "varovanie"
-      : "chyba";
+  // React sa z chyby zotavil sám (stránka beží) — varovanie, nie pád.
+  const uroven: UrovenChyby =
+    telo.stare_vydanie || jeStareVydanie(telo.sprava)
+      ? "stare_vydanie"
+      : telo.sprava.startsWith("[E2E]") || jeObalReactu(telo.sprava)
+        ? "varovanie"
+        : "chyba";
   const odtlacok = odtlacokChyby({
     zdroj: telo.zdroj,
     uroven,

@@ -25,7 +25,7 @@ const TICHO_S = 60;
 export function sledujStareVydanie() {
   if (typeof window === "undefined") return;
 
-  window.addEventListener("vite:preloadError", (e) => {
+  window.addEventListener("vite:preloadError", () => {
     let poslednaObnova = 0;
     try {
       poslednaObnova = Number(sessionStorage.getItem(KLUC) ?? 0);
@@ -36,12 +36,20 @@ export function sledujStareVydanie() {
 
     if (Date.now() - poslednaObnova < TICHO_S * 1000) return;
 
-    e.preventDefault();
+    /*
+      Bez `e.preventDefault()`: Vite by po ňom import trasy nevyhodil, ale
+      vrátil `undefined` — router si z neho siahne po `component` a kým sa
+      stránka obnoví, spadne na „Cannot read properties of undefined (reading
+      'component')“ (Admin → Chyby, 31. 10. 2026). Pôvodná chyba („Failed to
+      fetch dynamically imported module“) je pravdivá a zapíše sa ako staré
+      vydanie; stránka sa obnoví tak či tak.
+    */
     try {
       sessionStorage.setItem(KLUC, String(Date.now()));
     } catch {
       return;
     }
+    oznacObnovuPoNasadeni();
     console.warn("[verzia] chýbajúci kúsok stránky — načítavam nové vydanie");
     window.location.reload();
   });
@@ -113,6 +121,17 @@ export function sledujNoveVydanie(router: {
   };
 }
 
+/**
+ * Značka pre hlásenie chýb (`systemove-chyby/klient.ts`): karta sa ide obnoviť
+ * kvôli novému vydaniu, chyby z tejto chvíle sú staré vydanie. Cez `window`,
+ * lebo hlásenie chýb sa načítava až po štarte a tento súbor je v hlavnom skripte.
+ */
+export const ZNACKA_OBNOVY = "__fakteroObnovaPoNasadeni";
+
+function oznacObnovuPoNasadeni() {
+  (window as unknown as Record<string, unknown>)[ZNACKA_OBNOVY] = true;
+}
+
 function obnovPoNasadeni() {
   let posledna = 0;
   try {
@@ -126,6 +145,7 @@ function obnovPoNasadeni() {
   } catch {
     return;
   }
+  oznacObnovuPoNasadeni();
   void import("sonner").then(({ toast }) =>
     toast.info("Faktero sa práve aktualizovalo — stránka sa obnoví. Akciu potom zopakujte."),
   );
