@@ -782,7 +782,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
 
 type Naklad = {
   id: string;
-  druh: "blocek" | "prijata";
+  druh: "blocek" | "prijata" | "karta";
   datum: string | null;
   dodavatel: string | null;
   cislo: string | null;
@@ -794,6 +794,10 @@ type Naklad = {
 /**
  * Bločky a prijaté faktúry priradené k vozidlu — palivo, servis, poistky.
  * Súčet je bez DPH, lebo to je náklad firmy; DPH ide do odpočtu.
+ *
+ * Nákupy palivovou kartou sa pripočítajú zvlášť, lebo mesačná faktúra
+ * vydavateľa karty býva za viac áut a vozidlo na nej vyplnené nie je. Nákup,
+ * ktorého faktúra alebo bloček je už v zozname, sa nepočíta druhýkrát.
  */
 function NakladyVozidla({ id }: { id: string }) {
   const { t } = useT();
@@ -820,8 +824,20 @@ function NakladyVozidla({ id }: { id: string }) {
         .is("deleted_at", null)
         .order("issue_date", { ascending: false })
         .limit(500),
-    ]).then(([b, p]) => {
+      (supabase as any)
+        .from("palivove_karty_transakcie")
+        .select(
+          "id, datum, produkt, miesto, faktura_cislo, zaklad, mena, purchase_invoice_id, blocek_id",
+        )
+        .eq("vehicle_id", id)
+        .order("datum", { ascending: false })
+        .limit(500),
+    ]).then(([b, p, k]) => {
       if (!zive) return;
+      const uzZapocitane = new Set<string>([
+        ...(b.data ?? []).map((x: any) => String(x.id)),
+        ...(p.data ?? []).map((x: any) => String(x.id)),
+      ]);
       const vsetky: Naklad[] = [
         ...(b.data ?? []).map((x: any) => ({
           id: x.id,
@@ -843,6 +859,22 @@ function NakladyVozidla({ id }: { id: string }) {
           spolu: Number(x.amount_total ?? 0),
           mena: x.currency || "EUR",
         })),
+        ...((k.data ?? []) as any[])
+          .filter(
+            (x) =>
+              !uzZapocitane.has(String(x.purchase_invoice_id ?? "")) &&
+              !uzZapocitane.has(String(x.blocek_id ?? "")),
+          )
+          .map((x) => ({
+            id: x.id,
+            druh: "karta" as const,
+            datum: x.datum,
+            dodavatel: [x.produkt, x.miesto].filter(Boolean).join(" · ") || null,
+            cislo: x.faktura_cislo,
+            bezDph: Number(x.zaklad ?? 0),
+            spolu: Number(x.zaklad ?? 0),
+            mena: x.mena || "EUR",
+          })),
       ].sort((a, c) => String(c.datum ?? "").localeCompare(String(a.datum ?? "")));
       setNaklady(vsetky);
     });
@@ -865,7 +897,9 @@ function NakladyVozidla({ id }: { id: string }) {
     <section className="rounded-xl border border-border bg-card p-5">
       <h2 className="text-base font-semibold">{t("Náklady na vozidlo")}</h2>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        {t("Bločky a prijaté faktúry, pri ktorých je vybrané toto vozidlo. Sumy bez DPH.")}
+        {t(
+          "Bločky a prijaté faktúry, pri ktorých je vybrané toto vozidlo, a nákupy palivovou kartou. Sumy bez DPH.",
+        )}
       </p>
       {naklady === null ? (
         <p className="mt-3 text-xs text-muted-foreground">{t("Načítavam…")}</p>
@@ -894,16 +928,28 @@ function NakladyVozidla({ id }: { id: string }) {
                 className="flex items-start justify-between gap-2 py-1.5"
               >
                 <Link
-                  to={n.druh === "blocek" ? "/doklady/novy" : "/prijate-faktury/$id"}
+                  to={
+                    n.druh === "blocek"
+                      ? "/doklady/novy"
+                      : n.druh === "karta"
+                        ? "/vozovy-park/palivove-karty"
+                        : "/prijate-faktury/$id"
+                  }
                   {...(n.druh === "blocek"
                     ? { search: { id: n.id } as any }
-                    : { params: { id: n.id } as any })}
+                    : n.druh === "prijata"
+                      ? { params: { id: n.id } as any }
+                      : {})}
                   className="min-w-0 hover:underline"
                 >
                   <span className="block truncate">{n.dodavatel ?? (n.cislo || "—")}</span>
                   <span className="block text-xs text-muted-foreground">
                     {datumNaDoklade(n.datum)} ·{" "}
-                    {n.druh === "blocek" ? t("bloček") : t("prijatá faktúra")}
+                    {n.druh === "blocek"
+                      ? t("bloček")
+                      : n.druh === "karta"
+                        ? t("palivová karta")
+                        : t("prijatá faktúra")}
                   </span>
                 </Link>
                 <span className="shrink-0 tabular-nums">{formatujMenu(n.bezDph, n.mena)}</span>

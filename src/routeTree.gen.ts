@@ -248,6 +248,7 @@ import { Route as AuthenticatedUctovnictvoVypisDoPohodyRouteImport } from './rou
 import { Route as AuthenticatedVozovyParkIndexRouteImport } from './routes/_authenticated/vozovy-park.index'
 import { Route as AuthenticatedVozovyParkIdRouteImport } from './routes/_authenticated/vozovy-park.$id'
 import { Route as AuthenticatedVozovyParkNoveRouteImport } from './routes/_authenticated/vozovy-park.nove'
+import { Route as AuthenticatedVozovyParkPalivoveKartyRouteImport } from './routes/_authenticated/vozovy-park.palivove-karty'
 import { Route as AuthenticatedZakazkyIndexRouteImport } from './routes/_authenticated/zakazky.index'
 import { Route as AuthenticatedZakazkyIdRouteImport } from './routes/_authenticated/zakazky.$id'
 import { Route as AuthenticatedZakazkyNovaRouteImport } from './routes/_authenticated/zakazky.nova'
@@ -331,6 +332,7 @@ import { Route as ApiPublicHooksGpsSyncRouteImport } from './routes/api/public/h
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
+import { Route as ApiPublicHooksPalivoveKartySyncRouteImport } from './routes/api/public/hooks/palivove-karty-sync'
 import { Route as ApiPublicHooksPlatitelDphRouteImport } from './routes/api/public/hooks/platitel-dph'
 import { Route as ApiPublicHooksPodporaPristupyRouteImport } from './routes/api/public/hooks/podpora-pristupy'
 import { Route as ApiPublicHooksPohodaStrazcaRouteImport } from './routes/api/public/hooks/pohoda-strazca'
@@ -1689,6 +1691,12 @@ const AuthenticatedVozovyParkNoveRoute =
     path: '/vozovy-park/nove',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedVozovyParkPalivoveKartyRoute =
+  AuthenticatedVozovyParkPalivoveKartyRouteImport.update({
+    id: '/vozovy-park/palivove-karty',
+    path: '/vozovy-park/palivove-karty',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedZakazkyIndexRoute =
   AuthenticatedZakazkyIndexRouteImport.update({
     id: '/zakazky/',
@@ -2144,6 +2152,12 @@ const ApiPublicHooksOdovzdanieMesacneRoute =
   ApiPublicHooksOdovzdanieMesacneRouteImport.update({
     id: '/api/public/hooks/odovzdanie-mesacne',
     path: '/api/public/hooks/odovzdanie-mesacne',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksPalivoveKartySyncRoute =
+  ApiPublicHooksPalivoveKartySyncRouteImport.update({
+    id: '/api/public/hooks/palivove-karty-sync',
+    path: '/api/public/hooks/palivove-karty-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksPlatitelDphRoute =
@@ -2698,6 +2712,7 @@ export interface FileRoutesByFullPath {
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   '/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
   '/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
+  '/vozovy-park/palivove-karty': typeof AuthenticatedVozovyParkPalivoveKartyRoute
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
@@ -2793,6 +2808,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/palivove-karty-sync': typeof ApiPublicHooksPalivoveKartySyncRoute
   '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
@@ -3072,6 +3088,7 @@ export interface FileRoutesByTo {
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   '/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
   '/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
+  '/vozovy-park/palivove-karty': typeof AuthenticatedVozovyParkPalivoveKartyRoute
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
@@ -3167,6 +3184,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/palivove-karty-sync': typeof ApiPublicHooksPalivoveKartySyncRoute
   '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
@@ -3457,6 +3475,7 @@ export interface FileRoutesById {
   '/_authenticated/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   '/_authenticated/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
   '/_authenticated/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
+  '/_authenticated/vozovy-park/palivove-karty': typeof AuthenticatedVozovyParkPalivoveKartyRoute
   '/_authenticated/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/_authenticated/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/_authenticated/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
@@ -3552,6 +3571,7 @@ export interface FileRoutesById {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/palivove-karty-sync': typeof ApiPublicHooksPalivoveKartySyncRoute
   '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
@@ -3842,6 +3862,7 @@ export interface FileRouteTypes {
     | '/uctovnictvo/vypis-do-pohody'
     | '/vozovy-park/$id'
     | '/vozovy-park/nove'
+    | '/vozovy-park/palivove-karty'
     | '/zakazky/$id'
     | '/zakazky/nova'
     | '/zamestnanci/$id'
@@ -3937,6 +3958,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/palivove-karty-sync'
     | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
@@ -4216,6 +4238,7 @@ export interface FileRouteTypes {
     | '/uctovnictvo/vypis-do-pohody'
     | '/vozovy-park/$id'
     | '/vozovy-park/nove'
+    | '/vozovy-park/palivove-karty'
     | '/zakazky/$id'
     | '/zakazky/nova'
     | '/zamestnanci/$id'
@@ -4311,6 +4334,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/palivove-karty-sync'
     | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
@@ -4600,6 +4624,7 @@ export interface FileRouteTypes {
     | '/_authenticated/uctovnictvo/vypis-do-pohody'
     | '/_authenticated/vozovy-park/$id'
     | '/_authenticated/vozovy-park/nove'
+    | '/_authenticated/vozovy-park/palivove-karty'
     | '/_authenticated/zakazky/$id'
     | '/_authenticated/zakazky/nova'
     | '/_authenticated/zamestnanci/$id'
@@ -4695,6 +4720,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/palivove-karty-sync'
     | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
     | '/api/public/hooks/pohoda-strazca'
@@ -4905,6 +4931,7 @@ export interface RootRouteChildren {
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
+  ApiPublicHooksPalivoveKartySyncRoute: typeof ApiPublicHooksPalivoveKartySyncRoute
   ApiPublicHooksPlatitelDphRoute: typeof ApiPublicHooksPlatitelDphRoute
   ApiPublicHooksPodporaPristupyRoute: typeof ApiPublicHooksPodporaPristupyRoute
   ApiPublicHooksPohodaStrazcaRoute: typeof ApiPublicHooksPohodaStrazcaRoute
@@ -6615,6 +6642,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVozovyParkNoveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/vozovy-park/palivove-karty': {
+      id: '/_authenticated/vozovy-park/palivove-karty'
+      path: '/vozovy-park/palivove-karty'
+      fullPath: '/vozovy-park/palivove-karty'
+      preLoaderRoute: typeof AuthenticatedVozovyParkPalivoveKartyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/zakazky/': {
       id: '/_authenticated/zakazky/'
       path: '/zakazky'
@@ -7194,6 +7228,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/odovzdanie-mesacne'
       fullPath: '/api/public/hooks/odovzdanie-mesacne'
       preLoaderRoute: typeof ApiPublicHooksOdovzdanieMesacneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/palivove-karty-sync': {
+      id: '/api/public/hooks/palivove-karty-sync'
+      path: '/api/public/hooks/palivove-karty-sync'
+      fullPath: '/api/public/hooks/palivove-karty-sync'
+      preLoaderRoute: typeof ApiPublicHooksPalivoveKartySyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/platitel-dph': {
@@ -7806,6 +7847,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUctovnictvoVypisDoPohodyRoute: typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   AuthenticatedVozovyParkIdRoute: typeof AuthenticatedVozovyParkIdRoute
   AuthenticatedVozovyParkNoveRoute: typeof AuthenticatedVozovyParkNoveRoute
+  AuthenticatedVozovyParkPalivoveKartyRoute: typeof AuthenticatedVozovyParkPalivoveKartyRoute
   AuthenticatedZakazkyIdRoute: typeof AuthenticatedZakazkyIdRoute
   AuthenticatedZakazkyNovaRoute: typeof AuthenticatedZakazkyNovaRoute
   AuthenticatedZamestnanciIdRoute: typeof AuthenticatedZamestnanciIdRoute
@@ -7942,6 +7984,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedUctovnictvoVypisDoPohodyRoute,
   AuthenticatedVozovyParkIdRoute: AuthenticatedVozovyParkIdRoute,
   AuthenticatedVozovyParkNoveRoute: AuthenticatedVozovyParkNoveRoute,
+  AuthenticatedVozovyParkPalivoveKartyRoute:
+    AuthenticatedVozovyParkPalivoveKartyRoute,
   AuthenticatedZakazkyIdRoute: AuthenticatedZakazkyIdRoute,
   AuthenticatedZakazkyNovaRoute: AuthenticatedZakazkyNovaRoute,
   AuthenticatedZamestnanciIdRoute: AuthenticatedZamestnanciIdRoute,
@@ -8533,6 +8577,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
+  ApiPublicHooksPalivoveKartySyncRoute: ApiPublicHooksPalivoveKartySyncRoute,
   ApiPublicHooksPlatitelDphRoute: ApiPublicHooksPlatitelDphRoute,
   ApiPublicHooksPodporaPristupyRoute: ApiPublicHooksPodporaPristupyRoute,
   ApiPublicHooksPohodaStrazcaRoute: ApiPublicHooksPohodaStrazcaRoute,
