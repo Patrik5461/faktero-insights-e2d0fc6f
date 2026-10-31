@@ -4,8 +4,11 @@
 #
 #   e2e/po-nasadeni.sh <commit>
 #
-# - beh má strop 20 minút (E2E_STROP_S 1200; spusti.mjs nové toky nespúšťa po E2E_LIMIT_S 1080
-#   a bežiaci tok utne do 60 s po ňom, aby stihol upratať), súbežne beží najviac jeden (zámok v spusti.mjs);
+# - celá sada trvá ~10,5 min (40 tokov, 31. 10. 2026); beh má strop 16 minút (E2E_STROP_S 960;
+#   spusti.mjs nové toky nespúšťa po E2E_LIMIT_S 840 a bežiaci tok utne do 60 s po ňom, aby stihol
+#   upratať), súbežne beží najviac jeden (zámok v spusti.mjs);
+# - keď zámok drží iný beh (napr. po predošlom nasadení), počká naň najviac E2E_CAKAJ_S (900 s)
+#   — predtým sa beh preskočil a posledné nasadenie ostalo neotestované;
 # - neúspešný tok sa skúsi ešte raz (--opakuj), až potom je to chyba;
 # - výsledky: /home/patrik/e2e-vysledky/<čas>-<commit>/ (suhrn.json, beh.log, snímky),
 #   staršie ako 14 dní sa mažú;
@@ -23,7 +26,9 @@ COMMIT=${1:-$(git -C "$(dirname "$0")/.." rev-parse --short HEAD 2>/dev/null || 
 E2E=$(cd "$(dirname "$0")" && pwd)
 VYSLEDKY=${E2E_VYSLEDKY:-/home/patrik/e2e-vysledky}
 LOG=${E2E_DEPLOY_LOG:-/home/patrik/webhook/poll-deploy.log}
-STROP=${E2E_STROP_S:-1200}
+STROP=${E2E_STROP_S:-960}
+CAKAJ=${E2E_CAKAJ_S:-900}
+export E2E_LIMIT_S=${E2E_LIMIT_S:-840}
 
 export HOME=${HOME:-/home/patrik}
 export PATH=/usr/local/bin:/usr/bin:/bin:${PATH:-}
@@ -39,8 +44,9 @@ mkdir -p "$OUT"
 # Po nasadení sa web ešte chvíľu zahrieva — nech prvý tok nepadne na studenom štarte.
 sleep "${E2E_PAUZA_S:-20}"
 
-E2E_VYSTUP="$OUT" E2E_COMMIT="$COMMIT" E2E_OPAKUJ=1 \
-  timeout -k 30 "$STROP" node "$E2E/spusti.mjs" >"$OUT/beh.log" 2>&1
+# Strop platí pre samotný beh; čakanie na zámok sa k nemu pripočíta.
+E2E_VYSTUP="$OUT" E2E_COMMIT="$COMMIT" E2E_OPAKUJ=1 E2E_CAKAJ_S="$CAKAJ" \
+  timeout -k 30 "$((STROP + CAKAJ))" node "$E2E/spusti.mjs" >"$OUT/beh.log" 2>&1
 KOD=$?
 
 suhrn() { node -e '
@@ -55,10 +61,12 @@ case "$KOD" in
     log "e2e $COMMIT: $(suhrn) — $OUT"
     ;;
   2)
+    # Chýba heslo alebo nastavenie — bez upozornenia by sa testy potichu prestali spúšťať.
     log "e2e $COMMIT: PRESKOČENÉ — $(tail -1 "$OUT/beh.log")"
+    node "$E2E/upozorni.mjs" "$OUT/suhrn.json" >>"$OUT/beh.log" 2>&1
     ;;
   75)
-    log "e2e $COMMIT: PRESKOČENÉ — beží iný beh E2E"
+    log "e2e $COMMIT: PRESKOČENÉ — iný beh E2E držal zámok dlhšie než ${CAKAJ} s"
     rm -rf "$OUT"
     ;;
   *)

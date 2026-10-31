@@ -1317,6 +1317,18 @@ function NewInvoice() {
             cislo: inv.invoice_number,
             chyba: t(friendlyError(e2)),
           }),
+          /*
+            Hláška sa kreslí vpravo dole — presne cez tlačidlo vystavenia, a kým
+            je nad ňou myš (ostala tam po kliknutí), nezmizne. Opakovanie preto
+            ponúka priamo ona.
+          */
+          {
+            duration: 15000,
+            action: {
+              label: t("Skúsiť znova"),
+              onClick: () => document.getElementById("invoice-submit")?.click(),
+            },
+          },
         );
         setSubmitting(false);
         return;

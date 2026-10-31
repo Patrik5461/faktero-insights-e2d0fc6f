@@ -22,7 +22,7 @@ export default {
     // Formulár dodávateľa predvolene uloží aj do adresára — aj ten sa uprace.
     t.uprac("dodávateľ v adresári", async () => {
       const r = await t.rest.delete(
-        `customers?company_id=eq.${t.firmy.test}&name=like.${encodeURIComponent("E2E-*")}`,
+        `customers?company_id=eq.${t.firmy.test}&name=like.${encodeURIComponent(`${t.znacka}*`)}`,
       );
       if (r.status >= 300) throw new Error(`${r.status} ${r.text.slice(0, 200)}`);
     });

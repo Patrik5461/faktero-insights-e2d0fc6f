@@ -11,7 +11,6 @@ import {
   Suspense,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -321,20 +320,6 @@ function ObsahApky() {
     registrácii relácia ešte nie je a bez nej ich server neprijme.
   */
   const zapisSuhlasy = useOperacia("pravne-suhlasy");
-  /*
-    Skener-first režim. V appke je úvodnou obrazovkou kamera; na webe ostáva
-    pôvodná domovská obrazovka, aby sa `/app` v prehliadači nezmenil.
-    `?skener=1` je jediná výnimka — bez nej sa nová obrazovka nedá overiť inak
-    než na telefóne.
-  */
-  const skenerPrvy = useMemo(() => {
-    try {
-      if (Capacitor.isNativePlatform()) return true;
-      return new URLSearchParams(window.location.search).has("skener");
-    } catch {
-      return false;
-    }
-  }, []);
   /**
    * Kam vedie „späť" z agend.
    *
@@ -1184,7 +1169,12 @@ function ObsahApky() {
       <ZachytDokladu
         druh={zachyt}
         firma={firma}
-        prednastavene={skenerPrvy ? nastavenieDokladu : undefined}
+        /*
+          Voľby zo skenera (úhrada, kategória, zákazka) platia pre doklad, ktorý
+          zo skenera prišiel — v appke aj na webe. Skener je od redizajnu záložka
+          aj na `/app` v prehliadači; podmienka „len v appke“ ich tam zahadzovala.
+        */
+        prednastavene={zachytZo === "skener" ? nastavenieDokladu : undefined}
         hotovyQr={qrZoSkenera}
         zoSkenera={zachytZo === "skener"}
         hnedSkenovat={zachytHned}
