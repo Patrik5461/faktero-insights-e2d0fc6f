@@ -188,6 +188,9 @@ export const NAV: NavGroup[] = [
     children: [
       { to: "/vozovy-park", label: "Prehľad vozidiel" },
       { to: "/vozovy-park/nove", label: "Nové vozidlo" },
+      /* Dovtedy len tlačidlo na stránke Vozového parku — kto ho prehliadol,
+         o kartách nevedel. */
+      { to: "/vozovy-park/palivove-karty", label: "Palivové karty" },
     ],
   },
   {
@@ -277,8 +280,13 @@ export const NAV: NavGroup[] = [
     key: "vozidla",
     label: "Vozidlá",
     icon: Car,
-    match: ["/jazdy/vozidla"],
-    children: [{ to: "/jazdy/vozidla", label: "Vozidlá a tankovanie" }],
+    match: ["/jazdy/vozidla", "/vozovy-park/palivove-karty"],
+    children: [
+      { to: "/jazdy/vozidla", label: "Vozidlá a tankovanie" },
+      /* Tankovania z kariet idú rovno do knihy jázd, takže karty potrebuje
+         aj ten, kto má len Knihu jázd. */
+      { to: "/vozovy-park/palivove-karty", label: "Palivové karty" },
+    ],
   },
   {
     key: "integracie",

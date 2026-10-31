@@ -14,9 +14,11 @@ import {
   casZoShellu,
   datumZoShellu,
   fakturaZoShellu,
+  pdfZOdpovede,
   transakciaZoShellu,
   vymazTokeny,
 } from "./shell.server";
+import { zipSync, strToU8 } from "fflate";
 import { KartaChyba } from "./typy";
 
 const P = {
@@ -318,5 +320,53 @@ describe("Shell — faktúry", () => {
     );
     const e = await adapter.faktury!(P, new Date(), new Date()).catch((x) => x);
     expect(e.message).toContain("Invalid PayerNumber");
+  });
+});
+
+describe("Shell — PDF faktúry", () => {
+  const PDF = strToU8("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF");
+  const ZIP = zipSync({
+    "900001234_proofing.xml": strToU8("<Proofing/>"),
+    "900001234.pdf": PDF,
+  });
+
+  it("download s ColCo, účtom a číslom faktúry; z ZIP-u vyberie PDF", async () => {
+    podvrhni(
+      () => new Response(ZIP, { status: 200, headers: { "content-type": "application/zip" } }),
+    );
+    const f = fakturaZoShellu({ ...FAKTURA, ColCoId: 86 })!;
+    const s = await adapter.pdfFaktury!(P, f);
+    const api = volania[1];
+    expect(api.url).toBe("https://api.shell.com/invoice-management/v1/download");
+    expect(JSON.parse(String(api.init.body))).toEqual({
+      Filters: {
+        ColCoCode: 86,
+        PayerNumber: "SK00123456",
+        AccountNumber: ["SK00123456"],
+        InvoiceOrSOANumber: "900001234",
+      },
+    });
+    expect(s?.nazov).toBe("900001234.pdf");
+    expect(s?.mime).toBe("application/pdf");
+    expect(Array.from(s!.bajty)).toEqual(Array.from(PDF));
+  });
+
+  it("rovno PDF namiesto ZIP-u sa tiež prijme", () => {
+    expect(pdfZOdpovede(PDF, "77/2026")?.nazov).toBe("77_2026.pdf");
+  });
+
+  it("ZIP bez PDF a 404 → null, nie chyba", async () => {
+    expect(pdfZOdpovede(zipSync({ "a.xml": strToU8("<a/>") }), "1")).toBeNull();
+    podvrhni(() => json({ Errors: [{ Code: "404" }] }, 404));
+    expect(await adapter.pdfFaktury!(P, fakturaZoShellu(FAKTURA)!)).toBeNull();
+  });
+
+  it("JSON s FAILED namiesto súboru → KartaChyba s popisom", async () => {
+    podvrhni(() =>
+      json({ Status: "FAILED", Errors: [{ Code: "0042", Description: "Document not found" }] }),
+    );
+    const e = await adapter.pdfFaktury!(P, fakturaZoShellu(FAKTURA)!).catch((x) => x);
+    expect(e).toBeInstanceOf(KartaChyba);
+    expect(e.message).toContain("Document not found");
   });
 });

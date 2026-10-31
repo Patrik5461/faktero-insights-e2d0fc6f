@@ -271,6 +271,26 @@ const features = [
     text: "Jazdy z Commander GPS aj z appky. K vozidlám technický preukaz, leasing, poistky a upozornenie na STK.",
   },
   {
+    icon: CreditCard,
+    title: "Palivové karty",
+    text: "Shell Card cez API: tankovania s tachometrom sa priradia k vozidlám a mesačná faktúra príde ako prijatá faktúra s rozpisom.",
+  },
+  {
+    icon: Upload,
+    title: "Výpis karty Up Déjeuner",
+    text: "Mesačný výpis v CSV, XLSX alebo PDF nahráte a nákupy sa rozdelia k vozidlám. Opakované nahratie nič nezdvojí.",
+  },
+  {
+    icon: MapPin,
+    title: "GPS systémy v knihe jázd",
+    text: "Jazdy z GPS Dozoru, Webdispečinku, Webfleetu, Traccaru, Geotabu, Samsary či Wialonu sa zapíšu do knihy jázd samy, bez duplicít.",
+  },
+  {
+    icon: Truck,
+    title: "Trans.eu pre dopravcov",
+    text: "Prepravná objednávka z Trans.eu sa jedným klikom zmení na objednávku a faktúru a PDF faktúry sa pošle späť do Trans.eu.",
+  },
+  {
     icon: Banknote,
     title: "Leasingy a úvery",
     text: "Splátkový kalendár s rozpadom na istinu, úrok a DPH. Zmluvu načítate z PDF a splátky si Faktero páruje s platbami z banky.",

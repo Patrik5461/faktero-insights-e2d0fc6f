@@ -16,7 +16,6 @@ export const Route = createFileRoute("/api/public/transeu/callback")({
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         const error = url.searchParams.get("error");
-        const back = `${url.protocol}//${url.host}/nastavenia/transeu`;
         const {
           overStavTranseu,
           dokonciPrihlasenie,
@@ -25,14 +24,22 @@ export const Route = createFileRoute("/api/public/transeu/callback")({
           smiePripojit,
           zapisChybuPrihlasenia,
           COOKIE_TRANSEU,
+          COOKIE_TRANSEU_NAVRAT,
           domenaCookie,
+          navratovyHost,
         } = await import("@/lib/faktero/transeu.server");
-        // Cookie je jednorazová — zmaže sa pri každom návrate.
-        const zmaz = [
-          `${COOKIE_TRANSEU}=; Path=/api/public/transeu; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
-        ];
+        // Späť na adresu, z ktorej človek začal (faktero.sk alebo www) — tam je prihlásený.
+        const host = navratovyHost(
+          cookieZPoziadavky(request.headers.get("cookie"), COOKIE_TRANSEU_NAVRAT),
+          url.host,
+        );
+        const back = `${url.protocol}//${host}/nastavenia/transeu`;
+        // Cookies sú jednorazové — zmažú sa pri každom návrate.
+        const zmaz = [COOKIE_TRANSEU, COOKIE_TRANSEU_NAVRAT].map(
+          (meno) => `${meno}=; Path=/api/public/transeu; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
+        );
         const domena = domenaCookie(url.host);
-        if (domena) zmaz.push(`${zmaz[0]}; Domain=${domena}`);
+        if (domena) zmaz.push(...zmaz.map((c) => `${c}; Domain=${domena}`));
         const presmeruj = (kod: string | null) =>
           odpoved(`${back}?${kod ? `chyba=${encodeURIComponent(kod)}` : "pripojene=1"}`, zmaz);
 

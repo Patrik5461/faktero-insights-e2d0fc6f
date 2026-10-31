@@ -25,7 +25,7 @@ import {
   type VazbaKarty,
   type Vozidlo,
 } from "./spracovanie";
-import { KartaChyba, type KartaFaktura, type KartaTransakcia } from "./typy";
+import { KartaChyba, type KartaFaktura, type KartaSubor, type KartaTransakcia } from "./typy";
 
 type Admin = any;
 
@@ -402,6 +402,69 @@ export async function zalozFakturu(
   return { id: data.id as string, stav: "nova" };
 }
 
+/**
+ * PDF faktúry od vydavateľa karty → doklad prijatej faktúry (`file_path`, kôš
+ * purchase-invoices), aby ju účtovník videl aj s originálom. Len keď faktúra
+ * ešte žiadny súbor nemá — ručne nahratý alebo e-mailom prijatý sa neprepíše.
+ * Chyba pri sťahovaní synchronizáciu nezhodí, len sa zapíše do záznamu.
+ */
+export async function prilozPdfFaktury(
+  k: Kontext,
+  prijataId: string,
+  f: KartaFaktura,
+  stiahni: () => Promise<KartaSubor | null>,
+): Promise<boolean> {
+  const { data: r } = await k.admin
+    .from("purchase_invoices")
+    .select("id, file_path, deleted_at")
+    .eq("id", prijataId)
+    .eq("company_id", k.companyId)
+    .maybeSingle();
+  if (!r || r.file_path || r.deleted_at) return false;
+  let subor: KartaSubor | null;
+  try {
+    subor = await stiahni();
+  } catch (e) {
+    await log(
+      k.admin,
+      k.pripojenie,
+      "faktura",
+      "chyba",
+      `PDF faktúry ${f.cislo} sa nepodarilo stiahnuť: ${String((e as Error)?.message ?? e).slice(0, 300)}`,
+      { purchase_invoice_id: prijataId },
+    );
+    return false;
+  }
+  if (!subor) return false;
+  const cesta = `${k.companyId}/${crypto.randomUUID()}.pdf`;
+  const up = await k.admin.storage
+    .from("purchase-invoices")
+    .upload(cesta, subor.bajty, { contentType: subor.mime, upsert: false });
+  if (up.error) {
+    await log(
+      k.admin,
+      k.pripojenie,
+      "faktura",
+      "chyba",
+      `PDF faktúry ${f.cislo} sa nepodarilo uložiť: ${up.error.message}`,
+      { purchase_invoice_id: prijataId },
+    );
+    return false;
+  }
+  // `is(file_path, null)` — súbežne nahratý súbor má prednosť, náš sa zmaže.
+  const { data: zapisane } = await k.admin
+    .from("purchase_invoices")
+    .update({ file_path: cesta, file_mime: subor.mime, file_size: subor.bajty.length })
+    .eq("id", prijataId)
+    .is("file_path", null)
+    .select("id");
+  if (!zapisane?.length) {
+    await k.admin.storage.from("purchase-invoices").remove([cesta]);
+    return false;
+  }
+  return true;
+}
+
 /* ------------------------------------------------------------- beh */
 
 /** Kontext pre synchronizáciu aj pre prepočet vozidiel po ručnom priradení. */
@@ -513,10 +576,14 @@ export async function synchronizujPripojenie(
           break;
         }
         const transakcieFaktury = adapter.transakcieFaktury;
-        await zalozFakturu(k, f, krajina, {
+        const vysledok = await zalozFakturu(k, f, krajina, {
           ico: p.dodavatel_ico,
           doplnTransakcie: transakcieFaktury ? () => transakcieFaktury(p, f) : undefined,
         });
+        const pdfFaktury = adapter.pdfFaktury;
+        if (vysledok.id && pdfFaktury) {
+          await prilozPdfFaktury(k, vysledok.id, f, () => pdfFaktury(p, f));
+        }
       }
       if (vsetkyFaktury) {
         await admin

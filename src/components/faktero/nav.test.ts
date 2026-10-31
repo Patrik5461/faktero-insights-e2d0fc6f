@@ -126,3 +126,12 @@ describe("filterNav", () => {
     }
   });
 });
+
+describe("palivové karty", () => {
+  it("sú v menu fakturácie aj knihy jázd, nie len tlačidlo vo Vozovom parku", () => {
+    for (const view of ["invoicing", "logbook"] as const) {
+      const ciele = filterNav(view, true).flatMap((g) => g.children.map((c) => c.to));
+      expect(ciele, view).toContain("/vozovy-park/palivove-karty");
+    }
+  });
+});

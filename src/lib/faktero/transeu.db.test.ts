@@ -465,12 +465,11 @@ describe.skipIf(bezPristupu)("Trans.eu proti databáze (podvrhnutý Trans.eu)", 
     expect(f2.nova).toBe(false);
     expect(f2.invoice_id).toBe(fakturaEu.invoice_id);
     // Ani súbežné kliknutia nezaložia druhú.
-    const obe = await Promise.allSettled([
+    const obe = await Promise.all([
       srv.vystavFakturu(ako, firma, pouzivatel, r.id),
       srv.vystavFakturu(ako, firma, pouzivatel, r.id),
     ]);
-    for (const o of obe)
-      if (o.status === "fulfilled") expect(o.value.invoice_id).toBe(fakturaEu.invoice_id);
+    for (const o of obe) expect(o.invoice_id).toBe(fakturaEu.invoice_id);
     const { data: vsetky } = await db
       .from("invoices")
       .select("id")
@@ -508,11 +507,13 @@ describe.skipIf(bezPristupu)("Trans.eu proti databáze (podvrhnutý Trans.eu)", 
   it("cena za km: domáci zákazník, 420 € + 23 % DPH", async () => {
     const r = await id(OBJEDNAVKY[1].id);
     // Dvojklik na úplne novú objednávku: jedna prijatá objednávka, jedna faktúra.
-    const obe = await Promise.allSettled([
+    // Obe volania uspejú a vrátia tú istú faktúru — druhé nesmie skončiť chybou.
+    const [f, f2] = await Promise.all([
       srv.vystavFakturu(ako, firma, pouzivatel, r.id),
       srv.vystavFakturu(ako, firma, pouzivatel, r.id),
     ]);
-    const f = (obe.find((x) => x.status === "fulfilled") as PromiseFulfilledResult<any>).value;
+    expect(f2.invoice_id).toBe(f.invoice_id);
+    expect([f.nova, f2.nova].sort()).toEqual([false, true]);
     const { data: so } = await db
       .from("sales_orders")
       .select("id")

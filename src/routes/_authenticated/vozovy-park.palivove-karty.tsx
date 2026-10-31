@@ -205,7 +205,7 @@ function PalivoveKarty() {
       <PageHeader
         title={t("Palivové karty")}
         description={t(
-          "Nákupy palivovými kartami sa načítajú samy: tankovania s tachometrom k vozidlám, náklady vozidiel a mesačná faktúra ako prijatá faktúra s rozpisom.",
+          "Nákupy palivovými kartami: tankovania s tachometrom k vozidlám, náklady vozidiel a mesačná faktúra ako prijatá faktúra s rozpisom. Karty s API (Shell) sa načítajú samy, pri kartách bez API (Up Déjeuner) nahráte mesačný výpis.",
         )}
         action={
           <Link to="/vozovy-park" className={TLACIDLO}>

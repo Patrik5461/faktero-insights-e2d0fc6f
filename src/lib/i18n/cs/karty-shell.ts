@@ -2,8 +2,8 @@
 export default {
   "Palivové karty — Faktero": "Palivové karty — Faktero",
   "Palivové karty": "Palivové karty",
-  "Nákupy palivovými kartami sa načítajú samy: tankovania s tachometrom k vozidlám, náklady vozidiel a mesačná faktúra ako prijatá faktúra s rozpisom.":
-    "Nákupy palivovými kartami se načtou samy: tankování se stavem tachometru k vozidlům, náklady vozidel a měsíční faktura jako přijatá faktura s rozpisem.",
+  "Nákupy palivovými kartami: tankovania s tachometrom k vozidlám, náklady vozidiel a mesačná faktúra ako prijatá faktúra s rozpisom. Karty s API (Shell) sa načítajú samy, pri kartách bez API (Up Déjeuner) nahráte mesačný výpis.":
+    "Nákupy palivovými kartami: tankování se stavem tachometru k vozidlům, náklady vozidel a měsíční faktura jako přijatá faktura s rozpisem. Karty s API (Shell) se načtou samy, u karet bez API (Up Déjeuner) nahrajete měsíční výpis.",
   "Odpojiť {nazov}? Zmaže sa prihlásenie a evidencia nákupov kartou. Tankovania a prijaté faktúry ostanú.":
     "Odpojit {nazov}? Smaže se přihlášení a evidence nákupů kartou. Tankování a přijaté faktury zůstanou.",
   "Uložené — upravených nákupov: {n}": "Uloženo — upravených nákupů: {n}",

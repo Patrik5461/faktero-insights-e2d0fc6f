@@ -34,6 +34,8 @@ import {
   FileCheck2,
   BarChart3,
   CheckCircle2,
+  CreditCard,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -742,6 +744,84 @@ export const funkcie: HubContent = {
           type: "callout",
           title: "Bezpečnosť",
           body: "Prihlasovacie údaje do Commandera sú uložené šifrovane, nikdy sa nevracajú do prehliadača a používajú sa výhradne na čítanie jázd vašej firmy. Integráciu viete kedykoľvek odpojiť jedným klikom — jazdy, ktoré sa už stiahli, ostanú v knihe jázd.",
+        },
+      ],
+    },
+    {
+      slug: "palivove-karty",
+      label: "Palivové karty",
+      summary:
+        "Nákupy kartou Shell a Up Déjeuner: tankovania k vozidlám a mesačná faktúra ako prijatá faktúra s rozpisom.",
+      icon: CreditCard,
+      manual: "/pomoc/vozovy-park",
+      blocks: [
+        {
+          type: "lead",
+          text: "Tankovania z palivových kariet netreba prepisovať z bločkov. Faktero ich načíta z vydavateľa karty, priradí k vozidlám a z mesačnej faktúry urobí prijatú faktúru.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Shell Card cez API Shellu: transakcie, tankovania s tachometrom a mesačné faktúry",
+            "Up Déjeuner (Shell karta od Up): nahratie mesačného výpisu v CSV, XLSX alebo PDF",
+            "Karta sa k vozidlu priradí podľa ŠPZ, inak ju priradíte raz ručne",
+            "Tankovania idú rovno do knihy jázd a nákladov vozidla",
+            "Bloček z pumpy s rovnakým dňom a sumou sa označí, aby sa náklad a DPH nezaúčtovali dvakrát",
+            "Opakované načítanie ani nahratie toho istého výpisu nič nezdvojí",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Prístup k API",
+          body: "Prístup k API Shell vydáva Shell na požiadanie (client ID a client secret). Up Déjeuner verejné API nemá, preto sa jeho výpis nahráva.",
+        },
+      ],
+    },
+    {
+      slug: "gps-systemy",
+      label: "GPS systémy v knihe jázd",
+      summary:
+        "Jazdy z GPS Dozoru, Webdispečinku, Webfleetu, Traccaru, Geotabu, Samsary či Wialonu sa zapisujú do knihy jázd samy.",
+      icon: MapPin,
+      manual: "/pomoc/jazdy",
+      blocks: [
+        {
+          type: "lead",
+          text: "Ak máte vo vozidlách GPS jednotku, kniha jázd sa vyplní z nej. Prepojenie nastavíte raz v Jazdy → Integrácie.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "GPS Dozor, Webdispečink, Webfleet, Traccar, Geotab, Samsara a Wialon (popri Commander GPS a Tesle)",
+            "Vozidlá z GPS systému spárujete s vozidlami vo Fakteri alebo ich jedným klikom založíte",
+            "Jazdy s adresami a nadväzujúcim tachometrom, opakovaná synchronizácia bez duplicít",
+            "Súkromná jazda ostane súkromná aj po ďalšej synchronizácii",
+            "Prihlasovacie údaje sú uložené šifrovane a používajú sa len na serveri",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "transeu",
+      label: "Trans.eu pre dopravcov",
+      summary:
+        "Prepravná objednávka z Trans.eu sa jedným klikom zmení na objednávku a faktúru a PDF faktúry sa pošle späť do Trans.eu.",
+      icon: Truck,
+      manual: "/pomoc/prepojenia",
+      blocks: [
+        {
+          type: "lead",
+          text: "Dopravca, ktorý berie zákazky na Trans.eu, ich nemusí prepisovať. Prijaté prepravné objednávky sa stiahnu do Faktera a faktúra k nim vznikne jedným klikom.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Prihlásenie do Trans.eu cez Nastavenia → Trans.eu",
+            "Prijatá objednávka so zákazníkom podľa IČ DPH, trasou a cenou",
+            "Faktúra s návrhom režimu DPH pre prepravu (zákazník z EÚ s prenesením daňovej povinnosti)",
+            "PDF faktúry sa pošle späť k objednávke v Trans.eu",
+            "Tá istá objednávka nikdy nedostane druhú faktúru",
+          ],
         },
       ],
     },
