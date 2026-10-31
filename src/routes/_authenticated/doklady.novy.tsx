@@ -65,6 +65,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useDizajn } from "@/hooks/useDizajn";
 import { BlocekDetailKompaktny } from "@/components/faktero/BlocekDetailKompaktny";
 import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
+import { RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
 import { SumarK } from "@/components/faktero/DetailDokladuKompaktny";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 import {
@@ -924,21 +925,21 @@ function NovyDokladPage() {
         }
       />
       <PageBody>
-        <div
-          className={
-            nahladVedla
-              ? "grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,48rem)]"
-              : "mx-auto max-w-3xl"
+        <RozlozenieSNahladom
+          className={nahladVedla ? "grid grid-cols-1 gap-5" : "mx-auto max-w-3xl"}
+          stlpceVlavo="lg:grid-cols-[minmax(0,1fr)_minmax(0,48rem)]"
+          stlpceVpravo="lg:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]"
+          nahlad={
+            nahladVedla ? (
+              <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+                <NahladDokladuNastroje
+                  url={preview}
+                  mime={nahladJePdf ? "application/pdf" : uploadedFile?.mime ?? "image/jpeg"}
+                />
+              </div>
+            ) : null
           }
         >
-          {nahladVedla ? (
-            <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-              <NahladDokladuNastroje
-                url={preview}
-                mime={nahladJePdf ? "application/pdf" : uploadedFile?.mime ?? "image/jpeg"}
-              />
-            </div>
-          ) : null}
         <div className="min-w-0 space-y-5">
           {kompaktne && search.id && ulozeny ? (
             <button
@@ -1681,7 +1682,7 @@ function NovyDokladPage() {
             </div>
           </div>
         </div>
-        </div>
+        </RozlozenieSNahladom>
       </PageBody>
     </>
   );

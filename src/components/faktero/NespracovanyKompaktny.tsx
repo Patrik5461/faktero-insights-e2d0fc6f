@@ -21,6 +21,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { NahladPdf } from "./NahladPdf";
+import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahladom";
 import {
   ObrazokSoZvyraznenim,
   PrepinacZvyraznenia,
@@ -193,99 +194,115 @@ export function NespracovanyKompaktny({
   const pdf = String(subor.mime ?? "").includes("pdf");
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-      {/* Náhľad s nástrojmi */}
-      <div className="min-w-0 rounded-2xl border border-border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-          <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
-            {t("Náhľad")}
-          </span>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            {[
-              { ikona: RotateCcw, popis: "Otočiť doľava", akcia: () => setOtocenie((o) => o - 90) },
-              { ikona: RotateCw, popis: "Otočiť doprava", akcia: () => setOtocenie((o) => o + 90) },
-              {
-                ikona: ZoomIn,
-                popis: "Priblížiť",
-                akcia: () => setZvacsenie((z) => Math.min(3, z + 0.25)),
-              },
-              {
-                ikona: ZoomOut,
-                popis: "Oddialiť",
-                akcia: () => setZvacsenie((z) => Math.max(0.5, z - 0.25)),
-              },
-            ].map(({ ikona: I, popis, akcia }) => (
+    <RozlozenieSNahladom
+      className="grid gap-4"
+      stlpceVlavo="lg:grid-cols-[minmax(0,1fr)_400px]"
+      stlpceVpravo="lg:grid-cols-[400px_minmax(0,1fr)]"
+      nahlad={
+        /* Náhľad s nástrojmi */
+        <div className="min-w-0 rounded-2xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+            <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
+              {t("Náhľad")}
+            </span>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              {[
+                {
+                  ikona: RotateCcw,
+                  popis: "Otočiť doľava",
+                  akcia: () => setOtocenie((o) => o - 90),
+                },
+                {
+                  ikona: RotateCw,
+                  popis: "Otočiť doprava",
+                  akcia: () => setOtocenie((o) => o + 90),
+                },
+                {
+                  ikona: ZoomIn,
+                  popis: "Priblížiť",
+                  akcia: () => setZvacsenie((z) => Math.min(3, z + 0.25)),
+                },
+                {
+                  ikona: ZoomOut,
+                  popis: "Oddialiť",
+                  akcia: () => setZvacsenie((z) => Math.max(0.5, z - 0.25)),
+                },
+              ].map(({ ikona: I, popis, akcia }) => (
+                <button
+                  key={popis}
+                  type="button"
+                  title={t(popis)}
+                  aria-label={t(popis)}
+                  onClick={akcia}
+                  className="rounded-md p-2 hover:bg-secondary"
+                >
+                  <I className="h-4 w-4" />
+                </button>
+              ))}
+              {(pdf || Boolean(zvyraznenie?.polohy?.length)) &&
+              zvyraznenie &&
+              onPrepniZvyraznenie ? (
+                <PrepinacZvyraznenia zap={zvyraznenie.zobrazit} onPrepni={onPrepniZvyraznenie} />
+              ) : null}
+              {subor.url ? (
+                <a
+                  href={subor.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={t("Stiahnuť")}
+                  aria-label={t("Stiahnuť")}
+                  className="rounded-md p-2 hover:bg-secondary"
+                >
+                  <Download className="h-4 w-4" />
+                </a>
+              ) : null}
               <button
-                key={popis}
                 type="button"
-                title={t(popis)}
-                aria-label={t(popis)}
-                onClick={akcia}
-                className="rounded-md p-2 hover:bg-secondary"
+                title={t("Zmazať do koša")}
+                aria-label={t("Zmazať do koša")}
+                onClick={onZmaz}
+                disabled={busy}
+                className="rounded-md p-2 hover:bg-destructive/10 hover:text-destructive"
               >
-                <I className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </button>
-            ))}
-            {(pdf || Boolean(zvyraznenie?.polohy?.length)) && zvyraznenie && onPrepniZvyraznenie ? (
-              <PrepinacZvyraznenia zap={zvyraznenie.zobrazit} onPrepni={onPrepniZvyraznenie} />
-            ) : null}
+              <PrepinacStranyNahladu className="p-2" />
+            </div>
+          </div>
+          <div className="overflow-auto p-4 lg:max-h-[calc(100vh-11rem)]">
             {subor.url ? (
-              <a
-                href={subor.url}
-                target="_blank"
-                rel="noreferrer"
-                title={t("Stiahnuť")}
-                aria-label={t("Stiahnuť")}
-                className="rounded-md p-2 hover:bg-secondary"
+              <div
+                style={{
+                  transform: `rotate(${otocenie}deg) scale(${zvacsenie})`,
+                  transformOrigin: "top center",
+                }}
+                className="transition-transform"
               >
-                <Download className="h-4 w-4" />
-              </a>
-            ) : null}
-            <button
-              type="button"
-              title={t("Zmazať do koša")}
-              aria-label={t("Zmazať do koša")}
-              onClick={onZmaz}
-              disabled={busy}
-              className="rounded-md p-2 hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+                {pdf ? (
+                  <NahladPdf
+                    url={subor.url}
+                    zvyraznenie={
+                      zvyraznenie ? { ...zvyraznenie, aktivne: zvyraznenePole } : undefined
+                    }
+                  />
+                ) : (
+                  <ObrazokSoZvyraznenim
+                    url={subor.url}
+                    alt={subor.nazov ?? t("Doklad")}
+                    className="mx-auto max-w-full rounded-md"
+                    zvyraznenie={
+                      zvyraznenie ? { ...zvyraznenie, aktivne: zvyraznenePole } : undefined
+                    }
+                  />
+                )}
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>
+            )}
           </div>
         </div>
-        <div className="overflow-auto p-4 lg:max-h-[calc(100vh-11rem)]">
-          {subor.url ? (
-            <div
-              style={{
-                transform: `rotate(${otocenie}deg) scale(${zvacsenie})`,
-                transformOrigin: "top center",
-              }}
-              className="transition-transform"
-            >
-              {pdf ? (
-                <NahladPdf
-                  url={subor.url}
-                  zvyraznenie={
-                    zvyraznenie ? { ...zvyraznenie, aktivne: zvyraznenePole } : undefined
-                  }
-                />
-              ) : (
-                <ObrazokSoZvyraznenim
-                  url={subor.url}
-                  alt={subor.nazov ?? t("Doklad")}
-                  className="mx-auto max-w-full rounded-md"
-                  zvyraznenie={
-                    zvyraznenie ? { ...zvyraznenie, aktivne: zvyraznenePole } : undefined
-                  }
-                />
-              )}
-            </div>
-          ) : (
-            <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>
-          )}
-        </div>
-      </div>
-
+      }
+    >
       {/* Panel s údajmi */}
       <div
         onFocusCapture={(e) => setAktivnePole(poleZPrvku(e.target))}
@@ -882,6 +899,6 @@ export function NespracovanyKompaktny({
           {pravidloZDokladu ? <div className="flex justify-center">{pravidloZDokladu}</div> : null}
         </div>
       </div>
-    </div>
+    </RozlozenieSNahladom>
   );
 }

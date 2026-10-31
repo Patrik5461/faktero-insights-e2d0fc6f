@@ -6,6 +6,7 @@ import { PageBody, PageHeader } from "./AppShell";
 import { NahladPdf } from "./NahladPdf";
 import { PolozkyK, type PolozkaK } from "./DetailDokladuKompaktny";
 import { useT } from "@/lib/i18n/useT";
+import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahladom";
 
 /**
  * Náhľad dokladu s nástrojmi (otáčanie, priblíženie, stiahnutie) — tvarom
@@ -68,6 +69,7 @@ export function NahladDokladuNastroje({
             </a>
           ) : null}
           {akcie}
+          <PrepinacStranyNahladu className="p-2" />
         </div>
       </div>
       <div className="overflow-auto p-4 lg:max-h-[calc(100vh-11rem)]">
@@ -165,8 +167,12 @@ export function PrijataUpravaKompaktna({
     <>
       <PageHeader title={titulok} />
       <PageBody>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_440px]">
-          <NahladDokladuNastroje url={url} mime={priloha?.mime ?? null} />
+        <RozlozenieSNahladom
+          className="grid gap-4"
+          stlpceVlavo="lg:grid-cols-[minmax(0,1fr)_440px]"
+          stlpceVpravo="lg:grid-cols-[440px_minmax(0,1fr)]"
+          nahlad={<NahladDokladuNastroje url={url} mime={priloha?.mime ?? null} />}
+        >
           <form
             onSubmit={onSubmit}
             className="@container flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]"
@@ -204,7 +210,7 @@ export function PrijataUpravaKompaktna({
               </button>
             </div>
           </form>
-        </div>
+        </RozlozenieSNahladom>
       </PageBody>
     </>
   );

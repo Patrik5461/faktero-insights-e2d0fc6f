@@ -250,6 +250,12 @@ const sections: HelpSection[] = [
           položky, ostatné údaje k bločku vrátane ID bločku z eKasy, sumár a história. Všetky
           údaje sa dajú zmeniť po kliknutí na ceruzku.
         </p>
+        <p>
+          Náhľad je predvolene vľavo. Ak ho chcete <strong>napravo</strong>, kliknite na ikonu
+          panelu v hlavičke náhľadu alebo to zmeňte v Nastaveniach v časti Rozloženie aplikácie.
+          Voľba platí pre váš účet na každom zariadení a pre všetky obrazovky s náhľadom — bloček,
+          prijatú aj vystavenú faktúru, Nespracované doklady aj náhľad vedľa zoznamu.
+        </p>
       </>
     ),
   },

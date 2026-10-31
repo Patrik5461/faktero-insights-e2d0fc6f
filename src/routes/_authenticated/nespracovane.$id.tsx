@@ -22,6 +22,7 @@ import { Loader2, Plus, Trash2, ExternalLink, RefreshCw, ChevronDown, ChevronUp 
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { NahladSVyberom, poleZPrvku, zablikajPole } from "@/components/faktero/NahladSVyberom";
+import { PrepinacStranyNahladu, RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
 import { poliaPreDruh, zapisDoUdajov, type KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import {
@@ -540,8 +541,12 @@ function Detail() {
         action={prepinac}
       />
       <PageBody>
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* Doklad */}
+        <RozlozenieSNahladom
+          className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+          stlpceVlavo=""
+          stlpceVpravo=""
+          nahlad={
+          /* Doklad */
           <div className="min-w-0 rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-auto">
             {d.subor.url ? (
               <>
@@ -560,21 +565,25 @@ function Detail() {
                   zvyraznenie={{ ...zvyraznenie, aktivne: hoverPola.pole ?? vyberPole }}
                   onPrepniZvyraznenie={prepniZvyraznenie}
                 />
-                <a
-                  href={d.subor.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />{" "}
-                  {t("Otvoriť {nazov}", { nazov: d.subor.nazov ?? t("súbor") })}
-                </a>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <a
+                    href={d.subor.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />{" "}
+                    {t("Otvoriť {nazov}", { nazov: d.subor.nazov ?? t("súbor") })}
+                  </a>
+                  <PrepinacStranyNahladu />
+                </div>
               </>
             ) : (
               <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>
             )}
           </div>
-
+          }
+        >
           {/* Údaje — kliknutie do poľa zapne výber z náhľadu */}
           <div
             ref={udajeRef}
@@ -959,7 +968,7 @@ function Detail() {
               </button>
             </div>
           </div>
-        </div>
+        </RozlozenieSNahladom>
         <div className="mt-6 max-w-xl">
           <SchvalovaniePanel companyId={d.companyId} agenda="nespracovany" id={d.id} />
         </div>
