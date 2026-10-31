@@ -113,7 +113,7 @@ export async function zastaveneDoklady(
       const dovod = prekazkaDokladu(doklad, company, nast as any);
       if (dovod) out.push({ druh: "prijata", id: p.id, cislo: p.invoice_number, dovod });
       else {
-        const varovanie = varovanieDokladu(doklad, nast as any);
+        const varovanie = varovanieDokladu(doklad, nast as any, company as any);
         if (varovanie)
           out.push({
             druh: "prijata",

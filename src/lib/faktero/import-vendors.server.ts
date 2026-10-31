@@ -10,6 +10,57 @@ import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 export type VendorSource = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
 export type CanonicalRow = Partial<Record<FieldKey, string>>;
 
+/** Polia, ktoré import z účtovných programov prenáša 1:1 (identické mapovanie). */
+export const KANONICKE_POLIA: FieldKey[] = [
+  "invoice_number",
+  "variable_symbol",
+  "issue_date",
+  "due_date",
+  "delivery_date",
+  "status",
+  "currency",
+  "subtotal",
+  "vat_total",
+  "total",
+  "notes",
+  "external_id",
+  "customer_name",
+  "customer_ico",
+  "customer_dic",
+  "customer_ic_dph",
+  "customer_email",
+  "customer_phone",
+  "customer_street",
+  "customer_city",
+  "customer_zip",
+  "customer_country",
+  "item_name",
+  "item_description",
+  "item_quantity",
+  "item_unit",
+  "item_unit_price",
+  "item_vat_rate",
+  "item_total",
+  "item_subtotal",
+  "item_discount_percent",
+  "advance_amount",
+  /*
+      Druh dokladu chýbal — dobropis z Pohody (aj ISDOC) sa naimportoval ako
+      bežná faktúra s kladnou sumou. Zvyšok nesie len Pohoda XML.
+    */
+  "document_type",
+  "exchange_rate",
+  "kv_clenenie",
+  "pohoda_predkontacia",
+  "pohoda_clenenie_dph",
+  "reverse_charge",
+  "opravuje_cislo",
+  "zaloha_cislo",
+  "oss_country",
+  "item_vat_amount",
+  "item_pdp",
+];
+
 // Windows-1250 → UTF-8 (Slovak accounting exports frequently use CP1250).
 // If the bytes are already UTF-8 we detect a BOM or fail-safe decode via TextDecoder.
 function decodeBytes(bytes: Uint8Array): string {
@@ -331,7 +382,7 @@ function parseKrosXml(bytes: Uint8Array): CanonicalRow[] {
  * alebo `responsePack`, prípadne ISDOC), mPohoda ako cloudová aplikácia vydáva
  * JSON cez svoje rozhranie. Jedna stránka importu, formát sa rozpozná z obsahu.
  */
-function parsePohoda(bytes: Uint8Array): CanonicalRow[] {
+function parsePohoda(bytes: Uint8Array, krajina?: string | null): CanonicalRow[] {
   const obsah = decodeBytes(bytes);
 
   if (jeMPohodaJson(obsah)) {
@@ -354,7 +405,7 @@ function parsePohoda(bytes: Uint8Array): CanonicalRow[] {
 
   // Pohoda vie faktúru vyviezť aj do ISDOC.
   if (jeIsdoc(obsah)) return isdocNaRiadky(parser.parse(obsah)) as CanonicalRow[];
-  if (jePohodaXml(obsah)) return pohodaNaRiadky(parser.parse(obsah)) as CanonicalRow[];
+  if (jePohodaXml(obsah)) return pohodaNaRiadky(parser.parse(obsah), { krajina }) as CanonicalRow[];
   return [];
 }
 
@@ -365,12 +416,13 @@ export function parseVendorFile(
   source: VendorSource,
   fileName: string,
   bytes: Uint8Array,
+  opts: { krajina?: string | null } = {},
 ): CanonicalRow[] {
   const lower = fileName.toLowerCase();
   const isXml = lower.endsWith(".xml");
   switch (source) {
     case "pohoda":
-      return parsePohoda(bytes);
+      return parsePohoda(bytes, opts.krajina);
     case "money-s3":
       return parseMoneyS3(bytes);
     case "kros":

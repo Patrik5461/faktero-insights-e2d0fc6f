@@ -72,6 +72,8 @@ export async function rozbal(
   vstupy: Vstup[],
   hlbka = 0,
   rozpocet: RozpocetZipu = novyRozpocet(),
+  /** Krajina firmy — priehradky sadzieb Pohody (SK 23 %, CZ 21 %). */
+  krajina?: string | null,
 ): Promise<{
   zaznamy: PrijatyZaznam[];
   skeny: Vstup[];
@@ -92,7 +94,7 @@ export async function rozbal(
         const vnutri: Vstup[] = Object.entries(rozbalZip(v.bajty, rozpocet)).map(
           ([meno, bajty]) => ({ meno, bajty }),
         );
-        const r = await rozbal(vnutri, hlbka + 1, rozpocet);
+        const r = await rozbal(vnutri, hlbka + 1, rozpocet, krajina);
         zaznamy.push(...r.zaznamy);
         skeny.push(...r.skeny);
         poznamky.push(...r.poznamky);
@@ -102,7 +104,7 @@ export async function rozbal(
           poznamky.push(`${meno}: XML nie je vo formáte Pohody, preskočené`);
           continue;
         }
-        const najdene = pohodaPrijate(parser.parse(obsah));
+        const najdene = pohodaPrijate(parser.parse(obsah), { krajina: krajina ?? null });
         if (!najdene.length) poznamky.push(`${meno}: v XML nie sú prijaté faktúry ani pokladničné výdavky`);
         zaznamy.push(...najdene);
       } else if (nizke.endsWith(".csv") || nizke.endsWith(".txt")) {
@@ -186,10 +188,10 @@ export type Plan = {
 };
 
 export async function naplanuj(klient: any, companyId: string, vstupy: Vstup[]): Promise<Plan> {
-  const { zaznamy, skeny, poznamky } = await rozbal(vstupy);
+  const { data: firma } = await klient.from("companies").select("country").eq("id", companyId).maybeSingle();
+  const { zaznamy, skeny, poznamky } = await rozbal(vstupy, 0, novyRozpocet(), firma?.country ?? "SK");
   // Doklad bez uvedenej meny je v domácej mene firmy — CZ firme koruny, nie eurá.
   if (zaznamy.some((z) => !z.mena)) {
-    const { data: firma } = await klient.from("companies").select("country").eq("id", companyId).maybeSingle();
     const { domacaMena } = await import("./kurzy");
     const domaca = domacaMena(firma?.country);
     for (const z of zaznamy) if (!z.mena) z.mena = domaca;

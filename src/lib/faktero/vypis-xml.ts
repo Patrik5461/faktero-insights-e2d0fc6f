@@ -20,8 +20,72 @@ export type CitanieXml = {
   /** Čo si má človek pozrieť, kým to pošle do účtovníctva. `null` = všetko sedí. */
   varovanie: string | null;
   /** Ktorý formát sa v súbore našiel — do vety na obrazovke. */
-  format: "camt.053" | "camt.052" | "camt.054";
+  format: "camt.053" | "camt.052" | "camt.054" | "Pohoda XML";
 };
+
+/**
+ * Bankové doklady z Pohoda XML (`bnk:bank` v `dataPack`, aj `responsePack`
+ * exportu z Pohody). Účtovníčka tak vie poslať výpis, ktorý už má v Pohode,
+ * a Faktero z neho spáruje úhrady — rovnako ako zo súboru z banky.
+ * Suma je v súhrne (priehradky), smer v `bankType`.
+ */
+function citajPohodaBanku(koren: Uzol): CitanieXml | null {
+  const balik = (koren.dataPack ?? koren.responsePack) as Uzol | undefined;
+  if (!balik) return null;
+  const polozky = [...pole(balik.dataPackItem), ...pole(balik.responsePackItem)] as Uzol[];
+  const doklady = polozky.flatMap((i) => [
+    ...(pole(i?.bank) as Uzol[]),
+    ...(pole((i?.listBank as Uzol)?.bank) as Uzol[]),
+  ]);
+  if (!doklady.length) return null;
+  const sumaZ = (o: Uzol | undefined) =>
+    [
+      "priceNone",
+      "priceLow",
+      "priceLowVAT",
+      "priceHigh",
+      "priceHighVAT",
+      "price3",
+      "price3VAT",
+    ].reduce((a, k) => a + Number(String(hodnota(o?.[k]) ?? "0").replace(",", ".") || 0), 0);
+  let cislo: string | null = null;
+  let datumVypisu: string | null = null;
+  let mena: string | null = null;
+  const pohyby: SurovyPohyb[] = doklady.map((b) => {
+    const h = (b.bankHeader ?? {}) as Uzol;
+    const s = (b.bankSummary ?? {}) as Uzol;
+    const cudzia = s.foreignCurrency as Uzol | undefined;
+    const sumaCudzia = cudzia
+      ? Number(String(hodnota(cudzia.priceSum) ?? "").replace(",", "."))
+      : NaN;
+    mena ??= hodnota((cudzia?.currency as Uzol)?.ids) ?? null;
+    cislo ??= hodnota((h.statementNumber as Uzol)?.statementNumber) ?? null;
+    datumVypisu ??= hodnota(h.dateStatement) ?? null;
+    const ucet = (h.paymentAccount ?? {}) as Uzol;
+    const adresa = ((h.partnerIdentity as Uzol)?.address ?? {}) as Uzol;
+    return {
+      datum: hodnota(h.datePayment) ?? hodnota(h.dateStatement),
+      suma: cent(
+        Math.abs(Number.isFinite(sumaCudzia) ? sumaCudzia : sumaZ(s.homeCurrency as Uzol)),
+      ),
+      smer: String(hodnota(h.bankType) ?? "").toLowerCase() === "expense" ? "vydaj" : "prijem",
+      popis: [hodnota(h.text), hodnota(h.note)].filter(Boolean).join(" — ") || null,
+      protistrana: hodnota(adresa.company) ?? hodnota(adresa.name) ?? null,
+      protiucet: hodnota(ucet.accountNo) ?? null,
+      vs: hodnota(h.symVar) ?? null,
+      ks: hodnota(h.symConst) ?? null,
+      ss: hodnota(h.symSpec) ?? null,
+      kodBanky: hodnota(ucet.bankCode) ?? null,
+    };
+  });
+  const vypis = normalizujVypis({ cisloVypisu: cislo, ucet: null, mena, datumVypisu, pohyby });
+  return {
+    vypis,
+    format: "Pohoda XML",
+    varovanie:
+      "Výpis je z Pohody — účet v ňom je len skratka. Skontrolujte, že ho nahrávate k správnemu účtu.",
+  };
+}
 
 type Uzol = Record<string, any>;
 
@@ -275,6 +339,8 @@ export function citajBankoveXml(xml: string): CitanieXml {
   }
 
   const koren = (obj.Document ?? obj) as Uzol;
+  const zPohody = citajPohodaBanku(koren);
+  if (zPohody) return zPohody;
   const skupiny: { vety: Uzol[]; format: CitanieXml["format"] } = koren.BkToCstmrStmt
     ? { vety: pole((koren.BkToCstmrStmt as Uzol).Stmt) as Uzol[], format: "camt.053" }
     : koren.BkToCstmrAcctRpt

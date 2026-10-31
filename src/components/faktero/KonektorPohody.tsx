@@ -2,7 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { pripravKonektorFn, stavKonektoraFn } from "@/lib/faktero/pohoda-konektor.functions";
+import {
+  nahrajOdpovedPohodyFn,
+  pripravKonektorFn,
+  stavKonektoraFn,
+} from "@/lib/faktero/pohoda-konektor.functions";
 import { fetchMyCompanies } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
@@ -29,6 +33,14 @@ type StavKonektora = {
 };
 
 type MojaFirma = { id: string; name: string; role: string };
+type VysledokOdpovede = {
+  spracovanych: number;
+  zalozenych: number;
+  chybnych: number;
+  chyby: string[];
+  upozornenia?: string[];
+  chybaBaliku?: string | null;
+};
 
 export function KonektorPohody({ companyId }: { companyId: string }) {
   const { t, jazyk } = useT();
@@ -44,6 +56,40 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
   const [vybrane, setVybrane] = useState<string[]>([companyId]);
   const fnPriprav = useServerFn(pripravKonektorFn);
   const fnStav = useServerFn(stavKonektoraFn);
+  const fnOdpoved = useServerFn(nahrajOdpovedPohodyFn);
+  const [vysledokOdpovede, setVysledokOdpovede] = useState<VysledokOdpovede | null>(null);
+
+  /*
+    Odpoveď z Pohody nahratá ručne — po importe mesačného alebo skúšobného
+    balíka. Pohoda ju zapisuje vo Windows-1250, kódovanie sa berie z hlavičky.
+  */
+  async function nahrajOdpoved(subor: File) {
+    setPracuje(true);
+    try {
+      const bajty = new Uint8Array(await subor.arrayBuffer());
+      const hlavicka = new TextDecoder("ascii").decode(bajty.slice(0, 200));
+      const kod = /encoding\s*=\s*["']([\w-]+)["']/i.exec(hlavicka)?.[1] ?? "utf-8";
+      let xml: string;
+      try {
+        xml = new TextDecoder(kod).decode(bajty);
+      } catch {
+        xml = new TextDecoder("utf-8").decode(bajty);
+      }
+      const r = (await fnOdpoved({ data: { companyId, xml } })) as VysledokOdpovede;
+      setVysledokOdpovede(r);
+      if (r.chybnych)
+        toast.error(t("Pohoda odmietla {n} dokladov — vrátili sa do fronty.", { n: r.chybnych }));
+      else
+        toast.success(
+          t("Odpoveď z Pohody spracovaná: {n} dokladov potvrdených.", { n: r.zalozenych }),
+        );
+      fnStav({ data: { companyId } }).then((x) => setStav(x as StavKonektora));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("Odpoveď sa nepodarilo spracovať."));
+    } finally {
+      setPracuje(false);
+    }
+  }
 
   useEffect(() => {
     fnStav({ data: { companyId } })
@@ -160,12 +206,63 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
                 {r.pohoda_cislo ? ` → ${r.pohoda_cislo}` : ""}
                 {r.pohoda_stav === "error"
                   ? ` — ${t("chyba: {text}", { text: r.error ?? t("neznáma") })}`
-                  : ""}
+                  : r.pohoda_stav === "warning" && r.error
+                    ? ` — ${t("upozornenie: {text}", { text: r.error })}`
+                    : ""}
               </li>
             ))}
           </ul>
         </div>
       ) : null}
+      <div className="mt-3 text-xs">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 font-medium hover:bg-secondary">
+          <input
+            type="file"
+            accept=".xml,text/xml,application/xml"
+            className="sr-only"
+            disabled={pracuje}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void nahrajOdpoved(f);
+            }}
+          />
+          {t("Nahrať odpoveď z Pohody (XML)")}
+        </label>
+        <span className="ml-2 text-muted-foreground">
+          {t(
+            "Po ručnom importe balíka do Pohody — potvrdí čísla dokladov a ukáže, čo Pohoda odmietla.",
+          )}
+        </span>
+        {vysledokOdpovede ? (
+          <div className="mt-2 rounded-md border border-border p-2" role="status">
+            <div className="font-medium">
+              {t("Spracovaných {n}, potvrdených {ok}, odmietnutých {chyby}", {
+                n: vysledokOdpovede.spracovanych,
+                ok: vysledokOdpovede.zalozenych,
+                chyby: vysledokOdpovede.chybnych,
+              })}
+            </div>
+            {vysledokOdpovede.chyby.length ? (
+              <ul className="mt-1 list-disc space-y-0.5 pl-4 text-destructive">
+                {vysledokOdpovede.chyby.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            ) : null}
+            {vysledokOdpovede.upozornenia?.length ? (
+              <>
+                <div className="mt-1 font-medium">{t("Upozornenia Pohody")}</div>
+                <ul className="list-disc space-y-0.5 pl-4 text-muted-foreground">
+                  {vysledokOdpovede.upozornenia.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
       <p className="mt-3 text-xs text-muted-foreground">
         {t("Každé stiahnutie vyrobí nový kľúč; staré ostávajú platné a zrušiť sa dajú v")}{" "}
         <Link to="/api-kluce" className="underline">

@@ -22,6 +22,30 @@ export function doplnovacKurzov(companyId: string) {
       const { pravidloKurzuFirmy, kurzPreDoklad } = await import("./kurzy.server");
       pravidlo ??= pravidloKurzuFirmy(companyId);
       const p = await pravidlo;
+      /*
+        Kurz zo súboru (Pohoda XML nesie kurz, ktorým sa doklad zaúčtoval) má
+        prednosť pred lístkom — dopočíta sa len prepočet do domácej meny.
+      */
+      const kurzZoSuboru = Number(riadok?.exchange_rate);
+      if (kurzZoSuboru > 0) {
+        const { mena, datum } = udajeNaKurz(tabulka, riadok);
+        const { domacaMena } = await import("./kurzy");
+        if (!/^[A-Z]{3}$/.test(mena) || mena === domacaMena(p.krajina)) return {};
+        const stlpce = stlpceKurzu(
+          tabulka,
+          riadok,
+          {
+            kurz: kurzZoSuboru,
+            den: datum.slice(0, 10),
+            zdroj: p.krajina === "CZ" ? "cnb" : "ecb",
+          },
+          p.krajina,
+        );
+        // Čo volajúci už vyplnil (zdroj, deň kurzu), sa neprepisuje.
+        return Object.fromEntries(
+          Object.entries(stlpce).filter(([k]) => riadok?.[k] == null || riadok[k] === ""),
+        );
+      }
       if (!potrebujeKurz(tabulka, riadok, p.krajina)) return {};
       const { mena, datum } = udajeNaKurz(tabulka, riadok);
       const kluc = `${mena}|${datum.slice(0, 10)}`;

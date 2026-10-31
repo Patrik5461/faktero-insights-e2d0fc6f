@@ -36,6 +36,7 @@ import { riadkySoZlavou } from "./zlavy";
 import { polozkyOdpoctu, prekazkaOdpoctu, sumaOdpoctov } from "./zalohy-odpocty";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 import {
+  clenenieprijatejPdp,
   clenenieVydanejPdp,
   idDokladuPohody,
   jeTuzemskePdp,
@@ -1116,7 +1117,9 @@ export function polozkyFaktur(opts: {
             ? cudziaMenaSuhrn(
                 menaFaktury,
                 Number((invoice as any).exchange_rate),
-                zn * celkom,
+                // Súčet dokladu je po odpočte zálohy (položka odpočtu je záporná) —
+                // inak Pohoda hlási nesúlad súčtu s položkami.
+                zn * (celkom - zalohaZaklad - zalohaDan),
                 zn * zaokruhlenie,
                 "        ",
                 (company as any)?.country,
@@ -1669,7 +1672,7 @@ export function polozkyDokladov(opts: {
       const clenenie = rozuctovany
         ? null
         : d?._pdp && !String(d?.pohoda_clenenie_dph ?? "").trim()
-          ? nastavenia?.clenenieDphPdpPrijata || clenenieJedno
+          ? clenenieprijatejPdp(nastavenia, cz) || clenenieJedno
           : clenenieJedno;
 
       /*
@@ -1776,7 +1779,7 @@ export function polozkyDokladov(opts: {
         ? `
       <${p}:${koren}Detail>${polozkyFaktury
         .map((x: any) => {
-          const cl = x.pdp ? nastavenia?.clenenieDphPdpPrijata || x.clenenie : x.clenenie;
+          const cl = x.pdp ? clenenieprijatejPdp(nastavenia, cz) || x.clenenie : x.clenenie;
           const kvx = x.pdp && !cz ? "B1" : "";
           const pk = rozuctovanePolozky ? kodPolozky(x) : x.predkontacia;
           return `
@@ -1887,7 +1890,7 @@ export function polozkyDokladov(opts: {
           const domace = mena === "homeCurrency";
           const cl = domace
             ? r.pdp
-              ? nastavenia?.clenenieDphPdpPrijata || clenenie
+              ? clenenieprijatejPdp(nastavenia, cz) || clenenie
               : clenenie
             : clenenieJedno;
           const kvr = domace && r.pdp && !cz ? "B1" : "";
@@ -1982,7 +1985,12 @@ export function polozkyDokladov(opts: {
 
       // Číslo dokladu od dodávateľa: prijatá faktúra ho má vždy, bloček
       // v pokladni či internom doklade ho nesie tiež, nech sa dá dohľadať.
-      const povodne = skrat(d?._povodneCislo || (p !== "inv" ? d?.document_number : ""), 32);
+      /*
+        Číslo dokladu od dodávateľa. Aj bloček zaplatený prevodom (ide ako
+        prijatá faktúra) ho potrebuje — bez neho sa v Pohode nedá dohľadať a
+        import z Pohody by ho poznal len podľa VS (číslice z čísla bločku).
+      */
+      const povodne = skrat(d?._povodneCislo || d?.document_number || "", 32);
       /*
         SK prijatý dobropis: „Pôvodné číslo dokladu" je číslo faktúry, ktorú
         opravuje — kontrolný výkaz (C.2) ho chce. Interný doklad ho má obsadené

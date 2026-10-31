@@ -13,6 +13,9 @@ import {
   jeTuzemskePdp,
   prekazkaDokladu,
   prekazkaVydanej,
+  prekazkaPoliPrijateho,
+  prekazkaPoliVydanej,
+  varovanieKvPrijatej,
   PREDVOLENE_CLENENIE_PDP_VYDANE,
 } from "./pohoda-kontrola";
 import { polozkyPrijatej, prijataAkoDoklad, rozpisPrijatej } from "./prijate-do-pohody";
@@ -405,5 +408,65 @@ describe("oprava po vrátení ide pod novým id (kontrola duplicity Pohody)", ()
       doklady: [prijataAkoDoklad({ ...telekom, id, pohoda_verzia: 3 }) as any],
     });
     expect(prij).toContain(`<dat:dataPackItem id="${id}-3"`);
+  });
+});
+
+describe("kontrola polí pred Pohodou (dĺžky a tvar podľa schém Stormware)", () => {
+  const firma = { country: "SK" };
+  const fa = (o: Record<string, unknown> = {}) => ({
+    invoice_number: "FA2026001",
+    issue_date: "2026-10-10",
+    currency: "EUR",
+    customer_ic_dph: "SK2021999888",
+    ...o,
+  });
+  it("vydaná: číslo nad 32 znakov, zlé IČ DPH, mena a KV A.2 bez IČ DPH", () => {
+    expect(prekazkaPoliVydanej(fa(), firma)).toBeNull();
+    expect(prekazkaPoliVydanej(fa({ invoice_number: "X".repeat(33) }), firma)).toMatch(
+      /najviac 32/,
+    );
+    expect(prekazkaPoliVydanej(fa({ customer_ic_dph: "2021999888" }), firma)).toMatch(
+      /nemá tvar IČ DPH/,
+    );
+    expect(prekazkaPoliVydanej(fa({ customer_ic_dph: "SK" + "1".repeat(20) }), firma)).toMatch(
+      /dlhšie ako 18/,
+    );
+    expect(prekazkaPoliVydanej(fa({ currency: "€" }), firma)).toMatch(/nie je kód ISO/);
+    expect(prekazkaPoliVydanej(fa({ customer_ic_dph: null, kv_clenenie: "A2" }), firma)).toMatch(
+      /A.2 bez IČ DPH/,
+    );
+    expect(prekazkaPoliVydanej(fa({ customer_ico: "1234567890123456" }), firma)).toMatch(/IČO/);
+  });
+  it("prijatá: IČ DPH so sadzbou (čítanie AI) a dlhé číslo dodávateľa zastavia, bloček nie", () => {
+    const pr = (o: Record<string, unknown> = {}) => ({
+      _typPohody: "receivedInvoice",
+      _povodneCislo: "2026-778",
+      issue_date: "2026-10-05",
+      supplier_ic_dph: "SK2022111222",
+      ...o,
+    });
+    expect(prekazkaPoliPrijateho(pr())).toBeNull();
+    expect(prekazkaPoliPrijateho(pr({ supplier_ic_dph: "2.30" }))).toMatch(/nemá tvar IČ DPH/);
+    expect(prekazkaPoliPrijateho(pr({ supplier_ic_dph: "2020264818/SK2020264818" }))).toMatch(
+      /dlhšie ako 18/,
+    );
+    expect(
+      prekazkaPoliPrijateho(pr({ _povodneCislo: "Fwd: FW: Dožiadanie_MaxiTicket s.r.o." })),
+    ).toMatch(/najviac 32/);
+    expect(
+      prekazkaPoliPrijateho({ document_number: "O-".padEnd(60, "1"), supplier_ic_dph: "23" }),
+    ).toBeNull();
+  });
+  it("upozornenie: prijatá v KV B.2 bez IČ DPH dodávateľa", () => {
+    const d = {
+      _typPohody: "receivedInvoice",
+      _povodneCislo: "2026-1",
+      vat_breakdown: [{ sadzba: 23, zaklad: 100, dph: 23 }],
+    };
+    expect(varovanieKvPrijatej(d, { country: "SK" })).toMatch(/B2\) bez IČ DPH dodávateľa/);
+    expect(
+      varovanieKvPrijatej({ ...d, supplier_ic_dph: "SK2022111222" }, { country: "SK" }),
+    ).toBeNull();
+    expect(varovanieKvPrijatej(d, { country: "CZ" })).toBeNull();
   });
 });
