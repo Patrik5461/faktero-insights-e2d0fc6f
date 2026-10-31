@@ -154,8 +154,6 @@ function InvoiceDetail() {
   const nahladDetail = useNahladVDetaile();
   // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
   const kompaktne = useDizajn() === "kompaktny";
-  /* Číslo faktúry v Pohode — kompaktná hlavička ho ukazuje ako interné číslo. */
-  const [interneCislo, setInterneCislo] = useState<string | null>(null);
   const [pdfVedla, setPdfVedla] = useState<SuborNahladu | undefined>(undefined);
   const [emailOpen, setEmailOpen] = useState(false);
   /* Koľko príloh doklad má — podľa toho sa v maile ponúkne, či ich priložiť. */
@@ -1622,30 +1620,145 @@ function InvoiceDetail() {
   );
 
   /*
-    Kompaktné rozloženie — tie isté kúsky v jednom stĺpci kariet. Pri
-    zapnutom náhľade PDF ostáva PDF vľavo a karty idú vpravo.
+    Kompaktné rozloženie — ako nespracovaný doklad (NespracovanyKompaktny):
+    veľký náhľad PDF na strane podľa voľby a úzky panel so sekciami.
   */
   const zamknuteObdobie = Boolean(
     ciselnikyFirmy.zamknuteDo && inv.issue_date && inv.issue_date <= ciselnikyFirmy.zamknuteDo,
   );
+  /* Koncept, stav eFaktúry, schvaľovanie a chýbajúci IBAN — nad detailom (kompaktne navrchu panelu). */
+  const upozornenia = (
+    <>
+      {inv.status === "draft" && (
+        /*
+          Koncept (najčastejšie kópia inej faktúry) sa dal doteraz len upraviť
+          a uložiť znova ako koncept — vystaviť sa nedal nikde. Ľudia ho preto
+          mazali a faktúru písali nanovo.
+        */
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <span>
+            <strong>{t("Toto je koncept.")}</strong> {t("Odberateľ ho nemá a do prehľadov sa nepočíta.")}
+          </span>
+          <span className="flex flex-wrap gap-2">
+            <Link
+              to="/faktury/$id/upravit"
+              params={{ id }}
+              className="rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-secondary"
+            >
+              {t("Upraviť")}
+            </Link>
+            <button
+              onClick={() => {
+                // Bez textu nad položkami faktúra nevznikne — ten sa doplní v úprave.
+                if (!String(inv.intro_note ?? "").trim()) {
+                  toast.info(t("Doplňte text nad položkami a vystavte faktúru z úpravy."));
+                  navigate({ to: "/faktury/$id/upravit", params: { id } });
+                  return;
+                }
+                void setStatus("issued");
+              }}
+              className="rounded-md bg-primary px-3 py-1.5 font-semibold text-primary-foreground hover:opacity-90"
+            >
+              {t("Vystaviť faktúru")}
+            </button>
+          </span>
+        </div>
+      )}
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-muted-foreground">{t("eFaktúra:")}</span>
+        <EfakturaStatusBadge status={efakturaUi} />
+        {efakturaTest && (
+          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-800 dark:text-amber-300">
+            {t("testovací režim — odberateľovi nič nepríde")}
+          </span>
+        )}
+        {payLink && (
+          <a
+            href={payLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 hover:bg-secondary"
+            title={payLink}
+          >
+            <Copy className="h-3 w-3" /> {t("Otvoriť platobný odkaz")}
+          </a>
+        )}
+      </div>
+      {inv.approval_status === "rejected" && inv.approval_note && (
+        <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <XCircle className="h-4 w-4" /> {t("Faktúra bola zamietnutá zákazníkom")}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {inv.approval_responded_at
+              ? new Date(inv.approval_responded_at).toLocaleString("sk-SK")
+              : ""}
+          </div>
+          <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dôvod:")} </span>
+            {inv.approval_note}
+          </div>
+        </div>
+      )}
+      {inv.approval_status === "pending" && inv.approval_requested_at && (
+        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
+          <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+            <ClockIcon className="h-4 w-4" /> {t("Čaká sa na schválenie zákazníkom")}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {t("Odoslané {kedy} · odkaz platí 7 dní", { kedy: new Date(inv.approval_requested_at).toLocaleString("sk-SK") })}
+          </div>
+        </div>
+      )}
+      {/*
+        Bez IBAN-u sa na faktúre nevykreslia platobné údaje ani QR platba —
+        a doteraz sa to nikde nepovedalo. Doklad vyzeral hotovo a odberateľ
+        nemal kam zaplatiť.
+      */}
+      {company && !sUctomFaktury(company, inv).iban && (
+        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
+          <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+            <AlertTriangle className="h-4 w-4" /> {t("Faktúra nemá platobné údaje")}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {t("Firma nemá vyplnený IBAN, takže na doklade nebude číslo účtu ani QR platba.")}{" "}
+            <Link to="/firma" className="font-medium text-primary hover:underline">
+              {t("Doplniť v nastaveniach firmy")}
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
+  );
   const kompaktnyDetail = kompaktne ? (
+    /* Ako nespracovaný doklad v kompaktnom rozložení: náhľad PDF a panel so sekciami. */
     <VystavenaDetailKompaktna
       inv={inv}
       company={company}
       u={udajeUctovnika}
       poSplatnosti={isOverdue}
-      interneCislo={interneCislo}
-      hore={kartaStitky}
-      zauctovanie={
-        <ZauctovanieVystavenejPanel
-          inv={inv}
-          onZmena={() => void load()}
-          onStiahnut={handlePohodaExport}
-          kompaktne
-          zamknuteObdobie={zamknuteObdobie}
-          onVPohode={(v) => setInterneCislo(v?.cislo ?? null)}
-        />
+      polozky={items.map((it0) => polozkaNaZobrazenie(inv, it0))}
+      nahlad={
+        nahladDetail.zapnuty
+          ? {
+              subor:
+                pdfVedla === undefined
+                  ? undefined
+                  : pdfVedla
+                    ? {
+                        url: pdfVedla.url,
+                        nazov: `${inv.invoice_number ?? t("Faktúra")}.pdf`,
+                        mime: "application/pdf",
+                      }
+                    : null,
+              onSkryt: () => nahladDetail.prepni(false),
+            }
+          : null
       }
+      upozornenie={upozornenia}
+      stitky={kartaStitky}
+      zamknuteObdobie={zamknuteObdobie}
+      onStiahnut={handlePohodaExport}
       prilohy={
         <PrilohyFaktury
           dokladId={inv.id}
@@ -1659,13 +1772,6 @@ function InvoiceDetail() {
             stiahni: () => void handleNahlad(),
           }}
         />
-      }
-      polozky={
-        <>
-          {kartaUvod}
-          {kartaPolozky}
-          {kartaPoznamka}
-        </>
       }
       platbaDoplnok={
         <>
@@ -1954,105 +2060,10 @@ function InvoiceDetail() {
         }
       />
       <PageBody>
-        {inv.status === "draft" && (
-          /*
-            Koncept (najčastejšie kópia inej faktúry) sa dal doteraz len upraviť
-            a uložiť znova ako koncept — vystaviť sa nedal nikde. Ľudia ho preto
-            mazali a faktúru písali nanovo.
-          */
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-            <span>
-              <strong>{t("Toto je koncept.")}</strong> {t("Odberateľ ho nemá a do prehľadov sa nepočíta.")}
-            </span>
-            <span className="flex flex-wrap gap-2">
-              <Link
-                to="/faktury/$id/upravit"
-                params={{ id }}
-                className="rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-secondary"
-              >
-                {t("Upraviť")}
-              </Link>
-              <button
-                onClick={() => {
-                  // Bez textu nad položkami faktúra nevznikne — ten sa doplní v úprave.
-                  if (!String(inv.intro_note ?? "").trim()) {
-                    toast.info(t("Doplňte text nad položkami a vystavte faktúru z úpravy."));
-                    navigate({ to: "/faktury/$id/upravit", params: { id } });
-                    return;
-                  }
-                  void setStatus("issued");
-                }}
-                className="rounded-md bg-primary px-3 py-1.5 font-semibold text-primary-foreground hover:opacity-90"
-              >
-                {t("Vystaviť faktúru")}
-              </button>
-            </span>
-          </div>
-        )}
-        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-muted-foreground">{t("eFaktúra:")}</span>
-          <EfakturaStatusBadge status={efakturaUi} />
-          {efakturaTest && (
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-800 dark:text-amber-300">
-              {t("testovací režim — odberateľovi nič nepríde")}
-            </span>
-          )}
-          {payLink && (
-            <a
-              href={payLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 hover:bg-secondary"
-              title={payLink}
-            >
-              <Copy className="h-3 w-3" /> {t("Otvoriť platobný odkaz")}
-            </a>
-          )}
-        </div>
-        {inv.approval_status === "rejected" && inv.approval_note && (
-          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
-              <XCircle className="h-4 w-4" /> {t("Faktúra bola zamietnutá zákazníkom")}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {inv.approval_responded_at
-                ? new Date(inv.approval_responded_at).toLocaleString("sk-SK")
-                : ""}
-            </div>
-            <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dôvod:")} </span>
-              {inv.approval_note}
-            </div>
-          </div>
-        )}
-        {inv.approval_status === "pending" && inv.approval_requested_at && (
-          <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
-            <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-              <ClockIcon className="h-4 w-4" /> {t("Čaká sa na schválenie zákazníkom")}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {t("Odoslané {kedy} · odkaz platí 7 dní", { kedy: new Date(inv.approval_requested_at).toLocaleString("sk-SK") })}
-            </div>
-          </div>
-        )}
-        {/*
-          Bez IBAN-u sa na faktúre nevykreslia platobné údaje ani QR platba —
-          a doteraz sa to nikde nepovedalo. Doklad vyzeral hotovo a odberateľ
-          nemal kam zaplatiť.
-        */}
-        {company && !sUctomFaktury(company, inv).iban && (
-          <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
-            <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-              <AlertTriangle className="h-4 w-4" /> {t("Faktúra nemá platobné údaje")}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {t("Firma nemá vyplnený IBAN, takže na doklade nebude číslo účtu ani QR platba.")}{" "}
-              <Link to="/firma" className="font-medium text-primary hover:underline">
-                {t("Doplniť v nastaveniach firmy")}
-              </Link>
-            </div>
-          </div>
-        )}
+        {kompaktne ? null : upozornenia}
+        {kompaktnyDetail ? (
+          kompaktnyDetail
+        ) : (
         <DetailSNahladom
           zobrazit={nahladDetail.zapnuty}
           subor={pdfVedla}
@@ -2060,9 +2071,7 @@ function InvoiceDetail() {
           onSkryt={() => nahladDetail.prepni(false)}
           naMobile
         >
-        {kompaktnyDetail ? (
-          kompaktnyDetail
-        ) : pdfRozlozenie ? (
+        {pdfRozlozenie ? (
           /*
             Ako nespracovaný doklad: navrchu údaje, hneď pod nimi zaúčtovanie,
             potom platba a záloha (daňový doklad k platbe, odpočet), zvyšok nižšie.
@@ -2111,6 +2120,7 @@ function InvoiceDetail() {
         </div>
         )}
         </DetailSNahladom>
+        )}
       </PageBody>
       {efakturaOkno && inv?.company_id && (
         <OdoslanieEfakturyOkno

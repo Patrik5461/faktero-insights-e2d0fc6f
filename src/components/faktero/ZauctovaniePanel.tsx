@@ -4,6 +4,8 @@ import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Pole, Rozsirene, TLACIDLO_DRUHE, TLACIDLO_HLAVNE, ramik } from "./KompaktnyDetail";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -458,6 +460,7 @@ export function ZauctovaniePanel({
   onZmena,
   kompaktne,
   pravidloZDokladu,
+  vPaneli,
 }: {
   row: any;
   onZmena: () => void;
@@ -468,6 +471,12 @@ export function ZauctovaniePanel({
   kompaktne?: boolean;
   /** „Vytvoriť pravidlo z tohto dokladu“ — v riadku akcií pod mriežkou. */
   pravidloZDokladu?: ReactNode;
+  /**
+   * Kompaktný panel detailu (ako nespracovaný doklad): polia pod sebou bez
+   * vlastnej karty, tlačidlá sa presunú do pätičky panelu (`pata`) a účtovná
+   * poznámka do sekcie Poznámka (`poznamka`). Platí len s `kompaktne`.
+   */
+  vPaneli?: { pata: HTMLElement | null; poznamka: HTMLElement | null };
 }) {
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
@@ -780,6 +789,258 @@ export function ZauctovaniePanel({
       oznacenia?.[pole] ? <StitokNavrhu zdroj={oznacenia[pole]!} /> : null;
     const male =
       "inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary disabled:opacity-50";
+    if (vPaneli) {
+      const odkaz =
+        "inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-60";
+      const tlacidla = (
+        <>
+          {!odovzdana && !zauctovana ? (
+            <button
+              type="button"
+              onClick={() => uloz(false)}
+              // Cudzia faktúra sa zaúčtuje až po potvrdení „patrí tejto firme“ (server ju aj tak vynechá).
+              disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row)}
+              className={TLACIDLO_HLAVNE}
+            >
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <BookCheck className="h-4 w-4" />
+              )}
+              {t("Zaúčtovať")}
+            </button>
+          ) : null}
+          {!odovzdana && zauctovana ? (
+            <button type="button" onClick={zrusit} disabled={busy} className={TLACIDLO_DRUHE}>
+              {t("Zrušiť zaúčtovanie")}
+            </button>
+          ) : null}
+          {odovzdana ? (
+            <button type="button" onClick={vratit} disabled={busy} className={TLACIDLO_DRUHE}>
+              <Undo2 className="h-4 w-4" />
+              {program ? t("Vrátiť z účtovníctva (opraviť)") : t("Vrátiť z Pohody (opraviť)")}
+            </button>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {odovzdana ? (
+              <>
+                <OpravitZauctovanie row={row} druh="prijata" onZmena={onZmena} className={odkaz} />
+                {program ? null : (
+                  <button
+                    type="button"
+                    onClick={() => stiahniXml(false)}
+                    disabled={busy}
+                    className={odkaz}
+                  >
+                    <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
+                  </button>
+                )}
+              </>
+            ) : zauctovana || row.status === "received" || row.status === "paid" ? (
+              <button
+                type="button"
+                onClick={() => stiahniXml(true)}
+                disabled={busy}
+                title={t(
+                  "Stiahne XML na import do Pohody a označí faktúru ako odovzdanú, aby ju konektor neposlal druhýkrát.",
+                )}
+                className={odkaz}
+              >
+                <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML pre Pohodu")}
+              </button>
+            ) : null}
+            {pravidloZDokladu}
+          </div>
+        </>
+      );
+      const poznamka = (
+        <div>
+          <textarea
+            rows={2}
+            maxLength={200}
+            disabled={zamknutaUprava}
+            aria-label={t("Účtovná poznámka")}
+            value={h.intPoznamka ?? ""}
+            onChange={(e) => setH({ ...h, intPoznamka: e.target.value })}
+            placeholder={t("Účtovná poznámka (ide do účtovníctva)")}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm disabled:opacity-70"
+          />
+          <div className="text-right text-[11px] text-muted-foreground">
+            {(h.intPoznamka ?? "").length}/200
+          </div>
+        </div>
+      );
+      return (
+        <div className="min-w-0 space-y-3.5 text-sm" data-zauctovanie-v-paneli="">
+          <div className="flex flex-wrap items-center gap-2">
+            {odovzdana ? (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-hover">
+                {program
+                  ? t("V účtovníctve ({program}) od {kedy}", {
+                      program,
+                      kedy: kedy(row.exported_at, loc),
+                    })
+                  : t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
+              </span>
+            ) : zauctovana ? (
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
+                {t("Zaúčtovaná {kedy} — čaká na odovzdanie", {
+                  kedy: kedy(row.zauctovane_at, loc),
+                })}
+              </span>
+            ) : (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {t("Nezaúčtovaná")}
+              </span>
+            )}
+            {ukladam ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+            {ulozeneOk ? (
+              <Check className="h-4 w-4 text-primary" aria-label={t("Uložené")} />
+            ) : null}
+          </div>
+          {zamknutaUprava ? (
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
+              {odovzdana
+                ? program
+                  ? t(
+                      "Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.",
+                      { program },
+                    )
+                  : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")
+                : t("Faktúra je zamknutá proti úpravám — najprv ju odomknite.")}
+            </p>
+          ) : null}
+          <HistoriaOdovzdania row={row} druh="prijata" onZmena={onZmena} />
+          <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
+          <fieldset disabled={zamknutaUprava} className="min-w-0 space-y-3.5 disabled:opacity-70">
+            <PoliaZauctovania
+              navrhy={navrhy}
+              oznacenia={oznacenia}
+              kvAuto={kvAuto}
+              doklad={{ typ: "faktura", platba: row.payment_method }}
+              hodnoty={{
+                predkontacia: h.predkontacia,
+                clenenie: h.clenenie,
+                kategoria: h.kategoria,
+                kv: h.kv ?? "",
+                stredisko: h.stredisko ?? "",
+                cinnost: h.cinnost ?? "",
+                rad: h.rad ?? "",
+              }}
+              setHodnoty={(x) =>
+                setH({
+                  ...h,
+                  predkontacia: x.predkontacia,
+                  clenenie: x.clenenie,
+                  kategoria: x.kategoria ?? "",
+                  kv: x.kv ?? "",
+                  stredisko: x.stredisko ?? "",
+                  cinnost: x.cinnost ?? "",
+                  rad: x.rad ?? "",
+                })
+              }
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Pole popis="Dátum daňovej povinnosti">
+                <input
+                  type="date"
+                  value={row.delivery_date ?? row.issue_date ?? ""}
+                  onChange={(e) => void ulozStlpec({ delivery_date: e.target.value || null })}
+                  className={`${ramik} border-input`}
+                />
+              </Pole>
+              <Pole popis="Typ platby">
+                <select
+                  value={row.payment_method ?? "prevod"}
+                  onChange={(e) => void ulozStlpec({ payment_method: e.target.value })}
+                  className={`${ramik} border-input`}
+                >
+                  <option value="prevod">{t("Prevod")}</option>
+                  <option value="hotovost">{t("Hotovosť")}</option>
+                  <option value="karta">{t("Karta")}</option>
+                  <option value="dobierka">{t("Dobierka")}</option>
+                  <option value="inkaso">{t("Inkaso")}</option>
+                  <option value="zaloha">{t("Úhrada zálohou")}</option>
+                  <option value="zapocet">{t("Zápočet")}</option>
+                </select>
+              </Pole>
+            </div>
+          </fieldset>
+          {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
+          {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
+          {!odovzdana && !zauctovana && upozornenieClenenia}
+          {!zamknutaUprava ? (
+            <Rozsirene>
+              <VyberPravidla
+                companyId={row.company_id}
+                doklad={row}
+                druh="prijata"
+                typ={typPrijatej(row.type, row.amount_total, row.opravuje_cislo)}
+                zaklad={{
+                  predkontacia: h.predkontacia,
+                  clenenie: h.clenenie,
+                  kv: h.kv,
+                  kategoria: h.kategoria,
+                }}
+                onPouzi={(p) =>
+                  setH({
+                    ...h,
+                    predkontacia: p.predkontacia ?? h.predkontacia,
+                    clenenie: p.clenenie_dph ?? h.clenenie,
+                    kategoria: p.kategoria ?? h.kategoria,
+                    kv: p.kv_clenenie ?? h.kv,
+                  })
+                }
+                onPredloha={(p) => setH(uplatniPredlohu(h, p))}
+              />
+              <NastavitPredvolene
+                companyId={row.company_id}
+                kluc="prijata"
+                hodnoty={h}
+                predvolene={{
+                  predkontacia: navrhy?.predvolenaPredkontacia,
+                  clenenie: navrhy?.predvoleneClenenie,
+                  kv: navrhy?.predvoleneKv,
+                }}
+                onUlozene={() =>
+                  nacitajNavrhy({ data: { company_id: row.company_id } })
+                    .then(setNavrhy)
+                    .catch(() => {})
+                }
+              />
+              <RozuctovaniePanel
+                companyId={row.company_id}
+                druh="prijata"
+                id={row.id}
+                rozpis={rozpisPrijatej(row)}
+                ulozene={row.rozuctovanie}
+                navrhy={navrhy}
+                kody={{
+                  predkontacia: h.predkontacia || navrhy?.predvolenaPredkontacia || null,
+                  clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
+                }}
+                onZmena={onZmena}
+              />
+              {!row.samofakturacia && row.type === "regular" && row.source !== "efaktura" ? (
+                <button type="button" onClick={doDokladov} disabled={busy} className={male}>
+                  <MoveRight className="h-3.5 w-3.5" /> {t("Presunúť medzi doklady")}
+                </button>
+              ) : null}
+            </Rozsirene>
+          ) : null}
+          <p className="text-xs text-muted-foreground">
+            {t("Prázdne = predvolené z")}{" "}
+            <Link to="/uctovnictvo/predkontacie" className="underline">
+              {t("nastavení predkontácií")}
+            </Link>
+            {row.pravidlo_id ? ` · ${t("doplnené pravidlom účtovania")}` : ""}.
+          </p>
+          {vPaneli.pata ? createPortal(tlacidla, vPaneli.pata) : null}
+          {vPaneli.poznamka ? createPortal(poznamka, vPaneli.poznamka) : null}
+        </div>
+      );
+    }
     return (
       <section
         id="zauctovanie"

@@ -3,7 +3,7 @@ import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdz
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BookCheck, ChevronDown, ChevronUp, Download, Loader2, Lock, Undo2 } from "lucide-react";
+import { BookCheck, Download, Loader2, Lock, Undo2 } from "lucide-react";
 import {
   navrhyKodovFn,
   stavVystavenejFn,
@@ -21,9 +21,7 @@ import { NapovedaPredkontacii, SekciaZauctovania } from "./DetailDokladu";
 import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
-import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
-import { paymentMethodLabel } from "@/lib/faktero/payment-method";
-import { KomentarDokladu } from "./StavDokladu";
+import { TLACIDLO_DRUHE, TLACIDLO_HLAVNE } from "./KompaktnyDetail";
 import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 
@@ -42,29 +40,22 @@ type Polozka = {
 };
 
 /**
- * Zaúčtovanie vystavenej faktúry — predkontácia, členenie DPH a KV na
- * hlavičke a voliteľne na položkách (ako „účtovné nastavenia položky" v
- * Doklado). Do Pohody ide faktúra konektorom, balíkom alebo tlačidlom.
+ * Stav a akcie zaúčtovania vystavenej faktúry — predkontácia, členenie DPH a
+ * KV na hlavičke a voliteľne na položkách. Do Pohody ide faktúra konektorom,
+ * balíkom alebo tlačidlom. Skladá sa z neho klasická karta
+ * (ZauctovanieVystavenejPanel) aj kompaktný panel detailu (polia v sekcii
+ * „Základné údaje“, tlačidlá v pätičke panelu) — oba kreslia tie isté polia.
  */
-export function ZauctovanieVystavenejPanel({
+export function useZauctovanieVystavenej({
   inv,
   onZmena,
   onStiahnut,
-  kompaktne,
-  zamknuteObdobie,
   onVPohode,
 }: {
   inv: any;
   onZmena: () => void;
   onStiahnut: () => Promise<void> | void;
-  /**
-   * Kompaktné rozloženie detailu: karta „Základné údaje“ — interná a účtovná
-   * poznámka, dátum daňovej povinnosti, typ platby a kódy v jednej mriežke.
-   */
-  kompaktne?: boolean;
-  /** Dátum faktúry je v uzavretom období (uzávierka firmy). */
-  zamknuteObdobie?: boolean;
-  /** Odovzdanie do Pohody (aj s číslom) — kompaktná hlavička z neho berie interné číslo. */
+  /** Odovzdanie do Pohody (aj s číslom). */
   onVPohode?: (v: { kedy: string; cislo: string | null } | null) => void;
 }) {
   const { t, jazyk } = useT();
@@ -97,7 +88,6 @@ export function ZauctovanieVystavenejPanel({
   const [polozky, setPolozky] = useState<Polozka[]>([]);
   const [poPolozkach, setPoPolozkach] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [viac, setViac] = useState(false);
 
   async function obnov() {
     const s = await nacitajStav({ data: { id: inv.id } });
@@ -141,12 +131,8 @@ export function ZauctovanieVystavenejPanel({
     inv.int_poznamka,
   ]);
 
-  // Koncept sa nezaúčtuje; v kompaktnom rozložení ostanú aspoň poznámky a dátumy.
-  if (inv.status === "draft" && !kompaktne) return null;
-  const vPohode = stav?.vPohode;
+  const vPohode = stav?.vPohode ?? null;
   const zauctovana = Boolean(inv.zauctovane_at);
-  const vstup =
-    "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
 
   async function uloz(lenUlozit: boolean) {
     setBusy(true);
@@ -204,40 +190,6 @@ export function ZauctovanieVystavenejPanel({
       );
   }
 
-  /* Úlomky formulára — skladajú sa v klasickom aj kompaktnom rozložení. */
-  const kodPredkontacia = (trieda: string) => (
-    <KodPohody
-      ariaLabel="Predkontácia"
-      odkazNaCiselnik
-      value={h.predkontacia}
-      onChange={(v) => setH({ ...h, predkontacia: v })}
-      moznosti={navrhy?.predkontacie ?? []}
-      placeholder={navrhy?.predvolenaPredkontacia ?? t("napr. 3Fv")}
-      className={trieda}
-      vyber
-    />
-  );
-  const kodClenenie = (trieda: string) => (
-    <KodPohody
-      ariaLabel="Členenie DPH"
-      value={h.clenenie}
-      onChange={(v) => setH({ ...h, clenenie: v })}
-      moznosti={navrhy?.clenenia ?? []}
-      placeholder={navrhy?.predvoleneClenenie ?? t("napr. UD")}
-      className={trieda}
-      vyber
-    />
-  );
-  const kodKv = (trieda: string) => (
-    <select value={h.kv} onChange={(e) => setH({ ...h, kv: e.target.value })} className={trieda}>
-      <option value="">{t("automaticky")}</option>
-      {KV_VYDANE.map((k) => (
-        <option key={k.kod} value={k.kod}>
-          {t(k.nazov)}
-        </option>
-      ))}
-    </select>
-  );
   const vyberPravidla = (
     <VyberPravidla
       companyId={inv.company_id}
@@ -259,34 +211,6 @@ export function ZauctovanieVystavenejPanel({
       }
       onPredloha={(p) => setH(uplatniPredlohu(h, p))}
     />
-  );
-  const poleStredisko = (
-    <label className="block">
-      <span className="text-sm font-medium text-foreground">{t("Stredisko")}</span>
-      <KodPohody
-        ariaLabel="Stredisko"
-        value={h.stredisko}
-        onChange={(v) => setH({ ...h, stredisko: v })}
-        moznosti={navrhy?.strediska ?? []}
-        placeholder={navrhy?.predvoleneStredisko ?? "—"}
-        className={vstup}
-        vyber
-      />
-    </label>
-  );
-  const poleCinnost = (
-    <label className="block">
-      <span className="text-sm font-medium text-foreground">{t("Činnosť")}</span>
-      <KodPohody
-        ariaLabel="Činnosť"
-        value={h.cinnost}
-        onChange={(v) => setH({ ...h, cinnost: v })}
-        moznosti={navrhy?.cinnosti ?? []}
-        placeholder="—"
-        className={vstup}
-        vyber
-      />
-    </label>
   );
   /* Účtovanie po položkách, nápoveda a predvolené kódy. */
   const poPolozkachANapoveda = (
@@ -402,240 +326,63 @@ export function ZauctovanieVystavenejPanel({
     </>
   );
 
-  /*
-    Kompaktné rozloženie: „Základné údaje“ ako jedna karta. Dátum daňovej
-    povinnosti a typ platby sú na vystavenej faktúre len na čítanie — mení
-    ich Opraviť faktúru, lebo sú aj v PDF, ktoré má odberateľ.
-  */
-  if (kompaktne) {
-    const koncept = inv.status === "draft";
-    const zamknute = Boolean(vPohode);
-    const vstupK = "h-10 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-sm";
-    const popisK = "mb-1 block text-xs text-muted-foreground";
-    const male =
-      "inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary disabled:opacity-50";
-    const citanie = (popis: string, hodnota: string) => (
-      <div className="min-w-0">
-        <span className={popisK}>{t(popis)}</span>
-        <div
-          className="flex h-10 min-w-0 items-center truncate rounded-lg border border-border bg-muted/40 px-3 text-sm"
-          title={t("Mení sa cez Opraviť faktúru")}
-        >
-          {hodnota}
-        </div>
-      </div>
+  const zrusZauctovanie = () =>
+    void akcia(
+      () => zrus({ data: { company_id: inv.company_id, id: inv.id } }),
+      "Zaúčtovanie zrušené",
     );
-    return (
-      <section
-        id="zauctovanie"
-        aria-label={t("Základné údaje")}
-        className="@container min-w-0 scroll-mt-24 rounded-xl border border-border bg-card p-4 text-sm transition-shadow sm:p-5"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-base font-semibold">
-            {t("Základné údaje")}
-            {zamknute ? (
-              <Lock className="h-4 w-4 text-muted-foreground" aria-label={t("Len na čítanie")} />
-            ) : null}
-            {busy ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
-          </h2>
-          {koncept ? null : vPohode ? (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-hover">
-              {vPohode.program
-                ? t("V účtovníctve ({program}) od {kedy}", {
-                    program: vPohode.program,
-                    kedy: kedy(vPohode.kedy, loc),
-                  })
-                : t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
-              {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
-            </span>
-          ) : zauctovana ? (
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
-              {t("Zaúčtovaná {kedy}", { kedy: kedy(inv.zauctovane_at, loc) })}
-            </span>
-          ) : (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {t("Nezaúčtovaná")}
-            </span>
-          )}
-        </div>
-        {zamknute ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {vPohode?.program
-              ? t("Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.", {
-                  program: vPohode.program,
-                })
-              : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
-          </p>
-        ) : null}
-        {koncept ? null : (
-          <HistoriaOdovzdania
-            row={inv}
-            druh="faktura"
-            cisloVPohode={vPohode?.cislo}
-            onZmena={() => {
-              onZmena();
-              void obnov();
-            }}
-          />
-        )}
-        {zamknuteObdobie ? (
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5 shrink-0" />
-            {t("Obdobie je uzavreté — dátumy a sumy faktúry sa už nemenia.")}
-          </p>
-        ) : null}
-        {!vPohode && !koncept ? (
-          <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />
-        ) : null}
 
-        <div className="mt-3 grid grid-cols-1 gap-3 @xl:grid-cols-2 [&>*]:min-w-0">
-          {koncept ? null : (
-            <label className="block min-w-0">
-              <span className="mb-1 block text-sm font-medium">{t("Účtovná poznámka")}</span>
-              <textarea
-                rows={2}
-                maxLength={240}
-                disabled={zamknute}
-                value={h.intPoznamka}
-                onChange={(e) => setH({ ...h, intPoznamka: e.target.value })}
-                placeholder={t("Účtovná poznámka (ide do účtovníctva)")}
-                className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-70"
-              />
-              <span className="block text-right text-[11px] text-muted-foreground">
-                {h.intPoznamka.length}/240
-              </span>
-            </label>
-          )}
-          <KomentarDokladu tabulka="invoices" id={inv.id} komentar={inv.komentar} />
-        </div>
+  return {
+    de,
+    loc,
+    navrhy,
+    h,
+    setH,
+    vPohode,
+    zauctovana,
+    busy,
+    uloz,
+    stiahnut,
+    vratitZPohody,
+    zrusZauctovanie,
+    obnov,
+    vyberPravidla,
+    poPolozkachANapoveda,
+  };
+}
 
-        <fieldset
-          disabled={zamknute}
-          className="mt-2 grid grid-cols-1 gap-3 @md:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0"
-        >
-          {citanie("Dátum daňovej povinnosti", datumNaDoklade(inv.delivery_date ?? inv.issue_date))}
-          {citanie("Typ platby", t(paymentMethodLabel(inv.payment_method)))}
-          {koncept ? null : (
-            <>
-              <label className="block @md:col-span-2">
-                <span className={popisK}>{t("Predkontácia")}</span>
-                {kodPredkontacia(vstupK)}
-              </label>
-              <label className="block @md:col-span-2">
-                <span className={popisK}>{t("Členenie DPH")}</span>
-                {kodClenenie(vstupK)}
-              </label>
-              {de ? null : (
-                <label className="block @md:col-span-2">
-                  <span className={popisK}>{t("Členenie KV DPH")}</span>
-                  {kodKv(vstupK)}
-                </label>
-              )}
-            </>
-          )}
-        </fieldset>
+export type ZauctovanieVystavenej = ReturnType<typeof useZauctovanieVystavenej>;
 
-        {koncept ? (
-          <p className="mt-3 text-xs text-muted-foreground">
-            {t("Koncept sa zaúčtuje až po vystavení faktúry.")}
-          </p>
-        ) : (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {!vPohode && !zauctovana ? (
-              <button
-                type="button"
-                onClick={() => uloz(false)}
-                disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                <BookCheck className="h-3.5 w-3.5" />
-                {t("Zaúčtovať")}
-              </button>
-            ) : null}
-            {!vPohode ? (
-              <button type="button" onClick={() => uloz(true)} disabled={busy} className={male}>
-                {t("Uložiť bez zaúčtovania")}
-              </button>
-            ) : null}
-            {!vPohode && zauctovana ? (
-              <button
-                type="button"
-                onClick={() =>
-                  void akcia(
-                    () => zrus({ data: { company_id: inv.company_id, id: inv.id } }),
-                    "Zaúčtovanie zrušené",
-                  )
-                }
-                disabled={busy}
-                className={male}
-              >
-                {t("Zrušiť zaúčtovanie")}
-              </button>
-            ) : null}
-            {vPohode ? (
-              <>
-                {/* XML pre Pohodu len pri faktúre, ktorá odišla do Pohody. */}
-                {vPohode.program ? null : (
-                  <button type="button" onClick={stiahnut} disabled={busy} className={male}>
-                    <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => void vratitZPohody()}
-                  disabled={busy}
-                  className={male}
-                >
-                  <Undo2 className="h-3.5 w-3.5" />{" "}
-                  {vPohode.program
-                    ? t("Vrátiť z účtovníctva (opraviť)")
-                    : t("Vrátiť z Pohody (opraviť)")}
-                </button>
-                <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={male} />
-              </>
-            ) : de ? null : (
-              <button
-                type="button"
-                onClick={stiahnut}
-                disabled={busy}
-                title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
-                className={male}
-              >
-                <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML pre Pohodu")}
-              </button>
-            )}
-            {!vPohode ? (
-              <button
-                type="button"
-                onClick={() => setViac((v) => !v)}
-                aria-expanded={viac}
-                className={`${male} ml-auto`}
-              >
-                {t("Viac")}{" "}
-                {viac ? (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5" />
-                )}
-              </button>
-            ) : null}
-          </div>
-        )}
-
-        {viac && !vPohode && !koncept ? (
-          <div className="mt-3 space-y-3 border-t border-border pt-3">
-            <div className="grid grid-cols-1 gap-3 @md:grid-cols-2 [&>*]:min-w-0">
-              {poleStredisko}
-              {poleCinnost}
-            </div>
-            {vyberPravidla}
-            {poPolozkachANapoveda}
-          </div>
-        ) : null}
-      </section>
-    );
-  }
+/** Klasická karta „Zaúčtovanie“ vystavenej faktúry (tá istá ako pri nespracovanom doklade). */
+export function ZauctovanieVystavenejPanel({
+  inv,
+  onZmena,
+  onStiahnut,
+}: {
+  inv: any;
+  onZmena: () => void;
+  onStiahnut: () => Promise<void> | void;
+}) {
+  const { t } = useT();
+  const {
+    de,
+    loc,
+    navrhy,
+    h,
+    setH,
+    vPohode,
+    zauctovana,
+    busy,
+    uloz,
+    stiahnut,
+    vratitZPohody,
+    zrusZauctovanie,
+    obnov,
+    vyberPravidla,
+    poPolozkachANapoveda,
+  } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
+  // Koncept sa nezaúčtuje.
+  if (inv.status === "draft") return null;
 
   /*
     Klasické rozloženie — tá istá karta a to isté poradie polí ako pri
@@ -774,12 +521,7 @@ export function ZauctovanieVystavenejPanel({
             )}
             {zauctovana && (
               <button
-                onClick={() =>
-                  void akcia(
-                    () => zrus({ data: { company_id: inv.company_id, id: inv.id } }),
-                    "Zaúčtovanie zrušené",
-                  )
-                }
+                onClick={zrusZauctovanie}
                 disabled={busy}
                 className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
               >
@@ -790,5 +532,221 @@ export function ZauctovanieVystavenejPanel({
         </>
       )}
     </SekciaZauctovania>
+  );
+}
+
+/* ------------------------------------------------ kompaktné rozloženie */
+
+/** Stav zaúčtovania vpravo od nadpisu sekcie: Nezaúčtovaná / Zaúčtovaná / V Pohode. */
+export function StavZauctovaniaVystavenej({ inv, z }: { inv: any; z: ZauctovanieVystavenej }) {
+  const { t } = useT();
+  const { vPohode, zauctovana, busy, loc } = z;
+  if (inv.status === "draft") return null;
+  return (
+    <span className="flex items-center gap-1.5" data-stav-zauctovania="">
+      {busy ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+      {vPohode ? (
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-hover">
+          {vPohode.program
+            ? t("V účtovníctve ({program}) od {kedy}", {
+                program: vPohode.program,
+                kedy: kedy(vPohode.kedy, loc),
+              })
+            : t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
+          {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
+        </span>
+      ) : zauctovana ? (
+        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
+          {t("Zaúčtovaná {kedy}", { kedy: kedy(inv.zauctovane_at, loc) })}
+        </span>
+      ) : (
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          {t("Nezaúčtovaná")}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Polia zaúčtovania v kompaktnom paneli — tie isté a v tom istom poradí ako
+ * pri nespracovanom doklade (PoliaZauctovania): predkontácia, členenie DPH,
+ * KV DPH, stredisko, činnosť; potom pravidlo, účtovanie po položkách a
+ * predvolené kódy. Odovzdaná faktúra má polia zamknuté.
+ */
+export function PoliaZauctovaniaVystavenej({
+  inv,
+  z,
+  zamknuteObdobie,
+  onZmena,
+}: {
+  inv: any;
+  z: ZauctovanieVystavenej;
+  zamknuteObdobie?: boolean;
+  onZmena: () => void;
+}) {
+  const { t } = useT();
+  const { de, navrhy, h, setH, vPohode, obnov, vyberPravidla, poPolozkachANapoveda } = z;
+  if (inv.status === "draft")
+    return (
+      <p className="text-xs text-muted-foreground">
+        {t("Koncept sa zaúčtuje až po vystavení faktúry.")}
+      </p>
+    );
+  return (
+    <>
+      {vPohode ? (
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
+          {vPohode.program
+            ? t("Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.", {
+                program: vPohode.program,
+              })
+            : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
+        </p>
+      ) : null}
+      <HistoriaOdovzdania
+        row={inv}
+        druh="faktura"
+        cisloVPohode={vPohode?.cislo}
+        onZmena={() => {
+          onZmena();
+          void obnov();
+        }}
+      />
+      {zamknuteObdobie ? (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5 shrink-0" />
+          {t("Obdobie je uzavreté — dátumy a sumy faktúry sa už nemenia.")}
+        </p>
+      ) : null}
+      {!vPohode ? <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} /> : null}
+      <fieldset disabled={Boolean(vPohode)} className="min-w-0 space-y-3.5 disabled:opacity-70">
+        <PoliaZauctovania
+          navrhy={navrhy}
+          hodnoty={{
+            predkontacia: h.predkontacia,
+            clenenie: h.clenenie,
+            kv: de ? undefined : h.kv,
+            stredisko: h.stredisko,
+            cinnost: h.cinnost,
+          }}
+          setHodnoty={(x) =>
+            setH({
+              ...h,
+              predkontacia: x.predkontacia,
+              clenenie: x.clenenie,
+              kv: x.kv ?? h.kv,
+              stredisko: x.stredisko ?? "",
+              cinnost: x.cinnost ?? "",
+            })
+          }
+          kvMoznosti={KV_VYDANE}
+          popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
+          priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
+        />
+        {vPohode ? null : vyberPravidla}
+        {vPohode ? null : poPolozkachANapoveda}
+      </fieldset>
+    </>
+  );
+}
+
+/** Účtovná poznámka (ide do účtovníctva) — v sekcii „Poznámka“ ako pri nespracovanom doklade. */
+export function UctovnaPoznamkaVystavenej({ inv, z }: { inv: any; z: ZauctovanieVystavenej }) {
+  const { t } = useT();
+  const { h, setH, vPohode } = z;
+  if (inv.status === "draft") return null;
+  return (
+    <div>
+      <textarea
+        rows={2}
+        maxLength={240}
+        disabled={Boolean(vPohode)}
+        aria-label={t("Účtovná poznámka")}
+        placeholder={t("Účtovná poznámka (ide do účtovníctva)")}
+        value={h.intPoznamka}
+        onChange={(e) => setH({ ...h, intPoznamka: e.target.value })}
+        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm disabled:opacity-70"
+      />
+      <div className="text-right text-[11px] text-muted-foreground">{h.intPoznamka.length}/240</div>
+    </div>
+  );
+}
+
+/**
+ * Tlačidlá zaúčtovania v pätičke panelu — rovnaké tvary ako „Uložiť zmeny“
+ * a „Vytvoriť“ pri nespracovanom doklade.
+ */
+export function PataZauctovaniaVystavenej({
+  inv,
+  z,
+  onZmena,
+}: {
+  inv: any;
+  z: ZauctovanieVystavenej;
+  onZmena: () => void;
+}) {
+  const { t } = useT();
+  const { de, vPohode, zauctovana, busy, uloz, stiahnut, vratitZPohody, zrusZauctovanie } = z;
+  if (inv.status === "draft") return null;
+  const odkaz =
+    "inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-60";
+  if (vPohode)
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => void vratitZPohody()}
+          disabled={busy}
+          className={TLACIDLO_DRUHE}
+        >
+          <Undo2 className="h-4 w-4" />
+          {vPohode.program ? t("Vrátiť z účtovníctva (opraviť)") : t("Vrátiť z Pohody (opraviť)")}
+        </button>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={odkaz} />
+          {vPohode.program ? null : (
+            <button type="button" onClick={stiahnut} disabled={busy} className={odkaz}>
+              <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
+            </button>
+          )}
+        </div>
+      </>
+    );
+  return (
+    <>
+      <button type="button" onClick={() => uloz(true)} disabled={busy} className={TLACIDLO_DRUHE}>
+        {t("Uložiť bez zaúčtovania")}
+      </button>
+      {zauctovana ? (
+        <button type="button" onClick={zrusZauctovanie} disabled={busy} className={TLACIDLO_DRUHE}>
+          {t("Zrušiť zaúčtovanie")}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => uloz(false)}
+          disabled={busy}
+          className={TLACIDLO_HLAVNE}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookCheck className="h-4 w-4" />}
+          {t("Zaúčtovať")}
+        </button>
+      )}
+      {de ? null : (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={stiahnut}
+            disabled={busy}
+            title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
+            className={odkaz}
+          >
+            <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML pre Pohodu")}
+          </button>
+        </div>
+      )}
+    </>
   );
 }
