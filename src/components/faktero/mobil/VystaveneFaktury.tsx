@@ -1,3 +1,4 @@
+import { udajeMailuFaktury } from "@/lib/mobile/mail-faktury";
 import { useEffect, useMemo, useState } from "react";
 import { sucetDokladov } from "@/lib/faktero/faktury-sumy";
 import { useOperacia } from "@/lib/mobile/server-most";
@@ -550,13 +551,12 @@ function DetailFaktury({
     try {
       /* Prílohy idú s faktúrou rovnako ako na webe, kde je voľba predvolene zapnutá. */
       await mailFn({
-        data: {
-          invoiceId: faktura.id,
-          recipient_email: faktura.customer_email,
-          s_prilohami: true,
-          potvrdeny_stary_datum: datumOk.potvrdenyStaryDatum || undefined,
-          ...(sablona ?? {}),
-        },
+        data: udajeMailuFaktury({
+          faktura: { ...faktura, customer_email: faktura.customer_email },
+          sPrilohami: true,
+          potvrdenyStaryDatum: datumOk.potvrdenyStaryDatum,
+          sablona,
+        }),
       });
       toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));
       onZmena();

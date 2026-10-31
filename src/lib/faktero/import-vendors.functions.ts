@@ -38,7 +38,7 @@ export const previewVendorImport = createServerFn({ method: "POST" })
     const { data: blob, error } = await supabaseAdmin.storage.from("imports").download(data.path);
     if (error || !blob) throw new Error(error?.message ?? "Súbor sa nepodarilo načítať.");
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    const { parseVendorFile, summarize } = await import("./import-vendors.server");
+    const { parseVendorFile, summarize, stornaZoSuboru } = await import("./import-vendors.server");
     // Krajina firmy rozhoduje o sadzbe priehradky Pohody (SK high 23 %, CZ 21 %).
     const { data: firmaKrajina } = await supabaseAdmin
       .from("companies")
@@ -48,9 +48,17 @@ export const previewVendorImport = createServerFn({ method: "POST" })
     const rows = parseVendorFile(data.source, data.fileName, bytes, {
       krajina: firmaKrajina?.country ?? null,
     });
-    if (rows.length === 0)
+    const storna = stornaZoSuboru(data.source, bytes);
+    if (rows.length === 0 && !storna.cislaNaStorno.length)
       throw new Error("V súbore sa nenašli žiadne faktúry v očakávanom formáte.");
-    return { preview: summarize(rows), rowCount: rows.length };
+    return {
+      preview: {
+        ...summarize(rows),
+        storna: storna.cislaNaStorno.length,
+        stornujuce: storna.stornujuce.length,
+      },
+      rowCount: rows.length,
+    };
   });
 
 export const executeVendorImport = createServerFn({ method: "POST" })
@@ -64,7 +72,7 @@ export const executeVendorImport = createServerFn({ method: "POST" })
       .download(data.path);
     if (dlErr || !blob) throw new Error(dlErr?.message ?? "Súbor sa nepodarilo načítať.");
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    const { parseVendorFile, summarize } = await import("./import-vendors.server");
+    const { parseVendorFile, summarize, stornaZoSuboru } = await import("./import-vendors.server");
     const { runImport } = await import("./import-superfaktura.server");
 
     // Krajina firmy rozhoduje o sadzbe priehradky Pohody (SK high 23 %, CZ 21 %).
@@ -76,7 +84,8 @@ export const executeVendorImport = createServerFn({ method: "POST" })
     const rows = parseVendorFile(data.source, data.fileName, bytes, {
       krajina: firmaKrajina?.country ?? null,
     });
-    if (rows.length === 0)
+    const storna = stornaZoSuboru(data.source, bytes);
+    if (rows.length === 0 && !storna.cislaNaStorno.length)
       throw new Error("V súbore sa nenašli žiadne faktúry v očakávanom formáte.");
     const preview = summarize(rows);
 
@@ -126,6 +135,7 @@ export const executeVendorImport = createServerFn({ method: "POST" })
         mapping,
         options: data.options,
         source: sourceLabels[data.source] ?? data.source,
+        storna,
       });
       await supabaseAdmin
         .from("import_jobs")
@@ -134,6 +144,9 @@ export const executeVendorImport = createServerFn({ method: "POST" })
           imported_customers: r.imported_customers,
           imported_invoices: r.imported_invoices,
           failed_rows: r.failed_rows,
+          ...(r.upozornenia?.length || r.stornovane
+            ? { result: { stornovane: r.stornovane ?? 0, upozornenia: r.upozornenia ?? [] } }
+            : {}),
           completed_at: new Date().toISOString(),
         })
         .eq("id", job.id);

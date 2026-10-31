@@ -1,3 +1,4 @@
+import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
 /*
   Kontrola dokladu pred odovzdaním do Pohody.
 
@@ -499,10 +500,26 @@ export function varovanieDokladu(
   company?: Riadok | null,
 ): string | null {
   return (
+    varovanieCislaZMailu(d) ??
     varovanieZavazku(d, nastavenia) ??
     varovanieNeznamehoKodu(d, nastavenia) ??
     varovanieKvPrijatej(d, company)
   );
+}
+
+/**
+ * Prijatá faktúra z mailu, ktorej číslo je predmet mailu („Fwd: FW:
+ * Dožiadanie…“) alebo náhrada „bez čísla“ — do Pohody by išla s nezmyselným
+ * číslom dodávateľa a kontrolný výkaz by ju nespároval.
+ */
+export function varovanieCislaZMailu(d: Riadok): string | null {
+  if (!d?._typPohody) return null;
+  const cislo = kod(d?._povodneCislo || d?.document_number);
+  if (vyzeraAkoPredmetMailu(cislo))
+    return `${cislo} — číslo faktúry je predmet e-mailu, nie číslo dodávateľa — opravte ho podľa faktúry`;
+  if (/^bez [čc][íi]sla$/i.test(cislo))
+    return `${cislo} — prijatá faktúra nemá číslo dodávateľa — doplňte ho podľa faktúry`;
+  return null;
 }
 
 /**

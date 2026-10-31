@@ -71,6 +71,8 @@ export type PrijatyZaznam = {
   opravujeCislo?: string | null;
   /** false = bez nároku na odpočet DPH. */
   odpocet?: boolean | null;
+  /** Stornovaný doklad z exportu Pohody (`storno = cancelledDocument`) — uloží sa ako stornovaný. */
+  stornovany?: boolean;
   /** Odberateľ zo skenu prečítaného AI — podľa neho sa spozná faktúra inej firmy. */
   odberatel?: { nazov: string | null; ico: string | null; dic: string | null; icDph: string | null } | null;
 };
@@ -364,6 +366,8 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
       ...pole(uzol(item, "listInvoice", "invoice")),
     ];
     for (const f of faktury) {
+      // Storno (`cancelDocument`) a stornujúci doklad nie sú doklady — hlási ich `pohodaPrijateStorna`.
+      if (jeStorno(f, "invoiceHeader")) continue;
       const h = uzol(f, "invoiceHeader") ?? {};
       const typ = hodnota(h, "invoiceType").toLowerCase();
       if (!(typ in TYPY_PRIJATYCH)) continue;
@@ -420,12 +424,19 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
       }
       if (typ === "receivedcorrectivetax")
         zaznam.druh = (zaznam.spolu ?? 0) < 0 ? "Dobropis" : "Ťarchopis";
+      if (hodnota(h, "storno") === "cancelledDocument") zaznam.stornovany = true;
       vysledok.push(typ === "receivedcreditnotice" ? zaporne(zaznam) : zaznam);
     }
 
     const pokladnicne = [...pole(uzol(item, "voucher")), ...pole(uzol(item, "listVoucher", "voucher"))];
     for (const v of pokladnicne) {
+      /*
+        Stornovaný aj stornujúci pokladničný doklad sa navzájom rušia —
+        neimportuje sa ani jeden (bloček stav „stornovaný“ nemá).
+      */
+      if (jeStorno(v, "voucherHeader") || hodnota(uzol(v, "voucherHeader"), "storno")) continue;
       const h = uzol(v, "voucherHeader") ?? {};
+      // Príjmový pokladničný doklad ide do pokladne (`pohodaPokladnaPrijmy`), nie medzi náklady.
       if (hodnota(h, "voucherType").toLowerCase() !== "expense") continue;
       const zahranicnaV = uzol(v, "voucherSummary", "foreignCurrency");
       const menaV = hodnota(zahranicnaV, "currency", "ids");
@@ -461,6 +472,7 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
     const interne = [...pole(uzol(item, "intDoc")), ...pole(uzol(item, "listIntDoc", "intDoc"))];
     for (const d of interne) {
       const h = uzol(d, "intDocHeader") ?? {};
+      if (hodnota(h, "storno")) continue;
       if (/da[nň]ov[yý] doklad k p[rř][ií]jat/i.test(hodnota(h, "text"))) continue;
       const kvI = kvZPohody(kodPohody(h, "classificationKVDPH"));
       if (kvI && /^[AD]/.test(kvI)) continue;
@@ -491,6 +503,134 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
     }
   }
   return vysledok;
+}
+
+/** Blok `cancelDocument` (dávka „stornuj doklad č. …“) alebo stornujúci doklad z exportu Pohody. */
+function jeStorno(doklad: any, hlavicka: string): boolean {
+  return (
+    uzol(doklad, "cancelDocument") !== undefined ||
+    hodnota(uzol(doklad, hlavicka), "storno") === "cancelDocument"
+  );
+}
+
+/**
+ * Storná prijatých dokladov v Pohoda XML — na súhrn importu. Prijatá faktúra
+ * stornovaná v Pohode príde s príznakom `cancelledDocument` a uloží sa ako
+ * stornovaná; stornujúci doklad sa preskočí. Blok `cancelDocument` odkazuje na
+ * interné číslo Pohody, podľa ktorého sa doklad vo Fakteri spoľahlivo nájsť
+ * nedá — ten sa len nahlási.
+ */
+export function pohodaPrijateStorna(doc: any): string[] {
+  const balik = doc?.dataPack ?? doc?.responsePack ?? doc;
+  const polozkyBalika = [...pole(uzol(balik, "dataPackItem")), ...pole(uzol(balik, "responsePackItem"))];
+  const poznamky: string[] = [];
+  for (const item of polozkyBalika) {
+    const doklady: [any, string, string][] = [
+      ...[...pole(uzol(item, "invoice")), ...pole(uzol(item, "listInvoice", "invoice"))].map(
+        (f) => [f, "invoiceHeader", "invoiceType"] as [any, string, string],
+      ),
+      ...[...pole(uzol(item, "voucher")), ...pole(uzol(item, "listVoucher", "voucher"))].map(
+        (v) => [v, "voucherHeader", "voucherType"] as [any, string, string],
+      ),
+    ];
+    for (const [d, hl, typEl] of doklady) {
+      const h = uzol(d, hl);
+      const typ = hodnota(h, typEl).toLowerCase();
+      const prijaty = typ in TYPY_PRIJATYCH || typ === "expense" || typ === "receipt";
+      if (!prijaty) continue;
+      const cislo =
+        hodnota(h, "originalDocument") ||
+        hodnota(h, "number", "numberRequested") ||
+        hodnota(d, "cancelDocument", "sourceDocument", "number");
+      const pokladna = hl === "voucherHeader";
+      if (uzol(d, "cancelDocument") !== undefined)
+        poznamky.push(
+          `Storno ${pokladna ? "pokladničného dokladu" : "prijatej faktúry"} č. ${cislo || "?"} sa neimportovalo — ak doklad vo Fakteri máte, stornujte ho ručne.`,
+        );
+      else if (hodnota(h, "storno") === "cancelDocument")
+        poznamky.push(
+          `Stornujúci doklad ${cislo || "?"} sa neimportoval — ${pokladna ? "stornovaný pokladničný doklad sa neimportoval tiež (navzájom sa rušia)" : "pôvodná faktúra sa uložila ako stornovaná"}.`,
+        );
+      else if (pokladna && hodnota(h, "storno") === "cancelledDocument")
+        poznamky.push(`Stornovaný pokladničný doklad ${cislo || "?"} sa neimportoval.`);
+    }
+  }
+  return poznamky;
+}
+
+/** Príjmový pokladničný doklad z Pohody — do pokladne Faktera (`cash_entries`, príjem). */
+export type PokladnaPrijem = {
+  cislo: string | null;
+  datum: string | null;
+  suma: number;
+  popis: string;
+  poznamka: string | null;
+};
+
+/**
+ * Príjmové pokladničné doklady (`voucherType = receipt`) z Pohoda XML. Pokladňa
+ * Faktera je len v domácej mene — doklad v cudzej mene sa nevráti (hlási ho
+ * `pohodaPokladnaVCudzejMene`). Stornované a stornujúce sa preskočia.
+ */
+export function pohodaPokladnaPrijmy(doc: any): PokladnaPrijem[] {
+  const out: PokladnaPrijem[] = [];
+  for (const v of voucheryPrijmu(doc)) {
+    const h = uzol(v, "voucherHeader") ?? {};
+    if (hodnota(uzol(v, "voucherSummary", "foreignCurrency"), "currency", "ids")) continue;
+    const s = suhrnDokladu(uzol(v, "voucherSummary", "homeCurrency") ?? {});
+    const polozky = pole(uzol(v, "voucherDetail", "voucherItem"));
+    // Bez súhrnu (XML určené na import) — súčet položiek.
+    const suma =
+      s.spolu ||
+      r2(
+        polozky.reduce(
+          (a, p) =>
+            a +
+            (cisloZTextu(hodnota(p, "homeCurrency", "priceSum")) ??
+              (cisloZTextu(hodnota(p, "homeCurrency", "price")) ?? 0) +
+                (cisloZTextu(hodnota(p, "homeCurrency", "priceVAT")) ?? 0)),
+          0,
+        ),
+      );
+    if (!(Math.abs(suma) > 0)) continue;
+    const text = hodnota(h, "text") || hodnota(polozky[0], "text");
+    const partnerV = partner(h).dodavatel;
+    out.push({
+      cislo: alebo(hodnota(h, "number", "numberRequested") || hodnota(h, "number", "id")),
+      datum: datumZTextu(hodnota(h, "date")),
+      suma: r2(Math.abs(suma)),
+      popis: (text || (partnerV ? `Príjem — ${partnerV}` : "Príjem z Pohody")).slice(0, 255),
+      poznamka: alebo(hodnota(h, "note")),
+    });
+  }
+  return out;
+}
+
+/** Čísla príjmových pokladničných dokladov v cudzej mene — pokladňa ich nevie. */
+export function pohodaPokladnaVCudzejMene(doc: any): string[] {
+  return voucheryPrijmu(doc)
+    .filter((v) => hodnota(uzol(v, "voucherSummary", "foreignCurrency"), "currency", "ids"))
+    .map((v) => hodnota(uzol(v, "voucherHeader"), "number", "numberRequested") || "?");
+}
+
+function voucheryPrijmu(doc: any): any[] {
+  const balik = doc?.dataPack ?? doc?.responsePack ?? doc;
+  const polozkyBalika = [...pole(uzol(balik, "dataPackItem")), ...pole(uzol(balik, "responsePackItem"))];
+  return polozkyBalika
+    .flatMap((item) => [...pole(uzol(item, "voucher")), ...pole(uzol(item, "listVoucher", "voucher"))])
+    .filter((v) => {
+      const h = uzol(v, "voucherHeader");
+      return (
+        uzol(v, "cancelDocument") === undefined &&
+        !hodnota(h, "storno") &&
+        hodnota(h, "voucherType").toLowerCase() === "receipt"
+      );
+    });
+}
+
+/** Kľúč duplicity pokladničného príjmu — dátum, suma a popis. */
+export function klucPrijmu(p: { datum: string | null; suma: number; popis: string }): string {
+  return `${p.datum ?? ""}|${Number(p.suma).toFixed(2)}|${normalizuj(p.popis).replace(/[^a-z0-9]/g, "")}`;
 }
 
 /* ---------------- CSV / XLSX ---------------- */
@@ -821,7 +961,8 @@ export function riadokPrijatejFaktury(
     advance_amount: z.zaloha ?? null,
     payment_method: z.uhrada,
     // Prijatá faktúra nemá stav „odovzdaná" — zaúčtovaná je najbližšie.
-    status: o.stav === "new" ? "received" : "booked",
+    // Stornovaná v Pohode ostáva v evidencii ako stornovaná.
+    status: z.stornovany ? "cancelled" : o.stav === "new" ? "received" : "booked",
     source: "import",
     note: poznamkaImportu(z, o.zdrojAplikacie),
     items: z.polozky.length

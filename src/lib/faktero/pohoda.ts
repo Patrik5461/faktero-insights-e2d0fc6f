@@ -14,6 +14,7 @@
  */
 
 import {
+  jeOprava25a,
   kodPohody,
   kurzZPohody,
   kvZPohody,
@@ -198,10 +199,53 @@ function sumyPolozky(p: any, mena: any, sadzbaBezSum: () => number) {
   return { zaklad, dan, sDph, jc, mnozstvo, zlava };
 }
 
+/**
+ * Storná v Pohoda XML (vydané doklady).
+ *
+ *  - `cislaNaStorno`: blok `cancelDocument` (dávka na import, aj z Faktera) —
+ *    „stornuj doklad s týmto číslom“. Doklad sa vo Fakteri označí ako
+ *    stornovaný (`status = cancelled`), ak ho firma má alebo prišiel v tom
+ *    istom súbore.
+ *  - `stornujuce`: doklady z exportu Pohody s príznakom `storno =
+ *    cancelDocument` (stornujúci doklad s opačnými sumami). Vo Fakteri ho
+ *    netreba — pôvodný doklad príde s príznakom `cancelledDocument` a uloží sa
+ *    ako stornovaný; stornujúci by tržby odpočítal druhý raz.
+ */
+export function pohodaStorna(doc: any): { cislaNaStorno: string[]; stornujuce: string[] } {
+  const balik = doc?.dataPack ?? doc?.responsePack ?? doc;
+  const polozkyBalika = [
+    ...pole(uzol(balik, "dataPackItem")),
+    ...pole(uzol(balik, "responsePackItem")),
+  ];
+  const cislaNaStorno: string[] = [];
+  const stornujuce: string[] = [];
+  for (const item of polozkyBalika.length ? polozkyBalika : pole(balik)) {
+    const faktury = [...pole(uzol(item, "invoice")), ...pole(uzol(item, "listInvoice", "invoice"))];
+    for (const f of faktury) {
+      const h = uzol(f, "invoiceHeader");
+      const typ = hodnota(h, "invoiceType").toLowerCase();
+      if (typ && !(typ in TYPY_VYDANYCH)) continue;
+      const cislo = hodnota(f, "cancelDocument", "sourceDocument", "number");
+      if (uzol(f, "cancelDocument") !== undefined) {
+        if (cislo) cislaNaStorno.push(cislo);
+        continue;
+      }
+      if (h && hodnota(h, "storno") === "cancelDocument")
+        stornujuce.push(
+          hodnota(h, "number", "numberRequested") || hodnota(h, "number", "id") || hodnota(h, "id"),
+        );
+    }
+  }
+  return { cislaNaStorno, stornujuce };
+}
+
 function fakturaNaRiadky(faktura: any, krajinaFirmy?: string | null): PohodaRiadok[] {
+  // Storno (`cancelDocument`) nie je doklad na import — rieši ho `pohodaStorna`.
+  if (uzol(faktura, "cancelDocument") !== undefined) return [];
   const h = uzol(faktura, "invoiceHeader");
-  // Storno (`cancelDocument` bez hlavičky) nie je doklad na import.
   if (!h) return [];
+  // Stornujúci doklad z exportu Pohody — pôvodný príde ako stornovaný.
+  if (hodnota(h, "storno") === "cancelDocument") return [];
   const typ = hodnota(h, "invoiceType").toLowerCase();
   // Prijaté doklady číta import prijatých dokladov.
   if (typ && !(typ in TYPY_VYDANYCH)) return [];
@@ -289,6 +333,16 @@ function fakturaNaRiadky(faktura: any, krajinaFirmy?: string | null): PohodaRiad
 
   let druh = TYPY_VYDANYCH[typ] ?? "regular";
   if (druh === "corrective") druh = celkom < 0 ? "credit_note" : "debit_note";
+  /*
+    Opravný doklad podľa § 25a je vo Fakteri vždy `credit_note` s príznakom
+    `oprava_25a` — zníženie záporné, vrátenie po zaplatení (v Pohode vrubopis)
+    kladné. Bez toho sa vrátenie vracalo ako ťarchopis a zníženie ako obyčajný
+    dobropis, ktorý výkazy dávajú do iných riadkov (r. 26/27, ONP v C.1).
+  */
+  const oprava25a =
+    (typ === "issuedcreditnotice" || typ === "issueddebitnote") &&
+    jeOprava25a(hodnota(h, "text"), hodnota(h, "note"));
+  if (oprava25a) druh = "credit_note";
 
   const vsetkyPdp = polozky.length > 0 && polozky.every((x) => /^true$/i.test(hodnota(x.p, "PDP")));
   const poznamka = hodnota(h, "note");
@@ -312,6 +366,9 @@ function fakturaNaRiadky(faktura: any, krajinaFirmy?: string | null): PohodaRiad
     notes: hodnota(h, "text"),
     external_id: hodnota(h, "id") || hodnota(h, "extId", "ids"),
     document_type: druh,
+    ...(oprava25a ? { oprava_25a: typ === "issueddebitnote" ? "vratenie" : "znizenie" } : {}),
+    // Stornovaný doklad z exportu Pohody (`storno = cancelledDocument`).
+    ...(hodnota(h, "storno") === "cancelledDocument" ? { status: "cancelled" } : {}),
     subtotal: suma(zaklady),
     vat_total: suma(dane),
     total: suma(celkom),

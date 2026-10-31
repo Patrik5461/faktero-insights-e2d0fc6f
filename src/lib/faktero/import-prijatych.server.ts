@@ -18,6 +18,11 @@ import {
   datumZTextu,
   jePohodaXmlObsah,
   klucDuplicity,
+  klucPrijmu,
+  pohodaPokladnaPrijmy,
+  pohodaPokladnaVCudzejMene,
+  pohodaPrijateStorna,
+  type PokladnaPrijem,
   normalizuj,
   pohodaPrijate,
   priradSkeny,
@@ -30,6 +35,7 @@ import {
 } from "./import-prijatych";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { nesuladKrajinyPohody } from "./pohoda-citanie";
 export type Vstup = { meno: string; bajty: Uint8Array };
 
 const SKENY = /\.(pdf|jpe?g|png|webp|heic)$/i;
@@ -78,10 +84,13 @@ export async function rozbal(
   zaznamy: PrijatyZaznam[];
   skeny: Vstup[];
   poznamky: string[];
+  /** Príjmové pokladničné doklady z Pohody — do pokladne (`cash_entries`). */
+  prijmy: PokladnaPrijem[];
 }> {
   const zaznamy: PrijatyZaznam[] = [];
   const skeny: Vstup[] = [];
   const poznamky: string[] = [];
+  const prijmy: PokladnaPrijem[] = [];
   for (const v of vstupy) {
     const meno = v.meno.split("/").pop() ?? v.meno;
     const nizke = meno.toLowerCase();
@@ -98,15 +107,33 @@ export async function rozbal(
         zaznamy.push(...r.zaznamy);
         skeny.push(...r.skeny);
         poznamky.push(...r.poznamky);
+        prijmy.push(...r.prijmy);
       } else if (nizke.endsWith(".xml")) {
         const obsah = dekoduj(v.bajty);
         if (!jePohodaXmlObsah(obsah)) {
           poznamky.push(`${meno}: XML nie je vo formáte Pohody, preskočené`);
           continue;
         }
-        const najdene = pohodaPrijate(parser.parse(obsah), { krajina: krajina ?? null });
-        if (!najdene.length) poznamky.push(`${meno}: v XML nie sú prijaté faktúry ani pokladničné výdavky`);
+        // České XML do slovenskej firmy (a naopak) by zapísalo koruny ako eurá.
+        const nesulad = nesuladKrajinyPohody(obsah, krajina);
+        if (nesulad) {
+          poznamky.push(`${meno}: ${nesulad}`);
+          continue;
+        }
+        const doc = parser.parse(obsah);
+        const najdene = pohodaPrijate(doc, { krajina: krajina ?? null });
+        const prijmyXml = pohodaPokladnaPrijmy(doc);
+        const storna = pohodaPrijateStorna(doc);
+        const cudzie = pohodaPokladnaVCudzejMene(doc);
+        if (!najdene.length && !prijmyXml.length && !storna.length && !cudzie.length)
+          poznamky.push(`${meno}: v XML nie sú prijaté faktúry ani pokladničné doklady`);
         zaznamy.push(...najdene);
+        prijmy.push(...prijmyXml);
+        poznamky.push(...storna.map((x) => `${meno}: ${x}`));
+        if (cudzie.length)
+          poznamky.push(
+            `${meno}: príjmové pokladničné doklady v cudzej mene (${cudzie.slice(0, 10).join(", ")}) sa neimportovali — pokladňa Faktera je len v domácej mene.`,
+          );
       } else if (nizke.endsWith(".csv") || nizke.endsWith(".txt")) {
         const najdene = tabulkaNaZaznamy(citajCsv(dekoduj(v.bajty)), "CSV");
         if (!najdene.length) poznamky.push(`${meno}: v tabuľke sa nenašli stĺpce dokladov`);
@@ -137,7 +164,7 @@ export async function rozbal(
       poznamky.push(`${meno}: súbor sa nepodarilo prečítať (${String(e?.message ?? e).slice(0, 80)})`);
     }
   }
-  return { zaznamy, skeny, poznamky };
+  return { zaznamy, skeny, poznamky, prijmy };
 }
 
 /** Kľúče dokladov, ktoré vo firme už sú — aby sa import dal pustiť aj druhý raz. */
@@ -178,7 +205,28 @@ export async function existujuceKluce(klient: any, companyId: string): Promise<S
   return kluce;
 }
 
+/** Kľúče pokladničných príjmov, ktoré firma už má — opakovaný import ich nezdvojí. */
+async function existujucePrijmy(klient: any, companyId: string): Promise<Set<string>> {
+  const kluce = new Set<string>();
+  for (let od = 0; od < 50000; od += 1000) {
+    const { data } = await klient
+      .from("cash_entries")
+      .select("entry_date, amount, description")
+      .eq("company_id", companyId)
+      .eq("type", "prijem")
+      .order("id")
+      .range(od, od + 999);
+    for (const r of data ?? [])
+      kluce.add(klucPrijmu({ datum: r.entry_date, suma: Number(r.amount), popis: r.description ?? "" }));
+    if (!data || data.length < 1000) break;
+  }
+  return kluce;
+}
+
 export type Plan = {
+  /** Príjmové pokladničné doklady (do `cash_entries`) a tie, ktoré už vo firme sú. */
+  prijmy: PokladnaPrijem[];
+  prijmyDuplicity: Set<number>;
   zaznamy: PrijatyZaznam[];
   skeny: Vstup[];
   parovanie: Map<number, number>;
@@ -189,7 +237,16 @@ export type Plan = {
 
 export async function naplanuj(klient: any, companyId: string, vstupy: Vstup[]): Promise<Plan> {
   const { data: firma } = await klient.from("companies").select("country").eq("id", companyId).maybeSingle();
-  const { zaznamy, skeny, poznamky } = await rozbal(vstupy, 0, novyRozpocet(), firma?.country ?? "SK");
+  const { zaznamy, skeny, poznamky, prijmy } = await rozbal(vstupy, 0, novyRozpocet(), firma?.country ?? "SK");
+  const prijmyDuplicity = new Set<number>();
+  if (prijmy.length) {
+    const uzSu = await existujucePrijmy(klient, companyId);
+    prijmy.forEach((p, i) => {
+      const k = klucPrijmu(p);
+      if (uzSu.has(k)) prijmyDuplicity.add(i);
+      uzSu.add(k);
+    });
+  }
   // Doklad bez uvedenej meny je v domácej mene firmy — CZ firme koruny, nie eurá.
   if (zaznamy.some((z) => !z.mena)) {
     const { domacaMena } = await import("./kurzy");
@@ -208,7 +265,7 @@ export async function naplanuj(klient: any, companyId: string, vstupy: Vstup[]):
   const parovanie = priradSkeny(zaznamy, skeny);
   const sparovane = new Set(parovanie.values());
   const skenyBezParu = skeny.map((_, j) => j).filter((j) => !sparovane.has(j));
-  return { zaznamy, skeny, parovanie, duplicity, skenyBezParu, poznamky };
+  return { zaznamy, skeny, parovanie, duplicity, skenyBezParu, poznamky, prijmy, prijmyDuplicity };
 }
 
 export function suhrnPlanu(p: Plan) {
@@ -216,7 +273,8 @@ export function suhrnPlanu(p: Plan) {
   return {
     faktury: nove.filter((z) => z.typ === "faktura").length,
     blocky: nove.filter((z) => z.typ === "blocek").length,
-    duplicity: p.duplicity.size,
+    pokladna: p.prijmy.length - p.prijmyDuplicity.size,
+    duplicity: p.duplicity.size + p.prijmyDuplicity.size,
     skenyPriradene: [...p.parovanie.keys()].filter((i) => !p.duplicity.has(i)).length,
     skenyBezParu: p.skenyBezParu.length,
     poznamky: p.poznamky.slice(0, 30),
@@ -351,7 +409,18 @@ export async function vykonajImport(args: {
     dnes: dnesBratislava(),
     kurz: (await import("./kurz-dokladu.server")).doplnovacKurzov(args.companyId),
   };
-  const vysledok = { faktury: 0, blocky: 0, ostatne: 0, skenyPriradene: 0, preskocene: 0, chyby: [] as string[] };
+  const vysledok = {
+    faktury: 0,
+    blocky: 0,
+    ostatne: 0,
+    /** Príjmové pokladničné doklady zapísané do pokladne. */
+    pokladna: 0,
+    skenyPriradene: 0,
+    preskocene: 0,
+    chyby: [] as string[],
+    /** Čo sa nezapísalo a človek to má vedieť (storná, cudzia mena, iná krajina). */
+    upozornenia: plan.poznamky.slice(0, 50),
+  };
   const zapisane: Zapisany[] = [];
   let hotovo = 0;
   const priebeh = async (koniec = false) => {
@@ -359,7 +428,7 @@ export async function vykonajImport(args: {
       .from("import_jobs")
       .update({
         processed_rows: hotovo,
-        imported_invoices: vysledok.faktury + vysledok.blocky + vysledok.ostatne,
+        imported_invoices: vysledok.faktury + vysledok.blocky + vysledok.ostatne + vysledok.pokladna,
         failed_rows: vysledok.chyby.length,
         result: { ...vysledok, chyby: vysledok.chyby.slice(0, 50) },
         ...(koniec ? { status: "completed", completed_at: new Date().toISOString() } : {}),
@@ -385,6 +454,41 @@ export async function vykonajImport(args: {
     }
     hotovo++;
     if (hotovo % 20 === 0) await priebeh();
+  }
+  // Príjmové pokladničné doklady z Pohody → pokladňa (číslo z pokladničného radu firmy).
+  if (plan.prijmy.length) {
+    const { cisloZRadu } = await import("./cislo-z-radu.server");
+    for (const [i, p] of plan.prijmy.entries()) {
+      if (plan.prijmyDuplicity.has(i)) {
+        vysledok.preskocene++;
+        continue;
+      }
+      try {
+        const datum = p.datum ?? o.dnes;
+        const c = await cisloZRadu(klient, args.companyId, "cash", { datum });
+        const now = new Date().toISOString();
+        const { error } = await klient.from("cash_entries").insert({
+          company_id: args.companyId,
+          created_by: args.userId,
+          entry_number: c.cislo,
+          number_series_id: c.seriesId,
+          entry_date: datum,
+          type: "prijem",
+          amount: p.suma,
+          description: p.popis,
+          note: [p.poznamka, `Importované z ${args.zdrojAplikacie} (Pohoda XML${p.cislo ? `, doklad ${p.cislo}` : ""}).`]
+            .filter(Boolean)
+            .join("\n"),
+          // Doklad už v Pohode je — číslo z Pohody, a pri stave „odovzdané“ sa neexportuje druhý raz.
+          pohoda_cislo: p.cislo,
+          ...(args.stav === "exported" ? { exported_at: now } : {}),
+        });
+        if (error) throw new Error(error.message);
+        vysledok.pokladna++;
+      } catch (e: any) {
+        vysledok.chyby.push(`${p.cislo ?? p.popis}: ${String(e?.message ?? e).slice(0, 120)}`);
+      }
+    }
   }
   await priebeh();
 

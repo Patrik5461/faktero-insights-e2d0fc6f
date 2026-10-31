@@ -5,6 +5,7 @@ import { intNoteSEfakturou } from "./efaktura-odoslana";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { icoPrePohodu } from "./ico-z-mena";
 import { kodStatu } from "./company-autofill";
+import { VETA_25A_POHODA } from "./pohoda-citanie";
 
 /**
  * Množstvo najviac na štyri desatinné miesta. POHODA od verzie Jeseň 2026
@@ -955,6 +956,12 @@ export function polozkyFaktur(opts: {
             ? "Prenesenie daňovej povinnosti pri položkách PDP"
             : "",
         statOss ? `OSS — štát spotreby ${statOss.kod}` : "",
+        /*
+          Opravný doklad podľa § 25a ide do Pohody ako dobropis (zníženie) alebo
+          vrubopis (vrátenie po zaplatení). Veta v poznámke ho pri importe
+          z Pohody vráti ako opravu § 25a, nie ako obyčajný dobropis/ťarchopis.
+        */
+        (invoice as any).oprava_25a ? VETA_25A_POHODA : "",
         skrat(invoice.notes, 200),
       ]
         .filter(Boolean)

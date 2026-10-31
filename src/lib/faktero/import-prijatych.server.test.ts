@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import * as XLSX from "xlsx";
-import { naplanuj, rozbal, suhrnPlanu } from "./import-prijatych.server";
+import { naplanuj, rozbal, suhrnPlanu, vykonajImport } from "./import-prijatych.server";
 
 const XML = `<?xml version="1.0" encoding="UTF-8"?>
 <dat:dataPack xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd" version="2.0">
@@ -9,10 +9,14 @@ const XML = `<?xml version="1.0" encoding="UTF-8"?>
   <inv:invoiceType>receivedInvoice</inv:invoiceType><inv:originalDocument>FA2026/0815</inv:originalDocument>
   <inv:date>2026-09-01</inv:date><inv:dateDue>2026-09-15</inv:dateDue>
   <inv:partnerIdentity><typ:address><typ:company>Slovak Telekom, a.s.</typ:company><typ:ico>35763469</typ:ico></typ:address></inv:partnerIdentity>
- </inv:invoiceHeader><inv:invoiceSummary><inv:homeCurrency><typ:priceHigh>100</typ:priceHigh><typ:priceHighVAT>23</typ:priceHighVAT></inv:homeCurrency></inv:invoiceSummary></inv:invoice></dat:dataPackItem>
+ </inv:invoiceHeader><inv:invoiceSummary><inv:homeCurrency><typ:priceHigh>100</typ:priceHigh><typ:priceHighVAT>21</typ:priceHighVAT></inv:homeCurrency></inv:invoiceSummary></inv:invoice></dat:dataPackItem>
 </dat:dataPack>`;
 
-/** Klient, ktorý tvrdí, že vo firme je už faktúra FA-DUP od IČO 1. */
+/*
+  Klient, ktorý tvrdí, že vo firme je už faktúra FA-DUP od IČO 1. Firma je
+  česká — XML je preto z českej Pohody (21 %); slovenské XML by import
+  českej firmy odmietol (eurá by sa zapísali ako koruny).
+*/
 const klient = {
   from(tabulka: string) {
     const q: any = {
@@ -65,6 +69,75 @@ describe("import prijatých dokladov — balík z Doklado", () => {
     expect(s.ukazka.find((u) => u.cislo === "FA2026/0815")?.sken).toBe("FA2026-0815.pdf");
     // Doklady bez meny sú v domácej mene firmy — CZ firma koruny, nie eurá.
     expect(plan.zaznamy.map((z) => z.mena)).toEqual(["CZK", "CZK", "CZK"]);
+  });
+
+  it("XML z inej krajiny sa nenaimportuje a povie prečo", async () => {
+    const sk = XML.replace("<typ:priceHighVAT>21<", "<typ:priceHighVAT>23<");
+    const plan = await naplanuj(klient, "firma", [{ meno: "pohoda-sk.xml", bajty: new TextEncoder().encode(sk) }]);
+    expect(plan.zaznamy).toHaveLength(0);
+    expect(plan.poznamky[0]).toContain("slovenskej Pohody");
+  });
+
+  it("príjmový pokladničný doklad z Pohody ide do pokladne, opakovaný import ho nezdvojí", async () => {
+    const VCH = `<?xml version="1.0" encoding="UTF-8"?>
+<dat:dataPack xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd" xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd" version="2.0">
+ <dat:dataPackItem id="1" version="2.0"><vch:voucher version="2.0"><vch:voucherHeader>
+  <vch:voucherType>receipt</vch:voucherType><vch:number><typ:numberRequested>PPD0007</typ:numberRequested></vch:number>
+  <vch:date>2026-10-04</vch:date><vch:text>Vklad do pokladne</vch:text>
+ </vch:voucherHeader><vch:voucherSummary><vch:homeCurrency><typ:priceNone>200</typ:priceNone></vch:homeCurrency></vch:voucherSummary></vch:voucher></dat:dataPackItem>
+</dat:dataPack>`;
+    const vlozene: any[] = [];
+    const existujuce: any[] = [];
+    const k = {
+      rpc: async () => ({ data: { number: "PD20260001", series_id: "rad" }, error: null }),
+      storage: { from: () => ({}) },
+      from(tabulka: string) {
+        const q: any = {
+          select: () => q,
+          eq: () => q,
+          is: () => q,
+          order: () => q,
+          update: () => q,
+          maybeSingle: async () => ({ data: tabulka === "companies" ? { country: "SK" } : null }),
+          range: async () => ({ data: tabulka === "cash_entries" ? existujuce : [] }),
+          insert: async (r: any) => {
+            vlozene.push({ tabulka, ...r });
+            return { error: null };
+          },
+          then: (ok: any) => Promise.resolve({ data: null, error: null }).then(ok),
+        };
+        return q;
+      },
+    };
+    const vstup = [{ meno: "pokladna.xml", bajty: new TextEncoder().encode(VCH) }];
+    const plan = await naplanuj(k, "firma", vstup);
+    expect(suhrnPlanu(plan)).toMatchObject({ pokladna: 1, duplicity: 0 });
+    const v = await vykonajImport({
+      klient: k,
+      jobId: "job",
+      companyId: "firma",
+      userId: "u",
+      plan,
+      stav: "exported" as any,
+      doPokladne: true,
+      citatSkeny: false,
+      zdrojAplikacie: "Pohoda",
+    });
+    expect(v.pokladna).toBe(1);
+    const zapis = vlozene.find((r) => r.tabulka === "cash_entries");
+    expect(zapis).toMatchObject({
+      type: "prijem",
+      amount: 200,
+      entry_date: "2026-10-04",
+      entry_number: "PD20260001",
+      description: "Vklad do pokladne",
+      pohoda_cislo: "PPD0007",
+    });
+    expect(zapis.exported_at).toBeTruthy();
+    // Druhý raz: ten istý príjem vo firme už je.
+    existujuce.push({ entry_date: "2026-10-04", amount: "200.00", description: "Vklad do pokladne" });
+    const znova = await naplanuj(k, "firma", vstup);
+    expect(suhrnPlanu(znova)).toMatchObject({ pokladna: 0, duplicity: 1 });
   });
 
   it("CSV v kódovaní Windows-1250 prečíta s diakritikou", async () => {

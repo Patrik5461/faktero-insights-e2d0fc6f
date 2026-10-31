@@ -145,16 +145,44 @@ describe("zostavenie prijatej faktúry z mailu", () => {
   it("keď AI neprečíta nič, doklad aj tak vznikne s povinnými poľami", () => {
     const f = zostavPrijatuFakturu({ ...zaklad, ai: null });
     expect(f.supplier_name).toBe("Neurčený dodávateľ");
-    // Číslo dokladu zoberie z predmetu mailu, nech sa dá nájsť.
-    expect(f.invoice_number).toBe("Faktúra 2026123");
+    // Z predmetu sa berie len samotné číslo, nie celý predmet mailu.
+    expect(f.invoice_number).toBe("2026123");
     expect(f.issue_date).toBe("2026-08-13");
     expect(f.due_date).toBe("2026-08-13");
     expect(f.amount_total).toBe(0);
   });
 
-  it("bez predmetu siahne po názve súboru", () => {
-    const f = zostavPrijatuFakturu({ ...zaklad, predmet: null, ai: {} });
-    expect(f.invoice_number).toBe("faktura");
+  it("bez predmetu siahne po názve súboru, ak v ňom je číslo", () => {
+    const f = zostavPrijatuFakturu({
+      ...zaklad,
+      predmet: null,
+      nazovSuboru: "FA-2026123.pdf",
+      ai: {},
+    });
+    expect(f.invoice_number).toBe("FA-2026123");
+    const g = zostavPrijatuFakturu({ ...zaklad, predmet: null, ai: {} });
+    expect(g.invoice_number).toBe("bez čísla");
+  });
+
+  it("predmet mailu nikdy nie je číslo faktúry (MaxiTicket: „Fwd: FW: Dožiadanie…“)", () => {
+    for (const predmet of [
+      "Fwd: FW: Dožiadanie_MaxiTicket s.r.o.",
+      "Fwd: Elektronická faktúra za obdobie 1.7.2026 - 31.7.2026",
+      "Fwd: D&C faktúra za obdobie 08/2026",
+      "Fwd: fa",
+      "Fwd: Potvrdenie objednávky",
+    ]) {
+      const f = zostavPrijatuFakturu({ ...zaklad, predmet, nazovSuboru: "Dožiadanie.pdf", ai: {} });
+      expect(f.invoice_number, predmet).toBe("bez čísla");
+    }
+    // Ani keď AI ako číslo vráti predmet preposlaného mailu.
+    const f = zostavPrijatuFakturu({
+      ...zaklad,
+      predmet: "Fwd: FW: Dožiadanie_MaxiTicket s.r.o.",
+      ai: { invoice_number: "Fwd: FW: Dožiadanie_MaxiTicket s.r.o." },
+    });
+    expect(f.invoice_number).toBe("bez čísla");
+    expect(f.note).toContain("Predmet: Fwd: FW: Dožiadanie");
   });
 });
 

@@ -348,7 +348,9 @@ export type FieldKey =
   | "zaloha_cislo"
   | "oss_country"
   | "item_vat_amount"
-  | "item_pdp";
+  | "item_pdp"
+  /** Opravný doklad podľa § 25a: „znizenie“ (dobropis) alebo „vratenie“ (po zaplatení). */
+  | "oprava_25a";
 
 const HEURISTICS: Record<FieldKey, RegExp[]> = {
   invoice_number: [/^(invoice_)?number$/i, /\bfakt(u|ú)ra\b/i, /^cislo/i, /\bnumber\b/i],
@@ -394,6 +396,7 @@ const HEURISTICS: Record<FieldKey, RegExp[]> = {
   oss_country: [/^oss.?(country|stat)$/i],
   item_vat_amount: [/^item.?vat.?amount$|^dph polozky$/i],
   item_pdp: [/^item.?pdp$/i],
+  oprava_25a: [/^oprava.?25a$/i],
 };
 
 export function suggestMapping(headers: string[]): Partial<Record<FieldKey, string>> {
@@ -556,6 +559,7 @@ const SYNONYMS: Record<FieldKey, string[]> = {
   oss_country: ["oss stat"],
   item_vat_amount: ["dph polozky", "item vat amount"],
   item_pdp: ["item pdp"],
+  oprava_25a: ["oprava 25a"],
 };
 
 /**
@@ -1103,7 +1107,40 @@ export type ImportResult = {
   duplicates: number;
   /** Číslovanie rozpoznané z naimportovaných faktúr — nastavené alebo na potvrdenie. */
   ciselneRady?: import("./ciselne-rady-import.server").RadZImportu[];
+  /** Doklady označené ako stornované podľa storna zo súboru (Pohoda). */
+  stornovane?: number;
+  /** Čo import nezapísal a človek to má vedieť (storno bez dokladu…). */
+  upozornenia?: string[];
 };
+
+/**
+ * Čo spraviť so stornami zo súboru — čistá časť `runImport`.
+ * `dokladPodlaCisla` sú faktúry firmy vrátane tých z tohto importu.
+ */
+export function planStorien(
+  storna: { cislaNaStorno: string[]; stornujuce: string[] } | undefined,
+  dokladPodlaCisla: Map<string, string>,
+): { naStorno: { cislo: string; id: string }[]; upozornenia: string[] } {
+  const naStorno: { cislo: string; id: string }[] = [];
+  const upozornenia: string[] = [];
+  const videne = new Set<string>();
+  for (const cislo of storna?.cislaNaStorno ?? []) {
+    if (videne.has(cislo)) continue;
+    videne.add(cislo);
+    const id = dokladPodlaCisla.get(cislo);
+    if (id) naStorno.push({ cislo, id });
+    else
+      upozornenia.push(
+        `Storno dokladu ${cislo}: doklad vo firme nie je, storno sa nezapísalo — naimportujte najprv pôvodný doklad a súbor nahrajte znova.`,
+      );
+  }
+  const stornujuce = (storna?.stornujuce ?? []).filter(Boolean);
+  if (stornujuce.length)
+    upozornenia.push(
+      `${stornujuce.length === 1 ? "Stornujúci doklad" : "Stornujúce doklady"} ${stornujuce.slice(0, 10).join(", ")}${stornujuce.length > 10 ? " …" : ""} sa neimportoval${stornujuce.length === 1 ? "" : "i"} — pôvodný doklad je vo Fakteri označený ako stornovaný.`,
+    );
+  return { naStorno, upozornenia };
+}
 
 export async function runImport(args: {
   jobId: string;
@@ -1113,6 +1150,8 @@ export async function runImport(args: {
   options: ImportOptions;
   /** Odkiaľ dáta prišli. Zapíše sa na faktúru, aby bolo neskôr vidieť pôvod. */
   source?: string;
+  /** Storná zo súboru (Pohoda `cancelDocument`) — doklad sa označí ako stornovaný. */
+  storna?: { cislaNaStorno: string[]; stornujuce: string[] };
 }): Promise<ImportResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { jobId, companyId, rows, mapping, options } = args;
@@ -1393,6 +1432,37 @@ export async function runImport(args: {
     }
   }
 
+  /*
+    Storno z Pohody: pôvodný doklad ostáva v evidencii, len dostane stav
+    „stornovaný“ (tak ho Faktero vynechá zo súčtov, výkazov aj upomienok).
+  */
+  if (!lenOdberatelia && args.storna) {
+    const plan = planStorien(args.storna, invByNumber);
+    result.upozornenia = [...plan.upozornenia];
+    result.stornovane = 0;
+    for (const { cislo, id } of plan.naStorno) {
+      const { error } = await supabaseAdmin
+        .from("invoices")
+        .update({ status: "cancelled" })
+        .eq("id", id)
+        .eq("company_id", companyId);
+      if (error) result.upozornenia.push(`Storno dokladu ${cislo}: ${error.message}`);
+      else {
+        result.stornovane++;
+        await logRow(
+          supabaseAdmin,
+          jobId,
+          companyId,
+          0,
+          "invoice",
+          "success",
+          `Faktúra ${cislo} stornovaná`,
+          { storno: cislo },
+        );
+      }
+    }
+  }
+
   // Ďalšie faktúry pokračujú v číslovaní z pôvodného systému.
   if (result.imported_invoices > 0) {
     try {
@@ -1465,7 +1535,12 @@ export function fakturaZRiadkov(
   }
   if (total === 0) total = items.reduce((s, i) => s + i.total, 0);
   const druh = druhDokladu(pick(head, mapping, "document_type"));
-  if (druh === "credit_note") {
+  /*
+    Opravný doklad § 25a: zníženie je záporné ako dobropis, vrátenie po
+    zaplatení ostáva kladné (je to stále `credit_note` s `oprava_25a`).
+  */
+  const oprava25a = druh === "credit_note" ? pick(head, mapping, "oprava_25a") : "";
+  if (druh === "credit_note" && oprava25a !== "vratenie") {
     const z = dobropisZaporne({ subtotal, vat_total: vatTotal, total }, items);
     ({ subtotal, vat_total: vatTotal, total } = z.hlavicka);
     items = z.polozky;
@@ -1487,6 +1562,7 @@ export function fakturaZRiadkov(
   }
   if (/^(true|1|ano|áno|yes|a)$/i.test(pick(head, mapping, "reverse_charge")))
     pohoda.reverse_charge = true;
+  if (oprava25a) pohoda.oprava_25a = true;
   const oss = pick(head, mapping, "oss_country");
   if (/^[A-Z]{2}$/i.test(oss)) {
     pohoda.oss = true;

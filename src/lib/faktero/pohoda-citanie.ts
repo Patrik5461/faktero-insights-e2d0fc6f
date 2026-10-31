@@ -146,3 +146,86 @@ export function kvZPohody(kod: string): string | null {
 export function jeClenenieVPreneseni(kod: string): boolean {
   return /pdp|92a|prenes/i.test(String(kod ?? ""));
 }
+
+/**
+ * Veta, s ktorou ide opravný doklad podľa § 25a do poznámky dokladu v Pohode.
+ * Podľa nej ho import z Pohody vráti ako opravu § 25a (`oprava_25a`), nie ako
+ * obyčajný dobropis či ťarchopis.
+ */
+export const VETA_25A_POHODA = "Oprava základu dane podľa § 25a";
+
+/** Je doklad Pohody opravou základu dane podľa § 25a zákona o DPH? (nie § 25a UStG) */
+export function jeOprava25a(...texty: (string | null | undefined)[]): boolean {
+  return texty.some((t) =>
+    /oprav\p{L}*\s+z[áa]kladu\s+dane\s+pod[ľl]a\s+§\s*25a(?!\s*UStG)/iu.test(String(t ?? "")),
+  );
+}
+
+/**
+ * Z ktorej verzie Pohody je XML — „CZ“, „SK“, alebo `null`, keď sa to nedá
+ * povedať. Domácu menu Pohoda v XML neuvádza (sumy v `homeCurrency` sú v mene
+ * účtovnej jednotky), takže české XML naimportované do slovenskej firmy by
+ * zapísalo koruny ako eurá. Rozhodujú stopy, ktoré má len jedna verzia:
+ *  - CZ: opravný daňový doklad (`…CorrectiveTax`), `dateKHDPH`, cudzia mena
+ *    EUR, sadzby 21/15/12 %;
+ *  - SK: členenie KV DPH (`classificationKVDPH`), cudzia mena CZK, sadzby
+ *    23/20/19/5 %.
+ */
+export function krajinaSuboruPohody(xml: string): "CZ" | "SK" | null {
+  let cz = 0;
+  let sk = 0;
+  if (/CorrectiveTax\b|<(?:\w+:)?dateKHDPH>/.test(xml)) cz += 5;
+  if (/<(?:\w+:)?classificationKVDPH>/.test(xml)) sk += 5;
+  for (const m of xml.matchAll(
+    /<(?:\w+:)?foreignCurrency>[\s\S]*?<(?:\w+:)?currency>\s*<(?:\w+:)?ids>\s*([A-Z]{3})\s*</g,
+  )) {
+    if (m[1] === "EUR") cz += 3;
+    if (m[1] === "CZK") sk += 3;
+  }
+  const hlasuj = (percento: number) => {
+    const p = Math.round(percento * 10) / 10;
+    if ([21, 15, 12].some((x) => Math.abs(p - x) < 0.6)) cz++;
+    else if ([23, 20, 19, 5].some((x) => Math.abs(p - x) < 0.6)) sk++;
+  };
+  for (const m of xml.matchAll(/<(?:\w+:)?percentVAT>\s*([\d.]+)\s*</g)) hlasuj(Number(m[1]));
+  const cislo = (blok: string, el: string) => {
+    const m = new RegExp(`<(?:\\w+:)?${el}>\\s*(-?[\\d.]+)\\s*<`).exec(blok);
+    return m ? Number(m[1]) : NaN;
+  };
+  for (const m of xml.matchAll(/<(?:\w+:)?homeCurrency>([\s\S]*?)<\/(?:\w+:)?homeCurrency>/g)) {
+    const blok = m[1]!;
+    for (const [z, d] of [
+      ["priceHigh", "priceHighVAT"],
+      ["priceLow", "priceLowVAT"],
+      ["price3", "price3VAT"],
+      ["price", "priceVAT"],
+    ] as const) {
+      const zaklad = cislo(blok, z);
+      const dan = cislo(blok, d);
+      if (Math.abs(zaklad) >= 10 && Math.abs(dan) > 0) hlasuj((dan / zaklad) * 100);
+    }
+  }
+  if (cz > sk) return "CZ";
+  if (sk > cz) return "SK";
+  return null;
+}
+
+/**
+ * Hláška, keď XML z Pohody patrí inej krajine než firma (české XML do
+ * slovenskej firmy a naopak) — inak `null`. Domáca mena súboru sa nedá
+ * prepočítať: kurz Pohoda uvádza len pri doklade v cudzej mene, sumy
+ * v domácej mene by sa zapísali ako eurá (koruny) bez prepočtu.
+ */
+export function nesuladKrajinyPohody(
+  xml: string,
+  krajinaFirmy: string | null | undefined,
+): string | null {
+  if (!krajinaFirmy) return null;
+  const firma = krajinaDane(krajinaFirmy);
+  if (firma !== "SK" && firma !== "CZ") return null;
+  const subor = krajinaSuboruPohody(xml);
+  if (!subor || subor === firma) return null;
+  return subor === "CZ"
+    ? "Súbor je z českej Pohody — sumy sú v korunách, firma vedie účtovníctvo v eurách. Import sa zastavil, aby sa koruny nezapísali ako eurá. Nahrajte ho do českej firmy, alebo z Pohody vyvezte doklady slovenskej účtovnej jednotky."
+    : "Súbor je zo slovenskej Pohody — sumy sú v eurách, firma vedie účtovníctvo v korunách. Import sa zastavil, aby sa eurá nezapísali ako koruny. Nahrajte ho do slovenskej firmy, alebo z Pohody vyvezte doklady českej účtovnej jednotky.";
+}

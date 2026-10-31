@@ -1,3 +1,4 @@
+import { udajeMailuFaktury } from "@/lib/mobile/mail-faktury";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { VyberPoznamky } from "./DokladOznacenie";
 import { SablonaMailu, type VybranaSablona } from "./SablonaMailu";
@@ -1991,12 +1992,11 @@ function Vystavena({
     setBusy("mail");
     try {
       await mailFn({
-        data: {
-          invoiceId: faktura.id,
-          recipient_email: faktura.customer_email,
-          potvrdeny_stary_datum: datumOk.potvrdenyStaryDatum || undefined,
-          ...(sablona ?? {}),
-        },
+        data: udajeMailuFaktury({
+          faktura: { ...faktura, customer_email: faktura.customer_email },
+          potvrdenyStaryDatum: datumOk.potvrdenyStaryDatum,
+          sablona,
+        }),
       });
       setOdoslane(true);
       toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));

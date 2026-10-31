@@ -1,3 +1,4 @@
+import { cisloZMenaSuboru, cisloZPredmetu, vyzeraAkoPredmetMailu } from "./predmet-mailu";
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 /**
  * Príjem dokladov e-mailom — čistá logika bez siete a databázy.
@@ -334,10 +335,17 @@ export function zostavPrijatuFakturu(args: {
   const vystavenie = datum(ai.issue_date) ?? args.dnes;
   const splatnost = datum(ai.due_date) ?? vystavenie;
 
+  /*
+    Predmet mailu nie je číslo faktúry — „Fwd: FW: Dožiadanie_MaxiTicket“ tak
+    skončilo v Pohode aj v kontrolnom výkaze. Z predmetu a mena súboru sa berie
+    len token, ktorý vyzerá ako číslo dokladu; inak „bez čísla“ a človek ho
+    doplní z faktúry. Aj číslo od AI, ktoré je celé predmetom mailu, sa zahodí.
+  */
+  const odAi = text(ai.invoice_number, 60);
   const cisloDokladu =
-    text(ai.invoice_number, 60) ??
-    text(args.predmet, 60) ??
-    text(args.nazovSuboru?.replace(/\.[a-z0-9]+$/i, ""), 60) ??
+    (odAi && !vyzeraAkoPredmetMailu(odAi) ? odAi : null) ??
+    cisloZPredmetu(args.predmet) ??
+    cisloZMenaSuboru(args.nazovSuboru) ??
     "bez čísla";
 
   const odkial = args.odosielatel ? ` od ${args.odosielatel}` : "";

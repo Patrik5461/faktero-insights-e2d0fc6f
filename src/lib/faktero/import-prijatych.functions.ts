@@ -42,7 +42,7 @@ export const nahladImportuPrijatychFn = createServerFn({ method: "POST" })
     const { supabaseAdmin, vstupy } = await stiahni(data.companyId, data.subory);
     const { naplanuj, suhrnPlanu } = await import("./import-prijatych.server");
     const plan = await naplanuj(supabaseAdmin, data.companyId, vstupy);
-    if (!plan.zaznamy.length && !plan.skeny.length) {
+    if (!plan.zaznamy.length && !plan.skeny.length && !plan.prijmy.length) {
       throw new Error(
         plan.poznamky[0] ?? "V súboroch sa nenašli prijaté doklady ani skeny (PDF, fotky).",
       );
@@ -69,7 +69,8 @@ export const spustiImportPrijatychFn = createServerFn({ method: "POST" })
     const { supabaseAdmin, vstupy } = await stiahni(data.companyId, data.subory);
     const { naplanuj, suhrnPlanu, vykonajImport } = await import("./import-prijatych.server");
     const plan = await naplanuj(supabaseAdmin, data.companyId, vstupy);
-    const celkom = plan.zaznamy.length + (data.citatSkeny ? plan.skenyBezParu.length : 0);
+    const celkom =
+      plan.zaznamy.length + plan.prijmy.length + (data.citatSkeny ? plan.skenyBezParu.length : 0);
 
     const { data: job, error } = await supabaseAdmin
       .from("import_jobs")

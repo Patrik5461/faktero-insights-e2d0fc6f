@@ -30,6 +30,8 @@ const ZDROJE = ["Doklado", "Pohoda", "Money S3", "iná aplikácia"];
 type Nahlad = {
   faktury: number;
   blocky: number;
+  /** Príjmové pokladničné doklady z Pohody — do pokladne. */
+  pokladna?: number;
   duplicity: number;
   skenyPriradene: number;
   skenyBezParu: number;
@@ -258,6 +260,13 @@ function ImportDokladovPage() {
                   <Cislo popis={t("Skeny priradené")} hodnota={nahlad.skenyPriradene} />
                   <Cislo popis={t("Skeny na prečítanie AI")} hodnota={nahlad.skenyBezParu} />
                 </div>
+                {(nahlad.pokladna ?? 0) > 0 && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {t("Príjmové pokladničné doklady do pokladne: {n}", {
+                      n: nahlad.pokladna ?? 0,
+                    })}
+                  </p>
+                )}
                 {nahlad.duplicity > 0 && (
                   <p className="mt-3 text-sm text-muted-foreground">
                     {t(
@@ -416,6 +425,9 @@ function ImportDokladovPage() {
                     <li>{t("Prijaté faktúry: {n}", { n: priebeh.vysledok.faktury })}</li>
                     <li>{t("Bločky: {n}", { n: priebeh.vysledok.blocky })}</li>
                     <li>{t("Iné doklady: {n}", { n: priebeh.vysledok.ostatne })}</li>
+                    {priebeh.vysledok.pokladna > 0 && (
+                      <li>{t("Príjmy do pokladne: {n}", { n: priebeh.vysledok.pokladna })}</li>
+                    )}
                     <li>{t("Priradené skeny: {n}", { n: priebeh.vysledok.skenyPriradene })}</li>
                     <li>
                       {t("Preskočené (už boli vo Fakteri): {n}", {
@@ -425,6 +437,20 @@ function ImportDokladovPage() {
                   </ul>
                 )}
                 {priebeh.chyba && <p className="mt-2 text-sm text-destructive">{priebeh.chyba}</p>}
+                {hotovy && priebeh.vysledok?.upozornenia?.length > 0 && (
+                  <details className="mt-3 text-sm" open>
+                    <summary className="cursor-pointer text-amber-700 dark:text-amber-400">
+                      {t("Na čo dať pozor")}
+                    </summary>
+                    <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                      {priebeh.vysledok.upozornenia.map((c: string, i: number) => (
+                        <li key={i} className="break-words">
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 {priebeh.vysledok?.chyby?.length > 0 && (
                   <details className="mt-3 text-sm">
                     <summary className="cursor-pointer text-amber-700 dark:text-amber-400">

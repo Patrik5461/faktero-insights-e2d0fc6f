@@ -20,11 +20,17 @@ import {
   buildPohodaCashXml,
   buildPohodaExpensesXml,
   buildPohodaInvoiceXml,
+  buildPohodaStornaXml,
 } from "./export.server";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
-import { pohodaNaRiadky } from "./pohoda";
+import { pohodaNaRiadky, pohodaStorna } from "./pohoda";
+import { nesuladKrajinyPohody } from "./pohoda-citanie";
+import { planStorien } from "./import-superfaktura.server";
 import {
+  klucPrijmu,
+  pohodaPokladnaPrijmy,
   pohodaPrijate,
+  pohodaPrijateStorna,
   riadokBlocku,
   riadokPrijatejFaktury,
   type PrijatyZaznam,
@@ -1172,5 +1178,283 @@ describe("spätný chod — export z Pohody (responsePack so zoznamom dokladov)"
     });
     const [z] = prijateSpat(naOdpoved(p));
     expect([z!.zaklad, z!.dph, z!.spolu]).toEqual([100, 23, 123]);
+  });
+});
+
+/* ------------------------------------------- doplnky 31. 10. 2026 */
+
+describe("spätný chod — storno", () => {
+  it("storno z Faktera (`cancelDocument`): doklad sa označí ako stornovaný, storno nie je doklad", () => {
+    const x = buildPohodaStornaXml({
+      company: firmaSK,
+      storna: [{ id: "s1", cislo: "FA2026001", typ: "regular" }],
+    });
+    expect(chybySchemy(x)).toEqual([]);
+    const doc = parser.parse(x);
+    expect(pohodaNaRiadky(doc, { krajina: "SK" })).toEqual([]);
+    expect(pohodaStorna(doc)).toEqual({ cislaNaStorno: ["FA2026001"], stornujuce: [] });
+    // Doklad vo firme je → storno; nie je → zrozumiteľné upozornenie.
+    const p = planStorien(pohodaStorna(doc), new Map([["FA2026001", "inv-1"]]));
+    expect(p.naStorno).toEqual([{ cislo: "FA2026001", id: "inv-1" }]);
+    expect(p.upozornenia).toEqual([]);
+    const bez = planStorien(pohodaStorna(doc), new Map());
+    expect(bez.naStorno).toEqual([]);
+    expect(bez.upozornenia[0]).toContain("Storno dokladu FA2026001");
+    // Prijaté doklady storno faktúry neimportujú.
+    expect(prijateSpat(x)).toEqual([]);
+  });
+
+  it("export z Pohody: stornovaný doklad príde stornovaný, stornujúci sa preskočí a nahlási", () => {
+    const v = buildPohodaInvoiceXml({
+      company: firmaSK,
+      nastavenia,
+      invoices: [
+        { invoice: faktura(), items: [polozka()] },
+        {
+          invoice: faktura({ id: "inv-2", invoice_number: "FA2026099" }),
+          items: [polozka({ quantity: -2, subtotal: -100, vat_amount: -23, total: -123 })],
+        },
+      ],
+    });
+    // Pohoda pri exporte dáva príznak `storno` do hlavičky (invoice.xsd, „pouze pro export“).
+    let n = 0;
+    const x = v.replace(/<inv:invoiceType>issuedInvoice<\/inv:invoiceType>/g, (m) =>
+      n++ === 0
+        ? `${m}<inv:storno>cancelledDocument</inv:storno>`
+        : `${m}<inv:storno>cancelDocument</inv:storno>`,
+    );
+    const spat = vydaneSpat(x);
+    expect(spat.map((f) => f.cislo)).toEqual(["FA2026001"]);
+    expect(spat[0]!.knownStatus).toBe("cancelled");
+    expect(pohodaStorna(parser.parse(x))).toEqual({ cislaNaStorno: [], stornujuce: ["FA2026099"] });
+    expect(planStorien(pohodaStorna(parser.parse(x)), new Map()).upozornenia[0]).toContain(
+      "FA2026099",
+    );
+  });
+
+  it("prijatá faktúra stornovaná v Pohode: uloží sa ako stornovaná, stornujúca sa nahlási", () => {
+    const p = buildPohodaExpensesXml({
+      company: firmaSK,
+      nastavenia,
+      doklady: [
+        prijataAkoDoklad(prijata()),
+        prijataAkoDoklad(prijata({ id: "pi-2", invoice_number: "2026-779" })),
+      ],
+    });
+    let n = 0;
+    const x = p.replace(/<inv:invoiceType>receivedInvoice<\/inv:invoiceType>/g, (m) =>
+      n++ === 0
+        ? `${m}<inv:storno>cancelledDocument</inv:storno>`
+        : `${m}<inv:storno>cancelDocument</inv:storno>`,
+    );
+    const z = prijateSpat(x);
+    expect(z).toHaveLength(1);
+    expect(z[0]!.stornovany).toBe(true);
+    expect(ulozPrijatu(z[0]!).status).toBe("cancelled");
+    expect(pohodaPrijateStorna(parser.parse(x))).toEqual([
+      expect.stringContaining("Stornujúci doklad"),
+    ]);
+  });
+});
+
+describe("spätný chod — § 25a", () => {
+  const oprava = (o: any) =>
+    faktura({
+      id: "o25",
+      type: "credit_note",
+      oprava_25a: true,
+      invoice_number: "DB2026025",
+      intro_note:
+        "Oprava základu dane podľa § 25a zákona č. 222/2004 Z. z. o DPH k faktúre FA2026001",
+      ...o,
+    });
+
+  it("zníženie (dobropis v Pohode) sa vráti ako credit_note záporný s oprava_25a", () => {
+    const x = vydana(
+      {
+        company: firmaSK,
+        nastavenia,
+        povodneCisla: { o25: "FA2026001" },
+        invoices: [
+          {
+            invoice: oprava({ subtotal: -100, vat_total: -23, total: -123 }),
+            items: [polozka({ quantity: -2, subtotal: -100, vat_amount: -23, total: -123 })],
+          },
+        ],
+      } as any,
+      "71-oprava-25a-znizenie",
+    );
+    expect(x).toContain("issuedCreditNotice");
+    expect(x).toContain("Oprava základu dane podľa § 25a");
+    const [f] = vydaneSpat(x);
+    expect(f.druh).toBe("credit_note");
+    expect(f.pohoda.oprava_25a).toBe(true);
+    expect([c(f.subtotal), c(f.vatTotal), c(f.total)]).toEqual([-100, -23, -123]);
+    expect(f.opravujeCislo).toBe("FA2026001");
+    polozkySedia(f);
+  });
+
+  it("vrátenie po zaplatení (vrubopis v Pohode) sa vráti ako credit_note kladný s oprava_25a, nie ťarchopis", () => {
+    const x = vydana(
+      {
+        company: firmaSK,
+        nastavenia,
+        povodneCisla: { o25: "FA2026001" },
+        // Text dokladu bez vety § 25a — rozhoduje veta, ktorú export dáva do poznámky.
+        invoices: [{ invoice: oprava({ intro_note: "Vrátenie opravy" }), items: [polozka()] }],
+      } as any,
+      "72-oprava-25a-vratenie",
+    );
+    expect(x).toContain("issuedDebitNote");
+    const [f] = vydaneSpat(x);
+    expect(f.druh).toBe("credit_note");
+    expect(f.pohoda.oprava_25a).toBe(true);
+    expect([c(f.subtotal), c(f.vatTotal), c(f.total)]).toEqual([100, 23, 123]);
+  });
+
+  it("obyčajný ťarchopis a dobropis príznak § 25a nedostanú", () => {
+    const x = vydana(
+      {
+        company: firmaSK,
+        nastavenia,
+        invoices: [
+          {
+            invoice: faktura({ id: "t", type: "debit_note", invoice_number: "TP2026002" }),
+            items: [polozka()],
+          },
+        ],
+      },
+      "73-tarchopis-bez-25a",
+    );
+    const [f] = vydaneSpat(x);
+    expect(f.druh).toBe("debit_note");
+    expect(f.pohoda.oprava_25a).toBeUndefined();
+  });
+});
+
+describe("spätný chod — pokladničný príjem", () => {
+  it("príjmový pokladničný doklad sa vráti do pokladne (cash_entries príjem), výdavok ostáva bločkom", () => {
+    const x = buildPohodaCashXml({
+      company: firmaSK,
+      nastavenia,
+      pohyby: [
+        {
+          id: "c1",
+          entry_date: "2026-10-04",
+          type: "prijem",
+          amount: 200,
+          description: "Vklad",
+          entry_number: "PPD1",
+        },
+        {
+          id: "c2",
+          entry_date: "2026-10-05",
+          type: "vydaj",
+          amount: -35.4,
+          description: "Poštovné",
+          entry_number: "VPD1",
+        },
+      ],
+    } as any);
+    const doc = parser.parse(x);
+    const prijmy = pohodaPokladnaPrijmy(doc);
+    expect(prijmy).toEqual([
+      { cislo: null, datum: "2026-10-04", suma: 200, popis: "PPD1 — Vklad", poznamka: null },
+    ]);
+    expect(prijateSpat(x).map((z) => z.spolu)).toEqual([35.4]);
+    // Opakovaný import ten istý príjem spozná.
+    expect(klucPrijmu(prijmy[0]!)).toBe(
+      klucPrijmu({ datum: "2026-10-04", suma: 200, popis: "PPD1 — Vklad" }),
+    );
+  });
+});
+
+describe("spätný chod — XML inej krajiny", () => {
+  const czXml = () =>
+    buildPohodaInvoiceXml({
+      company: firmaCZ,
+      nastavenia: nastavenieCZ,
+      invoices: [
+        {
+          invoice: faktura({
+            id: "cz-f",
+            invoice_number: "FV2026001",
+            currency: "CZK",
+            customer_country: "CZ",
+            customer_ic_dph: null,
+            subtotal: 100,
+            vat_total: 21,
+            total: 121,
+          }),
+          items: [polozka({ vat_rate: 21, vat_amount: 21, total: 121 })],
+        },
+      ],
+    });
+  const skXml = () =>
+    buildPohodaInvoiceXml({
+      company: firmaSK,
+      nastavenia,
+      invoices: [{ invoice: faktura(), items: [polozka()] }],
+    });
+
+  it("české XML do slovenskej firmy sa odmietne (koruny by sa zapísali ako eurá)", () => {
+    expect(nesuladKrajinyPohody(czXml(), "SK")).toContain("českej Pohody");
+    expect(nesuladKrajinyPohody(czXml(), "CZ")).toBeNull();
+  });
+
+  it("slovenské XML do českej firmy sa odmietne", () => {
+    expect(nesuladKrajinyPohody(skXml(), "CZ")).toContain("slovenskej Pohody");
+    expect(nesuladKrajinyPohody(skXml(), "SK")).toBeNull();
+  });
+
+  it("prijaté CZ doklady aj CZ v EUR sa rozpoznajú, doklad bez stopy sa nezastaví", () => {
+    const p = buildPohodaExpensesXml({
+      company: firmaCZ,
+      nastavenia: nastavenieCZ,
+      doklady: [
+        prijataAkoDoklad(
+          prijata({
+            currency: "CZK",
+            amount_vat: 21,
+            vat_amount: 21,
+            amount_total: 121,
+            items: [
+              { name: "M", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 21, total: 100 },
+            ],
+          }),
+        ),
+      ],
+    });
+    expect(nesuladKrajinyPohody(p, "SK")).not.toBeNull();
+    const eur = buildPohodaInvoiceXml({
+      company: firmaCZ,
+      nastavenia: nastavenieCZ,
+      invoices: [
+        {
+          invoice: faktura({
+            id: "e",
+            currency: "EUR",
+            exchange_rate: 24.3,
+            reverse_charge: true,
+            vat_total: 0,
+            total: 100,
+          }),
+          items: [polozka({ vat_rate: 0, vat_amount: 0, total: 100 })],
+        },
+      ],
+    });
+    expect(nesuladKrajinyPohody(eur, "SK")).not.toBeNull();
+    const nula = buildPohodaInvoiceXml({
+      company: { ...firmaSK, vat_payer: false },
+      nastavenia: { ...nastavenia, predkontacia: null },
+      invoices: [
+        {
+          invoice: faktura({ vat_total: 0, total: 100 }),
+          items: [polozka({ vat_rate: 0, vat_amount: 0, total: 100 })],
+        },
+      ],
+    });
+    // Neplatiteľ bez sadzieb a bez KV — nedá sa povedať, import pokračuje.
+    expect(nesuladKrajinyPohody(nula, "CZ")).toBeNull();
   });
 });

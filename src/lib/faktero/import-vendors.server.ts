@@ -4,7 +4,14 @@
 import { XMLParser } from "fast-xml-parser";
 import type { FieldKey } from "./import-superfaktura.server";
 import { parseCsv, detectMapping as detectMappingSpolocne } from "./import-superfaktura.server";
-import { jeMPohodaJson, jePohodaXml, mpohodaNaRiadky, pohodaNaRiadky } from "./pohoda";
+import {
+  jeMPohodaJson,
+  jePohodaXml,
+  mpohodaNaRiadky,
+  pohodaNaRiadky,
+  pohodaStorna,
+} from "./pohoda";
+import { nesuladKrajinyPohody } from "./pohoda-citanie";
 import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 
 export type VendorSource = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
@@ -59,6 +66,7 @@ export const KANONICKE_POLIA: FieldKey[] = [
   "oss_country",
   "item_vat_amount",
   "item_pdp",
+  "oprava_25a",
 ];
 
 // Windows-1250 → UTF-8 (Slovak accounting exports frequently use CP1250).
@@ -405,8 +413,36 @@ function parsePohoda(bytes: Uint8Array, krajina?: string | null): CanonicalRow[]
 
   // Pohoda vie faktúru vyviezť aj do ISDOC.
   if (jeIsdoc(obsah)) return isdocNaRiadky(parser.parse(obsah)) as CanonicalRow[];
-  if (jePohodaXml(obsah)) return pohodaNaRiadky(parser.parse(obsah), { krajina }) as CanonicalRow[];
+  if (jePohodaXml(obsah)) {
+    // České XML do slovenskej firmy (a naopak) by zapísalo koruny ako eurá.
+    const nesulad = nesuladKrajinyPohody(obsah, krajina);
+    if (nesulad) throw new Error(nesulad);
+    return pohodaNaRiadky(parser.parse(obsah), { krajina }) as CanonicalRow[];
+  }
   return [];
+}
+
+/**
+ * Storná v súbore z Pohody (`pohodaStorna`) — čísla dokladov na stornovanie
+ * a stornujúce doklady, ktoré import preskočil. Iné zdroje storná nenesú.
+ */
+export function stornaZoSuboru(
+  source: VendorSource,
+  bytes: Uint8Array,
+): { cislaNaStorno: string[]; stornujuce: string[] } {
+  const prazdne = { cislaNaStorno: [], stornujuce: [] };
+  if (source !== "pohoda") return prazdne;
+  const obsah = decodeBytes(bytes);
+  if (!jePohodaXml(obsah)) return prazdne;
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    trimValues: true,
+    removeNSPrefix: true,
+    parseTagValue: false,
+    parseAttributeValue: false,
+  });
+  return pohodaStorna(parser.parse(obsah));
 }
 
 // ---------------------------------------------------------------------------

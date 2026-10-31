@@ -179,6 +179,17 @@ export function VendorImportPage(props: {
                 <Stat label="Riadky" value={preview.itemsCount} />
                 <Stat label="Hodnota" value={formatujMenu(preview.totalValue, preview.currency)} />
               </div>
+              {(preview.storna > 0 || preview.stornujuce > 0) && (
+                <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <span className="min-w-0">
+                    {t(
+                      "Súbor obsahuje storná ({n}). Stornovaný doklad sa vo Fakteri označí ako stornovaný, stornujúci doklad sa neimportuje.",
+                      { n: (preview.storna ?? 0) + (preview.stornujuce ?? 0) },
+                    )}
+                  </span>
+                </p>
+              )}
               {preview.sampleInvoices?.length > 0 && (
                 <div className="mt-5 overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
@@ -272,6 +283,26 @@ export function VendorImportPage(props: {
                 <Stat label="Duplikáty" value={result.duplicates} />
                 <Stat label="Chyby" value={result.failed_rows} />
               </div>
+              {result.stornovane > 0 && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {t("Stornované doklady: {n}", { n: result.stornovane })}
+                </p>
+              )}
+              {result.upozornenia?.length > 0 && (
+                <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm">
+                  <p className="flex items-center gap-2 font-medium">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                    {t("Na čo dať pozor")}
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {result.upozornenia.map((u: string, i: number) => (
+                      <li key={i} className="break-words">
+                        {u}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <CislovaniePoImporte rady={(result as any).ciselneRady} />
               <div className="mt-6 flex justify-center gap-2">
                 <Link
