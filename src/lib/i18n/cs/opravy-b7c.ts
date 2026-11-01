@@ -1,0 +1,47 @@
+// Opravy B7c – importy a účtovanie (predkontácie, pravidlá, Na kontrolu).
+export default {
+  "Najviac {max} súborov naraz; {n} sa nepridalo.":
+    "Nejvýše {max} souborů najednou; {n} se nepřidalo.",
+  "Stav importu sa nepodarilo zistiť, import môže bežať ďalej.":
+    "Stav importu se nepodařilo zjistit, import může běžet dál.",
+  "Import stále beží, pozrite históriu importov.":
+    "Import stále běží, podívejte se do historie importů.",
+  "Stav importu": "Stav importu",
+  "Skúsiť znova zistiť stav": "Zkusit znovu zjistit stav",
+  "{subor}: tento typ súboru sa tu nedá nahrať ({pripony}).":
+    "{subor}: tento typ souboru zde nelze nahrát ({pripony}).",
+  "Tabuľka bez stĺpca Druh sa načíta ako": "Tabulka bez sloupce Druh se načte jako",
+  "Číselník je prázdny. Načítajte ho z Pohody nižšie alebo pridajte kód ručne.":
+    "Číselník je prázdný. Načtěte ho z Pohody níže nebo přidejte kód ručně.",
+  "V tejto záložke zatiaľ nie je žiadne pravidlo.": "V této záložce zatím není žádné pravidlo.",
+  "z posledných 1 000 dokladov": "z posledních 1 000 dokladů",
+  "Počíta sa len z posledných 1 000 dokladov.": "Počítá se jen z posledních 1 000 dokladů.",
+  "účet {ucet}": "účet {ucet}",
+  "IBAN protistrany {iban}": "IBAN protistrany {iban}",
+  "platené: {sposob}": "placeno: {sposob}",
+  "vybraný používateľ": "vybraný uživatel",
+  "krajina {krajina}": "země {krajina}",
+  "VS {vs}": "VS {vs}",
+  "spárované bez dokladu": "spárováno bez dokladu",
+  "kategória {nazov}": "kategorie {nazov}",
+  "členenie DPH {kod}": "členění DPH {kod}",
+  "pokladňa {kod}": "pokladna {kod}",
+  "bez odpočtu DPH": "bez odpočtu DPH",
+  "s odpočtom DPH": "s odpočtem DPH",
+  "rozúčtovanie {pomer}": "rozúčtování {pomer}",
+  "rozúčtovanie {zaklad} %, DPH 50 %": "rozúčtování {zaklad} %, DPH 50 %",
+  "rad {kod}": "řada {kod}",
+  "Výpis z platobnej brány — Faktero": "Výpis z platební brány — Faktero",
+  'predmet mailu obsahuje „{text}"': 'předmět e-mailu obsahuje „{text}"',
+  'e-mail od „{text}"': 'e-mail od „{text}"',
+  'poznámka „{text}"': 'poznámka „{text}"',
+  'odberateľ obsahuje „{text}"': 'odběratel obsahuje „{text}"',
+  'dodávateľ obsahuje „{text}"': 'dodavatel obsahuje „{text}"',
+  'protistrana obsahuje „{text}"': 'protistrana obsahuje „{text}"',
+  "vystavil {meno}": "vystavil {meno}",
+  "nahral {meno}": "nahrál {meno}",
+  SuperFaktúra: "SuperFaktúra",
+  "KROS Omega": "KROS Omega",
+  "KROS Alfa plus": "KROS Alfa plus",
+  OK: "OK",
+};

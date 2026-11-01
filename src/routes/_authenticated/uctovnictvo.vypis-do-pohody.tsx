@@ -18,7 +18,17 @@ import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
   head: ({ match }) => ({
-    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankový výpis do Pohody — Faktero") }],
+    meta: [
+      {
+        // Z položky „Výpis z platobnej brány" (`?zdroj=brana`) nesmie byť v karte bankový výpis (E-20).
+        title: preloz(
+          match.context.jazyk ?? "sk",
+          (match.search as { zdroj?: string } | undefined)?.zdroj === "brana"
+            ? "Výpis z platobnej brány — Faktero"
+            : "Bankový výpis do Pohody — Faktero",
+        ),
+      },
+    ],
   }),
   /*
     `?zdroj=brana` je tá istá stránka otvorená z položky „Výpis z platobnej

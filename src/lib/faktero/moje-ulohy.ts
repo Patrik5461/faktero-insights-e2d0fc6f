@@ -9,29 +9,36 @@
   Čisté funkcie bez databázy, aby sa dali skúšať.
 */
 
-export type AgendaDokladu = "doklad" | "prijata" | "vystavena";
+import {
+  cestaNaDetail,
+  odkazNaDetail,
+  type AgendaSchvalovania,
+  type OdkazNaDetail,
+} from "./schvalovanie";
+import { formatujMenu } from "./mena";
+
+export type AgendaDokladu = AgendaSchvalovania;
 
 export const NAZOV_AGENDY_DOKLADU: Record<AgendaDokladu, string> = {
   doklad: "Bloček / doklad",
   prijata: "Prijatá faktúra",
   vystavena: "Vystavená faktúra",
+  nespracovany: "Nespracovaný doklad",
+  vyuctovanie: "Vyúčtovanie výdavkov",
 };
 
-/** Odkaz na detail dokladu pre `<Link>` — parametre zvlášť, router ich z reťazca neprečíta. */
-export function odkazNaDoklad(
-  agenda: string,
-  id: string,
-): { to: string; params?: Record<string, string>; search?: Record<string, string> } {
-  if (agenda === "doklad") return { to: "/doklady/novy", search: { id } };
-  if (agenda === "prijata") return { to: "/prijate-faktury/$id", params: { id } };
-  return { to: "/faktury/$id", params: { id } };
+/**
+ * Odkaz na detail dokladu pre `<Link>` — parametre zvlášť, router ich z
+ * reťazca neprečíta. Mapa agend je spoločná so stránkou Na schválenie
+ * (`ODKAZY_AGEND`), aby nespracovaný doklad a vyúčtovanie neviedli na faktúru.
+ */
+export function odkazNaDoklad(agenda: string, id: string): OdkazNaDetail {
+  return odkazNaDetail(agenda, id);
 }
 
 /** Tá istá cesta ako reťazec — pre zvonček, ktorý nesie len `to`. */
 export function cestaNaDoklad(agenda: string, id: string): string {
-  if (agenda === "doklad") return `/doklady/novy?id=${id}`;
-  if (agenda === "prijata") return `/prijate-faktury/${id}`;
-  return `/faktury/${id}`;
+  return cestaNaDetail(agenda, id);
 }
 
 export type KomentarNaVyriesenie = {
@@ -114,4 +121,14 @@ export function najnovsie<T extends { vytvorene: string }>(zoznamy: T[][], n = 1
     .flat()
     .sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)))
     .slice(0, n);
+}
+
+/**
+ * Suma úlohy na zobrazenie: doklad bez sumy (napr. vyúčtovanie či
+ * nespracovaný doklad, ktorý sa ešte nevyťažil) je „—“, nie „0,00 €“.
+ */
+export function sumaUlohy(suma: unknown, mena: unknown, locale = "sk-SK"): string {
+  if (suma == null || suma === "") return "—";
+  const n = Number(suma);
+  return Number.isFinite(n) ? formatujMenu(n, mena, locale) : "—";
 }

@@ -14,6 +14,10 @@
   ako v spúšťači (`hlaska_zamku_faktury` v migrácii), aby ich preložil `t()`.
 */
 import type { ExportFormat } from "./export.functions";
+import { posunMesiac, prvyDenMesiacaBratislava, dnesBratislava } from "./datum-vystavenia";
+import { znamienkoDokladu } from "./faktury-sumy";
+import { sucetPoMenach } from "./mena-sucet";
+import { krajinaDane } from "./vat-rates";
 
 /** Účtovný program, do ktorého daný formát exportu faktúr patrí (null = univerzálny formát). */
 export const PROGRAM_FORMATU: Record<ExportFormat, string | null> = {
@@ -37,6 +41,60 @@ export function predvoleneOznacit(
 ): boolean {
   const p = PROGRAM_FORMATU[format];
   return !!p && p === (uctovnyProgram || "pohoda");
+}
+
+/**
+ * Účtovný program firmy, s ktorým exporty naozaj počítajú. Nemecká firma,
+ * ktorá si program ešte nevybrala (v stĺpci je predvolená Pohoda), dostane
+ * DATEV — Pohodu ani Omegu nemecký poradca nepoužíva. To isté pravidlo
+ * používa server (`programUctovaniaFn`) aj stránka Exporty.
+ */
+export function uctovnyProgramFirmy(
+  uctovnyProgram: string | null | undefined,
+  country: string | null | undefined,
+): string {
+  const p = uctovnyProgram || "pohoda";
+  if (p === "pohoda" && String(krajinaDane(country)) === "DE") return "datev";
+  return p;
+}
+
+/** Typy vystavených faktúr, ktorých suma je výnos — zálohová a doklad k platbe nie. */
+const TYPY_DO_SUMY = new Set(["regular", "credit_note", "debit_note"]);
+
+export type FakturaNaOdovzdanie = {
+  type?: string | null;
+  total?: number | string | null;
+  currency?: string | null;
+};
+
+/**
+ * Súčet „Odovzdať za mesiac“ po menách. Počíta len riadne faktúry, dobropisy
+ * (so znamienkom cez `znamienkoDokladu`) a ťarchopisy; zálohové faktúry a
+ * daňové doklady k prijatej platbe sú v počte, ale nie v sume. Meny sa
+ * nesčítavajú — domáca mena je prvá.
+ */
+export function sumyOdovzdania(
+  faktury: readonly FakturaNaOdovzdanie[],
+  domaca = "EUR",
+): { mena: string; suma: number }[] {
+  const doSumy = faktury.filter((f) => TYPY_DO_SUMY.has(f.type || "regular"));
+  const sucty = sucetPoMenach(
+    doSumy,
+    (f) => znamienkoDokladu(f.type, f.total) * Number(f.total ?? 0),
+    (f) => f.currency,
+    domaca,
+  );
+  return [...sucty].map(([mena, suma]) => ({ mena, suma }));
+}
+
+/** Predvolené „Od“ v Exportoch: 1. deň mesiaca (o `mesiacovSpat` skôr) v Bratislave. */
+export function predvolenyZaciatokExportu(mesiacovSpat = 0, teraz: Date = new Date()): string {
+  return posunMesiac(prvyDenMesiacaBratislava(teraz), -mesiacovSpat);
+}
+
+/** Predvolený mesiac „Odovzdať za mesiac“ (RRRR-MM) podľa Bratislavy, nie UTC. */
+export function predvolenyMesiacOdovzdania(teraz: Date = new Date()): string {
+  return dnesBratislava(teraz).slice(0, 7);
 }
 
 /**

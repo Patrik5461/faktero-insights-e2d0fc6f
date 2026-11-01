@@ -9,7 +9,13 @@ import { CheckCircle2, Loader2, Undo2, XCircle } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { cakajuNaMnaFn, rozhodnutieFn } from "@/lib/faktero/schvalovanie.functions";
-import { NAZVY_AGEND, NAZVY_STAVOV, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
+import {
+  NAZVY_AGEND,
+  NAZVY_STAVOV,
+  odkazNaDetail,
+  vyberPoAgendach,
+  type AgendaSchvalovania,
+} from "@/lib/faktero/schvalovanie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
@@ -18,14 +24,6 @@ export const Route = createFileRoute("/_authenticated/schvalovanie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Na schválenie — Faktero") }] }),
   component: Stranka,
 });
-
-const ODKAZ: Record<AgendaSchvalovania, (id: string) => { to: string; params?: any; search?: any }> = {
-  doklad: (id) => ({ to: "/doklady/novy", search: { id } }),
-  prijata: (id) => ({ to: "/prijate-faktury/$id", params: { id } }),
-  vystavena: (id) => ({ to: "/faktury/$id", params: { id } }),
-  nespracovany: (id) => ({ to: "/nespracovane/$id", params: { id } }),
-  vyuctovanie: (id) => ({ to: "/doklady/vyuctovania/$id", params: { id } }),
-};
 
 function Stranka() {
   const { t } = useT();
@@ -58,9 +56,8 @@ function Stranka() {
     setBusy(true);
     try {
       let spolu = 0;
-      for (const agenda of ["doklad", "prijata", "vystavena"] as const) {
-        const ids = d.polozky.filter((p) => p.agenda === agenda && vyber.has(`${agenda}:${p.id}`)).map((p) => p.id);
-        if (!ids.length) continue;
+      // Všetky agendy zo spoločného zoznamu — aj nespracované doklady a vyúčtovania.
+      for (const { agenda, ids } of vyberPoAgendach(d.polozky, vyber)) {
         const r = await rozhodni({ data: { company_id: companyId, agenda, ids, akcia, poznamka } });
         spolu += r.hotovo;
       }
@@ -163,7 +160,7 @@ function Stranka() {
                           />
                         </td>
                         <td className="py-1.5 pr-3">
-                          <Link {...(ODKAZ[p.agenda as AgendaSchvalovania](p.id) as any)} className="font-medium hover:underline">
+                          <Link {...(odkazNaDetail(p.agenda, p.id) as any)} className="font-medium hover:underline">
                             {p.cislo || t("bez čísla")}
                           </Link>
                           <span className="block text-xs text-muted-foreground">{t(NAZVY_AGEND[p.agenda as AgendaSchvalovania])}</span>

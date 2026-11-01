@@ -57,7 +57,7 @@ export function PouzitPredlohu({
         {predlohy.map((p) => (
           <option key={p.id} value={p.id}>
             {p.nazov}
-            {popisPredlohy(p) ? ` — ${popisPredlohy(p)}` : ""}
+            {popisPredlohy(p, t) ? ` — ${popisPredlohy(p, t)}` : ""}
           </option>
         ))}
       </select>

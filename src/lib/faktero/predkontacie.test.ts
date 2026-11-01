@@ -6,6 +6,7 @@ import {
   rozdelCsv,
   rozoberCiselnikyPohody,
   rozoberTabulku,
+  druhZTextu,
   ziadostCiselnikov,
 } from "./predkontacie";
 
@@ -139,6 +140,40 @@ describe("tabuľka", () => {
       ["1Fp", "Materiál", "Predkontácia"],
     ]);
     expect(r.zaznamy.map((z) => z.druh)).toEqual(["clenenie_dph", "predkontacia"]);
+  });
+
+  // E-31: strediská, činnosti, rady a pokladne nekončia ako predkontácie.
+  it("stĺpec druh rozozná aj strediská, činnosti, rady, pokladne, zákazky a účty", () => {
+    const r = rozoberTabulku([
+      ["Kód", "Popis", "Druh"],
+      ["BA", "Bratislava", "Stredisko"],
+      ["VYR", "Výroba", "Činnosť"],
+      ["FV", "Faktúry vydané", "Číselný rad"],
+      ["HP", "Hlavná pokladňa", "Pokladňa"],
+      ["Z1", "Stavba", "Zákazka"],
+      ["TB", "Tatra banka", "Bankový účet"],
+    ]);
+    expect(r.zaznamy.map((z) => z.druh)).toEqual([
+      "stredisko",
+      "cinnost",
+      "ciselny_rad",
+      "pokladna",
+      "zakazka",
+      "bankovy_ucet",
+    ]);
+  });
+
+  it("bez stĺpca druh berie záložku, z ktorej sa nahráva", () => {
+    const r = rozoberTabulku(
+      [
+        ["Kód", "Popis"],
+        ["BA", "Bratislava"],
+      ],
+      "stredisko",
+    );
+    expect(r.zaznamy[0]!.druh).toBe("stredisko");
+    expect(druhZTextu("", "cinnost")).toBe("cinnost");
+    expect(druhZTextu("niečo iné", "pokladna")).toBe("pokladna");
   });
 });
 

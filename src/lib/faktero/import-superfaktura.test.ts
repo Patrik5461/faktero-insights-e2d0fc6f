@@ -171,6 +171,8 @@ describe("buildPreview", () => {
     // je 0, lebo doklad je zálohovaný — preto nie z neho.
     expect(p.totalValue).toBeCloseTo(15.8, 2);
     expect(p.currency).toBe("EUR");
+    expect(p.hodnotaPoMenach).toEqual({ EUR: 15.8 });
+    expect(p.sampleInvoices[0].currency).toBe("EUR");
     expect(p.sampleInvoices[0].customer_name).toBe("Ministerstvo financí ČR");
     expect(p.sampleInvoices[0].issue_date).toBe("2013-02-28");
   });

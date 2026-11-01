@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
@@ -14,6 +14,11 @@ import {
 import { CheckCircle2, FileArchive, History, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
+import {
+  MAX_SUBOROV_IMPORTU,
+  pridajSuborySoStropom,
+  sledujImport,
+} from "@/lib/faktero/import-doklady-priebeh";
 
 export const Route = createFileRoute("/_authenticated/importy/doklady")({
   head: ({ match }) => ({
@@ -67,7 +72,18 @@ function ImportDokladovPage() {
   const [stav, setStav] = useState<"new" | "processed" | "exported">("exported");
   const [doPokladne, setDoPokladne] = useState(false);
   const [citatSkeny, setCitatSkeny] = useState(true);
+  /** Úloha, na ktorú sa stránka pýta — pre „Skúsiť znova zistiť stav“. */
+  const [jobId, setJobId] = useState<string | null>(null);
+  // Po odchode zo stránky sa dopytovanie zastaví (E-18).
+  const odisiel = useRef(false);
+  useEffect(() => {
+    odisiel.current = false;
+    return () => {
+      odisiel.current = true;
+    };
+  }, []);
   const [priebeh, setPriebeh] = useState<{
+    /** running/completed/failed zo servera; „nezistene“ a „strop“ dopĺňa stránka. */
     stav: string;
     celkom: number;
     hotovo: number;
@@ -85,7 +101,15 @@ function ImportDokladovPage() {
       }
       return true;
     });
-    setSubory((s) => [...s, ...ok].slice(0, 20));
+    const { subory: nove, nepridane } = pridajSuborySoStropom(subory, ok);
+    if (nepridane > 0)
+      toast.error(
+        t("Najviac {max} súborov naraz; {n} sa nepridalo.", {
+          max: MAX_SUBOROV_IMPORTU,
+          n: nepridane,
+        }),
+      );
+    setSubory(nove);
     setNahlad(null);
     setNahrate([]);
   }
@@ -133,28 +157,54 @@ function ImportDokladovPage() {
         },
       });
       setPracujem(null);
+      setJobId(jobId);
       setPriebeh({ stav: "running", celkom, hotovo: 0, vysledok: null, chyba: null });
-      // Import beží na serveri; pýtame sa naň, kým neskončí.
-      for (;;) {
-        await cakaj(2500);
-        const j: any = await stavFn({ data: { companyId: cid, jobId } });
-        setPriebeh({
-          stav: j.status,
-          celkom: j.total_rows,
-          hotovo: j.processed_rows,
-          vysledok: j.result,
-          chyba: j.error_message,
-        });
-        if (j.status !== "running") break;
-      }
+      await sleduj(jobId);
     } catch (e: any) {
       toast.error(e?.message ?? t("Import sa nepodarilo spustiť."));
       setPracujem(null);
     }
   }
 
+  /** Import beží na serveri; pýtame sa naň, kým neskončí (s opakovaním a stropom). */
+  async function sleduj(id: string) {
+    if (!cid) return;
+    setPriebeh((p) =>
+      p
+        ? { ...p, stav: "running", chyba: null }
+        : { stav: "running", celkom: 0, hotovo: 0, vysledok: null, chyba: null },
+    );
+    const koniec = await sledujImport({
+      zisti: async () => (await stavFn({ data: { companyId: cid, jobId: id } })) as any,
+      cakaj,
+      zrusene: () => odisiel.current,
+      priebeh: (j: any) =>
+        setPriebeh({
+          stav: j.status,
+          celkom: j.total_rows,
+          hotovo: j.processed_rows,
+          vysledok: j.result,
+          chyba: j.error_message,
+        }),
+    });
+    if (koniec.druh === "nezistene")
+      setPriebeh((p) => ({
+        ...(p ?? { celkom: 0, hotovo: 0, vysledok: null }),
+        stav: "nezistene",
+        chyba: t("Stav importu sa nepodarilo zistiť, import môže bežať ďalej."),
+      }));
+    else if (koniec.druh === "strop")
+      setPriebeh((p) => ({
+        ...(p ?? { celkom: 0, hotovo: 0, vysledok: null }),
+        stav: "strop",
+        chyba: t("Import stále beží, pozrite históriu importov."),
+      }));
+  }
+
   const bezi = priebeh?.stav === "running";
-  const hotovy = priebeh && priebeh.stav !== "running";
+  /** Stav sa nepodarilo zistiť alebo import beží priveľmi dlho — nevieme, či skončil. */
+  const neisty = priebeh?.stav === "nezistene" || priebeh?.stav === "strop";
+  const hotovy = priebeh && !bezi && !neisty;
 
   return (
     <>
@@ -406,7 +456,7 @@ function ImportDokladovPage() {
             {priebeh && (
               <section className="rounded-2xl border border-border bg-card p-5" role="status">
                 <h2 className="text-sm font-semibold">
-                  3. {bezi ? t("Importujem…") : t("Hotovo")}
+                  3. {bezi ? t("Importujem…") : neisty ? t("Stav importu") : t("Hotovo")}
                 </h2>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
                   <div
@@ -437,6 +487,23 @@ function ImportDokladovPage() {
                   </ul>
                 )}
                 {priebeh.chyba && <p className="mt-2 text-sm text-destructive">{priebeh.chyba}</p>}
+                {neisty && jobId && (
+                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => sleduj(jobId)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                    >
+                      {t("Skúsiť znova zistiť stav")}
+                    </button>
+                    <Link
+                      to="/importy"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                    >
+                      <History className="h-4 w-4" /> {t("História importov")}
+                    </Link>
+                  </div>
+                )}
                 {hotovy && priebeh.vysledok?.upozornenia?.length > 0 && (
                   <details className="mt-3 text-sm" open>
                     <summary className="cursor-pointer text-amber-700 dark:text-amber-400">

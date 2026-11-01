@@ -62,7 +62,7 @@ export async function importujZPohody(t, page, subor, firma) {
   const od = new Date().toISOString();
   t.uprac("história importov", async () => {
     const jobs = await t.rest.get(
-      `import_jobs?company_id=eq.${firma}&created_at=gte.${od}&source=eq.Pohoda&select=id`,
+      `import_jobs?company_id=eq.${firma}&created_at=gte.${od}&source=in.(Pohoda,pohoda)&select=id`,
     );
     for (const j of jobs.data ?? []) {
       await t.rest.delete(`import_logs?import_job_id=eq.${j.id}`);

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { lokalJazyka, preloz } from "@/lib/i18n/jazyk";
 import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ import {
 import { cakajuNaMnaFn } from "@/lib/faktero/schvalovanie.functions";
 import { NAZVY_AGEND, NAZVY_STAVOV, type AgendaSchvalovania } from "@/lib/faktero/schvalovanie";
 import { mojeUlohyFn, vyriesKomentarFn } from "@/lib/faktero/moje-ulohy.functions";
-import { nicNecaka, odkazNaDoklad, popisDokladu, stavCitania } from "@/lib/faktero/moje-ulohy";
+import { nicNecaka, odkazNaDoklad, popisDokladu, stavCitania, sumaUlohy } from "@/lib/faktero/moje-ulohy";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
@@ -60,7 +60,7 @@ type Schvalenie = Awaited<ReturnType<typeof cakajuNaMnaFn>>;
 type Ulohy = Awaited<ReturnType<typeof mojeUlohyFn>>;
 
 function Stranka() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const { firma, dalej } = Route.useSearch();
   const navigate = useNavigate();
   const prepnut = Boolean(firma && firma !== getActiveCompanyId());
@@ -222,7 +222,7 @@ function Stranka() {
                             </div>
                           </div>
                           <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">
-                            {formatujMenu(p.suma, p.mena)}
+                            {sumaUlohy(p.suma, p.mena)}
                           </div>
                         </div>
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -262,7 +262,7 @@ function Stranka() {
                       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="min-w-0 break-words">
                           <span className="font-medium text-foreground">{k.autor}</span> ·{" "}
-                          {new Date(k.vytvorene).toLocaleString("sk-SK", {
+                          {new Date(k.vytvorene).toLocaleString(lokalJazyka(jazyk), {
                             dateStyle: "short",
                             timeStyle: "short",
                           })}

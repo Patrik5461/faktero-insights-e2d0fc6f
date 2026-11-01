@@ -10,6 +10,7 @@
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 import { nazovOznacenia } from "./vypis-oznacenie";
 import { nacitajPomer } from "./rozuctovanie";
+import { bezPrekladu, type PrekladPopisu } from "./preklad-popisu";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
@@ -312,40 +313,56 @@ export function chybaPravidla(p: Pravidlo): string | null {
   return null;
 }
 
-/** „Keď … → doplní …" na jeden riadok v zozname. */
-export function popisPravidla(p: Pravidlo, mena?: Record<string, string>): { ked: string; doplni: string } {
-  const partner = p.druh === "vystavena" ? "odberateľ" : p.druh === "banka" ? "protistrana" : "dodávateľ";
+/** „Keď … → doplní …" na jeden riadok v zozname. Texty idú cez `t` (E-28). */
+export function popisPravidla(
+  p: Pravidlo,
+  mena?: Record<string, string>,
+  t: PrekladPopisu = bezPrekladu,
+): { ked: string; doplni: string } {
+  const obsahuje =
+    p.druh === "vystavena"
+      ? 'odberateľ obsahuje „{text}"'
+      : p.druh === "banka"
+        ? 'protistrana obsahuje „{text}"'
+        : 'dodávateľ obsahuje „{text}"';
+  const sposob = SPOSOBY_UHRADY_DOKLADU.find((s) => s.kod === p.sposob_uhrady)?.nazov;
+  const typ = TYPY_DOKLADU.find((x) => x.kod === p.typ_dokladu)?.nazov;
+  const oznacenie = nazovOznacenia(p.oznacenie);
   const ked = [
-    p.druh === "banka" && !prazdne(p.bankovy_ucet) && `účet ${p.bankovy_ucet!.trim()}`,
-    p.druh === "banka" && p.smer && (p.smer === "prijem" ? "príjem" : "výdaj"),
-    p.druh === "banka" && !prazdne(p.oznacenie) && (nazovOznacenia(p.oznacenie) ?? p.oznacenie),
-    p.druh === "banka" && !prazdne(p.iban_protistrany) && `IBAN protistrany ${p.iban_protistrany!.trim()}`,
-    !prazdne(p.typ_dokladu) &&
-      (TYPY_DOKLADU.find((t) => t.kod === p.typ_dokladu)?.nazov ?? p.typ_dokladu),
-    !prazdne(p.dodavatel_ico) && `IČO ${p.dodavatel_ico!.trim()}`,
-    !prazdne(p.dodavatel_text) && `${partner} obsahuje „${p.dodavatel_text!.trim()}"`,
+    p.druh === "banka" && !prazdne(p.bankovy_ucet) && t("účet {ucet}", { ucet: p.bankovy_ucet!.trim() }),
+    p.druh === "banka" && p.smer && (p.smer === "prijem" ? t("príjem") : t("výdaj")),
+    p.druh === "banka" && !prazdne(p.oznacenie) && (oznacenie ? t(oznacenie) : p.oznacenie),
+    p.druh === "banka" &&
+      !prazdne(p.iban_protistrany) &&
+      t("IBAN protistrany {iban}", { iban: p.iban_protistrany!.trim() }),
+    !prazdne(p.typ_dokladu) && (typ ? t(typ) : p.typ_dokladu),
+    !prazdne(p.dodavatel_ico) && t("IČO {ico}", { ico: p.dodavatel_ico!.trim() }),
+    !prazdne(p.dodavatel_text) && t(obsahuje, { text: p.dodavatel_text!.trim() }),
     !prazdne(p.sposob_uhrady) &&
-      `platené: ${SPOSOBY_UHRADY_DOKLADU.find((s) => s.kod === p.sposob_uhrady)?.nazov ?? p.sposob_uhrady}`,
+      t("platené: {sposob}", { sposob: sposob ? t(sposob) : p.sposob_uhrady! }),
     p.pouzivatel_id &&
-      `${p.druh === "vystavena" ? "vystavil" : "nahral"} ${mena?.[p.pouzivatel_id] ?? "vybraný používateľ"}`,
-    !prazdne(p.predmet_text) && `predmet mailu obsahuje „${p.predmet_text!.trim()}"`,
-    !prazdne(p.odosielatel_text) && `e-mail od „${p.odosielatel_text!.trim()}"`,
-    !prazdne(p.krajina) && `krajina ${p.krajina!.trim().toUpperCase()}`,
-    !prazdne(p.variabilny_symbol) && `VS ${p.variabilny_symbol!.trim()}`,
+      t(p.druh === "vystavena" ? "vystavil {meno}" : "nahral {meno}", {
+        meno: mena?.[p.pouzivatel_id] ?? t("vybraný používateľ"),
+      }),
+    !prazdne(p.predmet_text) &&
+      t('predmet mailu obsahuje „{text}"', { text: p.predmet_text!.trim() }),
+    !prazdne(p.odosielatel_text) && t('e-mail od „{text}"', { text: p.odosielatel_text!.trim() }),
+    !prazdne(p.krajina) && t("krajina {krajina}", { krajina: p.krajina!.trim().toUpperCase() }),
+    !prazdne(p.variabilny_symbol) && t("VS {vs}", { vs: p.variabilny_symbol!.trim() }),
   ].filter(Boolean) as string[];
   const doplni = [
-    p.druh === "banka" && p.bez_dokladu && "spárované bez dokladu",
-    !prazdne(p.kategoria) && `kategória ${nazovKategorie(p.kategoria)}`,
-    !prazdne(p.predkontacia) && `predkontácia ${p.predkontacia!.trim()}`,
-    !prazdne(p.clenenie_dph) && `členenie DPH ${p.clenenie_dph!.trim()}`,
+    p.druh === "banka" && p.bez_dokladu && t("spárované bez dokladu"),
+    !prazdne(p.kategoria) && t("kategória {nazov}", { nazov: t(nazovKategorie(p.kategoria) ?? p.kategoria!) }),
+    !prazdne(p.predkontacia) && t("predkontácia {kod}", { kod: p.predkontacia!.trim() }),
+    !prazdne(p.clenenie_dph) && t("členenie DPH {kod}", { kod: p.clenenie_dph!.trim() }),
     !prazdne(p.kv_clenenie) && `KV ${p.kv_clenenie!.trim()}`,
-    !prazdne(p.pokladna) && `pokladňa ${p.pokladna!.trim()}`,
-    popisRozuctovania(p.rozuctovanie),
-    p.odpocet === false && "bez odpočtu DPH",
-    p.odpocet === true && "s odpočtom DPH",
-    !prazdne(p.poznamka) && `poznámka „${p.poznamka!.trim()}"`,
+    !prazdne(p.pokladna) && t("pokladňa {kod}", { kod: p.pokladna!.trim() }),
+    popisRozuctovania(p.rozuctovanie, t),
+    p.odpocet === false && t("bez odpočtu DPH"),
+    p.odpocet === true && t("s odpočtom DPH"),
+    !prazdne(p.poznamka) && t('poznámka „{text}"', { text: p.poznamka!.trim() }),
   ].filter(Boolean) as string[];
-  return { ked: ked.join(" a "), doplni: doplni.join(", ") };
+  return { ked: ked.join(` ${t("a")} `), doplni: doplni.join(", ") };
 }
 
 /** Prázdne reťazce na `null`, aby sa v databáze nemiešalo „nič" s „prázdnym". */
@@ -495,12 +512,13 @@ export function ocistiPodlaDruhu(p: Pravidlo): Pravidlo {
 }
 
 /** „rozúčtovanie 80/20" do popisu pravidla, alebo `false`. */
-function popisRozuctovania(v: unknown): string | false {
+function popisRozuctovania(v: unknown, t: PrekladPopisu = bezPrekladu): string | false {
   const x = v as { typ?: string; casti?: { podiel?: number }[]; zaklad?: number } | null;
   if (!x || typeof x !== "object") return false;
   if (x.typ === "pomer" && Array.isArray(x.casti))
-    return `rozúčtovanie ${x.casti.map((c) => Number(c?.podiel) || 0).join("/")}`;
-  if (x.typ === "dph5050") return `rozúčtovanie ${Number(x.zaklad) || 0} %, DPH 50 %`;
+    return t("rozúčtovanie {pomer}", { pomer: x.casti.map((c) => Number(c?.podiel) || 0).join("/") });
+  if (x.typ === "dph5050")
+    return t("rozúčtovanie {zaklad} %, DPH 50 %", { zaklad: Number(x.zaklad) || 0 });
   return false;
 }
 

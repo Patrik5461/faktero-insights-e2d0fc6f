@@ -42,7 +42,7 @@ import {
   type TypVyuctovania,
 } from "@/lib/faktero/vyuctovanie-vydavkov";
 
-import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { dnesBratislava, prvyDenMesiacaBratislava } from "@/lib/faktero/datum-vystavenia";
 type Hladanie = { blocky?: string; prijate?: string };
 export const Route = createFileRoute("/_authenticated/doklady/vyuctovania/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vyúčtovanie výdavkov — Faktero") }] }),
@@ -57,7 +57,8 @@ const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2
 /** Účtovné polia — väčšie, ako všade inde pri zaúčtovaní. */
 const vstupZauctovania =
   "mt-1 h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
-const prvyDen = () => new Date().toISOString().slice(0, 8) + "01";
+// Prvý deň mesiaca v Bratislave — UTC by 1. deň po polnoci ukázal predošlý mesiac.
+const prvyDen = () => prvyDenMesiacaBratislava();
 const dnes = () => dnesBratislava();
 const idy = (s?: string) => (s ? s.split(",").filter((x) => /^[0-9a-f-]{36}$/.test(x)) : []);
 
@@ -100,6 +101,8 @@ function Detail() {
   const [polozky, setPolozky] = useState<PolozkaVyuctovania[]>([]);
   const [busy, setBusy] = useState(false);
   const [vyber, setVyber] = useState(false);
+  /** Vyúčtovanie sa nenašlo (zmazané, iná firma) — text chyby namiesto večného „Načítavam…". */
+  const [nenajdene, setNenajdene] = useState<string | null>(null);
   const zmen = (z: Partial<Form>) => setF((x) => (x ? { ...x, ...z } : x));
 
   useEffect(() => {
@@ -115,6 +118,7 @@ function Detail() {
 
   useEffect(() => {
     if (!cid) return;
+    setNenajdene(null);
     (async () => {
       if (novy) {
         const { data: u } = await supabase.auth.getUser();
@@ -178,7 +182,9 @@ function Detail() {
           });
           setPolozky(r.polozky);
         } catch (e: any) {
-          toast.error(e?.message ?? t("Vyúčtovanie sa nenašlo"));
+          const text = e?.message ?? t("Vyúčtovanie sa nenašlo");
+          toast.error(text);
+          setNenajdene(text);
         }
       }
     })();
@@ -261,6 +267,22 @@ function Detail() {
     toast.success(t("Vyúčtovanie zmazané"));
     navigate({ to: "/doklady/vyuctovania" });
   }
+
+  if (nenajdene)
+    return (
+      <PageBody>
+        <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <p className="font-medium">{t("Vyúčtovanie sa nenašlo")}</p>
+          <p className="mt-1 break-words text-sm text-muted-foreground">{nenajdene}</p>
+          <Link
+            to="/doklady/vyuctovania"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+          >
+            {t("Späť na vyúčtovania")}
+          </Link>
+        </div>
+      </PageBody>
+    );
 
   if (!f || !s)
     return (

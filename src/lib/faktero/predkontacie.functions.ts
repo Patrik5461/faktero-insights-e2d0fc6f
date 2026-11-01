@@ -240,7 +240,19 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
         company_id: z.string().uuid(),
         nazov: z.string().max(255),
         base64: z.string().max(8_000_000),
-        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad", "pokladna"]).optional(),
+        // Druh pre riadky bez stĺpca „Druh“ — záložka číselníka, ktorú má človek otvorenú (E-31).
+        druh: z
+          .enum([
+            "predkontacia",
+            "clenenie_dph",
+            "stredisko",
+            "cinnost",
+            "ciselny_rad",
+            "pokladna",
+            "zakazka",
+            "bankovy_ucet",
+          ])
+          .optional(),
       })
       .parse(d),
   )

@@ -15,13 +15,13 @@ import { useStoredPageSize } from "@/components/faktero/ListControls";
  *
  * Tables wired here are read-only logs — no soft delete, no selection state.
  */
-export type LogFilters = Record<string, string | null | undefined>;
+export type LogFilters = Record<string, string | string[] | null | undefined>;
 
 export type PagedLogsOptions = {
   resource: string;
   /** ilike OR-search across these columns. */
   searchColumns?: string[];
-  /** Equality filters; null/empty values are ignored. */
+  /** Equality filters (array = `in`); null/empty values are ignored. */
   filters?: LogFilters;
   /**
    * Nerovnosti — napríklad smer platby (`amount > 0`). Rovnosti na to nestačia
@@ -113,7 +113,8 @@ export function usePagedLogs(opts: PagedLogsOptions) {
       if (filters) {
         for (const [k, v] of Object.entries(filters)) {
           if (v == null || v === "" || v === "all") continue;
-          q = q.eq(k, v);
+          // Pole = ktorákoľvek z hodnôt (napr. nový kľúč zdroja aj jeho starý text).
+          q = Array.isArray(v) ? (v.length ? q.in(k, v) : q) : q.eq(k, v);
         }
       }
       for (const c of compare ?? []) {

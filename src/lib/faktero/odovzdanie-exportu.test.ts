@@ -5,7 +5,11 @@ import {
   NAZVY_PROGRAMOV_EXPORTU,
   nazovProgramuExportu,
   predvoleneOznacit,
+  predvolenyMesiacOdovzdania,
+  predvolenyZaciatokExportu,
   PROGRAM_FORMATU,
+  sumyOdovzdania,
+  uctovnyProgramFirmy,
   uzOdovzdanaRiadok,
 } from "./odovzdanie-exportu";
 import { HLASKA_ZAMKU_FAKTURY } from "./pohoda-zamok";
@@ -88,5 +92,95 @@ describe("uplatni_pravidla_uctovania bez cudzích faktúr", () => {
     );
     // Podpis aj návratový typ ostávajú — starý kód volá tú istú RPC.
     expect(sql).toMatch(/uplatni_pravidla_uctovania\(_company uuid\)\s+returns integer/);
+  });
+});
+
+const zdroj = (cesta: string) => readFileSync(new URL(cesta, import.meta.url), "utf8");
+
+describe("E-15 — účtovný program firmy (pohoda + DE → DATEV)", () => {
+  it("nemecká firma s predvolenou Pohodou dostane DATEV", () => {
+    expect(uctovnyProgramFirmy("pohoda", "DE")).toBe("datev");
+    expect(uctovnyProgramFirmy(null, "Deutschland")).toBe("datev");
+    expect(uctovnyProgramFirmy("money_s3", "DE")).toBe("money_s3");
+    expect(uctovnyProgramFirmy("pohoda", "SK")).toBe("pohoda");
+    expect(uctovnyProgramFirmy(null, "CZ")).toBe("pohoda");
+  });
+  it("DE firma má pri Pohoda XML predvolene nezaškrtnuté „Označiť ako odovzdané“", () => {
+    expect(predvoleneOznacit("pohoda_xml", uctovnyProgramFirmy("pohoda", "DE"))).toBe(false);
+    expect(predvoleneOznacit("pohoda_xml", uctovnyProgramFirmy("pohoda", "SK"))).toBe(true);
+  });
+  it("server aj stránka Exporty používajú tú istú funkciu", () => {
+    expect(zdroj("./uctovanie-export.functions.ts")).toMatch(/uctovnyProgramFirmy\(/);
+    expect(zdroj("../../routes/_authenticated/exporty.tsx")).toMatch(/uctovnyProgramFirmy\(/);
+  });
+});
+
+describe("E-01/E-02 — súčet Odovzdať za mesiac", () => {
+  it("meny sa nesčítavajú, domáca je prvá", () => {
+    expect(
+      sumyOdovzdania(
+        [
+          { type: "regular", total: 100, currency: "EUR" },
+          { type: "regular", total: 2400, currency: "CZK" },
+          { type: "regular", total: 50.5, currency: "EUR" },
+        ],
+        "CZK",
+      ),
+    ).toEqual([
+      { mena: "CZK", suma: 2400 },
+      { mena: "EUR", suma: 150.5 },
+    ]);
+  });
+  it("zálohová faktúra a doklad k platbe nejdú do sumy, dobropis odpočítava", () => {
+    expect(
+      sumyOdovzdania([
+        { type: "regular", total: 1000, currency: "EUR" },
+        { type: "proforma", total: 500, currency: "EUR" },
+        { type: "advance_payment", total: 300, currency: "EUR" },
+        { type: "credit_note", total: -200, currency: "EUR" },
+        { type: "credit_note", total: 50, currency: "EUR" },
+        { type: "debit_note", total: 25, currency: "EUR" },
+        { type: null, total: 10, currency: null },
+      ]),
+    ).toEqual([{ mena: "EUR", suma: 785 }]);
+  });
+  it("prázdny mesiac = prázdny súčet", () => {
+    expect(sumyOdovzdania([])).toEqual([]);
+  });
+});
+
+describe("E-16/E-17 — predvolené dátumy podľa Bratislavy", () => {
+  // 1. 11. 2026 0:30 v Bratislave = 31. 10. 23:30 UTC.
+  const poPolnoci = new Date("2026-10-31T23:30:00Z");
+  // 15. 7. 2026 poludnie (letný čas).
+  const leto = new Date("2026-07-15T10:00:00Z");
+  it("„Od“ je 1. deň mesiaca, nie posledný deň predošlého", () => {
+    expect(predvolenyZaciatokExportu(0, poPolnoci)).toBe("2026-11-01");
+    expect(predvolenyZaciatokExportu(0, leto)).toBe("2026-07-01");
+    expect(predvolenyZaciatokExportu(1, poPolnoci)).toBe("2026-10-01");
+    expect(predvolenyZaciatokExportu(1, new Date("2026-01-10T10:00:00Z"))).toBe("2025-12-01");
+  });
+  it("mesiac odovzdania podľa Bratislavy, nie UTC", () => {
+    expect(predvolenyMesiacOdovzdania(poPolnoci)).toBe("2026-11");
+    expect(predvolenyMesiacOdovzdania(leto)).toBe("2026-07");
+  });
+  it("Exporty už nepočítajú dátumy cez toISOString", () => {
+    const s = zdroj("../../routes/_authenticated/exporty.tsx");
+    expect(s).not.toMatch(/new Date\(\)\.toISOString\(\)\.slice\(0, 7\)/);
+    expect(s).not.toMatch(/getMonth\(\)[^\n]*\)\.toISOString\(\)/);
+  });
+});
+
+describe("E-06 — Zaúčtované doklady do programu stránkujú", () => {
+  it("všetky tri agendy idú cez vsetkyRiadky so stabilným poradím", () => {
+    const s = zdroj("../../routes/_authenticated/exporty.tsx");
+    const cast = s.slice(s.indexOf("async function nacitajRiadky"));
+    for (const tabulka of ["invoices", "purchase_invoices", "expense_documents"]) {
+      const i = cast.indexOf(`.from("${tabulka}")`);
+      expect(i).toBeGreaterThan(-1);
+      const dotaz = cast.slice(Math.max(0, i - 200), i + 900);
+      expect(dotaz).toMatch(/vsetkyRiadky/);
+      expect(dotaz).toMatch(/\.order\("id"\)\s*\.range\(zac, kon\)/);
+    }
   });
 });

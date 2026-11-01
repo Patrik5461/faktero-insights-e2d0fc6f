@@ -1012,12 +1012,15 @@ export type ImportPreview = {
   dateFrom: string | null;
   dateTo: string | null;
   totalValue: number;
+  /** Súčet po menách — rôzne meny sa nesčítajú do jedného čísla. */
+  hodnotaPoMenach: Record<string, number>;
   currency: string;
   sampleInvoices: Array<{
     invoice_number: string;
     customer_name: string;
     total: number;
     issue_date: string | null;
+    currency: string;
   }>;
 };
 
@@ -1035,6 +1038,7 @@ export function buildPreview(
     dateTo: string | null = null,
     totalValue = 0;
   let currency = "EUR";
+  const hodnotaPoMenach: Record<string, number> = {};
   for (const row of rows) {
     const invNo = pick(row, mapping, "invoice_number");
     const total = sumaSDph(row, mapping) || num(pick(row, mapping, "item_total"));
@@ -1052,6 +1056,7 @@ export function buildPreview(
         currency: curr,
       });
       totalValue += total;
+      hodnotaPoMenach[curr] = Math.round(((hodnotaPoMenach[curr] ?? 0) + total) * 100) / 100;
       currency = curr;
       if (issue) {
         if (!dateFrom || issue < dateFrom) dateFrom = issue;
@@ -1066,6 +1071,7 @@ export function buildPreview(
       customer_name: v.customer_name,
       total: v.total,
       issue_date: v.issue_date,
+      currency: v.currency,
     }));
   return {
     invoicesCount: invoicesByNumber.size,
@@ -1074,6 +1080,7 @@ export function buildPreview(
     dateFrom,
     dateTo,
     totalValue,
+    hodnotaPoMenach,
     currency,
     sampleInvoices: sample,
   };

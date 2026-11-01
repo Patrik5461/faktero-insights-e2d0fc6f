@@ -27,6 +27,16 @@ import {
 } from "@/lib/faktero/import-superfaktura.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { ZonaSuboru } from "@/components/faktero/ZonaSuboru";
+import {
+  HodnotaPoMenach,
+  UpozorneniaImportu,
+  upozornNaChyby,
+} from "@/components/faktero/VendorImportPage";
+import { krokSpatZValidacie } from "@/lib/faktero/import-kroky";
+
+const PRIPONY_SUPERFAKTURY =
+  ".zip,.isdoc,.xlsx,.xls,.csv,.xml,text/csv,application/xml,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 
 export const Route = createFileRoute("/_authenticated/importy/superfaktura")({
   head: ({ match }) => ({
@@ -86,6 +96,8 @@ function ImportPage() {
   // roky starú históriu nie je čo.
   const [options, setOptions] = useState(PREDVOLENE_VOLBY);
   const [result, setResult] = useState<any>(null);
+  /** Odkiaľ sa prišlo na validáciu (krok 4) — „Späť“ vráti tam, nie vždy na mapovanie. */
+  const [odkial, setOdkial] = useState<2 | 3 | null>(null);
 
   async function handleUpload() {
     const cid = getActiveCompanyId();
@@ -147,6 +159,7 @@ function ImportPage() {
           odberatelia: r.imported_customers,
         }),
       );
+      upozornNaChyby(r.failed_rows, t);
     } catch (e: any) {
       toast.error(e?.message ?? t("Import zlyhal."));
     } finally {
@@ -191,7 +204,11 @@ function ImportPage() {
                   <code>.isdoc</code> — {t("nahrajte ho sem celý, rozbaľovať ho netreba.")}
                 </p>
               </div>
-              <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-12 text-sm hover:border-primary/50">
+              <ZonaSuboru
+                className="mt-5 py-12"
+                accept={PRIPONY_SUPERFAKTURY}
+                onSubory={(s) => setFile(s[0] ?? null)}
+              >
                 <Upload className="h-8 w-8 text-primary" />
                 <span className="font-medium">
                   {file ? file.name : t("Vyberte alebo presuňte súbor")}
@@ -199,13 +216,7 @@ function ImportPage() {
                 <span className="text-xs text-muted-foreground">
                   .zip · .isdoc · .xlsx · .csv · .xml
                 </span>
-                <input
-                  type="file"
-                  accept=".zip,.isdoc,.xlsx,.xls,.csv,.xml,text/csv,application/xml,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
+              </ZonaSuboru>
               <div className="mt-5 flex justify-end">
                 <button
                   onClick={handleUpload}
@@ -245,7 +256,7 @@ function ImportPage() {
                 <Stat label={t("Riadky")} value={preview.itemsCount} />
                 <Stat
                   label={t("Celková hodnota")}
-                  value={formatujMenu(preview.totalValue, preview.currency)}
+                  value={<HodnotaPoMenach preview={preview} className="text-base" />}
                 />
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
@@ -296,7 +307,7 @@ function ImportPage() {
                             {s.issue_date ? datumNaDoklade(s.issue_date) : "—"}
                           </td>
                           <td className="px-3 py-2 text-right tabular-nums">
-                            {formatujMenu(s.total, preview.currency)}
+                            {formatujMenu(s.total, s.currency || preview.currency)}
                           </td>
                         </tr>
                       ))}
@@ -319,7 +330,10 @@ function ImportPage() {
                     <Sliders className="h-4 w-4" /> {t("Upraviť mapovanie")}
                   </button>
                   <button
-                    onClick={() => setStep(4)}
+                    onClick={() => {
+                      setOdkial(2);
+                      setStep(4);
+                    }}
                     disabled={detection?.confidenceLabel === "low"}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                     title={
@@ -379,6 +393,7 @@ function ImportPage() {
                 onBack={() => setStep(2)}
                 onNext={async () => {
                   await recomputePreview();
+                  setOdkial(3);
                   setStep(4);
                 }}
                 nextLabel={t("Validovať")}
@@ -417,7 +432,7 @@ function ImportPage() {
               </div>
               <ImportOptions options={options} setOptions={setOptions} />
               <Footer
-                onBack={() => setStep(3)}
+                onBack={() => setStep(krokSpatZValidacie(odkial))}
                 onNext={handleRunImport}
                 nextLabel={busy ? t("Importujem…") : t("Potvrdiť a importovať")}
                 disabled={busy}
@@ -435,6 +450,7 @@ function ImportPage() {
                 <Stat label={t("Duplikáty")} value={result.duplicates} />
                 <Stat label={t("Chyby")} value={result.failed_rows} />
               </div>
+              <UpozorneniaImportu result={result} />
               <CislovaniePoImporte rady={(result as any).ciselneRady} />
               <div className="mt-6 flex justify-center gap-2">
                 <Link

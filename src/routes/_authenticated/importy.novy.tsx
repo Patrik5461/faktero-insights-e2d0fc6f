@@ -35,7 +35,7 @@ function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void
       >
         {IMPORT_ZDROJE.map((z) => (
           <option key={z.id} value={z.id}>
-            {z.label}
+            {t(z.label)}
           </option>
         ))}
       </select>
@@ -71,7 +71,7 @@ function Page() {
           <div className="mx-auto max-w-4xl space-y-6">
             <VyberZdroja id={z.id} onZmena={zmen} />
             <section className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="text-base font-semibold">{z.title}</h2>
+              <h2 className="text-base font-semibold">{t(z.title)}</h2>
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">{z.guide}</div>
               <div className="mt-5 flex justify-end">
                 <Link

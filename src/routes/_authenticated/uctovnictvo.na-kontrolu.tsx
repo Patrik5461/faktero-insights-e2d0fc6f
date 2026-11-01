@@ -21,6 +21,11 @@ import {
 } from "@/lib/faktero/auto-uctovanie";
 import { useZdrojText } from "@/components/faktero/AutoZauctovanieOdznak";
 import { AutopilotKarta } from "@/components/faktero/AutopilotKarta";
+import {
+  prepniVsetkyZobrazene,
+  vsetkyZobrazeneVybrane,
+  vybraneZobrazene,
+} from "@/lib/faktero/vyber-zobrazenych";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/na-kontrolu")({
   head: ({ match }) => ({
@@ -53,6 +58,8 @@ function NaKontroluPage() {
   const zdrojText = useZdrojText();
   const [riadky, setRiadky] = useState<RiadokNaKontrolu[] | null>(null);
   const [skratene, setSkratene] = useState(false);
+  /** Zoznam sa nepodarilo načítať — nesmie vyzerať ako „Všetko je zaúčtované“. */
+  const [chyba, setChyba] = useState<string | null>(null);
   const [typ, setTyp] = useState<"" | RiadokNaKontrolu["typ"]>("");
   const [filter, setFilter] = useState<Filter>("vsetky");
   const [zdroj, setZdroj] = useState("");
@@ -69,8 +76,10 @@ function NaKontroluPage() {
       const r = await nacitajFn({ data: { company_id: cid } });
       setRiadky(r.riadky);
       setSkratene(r.skratene);
+      setChyba(null);
     } catch (e) {
       toast.error((e as Error).message);
+      setChyba((e as Error).message || t("Zoznam sa nepodarilo načítať."));
       setRiadky([]);
     }
   }, [cid, nacitajFn]);
@@ -92,15 +101,16 @@ function NaKontroluPage() {
     });
   }, [riadky, typ, filter, zdroj, hladaj]);
 
-  const vsetkyVybrane = zobrazene.length > 0 && zobrazene.every((r) => vybrane.has(kluc(r)));
+  const zobrazeneKluce = useMemo(() => zobrazene.map(kluc), [zobrazene]);
+  const vsetkyVybrane = vsetkyZobrazeneVybrane(zobrazeneKluce, vybrane);
   const sNavrhom = (r: RiadokNaKontrolu) =>
     Boolean((r.navrh as NavrhZauctovania | null)?.predkontacia || r.predkontacia);
+  // Počet v tlačidle, `disabled` aj potvrdenie z jedného zoznamu (E-23).
+  const naPotvrdenie = vybraneZobrazene(zobrazene, vybrane, kluc, sNavrhom);
 
   async function potvrdit() {
     if (!cid) return;
-    const polozky = zobrazene
-      .filter((r) => vybrane.has(kluc(r)) && sNavrhom(r))
-      .map((r) => ({ typ: r.typ, id: r.id }));
+    const polozky = naPotvrdenie.map((r) => ({ typ: r.typ, id: r.id }));
     if (!polozky.length) return toast.error(t("Vyberte doklady s návrhom."));
     setBusy(true);
     try {
@@ -255,7 +265,7 @@ function NaKontroluPage() {
           </label>
           <button
             onClick={() => void potvrdit()}
-            disabled={busy || !vybrane.size}
+            disabled={busy || !naPotvrdenie.length}
             className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {busy ? (
@@ -263,13 +273,33 @@ function NaKontroluPage() {
             ) : (
               <CheckCheck className="h-4 w-4" />
             )}
-            {t("Potvrdiť návrhy ({n})", { n: vybrane.size })}
+            {t("Potvrdiť návrhy ({n})", { n: naPotvrdenie.length })}
           </button>
         </div>
 
         {riadky === null ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
+          </div>
+        ) : chyba ? (
+          <div
+            role="alert"
+            className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-8 text-center text-sm"
+          >
+            <span className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {t("Zoznam sa nepodarilo načítať.")}
+            </span>
+            <span className="break-words text-xs text-muted-foreground">{chyba}</span>
+            <button
+              onClick={() => {
+                setRiadky(null);
+                void nacitaj();
+              }}
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              {t("Skúsiť znova")}
+            </button>
           </div>
         ) : zobrazene.length === 0 ? (
           <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -285,9 +315,7 @@ function NaKontroluPage() {
                       type="checkbox"
                       aria-label={t("Vybrať všetky")}
                       checked={vsetkyVybrane}
-                      onChange={() =>
-                        setVybrane(vsetkyVybrane ? new Set() : new Set(zobrazene.map(kluc)))
-                      }
+                      onChange={() => setVybrane((v) => prepniVsetkyZobrazene(v, zobrazeneKluce))}
                     />
                     <span className="sr-only">{t("Výber")}</span>
                   </th>

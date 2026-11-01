@@ -38,6 +38,14 @@ import {
   type DokladNaPorovnanie,
   type Pravidlo,
 } from "@/lib/faktero/pravidla-uctovania";
+import {
+  STROP_NAHLADU_PRAVIDIEL,
+  pocetZoStropu,
+  prazdnyStavPravidiel,
+  pravidloVZalozke,
+  stropNahladu,
+  type StropNahladu,
+} from "@/lib/faktero/pravidla-zobrazenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -101,8 +109,7 @@ const ZALOZKY: { kod: Zalozka; nazov: string }[] = [
   { kod: "predlohy", nazov: "Predlohy" },
 ];
 /** Patrí pravidlo do záložky? Pôvodné pravidlá (bez druhu) sú v bločkoch aj prijatých. */
-const vZalozke = (r: Pravidlo, z: Zalozka) =>
-  z === "vsetky" || r.druh === z || (!r.druh && (z === "blocek" || z === "prijata"));
+const vZalozke = (r: Pravidlo, z: Zalozka) => pravidloVZalozke(r, z);
 
 type Riadok = Pravidlo & { id: string };
 
@@ -145,6 +152,12 @@ function PravidlaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cid]);
   const [doklady, setDoklady] = useState<DokladNaPorovnanie[]>([]);
+  /** Druhy dokladov, ktorých sa na náhľad načítalo 1 000 — „Sedí na“ je z posledných (E-30). */
+  const [strop, setStrop] = useState<StropNahladu>({
+    blocek: false,
+    prijata: false,
+    vystavena: false,
+  });
   const [uprava, setUprava] = useState<Pravidlo | null>(null);
   const [mazane, setMazane] = useState<Riadok | null>(null);
   const [uplatnujem, setUplatnujem] = useState(false);
@@ -223,7 +236,7 @@ function PravidlaPage() {
         )
         .eq("company_id", cid)
         .order("created_at", { ascending: false })
-        .limit(1000),
+        .limit(STROP_NAHLADU_PRAVIDIEL),
       supabase
         .from("purchase_invoices")
         .select(
@@ -232,14 +245,14 @@ function PravidlaPage() {
         .eq("company_id", cid)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-        .limit(1000),
+        .limit(STROP_NAHLADU_PRAVIDIEL),
       supabase
         .from("invoices")
         .select("customer_ico, customer_name, created_by, type")
         .eq("company_id", cid)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-        .limit(1000),
+        .limit(STROP_NAHLADU_PRAVIDIEL),
       supabase.from("company_bank_accounts").select("iban").eq("company_id", cid),
       supabase.from("bank_accounts").select("iban").eq("company_id", cid),
       supabase.from("companies").select("country").eq("id", cid).maybeSingle(),
@@ -247,6 +260,13 @@ function PravidlaPage() {
     const krajinaFirmy = (firma?.country as string | null) ?? null;
     if (error) toast.error(error.message);
     setPravidla((p ?? []) as unknown as Riadok[]);
+    setStrop(
+      stropNahladu({
+        blocek: d?.length ?? 0,
+        prijata: pf?.length ?? 0,
+        vystavena: vf?.length ?? 0,
+      }),
+    );
     setDoklady([
       ...((d ?? []) as any[]).map((x) => ({
         ...x,
@@ -454,10 +474,14 @@ function PravidlaPage() {
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
           </div>
-        ) : pravidla.length === 0 ? (
+        ) : prazdnyStavPravidiel(pravidla, zalozka) === "ziadne" ? (
           <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             {t("Zatiaľ žiadne pravidlo. Typický začiatok: „dodávateľ obsahuje")} <em>Slovnaft</em>{" "}
             {t("→ kategória Palivo, predkontácia PHM“.")}
+          </div>
+        ) : prazdnyStavPravidiel(pravidla, zalozka) === "zalozka" ? (
+          <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            {t("V tejto záložke zatiaľ nie je žiadne pravidlo.")}
           </div>
         ) : (
           <>
@@ -469,7 +493,16 @@ function PravidlaPage() {
                     <th className="p-3">{t("Pravidlo")}</th>
                     <th className="p-3">{t("Keď")}</th>
                     <th className="p-3">{t("Doplní")}</th>
-                    <th className="p-3 text-right">{t("Sedí na")}</th>
+                    <th className="p-3 text-right">
+                      {t("Sedí na")}
+                      {pravidla.some(
+                        (r) => vZalozke(r, zalozka) && pocetZoStropu(r, strop),
+                      ) ? (
+                        <span className="block font-normal">
+                          {t("z posledných 1 000 dokladov")}
+                        </span>
+                      ) : null}
+                    </th>
                     <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
@@ -477,7 +510,7 @@ function PravidlaPage() {
                   {pravidla
                     .filter((r) => vZalozke(r, zalozka))
                     .map((r) => {
-                      const { ked, doplni } = popisPravidla(r, mena);
+                      const { ked, doplni } = popisPravidla(r, mena, t);
                       const pocet =
                         r.druh === "banka"
                           ? null
@@ -539,7 +572,14 @@ function PravidlaPage() {
                           </td>
                           <td className="p-3">{ked}</td>
                           <td className="p-3">{doplni}</td>
-                          <td className="p-3 text-right tabular-nums text-muted-foreground">
+                          <td
+                            className="p-3 text-right tabular-nums text-muted-foreground"
+                            title={
+                              pocet !== null && pocetZoStropu(r, strop)
+                                ? t("Počíta sa len z posledných 1 000 dokladov.")
+                                : undefined
+                            }
+                          >
                             {pocet === null ? (
                               <span
                                 title={t("Pohyby z výpisov sa neukladajú — pravidlo zaberie pri vývoze")}

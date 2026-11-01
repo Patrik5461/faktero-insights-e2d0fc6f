@@ -49,6 +49,7 @@ export const SKUPINY = [
       "zauctovanie-kv",
       "odovzdanie-exportu",
       "odovzdanie-uctovania",
+      "exporty-predvolene",
       "faktura-eu",
       "apka-faktura",
       "apka-efaktura-odoslanie",
@@ -64,6 +65,10 @@ export const SKUPINY = [
       "banka-tb-suhlas",
       "apka-efaktura-stav",
       "web-efaktura-stav",
+      // Zakladá vlastné iné doklady so značkou behu, ZIP bez odovzdania.
+      "ine-doklady-vyber",
+      // Len číta (výber súborov bez nahratia, filter histórie importov).
+      "importy-zdroj",
     ],
   },
   {
