@@ -36,7 +36,7 @@ export function AutomatickyZaradena({
   return (
     <div
       role="status"
-      className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
+      className="flex items-start gap-2 rounded-lg border dk-pozor p-3 text-sm"
     >
       <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
       <div className="min-w-0">

@@ -12,12 +12,14 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import { StavOdznak, type TonStavu } from "./web/Stav";
+import { NacitavanieStav } from "./web/StavyObsahu";
 
-const STAVY: Record<string, { text: string; trieda: string }> = {
-  caka: { text: "Čaká na priradenie", trieda: "text-amber-700" },
-  spracuva: { text: "Priraďuje sa…", trieda: "text-muted-foreground" },
-  priradene: { text: "Priradené", trieda: "text-emerald-700" },
-  chyba: { text: "Nepodarilo sa", trieda: "text-destructive" },
+const STAVY: Record<string, { text: string; ton: TonStavu }> = {
+  caka: { text: "Čaká na priradenie", ton: "pozor" },
+  spracuva: { text: "Priraďuje sa…", ton: "priebeh" },
+  priradene: { text: "Priradené", ton: "uspech" },
+  chyba: { text: "Nepodarilo sa", ton: "chyba" },
 };
 
 function naBase64(f: File): Promise<string> {
@@ -98,15 +100,15 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
       <button
         onClick={() => setOtvorene((o) => !o)}
         aria-expanded={otvorene}
-        className="flex w-full items-center justify-between gap-2 p-4 text-left"
+        className="flex w-full items-center justify-between gap-2 rounded-xl p-4 text-left hover:bg-accent/50"
       >
-        <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
+        <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold">
           <Split className="h-4 w-4 shrink-0 text-primary" />
           {t("Rozdeľovač — jedna adresa a nahratie pre všetky firmy")}
           {caka > 0 && (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+            <StavOdznak ton="pozor" maly>
               {t("{n} nepriradené", { n: caka })}
-            </span>
+            </StavOdznak>
           )}
         </span>
         {otvorene ? (
@@ -119,7 +121,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
       {otvorene && (
         <div className="border-t border-border p-4">
           {!stav ? (
-            <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+            <NacitavanieStav className="py-6" />
           ) : !stav.dostupny ? (
             <p className="text-sm text-muted-foreground">
               {t(
@@ -144,7 +146,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                       setSkopirovane(true);
                       setTimeout(() => setSkopirovane(false), 2000);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     {skopirovane ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {skopirovane ? t("Skopírované") : t("Kopírovať")}
@@ -160,7 +162,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                       await obnov({ vymenit: true });
                       toast.success(t("Adresa rozdeľovača je nová"));
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     <RefreshCw className="h-4 w-4" /> {t("Vymeniť adresu")}
                   </button>
@@ -192,7 +194,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                 <button
                   disabled={nahravam > 0}
                   onClick={() => subory.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                 >
                   <Upload className="h-4 w-4" />
                   {nahravam > 0
@@ -205,7 +207,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
               </div>
 
               <div className="mt-4">
-                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="mb-2 text-sm font-semibold">
                   {t("Nepriradené doklady")}
                 </div>
                 {stav.nepriradene.length === 0 ? (
@@ -215,7 +217,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                 ) : (
                   <ul className="space-y-3">
                     {stav.nepriradene.map((n) => {
-                      const st = STAVY[n.status] ?? { text: n.status, trieda: "" };
+                      const st = STAVY[n.status] ?? { text: n.status, ton: "neutralny" as TonStavu };
                       const nahraty = n.zdroj === "nahratie";
                       const kandidati = new Set(n.prilohy.flatMap((p) => p.kandidati ?? []));
                       // Firmy, na ktoré doklad sedí, idú vo výbere navrch.
@@ -239,7 +241,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                             <span className="min-w-0 truncate text-muted-foreground">
                               {nahraty ? t("nahrané") : (n.subject ?? "")}
                             </span>
-                            <span className={`ml-auto ${st.trieda}`}>{t(st.text)}</span>
+                            <StavOdznak ton={st.ton} maly className="ml-auto">{t(st.text)}</StavOdznak>
                           </div>
                           {n.prilohy
                             .filter((p) => p.dodavatel || p.odberatel || p.suma != null || !nahraty)
@@ -321,7 +323,7 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                                   }
                                   await obnov();
                                 }}
-                                className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                                className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                               >
                                 {t("Zahodiť")}
                               </button>

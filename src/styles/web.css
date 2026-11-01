@@ -647,12 +647,6 @@ html.dark [data-web-redizajn] {
 [data-web-redizajn] .dk-ramik-chyba {
   border-color: var(--stav-chyba-bod);
 }
-/* Odkazy v pásoch dedia farbu pásu, podčiarknuté. */
-[data-web-redizajn] :is(.dk-pozor, .dk-chyba, .dk-uspech, .dk-info) a:not([data-slot="button"]) {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
 /* Prekrytie ručne kreslených okien (role="dialog") ako pri ui/dialog. */
 [data-web-redizajn] .dk-prekrytie {
   background-color: var(--w-prekrytie);

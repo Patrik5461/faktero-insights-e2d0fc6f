@@ -24,9 +24,9 @@ import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const FARBY: Record<string, string> = {
   koncept: "border-border bg-muted/40",
-  caka: "border-amber-300 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30",
-  odsuhlasena: "border-emerald-300 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/30",
-  zamietnuta: "border-rose-300 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/30",
+  caka: "dk-pozor",
+  odsuhlasena: "dk-uspech",
+  zamietnuta: "dk-chyba",
 };
 
 function kedy(iso: string | null | undefined, loc = "sk-SK") {
@@ -208,7 +208,7 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
     <div className={`rounded-xl border p-5 text-sm ${FARBY[stav]}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="text-sm font-semibold">
             {row.opravuje_cislo
               ? t("Dobropis k samofaktúre {cislo}", { cislo: row.opravuje_cislo })
               : t("Samofaktúra · vyhotovenie faktúry odberateľom")}
@@ -400,7 +400,7 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
                 type="button"
                 onClick={oznac}
                 disabled={busy !== null}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {busy === "ok" && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t("Označiť ako odsúhlasenú")}

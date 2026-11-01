@@ -61,7 +61,7 @@ export function CudziaFakturaZnak({
       title={popis}
       aria-label={popis}
       role="img"
-      className={`inline-flex shrink-0 items-center text-red-600 dark:text-red-400 ${className}`}
+      className={`inline-flex shrink-0 items-center dk-text-chyba ${className}`}
     >
       <AlertCircle className="h-4 w-4" aria-hidden="true" />
     </span>
@@ -136,11 +136,11 @@ export function CudziaFakturaUpozornenie({
   }
 
   const tlacidlo =
-    "inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:hover:bg-red-900/40";
+    "inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:opacity-60";
   return (
     <div
       role="alert"
-      className="rounded-lg border-2 border-red-400 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"
+      className="dk-chyba rounded-lg border-2 p-3 text-sm"
     >
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />

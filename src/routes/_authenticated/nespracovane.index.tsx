@@ -32,6 +32,7 @@ import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { nahralDokladu } from "@/lib/faktero/spracoval";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracované doklady — Faktero") }] }),
@@ -274,15 +275,15 @@ function Stranka() {
   );
   const stavText = (r: any) =>
     r.stav === "cita" ? (
-      <span className="inline-flex items-center gap-1 text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Číta sa…")}
-      </span>
+      <StavOdznak ton="priebeh" ikona={<Loader2 className="animate-spin" />}>
+        {t("Číta sa…")}
+      </StavOdznak>
     ) : r.stav === "chyba" ? (
-      <span className="inline-flex items-center gap-1 text-amber-700" title={r.chyba ?? undefined}>
-        <AlertTriangle className="h-3.5 w-3.5" /> {t("Doplniť ručne")}
-      </span>
+      <StavOdznak ton="pozor" ikona={<AlertTriangle />} title={r.chyba ?? undefined}>
+        {t("Doplniť ručne")}
+      </StavOdznak>
     ) : (
-      <span className="text-emerald-700">{t("Vyťažené")}</span>
+      <StavOdznak ton="uspech">{t("Vyťažené")}</StavOdznak>
     );
 
   return (
@@ -294,7 +295,7 @@ function Stranka() {
           <button
             type="button"
             onClick={() => input.current?.click()}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             {nahravam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             {t("Nahrať doklady")}
@@ -382,7 +383,7 @@ function Stranka() {
               type="button"
               disabled={hromadneBusy}
               onClick={() => void pouziHromadne()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {hromadneBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Zmeniť vybrané")}
             </button>
@@ -406,7 +407,7 @@ function Stranka() {
 
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs font-semibold whitespace-nowrap text-muted-foreground">
               <tr>
                 <th className="w-8 p-3">
                   <input
@@ -476,9 +477,9 @@ function Stranka() {
                       {r.dodavatel ?? <span className="text-muted-foreground">—</span>}
                     </span>
                   </td>
-                  <td className="p-3">{r.cislo ?? "—"}</td>
+                  <td className="p-3"><span className="cislo-dokladu">{r.cislo ?? "—"}</span></td>
                   <td className="p-3 whitespace-nowrap">{datumText(r)}</td>
-                  <td className="p-3 text-right tabular-nums whitespace-nowrap">{sumaText(r)}</td>
+                  <td className="suma p-3 text-right">{sumaText(r)}</td>
                   <td className="p-3 text-xs text-muted-foreground">{zdrojText(r)}</td>
                   <td className="p-3 text-xs">{stavText(r)}</td>
                 </tr>
@@ -537,7 +538,7 @@ function Stranka() {
                   </button>
                   {r.subor ? <div className="truncate text-xs text-muted-foreground">{r.subor}</div> : null}
                 </div>
-                <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">{sumaText(r)}</div>
+                <div className="suma shrink-0">{sumaText(r)}</div>
               </div>
               <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                 <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -568,7 +569,7 @@ function Stranka() {
               onClick={() => void uhradVybrane()}
               disabled={prikazBusy || !naUhraduPocet}
               title={t("Pripraví hromadný príkaz na úhradu (SEPA XML) z označených dokladov. Doklad bez IBAN-u sa vynechá.")}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {prikazBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Landmark className="h-3.5 w-3.5" />}{" "}
               {t("Uhradiť ({n})", { n: naUhraduPocet })}

@@ -477,7 +477,7 @@ export function BlocekDetailKompaktny({
 
         <Sekcia
           nadpis="Úhrada"
-          akcia={uhradeny ? <CheckCircle2 className="h-5 w-5 text-emerald-700" /> : null}
+          akcia={uhradeny ? <CheckCircle2 className="dk-text-uspech h-5 w-5" /> : null}
         >
           {uhradeny ? (
             <p className="text-sm font-medium">

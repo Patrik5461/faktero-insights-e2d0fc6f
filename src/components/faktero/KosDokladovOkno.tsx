@@ -76,12 +76,12 @@ export function KosDokladovOkno({
     vlozene ? (
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5">{obsah}</div>
     ) : (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dk-prekrytie p-4" onClick={onClose}>
         <div
           role="dialog"
           aria-modal="true"
           aria-label={t("Kôš dokladov")}
-          className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-xl"
+          className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-popover p-5 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {obsah}
@@ -114,14 +114,14 @@ export function KosDokladovOkno({
                   <div className="truncate font-medium">{p.popis}</div>
                   <div className="text-xs text-muted-foreground">
                     {p.datum ? datumNaDoklade(p.datum) : t("bez dátumu")}
-                    {p.suma != null ? ` · ${formatujMenu(p.suma, p.mena)}` : ""} · {t("zmazané")}{" "}
+                    {p.suma != null ? <> · <span className="font-medium tabular-nums text-foreground">{formatujMenu(p.suma, p.mena)}</span></> : ""} · {t("zmazané")}{" "}
                     {new Date(p.zmazaneAt).toLocaleString(lokalJazyka(jazyk), { dateStyle: "medium", timeStyle: "short" })}
                   </div>
                 </div>
                 <button
                   onClick={() => akcia(p.id, () => obnov({ data: { id: p.id } }), t("Doklad obnovený"))}
                   disabled={!!busy}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                 >
                   {busy === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
                   {t("Obnoviť")}
@@ -132,7 +132,7 @@ export function KosDokladovOkno({
                       void akcia(p.id, () => zmaz({ data: { id: p.id } }), t("Zmazané natrvalo"));
                   }}
                   disabled={!!busy}
-                  className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> {t("Natrvalo")}
                 </button>
@@ -142,7 +142,7 @@ export function KosDokladovOkno({
         )}
         {!vlozene && (
           <div className="mt-4 flex justify-end">
-            <button onClick={onClose} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+            <button onClick={onClose} className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary">
               {t("Zavrieť")}
             </button>
           </div>

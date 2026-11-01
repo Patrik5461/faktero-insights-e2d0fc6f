@@ -131,7 +131,7 @@ export function PravidloNespracovaneho({
       <PouzitPredlohu companyId={companyId} druh={druhPravidla} onPouzi={pouziPredlohu} />
       {pouzite ? (
         <span
-          className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"
+          className="dk-text-pozor inline-flex items-center gap-1 font-medium"
           title={t("Kódy doplnilo pravidlo účtovania")}
         >
           <Star className="h-3.5 w-3.5 fill-current" />{" "}

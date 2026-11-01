@@ -21,7 +21,7 @@ export function VlastnaFakturaUpozornenie({
   return (
     <div
       role="alert"
-      className="rounded-lg border-2 border-red-400 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"
+      className="dk-chyba rounded-lg border-2 p-3 text-sm"
     >
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -41,14 +41,14 @@ export function VlastnaFakturaUpozornenie({
         <button
           type="button"
           onClick={onInyDoklad}
-          className="rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium hover:bg-red-100 dark:border-red-800 dark:hover:bg-red-900/40"
+          className="rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
         >
           {t("Založiť ako iný doklad")}
         </button>
         <button
           type="button"
           onClick={onZmaz}
-          className="rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium hover:bg-red-100 dark:border-red-800 dark:hover:bg-red-900/40"
+          className="rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
         >
           {t("Zmazať do koša")}
         </button>

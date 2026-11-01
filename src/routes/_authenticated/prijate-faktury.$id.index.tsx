@@ -20,6 +20,7 @@ import {
   StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
 import { CudziaFakturaUpozornenie, CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { StavOdznak as WebStav, type TonStavu } from "@/components/faktero/web/Stav";
 import { nacitajNesedi } from "@/lib/faktero/cudzia-faktura";
 import { potvrdOdberatelaFn } from "@/lib/faktero/cudzia-faktura.functions";
 import { UpozornenieKontrolyEfaktury } from "@/components/faktero/NalezyKontrolyEfaktury";
@@ -122,12 +123,13 @@ const STATUS_LABEL: Record<string, string> = {
   paid: "Zaplatené",
   cancelled: "Stornované",
 };
-const STATUS_CLASS: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  received: "bg-amber-100 text-amber-800",
-  booked: "bg-sky-100 text-sky-800",
-  paid: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-rose-100 text-rose-800",
+/** Tón stavu prijatej faktúry (redizajn webu — texty ostávajú v STATUS_LABEL). */
+const TON_PRIJATEJ: Record<string, TonStavu> = {
+  draft: "neutralny",
+  received: "informacia",
+  booked: "priebeh",
+  paid: "uspech",
+  cancelled: "zruseny",
 };
 
 function fmt(n: number, c = "EUR") {
@@ -557,15 +559,13 @@ function PurchaseInvoiceDetail() {
   );
   const stavOdznak = (
     <>
-      <StavOdznak className={STATUS_CLASS[row.status] ?? undefined}>
-        {t(STATUS_LABEL[row.status] ?? row.status)}
-      </StavOdznak>
+      <WebStav ton={TON_PRIJATEJ[row.status] ?? "neutralny"}>{t(STATUS_LABEL[row.status] ?? row.status)}</WebStav>
       {/* Čiastočná úhrada nie je hodnota `status` — počíta sa z úhrad faktúry. */}
       {uhradyFaktury.stav.stav === "ciastocne" &&
       row.status !== "paid" &&
       row.status !== "cancelled" &&
       row.status !== "draft" ? (
-        <StavOdznak className="bg-amber-50 text-amber-800">{t("Čiastočne uhradená")}</StavOdznak>
+        <WebStav ton="pozor">{t("Čiastočne uhradená")}</WebStav>
       ) : null}
     </>
   );
@@ -861,7 +861,7 @@ function PurchaseInvoiceDetail() {
   const kartaStrany = (sVazbou: boolean) => (
     <div className="grid min-w-0 gap-6 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-6">
       <div className="min-w-0 break-words">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="text-sm font-semibold">
           {t("Dodávateľ")}
         </div>
         <div className="mt-1 font-medium">{row.supplier_name}</div>
@@ -890,7 +890,7 @@ function PurchaseInvoiceDetail() {
         )}
       </div>
       <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dátumy")}</div>
+        <div className="text-sm font-semibold">{t("Dátumy")}</div>
         <Row label={t("Vystavenie")} value={datumNaDoklade(row.issue_date)} />
         <Row
           label={t("Dodanie (daňové plnenie)")}
@@ -909,7 +909,7 @@ function PurchaseInvoiceDetail() {
   );
   const kartaPlatba = (sVazbou: boolean) => (
     <div className="rounded-xl border border-border bg-card p-5 text-sm">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm font-semibold">
         <Wallet className="h-3.5 w-3.5" /> {t("Platba")}
       </div>
       <div className="mt-2">
@@ -1020,8 +1020,8 @@ function PurchaseInvoiceDetail() {
   const kartaBanka = (
     <>
       {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-primary-hover">
             <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
           </div>
 
@@ -1077,7 +1077,7 @@ function PurchaseInvoiceDetail() {
               <button
                 onClick={payViaBank}
                 disabled={paying}
-                className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+                className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 <Landmark className="h-4 w-4" />
                 {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}
@@ -1089,8 +1089,8 @@ function PurchaseInvoiceDetail() {
           )}
 
           {payments.length > 0 && (
-            <div className="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-900/40">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="mt-4 border-t border-primary/20 pt-3">
+              <div className="text-sm font-semibold">
                 {t("História platieb")}
               </div>
               <ul className="mt-2 space-y-2">
@@ -1109,7 +1109,7 @@ function PurchaseInvoiceDetail() {
                         {fmt(Number(p.amount), p.currency)}
                       </div>
                       {p.error_message && (
-                        <div className="text-xs text-rose-700">{p.error_message}</div>
+                        <div className="text-xs dk-text-chyba">{p.error_message}</div>
                       )}
                     </div>
                     <button
@@ -1274,12 +1274,12 @@ function PurchaseInvoiceDetail() {
           <aside className="min-w-0 space-y-4">
             {kartaUhradyPrijatej}
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
+              <div className="text-sm font-semibold">{t("Sumár")}</div>
               <div className="mt-3 space-y-1 text-sm">
                 <Row label={t("Bez DPH")} value={fmt(Number(row.amount_without_vat), row.currency)} />
                 <Row label={t("DPH")} value={fmt(Number(row.vat_amount), row.currency)} />
               </div>
-              <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
+              <div className="suma mt-3 border-t border-border pt-3 text-lg">
                 {fmt(Number(row.amount_total), row.currency)}
               </div>
             </div>
@@ -1374,7 +1374,7 @@ function PolozkyDokladu({
       </div>
       <div className={`overflow-x-auto ${jeVypnute ? "opacity-50" : ""}`}>
         <table className="w-full min-w-[34rem] text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
             <tr>
               <th className="p-3">{t("Položka")}</th>
               <th className="p-3 text-right">{t("Množstvo")}</th>
@@ -1394,7 +1394,7 @@ function PolozkyDokladu({
                 <td className="p-3 text-right tabular-nums">
                   {p?.vat_rate != null ? `${p.vat_rate} %` : "—"}
                 </td>
-                <td className="p-3 text-right tabular-nums font-medium">{cena(p?.total)}</td>
+                <td className="suma p-3 text-right">{cena(p?.total)}</td>
               </tr>
             ))}
           </tbody>

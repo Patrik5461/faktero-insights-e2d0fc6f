@@ -240,7 +240,7 @@ export function PolozkyNespracovaneho({
       {nesuhlas ? (
         <div
           role="alert"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+          className="dk-chyba flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-xs"
         >
           <span>
             {t(
@@ -257,7 +257,7 @@ export function PolozkyNespracovaneho({
           <button
             type="button"
             onClick={() => setU(vyrovnajPolozky(u))}
-            className="rounded-md border border-red-300 bg-white px-2 py-1 font-medium hover:bg-red-100 dark:bg-transparent"
+            className="rounded-md border border-input bg-card px-2 py-1 font-semibold text-foreground hover:bg-secondary"
           >
             {t("Pridať vyrovnávaciu položku")}
           </button>

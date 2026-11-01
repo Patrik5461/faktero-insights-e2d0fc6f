@@ -72,8 +72,8 @@ export function RegistrPlatcuDph({
     : v.nespolehlivy
       ? "border-destructive/50 bg-destructive/5"
       : v.ucetZverejneny === false || !v.nalezen
-        ? "border-amber-500/50 bg-amber-500/10"
-        : "border-emerald-600/40 bg-emerald-600/5";
+        ? "dk-pozor"
+        : "dk-uspech";
 
   return (
     <div className={`rounded-xl border p-4 text-sm ${ton}`}>
@@ -84,9 +84,9 @@ export function RegistrPlatcuDph({
           ) : v.nespolehlivy ? (
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           ) : zle || !v.nalezen ? (
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 dk-text-pozor" />
           ) : (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 dk-text-uspech" />
           )}
           <div>
             <div className="font-medium">

@@ -125,9 +125,9 @@ export function PotvrdeniePreposielania({
       {potvrdenia.map((p) => (
         <div
           key={p.id}
-          className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40"
+          className="dk-pozor mb-4 rounded-xl border p-4"
         >
-          <div className="flex items-center gap-2 text-sm font-medium">
+          <div className="flex items-center gap-2 text-sm font-semibold">
             <ShieldCheck className="h-4 w-4" />
             {p.source_email
               ? t("Google žiada potvrdenie preposielania z {email}", { email: p.source_email })
@@ -140,12 +140,12 @@ export function PotvrdeniePreposielania({
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {p.code ? (
               <>
-                <code className="rounded-md border border-amber-300 bg-white px-3 py-2 text-lg font-semibold tracking-wider tabular-nums dark:bg-card dark:border-amber-900/40">
+                <code className="rounded-md border border-input bg-card px-3 py-2 text-lg font-semibold tracking-wider tabular-nums text-foreground">
                   {p.code}
                 </code>
                 <button
                   onClick={() => kopiruj(p)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm hover:bg-amber-100 dark:bg-card dark:border-amber-900/40"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent"
                 >
                   {skopirovany === p.id ? (
                     <Check className="h-4 w-4" />
@@ -162,7 +162,7 @@ export function PotvrdeniePreposielania({
                 href={p.confirm_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 <ExternalLink className="h-4 w-4" /> {t("Potvrdiť preposielanie")}
               </a>
@@ -171,7 +171,7 @@ export function PotvrdeniePreposielania({
             <button
               disabled={pracuje}
               onClick={() => uzPotvrdene(p)}
-              className="ml-auto rounded-md border border-amber-300 px-3 py-2 text-sm hover:bg-amber-100 disabled:opacity-60 dark:border-amber-900/40"
+              className="ml-auto rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent disabled:opacity-60"
             >
               {t("Už som potvrdil")}
             </button>
