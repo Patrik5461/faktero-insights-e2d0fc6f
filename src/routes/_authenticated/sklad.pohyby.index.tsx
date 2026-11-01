@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import {
   Download,
   ChevronDown,
@@ -50,7 +51,6 @@ function MovementsPage() {
   const { t } = useT();
   const mena = useMenaFirmy();
   const { stock_item_id } = Route.useSearch();
-  const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [items, setItems] = useState<Record<string, any>>({});
   const [warehouses, setWarehouses] = useState<Record<string, string>>({});
@@ -406,11 +406,7 @@ function MovementsPage() {
                 </tr>
               )}
               {visibleRows.map((m) => (
-                <tr
-                  key={m.id}
-                  className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => navigate({ to: "/sklad/pohyby/$id", params: { id: m.id } })}
-                >
+                <KlikatelnyRiadok key={m.id} ciel={{ to: "/sklad/pohyby/$id", params: { id: m.id } }}>
                   <td className="p-3 whitespace-nowrap tabular-nums text-muted-foreground">
                     {new Date(m.created_at).toLocaleString("sk-SK")}
                   </td>
@@ -440,7 +436,7 @@ function MovementsPage() {
                   <td className="p-3 text-right suma">
                     {formatujMenu(hodnotaPohybu(m), mena.kod)}
                   </td>
-                  <td className="p-3 max-w-[16rem] text-xs" onClick={(e) => e.stopPropagation()}>
+                  <td className="p-3 max-w-[16rem] text-xs">
                     {(m.source_document_type === "invoice" || m.reference_type === "invoice") &&
                     (m.source_document_id || m.reference_id) &&
                     invoices[m.source_document_id ?? m.reference_id] ? (
@@ -479,7 +475,7 @@ function MovementsPage() {
                     )}
                     {m.note && <div className="mt-1 truncate text-muted-foreground">{m.note}</div>}
                   </td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

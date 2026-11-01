@@ -13,6 +13,8 @@ import {
 } from "@/components/faktero/DocumentDetailHeader";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav, ChybovyStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import type { CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
@@ -554,6 +556,7 @@ function JobDetail() {
           prazdne="K zákazke zatiaľ nie je priradená žiadna faktúra."
           hlavicka={["Číslo", "Dátum", "Typ", "Stav", "Bez DPH"]}
           vpravo={[4]}
+          ciele={data.faktury.map((f: any) => ({ to: "/faktury/$id", params: { id: f.id } }))}
           riadky={data.faktury.map((f: any) => [
             <Link
               key={f.id}
@@ -596,8 +599,19 @@ function JobDetail() {
           prazdne="Žiadny nákup priradený k zákazke."
           hlavicka={["Číslo", "Dodávateľ", "Dátum", "Bez DPH"]}
           vpravo={[3]}
+          ciele={data.prijate_faktury.map((f: any) => ({
+            to: "/prijate-faktury/$id",
+            params: { id: f.id },
+          }))}
           riadky={data.prijate_faktury.map((f: any) => [
-            <span key="c" className="cislo-dokladu">{f.invoice_number}</span>,
+            <Link
+              key="c"
+              to="/prijate-faktury/$id"
+              params={{ id: f.id }}
+              className="cislo-dokladu hover:underline"
+            >
+              {f.invoice_number}
+            </Link>,
             f.supplier_name,
             datum(f.issue_date),
             <span key="s" className="suma">{suma(f.amount_without_vat, f.currency)}</span>,
@@ -609,8 +623,19 @@ function JobDetail() {
           prazdne="Žiadny bloček priradený k zákazke."
           hlavicka={["Číslo", "Dodávateľ", "Dátum", "Bez DPH"]}
           vpravo={[3]}
+          ciele={(data.blocky ?? []).map((b: any) => ({
+            to: "/doklady/novy",
+            search: { id: b.id },
+          }))}
           riadky={(data.blocky ?? []).map((b: any) => [
-            <span key="c" className="cislo-dokladu">{b.document_number ?? "—"}</span>,
+            <Link
+              key="c"
+              to="/doklady/novy"
+              search={{ id: b.id }}
+              className="cislo-dokladu hover:underline"
+            >
+              {b.document_number ?? "—"}
+            </Link>,
             b.supplier_name,
             datum(b.issue_date),
             <span key="s" className="suma">{suma(nakladZBlocku(b), b.currency)}</span>,
@@ -622,6 +647,7 @@ function JobDetail() {
           prazdne="Zo skladu sa na zákazku zatiaľ nič nevydalo."
           hlavicka={["Položka", "sklad::Pohyb", "Množstvo", "Vážená cena", "Hodnota"]}
           vpravo={[2, 3, 4]}
+          ciele={data.pohyby.map((p: any) => ({ to: "/sklad/pohyby/$id", params: { id: p.id } }))}
           riadky={data.pohyby.map((p: any) => [
             p.nazov,
             t(pohybNazov(p.type)),
@@ -637,6 +663,10 @@ function JobDetail() {
           poznamka="Objednaný tovar sa do nákladov nepočíta — náklad vznikne až jeho výdajom zo skladu."
           hlavicka={["Číslo", "Dodávateľ", "Objednané", "Očakávané", "Stav"]}
           vpravo={[]}
+          ciele={(data.objednavky ?? []).map((o: any) => ({
+            to: "/sklad/objednavky/$id",
+            params: { id: o.id },
+          }))}
           riadky={(data.objednavky ?? []).map((o: any) => [
             <Link
               key={o.id}
@@ -710,6 +740,7 @@ function Zoznam({
   riadky,
   poznamka,
   vpravo,
+  ciele,
 }: {
   titulok: string;
   prazdne: string;
@@ -718,6 +749,8 @@ function Zoznam({
   poznamka?: string;
   /** Stĺpce zarovnané doprava (sumy, čísla); predvolene posledné dva. */
   vpravo?: number[];
+  /** Kam vedie klik na riadok (rovnaké poradie ako `riadky`); `null` = riadok bez detailu. */
+  ciele?: (CielDetailu | null)[];
 }) {
   const { t } = useT();
   const jeVpravo = (i: number) => (vpravo ? vpravo.includes(i) : i >= hlavicka.length - 2);
@@ -745,7 +778,11 @@ function Zoznam({
             </thead>
             <tbody className="divide-y divide-border">
               {riadky.map((r, i) => (
-                <tr key={i} className="hover:bg-muted/30">
+                <KlikatelnyRiadok
+                  key={i}
+                  ciel={ciele?.[i] ?? null}
+                  className={ciele?.[i] ? undefined : "hover:bg-muted/30"}
+                >
                   {r.map((c, k) => (
                     <td
                       key={k}
@@ -760,7 +797,7 @@ function Zoznam({
                       {c}
                     </td>
                   ))}
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

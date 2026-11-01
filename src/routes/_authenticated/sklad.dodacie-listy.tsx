@@ -14,6 +14,9 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodacie-listy")({
@@ -39,6 +42,7 @@ function DeliveryNoteHistoryPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const lf = useListFilters();
+  const klik = useKlikNaRiadok();
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   useEffect(() => {
@@ -125,8 +129,16 @@ function DeliveryNoteHistoryPage() {
                 const m = r.metadata ?? {};
                 const c = m.counts ?? {};
                 const items = Array.isArray(m.items) ? m.items.length : 0;
+                const pk = klik(null, {
+                  naKlik: m.storage_path ? () => openDoc(m.storage_path) : undefined,
+                  klavesnica: false,
+                });
                 return (
-                  <div key={r.id} className="rounded-xl border border-border bg-card p-4 text-sm">
+                  <div
+                    key={r.id}
+                    {...pk}
+                    className={cn(pk.className, "rounded-xl border border-border bg-card p-4 text-sm")}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="break-words font-semibold">{m.supplier ?? "—"}</div>
@@ -175,7 +187,10 @@ function DeliveryNoteHistoryPage() {
                     const c = m.counts ?? {};
                     const items = Array.isArray(m.items) ? m.items.length : 0;
                     return (
-                      <tr key={r.id}>
+                      <KlikatelnyRiadok
+                        key={r.id}
+                        naKlik={m.storage_path ? () => openDoc(m.storage_path) : undefined}
+                      >
                         <td className="whitespace-nowrap p-3 tabular-nums text-muted-foreground">
                           {new Date(r.created_at).toLocaleString("sk-SK")}
                         </td>
@@ -198,7 +213,7 @@ function DeliveryNoteHistoryPage() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     );
                   })}
                 </tbody>
