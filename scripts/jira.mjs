@@ -92,7 +92,17 @@ function zaciatokJiry(iso) {
 /** Zapíše odpracovaný čas; rovnaký záznam (dĺžka + začiatok) druhýkrát nepridá. */
 async function zapisCas(kluc, cas, popis, zaciatok) {
   const dlzka = sekundy(cas);
-  const { worklogs = [] } = await api("GET", `/issue/${kluc}/worklog?maxResults=1000`);
+  // Čerstvo založená úloha vráti chvíľu 404 – skúsi znova.
+  let worklogs = [];
+  for (let pokus = 1; ; pokus++) {
+    try {
+      ({ worklogs = [] } = await api("GET", `/issue/${kluc}/worklog?maxResults=1000`));
+      break;
+    } catch (e) {
+      if (pokus >= 6 || !String(e.message).includes("Jira 404")) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * pokus));
+    }
+  }
   const uz = worklogs.find(
     (w) =>
       w.timeSpentSeconds === dlzka &&
