@@ -11,7 +11,7 @@ import {
   notifikaciaLehoty,
   notifikaciaOdpovedeNaPonuku,
 } from "./notifications";
-import { pripomienkyZamestnancov } from "./zamestnanci";
+import { krajinaZamestnancov, ODHLASKY_SPATNE_DNI, pridajDni, pripomienkyZamestnancov } from "./zamestnanci";
 import { agendaPreKrajinu } from "./agendy-krajiny";
 import { krajinaDane } from "./vat-rates";
 
@@ -137,15 +137,16 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
     new Date(),
   );
   // Modul sa overí súčasne so zamestnancami — za sebou to boli dve cesty k databáze.
+  // Ukončení len s nedávnym koncom — česká firma ich potrebuje na odhlášky (slovenská ich preskočí).
   const [{ data: firma }, zam, zml] = await Promise.all([
-    supabaseAdmin.from("companies").select("module_employees").eq("id", companyId).maybeSingle(),
+    supabaseAdmin.from("companies").select("module_employees, country").eq("id", companyId).maybeSingle(),
     supabaseAdmin
       .from("employees")
       .select(
-        "id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, medical_check_due, bozp_training_due",
+        "id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, sp_deregistered_at, zp_deregistered_at, medical_check_due, bozp_training_due",
       )
       .eq("company_id", companyId)
-      .eq("status", "active"),
+      .or(`status.eq.active,end_date.gte.${pridajDni(dnes, -ODHLASKY_SPATNE_DNI)}`),
     supabaseAdmin
       .from("employee_contracts")
       .select("id, employee_id, kind, start_date, end_date, probation_end, status")
@@ -153,7 +154,12 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
       .eq("status", "active"),
   ]);
   if (!firma?.module_employees) return [];
-  return pripomienkyZamestnancov(dnes, (zam.data ?? []) as any, (zml.data ?? []) as any).map(
+  return pripomienkyZamestnancov(
+    dnes,
+    (zam.data ?? []) as any,
+    (zml.data ?? []) as any,
+    krajinaZamestnancov((firma as { country?: string | null }).country),
+  ).map(
     (p) => ({
       key: p.kluc,
       severity: p.zavaznost,

@@ -4,14 +4,18 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   csvDochadzky,
   hodnotyTokenov,
+  kluceSablon,
+  krajinaZamestnancov,
   mesacnySuhrn,
-  NAZOV_SABLONY,
-  PREDVOLENE_SABLONY,
+  nazovSablony,
+  predvolenaSablona,
   pripomienkyZamestnancov,
   vyplnSablonu,
   celeMeno,
   type KlucSablony,
+  type KrajinaZamestnancov,
 } from "./zamestnanci";
+import { overCisloUctuCz, overRodneCisloCz } from "./zamestnanci-cz";
 
 /**
  * Modul Zamestnanci. Ako pri zákazkách ide všetko cez klienta viazaného na
@@ -26,7 +30,7 @@ import {
 
 /** Stĺpce zamestnanca, ktoré klient smie čítať — šifrované medzi nimi nie sú. */
 const STLPCE =
-  "id, company_id, first_name, last_name, title_before, title_after, birth_date, birth_place, nationality, email, phone, street, city, zip, country, iban, health_insurer, position, department, start_date, end_date, status, sp_registered_at, zp_registered_at, medical_check_due, bozp_training_due, note, created_at, updated_at";
+  "id, company_id, first_name, last_name, title_before, title_after, birth_date, birth_place, nationality, email, phone, street, city, zip, country, iban, health_insurer, position, department, start_date, end_date, status, sp_registered_at, zp_registered_at, sp_deregistered_at, zp_deregistered_at, medical_check_due, bozp_training_due, note, created_at, updated_at";
 
 const Firma = z.object({ company_id: z.string().uuid() });
 const Id = z.object({ company_id: z.string().uuid(), id: z.string().uuid() });
@@ -53,14 +57,18 @@ const cislo = z
   .transform((v) => (v == null || v === "" ? null : Number(String(v).replace(",", "."))))
   .refine((v) => v == null || Number.isFinite(v), "Neplatné číslo");
 
-/** Modul musí byť pre firmu zapnutý — menu ho inde neukáže, server ho inde nepustí. */
-async function overModul(supabase: any, companyId: string) {
+/**
+ * Modul musí byť pre firmu zapnutý — menu ho inde neukáže, server ho inde nepustí.
+ * Vráti krajinu, podľa ktorej predpisov modul pre firmu pracuje (CZ / inak SK).
+ */
+async function overModul(supabase: any, companyId: string): Promise<KrajinaZamestnancov> {
   const { data } = await supabase
     .from("companies")
-    .select("module_employees")
+    .select("module_employees, country")
     .eq("id", companyId)
     .maybeSingle();
   if (!data?.module_employees) throw new Error("Modul Zamestnanci nie je pre túto firmu zapnutý.");
+  return krajinaZamestnancov(data.country);
 }
 
 async function zamestnanecFirmy(supabase: any, companyId: string, id: string) {
@@ -85,20 +93,27 @@ export const listZamestnancov = createServerFn({ method: "POST" })
   .validator((d: unknown) => Firma.extend({ stav: z.enum(["active", "ended", "vsetci"]).optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await overModul(supabase, data.company_id);
-    let q = supabase.from("employees").select(STLPCE).eq("company_id", data.company_id);
-    if (data.stav && data.stav !== "vsetci") q = q.eq("status", data.stav);
-    const { data: zamestnanci, error } = await q.order("last_name").order("first_name");
+    const krajina = await overModul(supabase, data.company_id);
+    // Načítajú sa všetci — pripomienky českej firmy (odhlášky) potrebujú aj ukončených.
+    const { data: vsetci, error } = await supabase
+      .from("employees")
+      .select(STLPCE)
+      .eq("company_id", data.company_id)
+      .order("last_name")
+      .order("first_name");
     if (error) throw new Error(error.message);
+    const zamestnanci = (vsetci ?? []).filter(
+      (z: any) => !data.stav || data.stav === "vsetci" || z.status === data.stav,
+    );
     const { data: zmluvy } = await supabase
       .from("employee_contracts")
       .select("id, employee_id, kind, start_date, end_date, probation_end, status")
       .eq("company_id", data.company_id)
       .eq("status", "active");
     return {
-      zamestnanci: zamestnanci ?? [],
+      zamestnanci,
       zmluvy: zmluvy ?? [],
-      pripomienky: pripomienkyZamestnancov(dnesnyDatum(), (zamestnanci ?? []) as any, (zmluvy ?? []) as any),
+      pripomienky: pripomienkyZamestnancov(dnesnyDatum(), (vsetci ?? []) as any, (zmluvy ?? []) as any, krajina),
     };
   });
 
@@ -107,7 +122,7 @@ export const getZamestnanec = createServerFn({ method: "POST" })
   .validator((d: unknown) => Id.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await overModul(supabase, data.company_id);
+    const krajina = await overModul(supabase, data.company_id);
     const zamestnanec = await zamestnanecFirmy(supabase, data.company_id, data.id);
     const [zmluvy, dokumenty, nepritomnosti, pii] = await Promise.all([
       supabase.from("employee_contracts").select("*").eq("employee_id", data.id).eq("company_id", data.company_id).order("start_date", { ascending: false }),
@@ -125,7 +140,12 @@ export const getZamestnanec = createServerFn({ method: "POST" })
       nepritomnosti: nepritomnosti.data ?? [],
       maRodneCislo: Boolean(pritomne?.ma_rodne_cislo),
       maOp: Boolean(pritomne?.ma_op),
-      pripomienky: pripomienkyZamestnancov(dnesnyDatum(), [zamestnanec as any], (zmluvy.data ?? []) as any),
+      pripomienky: pripomienkyZamestnancov(
+        dnesnyDatum(),
+        [zamestnanec as any],
+        ((zmluvy.data ?? []) as any[]).filter((k) => k.status === "active"),
+        krajina,
+      ),
     };
   });
 
@@ -153,6 +173,8 @@ const ZamestnanecVstup = Firma.extend({
   status: z.enum(["active", "ended"]).default("active"),
   sp_registered_at: datum,
   zp_registered_at: datum,
+  sp_deregistered_at: datum,
+  zp_deregistered_at: datum,
   medical_check_due: datum,
   bozp_training_due: datum,
   note: text,
@@ -163,8 +185,13 @@ export const ulozZamestnanca = createServerFn({ method: "POST" })
   .validator((d: unknown) => ZamestnanecVstup.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await overModul(supabase, data.company_id);
+    const krajina = await overModul(supabase, data.company_id);
     const { id, company_id, ...polia } = data;
+    if (krajina === "CZ" && polia.iban) {
+      const ucet = overCisloUctuCz(polia.iban);
+      if (!ucet.ok) throw new Error(ucet.chyba);
+      polia.iban = ucet.hodnota;
+    }
     if (id) {
       await zamestnanecFirmy(supabase, company_id, id);
       const { error } = await supabase.from("employees").update(polia).eq("id", id).eq("company_id", company_id);
@@ -218,8 +245,14 @@ export const nastavCitliveUdaje = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await overModul(supabase, data.company_id);
+    const krajina = await overModul(supabase, data.company_id);
     await zamestnanecFirmy(supabase, data.company_id, data.id);
+    // Česká firma: rodné číslo podľa § 13 zák. 133/2000 Sb. (tvar, dátum, deliteľnosť 11).
+    if (krajina === "CZ" && data.rodne_cislo?.trim()) {
+      const rc = overRodneCisloCz(data.rodne_cislo);
+      if (!rc.ok) throw new Error(rc.chyba);
+      data.rodne_cislo = rc.hodnota;
+    }
     // `null` znamená „nemeniť“ — vygenerované typy to nevedia, SQL áno.
     const { error } = await supabase.rpc("employee_set_pii", {
       _employee_id: data.id,
@@ -461,15 +494,16 @@ export const zmazDokument = createServerFn({ method: "POST" })
 
 const KLUCE = ["pracovna_zmluva", "dovp", "dopc", "brigadnicka", "vypoved", "potvrdenie_prijmu"] as const;
 
-async function sablonyFirmy(supabase: any, companyId: string) {
+/** Šablóny firmy — česká firma má české predvolené texty a nemá brigádnickú dohodu. */
+async function sablonyFirmy(supabase: any, companyId: string, krajina: KrajinaZamestnancov) {
   const { data } = await supabase.from("employee_doc_templates").select("key, title, body, updated_at").eq("company_id", companyId);
   const upravy = new Map<string, any>((data ?? []).map((r: any) => [r.key, r]));
-  return KLUCE.map((key) => {
+  return kluceSablon(krajina).map((key) => {
     const u = upravy.get(key);
     return {
       key,
-      title: (u?.title as string) ?? NAZOV_SABLONY[key],
-      body: (u?.body as string) ?? PREDVOLENE_SABLONY[key],
+      title: (u?.title as string) ?? nazovSablony(key, krajina),
+      body: (u?.body as string) ?? predvolenaSablona(key, krajina),
       upravena: Boolean(u),
       updated_at: (u?.updated_at as string) ?? null,
     };
@@ -480,8 +514,8 @@ export const listSablon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => Firma.parse(d))
   .handler(async ({ data, context }) => {
-    await overModul(context.supabase, data.company_id);
-    return sablonyFirmy(context.supabase, data.company_id);
+    const krajina = await overModul(context.supabase, data.company_id);
+    return sablonyFirmy(context.supabase, data.company_id, krajina);
   });
 
 export const ulozSablonu = createServerFn({ method: "POST" })
@@ -531,7 +565,7 @@ export const vyrobDokument = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    await overModul(supabase, data.company_id);
+    const krajina = await overModul(supabase, data.company_id);
     const zamestnanec = await zamestnanecFirmy(supabase, data.company_id, data.employee_id);
     const { data: firma } = await supabase
       .from("companies")
@@ -551,7 +585,8 @@ export const vyrobDokument = createServerFn({ method: "POST" })
       if (!k) throw new Error("Zmluva nenájdená.");
       zmluva = k;
     }
-    const sablona = (await sablonyFirmy(supabase, data.company_id)).find((s) => s.key === data.key)!;
+    const sablona = (await sablonyFirmy(supabase, data.company_id, krajina)).find((s) => s.key === data.key);
+    if (!sablona) throw new Error("Táto šablóna pre firmu nie je.");
 
     let rodneCislo: string | null = null;
     if (/\{\{\s*zamestnanec\.rodne_cislo\s*\}\}/.test(sablona.body)) {
@@ -564,7 +599,7 @@ export const vyrobDokument = createServerFn({ method: "POST" })
     );
     const text = vyplnSablonu(
       sablona.body,
-      hodnotyTokenov({ firma, zamestnanec: zamestnanec as any, zmluva, rodneCislo, dnes: dnesnyDatum(), doplnky }),
+      hodnotyTokenov({ firma, zamestnanec: zamestnanec as any, zmluva, rodneCislo, dnes: dnesnyDatum(), doplnky, krajina }),
     );
 
     const { dokumentZoSablonyPdf } = await import("./zamestnanci-pdf.server");

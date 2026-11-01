@@ -5,7 +5,8 @@ import { AlertTriangle, IdCard, Plus } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listZamestnancov } from "@/lib/faktero/zamestnanci.functions";
-import { celeMeno, datumSk, DRUH_ZMLUVY, type DruhZmluvy, type Pripomienka } from "@/lib/faktero/zamestnanci";
+import { celeMeno, datumSk, krajinaZamestnancov, nazovZmluvy, type Pripomienka } from "@/lib/faktero/zamestnanci";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { ChybaModulu, FARBA_PRIPOMIENKY, TextPripomienky, tlacidlo } from "@/components/faktero/zamestnanci/ui";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/zamestnanci/")({
 function ZamestnanciPage() {
   const { t } = useT();
   const nacitajZoznam = useServerFn(listZamestnancov);
+  const krajina = krajinaZamestnancov(useKrajinaDane());
   const [stav, setStav] = useState<"active" | "ended" | "vsetci">("active");
   const [data, setData] = useState<{ zamestnanci: any[]; zmluvy: any[]; pripomienky: Pripomienka[] } | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
@@ -133,7 +135,7 @@ function ZamestnanciPage() {
                             </Link>
                           </td>
                           <td className="p-3 text-muted-foreground">{z.position || "—"}</td>
-                          <td className="p-3 text-muted-foreground">{k ? t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind) : "—"}</td>
+                          <td className="p-3 text-muted-foreground">{k ? t(nazovZmluvy(k.kind, krajina)) : "—"}</td>
                           <td className="p-3 text-muted-foreground">{datumSk(z.start_date)}</td>
                           <td className="p-3">
                             <span

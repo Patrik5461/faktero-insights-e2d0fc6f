@@ -29,9 +29,12 @@ import {
   DOPLNKY_SABLONY,
   DRUH_DOCHADZKY,
   DRUH_NEPRITOMNOSTI,
-  DRUH_ZMLUVY,
+  druhyZmluv,
   hodinyZaznamu,
-  NAZOV_SABLONY,
+  kluceSablon,
+  krajinaZamestnancov,
+  nazovSablony,
+  nazovZmluvy,
   type DruhDochadzky,
   type DruhNepritomnosti,
   type DruhZmluvy,
@@ -40,6 +43,8 @@ import {
 } from "@/lib/faktero/zamestnanci";
 import {
   ChybaModulu,
+  chybaCislaUctu,
+  chybaRodnehoCisla,
   FormularZamestnanca,
   naFormular,
   pole,
@@ -51,7 +56,8 @@ import {
   TextPripomienky,
 } from "@/components/faktero/zamestnanci/ui";
 import { potvrd } from "@/lib/potvrdenie";
-import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { kontrolaZmluvyCz } from "@/lib/faktero/zamestnanci-cz";
 import { useT } from "@/lib/i18n/useT";
 import { citliveNaUlozenie } from "@/lib/faktero/zamestnanci-citlive";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -179,11 +185,17 @@ function Udaje({ cid, detail, obnov }: Vlastnosti) {
   const uloz = useServerFn(ulozZamestnanca);
   const zmaz = useServerFn(zmazZamestnanca);
   const nav = useNavigate();
+  const krajina = krajinaZamestnancov(useKrajinaDane());
   const [udaje, setUdaje] = useState<UdajeZamestnanca>(() => naFormular(detail.zamestnanec));
   const [uklada, setUklada] = useState(false);
 
   async function ulozit(e: React.FormEvent) {
     e.preventDefault();
+    const chybaUctu = chybaCislaUctu(udaje.iban, krajina);
+    if (chybaUctu) {
+      toast.error(t(chybaUctu));
+      return;
+    }
     setUklada(true);
     try {
       await uloz({ data: { company_id: cid, id: detail.zamestnanec.id, ...udaje } });
@@ -217,7 +229,7 @@ function Udaje({ cid, detail, obnov }: Vlastnosti) {
   return (
     <div className="max-w-3xl space-y-4">
       <form onSubmit={ulozit} className="space-y-4">
-        <FormularZamestnanca udaje={udaje} zmen={setUdaje} />
+        <FormularZamestnanca udaje={udaje} zmen={setUdaje} krajina={krajina} />
         <div className="flex justify-end">
           <button type="submit" className={tlacidlo} disabled={uklada}>
             {uklada ? t("Ukladám…") : t("Uložiť zmeny")}
@@ -246,6 +258,7 @@ function CitliveUdaje({ cid, detail, obnov }: Vlastnosti) {
   const { t } = useT();
   const zobraz = useServerFn(zobrazCitliveUdaje);
   const uloz = useServerFn(nastavCitliveUdaje);
+  const krajina = krajinaZamestnancov(useKrajinaDane());
   const [hodnoty, setHodnoty] = useState<{ rodne_cislo: string | null; op_cislo: string | null } | null>(null);
   const [upravuje, setUpravuje] = useState(false);
   const [rc, setRc] = useState("");
@@ -264,6 +277,11 @@ function CitliveUdaje({ cid, detail, obnov }: Vlastnosti) {
     const zmeny = citliveNaUlozenie({ rodne_cislo: rc, op_cislo: op }, hodnoty);
     if (Object.keys(zmeny).length === 0) {
       setUpravuje(false);
+      return;
+    }
+    const chybaRc = zmeny.rodne_cislo ? chybaRodnehoCisla(zmeny.rodne_cislo, krajina) : null;
+    if (chybaRc) {
+      toast.error(t(chybaRc));
       return;
     }
     try {
@@ -303,7 +321,9 @@ function CitliveUdaje({ cid, detail, obnov }: Vlastnosti) {
             <input id="c-rc" className={pole} value={rc} onChange={(e) => setRc(e.target.value)} autoComplete="off" />
           </div>
           <div>
-            <label className={popis} htmlFor="c-op">{t("Číslo občianskeho preukazu")}</label>
+            <label className={popis} htmlFor="c-op">
+              {krajina === "CZ" ? t("Číslo občianskeho preukazu alebo pasu") : t("Číslo občianskeho preukazu")}
+            </label>
             <input id="c-op" className={pole} value={op} onChange={(e) => setOp(e.target.value)} autoComplete="off" />
           </div>
           <p className="text-xs text-muted-foreground sm:col-span-2">
@@ -374,6 +394,7 @@ const prazdnaZmluva = () => ({
 function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
   const { t } = useT();
   const mena = useMenaFirmy();
+  const krajina = krajinaZamestnancov(useKrajinaDane());
   const uloz = useServerFn(ulozZmluvu);
   const zmaz = useServerFn(zmazZaznam);
   const [forma, setForma] = useState<ReturnType<typeof prazdnaZmluva> | null>(null);
@@ -406,7 +427,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
             <div>
               <label className={popis} htmlFor="k-kind">{t("Druh")}</label>
               <select id="k-kind" className={pole} value={forma.kind} onChange={nastav("kind")}>
-                {Object.entries(DRUH_ZMLUVY).map(([k, v]) => (
+                {Object.entries(druhyZmluv(krajina)).map(([k, v]) => (
                   <option key={k} value={k}>
                     {t(v)}
                   </option>
@@ -470,6 +491,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
               </select>
             </div>
           </div>
+          {krajina === "CZ" && <UpozorneniaZmluvyCz forma={forma} />}
           <div className="mt-4 flex gap-2">
             <button type="submit" className={tlacidlo}>
               {t("Uložiť zmluvu")}
@@ -490,7 +512,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="font-medium">
-                    {t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind)}{" "}
+                    {t(nazovZmluvy(k.kind, krajina))}{" "}
                     {k.number ? t("č. {cislo}", { cislo: k.number }) : ""}
                   </div>
                   <div className="text-muted-foreground">
@@ -543,11 +565,35 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
   );
 }
 
+/** Čo hovorí český Zákoník práce k vyplnenej zmluve — neblokuje uloženie. */
+function UpozorneniaZmluvyCz({ forma }: { forma: ReturnType<typeof prazdnaZmluva> }) {
+  const { t } = useT();
+  const upozornenia = kontrolaZmluvyCz(forma);
+  if (upozornenia.length === 0) return null;
+  return (
+    <ul className="mt-4 space-y-1" aria-label={t("Upozornenia k zmluve")}>
+      {upozornenia.map((u) => (
+        <li
+          key={u.text}
+          className={`rounded-md border px-3 py-2 text-xs ${
+            u.zavaznost === "warning"
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
+              : "border-border bg-muted/40 text-muted-foreground"
+          }`}
+        >
+          {t(u.text, u.params)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /* ── Dokumenty ──────────────────────────────────────────────────────────── */
 
 function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
   const { t } = useT();
   const menaFirmy = useMenaFirmy();
+  const krajina = krajinaZamestnancov(useKrajinaDane());
   const vyrob = useServerFn(vyrobDokument);
   const pridaj = useServerFn(pridajDokument);
   const odkaz = useServerFn(odkazNaDokument);
@@ -607,9 +653,9 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
           <div>
             <label className={popis} htmlFor="d-sab">{t("Šablóna")}</label>
             <select id="d-sab" className={pole} value={sablona} onChange={(e) => setSablona(e.target.value as KlucSablony)}>
-              {Object.entries(NAZOV_SABLONY).map(([k, v]) => (
+              {kluceSablon(krajina).map((k) => (
                 <option key={k} value={k}>
-                  {t(v)}
+                  {t(nazovSablony(k, krajina))}
                 </option>
               ))}
             </select>
@@ -621,7 +667,7 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
               {detail.zmluvy.map((k) => (
                 <option key={k.id} value={k.id}>
                   {t("{druh} od {datum}", {
-                    druh: t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind),
+                    druh: t(nazovZmluvy(k.kind, krajina)),
                     datum: datumSk(k.start_date),
                   })}
                 </option>

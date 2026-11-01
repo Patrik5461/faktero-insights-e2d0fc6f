@@ -3,12 +3,13 @@
  */
 import { IdCard } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
+import { type KrajinaZamestnancov, type Pripomienka } from "@/lib/faktero/zamestnanci";
+import { textPripomienky } from "@/lib/faktero/zamestnanci-texty";
 import {
-  datumSk,
-  DRUH_ZMLUVY,
-  type DruhPripomienky,
-  type Pripomienka,
-} from "@/lib/faktero/zamestnanci";
+  overCisloUctuCz,
+  overRodneCisloCz,
+  ZDRAVOTNE_POISTOVNE_CZ,
+} from "@/lib/faktero/zamestnanci-cz";
 
 /** Farba pripomienky podľa závažnosti – spoločná pre zoznam aj kartu (Z-07). */
 export const FARBA_PRIPOMIENKY: Record<Pripomienka["zavaznost"], string> = {
@@ -17,51 +18,7 @@ export const FARBA_PRIPOMIENKY: Record<Pripomienka["zavaznost"], string> = {
   info: "border-border bg-muted/40 text-foreground",
 };
 
-const NADPIS_PRIPOMIENKY: Record<DruhPripomienky, string> = {
-  sp_prihlaska: "Prihláška do Sociálnej poisťovne",
-  zp_prihlaska: "Oznámenie zdravotnej poisťovni",
-  lekarska_prehliadka: "Lekárska prehliadka",
-  bozp: "Školenie BOZP",
-  skusobna_doba: "Koniec skúšobnej doby",
-  koniec_zmluvy: "Koniec zmluvy na dobu určitú",
-};
-
-type Prekladac = (text: string, p?: Record<string, string | number>) => string;
-
-/**
- * Z-09: nadpis a text pripomienky preložené cez `t()`. Server posiela aj
- * slovenský `nadpis`/`text` (e-mail, zvonček) – ten sa tu nepoužíva.
- */
-export function textPripomienky(p: Pripomienka, t: Prekladac): { nadpis: string; text: string } {
-  const nadpis = t(NADPIS_PRIPOMIENKY[p.druh] ?? p.nadpis);
-  let vec: string;
-  switch (p.druh) {
-    case "sp_prihlaska":
-      vec = t("{meno}: prihlásiť pred nástupom {datum}", {
-        meno: p.meno,
-        datum: datumSk(p.nastup ?? p.termin),
-      });
-      break;
-    case "zp_prihlaska":
-      vec = t("{meno}: oznámiť do 8 dní od nástupu", { meno: p.meno });
-      break;
-    case "lekarska_prehliadka":
-      vec = t("{meno}: preventívna prehliadka", { meno: p.meno });
-      break;
-    case "bozp":
-      vec = t("{meno}: školenie bezpečnosti a ochrany zdravia", { meno: p.meno });
-      break;
-    default:
-      vec = p.zmluva ? `${p.meno}: ${t(DRUH_ZMLUVY[p.zmluva])}` : p.meno;
-  }
-  const kedy =
-    p.zostava < 0
-      ? t("termín {datum} už uplynul", { datum: datumSk(p.termin) })
-      : p.zostava === 0
-        ? t("termín je dnes")
-        : t("do {datum}", { datum: datumSk(p.termin) });
-  return { nadpis, text: `${vec} — ${kedy}` };
-}
+export { textPripomienky } from "@/lib/faktero/zamestnanci-texty";
 
 export function TextPripomienky({ p, className }: { p: Pripomienka; className?: string }) {
   const { t } = useT();
@@ -142,12 +99,14 @@ export type UdajeZamestnanca = {
   status: "active" | "ended";
   sp_registered_at: string;
   zp_registered_at: string;
+  sp_deregistered_at: string;
+  zp_deregistered_at: string;
   medical_check_due: string;
   bozp_training_due: string;
   note: string;
 };
 
-export function prazdneUdaje(): UdajeZamestnanca {
+export function prazdneUdaje(krajina: KrajinaZamestnancov = "SK"): UdajeZamestnanca {
   return {
     first_name: "",
     last_name: "",
@@ -155,7 +114,7 @@ export function prazdneUdaje(): UdajeZamestnanca {
     title_after: "",
     birth_date: "",
     birth_place: "",
-    nationality: "SK",
+    nationality: krajina,
     email: "",
     phone: "",
     street: "",
@@ -170,6 +129,8 @@ export function prazdneUdaje(): UdajeZamestnanca {
     status: "active",
     sp_registered_at: "",
     zp_registered_at: "",
+    sp_deregistered_at: "",
+    zp_deregistered_at: "",
     medical_check_due: "",
     bozp_training_due: "",
     note: "",
@@ -193,15 +154,34 @@ export function naFormular(z: Record<string, any>): UdajeZamestnanca {
 }
 
 const ZDRAVOTNE_POISTOVNE = ["VšZP", "Dôvera", "Union"];
+const ZDRAVOTNE_POISTOVNE_CZ_TEXT = ZDRAVOTNE_POISTOVNE_CZ.map((p) => `${p.kod} ${p.nazov}`);
+
+/** Chyba kontroly rodného čísla českej firmy (prázdne pole je v poriadku). */
+export function chybaRodnehoCisla(rc: string, krajina: KrajinaZamestnancov): string | null {
+  if (krajina !== "CZ" || !rc.trim()) return null;
+  const v = overRodneCisloCz(rc);
+  return v.ok ? null : v.chyba;
+}
+
+/** Chyba čísla účtu českej firmy (prázdne pole je v poriadku). */
+export function chybaCislaUctu(ucet: string, krajina: KrajinaZamestnancov): string | null {
+  if (krajina !== "CZ" || !ucet.trim()) return null;
+  const v = overCisloUctuCz(ucet);
+  return v.ok ? null : v.chyba;
+}
 
 export function FormularZamestnanca({
   udaje,
   zmen,
+  krajina = "SK",
 }: {
   udaje: UdajeZamestnanca;
   zmen: (u: UdajeZamestnanca) => void;
+  krajina?: KrajinaZamestnancov;
 }) {
   const { t } = useT();
+  const cz = krajina === "CZ";
+  const chybaUctu = chybaCislaUctu(udaje.iban, krajina);
   const nastav = (k: keyof UdajeZamestnanca) => (e: { target: { value: string } }) =>
     zmen({ ...udaje, [k]: e.target.value });
   const vstup = (
@@ -249,7 +229,7 @@ export function FormularZamestnanca({
               onChange={nastav("health_insurer")}
             />
             <datalist id="zam-poistovne">
-              {ZDRAVOTNE_POISTOVNE.map((p) => (
+              {(cz ? ZDRAVOTNE_POISTOVNE_CZ_TEXT : ZDRAVOTNE_POISTOVNE).map((p) => (
                 <option key={p} value={p} />
               ))}
             </datalist>
@@ -265,7 +245,23 @@ export function FormularZamestnanca({
           {vstup("street", "Ulica a číslo")}
           {vstup("city", "Mesto")}
           {vstup("zip", "PSČ")}
-          {vstup("iban", "IBAN na výplatu")}
+          {cz ? (
+            <div>
+              <label className={popis} htmlFor="zam-iban">
+                {t("Číslo účtu na výplatu (napr. 19-2000145399/0800 alebo IBAN)")}
+              </label>
+              <input
+                id="zam-iban"
+                className={pole}
+                value={udaje.iban}
+                onChange={nastav("iban")}
+                aria-invalid={chybaUctu ? true : undefined}
+              />
+              {chybaUctu && <p className="mt-1 text-xs text-destructive">{t(chybaUctu)}</p>}
+            </div>
+          ) : (
+            vstup("iban", "IBAN na výplatu")
+          )}
         </div>
       </section>
 
@@ -298,12 +294,30 @@ export function FormularZamestnanca({
         <p className="mb-3 text-xs text-muted-foreground">
           {t("Podľa týchto dátumov Faktero pripomína prihlášky a termíny v zvončeku aj e-mailom.")}
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {vstup("sp_registered_at", "Prihláška do Sociálnej poisťovne podaná", "date")}
-          {vstup("zp_registered_at", "Oznámenie zdravotnej poisťovni podané", "date")}
-          {vstup("medical_check_due", "Najbližšia lekárska prehliadka", "date")}
-          {vstup("bozp_training_due", "Najbližšie školenie BOZP", "date")}
-        </div>
+        {cz ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {vstup("sp_registered_at", "Registrácia na ČSSZ podaná", "date")}
+              {vstup("zp_registered_at", "Nástup oznámený zdravotnej poisťovni", "date")}
+              {vstup("sp_deregistered_at", "Odhlásenie z ČSSZ podané", "date")}
+              {vstup("zp_deregistered_at", "Skončenie oznámené zdravotnej poisťovni", "date")}
+              {vstup("medical_check_due", "Najbližšia lekárska prehliadka", "date")}
+              {vstup("bozp_training_due", "Najbližšie školenie BOZP", "date")}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {t(
+                "Česká firma: zamestnanca treba na ČSSZ prihlásiť (Registrace zaměstnance) najneskôr pred nástupom, najskôr 8 dní vopred, a odhlásiť do 8 dní od skončenia. Zdravotnej poisťovni sa nástup aj skončenie oznamujú do 8 dní, pri DPP a DPČ do 20. dňa nasledujúceho mesiaca. ELDP od apríla 2026 zostavuje ČSSZ z mesačného hlásenia sama.",
+              )}
+            </p>
+          </>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {vstup("sp_registered_at", "Prihláška do Sociálnej poisťovne podaná", "date")}
+            {vstup("zp_registered_at", "Oznámenie zdravotnej poisťovni podané", "date")}
+            {vstup("medical_check_due", "Najbližšia lekárska prehliadka", "date")}
+            {vstup("bozp_training_due", "Najbližšie školenie BOZP", "date")}
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">

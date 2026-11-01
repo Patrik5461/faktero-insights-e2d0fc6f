@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +7,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nastavCitliveUdaje, ulozZamestnanca } from "@/lib/faktero/zamestnanci.functions";
 import {
+  chybaCislaUctu,
+  chybaRodnehoCisla,
   FormularZamestnanca,
   pole,
   popis,
@@ -17,6 +19,8 @@ import {
 import { useT } from "@/lib/i18n/useT";
 import { zalozZamestnanca } from "@/lib/faktero/zamestnanci-citlive";
 import { preloz } from "@/lib/i18n/jazyk";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { krajinaZamestnancov } from "@/lib/faktero/zamestnanci";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový zamestnanec — Faktero") }] }),
@@ -28,7 +32,12 @@ function NovyZamestnanec() {
   const uloz = useServerFn(ulozZamestnanca);
   const ulozCitlive = useServerFn(nastavCitliveUdaje);
   const nav = useNavigate();
-  const [udaje, setUdaje] = useState(prazdneUdaje);
+  const krajina = krajinaZamestnancov(useKrajinaDane());
+  const [udaje, setUdaje] = useState(() => prazdneUdaje());
+  // Krajina firmy sa načíta až po prvom vykreslení — štátna príslušnosť sa prispôsobí, kým ju nikto nezmenil.
+  useEffect(() => {
+    if (krajina === "CZ") setUdaje((u) => (u.nationality === "SK" ? { ...u, nationality: "CZ" } : u));
+  }, [krajina]);
   const [rodneCislo, setRodneCislo] = useState("");
   const [opCislo, setOpCislo] = useState("");
   const [uklada, setUklada] = useState(false);
@@ -40,6 +49,11 @@ function NovyZamestnanec() {
     if (!cid) return;
     if (!udaje.first_name.trim() || !udaje.last_name.trim()) {
       setChyba(t("Meno a priezvisko sú povinné."));
+      return;
+    }
+    const chybaKontroly = chybaRodnehoCisla(rodneCislo, krajina) ?? chybaCislaUctu(udaje.iban, krajina);
+    if (chybaKontroly) {
+      setChyba(t(chybaKontroly));
       return;
     }
     setUklada(true);
@@ -75,7 +89,7 @@ function NovyZamestnanec() {
           {chyba && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{chyba}</div>
           )}
-          <FormularZamestnanca udaje={udaje} zmen={setUdaje} />
+          <FormularZamestnanca udaje={udaje} zmen={setUdaje} krajina={krajina} />
           <section className="rounded-xl border border-border bg-card p-4">
             <h3 className="mb-1 text-sm font-semibold">{t("Citlivé údaje")}</h3>
             <p className="mb-3 text-xs text-muted-foreground">
@@ -88,11 +102,21 @@ function NovyZamestnanec() {
                 <label className={popis} htmlFor="zam-rc">
                   {t("Rodné číslo")}
                 </label>
-                <input id="zam-rc" className={pole} value={rodneCislo} onChange={(e) => setRodneCislo(e.target.value)} autoComplete="off" />
+                <input
+                  id="zam-rc"
+                  className={pole}
+                  value={rodneCislo}
+                  onChange={(e) => setRodneCislo(e.target.value)}
+                  autoComplete="off"
+                  placeholder={krajina === "CZ" ? "RRMMDD/XXXX" : undefined}
+                />
+                {chybaRodnehoCisla(rodneCislo, krajina) && rodneCislo.replace(/\D/g, "").length >= 9 && (
+                  <p className="mt-1 text-xs text-destructive">{t(chybaRodnehoCisla(rodneCislo, krajina)!)}</p>
+                )}
               </div>
               <div>
                 <label className={popis} htmlFor="zam-op">
-                  {t("Číslo občianskeho preukazu")}
+                  {krajina === "CZ" ? t("Číslo občianskeho preukazu alebo pasu") : t("Číslo občianskeho preukazu")}
                 </label>
                 <input id="zam-op" className={pole} value={opCislo} onChange={(e) => setOpCislo(e.target.value)} autoComplete="off" />
               </div>
