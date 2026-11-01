@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia";
+import { nazovStavuPripojenia, TEXT_BANKU_SPRAVUJE } from "@/lib/faktero/banka-ui";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   listBankData,
@@ -72,6 +74,9 @@ function BankAccountsPage() {
   const revPohyby = useServerFn(synchronizujRevolutPohyby);
   const revOdpoj = useServerFn(odpojRevolut);
   const disconnect = useServerFn(disconnectBank);
+  // Pripojenie a odpojenie banky smie len majiteľ/administrátor (server inak odmietne).
+  const jeAdmin = useJeAdminFirmy();
+  const clenstvo = useClenstvoFirmy();
   const renew = useServerFn(renewBankConsent);
   const [data, setData] = useState<{ connections: any[]; accounts: any[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -297,12 +302,14 @@ function BankAccountsPage() {
             >
               <Mail className="h-4 w-4" /> {t("E-mailové notifikácie")}
             </Link>
-            <Link
-              to="/bankove-ucty/pripojit"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
-            >
-              <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
-            </Link>
+            {jeAdmin && (
+              <Link
+                to="/bankove-ucty/pripojit"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
+              >
+                <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
+              </Link>
+            )}
           </div>
         }
       />
@@ -340,16 +347,27 @@ function BankAccountsPage() {
         <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {t("Pripojené banky")}
         </h2>
+        {clenstvo.nacitane && !jeAdmin && (data?.connections.length ?? 0) > 0 && (
+          <p className="mt-1 text-xs text-muted-foreground" data-testid="banku-spravuje">
+            {t(TEXT_BANKU_SPRAVUJE)}
+          </p>
+        )}
         {data && data.connections.length === 0 && (
           <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
             <Building2 className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">{t("Žiadna banka nie je pripojená.")}</p>
-            <Link
-              to="/bankove-ucty/pripojit"
-              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
-            >
-              <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
-            </Link>
+            {jeAdmin ? (
+              <Link
+                to="/bankove-ucty/pripojit"
+                className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
+              >
+                <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
+              </Link>
+            ) : (
+              clenstvo.nacitane && (
+                <p className="mt-2 text-xs text-muted-foreground">{t(TEXT_BANKU_SPRAVUJE)}</p>
+              )
+            )}
           </div>
         )}
         <div className="mt-3 space-y-3">
@@ -368,7 +386,7 @@ function BankAccountsPage() {
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300">
-                        <AlertCircle className="h-3 w-3" /> {c.status}
+                        <AlertCircle className="h-3 w-3" /> {t(nazovStavuPripojenia(c.status))}
                       </span>
                     )}
                   </div>
@@ -407,13 +425,15 @@ function BankAccountsPage() {
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                       {t("Stiahnuť pohyby")}
                     </button>
-                    <button
-                      onClick={() => onFio(c.id, "odpojit")}
-                      disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
-                    </button>
+                    {jeAdmin && (
+                      <button
+                        onClick={() => onFio(c.id, "odpojit")}
+                        disabled={busy === c.id}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
+                      </button>
+                    )}
                   </>
                 ) : c.provider === "revolut" ? (
                   <>
@@ -432,13 +452,15 @@ function BankAccountsPage() {
                     >
                       <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
-                    <button
-                      onClick={() => onRevolut(c.id, "odpojit")}
-                      disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
-                    </button>
+                    {jeAdmin && (
+                      <button
+                        onClick={() => onRevolut(c.id, "odpojit")}
+                        disabled={busy === c.id}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
+                      </button>
+                    )}
                   </>
                 ) : c.provider === "wallester" ? (
                   <>
@@ -457,13 +479,15 @@ function BankAccountsPage() {
                     >
                       <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
-                    <button
-                      onClick={() => onWallester(c.id, "odpojit")}
-                      disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
-                    </button>
+                    {jeAdmin && (
+                      <button
+                        onClick={() => onWallester(c.id, "odpojit")}
+                        disabled={busy === c.id}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
+                      </button>
+                    )}
                   </>
                 ) : c.provider === "wise" ? (
                   <>
@@ -482,13 +506,15 @@ function BankAccountsPage() {
                     >
                       <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
-                    <button
-                      onClick={() => onWise(c.id, "odpojit")}
-                      disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
-                    </button>
+                    {jeAdmin && (
+                      <button
+                        onClick={() => onWise(c.id, "odpojit")}
+                        disabled={busy === c.id}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -511,7 +537,7 @@ function BankAccountsPage() {
                         {t("Načítať účty")}
                       </button>
                     )}
-                    {akciePripojenia(c.provider).obnovitSuhlas && (
+                    {jeAdmin && akciePripojenia(c.provider).obnovitSuhlas && (
                       <button
                         onClick={() => onRenew(c.id)}
                         disabled={busy === c.id}
@@ -521,12 +547,14 @@ function BankAccountsPage() {
                         <ShieldCheck className="h-3.5 w-3.5" /> {t("Obnoviť súhlas")}
                       </button>
                     )}
-                    <button
-                      onClick={() => onDisconnect(c.id)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
-                    </button>
+                    {jeAdmin && (
+                      <button
+                        onClick={() => onDisconnect(c.id)}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
+                      </button>
+                    )}
                   </>
                 )}
               </div>

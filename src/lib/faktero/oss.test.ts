@@ -32,7 +32,13 @@ describe("prehľad OSS", () => {
   it("dobropis odpočítava", () => {
     const p = ossPrehlad([
       ...doklady,
-      { cislo: "4", datum: "2026-08-20", stat: "DE", opravny: true, riadky: [{ sadzba: 19, zaklad: 100, dan: 19 }] },
+      {
+        cislo: "4",
+        datum: "2026-08-20",
+        stat: "DE",
+        opravny: true,
+        riadky: [{ sadzba: 19, zaklad: 100, dan: 19 }],
+      },
     ]);
     expect(p.riadky.find((r) => r.stat === "DE")).toMatchObject({ zaklad: 200, dan: 38 });
   });
@@ -40,7 +46,13 @@ describe("prehľad OSS", () => {
   it("záporne uložený dobropis (formulár) sa neotáča druhýkrát", () => {
     const p = ossPrehlad([
       ...doklady,
-      { cislo: "4", datum: "2026-08-20", stat: "DE", opravny: true, riadky: [{ sadzba: 19, zaklad: -100, dan: -19 }] },
+      {
+        cislo: "4",
+        datum: "2026-08-20",
+        stat: "DE",
+        opravny: true,
+        riadky: [{ sadzba: 19, zaklad: -100, dan: -19 }],
+      },
     ]);
     expect(p.riadky.find((r) => r.stat === "DE")).toMatchObject({ zaklad: 200, dan: 38 });
     expect(p.danSpolu).toBe(48);
@@ -48,7 +60,12 @@ describe("prehľad OSS", () => {
 
   it("štát mimo EÚ a nulová sadzba sa ozvú", () => {
     const p = ossPrehlad([
-      { cislo: "5", datum: "2026-08-20", stat: "US", riadky: [{ sadzba: 19, zaklad: 10, dan: 1.9 }] },
+      {
+        cislo: "5",
+        datum: "2026-08-20",
+        stat: "US",
+        riadky: [{ sadzba: 19, zaklad: 10, dan: 1.9 }],
+      },
       { cislo: "6", datum: "2026-08-20", stat: "DE", riadky: [{ sadzba: 0, zaklad: 10, dan: 0 }] },
     ]);
     expect(p.riadky).toHaveLength(0);
@@ -68,5 +85,22 @@ describe("zaradenie do štvrťroka", () => {
   it("mesiac určí štvrťrok", () => {
     expect(stvrtrokDna("2026-01-31")).toEqual({ rok: 2026, stvrtrok: 1 });
     expect(stvrtrokDna("2026-12-01")).toEqual({ rok: 2026, stvrtrok: 4 });
+  });
+});
+
+describe("OSS — prepočet do eur (B-14)", () => {
+  it("euro je 1, SK/DE firma prepočíta kurzom ECB z dokladu", async () => {
+    const { eurZaJednotkuOss } = await import("./oss");
+    expect(eurZaJednotkuOss({ currency: "EUR" }, "SK")).toBe(1);
+    expect(eurZaJednotkuOss({ currency: null }, "SK")).toBe(1);
+    expect(eurZaJednotkuOss({ currency: "CZK", exchange_rate: 25 }, "SK")).toBeCloseTo(0.04, 6);
+    expect(eurZaJednotkuOss({ currency: "PLN", exchange_rate: 4 }, "DE")).toBeCloseTo(0.25, 6);
+  });
+  it("bez kurzu alebo pri CZ firme v CZK nevymýšľa kurz 1", async () => {
+    const { eurZaJednotkuOss } = await import("./oss");
+    expect(eurZaJednotkuOss({ currency: "USD", exchange_rate: null }, "SK")).toBeNull();
+    expect(eurZaJednotkuOss({ currency: "CZK", exchange_rate: 1 }, "CZ")).toBeNull();
+    expect(eurZaJednotkuOss({ currency: null }, "CZ")).toBeNull();
+    expect(eurZaJednotkuOss({ currency: "EUR", exchange_rate: 25 }, "CZ")).toBe(1);
   });
 });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ZoznamVytiek } from "@/components/faktero/ZoznamVytiek";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, Download, Info, Loader2 } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -257,21 +258,11 @@ export function DeZm() {
                 )}
               </p>
             )}
-            {data.vytky.length > 0 && (
-              <div className="mx-4 mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  {t("Pred podaním skontrolujte ({n})", { n: data.vytky.length })}
-                </div>
-                <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
-                  {data.vytky.slice(0, 20).map((v, i) => (
-                    <li key={i}>
-                      <span className="font-medium">{v.doklad}</span>: {t(v.text)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <ZoznamVytiek
+              vytky={data.vytky}
+              nadpis={t("Pred podaním skontrolujte ({n})", { n: data.vytky.length })}
+              className="mx-4 mb-4"
+            />
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3">
               <div className="min-w-0 text-xs text-muted-foreground">

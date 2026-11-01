@@ -35,6 +35,7 @@ import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData } from "@/lib/faktero/tatrabanka.functions";
+import { uctyPrePlatbuTb } from "@/lib/faktero/banka-ui";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import {
   payPurchaseInvoice,
@@ -106,6 +107,7 @@ const PAY_ERRORS: Record<string, string> = {
   payment_already_in_progress: "Platba tejto faktúry už prebieha.",
   not_approved: "Faktúra ešte nie je schválená — zaplatiť sa dá až po schválení.",
   unsupported_currency: "Cez banku sa dajú platiť len faktúry v eurách.",
+  account_not_tatrabanka: "Platiť sa dá len z účtu v Tatra banke s platným súhlasom.",
   not_configured: "Napojenie na banku nie je nastavené.",
   Forbidden: "Na platby potrebujete rolu vlastníka alebo správcu.",
 };
@@ -187,7 +189,8 @@ function PurchaseInvoiceDetail() {
         bankData({ data: { company_id: cid } }),
         loadPayments({ data: { company_id: cid, invoice_id: id } }),
       ]);
-      setAccounts(b.accounts ?? []);
+      // Platiť sa dá len z účtov Tatra banky s platným súhlasom (PIS) — nie z Fio, Wise či výpisu.
+      setAccounts(uctyPrePlatbuTb(b.accounts ?? [], (b.connections ?? []) as any[]));
       setPayments(p ?? []);
     } catch {
       // Banka nemusí byť pripojená — vtedy sa platobná časť jednoducho neponúkne.
@@ -1047,7 +1050,11 @@ function PurchaseInvoiceDetail() {
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("Suma")}</span>
                   <span className="font-semibold tabular-nums">
-                    {fmt(Number(row.amount_total), row.currency)}
+                    {/* Po čiastočných úhradách sa platí len zvyšok — rovnako počíta server. */}
+                    {fmt(
+                      uhradyFaktury.nacitane ? uhradyFaktury.stav.zostava : Number(row.amount_total),
+                      row.currency,
+                    )}
                   </span>
                 </div>
                 {vsPrijatej(row) && (

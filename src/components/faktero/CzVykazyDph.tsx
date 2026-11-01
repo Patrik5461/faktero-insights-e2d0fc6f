@@ -1,3 +1,6 @@
+import type { ReactNode } from "react";
+import { ZoznamVytiek } from "@/components/faktero/ZoznamVytiek";
+import { formaKhPreMesiac } from "@/lib/faktero/vykazy-rezim";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -88,7 +91,7 @@ function stiahni(nazov: string, obsah: string) {
   URL.revokeObjectURL(a.href);
 }
 
-export function CzVykazyDph() {
+export function CzVykazyDph({ uvod }: { uvod?: ReactNode } = {}) {
   const { t } = useT();
   const zostav = useServerFn(zostavCzVykazyFn);
   const uloz = useServerFn(ulozVykazFn);
@@ -100,7 +103,10 @@ export function CzVykazyDph() {
   const [mesiac, setMesiac] = useState(minuly.getMonth() + 1);
   const [stvrtrok, setStvrtrok] = useState(Math.floor(minuly.getMonth() / 3) + 1);
   const [formaDp, setFormaDp] = useState<Exclude<FormaCz, "N">>("B");
-  const [formaKh, setFormaKh] = useState<Exclude<FormaCz, "D">>("B");
+  // Forma KH sa volí pre každý mesiac zvlášť — následné hlásenie za jeden
+  // mesiac štvrťroka nesmie zmeniť formu ostatných.
+  const [formyKh, setFormyKh] = useState<Record<number, Exclude<FormaCz, "D">>>({});
+  const formaKhMesiaca = (m: number) => formaKhPreMesiac(formyKh, m);
   const [formaSh, setFormaSh] = useState<"R" | "N">("R");
   const [h, setH] = useState({
     cUfo: "",
@@ -226,6 +232,7 @@ export function CzVykazyDph() {
         )}
       />
       <PageBody>
+        {uvod}
         <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 lg:grid-cols-6">
           <label className="block">
             <span className={popis}>{t("Rok")}</span>
@@ -377,21 +384,10 @@ export function CzVykazyDph() {
               )}
             </p>
 
-            {data.vytky.length > 0 && (
-              <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  {t("Pred podaním doplňte ({n})", { n: data.vytky.length })}
-                </div>
-                <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
-                  {data.vytky.slice(0, 20).map((v, i) => (
-                    <li key={i}>
-                      <span className="font-medium">{v.doklad}</span>: {v.text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <ZoznamVytiek
+              vytky={data.vytky}
+              nadpis={t("Pred podaním doplňte ({n})", { n: data.vytky.length })}
+            />
 
             {/* Přiznání */}
             <section className="mb-6 rounded-xl border border-border bg-card">
@@ -553,8 +549,8 @@ export function CzVykazyDph() {
                 key={m}
                 mesiac={m}
                 kh={kh as KontrolniHlaseni}
-                forma={formaKh}
-                setForma={setFormaKh}
+                forma={formaKhMesiaca(m)}
+                setForma={(f) => setFormyKh((x) => ({ ...x, [m]: f }))}
                 onXml={() =>
                   hlavicka &&
                   overHlavicku() &&
@@ -566,14 +562,14 @@ export function CzVykazyDph() {
                           kh as KontrolniHlaseni,
                           hlavicka,
                           { rok, mesiac: m },
-                          { forma: formaKh, kodPredmetu: h.kodPredmetu },
+                          { forma: formaKhMesiaca(m), kodPredmetu: h.kodPredmetu },
                         ),
                       )
                     : toast.error(
                         t("Vyberte kód predmetu plnenia pre prenesenie daňovej povinnosti."),
                       ))
                 }
-                onPodane={() => oznacPodane("cz_kh", formaKh, kh as any, m)}
+                onPodane={() => oznacPodane("cz_kh", formaKhMesiaca(m), kh as any, m)}
               />
             ))}
           </>

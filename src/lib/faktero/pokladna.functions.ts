@@ -2,7 +2,7 @@ import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { priebehPokladne, stavPokladne } from "./pokladna";
+import { pociatocnyStavMesiaca, priebehPokladne, stavPokladne } from "./pokladna";
 import { cisloZRadu } from "./cislo-z-radu.server";
 
 /**
@@ -79,14 +79,9 @@ export const getCashBook = createServerFn({ method: "POST" })
       stav: stavPokladne(doklady ?? [], vydavky ?? []),
       riadky: [...riadky].reverse(),
       // Zostatok pred prvým riadkom mesiaca — počiatočný stav obdobia.
-      pociatocny_stav_obdobia:
-        riadky.length > 0
-          ? Math.round(
-              (riadky[0].zostatok -
-                (riadky[0].typ === "prijem" ? riadky[0].suma : -riadky[0].suma)) *
-                100,
-            ) / 100
-          : (celyPriebeh[celyPriebeh.length - 1]?.zostatok ?? 0),
+      // Mesiac bez pohybov preberá zostatok z konca predchádzajúcich mesiacov,
+      // nie konečný zostatok celej histórie.
+      pociatocny_stav_obdobia: data.month ? pociatocnyStavMesiaca(celyPriebeh, data.month) : 0,
       locked_until: (firma?.locked_until as string | null) ?? null,
     };
   });

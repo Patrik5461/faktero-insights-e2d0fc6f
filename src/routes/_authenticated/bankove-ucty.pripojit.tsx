@@ -28,6 +28,9 @@ import { pripojFio, stavFio, synchronizujFio, odpojFio } from "@/lib/faktero/fio
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
+import { potvrd } from "@/lib/potvrdenie";
+import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia";
+import { TEXT_BANKU_SPRAVUJE } from "@/lib/faktero/banka-ui";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import {
   Building2,
@@ -50,6 +53,9 @@ function ConnectPage() {
   // Českej firme je Fio najbližšia banka — ide hneď za Tatra banku.
   const ceska = useKrajinaDane() === "CZ";
   const [busy, setBusy] = useState(false);
+  // Pripojiť banku smie len majiteľ/administrátor — ostatným vysvetlenie namiesto tlačidiel.
+  const jeAdmin = useJeAdminFirmy();
+  const clenstvo = useClenstvoFirmy();
 
   async function connect() {
     const cid = getActiveCompanyId();
@@ -79,9 +85,21 @@ function ConnectPage() {
     <>
       <PageHeader
         title={t("Pripojiť banku")}
-        description={t("Tatra banka, Fio banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie.")}
+        description={t("Tatra banka, Fio banka, Wise, Wallester a Revolut Business. Zostatky a pohyby sa len čítajú.")}
       />
       <PageBody>
+        {clenstvo.nacitane && !jeAdmin ? (
+          <div
+            className="mx-auto max-w-xl rounded-xl border border-border bg-card p-6 text-sm"
+            data-testid="banku-spravuje"
+          >
+            <p>{t(TEXT_BANKU_SPRAVUJE)}</p>
+            <Link to="/bankove-ucty" className="mt-3 inline-block text-primary underline underline-offset-2">
+              {t("Späť na bankové účty")}
+            </Link>
+          </div>
+        ) : (
+        <>
         {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-8 shadow-sm">
@@ -100,9 +118,9 @@ function ConnectPage() {
             </div>
             <ul className="mt-6 space-y-2 text-sm text-foreground/80">
               <li>• {t("Načítanie zoznamu účtov a aktuálnych zostatkov")}</li>
-              <li>• {t("Načítanie transakcií za posledných 90 dní")}</li>
+              <li>• {t("Načítanie pohybov až 13 mesiacov dozadu")}</li>
               <li>• {t("Automatické párovanie platieb s faktúrami")}</li>
-              <li>• {t("Bez platobných príkazov, iba na čítanie")}</li>
+              <li>• {t("Úhrada prijatých faktúr z účtu v Tatra banke — každú platbu potvrdíte v banke")}</li>
             </ul>
             {/*
               Najčastejšia otázka na tejto obrazovke: „a čo keď mám inú banku?".
@@ -155,6 +173,8 @@ function ConnectPage() {
             </Link>
           </div>
         </div>
+        </>
+        )}
       </PageBody>
     </>
   );
@@ -271,13 +291,23 @@ function FioPripojenie() {
               </button>
               <button
                 disabled={busy !== null}
-                onClick={() =>
+                onClick={async () => {
+                  // Odpojenie vždy až po potvrdení — rovnako ako na /bankove-ucty.
+                  if (
+                    !(await potvrd(
+                      t(
+                        "Naozaj odpojiť {nazov}?\n\nZostatky sa prestanú aktualizovať a pripojenie budete musieť nastaviť znova. Už stiahnuté pohyby ostanú.",
+                        { nazov: "Fio" },
+                      ),
+                    ))
+                  )
+                    return;
                   sprav(
                     `odpoj-${u.id}`,
                     () => odpojFn({ data: { company_id: cid!, connection_id: u.id } }),
                     () => t("Fio účet odpojený. Pohyby ostávajú."),
-                  )
-                }
+                  );
+                }}
                 className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
               >
                 {t("Odpojiť")}

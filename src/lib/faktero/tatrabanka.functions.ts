@@ -100,7 +100,8 @@ export const startBankConnect = createServerFn({ method: "POST" })
   .validator((d: unknown) => CompanyInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
-    if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
+    if (!["owner", "admin"].includes(role))
+      throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
     if (!isTatraConfigured()) throw new Error("not_configured");
@@ -153,7 +154,8 @@ export const renewBankConsent = createServerFn({ method: "POST" })
   .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
-    if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
+    if (!["owner", "admin"].includes(role))
+      throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
     if (!isTatraConfigured()) throw new Error("not_configured");
@@ -372,7 +374,8 @@ export const disconnectBank = createServerFn({ method: "POST" })
   .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
-    if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
+    if (!["owner", "admin"].includes(role))
+      throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
       .from("bank_connections")
@@ -444,6 +447,12 @@ const SumyInput = z.object({
     .optional()
     .nullable(),
   hladat: z.string().max(200).optional().nullable(),
+  /** Ten istý filter „Vybavenie“ ako tabuľka pohybov — inak karty sčítajú aj skryté pohyby. */
+  vybavenie: z
+    .string()
+    .regex(/^[a-z_]{1,40}$/)
+    .optional()
+    .nullable(),
 });
 
 export const sumyTransakcii = createServerFn({ method: "POST" })
@@ -465,6 +474,7 @@ export const sumyTransakcii = createServerFn({ method: "POST" })
       if (data.account_id) q = q.eq("bank_account_id", data.account_id);
       if (data.date_from) q = q.gte("booking_date", data.date_from);
       if (data.date_to) q = q.lte("booking_date", data.date_to);
+      if (data.vybavenie) q = q.eq("vybavenie", data.vybavenie);
       const term = (data.hladat ?? "").trim().replace(/[%_,()]/g, "");
       if (term) {
         q = q.or(

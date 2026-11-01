@@ -54,7 +54,7 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
     const { data: inv } = await supabaseAdmin
       .from("purchase_invoices")
       .select(
-        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at, note",
+        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at, note, advance_amount, advance_invoice_id",
       )
       .eq("id", data.invoice_id)
       .eq("company_id", data.company_id)
@@ -69,7 +69,36 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
     if (!isValidIban(inv.supplier_iban)) throw new Error("invalid_supplier_iban");
     // TB Premium API robí cez sepa-credit-transfers len eurové platby.
     if ((inv.currency ?? "EUR") !== "EUR") throw new Error("unsupported_currency");
-    const amount = Number(inv.amount_total);
+    /*
+      Platí sa len to, čo ešte zostáva: po čiastočných úhradách a odpočte
+      zaplatenej zálohy (rovnaký výpočet ako karta úhrady na detaile).
+    */
+    const { stavUhradyPrijatej, zalohaPrijatej } = await import("./uhrady-prijatej");
+    const [{ data: uhrady }, { data: zalohova }] = await Promise.all([
+      supabaseAdmin
+        .from("purchase_invoice_payments")
+        .select("id, amount, paid_at")
+        .eq("purchase_invoice_id", inv.id),
+      (inv as any).advance_invoice_id
+        ? supabaseAdmin
+            .from("purchase_invoices")
+            .select("amount_total, status")
+            .eq("id", (inv as any).advance_invoice_id)
+            .eq("company_id", data.company_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null as any }),
+    ]);
+    const stavUhrady = stavUhradyPrijatej({
+      amount_total: inv.amount_total,
+      status: inv.status,
+      uhrady: (uhrady ?? []) as any[],
+      zaloha: zalohaPrijatej(
+        (inv as any).advance_amount,
+        zalohova?.status === "paid" ? Number(zalohova.amount_total ?? 0) : 0,
+      ),
+    });
+    if (stavUhrady.stav === "uhradena") throw new Error("invoice_already_paid");
+    const amount = stavUhrady.zostava;
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("invalid_amount");
 
     // Rozpracovanú platbu tej istej faktúry nezakladáme druhýkrát — inak by
@@ -92,6 +121,17 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id)
         .maybeSingle();
       if (!acc) throw new Error("account_not_found");
+      // Platbu založí len Tatra banka — účet z Fio, Wise či výpisu by banka odmietla.
+      const { data: conn } = acc.bank_connection_id
+        ? await supabaseAdmin
+            .from("bank_connections")
+            .select("provider, status")
+            .eq("id", acc.bank_connection_id)
+            .eq("company_id", data.company_id)
+            .maybeSingle()
+        : { data: null };
+      if (conn?.provider !== "tatrabanka" || conn?.status !== "connected")
+        throw new Error("account_not_tatrabanka");
       debtorIban = acc.iban;
       connectionId = acc.bank_connection_id;
     }

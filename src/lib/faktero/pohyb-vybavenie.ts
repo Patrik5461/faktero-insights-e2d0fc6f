@@ -119,13 +119,30 @@ export function stavPohybu(p: PohybStav): StavPohybu {
  */
 export function pokrytiePohybu(
   sumaPohybu: number,
-  doklady: { suma: number }[],
-): { spolu: number; z: number; zostava: number; uplne: boolean } {
+  doklady: { suma: number; mena?: string | null }[],
+  menaPohybu?: string | null,
+): { spolu: number; z: number; zostava: number; uplne: boolean; inaMena: number } {
   const z = Math.round(Math.abs(Number(sumaPohybu) || 0) * 100) / 100;
+  /*
+    Sčítajú sa len doklady v mene pohybu — 100 Kč a 100 € nie je 200 ničoho.
+    Doklady v inej mene sa len spočítajú (`inaMena`) a obrazovka to napíše.
+    Bez meny pohybu alebo dokladu sa berie, že sedí (staršie volania).
+  */
+  const m = String(menaPohybu ?? "")
+    .trim()
+    .toUpperCase();
+  const vMene = (d: { mena?: string | null }) => {
+    const dm = String(d.mena ?? "")
+      .trim()
+      .toUpperCase();
+    return !m || !dm || dm === m;
+  };
   const spolu =
-    Math.round(doklady.reduce((s, d) => s + Math.abs(Number(d.suma) || 0), 0) * 100) / 100;
+    Math.round(doklady.filter(vMene).reduce((s, d) => s + Math.abs(Number(d.suma) || 0), 0) * 100) /
+    100;
   const zostava = Math.round((z - spolu) * 100) / 100;
-  return { spolu, z, zostava, uplne: Math.abs(zostava) < 0.005 };
+  const inaMena = doklady.filter((d) => !vMene(d)).length;
+  return { spolu, z, zostava, uplne: Math.abs(zostava) < 0.005 && inaMena === 0, inaMena };
 }
 
 /** Parametre odkazu „Vytvoriť pravidlo z tohto pohybu“ na stránku Pravidlá účtovania. */

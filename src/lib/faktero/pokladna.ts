@@ -118,6 +118,26 @@ export function priebehPokladne(
   });
 }
 
+/**
+ * Zostatok na začiatku mesiaca `RRRR-MM` = zostatok po poslednom pohybe pred
+ * jeho prvým dňom (bez pohybov skôr 0). Platí aj pre mesiac bez pohybov —
+ * nikdy sa nevezme zostatok z neskorších mesiacov. `priebeh` je zoradený
+ * výstup `priebehPokladne`.
+ */
+export function pociatocnyStavMesiaca(
+  priebeh: readonly { datum: string; zostatok: number }[],
+  mesiac: string,
+  pociatocnyStav = 0,
+): number {
+  const hranica = `${mesiac}-01`;
+  let stav = centy(pociatocnyStav);
+  for (const r of priebeh) {
+    if (r.datum >= hranica) break;
+    stav = r.zostatok;
+  }
+  return stav;
+}
+
 export type StavPokladne = {
   prijmy: number;
   vydavky: number;

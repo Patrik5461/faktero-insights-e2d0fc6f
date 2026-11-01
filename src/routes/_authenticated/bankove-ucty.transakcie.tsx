@@ -77,6 +77,7 @@ function obdobiePopis(
 function TxPage() {
   const { t } = useT();
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const fetchData = useServerFn(listBankData);
   const sync = useServerFn(syncBankTransactions);
   const nacitajSumy = useServerFn(sumyTransakcii);
@@ -161,6 +162,7 @@ function TxPage() {
         date_from: dateFrom || null,
         date_to: dateTo || null,
         hladat: q || null,
+        vybavenie: vybavenie || null,
       },
     })
       .then((r) => {
@@ -172,7 +174,7 @@ function TxPage() {
     return () => {
       zrusene = true;
     };
-  }, [selected, dateFrom, dateTo, q, total]);
+  }, [selected, dateFrom, dateTo, q, vybavenie, total]);
 
   /* K spárovaným pohybom dotiahneme číslo faktúry — samotné id nikomu nič nepovie. */
   const [faktury, setFaktury] = useState<Record<string, string>>({});
@@ -283,6 +285,9 @@ function TxPage() {
             setDateTo("");
             setSmer("");
             setVybavenie("");
+            // „Vyčistiť“ zruší aj zvolený účet, vrátane ?account z karty účtu.
+            setSelected(undefined);
+            if (search.account) navigate({ search: {}, replace: true });
           }}
           right={
             <div className="flex flex-wrap gap-2">
