@@ -69,10 +69,18 @@ function DeliveryNoteHistoryPage() {
   );
 
   async function openDoc(path: string) {
+    /*
+      Okno sa otvára hneď po kliknutí — Safari zablokuje `window.open` volaný
+      až po `await` (už to nepovažuje za akciu používateľa). Adresa sa doplní
+      po podpísaní (F-09).
+    */
+    const okno = window.open("", "_blank");
     try {
       const { url } = await signFn({ data: { storage_path: path } });
-      window.open(url, "_blank");
+      if (okno) okno.location.href = url;
+      else window.open(url, "_blank");
     } catch (e: any) {
+      okno?.close();
       toast.error(e?.message ?? t("Nepodarilo sa otvoriť dokument."));
     }
   }

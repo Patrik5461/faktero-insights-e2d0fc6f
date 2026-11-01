@@ -12,7 +12,9 @@ import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
 import { PRODUKTY, mnozne } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY } from "@/lib/faktero/mena";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
+import { textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
@@ -20,9 +22,6 @@ export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   component: AkciePage,
 });
 
-function suma(n: unknown) {
-  return formatovacMeny("EUR", "sk-SK")(cislo(n));
-}
 
 /** Dnešok v miestnom čase. `toISOString()` by po polnoci vrátil včerajšok. */
 function dnes(): string {
@@ -45,6 +44,9 @@ type Polozka = { product_id: string; unit_price: string };
 
 function AkciePage() {
   const { t } = useT();
+  // Ceny v mene firmy — česká firma má cenník v Kč, nie v € (F-01/F-02).
+  const { suma: sumaMeny } = useFormatMenyFirmy();
+  const suma = (n: unknown) => sumaMeny(cislo(n));
   const nacitajAkcie = useServerFn(listPriceActions);
   const ulozAkciu = useServerFn(savePriceAction);
   const zmazAkciu = useServerFn(deletePriceAction);
@@ -197,7 +199,7 @@ function AkciePage() {
                           className={`rounded-full px-2 py-0.5 text-xs ${
                             bezi
                               ? "bg-emerald-500/10 text-emerald-700"
-                              : skoncila
+                              : skoncila || !a.active
                                 ? "bg-muted text-muted-foreground"
                                 : "bg-blue-500/10 text-blue-600"
                           }`}
@@ -259,7 +261,12 @@ function AkciePage() {
                         aria-label={t("Zmazať akciu")}
                         onClick={async () => {
                           if (!(await potvrd(t("Zmazať akciu „{nazov}\"?", { nazov: a.name })))) return;
-                          await zmazAkciu({ data: { company_id: cid!, id: a.id } });
+                          try {
+                            await zmazAkciu({ data: { company_id: cid!, id: a.id } });
+                            toast.success(t("Akcia zmazaná"));
+                          } catch (e) {
+                            toast.error(t(textChybyZapisu(e, t)));
+                          }
                           nacitaj();
                         }}
                         className="rounded p-1.5 text-muted-foreground hover:bg-muted"

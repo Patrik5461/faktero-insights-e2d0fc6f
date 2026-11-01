@@ -34,7 +34,13 @@ function EditStockProduct() {
   const mena = useMenaFirmy();
   const { id } = Route.useParams();
   const nav = useNavigate();
-  const { canManage } = useStockPermissions();
+  /*
+    Kartu (ceny, minimum, archiváciu) smie upravovať každý s právom zápisu do
+    skladu — rovnako ako dialóg v zozname a RLS na `stock_items`. Predtým
+    stránka chcela admina a dialóg nič (SA-11a). Kým sa rola načítava,
+    ukazuje sa „Načítavam…“, nie „Nemáte oprávnenie“ (SA-17).
+  */
+  const { canMutate, loading: rolaNacitava } = useStockPermissions();
   const fetchDetail = useServerFn(getProductStockDetail);
   const doUpdate = useServerFn(updateStockProduct);
   const fetchCategories = useServerFn(listStockCategories);
@@ -203,7 +209,7 @@ function EditStockProduct() {
     }
   }
 
-  if (loading)
+  if (loading || rolaNacitava)
     return (
       <PageBody>
         <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
@@ -220,7 +226,7 @@ function EditStockProduct() {
         </div>
       </PageBody>
     );
-  if (!canManage)
+  if (!canMutate)
     return (
       <PageBody>
         <div className="text-sm text-muted-foreground">

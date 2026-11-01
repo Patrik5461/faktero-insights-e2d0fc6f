@@ -61,6 +61,8 @@ function DeliveryNoteScanPage() {
   const [storagePath, setStoragePath] = useState<string | null>(null);
   const [scanStep, setScanStep] = useState(0); // 0 uploaded, 1 analyzing, 2 extracting, 3 preview
   const [scanError, setScanError] = useState<string | null>(null);
+  /* Okno skenu ostáva po chybe otvorené s „Skúsiť znova“, kým ho človek nezavrie (F-04). */
+  const [chybaVOkne, setChybaVOkne] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const lastFileRef = useRef<File | null>(null);
   const dragRef = useRef<HTMLDivElement | null>(null);
@@ -290,6 +292,7 @@ function DeliveryNoteScanPage() {
       }
       console.error("[dodaci-list] parse error:", e);
       setScanError(e?.message ?? t("AI spracovanie zlyhalo."));
+      setChybaVOkne(true);
       toast.error(e?.message ?? t("AI spracovanie zlyhalo."));
       setParsing(false);
       setScanSuccess(false);
@@ -299,12 +302,14 @@ function DeliveryNoteScanPage() {
   function cancelScan() {
     cancelledRef.current = true;
     abortRef.current?.abort();
+    setChybaVOkne(false);
     setParsing(false);
     setScanSuccess(false);
     setScanStep(0);
   }
 
   function retryScan() {
+    setChybaVOkne(false);
     if (lastFileRef.current) handleFile(lastFileRef.current);
   }
 
@@ -482,10 +487,10 @@ function DeliveryNoteScanPage() {
       />
       <PageBody>
         <AiScanOverlay
-          open={parsing || scanSuccess}
+          open={parsing || scanSuccess || chybaVOkne}
           step={scanStep}
           success={scanSuccess}
-          error={scanError && parsing ? scanError : null}
+          error={chybaVOkne ? scanError : null}
           onClose={cancelScan}
           onRetry={retryScan}
         />
@@ -510,7 +515,7 @@ function DeliveryNoteScanPage() {
             <div>
               <div className="text-base font-medium">{t("Nahrajte alebo odfoťte dodací list")}</div>
               <div className="mt-1 text-xs text-muted-foreground">
-                {t("JPG, PNG, WebP alebo PDF (max 15 MB)")}
+                {t("JPG, PNG, WebP (max 5 MB) alebo PDF (max 10 MB)")}
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">

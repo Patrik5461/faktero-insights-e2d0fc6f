@@ -34,20 +34,11 @@ function WarehousesPage() {
       .select("*")
       .eq("company_id", cid)
       .order("created_at");
+    // Prázdny zoznam sa tu nezapĺňa — otvorenie stránky nemá nič zapisovať
+    // (čitateľovi bez práva zápisu to hlásilo chybu RLS). Sklad pridá
+    // používateľ tlačidlom alebo ho založí prvý pohyb (SA-14).
     setRows(data ?? []);
     setLoading(false);
-    if ((data ?? []).length === 0) {
-      // Auto-create default warehouse
-      await supabase
-        .from("warehouses")
-        .insert({ company_id: cid, name: t("Hlavný sklad"), active: true });
-      const { data: d2 } = await supabase
-        .from("warehouses")
-        .select("*")
-        .eq("company_id", cid)
-        .order("created_at");
-      setRows(d2 ?? []);
-    }
   }
   useEffect(() => {
     load();

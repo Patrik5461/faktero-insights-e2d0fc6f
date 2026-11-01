@@ -21,7 +21,7 @@ import {
   sendPurchaseOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
-import { PackageCheck, Send, Trash2, X } from "lucide-react";
+import { PackageCheck, Pencil, Send, Trash2, X } from "lucide-react";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -176,6 +176,15 @@ function PurchaseOrderDetail() {
         }
         menuActions={
           <MenuSkupina>
+            {stav === "draft" && (
+              <MenuAkcia
+                ikona={Pencil}
+                disabled={busy}
+                onClick={() => nav({ to: "/sklad/objednavky/nova", search: { id } })}
+              >
+                {t("Upraviť")}
+              </MenuAkcia>
+            )}
             {otvorena && (
               <MenuAkcia
                 ikona={X}

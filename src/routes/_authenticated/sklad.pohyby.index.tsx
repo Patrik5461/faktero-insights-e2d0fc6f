@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { hodnotaPohybu, pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import { hodnotaPohybu, hraniceDniPohybov, pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import { poDavkach } from "@/lib/faktero/strankovanie";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -29,6 +30,9 @@ export const Route = createFileRoute("/_authenticated/sklad/pohyby/")({
   }),
   component: MovementsPage,
 });
+
+/** Zoznam ukáže najviac toľko pohybov; pri dosiahnutí stropu to povie (SA-13b). */
+const LIMIT_POHYBOV = 1000;
 
 const TYPE_LABEL: Record<string, string> = {
   prijem: "Príjem",
@@ -70,24 +74,21 @@ function MovementsPage() {
         .select("*")
         .eq("company_id", cid)
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .limit(LIMIT_POHYBOV);
       if (filter) q = q.eq("type", filter as any);
       if (stock_item_id) q = q.eq("stock_item_id", stock_item_id);
       if (warehouseFilter) q = q.eq("warehouse_id", warehouseFilter);
-      if (dateFrom) q = q.gte("created_at", new Date(dateFrom).toISOString());
-      if (dateTo) {
-        const end = new Date(dateTo);
-        end.setHours(23, 59, 59, 999);
-        q = q.lte("created_at", end.toISOString());
-      }
+      const hranice = hraniceDniPohybov(dateFrom, dateTo);
+      if (hranice.od) q = q.gte("created_at", hranice.od);
+      if (hranice.po) q = q.lte("created_at", hranice.po);
       const { data } = await q;
       setRows(data ?? []);
       const ids = Array.from(new Set((data ?? []).map((r: any) => r.stock_item_id)));
       if (ids.length) {
-        const { data: si } = await supabase
-          .from("stock_items")
-          .select("id, sku, product_id")
-          .in("id", ids);
+        // Po dávkach — tisíc id v jednom `.in()` je na URL pridlhé.
+        const si = await poDavkach<any>(ids as string[], (kus) =>
+          supabase.from("stock_items").select("id, sku, product_id").in("id", kus),
+        ).catch(() => [] as any[]);
         const m: Record<string, any> = {};
         (si ?? []).forEach((x: any) => {
           m[x.id] = x;
@@ -97,7 +98,9 @@ function MovementsPage() {
           new Set((si ?? []).map((x: any) => x.product_id).filter(Boolean)),
         );
         if (prodIds.length) {
-          const { data: pr } = await supabase.from("products").select("id, name").in("id", prodIds);
+          const pr = await poDavkach<any>(prodIds as string[], (kus) =>
+            supabase.from("products").select("id, name").in("id", kus),
+          ).catch(() => [] as any[]);
           const pm: Record<string, { name: string }> = {};
           (pr ?? []).forEach((p: any) => {
             pm[p.id] = { name: p.name };
@@ -294,6 +297,19 @@ function MovementsPage() {
         }
       />
       <PageBody>
+        {rows.length >= LIMIT_POHYBOV && (
+          <div
+            role="status"
+            className="mb-3 rounded-md border border-amber-300/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+          >
+            {t(
+              "Zobrazených je prvých {n} pohybov. Staršie nájdete po zúžení filtra (dátum, typ, sklad).",
+              {
+                n: LIMIT_POHYBOV,
+              },
+            )}
+          </div>
+        )}
         <div className="mb-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <select
             aria-label={t("Typ pohybu")}

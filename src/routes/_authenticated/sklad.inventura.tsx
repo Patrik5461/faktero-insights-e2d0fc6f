@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { ScanLine } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { lokalJazyka, preloz } from "@/lib/i18n/jazyk";
+import { pocetRozdielov, spocitaneZPola } from "@/lib/faktero/sklad-inventura";
 
 export const Route = createFileRoute("/_authenticated/sklad/inventura")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Inventúra — Faktero") }] }),
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/sklad/inventura")({
 });
 
 function InventoryPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const start = useServerFn(startInventory);
   const complete = useServerFn(completeInventory);
   const lookup = useServerFn(lookupStockItemByCode);
@@ -94,16 +95,43 @@ function InventoryPage() {
     }
   }
 
-  async function setCounted(itemId: string, value: string) {
-    const v = value === "" ? null : Number(value);
+  /**
+   * Uloží spočítaný počet. Pri chybe (RLS, výpadok) vráti pôvodnú hodnotu
+   * a povie to — predtým UI ukázalo nový počet, hoci sa neuložil, a inventúra
+   * sa potom ukončila so starým (SA-18b). Vracia, či sa uložilo.
+   */
+  async function setCounted(itemId: string, v: number | null): Promise<boolean> {
+    const povodne = items.find((it) => it.id === itemId)?.counted_quantity ?? null;
     setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, counted_quantity: v } : it)));
-    await supabase.from("inventory_count_items").update({ counted_quantity: v }).eq("id", itemId);
+    const { data, error } = await supabase
+      .from("inventory_count_items")
+      .update({ counted_quantity: v })
+      .eq("id", itemId)
+      .select("id");
+    if (error || !data?.length) {
+      setItems((prev) =>
+        prev.map((it) => (it.id === itemId ? { ...it, counted_quantity: povodne } : it)),
+      );
+      toast.error(error?.message ?? t("Počet sa neuložil — na zápis do skladu nemáte oprávnenie."));
+      return false;
+    }
+    return true;
   }
 
   async function onComplete() {
     if (!countId) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // Ukončenie vytvára opravné pohyby, ktoré sa nedajú zmazať (SA-18a).
+    const n = pocetRozdielov(items);
+    if (
+      !(await potvrd(
+        n === 0
+          ? t("Ukončiť inventúru? Stavy sa nezmenia, rozdiely nie sú.")
+          : t("Ukončiť inventúru a vytvoriť {n} úprav stavu?", { n }),
+      ))
+    )
+      return;
     setBusy(true);
     try {
       const r = await complete({ data: { company_id: cid, inventory_count_id: countId } });
@@ -167,7 +195,7 @@ function InventoryPage() {
         return;
       }
       const next = Number(row.counted_quantity ?? 0) + 1;
-      await setCounted(row.id, String(next));
+      if (!(await setCounted(row.id, next))) return;
       toast.success(`+1 → ${(found as any).sku ?? t("položka")} (${next})`);
       setScan("");
       scanRef.current?.focus();
@@ -218,7 +246,7 @@ function InventoryPage() {
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
                 <span>
                   {t("Inventúra začatá")}{" "}
-                  <strong>{new Date(zacata).toLocaleString("sk-SK")}</strong>.{" "}
+                  <strong>{new Date(zacata).toLocaleString(lokalJazyka(jazyk))}</strong>.{" "}
                   {t("Očakávané stavy sú z tohto času.")}
                 </span>
                 <button
@@ -277,11 +305,26 @@ function InventoryPage() {
                           {formatujCislo(it.expected_quantity, 0, 2)}
                         </td>
                         <td className="p-3 text-right">
+                          {/* `key` s počtom: po skene sa pole vykreslí nanovo s novou
+                              hodnotou; onBlur ukladá len zmenu (SA-03). */}
                           <input
-                            type="number"
-                            step="0.001"
-                            defaultValue={it.counted_quantity ?? ""}
-                            onBlur={(e) => setCounted(it.id, e.target.value)}
+                            key={`${it.id}:${it.counted_quantity ?? ""}`}
+                            type="text"
+                            inputMode="decimal"
+                            aria-label={t("Spočítané")}
+                            defaultValue={
+                              it.counted_quantity == null ? "" : String(it.counted_quantity)
+                            }
+                            onBlur={(e) => {
+                              const r = spocitaneZPola(it.counted_quantity, e.target.value);
+                              if (r.chyba) {
+                                toast.error(t("Zadajte číslo."));
+                                e.target.value =
+                                  it.counted_quantity == null ? "" : String(it.counted_quantity);
+                                return;
+                              }
+                              if (r.zmena) setCounted(it.id, r.hodnota);
+                            }}
                             className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm"
                           />
                         </td>

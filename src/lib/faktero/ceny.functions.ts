@@ -1,3 +1,4 @@
+import { TEXT_BEZ_OPRAVNENIA } from "./over-zapis";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -105,12 +106,15 @@ export const deletePriceGroup = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // Skupinu netreba mazať natvrdo — odberatelia by prišli o väzbu ticho.
     // `deleted_at` ju schová a ceny aj priradenia ostanú v histórii.
-    const { error } = await context.supabase
+    const { data: zmenene, error } = await context.supabase
       .from("price_groups")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", data.id)
-      .eq("company_id", data.company_id);
+      .eq("company_id", data.company_id)
+      .select("id");
     if (error) throw new Error(error.message);
+    // RLS bez práva zápisu nevráti chybu, len nič nezmení (F-07).
+    if (!zmenene?.length) throw new Error(TEXT_BEZ_OPRAVNENIA);
     // Odberateľov treba odviazať, inak by ďalej dedili zľavu zo schovanej skupiny.
     await context.supabase
       .from("customers")
@@ -197,12 +201,15 @@ export const deleteProductPrice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { data: zmenene, error } = await context.supabase
       .from("product_prices")
       .delete()
       .eq("id", data.id)
-      .eq("company_id", data.company_id);
+      .eq("company_id", data.company_id)
+      .select("id");
     if (error) throw new Error(error.message);
+    // RLS bez práva zápisu nevráti chybu, len nič nezmení (F-07).
+    if (!zmenene?.length) throw new Error(TEXT_BEZ_OPRAVNENIA);
     return { ok: true };
   });
 
@@ -304,12 +311,15 @@ export const deletePriceAction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { data: zmenene, error } = await context.supabase
       .from("price_actions")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", data.id)
-      .eq("company_id", data.company_id);
+      .eq("company_id", data.company_id)
+      .select("id");
     if (error) throw new Error(error.message);
+    // RLS bez práva zápisu nevráti chybu, len nič nezmení (F-07).
+    if (!zmenene?.length) throw new Error(TEXT_BEZ_OPRAVNENIA);
     return { ok: true };
   });
 

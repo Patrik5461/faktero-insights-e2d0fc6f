@@ -32,10 +32,13 @@ export function ReservationsPanel({
   companyId,
   stockItemId,
   unit,
+  canMutate = false,
 }: {
   companyId: string;
   stockItemId: string;
   unit?: string | null;
+  /** Právo zápisu do skladu — bez neho sa rezervovať ani rušiť neponúka (SA-09b). */
+  canMutate?: boolean;
 }) {
   const { t, jazyk } = useT();
   const listFn = useServerFn(listReservationsForItem);
@@ -74,12 +77,14 @@ export function ReservationsPanel({
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="text-sm font-semibold">{t("Rezervácie")}</div>
-        <button
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
-        >
-          <Plus className="h-3.5 w-3.5" /> {t("Rezervovať ručne")}
-        </button>
+        {canMutate && (
+          <button
+            onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+          >
+            <Plus className="h-3.5 w-3.5" /> {t("Rezervovať ručne")}
+          </button>
+        )}
       </div>
       {loading ? (
         <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
@@ -126,7 +131,7 @@ export function ReservationsPanel({
                 </td>
                 <td className="p-2 text-xs text-muted-foreground">{r.note ?? "—"}</td>
                 <td className="p-2 text-right">
-                  {r.status === "active" && r.source_document_type === "manual" && (
+                  {canMutate && r.status === "active" && r.source_document_type === "manual" && (
                     <button
                       onClick={() => doCancel(r.id)}
                       className="inline-flex items-center gap-1 rounded p-1 text-destructive hover:bg-destructive/10"

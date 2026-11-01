@@ -63,24 +63,18 @@ export function MovementForm({
     if (!cid) return;
     (async () => {
       setLoading(true);
-      let { data: wh } = await supabase
+      /*
+        Sklad sa tu nezakladá. Predtým už samotné otvorenie stránky zapísalo
+        „Hlavný sklad“ (a čitateľovi bez práva zápisu ukázalo chybu RLS).
+        Keď firma sklad nemá, založí ho server pri prvom uložení pohybu
+        (`ensureDefaultWarehouse`, názov podľa krajiny firmy) — SA-14.
+      */
+      const { data: wh } = await supabase
         .from("warehouses")
         .select("id, name")
         .eq("company_id", cid)
         .eq("active", true)
         .order("name");
-      if (!wh || wh.length === 0) {
-        const { data: created, error } = await supabase
-          .from("warehouses")
-          // Názov v jazyku rozhrania — česká firma nemá dostať „Hlavný sklad“.
-          .insert({ company_id: cid, name: t("Hlavný sklad"), active: true })
-          .select()
-          .single();
-        if (created) {
-          wh = [created];
-          toast.success(t("Vytvorený sklad 'Hlavný sklad'."));
-        } else if (error) toast.error(error.message);
-      }
       const [{ data: si }, { data: prods }] = await Promise.all([
         /*
           Archivovanú kartu ponúkať netreba — firma ten tovar prestala viesť a
@@ -89,7 +83,7 @@ export function MovementForm({
         */
         supabase
           .from("stock_items")
-          .select("id, sku, product_id, sale_price, purchase_price, archived_at")
+          .select("id, sku, product_id, sale_price, purchase_price, archived_at, unit")
           .eq("company_id", cid)
           .order("sku"),
         supabase.from("products").select("id, name").eq("company_id", cid).is("deleted_at", null),
@@ -149,9 +143,11 @@ export function MovementForm({
     if (type === "vydaj" && availability && qty > availability.available) {
       const ok = await potvrd(
         t(
-          "Vydávate {qty} ks, ale k dispozícii je len {k_dispozicii} (na sklade {na_sklade}, rezervované {rezervovane}). Pokračovať a porušiť rezervácie?",
+          "Vydávate {qty} {mj}, ale k dispozícii je len {k_dispozicii} (na sklade {na_sklade}, rezervované {rezervovane}). Pokračovať a porušiť rezervácie?",
           {
             qty: formatujCislo(qty, 0, 3),
+            // Jednotka vybranej karty, nie natvrdo „ks“ (SA-15).
+            mj: items.find((x) => x.id === stockItem)?.unit || "ks",
             k_dispozicii: formatujCislo(availability.available, 0, 2),
             na_sklade: formatujCislo(availability.on_hand, 0, 2),
             rezervovane: formatujCislo(availability.reserved, 0, 2),
@@ -251,18 +247,24 @@ export function MovementForm({
           >
             <label className="block">
               <span className="text-sm font-medium">{t("Sklad *")}</span>
-              <select
-                required
-                value={warehouse}
-                onChange={(e) => setWarehouse(e.target.value)}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
+              {warehouses.length === 0 ? (
+                <p className="mt-1 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+                  {t("Firma zatiaľ nemá sklad — hlavný sklad sa založí pri uložení pohybu.")}
+                </p>
+              ) : (
+                <select
+                  required
+                  value={warehouse}
+                  onChange={(e) => setWarehouse(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </label>
             <label className="block">
               <span className="text-sm font-medium">{t("Tovar / skladová karta *")}</span>

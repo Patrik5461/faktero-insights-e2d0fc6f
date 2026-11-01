@@ -1,6 +1,11 @@
 import { KROK_CENY, formatujCislo, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import { hodnotaZasoby, pohybDelta, pohybNazov, pohybText } from "@/lib/faktero/stock-pohyb";
+import { podMinimom } from "@/lib/faktero/stock-doobjednanie";
+import { nacitajNaCeste } from "@/lib/faktero/sklad-na-ceste";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
+import { useStockPermissions } from "@/hooks/useStockPermissions";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,17 +67,6 @@ type SI = {
   last_purchase_price?: number;
   archived_at?: string | null;
 };
-const EMPTY: SI = {
-  sku: "",
-  barcode: "",
-  purchase_price: 0,
-  sale_price: 0,
-  vat_rate: 23,
-  unit: "ks",
-  track_stock: true,
-  min_stock: 0,
-};
-
 type NewProduct = {
   name: string;
   sku: string;
@@ -105,7 +99,9 @@ const SHOW_STOCK_DEBUG =
   (typeof window !== "undefined" && window.location.hostname.includes("lovable"));
 
 function StockItemsPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
+  // Upravovať, archivovať a naskladňovať smie, komu to dovolí RLS (právo zápisu do skladu).
+  const { canMutate } = useStockPermissions();
   /** Hlavičky a kľúče riadkov exportu v jazyku používateľa. */
   const prelozExport = (headers: string[], data: ExportRow[]) => ({
     headers: headers.map((h) => t(h)),
@@ -144,6 +140,17 @@ function StockItemsPage() {
     Record<string, Array<{ warehouse_id: string; quantity: number; reserved: number }>>
   >({});
   const [reservedByItem, setReservedByItem] = useState<Record<string, number>>({});
+  const [naCeste, setNaCeste] = useState<Record<string, number>>({});
+  /** Jedno pravidlo „pod minimom“ pre filter, tabuľku, Prehľad aj stránku Pod minimom. */
+  const jePodMinimom = (r: any) =>
+    !!r.track_stock &&
+    podMinimom({
+      on_hand: levels[r.id] ?? 0,
+      reserved: reservedByItem[r.id] ?? 0,
+      incoming: naCeste[r.id] ?? 0,
+      min_stock: r.min_stock,
+      optimal_stock: r.optimal_stock,
+    });
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -154,59 +161,63 @@ function StockItemsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
-    const [
-      { data: items },
-      { data: lvl },
-      { data: prods },
-      { data: wh },
-      { data: cats },
-      { data: resv },
-      snapshot,
-    ] = await Promise.all([
-      showArchived
-        ? supabase
-            .from("stock_items")
-            .select("*")
+    const [items, lvl, prods, { data: wh }, { data: cats }, naCesteMapa, snapshot] =
+      await Promise.all([
+        // Po stránkach — PostgREST vráti najviac 1 000 riadkov (SA-13a).
+        vsetkyRiadky<any>((od, po) =>
+          showArchived
+            ? supabase
+                .from("stock_items")
+                .select("*")
+                .eq("company_id", cid)
+                .not("archived_at", "is", null)
+                .order("archived_at", { ascending: false })
+                .order("id")
+                .range(od, po)
+            : supabase
+                .from("stock_items")
+                .select("*")
+                .eq("company_id", cid)
+                .is("archived_at", null)
+                .order("created_at", { ascending: false })
+                .order("id")
+                .range(od, po),
+        ).catch(() => [] as any[]),
+        vsetkyRiadky<any>((od, po) =>
+          supabase
+            .from("stock_levels")
+            .select("id, stock_item_id, warehouse_id, quantity, reserved_quantity")
             .eq("company_id", cid)
-            .not("archived_at", "is", null)
-            .order("archived_at", { ascending: false })
-        : supabase
-            .from("stock_items")
-            .select("*")
+            .order("id")
+            .range(od, po),
+        ).catch(() => [] as any[]),
+        vsetkyRiadky<any>((od, po) =>
+          supabase
+            .from("products")
+            .select("id, name, code, unit_price, vat_rate, unit")
             .eq("company_id", cid)
-            .is("archived_at", null)
-            .order("created_at", { ascending: false }),
-      supabase
-        .from("stock_levels")
-        .select("stock_item_id, warehouse_id, quantity, reserved_quantity")
-        .eq("company_id", cid),
-      supabase
-        .from("products")
-        .select("id, name, code, unit_price, vat_rate, unit")
-        .eq("company_id", cid)
-        .is("deleted_at", null),
-      supabase
-        .from("warehouses")
-        .select("id, name")
-        .eq("company_id", cid)
-        .eq("active", true)
-        .order("created_at"),
-      supabase
-        .from("stock_categories")
-        .select("id, name, color")
-        .eq("company_id", cid)
-        .order("name"),
-      (supabase as any)
-        .from("stock_reservations")
-        .select("stock_item_id, quantity")
-        .eq("company_id", cid)
-        .eq("status", "active"),
-      SHOW_STOCK_DEBUG
-        ? fetchDebugSnapshot({ data: { company_id: cid } }).catch((e) => ({
-            errors: [{ message: e?.message ?? String(e) }],
-          }))
-        : Promise.resolve(null),
-    ]);
+            .is("deleted_at", null)
+            .order("id")
+            .range(od, po),
+        ).catch(() => [] as any[]),
+        supabase
+          .from("warehouses")
+          .select("id, name")
+          .eq("company_id", cid)
+          .eq("active", true)
+          .order("created_at"),
+        supabase
+          .from("stock_categories")
+          .select("id, name, color")
+          .eq("company_id", cid)
+          .order("name"),
+        nacitajNaCeste(supabase, cid).catch(() => new Map<string, number>()),
+        SHOW_STOCK_DEBUG
+          ? fetchDebugSnapshot({ data: { company_id: cid } }).catch((e) => ({
+              errors: [{ message: e?.message ?? String(e) }],
+            }))
+          : Promise.resolve(null),
+      ]);
     setRows(items ?? []);
     const m: Record<string, number> = {};
     const perWh: Record<
@@ -221,10 +232,13 @@ function StockItemsPage() {
         reserved: Number(l.reserved_quantity ?? 0),
       });
     });
+    // Rezervované z `stock_levels.reserved_quantity` — ten istý zdroj ako
+    // Prehľad skladu a stránka Pod minimom.
     const rm: Record<string, number> = {};
-    (resv ?? []).forEach((r: any) => {
-      rm[r.stock_item_id] = (rm[r.stock_item_id] ?? 0) + Number(r.quantity);
+    (lvl ?? []).forEach((l: any) => {
+      rm[l.stock_item_id] = (rm[l.stock_item_id] ?? 0) + Number(l.reserved_quantity ?? 0);
     });
+    setNaCeste(Object.fromEntries(naCesteMapa));
     setLevels(m);
     setLevelsByItemWh(perWh);
     setReservedByItem(rm);
@@ -266,12 +280,16 @@ function StockItemsPage() {
   async function save(s: SI) {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // Dialóg vždy upravuje existujúcu kartu — novú zakladá „Pridať tovar“.
+    if (!s.id) return;
     const payload = { ...s, company_id: cid };
-    const op = s.id
-      ? supabase.from("stock_items").update(payload).eq("id", s.id)
-      : supabase.from("stock_items").insert(payload);
-    const { error } = await op;
+    const { data: ulozene, error } = await supabase
+      .from("stock_items")
+      .update(payload)
+      .eq("id", s.id)
+      .select("id");
     if (error) return toast.error(error.message);
+    if (!ulozene?.length) return toast.error(t("Na úpravu skladu nemáte oprávnenie."));
     /*
       Cena, za ktorú sa fakturuje, je v cenníku (`products`). Bez tohto kroku
       by sa tu dala prepísať predajná cena a faktúra by aj tak išla za starú.
@@ -363,19 +381,18 @@ function StockItemsPage() {
     }
   }
 
+  const hladane = search.trim().toLowerCase();
+  const produktPodlaId = new Map(products.map((p) => [p.id, p] as const));
   const filtered = rows.filter((r) => {
-    if (
-      search &&
-      !(
-        (r.sku ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (r.barcode ?? "").toLowerCase().includes(search.toLowerCase())
-      )
-    )
-      return false;
-    if (urlFilter === "low_stock") {
-      const qty = levels[r.id] ?? 0;
-      if (!(r.track_stock && qty < Number(r.min_stock ?? 0))) return false;
+    if (hladane) {
+      // Placeholder sľubuje aj názov — hľadá sa v názve a kóde produktu.
+      const prod = r.product_id ? produktPodlaId.get(r.product_id) : null;
+      const kde = [r.sku, r.barcode, prod?.name, prod?.code]
+        .map((x) => String(x ?? "").toLowerCase())
+        .join("\n");
+      if (!kde.includes(hladane)) return false;
     }
+    if (urlFilter === "low_stock" && !jePodMinimom(r)) return false;
     if (warehouseFilter) {
       const hasInWh = (levelsByItemWh[r.id] ?? []).some((l) => l.warehouse_id === warehouseFilter);
       if (!hasInWh) return false;
@@ -590,7 +607,8 @@ function StockItemsPage() {
           "Nákupná cena": Number(s.purchase_price),
           "Predajná cena": Number(s.sale_price),
           "DPH %": Number(s.vat_rate),
-          "Hodnota skladu": Number((l.quantity * Number(s.purchase_price ?? 0)).toFixed(2)),
+          // Vážená nákupná cena ako na Prehľade a v Hodnote skladu (SA-05).
+          "Hodnota skladu": Number(hodnotaZasoby(l.quantity, s).toFixed(2)),
           "Sledovanie skladu": s.track_stock ? t("áno") : t("nie"),
         });
       }
@@ -648,18 +666,22 @@ function StockItemsPage() {
                 </div>
               )}
             </div>
-            <Link
-              to="/sklad/import"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
-            >
-              <Upload className="h-4 w-4" /> {t("Import skladu")}
-            </Link>
-            <button
-              onClick={openCreate}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" /> {t("Pridať tovar")}
-            </button>
+            {canMutate && (
+              <>
+                <Link
+                  to="/sklad/import"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
+                >
+                  <Upload className="h-4 w-4" /> {t("Import skladu")}
+                </Link>
+                <button
+                  onClick={openCreate}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" /> {t("Pridať tovar")}
+                </button>
+              </>
+            )}
             <button
               onClick={() => setSettingsOpen(true)}
               className="inline-flex items-center justify-center rounded-md border border-border bg-card p-2 hover:bg-secondary"
@@ -801,7 +823,7 @@ function StockItemsPage() {
               >
                 <Download className="h-3.5 w-3.5" /> {t("Export CSV")}
               </button>
-              {showArchived ? (
+              {!canMutate ? null : showArchived ? (
                 <button
                   disabled={bulkBusy}
                   onClick={bulkRestore}
@@ -855,14 +877,14 @@ function StockItemsPage() {
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="p-8 text-center text-muted-foreground">
                     {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="p-8 text-center text-muted-foreground">
                     {showArchived ? t("Žiadne archivované karty.") : t("Žiadne skladové karty.")}
                   </td>
                 </tr>
@@ -871,8 +893,7 @@ function StockItemsPage() {
                 const qty = levels[s.id] ?? 0;
                 const reserved = reservedByItem[s.id] ?? 0;
                 const available = qty - reserved;
-                const minStock = Number(s.min_stock ?? 0);
-                const belowAvail = s.track_stock && (available < 0 || available < minStock);
+                const belowAvail = available < 0 || jePodMinimom(s);
                 const prod = products.find((p) => p.id === s.product_id);
                 const isEditingName = editingNameId === s.id;
                 const displayName = prod?.name ?? s.sku ?? "—";
@@ -894,7 +915,7 @@ function StockItemsPage() {
                     <td
                       className="min-w-[10rem] p-3 text-muted-foreground"
                       onDoubleClick={() => {
-                        if (isArchived) return;
+                        if (isArchived || !canMutate) return;
                         setEditingNameId(s.id);
                         setEditingNameValue(displayName);
                       }}
@@ -955,33 +976,35 @@ function StockItemsPage() {
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">
                         {isArchived ? (
-                          <>
-                            <button
-                              onClick={async () => {
-                                const cid = getActiveCompanyId();
-                                if (!cid) return;
-                                const { error } = await supabase
-                                  .from("stock_items")
-                                  .update({ archived_at: null })
-                                  .eq("id", s.id)
-                                  .eq("company_id", cid);
-                                if (error) return toast.error(error.message);
-                                toast.success(t("Obnovené"));
-                                load();
-                              }}
-                              className="rounded p-1.5 hover:bg-muted"
-                              title={t("Obnoviť z archívu")}
-                            >
-                              <ArchiveRestore className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => zmazKartu(s)}
-                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                              title={t("Zmazať natrvalo")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </>
+                          canMutate && (
+                            <>
+                              <button
+                                onClick={async () => {
+                                  const cid = getActiveCompanyId();
+                                  if (!cid) return;
+                                  const { error } = await supabase
+                                    .from("stock_items")
+                                    .update({ archived_at: null })
+                                    .eq("id", s.id)
+                                    .eq("company_id", cid);
+                                  if (error) return toast.error(error.message);
+                                  toast.success(t("Obnovené"));
+                                  load();
+                                }}
+                                className="rounded p-1.5 hover:bg-muted"
+                                title={t("Obnoviť z archívu")}
+                              >
+                                <ArchiveRestore className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => zmazKartu(s)}
+                                className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                                title={t("Zmazať natrvalo")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          )
                         ) : (
                           <>
                             {/* Skladová karta (pohyby, rezervácie, priemerná
@@ -998,40 +1021,45 @@ function StockItemsPage() {
                                 <FileText className="h-4 w-4" />
                               </Link>
                             )}
-                            <Link
-                              to="/sklad/prijem"
-                              search={{ polozka: s.id }}
-                              className="rounded p-1.5 hover:bg-muted"
-                              title={t("Naskladniť")}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={() => setEditing(s)}
-                              className="rounded p-1.5 hover:bg-muted"
-                              title={t("Upraviť")}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                const cid = getActiveCompanyId();
-                                if (!cid) return;
-                                if (!(await potvrd(t("Archivovať túto skladovú kartu?")))) return;
-                                const { error } = await supabase
-                                  .from("stock_items")
-                                  .update({ archived_at: new Date().toISOString() })
-                                  .eq("id", s.id)
-                                  .eq("company_id", cid);
-                                if (error) return toast.error(error.message);
-                                toast.success(t("Archivované"));
-                                load();
-                              }}
-                              className="rounded p-1.5 hover:bg-muted text-destructive"
-                              title={t("Archivovať")}
-                            >
-                              <Archive className="h-4 w-4" />
-                            </button>
+                            {canMutate && (
+                              <>
+                                <Link
+                                  to="/sklad/prijem"
+                                  search={{ polozka: s.id }}
+                                  className="rounded p-1.5 hover:bg-muted"
+                                  title={t("Naskladniť")}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Link>
+                                <button
+                                  onClick={() => setEditing(s)}
+                                  className="rounded p-1.5 hover:bg-muted"
+                                  title={t("Upraviť")}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const cid = getActiveCompanyId();
+                                    if (!cid) return;
+                                    if (!(await potvrd(t("Archivovať túto skladovú kartu?"))))
+                                      return;
+                                    const { error } = await supabase
+                                      .from("stock_items")
+                                      .update({ archived_at: new Date().toISOString() })
+                                      .eq("id", s.id)
+                                      .eq("company_id", cid);
+                                    if (error) return toast.error(error.message);
+                                    toast.success(t("Archivované"));
+                                    load();
+                                  }}
+                                  className="rounded p-1.5 hover:bg-muted text-destructive"
+                                  title={t("Archivovať")}
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
                       </div>
@@ -1056,9 +1084,7 @@ function StockItemsPage() {
             className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold">
-              {editing.id ? t("Upraviť skladovú kartu") : t("Nová skladová karta")}
-            </h2>
+            <h2 className="text-lg font-semibold">{t("Upraviť skladovú kartu")}</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1212,9 +1238,9 @@ function StockItemsPage() {
                     {recentMovements.map((m) => (
                       <li key={m.id} className="flex items-center justify-between">
                         <span className="text-muted-foreground">
-                          {new Date(m.created_at).toLocaleString("sk-SK")}
+                          {new Date(m.created_at).toLocaleString(lokalJazyka(jazyk))}
                         </span>
-                        <span className="font-medium">{m.type}</span>
+                        <span className="font-medium">{t(pohybNazov(m.type))}</span>
                         <span
                           className={
                             pohybDelta(m.type, m.quantity) >= 0

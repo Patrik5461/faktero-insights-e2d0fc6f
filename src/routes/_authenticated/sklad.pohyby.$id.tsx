@@ -1,5 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import {
+  hodnotaPohybu,
+  nakladovaCenaPohybu,
+  pohybDelta,
+  pohybText,
+} from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -118,11 +123,22 @@ function MovementDetail() {
                   pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"
                 }
               />
+              {/* Nákladová cena ako v zozname pohybov; pri výdaji je `unit_price`
+                  predajná a ukáže sa zvlášť (SA-06). */}
               <Pair
                 label="Jednotková cena"
-                value={formatujJednotkovuCenu(m.unit_price, mena.kod)}
+                value={formatujJednotkovuCenu(nakladovaCenaPohybu(m), mena.kod)}
               />
-              <Pair label="Celková hodnota" value={formatujMenu(m.total_value, mena.kod)} />
+              <Pair label="Celková hodnota" value={formatujMenu(hodnotaPohybu(m), mena.kod)} />
+              {(m.type === "vydaj" || m.type === "faktura") &&
+                Number(m.unit_cost) > 0 &&
+                Number(m.unit_price) > 0 &&
+                Math.abs(Number(m.unit_price) - Number(m.unit_cost)) > 1e-9 && (
+                  <Pair
+                    label="Predajná cena"
+                    value={formatujJednotkovuCenu(m.unit_price, mena.kod)}
+                  />
+                )}
               <Pair label="Sklad" value={data.warehouse?.name ?? "—"} />
               <Pair
                 label="Skladová karta"

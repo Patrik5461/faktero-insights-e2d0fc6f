@@ -230,6 +230,101 @@ export const createPurchaseOrder = createServerFn({ method: "POST" })
     return { id: order.id, order_number: order.order_number };
   });
 
+/**
+ * Úprava rozpracovanej objednávky (F-06). Odoslanú už nie — od odoslania sa
+ * počíta ako tovar na ceste a podľa nej sa prijíma. Číslo ostáva.
+ */
+export const updatePurchaseOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    CompanyScoped.extend({
+      id: z.string().uuid(),
+      supplier_id: z.string().uuid().nullable().optional(),
+      warehouse_id: z.string().uuid().nullable().optional(),
+      job_id: z.string().uuid().nullable().optional(),
+      expected_date: z.string().date().nullable().optional(),
+      note: z.string().trim().max(2000).nullable().optional(),
+      items: z.array(PolozkaVstup).min(1),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { order } = await nacitajObjednavku(supabase, data.company_id, data.id);
+    if (order.status !== "draft") {
+      throw new Error("Upraviť sa dá len rozpracovaná objednávka.");
+    }
+    if (data.warehouse_id) {
+      const { data: wh } = await supabase
+        .from("warehouses")
+        .select("id")
+        .eq("id", data.warehouse_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (!wh) throw new Error("Zvolený sklad nepatrí tejto firme.");
+    }
+    let supplierName: string | null = null;
+    if (data.supplier_id) {
+      const { data: s } = await supabase
+        .from("customers")
+        .select("name")
+        .eq("id", data.supplier_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      supplierName = s?.name ?? null;
+    } else if (order.supplier_id == null) {
+      // Bez väzby na kontakt ostáva odpísané meno, ak nejaké bolo.
+      supplierName = order.supplier_name ?? null;
+    }
+    const { data: hlavicka, error } = await supabase
+      .from("purchase_orders")
+      .update({
+        supplier_id: data.supplier_id ?? null,
+        supplier_name: supplierName,
+        warehouse_id: data.warehouse_id ?? null,
+        job_id: data.job_id ?? null,
+        expected_date: data.expected_date ?? null,
+        note: data.note ?? null,
+      })
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .eq("status", "draft")
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!hlavicka?.length)
+      throw new Error(
+        "Objednávku sa nepodarilo upraviť (už nie je rozpracovaná alebo na to nemáte oprávnenie).",
+      );
+
+    // Najprv nové položky, až potom staré preč — pri chybe vkladania ostane
+    // objednávka s pôvodnými položkami, nie prázdna.
+    const { data: stare } = await supabase
+      .from("purchase_order_items")
+      .select("id")
+      .eq("purchase_order_id", data.id);
+    const { error: iErr } = await supabase.from("purchase_order_items").insert(
+      data.items.map((it, i) => ({
+        purchase_order_id: data.id,
+        stock_item_id: it.stock_item_id ?? null,
+        name: it.name,
+        unit: it.unit ?? null,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        vat_rate: it.vat_rate,
+        position: i,
+      })),
+    );
+    if (iErr) throw new Error(iErr.message);
+    const stareIds = (stare ?? []).map((r: any) => r.id);
+    if (stareIds.length) {
+      const { error: dErr } = await supabase
+        .from("purchase_order_items")
+        .delete()
+        .in("id", stareIds);
+      if (dErr) throw new Error(dErr.message);
+    }
+    return { id: data.id };
+  });
+
 export const sendPurchaseOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))

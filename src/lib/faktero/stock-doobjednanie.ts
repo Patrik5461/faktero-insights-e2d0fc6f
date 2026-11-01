@@ -52,7 +52,7 @@ export function cielovyStav(minStock: unknown, optimalStock: unknown): number {
 }
 
 export function navrhniObjednavku(z: ZasobaNaDoobjednanie): NavrhObjednavky | null {
-  const available = cislo(z.on_hand) - cislo(z.reserved) + cislo(z.incoming);
+  const available = disponibilne(z);
   const min = Math.max(0, cislo(z.min_stock));
   const ciel = cielovyStav(z.min_stock, z.optimal_stock);
 
@@ -70,6 +70,45 @@ export function navrhniObjednavku(z: ZasobaNaDoobjednanie): NavrhObjednavky | nu
     objednat: Math.round(objednat * 10_000) / 10_000,
     cielovy_stav: ciel,
   };
+}
+
+/** Stav znížený o rezervácie a zvýšený o objednané a ešte neprijaté. */
+export function disponibilne(z: {
+  on_hand: unknown;
+  reserved?: unknown;
+  incoming?: unknown;
+}): number {
+  return cislo(z.on_hand) - cislo(z.reserved) + cislo(z.incoming);
+}
+
+/**
+ * Je zásoba „pod minimom“? Jediné pravidlo pre Prehľad skladu, filter
+ * a dlaždicu v Skladových položkách aj stránku Pod minimom — predtým mal každý
+ * vlastné (stav < min, stav − rezervované < min, …) a každý ukázal iné karty.
+ *
+ * Platí to isté ako pre návrh objednávky: disponibilné množstvo (stav −
+ * rezervované + na ceste) dosiahlo minimum a je čo doobjednať.
+ */
+export function podMinimom(z: {
+  on_hand: unknown;
+  reserved?: unknown;
+  incoming?: unknown;
+  min_stock: unknown;
+  optimal_stock?: unknown;
+}): boolean {
+  return (
+    navrhniObjednavku({
+      stock_item_id: "",
+      sku: null,
+      nazov: "",
+      unit: null,
+      on_hand: cislo(z.on_hand),
+      reserved: cislo(z.reserved),
+      incoming: cislo(z.incoming),
+      min_stock: cislo(z.min_stock),
+      optimal_stock: cislo(z.optimal_stock),
+    }) !== null
+  );
 }
 
 /** Najskôr tie, ktoré chýbajú najviac oproti svojej hranici. */

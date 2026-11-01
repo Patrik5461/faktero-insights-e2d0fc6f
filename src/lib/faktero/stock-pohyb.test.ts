@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { hodnotaPohybu, pohybDelta, pohybNazov, pohybText } from "./stock-pohyb";
+import {
+  cenaOcenenia,
+  hodnotaPohybu,
+  hodnotaZasoby,
+  hraniceDniPohybov,
+  nakladovaCenaPohybu,
+  pohybDelta,
+  pohybNazov,
+  pohybText,
+} from "./stock-pohyb";
 
 describe("pohybDelta", () => {
   it("výdaj a faktúra uberajú aj z kladného množstva", () => {
@@ -55,5 +64,36 @@ describe("pohybNazov", () => {
   it("neznámy typ prejde tak, ako prišiel", () => {
     expect(pohybNazov("nieco")).toBe("nieco");
     expect(pohybNazov(null)).toBe("—");
+  });
+});
+
+describe("cenaOcenenia (SA-05)", () => {
+  it("prednosť má vážená cena, nie posledná nákupná", () => {
+    expect(cenaOcenenia({ avg_purchase_price: 9.13, purchase_price: 12 })).toBe(9.13);
+    expect(hodnotaZasoby(10, { avg_purchase_price: 9.13, purchase_price: 12 })).toBeCloseTo(91.3);
+  });
+  it("bez priemeru padne na nákupnú cenu, bez oboch na nulu", () => {
+    expect(cenaOcenenia({ avg_purchase_price: 0, purchase_price: 4 })).toBe(4);
+    expect(cenaOcenenia({ avg_purchase_price: null, purchase_price: "4.5" })).toBe(4.5);
+    expect(cenaOcenenia({})).toBe(0);
+  });
+});
+
+describe("nakladovaCenaPohybu (SA-06)", () => {
+  it("pri výdaji ukáže nákladovú cenu, nie predajnú", () => {
+    expect(nakladovaCenaPohybu({ unit_cost: 9.13, unit_price: 12.5 })).toBe(9.13);
+    expect(nakladovaCenaPohybu({ unit_cost: null, unit_price: 12.5 })).toBe(12.5);
+  });
+});
+
+describe("hraniceDniPohybov (SA-16)", () => {
+  it("„Od“ je miestna polnoc, nie UTC", () => {
+    const { od, po } = hraniceDniPohybov("2026-11-01", "2026-11-02");
+    expect(od).toBe(new Date(2026, 10, 1, 0, 0, 0, 0).toISOString());
+    expect(po).toBe(new Date(2026, 10, 2, 23, 59, 59, 999).toISOString());
+  });
+  it("prázdne alebo zlé dátumy filter nedávajú", () => {
+    expect(hraniceDniPohybov("", null)).toEqual({ od: null, po: null });
+    expect(hraniceDniPohybov("1.11.2026", undefined)).toEqual({ od: null, po: null });
   });
 });

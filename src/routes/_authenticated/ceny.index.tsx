@@ -18,7 +18,9 @@ import { cislo } from "@/lib/faktero/ceny";
 import { Plus, Pencil, Trash2, Tag, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY } from "@/lib/faktero/mena";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
+import { textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 
@@ -27,15 +29,15 @@ export const Route = createFileRoute("/_authenticated/ceny/")({
   component: CennikPage,
 });
 
-function suma(n: unknown) {
-  return formatovacMeny("EUR", "sk-SK")(cislo(n));
-}
 
 const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
 const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 
 function CennikPage() {
   const { t } = useT();
+  // Ceny v mene firmy — česká firma má cenník v Kč, nie v € (F-01/F-02).
+  const { suma: sumaMeny } = useFormatMenyFirmy();
+  const suma = (n: unknown) => sumaMeny(cislo(n));
   const mena = useMenaFirmy();
   const nacitajSkupiny = useServerFn(listPriceGroups);
   const nacitajCeny = useServerFn(listProductPrices);
@@ -244,7 +246,12 @@ function CennikPage() {
                                 ))
                               )
                                 return;
-                              await zmazSkupinu({ data: { company_id: cid!, id: s.id } });
+                              try {
+                                await zmazSkupinu({ data: { company_id: cid!, id: s.id } });
+                                toast.success(t("Skupina zmazaná"));
+                              } catch (e) {
+                                toast.error(t(textChybyZapisu(e, t)));
+                              }
                               nacitaj();
                             }}
                             className="rounded p-1.5 text-muted-foreground hover:bg-muted"
@@ -340,7 +347,12 @@ function CennikPage() {
                                 aria-label={t("Zmazať cenu")}
                                 onClick={async () => {
                                   if (!(await potvrd(t("Zmazať dohodnutú cenu?")))) return;
-                                  await zmazCenu({ data: { company_id: cid!, id: c.id } });
+                                  try {
+                                    await zmazCenu({ data: { company_id: cid!, id: c.id } });
+                                    toast.success(t("Cena zmazaná"));
+                                  } catch (e) {
+                                    toast.error(t(textChybyZapisu(e, t)));
+                                  }
                                   nacitaj();
                                 }}
                                 className="rounded p-1.5 text-muted-foreground hover:bg-muted"
