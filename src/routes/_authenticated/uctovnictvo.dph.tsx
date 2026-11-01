@@ -43,6 +43,8 @@ import { domacaMena } from "@/lib/faktero/kurzy";
 import { vatBucketLabel, vatBucketOrder } from "@/lib/faktero/vat-rates";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/dph")({
@@ -129,6 +131,7 @@ function sucet(b: Record<string, Bucket>, pole: "base" | "vat"): number {
 }
 
 function DphPage() {
+  const klik = useKlikNaRiadok();
   const { t } = useT();
   const now = new Date();
   /* Priehradky aj názvy sadzieb patria krajine registrácie firmy. */
@@ -625,6 +628,7 @@ function DphPage() {
               prazdne={t("Žiadne faktúry v období")}
               riadky={invoices.map((i) => ({
                 id: i.id,
+                ciel: { to: "/faktury/$id", params: { id: i.id } },
                 cislo: i.invoice_number,
                 datum: datumNaDoklade(denDaneVystavenej(i)),
                 meno: `${i.customer_name ?? ""}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}`,
@@ -646,8 +650,12 @@ function DphPage() {
               </TableHeader>
               <TableBody>
                 {invoices.map((i) => (
-                  <TableRow key={i.id}>
-                    <TableCell className="cislo-dokladu whitespace-nowrap font-medium">{i.invoice_number}</TableCell>
+                  <TableRow key={i.id} {...klik({ to: "/faktury/$id", params: { id: i.id } })}>
+                    <TableCell className="cislo-dokladu whitespace-nowrap font-medium">
+                      <Link to="/faktury/$id" params={{ id: i.id }} className="hover:underline">
+                        {i.invoice_number}
+                      </Link>
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{datumNaDoklade(denDaneVystavenej(i))}</TableCell>
                     <TableCell>
                       {i.customer_name}
@@ -686,6 +694,7 @@ function DphPage() {
               prazdne={t("Žiadne prijaté faktúry v období")}
               riadky={purchases.map((p) => ({
                 id: p.id,
+                ciel: { to: "/prijate-faktury/$id", params: { id: p.id } },
                 cislo: p.invoice_number,
                 datum: datumNaDoklade(denOdpoctuPrijatej(p)),
                 meno: p.supplier_name ?? "",
@@ -707,8 +716,12 @@ function DphPage() {
               </TableHeader>
               <TableBody>
                 {purchases.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="cislo-dokladu whitespace-nowrap font-medium">{p.invoice_number}</TableCell>
+                  <TableRow key={p.id} {...klik({ to: "/prijate-faktury/$id", params: { id: p.id } })}>
+                    <TableCell className="cislo-dokladu whitespace-nowrap font-medium">
+                      <Link to="/prijate-faktury/$id" params={{ id: p.id }} className="hover:underline">
+                        {p.invoice_number}
+                      </Link>
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{datumNaDoklade(denOdpoctuPrijatej(p))}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
                     <TableCell className="suma text-right">
@@ -745,6 +758,8 @@ function MobilnyZoznam({
 }: {
   riadky: {
     id: string;
+    /** Detail dokladu — celá položka je klikateľná, číslo je odkaz. */
+    ciel?: CielDetailu;
     cislo: string | null;
     datum: string;
     meno: string;
@@ -755,15 +770,24 @@ function MobilnyZoznam({
   prazdne: string;
 }) {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
   if (riadky.length === 0) {
     return <p className="py-4 text-center text-sm text-muted-foreground md:hidden">{prazdne}</p>;
   }
   return (
     <ul className="divide-y divide-border md:hidden">
-      {riadky.map((r) => (
-        <li key={r.id} className="py-3 text-sm">
+      {riadky.map((r) => {
+        const pk = klik(r.ciel, { klavesnica: false });
+        return (
+        <li key={r.id} {...pk} className={cn(pk.className, "py-3 text-sm")}>
           <div className="flex items-baseline justify-between gap-3">
-            <span className="cislo-dokladu min-w-0 truncate font-medium">{r.cislo}</span>
+            {r.ciel ? (
+              <Link {...r.ciel} className="cislo-dokladu min-w-0 truncate font-medium">
+                {r.cislo}
+              </Link>
+            ) : (
+              <span className="cislo-dokladu min-w-0 truncate font-medium">{r.cislo}</span>
+            )}
             <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
               {r.datum}
             </span>
@@ -775,7 +799,8 @@ function MobilnyZoznam({
             <span className="suma">{t("Spolu {suma}", { suma: r.spolu })}</span>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

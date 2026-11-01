@@ -7,6 +7,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia";
 import { TEXT_BANKU_SPRAVUJE } from "@/lib/faktero/banka-ui";
 import { StavOdznak } from "@/components/faktero/web/Stav";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
@@ -512,6 +514,9 @@ function MailNaKontrolu({
   const u = mail.udaje ?? {};
   const [otvoreny, setOtvoreny] = useState(false);
   const [busy, setBusy] = useState(false);
+  const klik = useKlikNaRiadok();
+  // Klik na kartu rozbalí/zbalí e-mail ako tlačidlo „Zobraziť“; rozbalený obsah klik nechá pre seba.
+  const pk = klik(null, { naKlik: () => setOtvoreny((o) => !o), klavesnica: false });
   const [f, setF] = useState({
     smer: (u.smer as string) ?? "kredit",
     suma: u.suma != null ? String(u.suma) : "",
@@ -588,7 +593,7 @@ function MailNaKontrolu({
   );
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div {...pk} className={cn(pk.className, "rounded-xl border border-border bg-card p-4")}>
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold">{mail.subject ?? t("(bez predmetu)")}</div>
@@ -646,7 +651,7 @@ function MailNaKontrolu({
       </div>
 
       {otvoreny && (
-        <div className="mt-3 grid gap-4 lg:grid-cols-2">
+        <div data-neotvarat className="mt-3 grid gap-4 lg:grid-cols-2 cursor-auto">
           <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs">
             {mail.text_mailu ?? t("Text e-mailu nie je uložený.")}
           </pre>

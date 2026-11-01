@@ -26,6 +26,7 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { nazovVybavenia, stavPohybu } from "@/lib/faktero/pohyb-vybavenie";
 import { triedaStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { cn } from "@/lib/utils";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 /** Tón stavu pohybu (text ostáva z `stavPohybu`/`nazovVybavenia`); vybavené bez dokladu = informácia. */
 const TON_POHYBU: Record<string, TonStavu> = {
@@ -379,7 +380,11 @@ function TxPage() {
                 </thead>
                 <tbody>
                   {txs.map((tx) => (
-                    <tr key={tx.id} className="border-t border-border">
+                    <KlikatelnyRiadok
+                      key={tx.id}
+                      naKlik={() => setDetail(tx.id)}
+                      className="border-t border-border"
+                    >
                       <td className="whitespace-nowrap px-3 py-2 tabular-nums">{datumNaDoklade(tx.booking_date)}</td>
                       {!selected && (
                         <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-muted-foreground">
@@ -457,7 +462,7 @@ function TxPage() {
                       >
                         {fmtMoney(Number(tx.amount), tx.currency)}
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   ))}
                 </tbody>
               </table>

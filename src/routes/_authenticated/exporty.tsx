@@ -28,6 +28,7 @@ import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/o
 import { prveOdoslanie } from "@/lib/faktero/efaktura-odoslana";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
@@ -368,7 +369,11 @@ function ExportsPage() {
                       </tr>
                     )}
                     {invoices.map((i) => (
-                      <tr key={i.id} className="hover:bg-muted/30">
+                      // Zoznam slúži na výber — klik na riadok ho označí/odznačí, doklad neotvára.
+                      <KlikatelnyRiadok
+                        key={i.id}
+                        naKlik={() => setPicked((p) => ({ ...p, [i.id]: !p[i.id] }))}
+                      >
                         <td className="p-3">
                           <input
                             type="checkbox"
@@ -435,7 +440,7 @@ function ExportsPage() {
                         <td className="suma hidden whitespace-nowrap p-3 text-right md:table-cell">
                           {formatujMenu(i.total, i.currency)}
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))}
                   </tbody>
                 </table>
@@ -1261,7 +1266,11 @@ function ZauctovaneDoProgramu() {
                   </tr>
                 )}
                 {zobrazene.map((r) => (
-                  <tr key={r.id} className="hover:bg-muted/30">
+                  // Výber na export — klik na riadok ho označí/odznačí, doklad neotvára.
+                  <KlikatelnyRiadok
+                    key={r.id}
+                    naKlik={() => setVyber((v) => ({ ...v, [r.id]: !v[r.id] }))}
+                  >
                     <td className="p-2">
                       <input
                         type="checkbox"
@@ -1309,7 +1318,7 @@ function ZauctovaneDoProgramu() {
                         </StavOdznak>
                       )}
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>

@@ -50,6 +50,7 @@ import { pohybyZastarane } from "@/lib/faktero/bank-stav-pohybov";
 import { akciePripojenia } from "@/lib/faktero/akcie-pripojenia";
 import { StavOdznak, triedaStavu } from "@/components/faktero/web/Stav";
 import { cn } from "@/lib/utils";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové účty — Faktero") }] }),
@@ -61,6 +62,7 @@ function fmtMoney(n: number, c = "EUR") {
 }
 
 function BankAccountsPage() {
+  const klik = useKlikNaRiadok();
   const { t, jazyk } = useT();
   const list = useServerFn(listBankData);
   const syncAcc = useServerFn(syncBankAccounts);
@@ -563,8 +565,18 @@ function BankAccountsPage() {
               <div className="mt-3 grid gap-2 md:grid-cols-2">
                 {data.accounts
                   .filter((a) => a.bank_connection_id === c.id)
-                  .map((a) => (
-                    <div key={a.id} className="rounded-lg border border-border bg-muted/40 p-3">
+                  .map((a) => {
+                    // Celá karta účtu vedie na jeho transakcie (odkaz „Transakcie“ ostáva).
+                    const pk = klik(
+                      { to: "/bankove-ucty/transakcie", search: { account: a.id } as any },
+                      { klavesnica: false },
+                    );
+                    return (
+                    <div
+                      key={a.id}
+                      {...pk}
+                      className={cn(pk.className, "rounded-lg border border-border bg-muted/40 p-3")}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate font-semibold">{a.account_name ?? a.iban ?? t("Účet")}</div>
@@ -621,7 +633,8 @@ function BankAccountsPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 {data.accounts.filter((a) => a.bank_connection_id === c.id).length === 0 && (
                   <div className="text-sm text-muted-foreground">
                     {t("Žiadne účty — kliknite \"Načítať účty\".")}

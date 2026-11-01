@@ -6,6 +6,7 @@ import { NacitavanieStav } from "./web/StavyObsahu";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "./KodPohody";
+import { KlikatelnyRiadok } from "./KlikatelnyRiadok";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA, KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
@@ -105,7 +106,11 @@ export function PredlohyUctovania({ companyId }: { companyId: string }) {
             </thead>
             <tbody>
               {predlohy.map((r) => (
-                <tr key={r.id} className="border-b border-border align-top last:border-0 hover:bg-muted/30">
+                <KlikatelnyRiadok
+                  key={r.id}
+                  naKlik={() => setUprava({ ...r })}
+                  className="border-b border-border align-top last:border-0"
+                >
                   <td className="p-3 font-semibold break-words">{r.nazov}</td>
                   <td className="whitespace-nowrap p-3 text-muted-foreground">
                     {t(DRUHY_PREDLOH.find((d) => d.kod === (r.druh ?? null))?.nazov ?? "")}
@@ -129,7 +134,7 @@ export function PredlohyUctovania({ companyId }: { companyId: string }) {
                       </button>
                     </div>
                   </td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

@@ -46,6 +46,7 @@ import { KV_CLENENIA, KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/
 import { triedaStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useT } from "@/lib/i18n/useT";
 import { otlacok, predvoleneZFirmy } from "@/lib/faktero/formular-z-firmy";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -1029,6 +1030,30 @@ function Ciselnik({
   const [form, setForm] = useState<typeof PRAZDNY | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const formular = useRef<HTMLDivElement>(null);
+  const formZRiadku = (z: (typeof zaznamy)[number]): typeof PRAZDNY => ({
+    id: z.id,
+    kod: z.kod,
+    popis: z.popis ?? "",
+    agenda: z.agenda,
+    ucet_md: z.ucet_md ?? "",
+    ucet_d: z.ucet_d ?? "",
+    aktivne: z.aktivne,
+    druhy_dokladov: z.druhy_dokladov ?? [],
+    kategoria: z.kategoria ?? "",
+    pomer: z.pomer ?? null,
+    typ_dokladu: z.typ_dokladu ?? null,
+    typ_platby: z.typ_platby ?? null,
+  });
+  /** Klik na riadok: otvorí formulár nad tabuľkou, posunie k nemu a zameria prvé pole. */
+  const upravRiadok = (z: (typeof zaznamy)[number]) => {
+    setForm(formZRiadku(z));
+    requestAnimationFrame(() => {
+      sekcia.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      formular.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    });
+  };
+
   useEffect(() => {
     if (!pridat) return;
     setDruh("predkontacia");
@@ -1123,7 +1148,7 @@ function Ciselnik({
       </div>
 
       {form && (
-        <div className="mt-4 grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-6 sm:p-4">
+        <div ref={formular} className="mt-4 grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-6 sm:p-4">
           <label className="block sm:col-span-1">
             <span className="text-xs font-medium text-muted-foreground">{t("Kód")}</span>
             <input
@@ -1377,9 +1402,10 @@ function Ciselnik({
             </thead>
             <tbody>
               {riadky.map((z) => (
-                <tr
+                <KlikatelnyRiadok
                   key={z.id}
-                  className={`border-t border-border first:border-t-0 hover:bg-muted/30 [&>td:first-child]:pl-3 ${z.aktivne ? "" : "opacity-50"}`}
+                  naKlik={() => upravRiadok(z)}
+                  className={`border-t border-border first:border-t-0 [&>td:first-child]:pl-3 ${z.aktivne ? "" : "opacity-50"}`}
                 >
                   <td className="whitespace-nowrap py-1.5 pr-3 font-mono font-semibold">{z.kod}</td>
                   <td className="py-1.5 pr-3">
@@ -1441,22 +1467,7 @@ function Ciselnik({
                   </td>
                   <td className="whitespace-nowrap py-1.5 pr-3 text-right">
                     <button
-                      onClick={() =>
-                        setForm({
-                          id: z.id,
-                          kod: z.kod,
-                          popis: z.popis ?? "",
-                          agenda: z.agenda,
-                          ucet_md: z.ucet_md ?? "",
-                          ucet_d: z.ucet_d ?? "",
-                          aktivne: z.aktivne,
-                          druhy_dokladov: z.druhy_dokladov ?? [],
-                          kategoria: z.kategoria ?? "",
-                          pomer: z.pomer ?? null,
-                          typ_dokladu: z.typ_dokladu ?? null,
-                          typ_platby: z.typ_platby ?? null,
-                        })
-                      }
+                      onClick={() => setForm(formZRiadku(z))}
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                       aria-label={t("Upraviť {kod}", { kod: z.kod })}
                     >
@@ -1475,7 +1486,7 @@ function Ciselnik({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>
