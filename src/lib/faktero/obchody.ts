@@ -59,10 +59,10 @@ export const ANDROID_STRANKA = "/android";
 
 export const ANDROID_FAKTERO = apk(
   "Faktero",
-  "1.7.0",
-  "faktero-1.7.0.apk",
+  "1.7.1",
+  "faktero-1.7.1.apk",
   15,
-  "4c81e11ebe38826f3c3f033d957e3fd944409e21bd49f80d1a22a5b1e47ef77e",
+  "bd9b80884534d711c0236f519be0d807680dbfc1a5f57f52d547545ba9f310ff",
 );
 
 export const ANDROID_KNIHA_JAZD = apk(
