@@ -7,7 +7,8 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertTriangle, FileText, Landmark } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, FileText, Landmark, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -437,16 +438,15 @@ function Stranka() {
               )}
               {data && riadky.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    {t("Všetko je spracované.")}
+                  <td colSpan={8}>
+                    <EmptyState title="Všetko je spracované." icon={FileText} />
                   </td>
                 </tr>
               )}
               {riadky.length > 0 && zobrazene.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {t("Nič nevyhovuje filtru.")}
+                  <td colSpan={8}>
+                    <EmptyState title="Nič nevyhovuje filtru." icon={SearchX} />
                   </td>
                 </tr>
               )}
@@ -477,7 +477,7 @@ function Stranka() {
                       {r.dodavatel ?? <span className="text-muted-foreground">—</span>}
                     </span>
                   </td>
-                  <td className="p-3"><span className="cislo-dokladu">{r.cislo ?? "—"}</span></td>
+                  <td className="whitespace-nowrap p-3"><span className="cislo-dokladu">{r.cislo ?? "—"}</span></td>
                   <td className="p-3 whitespace-nowrap">{datumText(r)}</td>
                   <td className="suma p-3 text-right">{sumaText(r)}</td>
                   <td className="p-3 text-xs text-muted-foreground">{zdrojText(r)}</td>

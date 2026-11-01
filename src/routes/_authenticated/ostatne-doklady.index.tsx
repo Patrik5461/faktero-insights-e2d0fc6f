@@ -699,7 +699,7 @@ function OstatneDokladyPage() {
                                   <button
                                     onClick={() => zmenStav([r.id], "processed")}
                                     disabled={pracujem}
-                                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary-hover hover:bg-primary/15 disabled:opacity-50"
+                                    className="inline-flex h-6 items-center gap-1 rounded-md border border-input bg-card px-2 text-xs font-semibold text-primary-hover hover:bg-accent disabled:opacity-50"
                                   >
                                     <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                                   </button>
