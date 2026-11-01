@@ -22,6 +22,8 @@ import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { MENY, KROK_CENY, formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { platnePolozkySablony } from "@/lib/faktero/polozky-sablony";
 export const Route = createFileRoute("/_authenticated/opakovane/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Opakovaná faktúra — Faktero") }] }),
   component: RecurringDetail,
@@ -59,10 +61,14 @@ function RecurringDetail() {
   const toggleFn = useServerFn(toggleRecurring);
 
   async function load() {
+    /* Len šablóna aktívnej firmy — inak by sa dala upravovať šablóna inej vlastnej firmy. */
+    const cid = getActiveCompanyId();
+    if (!cid) return;
     const { data } = await supabase
       .from("recurring_invoices")
       .select("*")
       .eq("id", id)
+      .eq("company_id", cid)
       .maybeSingle();
     setNenajdene(!data);
     setRec(data);
@@ -99,6 +105,14 @@ function RecurringDetail() {
   }
 
   async function save() {
+    // Text nad položkami je povinný ako pri novej šablóne a faktúre.
+    if (!String(rec?.intro_note ?? "").trim()) {
+      return toast.error(t("Vyplňte text nad položkami — hovorí, čo sa fakturuje."));
+    }
+    const { riadky, chyba } = platnePolozkySablony(items);
+    if (chyba) return toast.error(t(chyba));
+    const cid = getActiveCompanyId();
+    if (!cid || rec?.company_id !== cid) return toast.error(t("Táto opakovaná faktúra v aktívnej firme neexistuje."));
     setBusy("save");
     try {
       const { error } = await supabase
@@ -111,12 +125,13 @@ function RecurringDetail() {
           due_days: rec.due_days,
           notes: rec.notes,
           intro_note: (rec.intro_note ?? "").trim() || null,
-          items: items as any,
+          items: riadky as any,
           subtotal: totals.subtotal,
           vat_total: totals.vat_total,
           total: totals.total,
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", cid);
       if (error) throw error;
       toast.success(t("Uložené"));
       load();

@@ -150,11 +150,27 @@ export async function vytvorFakturu(
   // Rovnaké pravidlo ako formulár webu: dodanie do EÚ bez DPH len na IČ DPH z iného štátu.
   if (typPdp === "eu_b2b") {
     const icDph = String(cust.ic_dph ?? "").trim();
-    if (!/^[A-Z]{2}[A-Z0-9]{2,}$/i.test(icDph) || /^SK/i.test(icDph))
+    // Tuzemské je IČ DPH krajiny firmy — pre českú firmu CZ, nie SK.
+    const { chybaIcDphPreDodanieDoEu } = await import("./dph-rezim");
+    if (chybaIcDphPreDodanieDoEu(icDph, krajinaDane(firma?.country)))
       return {
         ok: false,
         kod: "validation_error",
         sprava: "Pri dodaní do EÚ (eu_b2b) musí mať odberateľ IČ DPH z iného členského štátu.",
+        status: 400,
+      };
+  }
+  /*
+    Neplatiteľ DPH nevyčísľuje — výslovná sadzba ≠ 0 by inak padla až na
+    poistke v databáze s menej jasnou chybou.
+  */
+  if (firma?.vat_payer === false && !pdp) {
+    const sDph = polozky.find((i) => !i.prenesenie && Number(i.vat_rate ?? 0) !== 0);
+    if (sDph)
+      return {
+        ok: false,
+        kod: "validation_error",
+        sprava: `Firma nie je platiteľ DPH — položka „${sDph.name}“ nesmie mať DPH (vat_rate musí byť 0).`,
         status: 400,
       };
   }

@@ -6,17 +6,13 @@ import { useT } from "@/lib/i18n/useT";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
 import { colneUdajeNaZapis } from "@/lib/faktero/colny-kod";
 import { riadkyNaZapis, sumaFormulara, znamienkoFormulara } from "@/lib/faktero/dobropis-zobrazenie";
-import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import { KROK_CENY, MENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import { sumyFormulara } from "@/lib/faktero/faktura-formular-sumy";
+import { skontrolujDatumy } from "@/lib/faktero/faktura-nalezitosti";
 import { useServerFn } from "@tanstack/react-start";
 import { druhPodlaTypuFaktury, sablonaZCisla, ukazkaCisla } from "@/lib/faktero/ciselne-rady";
 import { pokracujVRaduFn } from "@/lib/faktero/ciselne-rady.functions";
-import {
-  koeficientZlavy,
-  percentoZlavy,
-  sumaZlavyDokladu,
-  zakladRiadku,
-  type TypZlavy,
-} from "@/lib/faktero/zlavy";
+import { percentoZlavy, zakladRiadku, type TypZlavy } from "@/lib/faktero/zlavy";
 import { technickaChyba } from "@/lib/faktero/chyba-pre-ludi";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
@@ -43,7 +39,11 @@ import {
 } from "@/lib/faktero/odberatel-faktury";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
-import { sadzbyDoVyberu } from "@/lib/faktero/dph-rezim";
+import {
+  riadkySDphNeplatitela,
+  sadzbaNovehoRiadku,
+  sadzbyDoVyberu,
+} from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Upraviť faktúru — Faktero") }] }),
   component: EditInvoice,
@@ -248,33 +248,41 @@ function EditInvoice() {
   */
   const znForm = znamienkoFormulara(inv?.type, inv);
   const riadkyZapis = useMemo(() => riadkyNaZapis(riadkyDokladu, znForm), [riadkyDokladu, znForm]);
-  const totals = useMemo(() => {
-    let sub = 0,
-      vat = 0;
-    for (const it of riadkyZapis) {
-      const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
-      sub += s;
-      // Prenesenie na celej faktúre (reverse_charge) — daň neuplatňuje žiadny riadok.
-      vat += inv?.reverse_charge || it.prenesenie ? 0 : s * (Number(it.vat_rate) / 100);
-    }
-    // Zľava na doklad prenásobí základ aj daň rovnakým koeficientom, takže
-    // pomer medzi sadzbami DPH ostane nedotknutý.
-    const medzisucet = Math.round(sub * 100) / 100;
-    const zlava = sumaZlavyDokladu(sub, {
-      typ: form.discount_type || null,
-      hodnota: Number(form.discount_value),
-    });
-    const k = koeficientZlavy(sub, zlava);
-    sub = sub * k;
-    vat = vat * k;
-    return { subtotal: sub, vat_total: vat, total: sub + vat, medzisucet, zlava };
-  }, [riadkyZapis, form.discount_type, form.discount_value, inv?.reverse_charge]);
+  /*
+    Súčty rovnako ako pri vystavení (`sumyFormulara`): spôsob zaokrúhlenia
+    faktúry (po položkách, za doklad, hotovosť na 0,05 € / celé Kč), prenesenie
+    na celej faktúre a odpočítané zálohy. Predtým mala úprava vlastný výpočet
+    bez zaokrúhlenia, takže uložila iný `total`, než aký mala faktúra pri vystavení.
+  */
+  const totals = useMemo(
+    () =>
+      sumyFormulara(riadkyZapis, {
+        rounding_mode: (inv?.rounding_mode as "per_item" | "per_document" | "retail") || "per_document",
+        reverse_charge: Boolean(inv?.reverse_charge),
+        discount_type: form.discount_type,
+        discount_value: Number(form.discount_value),
+        mena: form.currency,
+        zalohy: Number(inv?.advance_amount) ? [Number(inv.advance_amount)] : [],
+      }),
+    [
+      riadkyZapis,
+      form.discount_type,
+      form.discount_value,
+      form.currency,
+      inv?.reverse_charge,
+      inv?.rounding_mode,
+      inv?.advance_amount,
+    ],
+  );
+  /* Prenesenie na celej faktúre (reverse_charge) alebo na riadku — daň sa nevyčísľuje. */
+  const bezDane = (it: Pick<Item, "prenesenie">) => Boolean(inv?.reverse_charge || it.prenesenie);
   /** Súčty, ako ich vidí človek — dobropis bez mínusu. */
   const zobrazene = {
     medzisucet: sumaFormulara(totals.medzisucet, znForm),
     subtotal: sumaFormulara(totals.subtotal, znForm),
     vat_total: sumaFormulara(totals.vat_total, znForm),
     total: sumaFormulara(totals.total, znForm),
+    payable: sumaFormulara(totals.payable, znForm),
   };
 
   /** Suma s DPH napísaná do stĺpca Spolu dopočíta jednotkovú cenu bez dane. */
@@ -282,7 +290,8 @@ function EditInvoice() {
     const it = items[idx];
     if (!it || it._locked) return;
     const zlava = percentoZlavy(it.discount_percent);
-    const cena = cenaZoSumySDph(spolu, it.quantity, it.prenesenie ? 0 : it.vat_rate);
+    // Pri prenesení na celej faktúre je „Spolu“ bez dane — inak by sa z 100 stalo 81,30.
+    const cena = cenaZoSumySDph(spolu, it.quantity, bezDane(it) ? 0 : it.vat_rate);
     setItem(idx, {
       unit_price: zlava >= 100 ? cena : Number((cena / (1 - zlava / 100)).toFixed(5)),
     });
@@ -307,6 +316,31 @@ function EditInvoice() {
     if (bezNazvu) return toast.error(t("Položka so sumou musí mať názov."));
     if (znForm === -1 && totals.total > 0)
       return toast.error(t("Dobropis cenu znižuje — sumy zadajte kladne, mínus doplní Faktero samo."));
+    // Neplatiteľ DPH nevyčísľuje — databáza by riadok s 23 % aj tak odmietla.
+    const sDphNeplatitela = riadkySDphNeplatitela(rezim, riadkyDokladu, Boolean(inv?.reverse_charge));
+    if (sDphNeplatitela.length)
+      return toast.error(
+        t("Firma nie je platiteľ DPH — položka „{nazov}“ nesmie mať DPH. Nastavte sadzbu 0 %.", {
+          nazov: sDphNeplatitela[0].name,
+        }),
+      );
+    /*
+      Dátum dodania: koncept pri vystavení dostane dátum vystavenia, vystavená
+      faktúra platiteľa ho mať musí (určuje obdobie DPH) — rovnaká kontrola
+      ako pri vystavení novej faktúry.
+    */
+    const vystavujeSa = inv?.status === "draft" && vystavitRef.current;
+    const datumDodania = form.delivery_date || (vystavujeSa ? form.issue_date : "");
+    if (inv?.status !== "draft" || vystavujeSa) {
+      const datumy = skontrolujDatumy({
+        platitel: rezim.platitel,
+        datumDodania,
+        datumVystavenia: form.issue_date,
+        krajina: rezim.krajina,
+      });
+      if (datumy.chyba) return toast.error(t(datumy.chyba));
+      if (datumy.upozornenie) toast.warning(t(datumy.kluc ?? datumy.upozornenie, datumy.parametre));
+    }
     // Lock: stock-linked lines cannot be removed or modified after sent/paid
     if ((inv?.status as string) === "sent") {
       const violation = originalLocked.some((orig) => {
@@ -332,8 +366,7 @@ function EditInvoice() {
         // odpovie „invalid input syntax for type date" a faktúra bez dátumu
         // dodania sa nedala uložiť vôbec.
         // Vystavený doklad bez dátumu dodania nesmie vzniknúť — doplní sa dátum vystavenia.
-        delivery_date:
-          form.delivery_date || (inv?.status === "draft" && vystavitRef.current ? form.issue_date : null),
+        delivery_date: datumDodania || null,
         due_date: form.due_date,
         // Prázdny VS sa doplní z čísla faktúry, rovnako ako pri vystavení.
         variable_symbol: vsNaUlozenie(form.variable_symbol, form.invoice_number),
@@ -650,12 +683,22 @@ function EditInvoice() {
                   </select>
                 </PoleDokladu>
                 <PoleDokladu label={t("Mena")} htmlFor="mena-dokladu" className={bunka.polovica}>
-                  <input
+                  <select
                     id="mena-dokladu"
                     value={form.currency}
                     onChange={(e) => setForm({ ...form, currency: e.target.value })}
                     className={VSTUP_DOKLADU}
-                  />
+                  >
+                    {/* Staršia mena mimo zoznamu ostáva na výber, nech sa pri otvorení ticho nezmení. */}
+                    {!MENY.some((c) => c.code === form.currency) && form.currency && (
+                      <option value={form.currency}>{form.currency}</option>
+                    )}
+                    {MENY.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.code} {c.symbol} — {t(c.name)}
+                      </option>
+                    ))}
+                  </select>
                 </PoleDokladu>
                 <PoleDokladu label={t("Variabilný symbol")} htmlFor="vs-dokladu" className={bunka.polovica}>
                   <input
@@ -835,7 +878,7 @@ function EditInvoice() {
                         <CellSpolu
                           hodnota={
                             zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                            (it.prenesenie ? 1 : 1 + it.vat_rate / 100)
+                            (bezDane(it) ? 1 : 1 + it.vat_rate / 100)
                           }
                           onZmena={(v) => nastavSpolu(idx, v)}
                           disabled={it._locked}
@@ -892,32 +935,47 @@ function EditInvoice() {
                     disabled={it._locked}
                     onChange={(v) => setItem(idx, v)}
                   />
-                  <div className="grid grid-cols-5 gap-2">
+                  {/* Na telefóne dva stĺpce s popiskami — päť polí v riadku bez popisov sa nedalo čítať. */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted-foreground">
+                      {t("Množstvo")}
                     <input
+                      aria-label={t("Množstvo")}
                       type="number"
                       step="0.01"
                       value={it.quantity}
                       disabled={it._locked}
                       onChange={(e) => setItem(idx, { quantity: Number(e.target.value) })}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                      className="w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                     />
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted-foreground">
+                      {t("Merná jednotka")}
                     <input
                       aria-label={t("Merná jednotka")}
                       value={it.unit}
                       disabled={it._locked}
                       onChange={(e) => setItem(idx, { unit: e.target.value })}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                      className="w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                     />
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted-foreground">
+                      {t("Cena bez DPH")}
                     <input
+                      aria-label={t("Cena bez DPH")}
                       type="number"
                       step={KROK_CENY}
                       value={it.unit_price === 0 ? "" : it.unit_price}
                       placeholder="0"
                       disabled={it._locked}
                       onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                      className="w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                     />
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted-foreground">
+                      {t("Zľava v %")}
                     <input
+                      aria-label={t("Zľava v %")}
                       type="number"
                       step="0.01"
                       min="0"
@@ -929,8 +987,11 @@ function EditInvoice() {
                       onChange={(e) =>
                         setItem(idx, { discount_percent: percentoZlavy(e.target.value) })
                       }
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                      className="w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                     />
+                    </label>
+                    <label className="col-span-2 flex min-w-0 flex-col gap-1 text-xs font-medium text-muted-foreground">
+                      {t("Sadzba DPH")}
                     <select
                       aria-label={t("Sadzba DPH")}
                       value={it.prenesenie ? "pdp" : it.vat_rate}
@@ -940,7 +1001,7 @@ function EditInvoice() {
                           ? setItem(idx, { prenesenie: true })
                           : setItem(idx, { vat_rate: Number(e.target.value), prenesenie: false })
                       }
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                      className="w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
                     >
                       {(() => {
                         const v = sadzbyDoVyberu(rezim, it.vat_rate, form.issue_date);
@@ -966,6 +1027,7 @@ function EditInvoice() {
                         );
                       })()}
                     </select>
+                    </label>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
@@ -973,7 +1035,7 @@ function EditInvoice() {
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
-                          (it.prenesenie ? 1 : 1 + it.vat_rate / 100)
+                          (bezDane(it) ? 1 : 1 + it.vat_rate / 100)
                         }
                         onZmena={(v) => nastavSpolu(idx, v)}
                         disabled={it._locked}
@@ -1001,7 +1063,20 @@ function EditInvoice() {
 
             <button
               type="button"
-              onClick={() => setItems([...items, { ...EMPTY }])}
+              onClick={() =>
+                setItems([
+                  ...items,
+                  {
+                    ...EMPTY,
+                    // Sadzba podľa platiteľa, OSS a prenesenia na faktúre — nie pevných 23 %.
+                    vat_rate: sadzbaNovehoRiadku(rezim, {
+                      ossKrajina: inv?.oss && inv?.oss_country ? inv.oss_country : null,
+                      reverseCharge: Boolean(inv?.reverse_charge),
+                      den: form.delivery_date || form.issue_date,
+                    }),
+                  },
+                ])
+              }
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" /> {t("Pridať položku")}
@@ -1090,6 +1165,23 @@ function EditInvoice() {
                   {zobrazene.total.toFixed(2)} {form.currency}
                 </span>
               </div>
+              {/* Odpočítané zálohy — „Spolu“ sa ukladá pred odpočtom, zákazník platí rozdiel. */}
+              {totals.advance > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t("Odpočet zálohy")}</span>
+                    <span className="tabular-nums">
+                      −{totals.advance.toFixed(2)} {form.currency}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>{t("K úhrade")}</span>
+                    <span className="tabular-nums">
+                      {zobrazene.payable.toFixed(2)} {form.currency}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

@@ -109,6 +109,9 @@ export const SKUPINY = [
       "pohoda-cz-spatny-chod",
       "mobil-zoznamy",
       "banka-tb-notifikacie",
+      // B2: test2 sa počas toku prepne na neplatiteľa — preto za sebou v tejto skupine.
+      "b2-neplatitel-dph",
+      "b2-cz-formulare",
     ],
   },
   {
