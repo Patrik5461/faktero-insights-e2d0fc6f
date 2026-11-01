@@ -32,7 +32,9 @@ function bezpecne<T>(f: () => T, nahrada: T): T {
 if (jeKlient && !(window as any).__demoNainstalovane) {
   (window as any).__demoNainstalovane = true;
   const POVOD = window.location.origin;
-  const stav = (window.__demoSiet = { blokovane: [] as { cas: string; kam: string; sposob: string }[] });
+  const stav = (window.__demoSiet = {
+    blokovane: [] as { cas: string; kam: string; sposob: string }[],
+  });
 
   /* ------------------------------------------------------------ toasty */
   let poslednyToast = 0;
@@ -41,7 +43,10 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
     if (teraz - poslednyToast < 1200) return;
     poslednyToast = teraz;
     // Toaster appky sa vykreslí až po hydratácii — toast počká na ďalší tik.
-    setTimeout(() => toast.info("Demo – nič sa neodoslalo", { description: popis, duration: 4000 }), 0);
+    setTimeout(
+      () => toast.info("Demo – nič sa neodoslalo", { description: popis, duration: 4000 }),
+      0,
+    );
   };
 
   const zablokuj = (kam: string, sposob: string) => {
@@ -61,20 +66,53 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
   const povodnyFetch = window.fetch.bind(window);
   window.fetch = async (vstup: RequestInfo | URL, init?: RequestInit) => {
     const adresa = typeof vstup === "string" || vstup instanceof URL ? String(vstup) : vstup.url;
-    const metoda = (init?.method ?? (vstup instanceof Request ? vstup.method : "GET")).toUpperCase();
+    const metoda = (
+      init?.method ?? (vstup instanceof Request ? vstup.method : "GET")
+    ).toUpperCase();
     if (!jeVlastny(adresa)) {
       zablokuj(`${metoda} ${adresa}`, "fetch");
-      demoToast(`Preview neposiela nič mimo tento počítač (${bezpecne(() => new URL(adresa).host, adresa)}).`);
+      demoToast(
+        `Preview neposiela nič mimo tento počítač (${bezpecne(() => new URL(adresa).host, adresa)}).`,
+      );
       throw new TypeError("Demo – externé volanie je v preview zablokované");
     }
-    const odpoved = await povodnyFetch(vstup as RequestInfo, init);
+    let odpoved = await povodnyFetch(vstup as RequestInfo, init);
+    /*
+     * Vite dev pri prvom volaní serverovej funkcie, ktorej modul server ešte
+     * nenačítal, občas vráti 500 — v logu „reading 'method'“, v tele HTML
+     * chybová stránka namiesto odpovede funkcie. Funkcia sa vôbec nespustila
+     * (TanStack ju nenašiel), takže je bezpečné volanie zopakovať.
+     */
+    for (
+      let pokus = 0;
+      pokus < 3 && odpoved.status === 500 && adresa.includes("/_serverFn/");
+      pokus++
+    ) {
+      const text = await odpoved
+        .clone()
+        .text()
+        .catch(() => "");
+      if (!text.includes("This page didn't load") && !text.includes("reading 'method'")) break;
+      await new Promise((r) => setTimeout(r, 400));
+      odpoved = await povodnyFetch(vstup as RequestInfo, init);
+    }
     const simulovane = odpoved.headers.get("x-demo-simulovane");
     const zapisy = odpoved.headers.get("x-demo-zapisy");
     if (simulovane) {
       demoToast(`Simulované v demo: ${decodeURIComponent(simulovane)}`);
-    } else if (zapisy || (adresa.includes("/__demo/rest/") && !["GET", "HEAD"].includes(metoda) && !adresa.includes("/rpc/"))) {
+    } else if (
+      zapisy ||
+      (adresa.includes("/__demo/rest/") &&
+        !["GET", "HEAD"].includes(metoda) &&
+        !adresa.includes("/rpc/"))
+    ) {
       demoToast("Zmena sa uložila len do pamäte preview.");
-    } else if (adresa.includes("/__demo/storage/") && ["POST", "PUT", "DELETE"].includes(metoda) && !adresa.includes("/object/sign/") && !adresa.includes("/object/list")) {
+    } else if (
+      adresa.includes("/__demo/storage/") &&
+      ["POST", "PUT", "DELETE"].includes(metoda) &&
+      !adresa.includes("/object/sign/") &&
+      !adresa.includes("/object/list")
+    ) {
       demoToast("Súbor je len v pamäti preview.");
     }
     return odpoved;
@@ -82,7 +120,12 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
 
   /* ------------------------------------------------------------ XHR, beacon, WS, SSE */
   const povodnyOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, metoda: string, adresa: string | URL, ...zvysok: any[]) {
+  XMLHttpRequest.prototype.open = function (
+    this: XMLHttpRequest,
+    metoda: string,
+    adresa: string | URL,
+    ...zvysok: any[]
+  ) {
     if (!jeVlastny(adresa)) {
       zablokuj(`${metoda} ${adresa}`, "xhr");
       throw new TypeError("Demo – externé volanie je v preview zablokované");
@@ -129,7 +172,9 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
   window.open = (adresa?: string | URL, ...zvysok: any[]) => {
     if (adresa && !jeVlastny(adresa)) {
       zablokuj(String(adresa), "window.open");
-      demoToast(`Externý odkaz sa v preview neotvára (${bezpecne(() => new URL(String(adresa)).host, String(adresa))}).`);
+      demoToast(
+        `Externý odkaz sa v preview neotvára (${bezpecne(() => new URL(String(adresa)).host, String(adresa))}).`,
+      );
       return null;
     }
     return povodnyOpenOkna(adresa as any, ...zvysok);
@@ -146,7 +191,9 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
       e.preventDefault();
       e.stopPropagation();
       zablokuj(href, "odkaz");
-      demoToast(`Externý odkaz sa v preview neotvára (${bezpecne(() => new URL(href).host, href)}).`);
+      demoToast(
+        `Externý odkaz sa v preview neotvára (${bezpecne(() => new URL(href).host, href)}).`,
+      );
     },
     true,
   );
@@ -169,16 +216,39 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
     else if (!localStorage.getItem("faktero.demo.pripravene")) {
       localStorage.setItem("faktero.demo.pripravene", "1");
       if (!localStorage.getItem(kluceRelacie())) nastavRelaciu("majitel@demo.faktero.sk");
-      // Lišta cookies by na každej snímke zakrývala obsah — v preview je súhlas „len nevyhnutné“.
-      if (!localStorage.getItem("faktero-cookie-consent")) {
-        localStorage.setItem(
-          "faktero-cookie-consent",
-          JSON.stringify({ necessary: true, analytics: false, marketing: false, acceptedAt: new Date().toISOString(), recorded: true }),
-        );
-      }
+    }
+    // Lišta cookies by na každej snímke zakrývala obsah — v preview je súhlas „len nevyhnutné“.
+    if (
+      !localStorage.getItem("faktero-cookie-consent") &&
+      !localStorage.getItem("faktero.demo.suhlas")
+    ) {
+      localStorage.setItem("faktero.demo.suhlas", "1");
+      localStorage.setItem(
+        "faktero-cookie-consent",
+        JSON.stringify({
+          necessary: true,
+          analytics: false,
+          marketing: false,
+          acceptedAt: new Date().toISOString(),
+          recorded: true,
+        }),
+      );
     }
     const dizajn = parametre.get("demoDizajn");
-    if (dizajn === "kompaktny" || dizajn === "faktero") localStorage.setItem("faktero.dizajn", dizajn);
+    if (dizajn === "kompaktny" || dizajn === "faktero") {
+      localStorage.setItem("faktero.dizajn", dizajn);
+      // Appka si dizajn zosúlaďuje s účtom (user_metadata.dizajn) — zapíše sa aj tam.
+      const ja = bezpecne(
+        () => JSON.parse(localStorage.getItem(kluceRelacie()) ?? "null")?.user?.id,
+        null,
+      );
+      const xhr = new XMLHttpRequest();
+      povodnyOpen.call(xhr, "POST", "/__demo/nastav", false);
+      xhr.setRequestHeader("content-type", "application/json");
+      xhr.send(JSON.stringify({ ucet: ja, dizajn }));
+      if (ucet || ja)
+        nastavRelaciu(ucet ?? JSON.parse(localStorage.getItem(kluceRelacie())!).user.email);
+    }
     const panel = parametre.get("demoPanel");
     if (panel === "0") localStorage.setItem("faktero.demo.panel", "0");
     if (panel === "1") localStorage.removeItem("faktero.demo.panel");
@@ -227,7 +297,10 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
     const $ = <T extends Element>(s: string) => tien.querySelector(s) as T;
     $("button.tl").addEventListener("click", () => $(".p").classList.toggle("o"));
     const aktualnyUcet = () =>
-      bezpecne(() => JSON.parse(localStorage.getItem(kluceRelacie()) ?? "null")?.user?.email ?? "", "");
+      bezpecne(
+        () => JSON.parse(localStorage.getItem(kluceRelacie()) ?? "null")?.user?.email ?? "",
+        "",
+      );
     povodnyFetch("/__demo/stav")
       .then((r) => r.json())
       .then((s) => {
@@ -241,8 +314,10 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
         const ja = s.ucty.find((x: any) => x.email === aktualnyUcet()) ?? s.ucty[0];
         u.value = ja.email;
         $<HTMLSelectElement>("#r").value = ja.rola;
-        $<HTMLSelectElement>("#d").value = localStorage.getItem("faktero.dizajn") === "kompaktny" ? "kompaktny" : "faktero";
-        $("#info").textContent = `Zablokované pokusy o sieť: server ${s.blokovane}, prehliadač ${stav.blokovane.length}`;
+        $<HTMLSelectElement>("#d").value =
+          localStorage.getItem("faktero.dizajn") === "kompaktny" ? "kompaktny" : "faktero";
+        $("#info").textContent =
+          `Zablokované pokusy o sieť: server ${s.blokovane}, prehliadač ${stav.blokovane.length}`;
         u.addEventListener("change", () => {
           const iny = s.ucty.find((x: any) => x.email === u.value);
           if (iny) $<HTMLSelectElement>("#r").value = iny.rola;
@@ -274,10 +349,13 @@ if (jeKlient && !(window as any).__demoNainstalovane) {
     });
     document.body.appendChild(hostitel);
   };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => setTimeout(vykresliPanel, 500));
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", () => setTimeout(vykresliPanel, 500));
   else setTimeout(vykresliPanel, 500);
 
-  console.info("[demo] Preview režim: demo dáta v pamäti servera, sieť mimo tento počítač je zablokovaná.");
+  console.info(
+    "[demo] Preview režim: demo dáta v pamäti servera, sieť mimo tento počítač je zablokovaná.",
+  );
 }
 
 export {};

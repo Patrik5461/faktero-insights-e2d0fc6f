@@ -118,7 +118,11 @@ export class DemoDb {
   }
 
   /** Doplní chýbajúce stĺpce (predvolené hodnoty, id, časy) — ako INSERT v Postgrese. */
-  doplnRiadok(meno: string, vstup: Riadok, kontext: KontextPoziadavky = { pouzivatel: null, servis: true }): Riadok {
+  doplnRiadok(
+    meno: string,
+    vstup: Riadok,
+    kontext: KontextPoziadavky = { pouzivatel: null, servis: true },
+  ): Riadok {
     const st = schema.tabulky[meno]?.stlpce ?? {};
     const pred = predvolene[meno] ?? {};
     const r: Riadok = {};
@@ -126,7 +130,8 @@ export class DemoDb {
       if (vstup[stlpec] !== undefined) r[stlpec] = vstup[stlpec];
       else if (pred[stlpec] !== undefined) r[stlpec] = predvolenaHodnota(pred[stlpec], kontext);
       else if (stlpec === "id" && st.id.druh === "text") r.id = randomUUID();
-      else if (stlpec === "created_at" || stlpec === "updated_at") r[stlpec] = new Date().toISOString();
+      else if (stlpec === "created_at" || stlpec === "updated_at")
+        r[stlpec] = new Date().toISOString();
       else r[stlpec] = null;
     }
     // Stĺpce, ktoré typy (zatiaľ) nepoznajú, sa nezahodia.

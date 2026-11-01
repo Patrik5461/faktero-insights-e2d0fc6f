@@ -99,9 +99,15 @@ function nahradnySubor(cesta: string): { obsah: Buffer; typ: string } {
   let subor = kandidati[ext];
   if (/logo/i.test(cesta) && ext !== ".pdf") subor = "demo-logo.svg";
   if (subor && existsSync(resolve(ASSETS, subor))) {
-    return { obsah: readFileSync(resolve(ASSETS, subor)), typ: TYPY[extname(subor)] ?? "application/octet-stream" };
+    return {
+      obsah: readFileSync(resolve(ASSETS, subor)),
+      typ: TYPY[extname(subor)] ?? "application/octet-stream",
+    };
   }
-  return { obsah: Buffer.from("Demo súbor – vymyslený obsah preview.\n"), typ: "text/plain; charset=utf-8" };
+  return {
+    obsah: Buffer.from("Demo súbor – vymyslený obsah preview.\n"),
+    typ: "text/plain; charset=utf-8",
+  };
 }
 
 async function obsluzUlozisko(req: IncomingMessage, res: ServerResponse, cesta: string, url: URL) {
@@ -130,15 +136,25 @@ async function obsluzUlozisko(req: IncomingMessage, res: ServerResponse, cesta: 
     return posliJson(
       res,
       200,
-      (paths as string[]).map((p) => ({ path: p, signedURL: `/object/sign/${m![1]}/${p}?token=demo`, error: null })),
+      (paths as string[]).map((p) => ({
+        path: p,
+        signedURL: `/object/sign/${m![1]}/${p}?token=demo`,
+        error: null,
+      })),
     );
   }
   m = /^object\/upload\/sign\/([^/]+)\/(.+)$/.exec(cesta);
   if (m && metoda === "POST") {
-    return posliJson(res, 200, { url: `/object/upload/sign/${m[1]}/${m[2]}?token=demo`, token: "demo" });
+    return posliJson(res, 200, {
+      url: `/object/upload/sign/${m[1]}/${m[2]}?token=demo`,
+      token: "demo",
+    });
   }
   if (m && metoda === "PUT") {
-    db.subory.set(`${m[1]}/${dekoduj(m[2])}`, { obsah: telo, typ: String(req.headers["content-type"] ?? "application/octet-stream") });
+    db.subory.set(`${m[1]}/${dekoduj(m[2])}`, {
+      obsah: telo,
+      typ: String(req.headers["content-type"] ?? "application/octet-stream"),
+    });
     return posliJson(res, 200, { Key: `${m[1]}/${m[2]}` });
   }
   m = /^object\/list(?:-v2)?\/([^/]+)$/.exec(cesta);
@@ -147,7 +163,11 @@ async function obsluzUlozisko(req: IncomingMessage, res: ServerResponse, cesta: 
     const pred = `${m[1]}/${prefix ? String(prefix).replace(/\/$/, "") + "/" : ""}`;
     const polozky = [...db.subory.keys()]
       .filter((k) => k.startsWith(pred))
-      .map((k) => ({ name: k.slice(pred.length), id: k, metadata: { size: db.subory.get(k)!.obsah.length } }));
+      .map((k) => ({
+        name: k.slice(pred.length),
+        id: k,
+        metadata: { size: db.subory.get(k)!.obsah.length },
+      }));
     return posliJson(res, 200, polozky);
   }
   if ((cesta === "object/move" || cesta === "object/copy") && metoda === "POST") {
@@ -169,7 +189,11 @@ async function obsluzUlozisko(req: IncomingMessage, res: ServerResponse, cesta: 
     const { prefixes = [] } = json();
     for (const p of prefixes as string[]) db.subory.delete(`${m[1]}/${p}`);
     console.info(`[demo] úložisko: zmazané ${prefixes.length} súborov (len v pamäti)`);
-    return posliJson(res, 200, (prefixes as string[]).map((p) => ({ name: p })));
+    return posliJson(
+      res,
+      200,
+      (prefixes as string[]).map((p) => ({ name: p })),
+    );
   }
   // Čítanie: object/<bucket>/<cesta>, object/public|authenticated|sign/…, render/image/…
   m = /^(?:object|render\/image)\/(?:public\/|authenticated\/|sign\/)?([^/]+)\/(.+)$/.exec(cesta);
@@ -185,12 +209,19 @@ async function obsluzUlozisko(req: IncomingMessage, res: ServerResponse, cesta: 
   if (m && (metoda === "POST" || metoda === "PUT")) {
     const kluc = `${m[1]}/${dekoduj(m[2])}`;
     // Nahranie cez FormData — obsah sa nerozoberá, stačí ho podržať.
-    db.subory.set(kluc, { obsah: telo, typ: String(req.headers["content-type"] ?? "application/octet-stream") });
+    db.subory.set(kluc, {
+      obsah: telo,
+      typ: String(req.headers["content-type"] ?? "application/octet-stream"),
+    });
     console.info(`[demo] úložisko: nahraté ${kluc} (len v pamäti)`);
     return posliJson(res, 200, { Key: kluc, Id: kluc, path: m[2] });
   }
   void url;
-  return posliJson(res, 404, { statusCode: "404", error: "not_found", message: "Demo – súbor neexistuje" });
+  return posliJson(res, 404, {
+    statusCode: "404",
+    error: "not_found",
+    message: "Demo – súbor neexistuje",
+  });
 }
 
 /* ------------------------------------------------------------- auth */
@@ -199,26 +230,35 @@ let aktivnyDizajn: Record<string, string> = {};
 
 async function obsluzAuth(req: IncomingMessage, res: ServerResponse, cesta: string, url: URL) {
   const metoda = req.method ?? "GET";
-  const telo = metoda === "GET" ? {} : (() => {
-    return citajTelo(req).then((b) => {
-      try {
-        return JSON.parse(b.toString("utf8") || "{}");
-      } catch {
-        return {};
-      }
-    });
-  })();
+  const telo =
+    metoda === "GET"
+      ? {}
+      : (() => {
+          return citajTelo(req).then((b) => {
+            try {
+              return JSON.parse(b.toString("utf8") || "{}");
+            } catch {
+              return {};
+            }
+          });
+        })();
   const vstup: any = await telo;
   const k = kontextZ(req);
 
   if (cesta === "settings") {
-    return posliJson(res, 200, { external: { email: true, google: false }, disable_signup: true, mailer_autoconfirm: true });
+    return posliJson(res, 200, {
+      external: { email: true, google: false },
+      disable_signup: true,
+      mailer_autoconfirm: true,
+    });
   }
   if (cesta === "token") {
     const typ = url.searchParams.get("grant_type");
     let ucet = null;
-    if (typ === "password") ucet = DEMO_UCTY.find((u) => u.email === String(vstup.email ?? "").toLowerCase()) ?? null;
-    if (typ === "refresh_token") ucet = ucetPodlaId(String(vstup.refresh_token ?? "").replace("demo-refresh-", ""));
+    if (typ === "password")
+      ucet = DEMO_UCTY.find((u) => u.email === String(vstup.email ?? "").toLowerCase()) ?? null;
+    if (typ === "refresh_token")
+      ucet = ucetPodlaId(String(vstup.refresh_token ?? "").replace("demo-refresh-", ""));
     if (!ucet) {
       return posliJson(res, 400, {
         code: 400,
@@ -234,7 +274,8 @@ async function obsluzAuth(req: IncomingMessage, res: ServerResponse, cesta: stri
   }
   if (cesta === "user") {
     const ucet = ucetPodlaId(k.pouzivatel);
-    if (!ucet) return posliJson(res, 401, { code: 401, error_code: "bad_jwt", msg: "Demo: neplatný token" });
+    if (!ucet)
+      return posliJson(res, 401, { code: 401, error_code: "bad_jwt", msg: "Demo: neplatný token" });
     if (metoda === "PUT") {
       // updateUser({ data }) — napr. prepnutie dizajnu v nastaveniach
       if (vstup.data && typeof vstup.data === "object") Object.assign(ucet.metadata, vstup.data);
@@ -245,10 +286,17 @@ async function obsluzAuth(req: IncomingMessage, res: ServerResponse, cesta: stri
   }
   if (cesta.startsWith("factors")) {
     if (metoda === "GET") return posliJson(res, 200, []);
-    return posliJson(res, 400, { code: 400, msg: "Demo – dvojfaktorové overenie sa v preview nenastavuje" });
+    return posliJson(res, 400, {
+      code: 400,
+      msg: "Demo – dvojfaktorové overenie sa v preview nenastavuje",
+    });
   }
   if (cesta === "signup") {
-    return posliJson(res, 400, { code: 400, error_code: "signup_disabled", msg: "Demo – registrácia je v preview vypnutá" });
+    return posliJson(res, 400, {
+      code: 400,
+      error_code: "signup_disabled",
+      msg: "Demo – registrácia je v preview vypnutá",
+    });
   }
   if (["recover", "otp", "resend", "magiclink", "verify", "reauthenticate"].includes(cesta)) {
     return posliJson(res, 200, {});
@@ -258,7 +306,9 @@ async function obsluzAuth(req: IncomingMessage, res: ServerResponse, cesta: stri
     const id = cesta.split("/")[2];
     if (id) {
       const u = ucetPodlaId(id);
-      return u ? posliJson(res, 200, pouzivatelJson(u)) : posliJson(res, 404, { code: 404, msg: "User not found" });
+      return u
+        ? posliJson(res, 200, pouzivatelJson(u))
+        : posliJson(res, 404, { code: 404, msg: "User not found" });
     }
     return posliJson(res, 200, { users: DEMO_UCTY.map(pouzivatelJson), aud: "authenticated" });
   }
@@ -285,7 +335,10 @@ async function obsluzOvladanie(req: IncomingMessage, res: ServerResponse, cesta:
     });
   }
   if (cesta === "relacia") {
-    const ucet = DEMO_UCTY.find((u) => u.email === url.searchParams.get("ucet") || u.id === url.searchParams.get("ucet")) ?? DEMO_UCTY[0];
+    const ucet =
+      DEMO_UCTY.find(
+        (u) => u.email === url.searchParams.get("ucet") || u.id === url.searchParams.get("ucet"),
+      ) ?? DEMO_UCTY[0];
     return posliJson(res, 200, vyrobRelaciu(ucet));
   }
   if (cesta === "blokovane") return posliJson(res, 200, zablokovanePokusy);
@@ -330,7 +383,8 @@ export async function obsluzDemo(req: IncomingMessage, res: ServerResponse): Pro
   }
   try {
     if (zvysok.startsWith("rest/v1/")) {
-      const surove = req.method === "GET" || req.method === "HEAD" ? Buffer.alloc(0) : await citajTelo(req);
+      const surove =
+        req.method === "GET" || req.method === "HEAD" ? Buffer.alloc(0) : await citajTelo(req);
       let telo: unknown = null;
       if (surove.length) {
         try {
@@ -340,7 +394,8 @@ export async function obsluzDemo(req: IncomingMessage, res: ServerResponse): Pro
         }
       }
       const hlavicky: Record<string, string | undefined> = {};
-      for (const [k, v] of Object.entries(req.headers)) hlavicky[k.toLowerCase()] = Array.isArray(v) ? v.join(",") : v;
+      for (const [k, v] of Object.entries(req.headers))
+        hlavicky[k.toLowerCase()] = Array.isArray(v) ? v.join(",") : v;
       posli(
         res,
         obsluzRest(

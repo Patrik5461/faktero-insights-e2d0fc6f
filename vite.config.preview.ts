@@ -29,7 +29,11 @@ const DEMO_ORIGIN = `http://127.0.0.1:${PORT}`;
  * keby boli v prostredí shellu.
  */
 for (const k of Object.keys(process.env)) {
-  if (/KEY|SECRET|TOKEN|PASSWORD|PASS$|SMTP|RESEND|GOPAY|TATRA|GEMINI|OPENAI|ANTHROPIC|SUPABASE|DATABASE_URL|WEBHOOK|EPOSTAK|TURNSTILE|FIREBASE|APPLE|GOOGLE|REVOLUT|WISE|TELEGRAM|WHATSAPP|ORS_/i.test(k)) {
+  if (
+    /KEY|SECRET|TOKEN|PASSWORD|PASS$|SMTP|RESEND|GOPAY|TATRA|GEMINI|OPENAI|ANTHROPIC|SUPABASE|DATABASE_URL|WEBHOOK|EPOSTAK|TURNSTILE|FIREBASE|APPLE|GOOGLE|REVOLUT|WISE|TELEGRAM|WHATSAPP|ORS_/i.test(
+      k,
+    )
+  ) {
     delete process.env[k];
   }
 }
@@ -37,6 +41,14 @@ process.env.SUPABASE_URL = `${DEMO_ORIGIN}/__demo`;
 process.env.SUPABASE_PUBLISHABLE_KEY = "demo-publishable-key";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "demo-service-role-key";
 process.env.FAKTERO_PREVIEW_DEMO = "1";
+/*
+ * Vymyslené (neplatné) hodnoty, aby pracovné postupy došli až po odoslanie.
+ * Samotné volanie von zastaví zámok siete: e-mail cez Resend dostane
+ * predstieranú odpoveď (preview/server/siet.ts), ostatné skončia chybou
+ * „Demo – nič sa neodoslalo“.
+ */
+process.env.RESEND_API_KEY = "demo-neplatny-kluc";
+process.env.EPOSTAK_ENV = "production";
 
 const CSP = [
   "default-src 'self'",
@@ -69,7 +81,8 @@ function demoPlugin(): Plugin {
        * pritom vrátia do pôvodného stavu) — server netreba reštartovať.
        */
       type Obsluha = typeof import("./preview/server/obsluha");
-      const nacitajObsluhu = () => server.ssrLoadModule("/preview/server/obsluha.ts") as Promise<Obsluha>;
+      const nacitajObsluhu = () =>
+        server.ssrLoadModule("/preview/server/obsluha.ts") as Promise<Obsluha>;
       server.middlewares.use((req, res, next) => {
         const stav = { blokovane: [] as string[], zapisy: 0 };
         // Hlavičky sa doplnia tesne pred odoslaním — vtedy už vieme, čo
@@ -77,7 +90,8 @@ function demoPlugin(): Plugin {
         const writeHead = res.writeHead.bind(res);
         (res as any).writeHead = (...args: any[]) => {
           try {
-            if (stav.blokovane.length) res.setHeader("x-demo-simulovane", encodeURIComponent(stav.blokovane.join(", ")));
+            if (stav.blokovane.length)
+              res.setHeader("x-demo-simulovane", encodeURIComponent(stav.blokovane.join(", ")));
             if (stav.zapisy) res.setHeader("x-demo-zapisy", String(stav.zapisy));
             const typ = String(res.getHeader("content-type") ?? "");
             if (!typ || typ.includes("text/html")) res.setHeader("content-security-policy", CSP);
@@ -105,7 +119,10 @@ function demoPlugin(): Plugin {
         out = out.replaceAll("import.meta.env.VITE_SUPABASE_URL", SUPABASE_URL_V_KODE);
       }
       if (out.includes("import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY")) {
-        out = out.replaceAll("import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY", JSON.stringify("demo-publishable-key"));
+        out = out.replaceAll(
+          "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY",
+          JSON.stringify("demo-publishable-key"),
+        );
       }
       // Pevné adresy produkčného projektu (videá, Android) → demo úložisko.
       out = out.replaceAll("https://sywcjxydnljkzoepfcaz.supabase.co", "/__demo");
@@ -138,7 +155,9 @@ const zakladnaKonfiguracia = lovableKonfiguracia({
 } as Parameters<typeof lovableKonfiguracia>[0]);
 
 export default async (env: { command: "build" | "serve"; mode: string }) => {
-  const zaklad = await (zakladnaKonfiguracia as unknown as (e: typeof env) => Promise<UserConfig>)(env);
+  const zaklad = await (zakladnaKonfiguracia as unknown as (e: typeof env) => Promise<UserConfig>)(
+    env,
+  );
   return mergeConfig(zaklad, {
     plugins: [demoPlugin()],
     define: {

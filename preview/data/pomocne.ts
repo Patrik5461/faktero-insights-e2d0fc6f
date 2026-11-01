@@ -8,7 +8,9 @@ export const r2 = (x: number) => Math.round((x + Number.EPSILON) * 100) / 100;
 
 /** Stabilné UUID z textu — rovnaký kľúč dá vždy rovnaké id (odkazy medzi tabuľkami). */
 export function uid(kluc: string): string {
-  const h = createHash("sha1").update("faktero-demo:" + kluc).digest("hex");
+  const h = createHash("sha1")
+    .update("faktero-demo:" + kluc)
+    .digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
@@ -39,7 +41,9 @@ export function den(posun = 0): string {
 
 /** Časová pečiatka `posun` dní od teraz (ISO), voliteľne s hodinou. */
 export function cas(posun = 0, hodina = 10, minuta = 0): string {
-  const d = new Date(den(posun) + `T${String(hodina).padStart(2, "0")}:${String(minuta).padStart(2, "0")}:00+01:00`);
+  const d = new Date(
+    den(posun) + `T${String(hodina).padStart(2, "0")}:${String(minuta).padStart(2, "0")}:00+01:00`,
+  );
   return d.toISOString();
 }
 

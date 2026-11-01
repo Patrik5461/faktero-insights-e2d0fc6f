@@ -175,7 +175,14 @@ export function najdiVztah(rodic: string, meno: string, hint: string | null): Na
     else if (hint) continue;
     const jednotne = cielovaTabulka.replace(/ies$/, "y").replace(/s$/, "");
     if (v.stlpce[0] === `${jednotne}_id`) skore += 10;
-    kandidati.push({ tabulka: v.tabulka, rodic: v.stlpce, ciel: v.ciel, jeden: true, fk: v.fk, skore });
+    kandidati.push({
+      tabulka: v.tabulka,
+      rodic: v.stlpce,
+      ciel: v.ciel,
+      jeden: true,
+      fk: v.fk,
+      skore,
+    });
   }
   // jeden-k-mnohým: `meno` má FK na rodiča
   const sCiel = schema.tabulky[cielovaTabulka];
@@ -203,7 +210,12 @@ export function najdiVztah(rodic: string, meno: string, hint: string | null): Na
     }
     const jednotneRodic = rodic.replace(/ies$/, "y").replace(/s$/, "");
     if (sCiel && `${jednotneRodic}_id` in sCiel.stlpce) {
-      return { tabulka: cielovaTabulka, rodic: ["id"], ciel: [`${jednotneRodic}_id`], jeden: false };
+      return {
+        tabulka: cielovaTabulka,
+        rodic: ["id"],
+        ciel: [`${jednotneRodic}_id`],
+        jeden: false,
+      };
     }
   }
   if (!kandidati.length) return null;
@@ -226,7 +238,8 @@ function hodnotaCesty(r: Riadok, cesta: string[], text: boolean[]): unknown {
     }
     v = Array.isArray(v) && /^\d+$/.test(cesta[i]) ? v[Number(cesta[i])] : v[cesta[i]];
   }
-  if (text[text.length - 1] && cesta.length > 1 && v != null && typeof v === "object") return JSON.stringify(v);
+  if (text[text.length - 1] && cesta.length > 1 && v != null && typeof v === "object")
+    return JSON.stringify(v);
   if (text[text.length - 1] && cesta.length > 1 && v != null) return String(v);
   return v === undefined ? null : v;
 }
@@ -256,7 +269,8 @@ function porovnaj(a: unknown, b: unknown): number {
 }
 
 function odUvodzoviek(s: string): string {
-  if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1).replace(/\\"/g, '"');
+  if (s.length >= 2 && s.startsWith('"') && s.endsWith('"'))
+    return s.slice(1, -1).replace(/\\"/g, '"');
   return s;
 }
 
@@ -281,18 +295,27 @@ function rozoberPole(s: string): unknown[] | Record<string, unknown> {
 }
 
 function vzorNaRegex(vzor: string, velkost: boolean): RegExp {
-  const esc = vzor.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/[%*]/g, ".*").replace(/_/g, ".");
+  const esc = vzor
+    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+    .replace(/[%*]/g, ".*")
+    .replace(/_/g, ".");
   return new RegExp(`^${esc}$`, velkost ? "is" : "s");
 }
 
 function obsahuje(celok: unknown, cast: unknown): boolean {
   if (Array.isArray(celok)) {
     const c = Array.isArray(cast) ? cast : [cast];
-    return c.every((x) => celok.some((y) => (typeof y === "object" ? JSON.stringify(y) === JSON.stringify(x) : String(y) === String(x))));
+    return c.every((x) =>
+      celok.some((y) =>
+        typeof y === "object" ? JSON.stringify(y) === JSON.stringify(x) : String(y) === String(x),
+      ),
+    );
   }
   if (celok && typeof celok === "object" && cast && typeof cast === "object") {
     return Object.entries(cast as Record<string, unknown>).every(([k, v]) =>
-      typeof v === "object" && v !== null ? obsahuje((celok as any)[k], v) : (celok as any)[k] === v,
+      typeof v === "object" && v !== null
+        ? obsahuje((celok as any)[k], v)
+        : (celok as any)[k] === v,
     );
   }
   return false;
@@ -350,7 +373,10 @@ function operator(op: string, hodnota: unknown, arg: string): boolean {
     case "plfts":
     case "phfts":
     case "wfts": {
-      const slova = arg.replace(/^\([^)]*\)/, "").split(/[\s&|]+/).filter(Boolean);
+      const slova = arg
+        .replace(/^\([^)]*\)/, "")
+        .split(/[\s&|]+/)
+        .filter(Boolean);
       const t = String(hodnota ?? "").toLowerCase();
       return slova.every((s) => t.includes(s.toLowerCase().replace(/[:*']/g, "")));
     }
@@ -361,7 +387,15 @@ function operator(op: string, hodnota: unknown, arg: string): boolean {
 /* ---------------------------------------------------------------- filtre */
 
 type Filter =
-  | { druh: "stlpec"; cesta: string[]; text: boolean[]; op: string; arg: string; nie: boolean; vztah: string[] }
+  | {
+      druh: "stlpec";
+      cesta: string[];
+      text: boolean[];
+      op: string;
+      arg: string;
+      nie: boolean;
+      vztah: string[];
+    }
   | { druh: "logika"; op: "or" | "and"; nie: boolean; deti: Filter[]; vztah: string[] };
 
 /** `stlpec=op.hodnota`, `not.op.hodnota`, `or=(...)` */
@@ -391,7 +425,15 @@ function rozoberFilter(kluc: string, hodnota: string): Filter | null {
   // `rel.stlpec` — filter na vnorenom vzťahu; JSON cesta ostáva v poslednej časti
   const stlpecText = casti.slice(-1)[0];
   const { cesta, text } = rozoberStlpec(stlpecText);
-  return { druh: "stlpec", cesta, text, op: op.replace(/\(.*\)$/, ""), arg, nie, vztah: casti.slice(0, -1) };
+  return {
+    druh: "stlpec",
+    cesta,
+    text,
+    op: op.replace(/\(.*\)$/, ""),
+    arg,
+    nie,
+    vztah: casti.slice(0, -1),
+  };
 }
 
 /** Obsah `or=(a.eq.1,and(b.is.null,c.gt.2))` */
@@ -403,7 +445,13 @@ function rozoberLogiku(text: string): Filter[] {
     if (!c) continue;
     const mLog = /^(not\.)?(or|and)\((.*)\)$/s.exec(c);
     if (mLog) {
-      out.push({ druh: "logika", op: mLog[2] as "or" | "and", nie: !!mLog[1], deti: rozoberLogiku(mLog[3]), vztah: [] });
+      out.push({
+        druh: "logika",
+        op: mLog[2] as "or" | "and",
+        nie: !!mLog[1],
+        deti: rozoberLogiku(mLog[3]),
+        vztah: [],
+      });
       continue;
     }
     // stlpec.op.arg  alebo stlpec.not.op.arg (stĺpec môže mať JSON cestu)
@@ -474,7 +522,10 @@ type Dopyt = {
   order: Zoradenie[];
   limit: number | null;
   offset: number;
-  vnorene: Map<string, { filtre: Filter[]; order: Zoradenie[]; limit: number | null; offset: number }>;
+  vnorene: Map<
+    string,
+    { filtre: Filter[]; order: Zoradenie[]; limit: number | null; offset: number }
+  >;
 };
 
 function vnorenePre(d: Dopyt, cesta: string) {
@@ -507,7 +558,11 @@ function rozoberDopyt(tabulka: string, parametre: URLSearchParams): Dopyt {
       else if (kluc === "offset") d.offset = Number(hodnota);
       continue;
     }
-    if (casti.length > 1 && ["order", "limit", "offset"].includes(posledny) && !kluc.includes("->")) {
+    if (
+      casti.length > 1 &&
+      ["order", "limit", "offset"].includes(posledny) &&
+      !kluc.includes("->")
+    ) {
       const v = vnorenePre(d, casti.slice(0, -1).join("."));
       if (posledny === "order") v.order = rozoberOrder(hodnota);
       else if (posledny === "limit") v.limit = Number(hodnota);
@@ -523,7 +578,14 @@ function rozoberDopyt(tabulka: string, parametre: URLSearchParams): Dopyt {
   return d;
 }
 
-function vyber(db: DemoDb, d: Dopyt, tabulka: string, riadky: Riadok[], select: PolozkaSelectu[], cesta: string): Riadok[] | null {
+function vyber(
+  db: DemoDb,
+  d: Dopyt,
+  tabulka: string,
+  riadky: Riadok[],
+  select: PolozkaSelectu[],
+  cesta: string,
+): Riadok[] | null {
   // Najprv vnorené vzťahy (kvôli !inner a filtrom na nich), potom stĺpce.
   const out: Riadok[] = [];
   for (const r of riadky) {
@@ -539,14 +601,17 @@ function vyber(db: DemoDb, d: Dopyt, tabulka: string, riadky: Riadok[], select: 
       } else if (p.druh === "vztah") {
         const vz = najdiVztah(tabulka, p.meno, p.hint);
         const podCesta = cesta ? `${cesta}.${p.alias}` : p.alias;
-        const nastavenia = d.vnorene.get(podCesta) ?? d.vnorene.get(cesta ? `${cesta}.${p.meno}` : p.meno);
+        const nastavenia =
+          d.vnorene.get(podCesta) ?? d.vnorene.get(cesta ? `${cesta}.${p.meno}` : p.meno);
         if (!vz) {
           vysledok[p.alias] = null;
           continue;
         }
         let deti = db
           .tabulka(vz.tabulka)
-          .filter((x) => vz.rodic.every((s, i) => r[s] != null && String(r[s]) === String(x[vz.ciel[i]])));
+          .filter((x) =>
+            vz.rodic.every((s, i) => r[s] != null && String(r[s]) === String(x[vz.ciel[i]])),
+          );
         if (nastavenia) deti = deti.filter((x) => nastavenia.filtre.every((f) => splna(x, f)));
         if (nastavenia?.order.length) deti = zorad(deti, nastavenia.order);
         if (nastavenia?.offset) deti = deti.slice(nastavenia.offset);
@@ -588,8 +653,14 @@ function json(status: number, telo: unknown, hlavicky: Record<string, string> = 
 }
 
 function chyba(e: unknown): Odpoved {
-  if (e instanceof ChybaPgrst) return json(e.status, { code: e.kod, message: e.message, details: e.detail, hint: null });
-  return json(500, { code: "DEMO", message: String((e as Error)?.message ?? e), details: null, hint: null });
+  if (e instanceof ChybaPgrst)
+    return json(e.status, { code: e.kod, message: e.message, details: e.detail, hint: null });
+  return json(500, {
+    code: "DEMO",
+    message: String((e as Error)?.message ?? e),
+    details: null,
+    hint: null,
+  });
 }
 
 export type PoziadavkaRest = {
@@ -601,9 +672,17 @@ export type PoziadavkaRest = {
   kontext: KontextPoziadavky;
 };
 
-export type RpcObsluha = (args: Record<string, any>, db: DemoDb, kontext: KontextPoziadavky) => unknown;
+export type RpcObsluha = (
+  args: Record<string, any>,
+  db: DemoDb,
+  kontext: KontextPoziadavky,
+) => unknown;
 
-export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, RpcObsluha>): Odpoved {
+export function obsluzRest(
+  db: DemoDb,
+  p: PoziadavkaRest,
+  rpc: Record<string, RpcObsluha>,
+): Odpoved {
   try {
     const prefer = (p.hlavicky["prefer"] ?? "").toLowerCase();
     const accept = p.hlavicky["accept"] ?? "";
@@ -624,7 +703,10 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
         vysledok = null;
       }
       // Funkcia vracajúca tabuľku: dá sa ďalej filtrovať a zoraďovať.
-      if (Array.isArray(vysledok) && (p.parametre.has("select") || p.parametre.has("order") || p.parametre.has("limit"))) {
+      if (
+        Array.isArray(vysledok) &&
+        (p.parametre.has("select") || p.parametre.has("order") || p.parametre.has("limit"))
+      ) {
         const d = rozoberDopyt("__rpc", p.parametre);
         let r = vysledok.filter((x) => d.filtre.every((f2) => splna(x, f2)));
         r = zorad(r, d.order);
@@ -638,7 +720,11 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
 
     const tabulka = cesta;
     if (!db.existuje(tabulka)) {
-      throw new ChybaPgrst(404, "PGRST205", `Could not find the table 'public.${tabulka}' in the schema cache`);
+      throw new ChybaPgrst(
+        404,
+        "PGRST205",
+        `Could not find the table 'public.${tabulka}' in the schema cache`,
+      );
     }
 
     if (p.metoda === "GET" || p.metoda === "HEAD") {
@@ -657,7 +743,8 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
       const hl: Record<string, string> = {};
       const od = d.offset;
       const po = od + vybrane.length - 1;
-      hl["content-range"] = `${vybrane.length ? `${od}-${po}` : "*"}/${prefer.includes("count=") ? celkom : "*"}`;
+      hl["content-range"] =
+        `${vybrane.length ? `${od}-${po}` : "*"}/${prefer.includes("count=") ? celkom : "*"}`;
       if (p.metoda === "HEAD") return { status: 200, hlavicky: hl, telo: null };
       if (jedenObjekt) {
         if (vybrane.length !== 1) {
@@ -684,18 +771,25 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
 
     if (p.metoda === "POST") {
       const vstup = (Array.isArray(p.telo) ? p.telo : [p.telo]) as Riadok[];
-      const upsert = prefer.includes("resolution=merge-duplicates") || prefer.includes("resolution=ignore-duplicates");
+      const upsert =
+        prefer.includes("resolution=merge-duplicates") ||
+        prefer.includes("resolution=ignore-duplicates");
       const ignoruj = prefer.includes("resolution=ignore-duplicates");
       const naKonflikt = p.parametre.get("on_conflict");
-      const kluce = naKonflikt ? [naKonflikt.split(",").map((x) => x.trim())] : kluceTabulky(tabulka);
+      const kluce = naKonflikt
+        ? [naKonflikt.split(",").map((x) => x.trim())]
+        : kluceTabulky(tabulka);
       for (const r of vstup) {
         if (upsert) {
           const kluc = kluce.find((k) => k.every((s) => r[s] !== undefined)) ?? kluce[0];
-          const existujuci = t.find((x) => kluc.every((s) => r[s] !== undefined && String(x[s]) === String(r[s])));
+          const existujuci = t.find((x) =>
+            kluc.every((s) => r[s] !== undefined && String(x[s]) === String(r[s])),
+          );
           if (existujuci) {
             if (!ignoruj) {
               Object.assign(existujuci, r);
-              if ("updated_at" in existujuci && r.updated_at === undefined) existujuci.updated_at = new Date().toISOString();
+              if ("updated_at" in existujuci && r.updated_at === undefined)
+                existujuci.updated_at = new Date().toISOString();
               zmenene.push(existujuci);
             }
             continue;
@@ -706,7 +800,11 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
             if (kluc.length === 1 && kluc[0] === "id" && r.id === undefined) continue;
             if (!kluc.every((s) => r[s] != null)) continue;
             if (t.some((x) => kluc.every((s) => String(x[s]) === String(r[s])))) {
-              throw new ChybaPgrst(409, "23505", `duplicate key value violates unique constraint (${kluc.join(", ")})`);
+              throw new ChybaPgrst(
+                409,
+                "23505",
+                `duplicate key value violates unique constraint (${kluc.join(", ")})`,
+              );
             }
           }
         }
@@ -720,7 +818,8 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
       for (const r of t) {
         if (!d.filtre.every((f) => splna(r, f))) continue;
         Object.assign(r, zmena);
-        if ("updated_at" in r && zmena.updated_at === undefined) r.updated_at = new Date().toISOString();
+        if ("updated_at" in r && zmena.updated_at === undefined)
+          r.updated_at = new Date().toISOString();
         zmenene.push(r);
       }
       console.info(`[demo] UPDATE ${tabulka}: ${zmenene.length} riadkov (len v pamäti)`);
@@ -739,7 +838,11 @@ export function obsluzRest(db: DemoDb, p: PoziadavkaRest, rpc: Record<string, Rp
     const vybrane = vyber(db, d, tabulka, zmenene, d.select, "") ?? [];
     if (jedenObjekt) {
       if (vybrane.length !== 1) {
-        throw new ChybaPgrst(406, "PGRST116", "JSON object requested, multiple (or no) rows returned");
+        throw new ChybaPgrst(
+          406,
+          "PGRST116",
+          "JSON object requested, multiple (or no) rows returned",
+        );
       }
       return json(p.metoda === "POST" ? 201 : 200, vybrane[0]);
     }

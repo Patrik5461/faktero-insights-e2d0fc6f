@@ -27,14 +27,16 @@ const g = globalThis as any;
 export const kontextSiete: AsyncLocalStorage<KontextSiete> = (g.__demoKontextSiete ??=
   new AsyncLocalStorage<KontextSiete>());
 
-export const zablokovanePokusy: { cas: string; kam: string; sposob: string }[] = (g.__demoZablokovane ??=
-  []);
+export const zablokovanePokusy: { cas: string; kam: string; sposob: string }[] =
+  (g.__demoZablokovane ??= []);
 
 const LOKALNE = new Set(["localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0", ""]);
 
 export function jeLokalne(host: string | null | undefined): boolean {
   if (host == null) return true;
-  const h = String(host).toLowerCase().replace(/^\[|\]$/g, "");
+  const h = String(host)
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "");
   return LOKALNE.has(h) || h.startsWith("127.") || h === "::ffff:127.0.0.1";
 }
 
@@ -72,7 +74,11 @@ export function zamkniSiet() {
   const povodnyFetch = globalThis.fetch;
   globalThis.fetch = async function demoFetch(vstup: any, init?: any) {
     const adresa =
-      typeof vstup === "string" ? vstup : vstup instanceof URL ? vstup.href : (vstup?.url as string);
+      typeof vstup === "string"
+        ? vstup
+        : vstup instanceof URL
+          ? vstup.href
+          : (vstup?.url as string);
     let url: URL;
     try {
       url = new URL(adresa);
@@ -140,7 +146,12 @@ export function zamkniSiet() {
   const povodnyTls = tls.connect;
   (tls as any).connect = function (...args: any[]) {
     const a = args[0];
-    const host = typeof a === "object" && a ? (a.host ?? a.servername) : typeof args[1] === "string" ? args[1] : undefined;
+    const host =
+      typeof a === "object" && a
+        ? (a.host ?? a.servername)
+        : typeof args[1] === "string"
+          ? args[1]
+          : undefined;
     if (!jeLokalne(host ?? "localhost")) {
       zapis(`tls://${host}`, "tls.connect");
       throw new DemoBlokovane(String(host));
@@ -168,7 +179,14 @@ export function zamkniSiet() {
     }
     return (povodnyPromises as any).call(this, hostname, ...rest);
   };
-  for (const f of ["resolve", "resolve4", "resolve6", "resolveMx", "resolveTxt", "resolveAny"] as const) {
+  for (const f of [
+    "resolve",
+    "resolve4",
+    "resolve6",
+    "resolveMx",
+    "resolveTxt",
+    "resolveAny",
+  ] as const) {
     const p = (dns.promises as any)[f];
     if (typeof p !== "function") continue;
     (dns.promises as any)[f] = async function (hostname: string, ...rest: any[]) {

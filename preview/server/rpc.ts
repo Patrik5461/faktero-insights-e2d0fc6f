@@ -9,14 +9,19 @@
 import type { DemoDb, KontextPoziadavky, Riadok } from "./db";
 import { dnes } from "./db";
 import type { RpcObsluha } from "./postgrest";
-import { suhrnVystavenychFaktur } from "./rpc-faktury";
+import { suhrnVystavenychFaktur, ulozUpravuFaktury } from "./rpc-faktury";
 
 const r2 = (x: number) => Math.round((x + Number.EPSILON) * 100) / 100;
 const dni = (a: string, b: string) =>
-  Math.round((Date.parse(a.slice(0, 10) + "T00:00:00Z") - Date.parse(b.slice(0, 10) + "T00:00:00Z")) / 86400000);
+  Math.round(
+    (Date.parse(a.slice(0, 10) + "T00:00:00Z") - Date.parse(b.slice(0, 10) + "T00:00:00Z")) /
+      86400000,
+  );
 
 function clenstvo(db: DemoDb, k: KontextPoziadavky, firma: string | undefined) {
-  return db.tabulka("company_users").find((c) => c.user_id === k.pouzivatel && c.company_id === firma);
+  return db
+    .tabulka("company_users")
+    .find((c) => c.user_id === k.pouzivatel && c.company_id === firma);
 }
 
 function posunMesiac(datum: string, mesiacov: number): string {
@@ -49,7 +54,8 @@ function prehladSuhrn(a: Record<string, any>, db: DemoDb) {
       const dph = Number(cudzia ? (i.vat_total_eur ?? i.vat_total) : i.vat_total) || 0;
       const typ = String(i.type);
       const stav = String(i.status);
-      const zap = !["draft", "cancelled"].includes(stav) && !["proforma", "advance_payment"].includes(typ);
+      const zap =
+        !["draft", "cancelled"].includes(stav) && !["proforma", "advance_payment"].includes(typ);
       const zn = typ === "credit_note" && !(celkom < 0) ? -1 : 1;
       const otv = zap && typ !== "credit_note" && !i.paid_at && stav !== "paid";
       const poSpl = otv && !!i.due_date && i.due_date < pDnes;
@@ -91,35 +97,59 @@ function prehladSuhrn(a: Record<string, any>, db: DemoDb) {
   const api = db.tabulka("api_logs").filter((l) => l.company_id === firma);
   const pred31 = new Date(Date.now() - 31 * 86400000).toISOString();
   const pdRok = pd.filter(
-    (p) => p.type !== "proforma" && p.status !== "cancelled" && (p.delivery_date ?? p.issue_date) >= rokOd,
+    (p) =>
+      p.type !== "proforma" &&
+      p.status !== "cancelled" &&
+      (p.delivery_date ?? p.issue_date) >= rokOd,
   );
-  const stockItems = db.tabulka("stock_items").filter((s) => s.company_id === firma && s.track_stock);
+  const stockItems = db
+    .tabulka("stock_items")
+    .filter((s) => s.company_id === firma && s.track_stock);
   const levels = db.tabulka("stock_levels");
   return {
     pocet_faktur: fakt.length,
     ma_zaplatenu: fakt.some((f) => f.stav === "paid"),
-    mesiac_obrat: sum(fakt.filter((f) => f.zap && f.issue_date >= mesOd).map((f) => f.zn * f.celkom)),
-    minuly_obrat: sum(fakt.filter((f) => f.zap && f.issue_date >= minOd && f.issue_date < mesOd).map((f) => f.zn * f.celkom)),
+    mesiac_obrat: sum(
+      fakt.filter((f) => f.zap && f.issue_date >= mesOd).map((f) => f.zn * f.celkom),
+    ),
+    minuly_obrat: sum(
+      fakt
+        .filter((f) => f.zap && f.issue_date >= minOd && f.issue_date < mesOd)
+        .map((f) => f.zn * f.celkom),
+    ),
     neuhradene_suma: sum(fakt.filter((f) => f.otv).map((f) => f.zn * f.celkom)),
     neuhradene_pocet: fakt.filter((f) => f.otv).length,
     po_splatnosti_suma: sum(fakt.filter((f) => f.poSpl).map((f) => f.zn * f.celkom)),
     po_splatnosti_pocet: fakt.filter((f) => f.poSpl).length,
     dlznikov: new Set(fakt.filter((f) => f.otv).map((f) => f.customer_id ?? f.customer_name)).size,
     priemer_dni_uhrady: zaplatene.length
-      ? zaplatene.reduce((s, f) => s + (Date.parse(f.paid_at) - Date.parse(f.issue_date + "T00:00:00Z")) / 86400000, 0) /
-        zaplatene.length
+      ? zaplatene.reduce(
+          (s, f) =>
+            s + (Date.parse(f.paid_at) - Date.parse(f.issue_date + "T00:00:00Z")) / 86400000,
+          0,
+        ) / zaplatene.length
       : null,
     dph_odvod: sum(fakt.filter((f) => f.zap && f.issue_date >= rokOd).map((f) => f.zn * f.dph)),
     prijmy_rok: sum(fakt.filter((f) => f.zap && f.issue_date >= rokOd).map((f) => f.zn * f.zaklad)),
-    trzby_365: sum(fakt.filter((f) => f.zap && dni(pDnes, f.issue_date) <= 365).map((f) => f.zn * f.celkom)),
+    trzby_365: sum(
+      fakt.filter((f) => f.zap && dni(pDnes, f.issue_date) <= 365).map((f) => f.zn * f.celkom),
+    ),
     stavy,
     dlznici,
-    vek_pohladavok: vek(fakt.filter((f) => f.otv && f.due_date).map((f) => ({ kos: f.kos, s: f.celkom }))),
+    vek_pohladavok: vek(
+      fakt.filter((f) => f.otv && f.due_date).map((f) => ({ kos: f.kos, s: f.celkom })),
+    ),
     vek_zavazkov: vek(zavazkyOtv.map((p) => ({ kos: p.kos, s: p.celkomD }))),
     vyhlad: [0, 1, 2, 3].map((w) => ({
       prijem: sum(
         fakt
-          .filter((f) => f.otv && f.due_date && dni(f.due_date, pDnes) >= 7 * w && dni(f.due_date, pDnes) < 7 * (w + 1))
+          .filter(
+            (f) =>
+              f.otv &&
+              f.due_date &&
+              dni(f.due_date, pDnes) >= 7 * w &&
+              dni(f.due_date, pDnes) < 7 * (w + 1),
+          )
           .map((f) => f.celkom),
       ),
       vydaj: sum(
@@ -131,18 +161,31 @@ function prehladSuhrn(a: Record<string, any>, db: DemoDb) {
     zaplatene_30: sum(
       db
         .tabulka("payments")
-        .filter((p) => p.company_id === firma && Date.parse(p.paid_at) >= Date.now() - 30 * 86400000)
+        .filter(
+          (p) => p.company_id === firma && Date.parse(p.paid_at) >= Date.now() - 30 * 86400000,
+        )
         .map((p) => Number(p.amount) || 0),
     ),
-    zavazky_neuhradene: sum(pd.filter((p) => !["paid", "cancelled", "draft"].includes(p.status)).map((p) => p.celkomD)),
-    zavazky_po_splatnosti: pd.filter((p) => !["paid", "cancelled", "draft"].includes(p.status) && p.due_date && p.due_date < pDnes).length,
+    zavazky_neuhradene: sum(
+      pd.filter((p) => !["paid", "cancelled", "draft"].includes(p.status)).map((p) => p.celkomD),
+    ),
+    zavazky_po_splatnosti: pd.filter(
+      (p) => !["paid", "cancelled", "draft"].includes(p.status) && p.due_date && p.due_date < pDnes,
+    ).length,
     zavazky_pocet: pd.length,
-    dph_odpocet: sum(pdRok.filter((p) => p.odpocet !== false).map((p) => Number(p.vat_amount_eur ?? p.vat_amount ?? 0))),
-    vydavky_rok: sum(pdRok.map((p) => Number(p.amount_without_vat_eur ?? p.amount_without_vat ?? 0))),
+    dph_odpocet: sum(
+      pdRok
+        .filter((p) => p.odpocet !== false)
+        .map((p) => Number(p.vat_amount_eur ?? p.vat_amount ?? 0)),
+    ),
+    vydavky_rok: sum(
+      pdRok.map((p) => Number(p.amount_without_vat_eur ?? p.amount_without_vat ?? 0)),
+    ),
     sklad_pod_minimom: stockItems.filter(
       (s) =>
-        levels.filter((l) => l.stock_item_id === s.id).reduce((x, l) => x + Number(l.quantity || 0), 0) <
-        Number(s.min_stock || 0),
+        levels
+          .filter((l) => l.stock_item_id === s.id)
+          .reduce((x, l) => x + Number(l.quantity || 0), 0) < Number(s.min_stock || 0),
     ).length,
     km_mesiac: r2(
       db
@@ -152,17 +195,28 @@ function prehladSuhrn(a: Record<string, any>, db: DemoDb) {
     ),
     api_dnes: api.filter((l) => l.created_at >= (a.p_dnes_od ?? pDnes)).length,
     api_mesiac: api.filter((l) => l.created_at >= pred31).length,
-    api_uspesne: api.filter((l) => l.created_at >= pred31 && l.status >= 200 && l.status < 400).length,
+    api_uspesne: api.filter((l) => l.created_at >= pred31 && l.status >= 200 && l.status < 400)
+      .length,
   };
 }
 
 /** Ďalšie číslo dokladu — formát `{YYYY}{NNNN}` alebo z číselného radu. */
-function dalsieCislo(db: DemoDb, firma: string, druh: string, seriaId: string | null, datum: string) {
+function dalsieCislo(
+  db: DemoDb,
+  firma: string,
+  druh: string,
+  seriaId: string | null,
+  datum: string,
+) {
   const rad = db
     .tabulka("number_series")
-    .find((s) => s.company_id === firma && (seriaId ? s.id === seriaId : s.kind === druh && s.is_default));
+    .find(
+      (s) =>
+        s.company_id === firma && (seriaId ? s.id === seriaId : s.kind === druh && s.is_default),
+    );
   const rok = (datum || dnes()).slice(0, 4);
-  const format: string = rad?.format ?? (rad?.prefix ? `${rad.prefix}{YYYY}{NNNN}` : "{YYYY}{NNNN}");
+  const format: string =
+    rad?.format ?? (rad?.prefix ? `${rad.prefix}{YYYY}{NNNN}` : "{YYYY}{NNNN}");
   const tabulky: Record<string, [string, string]> = {
     invoice: ["invoices", "invoice_number"],
     quote: ["quotes", "quote_number"],
@@ -170,13 +224,19 @@ function dalsieCislo(db: DemoDb, firma: string, druh: string, seriaId: string | 
     purchase_order: ["purchase_orders", "order_number"],
   };
   const [tab, stlpec] = tabulky[druh] ?? ["invoices", "invoice_number"];
-  const existujuce = new Set(db.tabulka(tab).filter((r) => r.company_id === firma).map((r) => String(r[stlpec])));
+  const existujuce = new Set(
+    db
+      .tabulka(tab)
+      .filter((r) => r.company_id === firma)
+      .map((r) => String(r[stlpec])),
+  );
   for (let n = Number(rad?.start_from ?? 1); n < 100000; n++) {
     const cislo = format
       .replace("{YYYY}", rok)
       .replace("{YY}", rok.slice(2))
       .replace(/\{N+\}/, (m) => String(n).padStart(m.length - 2, "0"));
-    if (!existujuce.has(cislo)) return { number: cislo, invoice_number: cislo, series_id: rad?.id ?? null };
+    if (!existujuce.has(cislo))
+      return { number: cislo, invoice_number: cislo, series_id: rad?.id ?? null };
   }
   return { number: `${rok}9999`, invoice_number: `${rok}9999`, series_id: rad?.id ?? null };
 }
@@ -189,7 +249,9 @@ export const RPC: Record<string, RpcObsluha> = {
     ["owner", "admin"].includes(clenstvo(db, k, a._company_id ?? a.company_id)?.role ?? ""),
   faktero_can_write: () => true,
   get_company_role: (a, db) =>
-    db.tabulka("company_users").find((c) => c.company_id === a._company_id && c.user_id === a._user_id)?.role ?? null,
+    db
+      .tabulka("company_users")
+      .find((c) => c.company_id === a._company_id && c.user_id === a._user_id)?.role ?? null,
   firmy_s_pravom: (_a, db, k) =>
     db
       .tabulka("company_users")
@@ -204,12 +266,23 @@ export const RPC: Record<string, RpcObsluha> = {
     })),
   prehlad_suhrn: (a, db) => prehladSuhrn(a, db),
   suhrn_vystavenych_faktur: (a, db) => suhrnVystavenychFaktur(a, db),
+  uloz_upravu_faktury: (a, db) => ulozUpravuFaktury(a, db),
   faktero_next_invoice_number: (a, db) =>
-    dalsieCislo(db, a._company_id, a._type === "proforma" ? "proforma" : "invoice", a._series_id ?? null, a._issue_date),
-  faktero_next_series_number: (a, db) => dalsieCislo(db, a._company_id, a._kind, a._series_id ?? null, a._date ?? dnes()),
+    dalsieCislo(
+      db,
+      a._company_id,
+      a._type === "proforma" ? "proforma" : "invoice",
+      a._series_id ?? null,
+      a._issue_date,
+    ),
+  faktero_next_series_number: (a, db) =>
+    dalsieCislo(db, a._company_id, a._kind, a._series_id ?? null, a._date ?? dnes()),
   faktero_reserve_invoice_numbers: () => [],
   faktero_release_invoice_numbers: () => null,
-  faktero_recurring_cron_status: () => ({ last_run: new Date(Date.now() - 3600000).toISOString(), ok: true }),
+  faktero_recurring_cron_status: () => ({
+    last_run: new Date(Date.now() - 3600000).toISOString(),
+    ok: true,
+  }),
   faktero_invoice_pdf_hash: () => "demo",
   employee_pii_present: () => true,
   employee_get_pii: () => ({ birth_number: "XXXXXX/XXXX", id_card_number: "DEMO000000" }),
@@ -220,7 +293,12 @@ export const RPC: Record<string, RpcObsluha> = {
     [
       { kod: "84713000", popis: "Prenosné počítače (demo)", rok: 2026 },
       { kod: "94033011", popis: "Kancelársky nábytok (demo)", rok: 2026 },
-    ].filter((x) => !a._q || x.popis.toLowerCase().includes(String(a._q).toLowerCase()) || x.kod.startsWith(String(a._q))),
+    ].filter(
+      (x) =>
+        !a._q ||
+        x.popis.toLowerCase().includes(String(a._q).toLowerCase()) ||
+        x.kod.startsWith(String(a._q)),
+    ),
   recompute_stock_avg_cost: () => null,
   uplatni_pravidla_uctovania: () => 0,
   faktero_vybav_pohyby_pravidlami: () => 0,

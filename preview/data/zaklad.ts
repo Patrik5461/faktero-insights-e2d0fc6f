@@ -29,7 +29,8 @@ export function naplnZaklad(db: DemoDb) {
 
   const spolocne = {
     email_sender_name: "Demo s.r.o.",
-    invoice_footer: "Spoločnosť je zapísaná v Obchodnom registri Okresného súdu Demo, oddiel Sro, vložka č. 00000/X (vymyslené údaje).",
+    invoice_footer:
+      "Spoločnosť je zapísaná v Obchodnom registri Okresného súdu Demo, oddiel Sro, vložka č. 00000/X (vymyslené údaje).",
     uctovnik_email: "uctovnik@demo.faktero.sk",
   };
   db.vloz("companies", [
@@ -107,13 +108,80 @@ export function naplnZaklad(db: DemoDb) {
   }
 
   db.vloz("subscription_plans", [
-    { id: uid("plan:starter"), slug: "starter", name: "Starter", price_monthly_cents: 0, invoice_limit: 10, user_limit: 1, company_limit: 1, sort_order: 1 },
-    { id: uid("plan:premium"), slug: "premium", name: "Premium", price_monthly_cents: 990, invoice_limit: null, user_limit: 5, company_limit: 3, accountant_seats: 1, api_enabled: true, webhooks_enabled: true, recurring_enabled: true, efaktura_enabled: true, bank_matching_enabled: true, import_enabled: true, sort_order: 2 },
-    { id: uid("plan:business"), slug: "business", name: "Business", price_monthly_cents: 2490, invoice_limit: null, user_limit: null, company_limit: null, accountant_seats: 3, api_enabled: true, webhooks_enabled: true, recurring_enabled: true, efaktura_enabled: true, bank_matching_enabled: true, import_enabled: true, audit_log_enabled: true, priority_support: true, sort_order: 3 },
+    {
+      id: uid("plan:starter"),
+      slug: "starter",
+      name: "Starter",
+      price_monthly_cents: 0,
+      invoice_limit: 10,
+      user_limit: 1,
+      company_limit: 1,
+      sort_order: 1,
+    },
+    {
+      id: uid("plan:premium"),
+      slug: "premium",
+      name: "Premium",
+      price_monthly_cents: 990,
+      invoice_limit: null,
+      user_limit: 5,
+      company_limit: 3,
+      accountant_seats: 1,
+      api_enabled: true,
+      webhooks_enabled: true,
+      recurring_enabled: true,
+      efaktura_enabled: true,
+      bank_matching_enabled: true,
+      import_enabled: true,
+      sort_order: 2,
+    },
+    {
+      id: uid("plan:business"),
+      slug: "business",
+      name: "Business",
+      price_monthly_cents: 2490,
+      invoice_limit: null,
+      user_limit: null,
+      company_limit: null,
+      accountant_seats: 3,
+      api_enabled: true,
+      webhooks_enabled: true,
+      recurring_enabled: true,
+      efaktura_enabled: true,
+      bank_matching_enabled: true,
+      import_enabled: true,
+      audit_log_enabled: true,
+      priority_support: true,
+      sort_order: 3,
+    },
   ]);
   db.vloz("subscriptions", [
-    { company_id: FIRMA, plan: "business", plan_id: uid("plan:business"), status: "active", current_period_start: den(-12), current_period_end: den(18), next_billing_at: cas(18), monthly_price_cents: 2490 },
-    { company_id: FIRMA_CZ, plan: "premium", plan_id: uid("plan:premium"), status: "active", current_period_start: den(-3), current_period_end: den(27), next_billing_at: cas(27), monthly_price_cents: 990 },
-    { company_id: FIRMA_PRAZDNA, plan: "premium", plan_id: uid("plan:premium"), status: "trialing", trial_ends_at: cas(25) },
+    {
+      company_id: FIRMA,
+      plan: "business",
+      plan_id: uid("plan:business"),
+      status: "active",
+      current_period_start: den(-12),
+      current_period_end: den(18),
+      next_billing_at: cas(18),
+      monthly_price_cents: 2490,
+    },
+    {
+      company_id: FIRMA_CZ,
+      plan: "premium",
+      plan_id: uid("plan:premium"),
+      status: "active",
+      current_period_start: den(-3),
+      current_period_end: den(27),
+      next_billing_at: cas(27),
+      monthly_price_cents: 990,
+    },
+    {
+      company_id: FIRMA_PRAZDNA,
+      plan: "premium",
+      plan_id: uid("plan:premium"),
+      status: "trialing",
+      trial_ends_at: cas(25),
+    },
   ]);
 }
