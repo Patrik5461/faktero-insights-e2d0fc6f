@@ -147,7 +147,29 @@ export default {
         const x = await pripomienky();
         return x.includes("Odhlásenie zamestnanca z ČSSZ") ? x : null;
       });
-      t.over(text.includes("Skončenie oznámiť zdravotnej poisťovni"), `chýba odhláška ZP: ${text}`);
+      /*
+        Zamestnanec má len DPP, takže skončenie sa zdravotnej poisťovni oznamuje do 20. dňa
+        nasledujúceho mesiaca (§ 10 zák. 48/1997 Sb.) a pripomienka sa ukáže až 14 dní pred ním.
+      */
+      const koniec = pridajDni(t.dnes, -1);
+      const [kr, km] = koniec.split("-").map(Number);
+      const terminZp = new Date(Date.UTC(kr, km, 20)).toISOString().slice(0, 10);
+      const dniDoZp = (Date.parse(terminZp) - Date.parse(t.dnes)) / 86_400_000;
+      if (dniDoZp <= 14) {
+        t.over(
+          text.includes("oznámiť skončenie zdravotnej poisťovni do 20. dňa nasledujúceho mesiaca"),
+          `chýba odhláška ZP (termín ${terminZp}): ${text}`,
+        );
+      } else {
+        t.over(
+          !text.includes("Skončenie oznámiť zdravotnej poisťovni"),
+          `odhláška ZP pri DPP sa ukázala priskoro (termín ${terminZp}): ${text}`,
+        );
+      }
+      t.over(
+        !text.includes("oznámiť skončenie zdravotnej poisťovni do 8 dní"),
+        `pri DPP lehota 8 dní: ${text}`,
+      );
       await page.locator("#zam-sp_deregistered_at").fill(t.dnes);
       await page.getByRole("button", { name: "Uložiť zmeny" }).click();
       await t.cakajNa("odhláška ČSSZ zmizne", async () =>
@@ -175,7 +197,12 @@ export default {
           .catch(() => "");
         return s.includes("Odhlášení") || s.includes("Registrace zaměstnance") ? s : null;
       });
-      t.over(/zdravotní pojišťovně/.test(x), `pripomienky nie sú po česky: ${x}`);
+      // Pri DPP sú termíny zdravotnej poisťovne často ďalej ako predstih — overuje sa ČSSZ.
+      t.over(
+        x.includes("přihlásit na ČSSZ nejpozději před nástupem") &&
+          !/prihlásiť|Registrácia/.test(x),
+        `pripomienky nie sú po česky: ${x}`,
+      );
     });
   },
 };
