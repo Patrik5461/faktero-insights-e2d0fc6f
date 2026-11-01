@@ -10,8 +10,9 @@ import {
   MenuSkupina,
   MetaRiadok,
   PrimarnaAkcia,
-  StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav, ChybovyStav } from "@/components/faktero/web/StavyObsahu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
@@ -31,11 +32,24 @@ export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   component: JobDetail,
 });
 
-const FARBA_STAVU: Record<StavZakazky, string> = {
-  active: "bg-blue-500/10 text-blue-600",
-  closed: "bg-emerald-500/10 text-emerald-700",
-  cancelled: "bg-muted text-muted-foreground line-through",
+/** Stav zákazky → tón jednotného stavového odznaku (text ostáva z STAV_ZAKAZKY_POPIS). */
+const TON_ZAKAZKY: Record<StavZakazky, TonStavu> = {
+  active: "informacia",
+  closed: "uspech",
+  cancelled: "zruseny",
 };
+
+/** Stav objednávky u dodávateľa → tón (text ostáva z STAV_POPIS). */
+const TON_OBJEDNAVKY: Record<StavObjednavky, TonStavu> = {
+  draft: "neutralny",
+  sent: "priebeh",
+  partially_received: "pozor",
+  received: "uspech",
+  cancelled: "zruseny",
+};
+
+/** Kladný zisk — tón „úspech“ z dizajnového systému (nie pevná zelená). */
+const KLADNE = "text-[color:var(--stav-uspech-text)]";
 
 function suma(n: number) {
   return formatovacMeny("EUR", "sk-SK")(n || 0);
@@ -54,9 +68,9 @@ function Karta({
 }) {
   const { t } = useT();
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(titulok)}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums sm:text-xl ${farba ?? ""}`}>
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
+      <div className="text-sm text-muted-foreground">{t(titulok)}</div>
+      <div className={`suma mt-1 text-lg sm:text-xl ${farba ?? ""}`}>
         {hodnota}
       </div>
       {poznamka && <div className="mt-1 text-xs text-muted-foreground">{t(poznamka)}</div>}
@@ -70,7 +84,7 @@ function Prucok({ percento, obratene }: { percento: number; obratene?: boolean }
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
       <div
-        className={`h-full rounded-full ${zle ? "bg-destructive" : "bg-emerald-500"}`}
+        className={`h-full rounded-full ${zle ? "bg-destructive" : "bg-[color:var(--chart-1)]"}`}
         style={{ width: `${Math.min(100, Math.max(0, percento))}%` }}
       />
     </div>
@@ -165,14 +179,18 @@ function JobDetail() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <div className="rounded-xl border border-border bg-card">
+          <NacitavanieStav />
+        </div>
       </PageBody>
     );
   }
   if (!data) {
     return (
       <PageBody>
-        <div className="text-sm text-destructive">{error ?? t("Zákazka nenájdená.")}</div>
+        <div className="rounded-xl border border-border bg-card">
+          <ChybovyStav nadpis={error ?? t("Zákazka nenájdená.")} />
+        </div>
       </PageBody>
     );
   }
@@ -190,7 +208,7 @@ function JobDetail() {
   );
   const pole =
     "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
-  const popis = "mb-1 block text-xs font-medium text-muted-foreground";
+  const popis = "mb-1 block text-sm font-semibold text-foreground";
 
   return (
     <>
@@ -198,7 +216,7 @@ function JobDetail() {
         title={t("Zákazka")}
         number={j.job_number}
         status={
-          <StavOdznak className={FARBA_STAVU[j.status as StavZakazky]}>
+          <StavOdznak ton={TON_ZAKAZKY[j.status as StavZakazky] ?? "neutralny"}>
             {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
           </StavOdznak>
         }
@@ -246,13 +264,13 @@ function JobDetail() {
       />
       <PageBody>
         {error && (
-          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
         {!otvorena && (
-          <div className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          <div className="mb-4 rounded-lg border border-border bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
             {t(
               "Zákazka je {stav}. Nový doklad sa k nej priradiť nedá — vyhodnotenie sa už nezmení.",
               {
@@ -264,7 +282,7 @@ function JobDetail() {
 
         {upravujem && (
           <form
-            className="mb-6 space-y-4 rounded-xl border border-border bg-card p-4"
+            className="mb-6 max-w-3xl space-y-4 rounded-xl border border-border bg-card p-4 sm:p-5"
             onSubmit={(e) => {
               e.preventDefault();
               akcia(async () => {
@@ -389,14 +407,14 @@ function JobDetail() {
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {t("Uložiť")}
               </button>
               <button
                 type="button"
                 onClick={() => setUpravujem(false)}
-                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
+                className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
               >
                 {t("Zrušiť")}
               </button>
@@ -411,7 +429,7 @@ function JobDetail() {
           <Karta
             titulok="Zisk"
             hodnota={suma(v.zisk)}
-            farba={v.zisk < 0 ? "text-destructive" : "text-emerald-700"}
+            farba={v.zisk < 0 ? "text-destructive" : KLADNE}
           />
           <Karta
             titulok="Marža"
@@ -446,14 +464,14 @@ function JobDetail() {
         </div>
 
         {(v.planovany_vynos != null || v.planovany_naklad != null) && (
-          <div className="mt-6 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-medium">{t("Plán a skutočnosť")}</div>
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="mb-3 text-base font-semibold">{t("Plán a skutočnosť")}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {v.planovany_vynos != null && (
                 <div>
-                  <div className="mb-1 flex justify-between text-sm">
+                  <div className="mb-1.5 flex flex-wrap justify-between gap-x-3 text-sm">
                     <span className="text-muted-foreground">{t("Výnosy")}</span>
-                    <span className="tabular-nums">
+                    <span className="font-semibold tabular-nums">
                       {t("{suma} z {plan}", { suma: suma(v.vynosy), plan: suma(v.planovany_vynos) })}
                       {v.plnenie_vynosu != null && ` (${v.plnenie_vynosu} %)`}
                     </span>
@@ -463,9 +481,9 @@ function JobDetail() {
               )}
               {v.planovany_naklad != null && (
                 <div>
-                  <div className="mb-1 flex justify-between text-sm">
+                  <div className="mb-1.5 flex flex-wrap justify-between gap-x-3 text-sm">
                     <span className="text-muted-foreground">{t("Náklady")}</span>
-                    <span className="tabular-nums">
+                    <span className="font-semibold tabular-nums">
                       {t("{suma} z {plan}", { suma: suma(v.naklady), plan: suma(v.planovany_naklad) })}
                       {v.cerpanie_nakladu != null && ` (${v.cerpanie_nakladu} %)`}
                     </span>
@@ -477,7 +495,7 @@ function JobDetail() {
             {v.planovany_zisk != null && (
               <div className="mt-3 text-sm text-muted-foreground">
                 {t("Plánovaný zisk {suma}, skutočný", { suma: suma(v.planovany_zisk) })}{" "}
-                <span className={v.zisk < 0 ? "text-destructive" : "text-emerald-700"}>
+                <span className={`suma ${v.zisk < 0 ? "text-destructive" : KLADNE}`}>
                   {suma(v.zisk)}
                 </span>
                 .
@@ -487,11 +505,9 @@ function JobDetail() {
         )}
 
         {j.note && (
-          <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm">
-            <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
-              {t("Poznámka")}
-            </div>
-            <div className="whitespace-pre-wrap">{j.note}</div>
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm sm:p-5">
+            <h2 className="mb-1 text-sm font-semibold">{t("Poznámka")}</h2>
+            <div className="whitespace-pre-wrap break-words">{j.note}</div>
           </div>
         )}
 
@@ -499,12 +515,13 @@ function JobDetail() {
           titulok="Vydané faktúry"
           prazdne="K zákazke zatiaľ nie je priradená žiadna faktúra."
           hlavicka={["Číslo", "Dátum", "Typ", "Bez DPH"]}
+          vpravo={[3]}
           riadky={data.faktury.map((f: any) => [
             <Link
               key={f.id}
               to="/faktury/$id"
               params={{ id: f.id }}
-              className="text-primary hover:underline"
+              className="cislo-dokladu text-primary hover:underline"
             >
               {f.invoice_number}
             </Link>,
@@ -516,7 +533,7 @@ function JobDetail() {
                 : f.type === "proforma"
                   ? t("Zálohová")
                   : t("Faktúra"),
-            suma(Number(f.subtotal)),
+            <span className="suma">{suma(Number(f.subtotal))}</span>,
           ])}
         />
 
@@ -524,11 +541,12 @@ function JobDetail() {
           titulok="Prijaté faktúry"
           prazdne="Žiadny nákup priradený k zákazke."
           hlavicka={["Číslo", "Dodávateľ", "Dátum", "Bez DPH"]}
+          vpravo={[3]}
           riadky={data.prijate_faktury.map((f: any) => [
-            f.invoice_number,
+            <span key="c" className="cislo-dokladu">{f.invoice_number}</span>,
             f.supplier_name,
             f.issue_date,
-            suma(Number(f.amount_without_vat)),
+            <span key="s" className="suma">{suma(Number(f.amount_without_vat))}</span>,
           ])}
         />
 
@@ -536,11 +554,12 @@ function JobDetail() {
           titulok="Bločky"
           prazdne="Žiadny bloček priradený k zákazke."
           hlavicka={["Číslo", "Dodávateľ", "Dátum", "Bez DPH"]}
+          vpravo={[3]}
           riadky={(data.blocky ?? []).map((b: any) => [
-            b.document_number ?? "—",
+            <span key="c" className="cislo-dokladu">{b.document_number ?? "—"}</span>,
             b.supplier_name,
             b.issue_date,
-            suma(nakladZBlocku(b)),
+            <span key="s" className="suma">{suma(nakladZBlocku(b))}</span>,
           ])}
         />
 
@@ -548,12 +567,13 @@ function JobDetail() {
           titulok="Materiál zo skladu"
           prazdne="Zo skladu sa na zákazku zatiaľ nič nevydalo."
           hlavicka={["Položka", "sklad::Pohyb", "Množstvo", "Vážená cena", "Hodnota"]}
+          vpravo={[2, 3, 4]}
           riadky={data.pohyby.map((p: any) => [
             p.nazov,
             t(pohybNazov(p.type)),
             Number(p.quantity),
-            p.unit_cost == null ? "—" : suma(Number(p.unit_cost)),
-            suma(Number(p.unit_cost ?? 0) * Number(p.quantity)),
+            p.unit_cost == null ? "—" : <span className="suma">{suma(Number(p.unit_cost))}</span>,
+            <span key="s" className="suma">{suma(Number(p.unit_cost ?? 0) * Number(p.quantity))}</span>,
           ])}
         />
 
@@ -562,19 +582,26 @@ function JobDetail() {
           prazdne="Pre zákazku nie je objednané nič."
           poznamka="Objednaný tovar sa do nákladov nepočíta — náklad vznikne až jeho výdajom zo skladu."
           hlavicka={["Číslo", "Dodávateľ", "Objednané", "Očakávané", "Stav"]}
+          vpravo={[]}
           riadky={(data.objednavky ?? []).map((o: any) => [
             <Link
               key={o.id}
               to="/sklad/objednavky/$id"
               params={{ id: o.id }}
-              className="text-primary hover:underline"
+              className="cislo-dokladu text-primary hover:underline"
             >
               {o.order_number}
             </Link>,
             o.supplier_name ?? "—",
             o.order_date,
             o.expected_date ?? "—",
-            t(STAV_POPIS[o.status as StavObjednavky] ?? o.status),
+            <StavOdznak
+              key="st"
+              ton={TON_OBJEDNAVKY[o.status as StavObjednavky] ?? "neutralny"}
+              maly
+            >
+              {t(STAV_POPIS[o.status as StavObjednavky] ?? o.status)}
+            </StavOdznak>,
           ])}
         />
 
@@ -582,11 +609,12 @@ function JobDetail() {
           titulok="Jazdy"
           prazdne="K zákazke nie je priradená žiadna jazda."
           hlavicka={["Dátum", "Trasa", "Km", "Náklad"]}
+          vpravo={[2, 3]}
           riadky={data.jazdy.map((t: any) => [
             t.trip_date,
             [t.start_location, t.end_location].filter(Boolean).join(" → ") || (t.purpose ?? "—"),
             Number(t.distance_km),
-            suma(nakladZJazdy(t)),
+            <span key="s" className="suma">{suma(nakladZJazdy(t))}</span>,
           ])}
         />
 
@@ -604,7 +632,7 @@ function JobDetail() {
                 nav({ to: "/zakazky" });
               });
             }}
-            className="inline-flex items-center gap-1 text-sm text-destructive hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-destructive hover:underline disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" /> {t("Zmazať zákazku")}
           </button>
@@ -627,31 +655,35 @@ function Zoznam({
   hlavicka,
   riadky,
   poznamka,
+  vpravo,
 }: {
   titulok: string;
   prazdne: string;
   hlavicka: string[];
   riadky: React.ReactNode[][];
   poznamka?: string;
+  /** Stĺpce zarovnané doprava (sumy, čísla); predvolene posledné dva. */
+  vpravo?: number[];
 }) {
   const { t } = useT();
+  const jeVpravo = (i: number) => (vpravo ? vpravo.includes(i) : i >= hlavicka.length - 2);
   return (
-    <div className="mt-6">
-      <div className="mb-2 text-sm font-medium">
-        {t(titulok)} <span className="text-muted-foreground">({riadky.length})</span>
-      </div>
-      {poznamka && <div className="mb-2 text-xs text-muted-foreground">{t(poznamka)}</div>}
+    <section className="mt-6">
+      <h2 className="mb-2 text-base font-semibold">
+        {t(titulok)} <span className="font-normal text-muted-foreground">({riadky.length})</span>
+      </h2>
+      {poznamka && <div className="mb-2 text-sm text-muted-foreground">{t(poznamka)}</div>}
       {riadky.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card px-4 py-4 text-sm text-muted-foreground sm:px-5">
           {t(prazdne)}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full min-w-[560px] text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
               <tr>
                 {hlavicka.map((h, i) => (
-                  <th key={h} className={`p-3 ${i >= hlavicka.length - 2 ? "text-right" : ""}`}>
+                  <th key={h} className={`whitespace-nowrap p-3 ${jeVpravo(i) ? "text-right" : ""}`}>
                     {t(h)}
                   </th>
                 ))}
@@ -663,7 +695,13 @@ function Zoznam({
                   {r.map((c, k) => (
                     <td
                       key={k}
-                      className={`p-3 ${k >= hlavicka.length - 2 ? "text-right tabular-nums" : ""}`}
+                      className={`p-3 ${
+                        jeVpravo(k)
+                          ? "whitespace-nowrap text-right tabular-nums"
+                          : ["Dátum", "Objednané", "Očakávané", "Km"].includes(hlavicka[k])
+                            ? "whitespace-nowrap tabular-nums"
+                            : "break-words"
+                      }`}
                     >
                       {c}
                     </td>
@@ -674,6 +712,6 @@ function Zoznam({
           </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }

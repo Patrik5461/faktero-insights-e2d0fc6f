@@ -41,7 +41,7 @@ function OdkazDokladu({
   id: string;
   children: React.ReactNode;
 }) {
-  const trieda = "font-medium text-primary hover:underline";
+  const trieda = "cislo-dokladu font-medium text-primary hover:underline";
   if (druh === "faktura")
     return (
       <Link to="/faktury/$id" params={{ id }} className={trieda}>
@@ -111,8 +111,8 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
   const clenenie = zastavene?.some((z) => z.dovod.includes("Predkontácie"));
 
   return (
-    <div className="mb-6 grid gap-4 lg:grid-cols-2">
-      <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
+    <div className="grid gap-4 lg:grid-cols-2">
+      <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-base font-semibold">
             <ShieldCheck className="h-4 w-4 text-primary" />{" "}
@@ -121,7 +121,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
           <button
             onClick={skontroluj}
             disabled={!!busy}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
           >
             {busy === "kontrola" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {t("Skontrolovať")}
@@ -133,14 +133,14 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
           )}
         </p>
         {zastavene && !zastavene.length && (
-          <p className="mt-3 text-sm text-emerald-700">
+          <p className="mt-3 text-sm font-medium text-primary">
             {t("Všetko neodovzdané prejde kontrolou.")}
           </p>
         )}
         {varovania.length > 0 && (
           <div className="mt-3">
-            <p className="flex items-center gap-1.5 text-sm font-medium text-sky-800 dark:text-sky-200">
-              <AlertTriangle className="h-4 w-4" />
+            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
               {t("Odíde, ale skontrolujte v Pohode: {n}", { n: varovania.length })}
             </p>
             <ul className="mt-2 max-h-60 divide-y divide-border overflow-y-auto text-sm">
@@ -162,8 +162,8 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
         )}
         {zastavene && zastavene.length > 0 && (
           <>
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-amber-800">
-              <AlertTriangle className="h-4 w-4" />
+            <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-warning">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               {t(tvarNeodovzdanych(zastavene.length), { n: zastavene.length })}
             </p>
             <ul className="mt-2 max-h-80 divide-y divide-border overflow-y-auto text-sm">
@@ -185,7 +185,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
               {pokladna && (
                 <Link
                   to="/uctovnictvo/pohoda"
-                  className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                  className="rounded-md border border-input bg-background px-3 py-1.5 font-medium hover:bg-secondary"
                 >
                   {t("Nastaviť pokladňu pre Pohodu")}
                 </Link>
@@ -193,7 +193,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
               {clenenie && (
                 <Link
                   to="/uctovnictvo/predkontacie"
-                  className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                  className="rounded-md border border-input bg-background px-3 py-1.5 font-medium hover:bg-secondary"
                 >
                   {t("Nastaviť členenie pre prenesenie")}
                 </Link>
@@ -203,7 +203,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
         )}
       </section>
 
-      <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
+      <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-base font-semibold">
             <GitCompare className="h-4 w-4 text-primary" /> {t("Rozdiely oproti Pohode")}
@@ -211,7 +211,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
           <button
             onClick={porovnaj}
             disabled={!!busy}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
           >
             {busy === "rozdiely" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {t("Porovnať")}
@@ -229,7 +229,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
           </p>
         )}
         {rozdiely && !rozdiely.doklady.length && (
-          <p className="mt-2 text-sm text-emerald-700">
+          <p className="mt-2 text-sm font-medium text-primary">
             {t("V Pohode je to isté, čo vo Fakteri.")}
           </p>
         )}
@@ -255,19 +255,19 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
                       onClick={async () => {
                         if (await poslatOpravu(d.druh, companyId, d.id)) void porovnaj();
                       }}
-                      className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                      className="ml-auto inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-secondary"
                     >
                       <SendHorizontal className="h-3.5 w-3.5" /> {t("Poslať opravu")}
                     </button>
                   )}
                 </div>
                 {d.zmazany && (
-                  <div className="mt-1 text-amber-800">
+                  <div className="mt-1 text-warning">
                     {t("Vo Fakteri je zmazaný, v Pohode ostal — zmažte ho aj tam.")}
                   </div>
                 )}
                 {d.dovod && (
-                  <div className="mt-1 text-amber-800">
+                  <div className="mt-1 text-warning">
                     {t("Dnes by do Pohody neprešiel:")} {d.dovod.split(" — ").slice(1).join(" — ")}
                   </div>
                 )}

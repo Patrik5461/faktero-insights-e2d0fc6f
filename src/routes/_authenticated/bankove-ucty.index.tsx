@@ -46,6 +46,8 @@ import { potvrd } from "@/lib/potvrdenie";
 import { NastaveniaBanky } from "@/components/faktero/banka/NastaveniaBanky";
 import { pohybyZastarane } from "@/lib/faktero/bank-stav-pohybov";
 import { akciePripojenia } from "@/lib/faktero/akcie-pripojenia";
+import { StavOdznak, triedaStavu } from "@/components/faktero/web/Stav";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové účty — Faktero") }] }),
@@ -281,25 +283,25 @@ function BankAccountsPage() {
         title={t("Bankové účty")}
         description={t("Tatra banka, Fio banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie.")}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Banky bez priameho pripojenia (Akcenta a spol.) sa dostanú dnu
                 nahratým výpisom — inak by pre ne nebola žiadna cesta. */}
             <Link
               to="/bankove-ucty/import"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
             >
               <Upload className="h-4 w-4" /> {t("Nahrať výpis")}
             </Link>
             {/* Banky bez API: pohyby z e-mailových notifikácií banky. */}
             <Link
               to="/bankove-ucty/notifikacie"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
             >
               <Mail className="h-4 w-4" /> {t("E-mailové notifikácie")}
             </Link>
             <Link
               to="/bankove-ucty/pripojit"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
             </Link>
@@ -308,45 +310,45 @@ function BankAccountsPage() {
       />
       <PageBody>
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-4">
-            <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5">
+            <div className="text-sm text-muted-foreground">
               {zostatky.length > 1 ? t("Celkový zostatok po menách") : t("Celkový zostatok")}
             </div>
             {zostatky.length === 0 ? (
-              <div className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">
+              <div className="suma mt-1 text-2xl text-foreground">
                 {fmtMoney(0)}
               </div>
             ) : (
               zostatky.map((z) => (
                 <div
                   key={z.mena}
-                  className="mt-1 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100"
+                  className="suma mt-1 text-2xl text-foreground"
                 >
                   {fmtMoney(z.suma, z.mena)}
                 </div>
               ))
             )}
           </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Počet účtov")}</div>
-            <div className="mt-1 text-2xl font-semibold">{data?.accounts.length ?? 0}</div>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="text-sm text-muted-foreground">{t("Počet účtov")}</div>
+            <div className="suma mt-1 text-2xl">{data?.accounts.length ?? 0}</div>
           </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Pripojenia")}</div>
-            <div className="mt-1 text-2xl font-semibold">{data?.connections.length ?? 0}</div>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="text-sm text-muted-foreground">{t("Pripojenia")}</div>
+            <div className="suma mt-1 text-2xl">{data?.connections.length ?? 0}</div>
           </div>
         </div>
 
-        <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="mt-8 text-base font-semibold">
           {t("Pripojené banky")}
         </h2>
         {data && data.connections.length === 0 && (
-          <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
+          <div className="mt-3 rounded-xl border border-dashed border-border bg-card p-8 text-center">
             <Building2 className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">{t("Žiadna banka nie je pripojená.")}</p>
             <Link
               to="/bankove-ucty/pripojit"
-              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800"
+              className="mt-3 inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Pripojiť banku")}
             </Link>
@@ -354,22 +356,22 @@ function BankAccountsPage() {
         )}
         <div className="mt-3 space-y-3">
           {data?.connections.map((c) => (
-            <div key={c.id} className="rounded-xl border border-border bg-card p-4">
+            <div key={c.id} className="rounded-xl border border-border bg-card p-4 sm:p-5">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-700 dark:text-emerald-300">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 font-medium capitalize">
+                  <div className="flex flex-wrap items-center gap-2 font-semibold capitalize">
                     {c.provider === "email" ? t("E-mailové notifikácie") : c.provider}
                     {c.status === "connected" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="h-3 w-3" /> {t("Pripojené")}
-                      </span>
+                      <StavOdznak ton="uspech" ikona={<CheckCircle2 />}>
+                        {t("Pripojené")}
+                      </StavOdznak>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300">
-                        <AlertCircle className="h-3 w-3" /> {c.status}
-                      </span>
+                      <StavOdznak ton="pozor" ikona={<AlertCircle />}>
+                        {c.status}
+                      </StavOdznak>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">
@@ -394,7 +396,7 @@ function BankAccountsPage() {
                 */}
                 {c.provider === "email" ? (
                   /* Účet z e-mailových notifikácií: nie je čo sťahovať ani obnovovať. */
-                  <Link to="/bankove-ucty/notifikacie" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary">
+                  <Link to="/bankove-ucty/notifikacie" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent">
                     <Mail className="h-3.5 w-3.5" /> {t("Nastavenie notifikácií")}
                   </Link>
                 ) : c.provider === "fio" ? (
@@ -402,7 +404,7 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onFio(c.id, "sync")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                       {t("Stiahnuť pohyby")}
@@ -410,7 +412,7 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onFio(c.id, "odpojit")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
@@ -420,7 +422,7 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onRevolut(c.id, "ucty")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                       {t("Načítať účty")}
@@ -428,14 +430,14 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onRevolut(c.id, "pohyby")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onRevolut(c.id, "odpojit")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
@@ -445,7 +447,7 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onWallester(c.id, "ucty")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                       {t("Načítať účty")}
@@ -453,14 +455,14 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onWallester(c.id, "pohyby")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onWallester(c.id, "odpojit")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
@@ -470,7 +472,7 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onWise(c.id, "ucty")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                       {t("Načítať zostatky")}
@@ -478,14 +480,14 @@ function BankAccountsPage() {
                     <button
                       onClick={() => onWise(c.id, "pohyby")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <ArrowRight className="h-3.5 w-3.5" /> {t("Stiahnuť pohyby")}
                     </button>
                     <button
                       onClick={() => onWise(c.id, "odpojit")}
                       disabled={busy === c.id}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
@@ -496,7 +498,7 @@ function BankAccountsPage() {
                     {akciePripojenia(c.provider).nahratVypis && (
                       <Link
                         to="/bankove-ucty/import"
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent"
                       >
                         <Upload className="h-3.5 w-3.5" /> {t("Nahrať výpis")}
                       </Link>
@@ -505,7 +507,7 @@ function BankAccountsPage() {
                       <button
                         onClick={() => onSync(c.id)}
                         disabled={busy === c.id}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                       >
                         <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                         {t("Načítať účty")}
@@ -516,14 +518,14 @@ function BankAccountsPage() {
                         onClick={() => onRenew(c.id)}
                         disabled={busy === c.id}
                         title={t("Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú.")}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                       >
                         <ShieldCheck className="h-3.5 w-3.5" /> {t("Obnoviť súhlas")}
                       </button>
                     )}
                     <button
                       onClick={() => onDisconnect(c.id)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> {t("Odpojiť")}
                     </button>
@@ -534,18 +536,18 @@ function BankAccountsPage() {
                 {data.accounts
                   .filter((a) => a.bank_connection_id === c.id)
                   .map((a) => (
-                    <div key={a.id} className="rounded-lg border border-border bg-muted/30 p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">{a.account_name ?? a.iban ?? t("Účet")}</div>
-                          <div className="font-mono text-xs text-muted-foreground">
+                    <div key={a.id} className="rounded-lg border border-border bg-muted/40 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold">{a.account_name ?? a.iban ?? t("Účet")}</div>
+                          <div className="break-all font-mono text-xs text-muted-foreground">
                             {a.iban ?? "—"}
                           </div>
                           {/* Účet, ktorý banka odmieta, sa už v noci neťahá —
                               nech to človek vidí a nečaká na pohyby zbytočne. */}
                           {a.unavailable_since && (
                             <div
-                              className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-400"
+                              className={cn(triedaStavu("pozor", true), "mt-1 h-auto min-h-[1.125rem] whitespace-normal py-0.5")}
                               title={a.unavailable_reason ?? undefined}
                             >
                               {t("Banka ho nepozná — obnovte súhlas")}
@@ -555,7 +557,7 @@ function BankAccountsPage() {
                           {!a.unavailable_since && pohybyZastarane(a) && (
                             <div
                               role="status"
-                              className="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:text-rose-300"
+                              className={cn(triedaStavu("chyba", true), "mt-1 h-auto min-h-[1.125rem] whitespace-normal py-0.5")}
                               title={a.pohyby_chyba ?? undefined}
                             >
                               {a.pohyby_ok_at
@@ -566,15 +568,15 @@ function BankAccountsPage() {
                             </div>
                           )}
                         </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold tabular-nums">
+                        <div className="shrink-0 text-right">
+                          <div className="suma text-lg">
                             {fmtMoney(Number(a.balance ?? 0), a.currency)}
                           </div>
                           {(() => {
                             const zauctovany = zobrazitZauctovany(a.balance, a.booked_balance);
                             return zauctovany.zobrazit ? (
                               <div
-                                className="text-xs tabular-nums text-muted-foreground"
+                                className="whitespace-nowrap text-xs tabular-nums text-muted-foreground"
                                 title={t("Suma, ktorú má banka zaúčtovanú. Líši sa o blokácie a nezaúčtované platby.")}
                               >
                                 {t("Zaúčtovaný {suma}", { suma: fmtMoney(zauctovany.suma, a.currency) })}
@@ -584,7 +586,7 @@ function BankAccountsPage() {
                           <Link
                             to="/bankove-ucty/transakcie"
                             search={{ account: a.id } as any}
-                            className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
                           >
                             {t("Transakcie")} <ArrowRight className="h-3 w-3" />
                           </Link>
@@ -625,7 +627,7 @@ function PlatnostSuhlasu({ platiDo }: { platiDo: string | null }) {
   }
   return (
     <div
-      className={`mt-0.5 text-xs font-medium ${s.stav === "vyprsal" ? "text-destructive" : "text-amber-700 dark:text-amber-300"}`}
+      className={`mt-0.5 text-xs font-medium ${s.stav === "vyprsal" ? "text-destructive" : "text-warning"}`}
     >
       {s.stav === "vyprsal"
         ? t("Súhlas banky vypršal {datum} — kliknite na Obnoviť súhlas.", { datum })

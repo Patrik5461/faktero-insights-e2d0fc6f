@@ -68,7 +68,7 @@ export function ImportOptions({
   return (
     <div className="space-y-4">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">{t("Čo importovať")}</legend>
+        <legend className="text-sm font-semibold">{t("Čo importovať")}</legend>
         <div className="grid gap-2 sm:grid-cols-3">
           {ROZSAHY.map((r) => (
             <label

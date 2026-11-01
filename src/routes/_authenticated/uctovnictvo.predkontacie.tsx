@@ -6,7 +6,7 @@ import { StavyAStitkyNastavenia } from "@/components/faktero/StavyAStitkyNastave
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Download, Loader2, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { BookOpen, Download, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KodPohody } from "@/components/faktero/KodPohody";
@@ -45,6 +45,9 @@ import {
 } from "@/lib/faktero/predkontacie.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { KV_CLENENIA, KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/lib/faktero/kv-clenenie";
+import { triedaStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -120,7 +123,9 @@ function Stranka() {
       <>
         <PageHeader title={t("Predkontácie")} />
         <PageBody>
-          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+          <div className="rounded-xl border border-border bg-card">
+            <NacitavanieStav />
+          </div>
         </PageBody>
       </>
     );
@@ -137,14 +142,14 @@ function Stranka() {
             <button
               type="button"
               onClick={() => setPridat((n) => n + 1)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Pridať predkontáciu")}
             </button>
             <button
               type="button"
               onClick={() => setKopirovat(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
             >
               {t("Kopírovať do iných firiem")}
             </button>
@@ -253,15 +258,15 @@ function Predvolene({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-base font-semibold">
           {t("Predvolené podľa druhu dokladu")}
         </h2>
         <button
           type="button"
           onClick={onPridat}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+          className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-secondary"
         >
           <Plus className="h-3.5 w-3.5" /> {t("Pridať predkontáciu")}
         </button>
@@ -286,10 +291,10 @@ function Predvolene({
           className={`block w-full text-sm md:table ${kvStlpec ? "md:min-w-[760px]" : ""}`}
         >
           <thead className="hidden md:table-header-group">
-            <tr className="text-left text-xs text-muted-foreground">
-              <th className="py-1 pr-3 font-medium">{t("Doklad")}</th>
-              <th className="py-1 pr-3 font-medium">{t("Predkontácia")}</th>
-              <th className="py-1 pr-3 font-medium">{t("Členenie DPH")}</th>
+            <tr className="border-b border-border text-left text-xs text-muted-foreground">
+              <th className="py-2 pr-3 font-semibold">{t("Doklad")}</th>
+              <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Predkontácia")}</th>
+              <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Členenie DPH")}</th>
               {kvStlpec ? <th className="py-1 font-medium">{t("Členenie KV DPH")}</th> : null}
             </tr>
           </thead>
@@ -386,8 +391,8 @@ function Predvolene({
         </table>
       </div>
 
-      <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">{t("Bločky do Pohody")}</legend>
+      <fieldset className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold">{t("Bločky do Pohody")}</legend>
         <label className="flex items-start gap-2 text-sm">
           <input
             type="radio"
@@ -407,7 +412,7 @@ function Predvolene({
         </label>
         {blockyAgenda === "podla_platby" && (
           <label className="ml-6 mt-2 block">
-            <span className="text-xs text-muted-foreground">{t("Skratka pokladne v Pohode")}</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Skratka pokladne v Pohode")}</span>
             <span className="block max-w-xs">
               <input
                 value={pokladna}
@@ -418,7 +423,7 @@ function Predvolene({
               />
             </span>
             {!pokladna.trim() && (
-              <span className="mt-1 block max-w-prose text-xs text-amber-700">
+              <span className="mt-1 block max-w-prose text-xs text-warning">
                 {t(
                   "Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu zatiaľ ako prijaté faktúry.",
                 )}
@@ -459,12 +464,12 @@ function Predvolene({
         </label>
       </fieldset>
 
-      <fieldset className="mt-4 space-y-3 rounded-md border border-border p-3 text-sm">
-        <legend className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <fieldset className="mt-4 space-y-3 rounded-lg border border-border p-3 text-sm sm:p-4">
+        <legend className="px-1 text-sm font-semibold">
           {t("Export a spracovanie dokladov")}
         </legend>
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Párovací symbol v Pohode")}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("Párovací symbol v Pohode")}</span>
           <select
             value={ine.parovaciSymbol}
             onChange={(e) => setIne({ ...ine, parovaciSymbol: e.target.value as any })}
@@ -476,7 +481,7 @@ function Predvolene({
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Predkontácia pre zaokrúhlenie")}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("Predkontácia pre zaokrúhlenie")}</span>
           <input
             value={ine.predkontaciaZaokruhlenie}
             maxLength={30}
@@ -559,7 +564,7 @@ function Predvolene({
           </span>
         </label>
         <div>
-          <span className="text-xs text-muted-foreground">{t("Povinné pri spracovaní dokladu")}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("Povinné pri spracovaní dokladu")}</span>
           <div className="mt-1 flex flex-wrap gap-4">
             {(
               [
@@ -644,7 +649,7 @@ function Predvolene({
           </label>
         ))}
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Tolerancia zaokrúhlenia položiek (v centoch)")}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("Tolerancia zaokrúhlenia položiek (v centoch)")}</span>
           <input
             type="number"
             min={0}
@@ -671,8 +676,8 @@ function Predvolene({
         />
       </fieldset>
 
-      <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">{t("Číselné rady a stredisko v Pohode")}</legend>
+      <fieldset className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold">{t("Číselné rady a stredisko v Pohode")}</legend>
         <p className="text-xs text-muted-foreground">
           {t(
             "Predpona radu, do ktorého Pohoda doklad očísluje. Prázdne = predvolený rad v Pohode. Doklad môže mať vlastný rad v zaúčtovaní.",
@@ -681,7 +686,7 @@ function Predvolene({
         <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {RADY_POHODY.map((r) => (
             <label key={r.stlpec} className="block">
-              <span className="text-xs text-muted-foreground">{t(r.nazov)}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t(r.nazov)}</span>
               <KodPohody
                 ariaLabel={t("Číselný rad — {nazov}", { nazov: t(r.nazov) })}
                 value={h[r.stlpec] ?? ""}
@@ -697,7 +702,7 @@ function Predvolene({
             </label>
           ))}
           <label className="block">
-            <span className="text-xs text-muted-foreground">{t("Predvolené stredisko")}</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Predvolené stredisko")}</span>
             <KodPohody
               ariaLabel={t("Predvolené stredisko")}
               value={h.pohoda_stredisko ?? ""}
@@ -747,8 +752,8 @@ function Predvolene({
         </span>
       </label>
 
-      <details className="mt-4 rounded-md border border-border p-3">
-        <summary className="cursor-pointer text-sm font-medium">
+      <details className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+        <summary className="cursor-pointer text-sm font-semibold">
           {t("Bankové pohyby podľa označenia platby")}
         </summary>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -763,7 +768,7 @@ function Predvolene({
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {OZNACENIA.map((o) => (
             <label key={o.kod} className="block">
-              <span className="text-xs text-muted-foreground">{t(o.nazov)}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t(o.nazov)}</span>
               <KodPohody
                 ariaLabel={`${t("Predkontácia")} — ${t(o.nazov)}`}
                 value={oznaceni[o.kod] ?? ""}
@@ -788,7 +793,7 @@ function Predvolene({
         <button
           onClick={ulozit}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("Uložiť predvolené")}
@@ -868,8 +873,8 @@ function Import({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <h2 className="text-base font-semibold">
         {t("Načítať z Pohody")}
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -882,8 +887,8 @@ function Import({
       </p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <div className="rounded-md border border-border p-3">
-          <div className="text-sm font-medium">{t("1. Konektorom")}</div>
+        <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 sm:p-4">
+          <div className="text-sm font-semibold">{t("1. Konektorom")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             {t("Keď beží")}{" "}
             <Link to="/uctovnictvo/pohoda" className="underline">
@@ -893,13 +898,13 @@ function Import({
           </p>
           {caka ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+              <span className={triedaStavu("pozor", true)}>
                 {t("Čaká na konektor")}
               </span>
               <button
                 onClick={() => konektor(false)}
                 disabled={!!busy}
-                className="text-xs underline disabled:opacity-50"
+                className="text-xs font-semibold text-primary underline disabled:opacity-50"
               >
                 {t("Zrušiť")}
               </button>
@@ -908,7 +913,7 @@ function Import({
             <button
               onClick={() => konektor(true)}
               disabled={!!busy}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
             >
               {busy === "konektor" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -920,8 +925,8 @@ function Import({
           )}
         </div>
 
-        <div className="rounded-md border border-border p-3">
-          <div className="text-sm font-medium">{t("2. XML súborom")}</div>
+        <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 sm:p-4">
+          <div className="text-sm font-semibold">{t("2. XML súborom")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
               "Žiadosť načítajte v Pohode cez Súbor → Dátová komunikácia → XML import a odpoveď, ktorú Pohoda uloží, nahrajte sem.",
@@ -929,14 +934,14 @@ function Import({
           </p>
           <button
             onClick={stiahniZiadost}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
           >
             <Download className="h-4 w-4" /> {t("Stiahnuť žiadosť")}
           </button>
         </div>
 
-        <div className="rounded-md border border-border p-3">
-          <div className="text-sm font-medium">{t("3. Nahrať súbor")}</div>
+        <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 sm:p-4">
+          <div className="text-sm font-semibold">{t("3. Nahrať súbor")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
               "Odpoveď Pohody (XML), alebo tabuľka CSV či Excel so stĺpcami Kód, Popis, prípadne Agenda, MD, D.",
@@ -955,7 +960,7 @@ function Import({
           <button
             onClick={() => subor.current?.click()}
             disabled={!!busy}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
           >
             {busy === "subor" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1073,10 +1078,10 @@ function Ciselnik({
   }
 
   return (
-    <section ref={sekcia} className="scroll-mt-24 rounded-xl border border-border bg-card p-5">
+    <section ref={sekcia} className="scroll-mt-24 rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
-          className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-muted p-1 text-sm"
+          className="flex max-w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-sm"
           role="tablist"
         >
           {DRUHY_CISELNIKA.map(({ kod: k, nazov: n }) => (
@@ -1089,24 +1094,24 @@ function Ciselnik({
                 setAgenda("");
                 setForm(null);
               }}
-              className={`shrink-0 whitespace-nowrap rounded px-3 py-1 ${druh === k ? "bg-background font-medium shadow-sm" : "text-muted-foreground"}`}
+              className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1 ${druh === k ? "bg-card font-semibold text-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
             >
-              {t(n)} <span className="text-xs text-muted-foreground">({pocty[k]})</span>
+              {t(n)} <span className="text-xs tabular-nums text-muted-foreground">({pocty[k]})</span>
             </button>
           ))}
         </div>
         <button
           onClick={() => setForm({ ...PRAZDNY })}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           <Plus className="h-4 w-4" /> {t("Pridať {co}", { co: t(jednotne) })}
         </button>
       </div>
 
       {form && (
-        <div className="mt-4 grid gap-3 rounded-md border border-primary/30 bg-primary/5 p-3 sm:grid-cols-6">
+        <div className="mt-4 grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-6 sm:p-4">
           <label className="block sm:col-span-1">
-            <span className="text-xs text-muted-foreground">{t("Kód")}</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Kód")}</span>
             <input
               value={form.kod}
               onChange={(e) => setForm({ ...form, kod: e.target.value })}
@@ -1126,7 +1131,7 @@ function Ciselnik({
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-xs text-muted-foreground">{t("Popis")}</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Popis")}</span>
             <input
               value={form.popis}
               onChange={(e) => setForm({ ...form, popis: e.target.value })}
@@ -1163,7 +1168,7 @@ function Ciselnik({
           {druh === "predkontacia" ? (
             <>
               <label className="block">
-                <span className="text-xs text-muted-foreground">MD</span>
+                <span className="text-xs font-medium text-muted-foreground">MD</span>
                 <input
                   value={form.ucet_md}
                   onChange={(e) => setForm({ ...form, ucet_md: e.target.value })}
@@ -1172,7 +1177,7 @@ function Ciselnik({
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-muted-foreground">D</span>
+                <span className="text-xs font-medium text-muted-foreground">D</span>
                 <input
                   value={form.ucet_d}
                   onChange={(e) => setForm({ ...form, ucet_d: e.target.value })}
@@ -1213,7 +1218,7 @@ function Ciselnik({
           {druh === "predkontacia" && (
             <>
               <label className="block">
-                <span className="text-xs text-muted-foreground">{t("Typ dokladu")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("Typ dokladu")}</span>
                 <select
                   value={form.typ_dokladu ?? ""}
                   onChange={(e) =>
@@ -1230,7 +1235,7 @@ function Ciselnik({
                 </select>
               </label>
               <label className="block">
-                <span className="text-xs text-muted-foreground">{t("Typ platby")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("Typ platby")}</span>
                 <select
                   value={form.typ_platby ?? ""}
                   onChange={(e) =>
@@ -1254,7 +1259,7 @@ function Ciselnik({
             </>
           )}
           <label className="block sm:col-span-2">
-            <span className="text-xs text-muted-foreground">{t("Použiť sám pre kategóriu nákladu")}</span>
+            <span className="text-xs font-medium text-muted-foreground">{t("Použiť sám pre kategóriu nákladu")}</span>
             <select
               value={form.kategoria}
               onChange={(e) => setForm({ ...form, kategoria: e.target.value })}
@@ -1284,14 +1289,14 @@ function Ciselnik({
             </p>
             <button
               onClick={() => setForm(null)}
-              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
             >
               {t("Zrušiť")}
             </button>
             <button
               onClick={ulozit}
               disabled={busy || !form.kod.trim()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("Uložiť")}
@@ -1305,7 +1310,7 @@ function Ciselnik({
           value={hladaj}
           onChange={(e) => setHladaj(e.target.value)}
           placeholder={t("Hľadať kód, popis alebo účet")}
-          className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          className="min-w-[12rem] flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
         />
         {agendyVZozname.length > 1 && (
           <select
@@ -1329,39 +1334,44 @@ function Ciselnik({
       </div>
 
       {riadky.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          {pocty[druh] === 0
-            ? t("Číselník je prázdny. Načítajte ho z Pohody vyššie alebo pridajte kód ručne.")
-            : t("Nič nevyhovuje filtru.")}
-        </p>
+        <div className="mt-3">
+          <EmptyState
+            icon={pocty[druh] === 0 ? BookOpen : Search}
+            title={
+              pocty[druh] === 0
+                ? "Číselník je prázdny. Načítajte ho z Pohody vyššie alebo pridajte kód ručne."
+                : "Nič nevyhovuje filtru."
+            }
+          />
+        </div>
       ) : (
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-border">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="py-1 pr-3 font-medium">{t("Kód")}</th>
-                <th className="py-1 pr-3 font-medium">{t("Popis")}</th>
-                <th className="py-1 pr-3 font-medium">
+              <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground [&>th:first-child]:pl-3">
+                <th className="py-2 pr-3 font-semibold">{t("Kód")}</th>
+                <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Popis")}</th>
+                <th className="whitespace-nowrap py-2 pr-3 font-semibold">
                   {druh === "predkontacia" ? t("Agenda") : t("Typ")}
                 </th>
-                {druh === "predkontacia" && <th className="py-1 pr-3 font-medium">MD / D</th>}
-                <th className="py-1 pr-3 font-medium">{t("Použitie")}</th>
-                <th className="py-1 pr-3 font-medium">{t("Zdroj")}</th>
-                <th className="py-1 pr-3 font-medium">{t("Aktívne")}</th>
-                <th className="py-1"><span className="sr-only">{t("Akcie")}</span></th>
+                {druh === "predkontacia" && <th className="whitespace-nowrap py-2 pr-3 font-semibold">MD / D</th>}
+                <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Použitie")}</th>
+                <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Zdroj")}</th>
+                <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Aktívne")}</th>
+                <th className="py-2 pr-3"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody>
               {riadky.map((z) => (
                 <tr
                   key={z.id}
-                  className={`border-t border-border ${z.aktivne ? "" : "opacity-50"}`}
+                  className={`border-t border-border first:border-t-0 hover:bg-muted/30 [&>td:first-child]:pl-3 ${z.aktivne ? "" : "opacity-50"}`}
                 >
-                  <td className="py-1.5 pr-3 font-mono font-medium">{z.kod}</td>
+                  <td className="whitespace-nowrap py-1.5 pr-3 font-mono font-semibold">{z.kod}</td>
                   <td className="py-1.5 pr-3">
                     {z.popis ?? "—"}
                     {z.pomer ? (
-                      <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800">
+                      <span className={`ml-2 ${triedaStavu("informacia", true)}`}>
                         {z.pomer.typ === "dph5050"
                           ? t("pomer {z} %, DPH 50 %", { z: z.pomer.zaklad })
                           : t("pomer {p}", { p: z.pomer.casti.map((c) => `${c.podiel}`).join("/") })}
@@ -1415,7 +1425,7 @@ function Ciselnik({
                       aria-label={t("Aktívne {kod}", { kod: z.kod })}
                     />
                   </td>
-                  <td className="py-1.5 text-right whitespace-nowrap">
+                  <td className="whitespace-nowrap py-1.5 pr-3 text-right">
                     <button
                       onClick={() =>
                         setForm({

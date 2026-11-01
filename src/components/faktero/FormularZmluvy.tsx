@@ -30,6 +30,7 @@ import {
   type ReferencnyIndex,
 } from "@/lib/faktero/pohybliva-sadzba";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { Button } from "@/components/ui/button";
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -401,8 +402,8 @@ export function FormularZmluvy({
     }
   }
 
-  const pole = "w-full rounded-lg border bg-background px-3 py-2 text-sm";
-  const popis = "mb-1 block text-sm font-medium";
+  const pole = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const popis = "mb-1.5 block text-sm font-semibold";
 
   /** Spôsob výpočtu úroku pri kontokorente (pri úvere je v poliach kalendára). */
   const poleVypoctu = (
@@ -424,11 +425,11 @@ export function FormularZmluvy({
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-      <div className="space-y-5 rounded-xl border bg-card p-5">
+    <div className="grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="min-w-0 space-y-5 rounded-xl border border-border bg-card p-4 sm:p-5">
         {drziKalendarZoZmluvy && !kontokorent && (
-          <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
-            <p className="font-medium">{t("Kalendár je z dokumentu.")}</p>
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm">
+            <p className="font-semibold">{t("Kalendár je z dokumentu.")}</p>
             <p className="mt-1 text-muted-foreground">
               {riadkyZoZmluvy.length > 0
                 ? t(
@@ -440,7 +441,7 @@ export function FormularZmluvy({
                   )}
             </p>
             {(zoZmluvy?.vyhrady ?? []).length > 0 && (
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-amber-700 dark:text-amber-400">
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs font-medium text-warning">
                 {zoZmluvy!.vyhrady.map((v) => (
                   <li key={v}>{v}</li>
                 ))}
@@ -460,8 +461,11 @@ export function FormularZmluvy({
                   // Úver splátku bez DPH; leasingová ju spravidla obsahuje.
                   if (k !== "leasing") setVat(0);
                 }}
-                className={`rounded-lg border px-4 py-2 text-sm ${
-                  kind === k ? "border-primary bg-primary/10 font-medium" : ""
+                aria-pressed={kind === k}
+                className={`rounded-md border px-4 py-2 text-sm transition-colors ${
+                  kind === k
+                    ? "border-primary bg-primary/10 font-semibold text-primary-hover"
+                    : "border-input bg-background hover:bg-accent"
                 }`}
               >
                 {t(l)}
@@ -734,7 +738,7 @@ export function FormularZmluvy({
           </>
         )}
 
-        <div className="space-y-4 rounded-lg border p-4">
+        <div className="space-y-4 rounded-lg border border-border bg-muted/40 p-4">
           <div>
             <span className={popis}>{t("Úroková sadzba")}</span>
             <div className="flex flex-wrap gap-2">
@@ -748,8 +752,11 @@ export function FormularZmluvy({
                   key={k}
                   type="button"
                   onClick={() => setTypSadzby(k)}
-                  className={`rounded-lg border px-4 py-2 text-sm ${
-                    typSadzby === k ? "border-primary bg-primary/10 font-medium" : ""
+                  aria-pressed={typSadzby === k}
+                  className={`rounded-md border px-4 py-2 text-sm transition-colors ${
+                    typSadzby === k
+                      ? "border-primary bg-primary/10 font-semibold text-primary-hover"
+                      : "border-input bg-background hover:bg-accent"
                   }`}
                 >
                   {t(l)}
@@ -900,27 +907,25 @@ export function FormularZmluvy({
           />
         </div>
 
-        <button
-          onClick={odosli}
-          disabled={ukladam}
-          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
-        >
-          {t(ukladam ? "Ukladám…" : kontokorent ? "Uložiť" : "Uložiť a vytvoriť kalendár")}
-        </button>
+        <div className="border-t border-border pt-4">
+          <Button onClick={odosli} disabled={ukladam} size="lg" className="px-5">
+            {t(ukladam ? "Ukladám…" : kontokorent ? "Uložiť" : "Uložiť a vytvoriť kalendár")}
+          </Button>
+        </div>
       </div>
 
       {kontokorent ? (
         <div className="space-y-4">
-          <div className="rounded-xl border bg-card p-5">
-            <h2 className="mb-3 text-sm font-medium">{t("Náhľad")}</h2>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="mb-3 text-base font-semibold">{t("Náhľad")}</h2>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("Úverový rámec")}</dt>
-                <dd className="font-medium tabular-nums">{formatujSumu(cislo(limit), "EUR")}</dd>
+                <dd className="suma text-right">{formatujSumu(cislo(limit), "EUR")}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("Úrok pri plnom čerpaní za mesiac")}</dt>
-                <dd className="tabular-nums">
+                <dd className="suma text-right">
                   {formatujSumu(
                     Math.round(((cislo(limit) * Math.max(0, efektivnaSadzba)) / 100 / 12) * 100) / 100,
                     "EUR",
@@ -930,7 +935,7 @@ export function FormularZmluvy({
               {cislo(poplatokRocne) > 0 && (
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Poplatok za rámec mesačne")}</dt>
-                  <dd className="tabular-nums">
+                  <dd className="suma text-right">
                     {formatujSumu(Math.round((cislo(poplatokRocne) / 12) * 100) / 100, "EUR")}
                   </dd>
                 </div>
@@ -941,7 +946,7 @@ export function FormularZmluvy({
             {t("Kontokorent nemá splátkový kalendár. Istinu splácajú príjmy na účet; Faktero sleduje čerpanie podľa zostatku účtu a úroky a poplatky, ktoré banka z účtu strhne, si k zmluve páruje samo.")}
           </p>
           {(zoZmluvy?.vyhrady ?? []).length > 0 && (
-            <ul className="list-disc space-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 pl-8 text-xs text-amber-800 dark:text-amber-400">
+            <ul className="list-disc space-y-1 rounded-lg border border-warning/40 bg-warning/10 p-4 pl-8 text-xs font-medium text-warning">
               {zoZmluvy!.vyhrady.map((v) => (
                 <li key={v}>{v}</li>
               ))}
@@ -950,37 +955,37 @@ export function FormularZmluvy({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-xl border bg-card p-5">
-            <h2 className="mb-3 text-sm font-medium">{t("Náhľad")}</h2>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="mb-3 text-base font-semibold">{t("Náhľad")}</h2>
             {!nahlad ? (
               <p className="text-sm text-muted-foreground">
                 {t("Zadajte financovanú sumu a počet splátok.")}
               </p>
             ) : (
               <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Mesačná splátka")}</dt>
-                  <dd className="font-medium tabular-nums">
+                  <dd className="suma text-right text-base">
                     {formatujSumu(nahlad.riadky[0].amount, "EUR")}
                   </dd>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Zaplatíte spolu")}</dt>
-                  <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.zaplatiSpolu, "EUR")}</dd>
+                  <dd className="suma text-right">{formatujSumu(nahlad.suhrn.zaplatiSpolu, "EUR")}</dd>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Z toho úrok")}</dt>
-                  <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.urokSpolu, "EUR")}</dd>
+                  <dd className="suma text-right">{formatujSumu(nahlad.suhrn.urokSpolu, "EUR")}</dd>
                 </div>
                 {nahlad.suhrn.dphSpolu > 0 && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">{t("Z toho DPH")}</dt>
-                    <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.dphSpolu, "EUR")}</dd>
+                    <dd className="suma text-right">{formatujSumu(nahlad.suhrn.dphSpolu, "EUR")}</dd>
                   </div>
                 )}
-                <div className="flex justify-between border-t pt-2">
+                <div className="flex justify-between gap-3 border-t border-border pt-2">
                   <dt className="text-muted-foreground">{t("Splátok")}</dt>
-                  <dd className="tabular-nums">{nahlad.suhrn.splatok}</dd>
+                  <dd className="suma text-right">{nahlad.suhrn.splatok}</dd>
                 </div>
               </dl>
             )}

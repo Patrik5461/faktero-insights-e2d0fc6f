@@ -184,9 +184,9 @@ function InventoryPage() {
       />
       <PageBody>
         {!countId ? (
-          <div className="mx-auto max-w-md rounded-xl border border-border bg-card p-6">
+          <div className="mx-auto max-w-md rounded-xl border border-border bg-card p-4 sm:p-6">
             <label className="block">
-              <span className="text-sm font-medium">{t("Sklad")}</span>
+              <span className="text-sm font-semibold">{t("Sklad")}</span>
               <select
                 value={warehouse}
                 onChange={(e) => setWarehouse(e.target.value)}
@@ -202,7 +202,7 @@ function InventoryPage() {
             <button
               disabled={busy || !warehouse}
               onClick={onStart}
-              className="mt-4 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="mt-4 w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
               {busy ? t("inventura::Spúšťam…") : t("Začať inventúru")}
             </button>
@@ -215,24 +215,26 @@ function InventoryPage() {
                 začala, dalo sa omylom „ukončiť" mesiac starý súpis a prepísať
                 ním skutočné stavy.
               */
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-                <span>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--stav-pozor-bod)]/40 bg-[var(--stav-pozor-plocha)] p-3 text-sm text-[var(--stav-pozor-text)] sm:px-4">
+                <span className="min-w-0">
                   {t("Inventúra začatá")}{" "}
-                  <strong>{new Date(zacata).toLocaleString("sk-SK")}</strong>.{" "}
-                  {t("Očakávané stavy sú z tohto času.")}
+                  <strong className="whitespace-nowrap tabular-nums">
+                    {new Date(zacata).toLocaleString("sk-SK")}
+                  </strong>
+                  . {t("Očakávané stavy sú z tohto času.")}
                 </span>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={onZahodit}
-                  className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+                  className="rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:opacity-60"
                 >
                   {t("Zahodiť inventúru")}
                 </button>
               </div>
             )}
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
-              <ScanLine className="h-4 w-4 text-primary" />
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 p-3 sm:px-4">
+              <ScanLine className="h-4 w-4 shrink-0 text-primary" />
               <input
                 ref={scanRef}
                 autoFocus
@@ -245,18 +247,18 @@ function InventoryPage() {
                   }
                 }}
                 placeholder={t("Naskenujte alebo napíšte čiarový kód alebo kód a stlačte Enter…")}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
               <button
                 onClick={() => onScan(scan)}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-semibold tabular-nums text-primary-foreground hover:opacity-90"
               >
                 +1
               </button>
             </div>
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="p-3">{t("Položka")}</th>
                     <th className="p-3 text-right">{t("inventura::Očakávané")}</th>
@@ -272,8 +274,10 @@ function InventoryPage() {
                         : null;
                     return (
                       <tr key={it.id}>
-                        <td className="p-3 font-medium">{skuMap[it.stock_item_id] ?? "—"}</td>
-                        <td className="p-3 text-right">
+                        <td className="p-3 min-w-[10rem] font-medium break-words">
+                          {skuMap[it.stock_item_id] ?? "—"}
+                        </td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap">
                           {formatujCislo(it.expected_quantity, 0, 2)}
                         </td>
                         <td className="p-3 text-right">
@@ -282,11 +286,11 @@ function InventoryPage() {
                             step="0.001"
                             defaultValue={it.counted_quantity ?? ""}
                             onBlur={(e) => setCounted(it.id, e.target.value)}
-                            className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm"
+                            className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm tabular-nums"
                           />
                         </td>
                         <td
-                          className={`p-3 text-right ${diff != null && diff !== 0 ? (diff > 0 ? "text-emerald-700" : "text-destructive") : "text-muted-foreground"}`}
+                          className={`p-3 text-right whitespace-nowrap tabular-nums ${diff != null && diff !== 0 ? (diff > 0 ? "font-semibold text-[var(--stav-uspech-text)]" : "font-semibold text-destructive") : "text-muted-foreground"}`}
                         >
                           {diff == null ? "—" : (diff > 0 ? "+" : "") + formatujCislo(diff, 0, 2)}
                         </td>
@@ -300,7 +304,7 @@ function InventoryPage() {
               <button
                 disabled={busy}
                 onClick={onComplete}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {busy ? t("Ukončujem…") : t("Ukončiť a vytvoriť úpravy")}
               </button>

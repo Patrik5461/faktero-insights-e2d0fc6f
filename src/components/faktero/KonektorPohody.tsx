@@ -9,6 +9,7 @@ import {
 } from "@/lib/faktero/pohoda-konektor.functions";
 import { fetchMyCompanies } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 /**
@@ -142,7 +143,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
 
   return (
     <div>
-      <h4 className="text-sm font-semibold">{t("Priame prepojenie s Pohodou")}</h4>
+      <h4 className="text-base font-semibold">{t("Priame prepojenie s Pohodou")}</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         {t(
           "Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť nám povie, aké čísla im pridelila. Účtovníčka nič neinštaluje: stiahnutý priečinok skopíruje k Pohode, vyplní v ňom cestu a názov databázy a spustí druhý súbor, ktorý založí naplánovanú úlohu. Keď vedie viac firiem, ďalšiu pridá jedným riadkom do",
@@ -151,8 +152,8 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         {t("priečinok ani úlohu už nezakladá znova.")}
       </p>
       {firmy.length > 1 && (
-        <div className="mt-3 rounded-md border border-border bg-secondary/40 p-3">
-          <div className="mb-2 text-xs font-medium">{t("Do balíčka zahrnúť")}</div>
+        <div className="mt-3 rounded-md border border-border bg-muted/40 p-3">
+          <div className="mb-2 text-sm font-semibold">{t("Do balíčka zahrnúť")}</div>
           <div className="space-y-1.5">
             {firmy.map((f) => (
               <label key={f.id} className="flex items-center gap-2 text-xs">
@@ -178,7 +179,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
           type="button"
           onClick={stiahni}
           disabled={pracuje || vybrane.length === 0}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {pracuje
             ? t("Pripravujem…")
@@ -198,11 +199,11 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
       </div>
       {stav?.potvrdene?.length ? (
         <div className="mt-3 text-xs">
-          <div className="mb-1 font-medium">{t("Naposledy potvrdené Pohodou")}</div>
+          <div className="mb-1 text-sm font-semibold">{t("Naposledy potvrdené Pohodou")}</div>
           <ul className="space-y-0.5 text-muted-foreground">
             {stav.potvrdene.map((r: PotvrdenyDoklad, i: number) => (
-              <li key={i}>
-                {r.invoice_number}
+              <li key={i} className="break-words">
+                <span className="cislo-dokladu text-foreground">{r.invoice_number}</span>
                 {r.pohoda_cislo ? ` → ${r.pohoda_cislo}` : ""}
                 {r.pohoda_stav === "error"
                   ? ` — ${t("chyba: {text}", { text: r.error ?? t("neznáma") })}`
@@ -215,7 +216,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         </div>
       ) : null}
       <div className="mt-3 text-xs">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 font-medium hover:bg-secondary">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input px-3 py-1.5 font-medium hover:bg-secondary">
           <input
             type="file"
             accept=".xml,text/xml,application/xml"
@@ -284,16 +285,24 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
 function StavFirmyPopis({ stav }: { stav?: StavFirmy }) {
   const { t, jazyk } = useT();
   if (!stav?.kluce) {
-    return <span className="shrink-0 text-[11px] text-muted-foreground">{t("bez balíčka")}</span>;
+    return (
+      <StavOdznak ton="neutralny" maly className="shrink-0">
+        {t("bez balíčka")}
+      </StavOdznak>
+    );
   }
   if (!stav.naposledy) {
-    return <span className="shrink-0 text-[11px] text-amber-700">{t("vydaný, zatiaľ ticho")}</span>;
+    return (
+      <StavOdznak ton="pozor" maly className="shrink-0">
+        {t("vydaný, zatiaľ ticho")}
+      </StavOdznak>
+    );
   }
   return (
-    <span className="shrink-0 text-[11px] text-muted-foreground">
+    <StavOdznak ton="uspech" maly className="shrink-0">
       {t("ozval sa {kedy}", {
         kedy: new Date(stav.naposledy).toLocaleDateString(lokalJazyka(jazyk)),
       })}
-    </span>
+    </StavOdznak>
   );
 }

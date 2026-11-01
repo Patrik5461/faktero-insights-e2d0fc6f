@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 type MovementType = "prijem" | "vydaj" | "oprava";
 const SHOW_STOCK_DEBUG =
@@ -235,22 +236,26 @@ export function MovementForm({
       <PageHeader title={t(title)} description={t("Manuálny skladový pohyb.")} action={action} />
       <PageBody>
         {!loading && items.length === 0 ? (
-          <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">{t("Najprv pridajte tovar do skladu.")}</p>
-            <Link
-              to="/sklad/produkty"
-              className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              {t("Pridať tovar")}
-            </Link>
+          <div className="mx-auto max-w-xl rounded-xl border border-border bg-card">
+            <EmptyState
+              title="Najprv pridajte tovar do skladu."
+              action={
+                <Link
+                  to="/sklad/produkty"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  {t("Pridať tovar")}
+                </Link>
+              }
+            />
           </div>
         ) : (
           <form
             onSubmit={submit}
-            className="mx-auto grid max-w-xl gap-3 rounded-xl border border-border bg-card p-6"
+            className="mx-auto grid max-w-xl gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
           >
             <label className="block">
-              <span className="text-sm font-medium">{t("Sklad *")}</span>
+              <span className="text-sm font-semibold">{t("Sklad *")}</span>
               <select
                 required
                 value={warehouse}
@@ -265,7 +270,7 @@ export function MovementForm({
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium">{t("Tovar / skladová karta *")}</span>
+              <span className="text-sm font-semibold">{t("Tovar / skladová karta *")}</span>
               <select
                 required
                 value={stockItem}
@@ -286,16 +291,16 @@ export function MovementForm({
             </label>
             {type === "vydaj" && stockItem && availability && (
               <div
-                className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100" : "border-border bg-muted text-muted-foreground"}`}
+                className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-[var(--stav-pozor-bod)] bg-[var(--stav-pozor-plocha)] text-[var(--stav-pozor-text)]" : "border-border bg-muted text-muted-foreground"}`}
               >
                 {t("Na sklade")} <b>{formatujCislo(availability.on_hand, 0, 2)}</b> ·{" "}
                 {t("Rezervované")} <b>{formatujCislo(availability.reserved, 0, 2)}</b> ·{" "}
                 {t("K dispozícii")} <b>{formatujCislo(availability.available, 0, 2)}</b>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <label className="block">
-                <span className="text-sm font-medium">{t("Množstvo *")}</span>
+                <span className="text-sm font-semibold">{t("Množstvo *")}</span>
                 <input
                   type="number"
                   step="0.001"
@@ -307,7 +312,7 @@ export function MovementForm({
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">{t("Jedn. cena")}</span>
+                <span className="text-sm font-semibold">{t("Jedn. cena")}</span>
                 <input
                   type="number"
                   step={KROK_CENY}
@@ -320,7 +325,7 @@ export function MovementForm({
             {type === "prijem" && (
               <>
                 <label className="block">
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-semibold">
                     {t("Vedľajšie náklady (doprava, clo…)")}
                   </span>
                   <input
@@ -336,10 +341,10 @@ export function MovementForm({
                   </span>
                 </label>
                 <div className="rounded-md border border-border bg-muted px-3 py-2 text-sm">
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs font-semibold text-muted-foreground">
                     {t("Obstarávacia cena / MJ")}
                   </span>
-                  <div className="mt-0.5 font-semibold tabular-nums">
+                  <div className="suma mt-0.5">
                     {(() => {
                       const q = Number(quantity) || 0;
                       const p = Number(price) || 0;
@@ -355,7 +360,7 @@ export function MovementForm({
                 materiálu a náklad naopak zníži. */}
             <JobPicker value={jobId} onChange={setJobId} />
             <label className="block">
-              <span className="text-sm font-medium">{t("Poznámka")}</span>
+              <span className="text-sm font-semibold">{t("Poznámka")}</span>
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -365,13 +370,13 @@ export function MovementForm({
             <div className="flex justify-end">
               <button
                 disabled={busy}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {busy ? t("Ukladám…") : t("Uložiť pohyb")}
               </button>
             </div>
             {SHOW_STOCK_DEBUG && debug && (
-              <pre className="max-h-56 overflow-auto rounded-md border border-amber-300/50 bg-amber-50 p-3 text-[11px] text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
+              <pre className="max-h-56 overflow-auto rounded-md border border-[var(--stav-pozor-bod)] bg-[var(--stav-pozor-plocha)] p-3 text-[11px] text-[var(--stav-pozor-text)]">
                 {JSON.stringify(debug, null, 2)}
               </pre>
             )}

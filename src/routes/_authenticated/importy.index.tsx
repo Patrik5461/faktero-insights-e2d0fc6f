@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/importy/")({
   head: ({ match }) => ({
@@ -81,13 +82,13 @@ function ImportHistoryPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/importy/doklady"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
               <UploadIcon className="h-4 w-4" /> {t("Prijaté doklady")}
             </Link>
             <Link
               to="/importy/novy"
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <UploadIcon className="h-4 w-4" /> {t("Nový import")}
             </Link>
@@ -141,7 +142,7 @@ function ImportHistoryPage() {
           </div>
 
           {!loading && jobs.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card text-center text-sm text-muted-foreground">
               <EmptyState
                 icon={UploadIcon}
                 title={t("Žiadne importy")}
@@ -151,7 +152,7 @@ function ImportHistoryPage() {
                 action={
                   <Link
                     to="/importy/novy"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                   >
                     <UploadIcon className="h-4 w-4" /> {t("Spustiť nový import")}
                   </Link>
@@ -160,11 +161,12 @@ function ImportHistoryPage() {
             </div>
           )}
           {jobs.length > 0 && (
-            <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-secondary/40 text-xs text-muted-foreground">
+                <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-2 text-left">{t("Dátum")}</th>
+                    <th className="whitespace-nowrap px-4 py-2 text-left">{t("Dátum")}</th>
                     <th className="px-4 py-2 text-left">{t("Zdroj")}</th>
                     <th className="px-4 py-2 text-left">{t("Súbor")}</th>
                     <th className="px-4 py-2 text-left">{t("Stav")}</th>
@@ -180,10 +182,10 @@ function ImportHistoryPage() {
                   {jobs.map((j) => (
                     <React.Fragment key={j.id}>
                       <tr className="border-t border-border">
-                        <td className="px-4 py-2 whitespace-nowrap">
+                        <td className="px-4 py-2 whitespace-nowrap tabular-nums">
                           {new Date(j.created_at).toLocaleString("sk-SK")}
                         </td>
-                        <td className="px-4 py-2">{j.source}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{j.source}</td>
                         <td className="px-4 py-2 max-w-[240px] truncate" title={j.file_name}>
                           {j.file_name ?? "—"}
                         </td>
@@ -195,7 +197,7 @@ function ImportHistoryPage() {
                           {j.imported_customers}
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums">{j.failed_rows}</td>
-                        <td className="px-4 py-2 text-right">
+                        <td className="whitespace-nowrap px-4 py-2 text-right">
                           <button
                             onClick={() => downloadOriginal(j.id)}
                             title={t("Stiahnuť pôvodný súbor")}
@@ -213,13 +215,13 @@ function ImportHistoryPage() {
                         </td>
                       </tr>
                       {openId === j.id && (
-                        <tr className="border-t border-border bg-secondary/20">
+                        <tr className="border-t border-border bg-muted/30">
                           <td colSpan={8} className="p-4">
                             <div className="max-h-72 overflow-auto rounded-md border border-border bg-background">
                               <table className="w-full text-xs">
-                                <thead className="text-muted-foreground">
+                                <thead className="bg-muted/40 text-muted-foreground">
                                   <tr>
-                                    <th className="px-2 py-1 text-left">#</th>
+                                    <th className="px-2 py-1 text-right">#</th>
                                     <th className="px-2 py-1 text-left">{t("Typ")}</th>
                                     <th className="px-2 py-1 text-left">{t("Stav")}</th>
                                     <th className="px-2 py-1 text-left">{t("Správa")}</th>
@@ -228,12 +230,12 @@ function ImportHistoryPage() {
                                 <tbody>
                                   {(logs[j.id] ?? []).map((l) => (
                                     <tr key={l.id} className="border-t border-border">
-                                      <td className="px-2 py-1 tabular-nums">{l.row_number}</td>
+                                      <td className="px-2 py-1 text-right tabular-nums">{l.row_number}</td>
                                       <td className="px-2 py-1">{l.entity_type}</td>
                                       <td className="px-2 py-1">
                                         <StatusPill status={l.status} />
                                       </td>
-                                      <td className="px-2 py-1">{l.message}</td>
+                                      <td className="min-w-[16rem] px-2 py-1 break-words">{l.message}</td>
                                     </tr>
                                   ))}
                                   {(logs[j.id] ?? []).length === 0 && (
@@ -256,6 +258,7 @@ function ImportHistoryPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               <ListFooter
                 page={page}
                 pageSize={pageSize}
@@ -271,22 +274,22 @@ function ImportHistoryPage() {
   );
 }
 
+/** Stav importu aj riadku logu — text ostáva surový ako doteraz, mení sa len tón. */
+const TON_IMPORTU: Record<string, TonStavu> = {
+  completed: "uspech",
+  success: "uspech",
+  running: "priebeh",
+  uploaded: "neutralny",
+  failed: "chyba",
+  error: "chyba",
+  duplicate: "pozor",
+  warning: "pozor",
+};
+
 function StatusPill({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    completed: "bg-primary/10 text-primary-hover",
-    running: "bg-amber-500/10 text-amber-800",
-    uploaded: "bg-secondary text-foreground/70",
-    failed: "bg-destructive/10 text-destructive",
-    error: "bg-destructive/10 text-destructive",
-    success: "bg-primary/10 text-primary-hover",
-    duplicate: "bg-amber-500/10 text-amber-800",
-    warning: "bg-amber-500/10 text-amber-800",
-  };
   return (
-    <span
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${map[status] ?? "bg-secondary"}`}
-    >
+    <StavOdznak ton={TON_IMPORTU[status] ?? "neutralny"} maly>
       {status}
-    </span>
+    </StavOdznak>
   );
 }

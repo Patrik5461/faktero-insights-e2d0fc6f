@@ -21,6 +21,7 @@ import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenník — Faktero") }] }),
@@ -31,8 +32,8 @@ function suma(n: unknown) {
   return formatovacMeny("EUR", "sk-SK")(cislo(n));
 }
 
-const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
-const popis = "mb-1 block text-xs font-medium text-muted-foreground";
+const pole = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+const popis = "mb-1 block text-xs font-semibold text-muted-foreground";
 
 function CennikPage() {
   const { t } = useT();
@@ -142,10 +143,10 @@ function CennikPage() {
         title={t("Cenník")}
         description={t("Dohodnuté ceny a zľavy pre odberateľov. Doklad ich doplní sám podľa toho, komu ho vystavujete.")}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
               to="/ceny/akcie"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-muted"
             >
               <Percent className="h-4 w-4" /> {t("Cenové akcie")}
             </Link>
@@ -162,7 +163,7 @@ function CennikPage() {
                   min_quantity: 0,
                 })
               }
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <Plus className="h-4 w-4" /> {t("Nová cena")}
             </button>
@@ -171,7 +172,7 @@ function CennikPage() {
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav />
         ) : (
           <div className="space-y-6">
             {!maProdukty && (
@@ -186,28 +187,29 @@ function CennikPage() {
 
             {/* Cenové skupiny */}
             <section className="rounded-xl border border-border bg-card">
-              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5 sm:py-4">
                 <div className="min-w-0">
-                  <h2 className="text-sm font-semibold">{t("Cenové skupiny")}</h2>
-                  <p className="text-xs text-muted-foreground">
+                  <h2 className="text-base font-semibold">{t("Cenové skupiny")}</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
                     {t("Spoločná zľava pre skupinu odberateľov — veľkoobchod, stáli zákazníci.")}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSkupinaForm({ name: "", discount_percent: 0 })}
-                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted"
+                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-semibold hover:bg-muted"
                 >
                   <Plus className="h-3.5 w-3.5" /> {t("Nová skupina")}
                 </button>
               </div>
               {skupiny.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-muted-foreground">
+                <p className="px-4 py-6 text-sm text-muted-foreground sm:px-5">
                   {t("Zatiaľ žiadna cenová skupina.")}
                 </p>
               ) : (
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-xs text-muted-foreground">
+                  <thead className="bg-muted/40 text-xs text-muted-foreground">
                     <tr className="border-b border-border">
                       <th className="px-4 py-2 text-left font-medium">{t("Názov")}</th>
                       <th className="px-4 py-2 text-right font-medium">{t("Zľava")}</th>
@@ -219,18 +221,18 @@ function CennikPage() {
                   <tbody>
                     {skupiny.map((s) => (
                       <tr key={s.id} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2 font-medium">{s.name}</td>
+                        <td className="min-w-[10rem] break-words px-4 py-2 font-medium">{s.name}</td>
                         <td className="px-4 py-2 text-right tabular-nums">
                           {cislo(s.discount_percent) > 0 ? `${cislo(s.discount_percent)} %` : "—"}
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums">{s.pocet_odberatelov}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{s.pocet_cien}</td>
-                        <td className="px-4 py-2 text-right">
+                        <td className="whitespace-nowrap px-4 py-2 text-right">
                           <button
                             type="button"
                             aria-label={t("Upraviť skupinu")}
                             onClick={() => setSkupinaForm({ ...s })}
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -247,7 +249,7 @@ function CennikPage() {
                               await zmazSkupinu({ data: { company_id: cid!, id: s.id } });
                               nacitaj();
                             }}
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -256,25 +258,26 @@ function CennikPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </section>
 
             {/* Dohodnuté ceny */}
             <section className="rounded-xl border border-border bg-card">
-              <div className="border-b border-border px-4 py-3">
-                <h2 className="text-sm font-semibold">{t("Dohodnuté ceny")}</h2>
-                <p className="text-xs text-muted-foreground">
+              <div className="border-b border-border px-4 py-3 sm:px-5 sm:py-4">
+                <h2 className="text-base font-semibold">{t("Dohodnuté ceny")}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">
                   {t("Konkrétna cena produktu pre odberateľa alebo skupinu. Prebíja percentuálnu zľavu.")}
                 </p>
               </div>
               {ceny.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-muted-foreground">
+                <p className="px-4 py-6 text-sm text-muted-foreground sm:px-5">
                   {t("Zatiaľ žiadna dohodnutá cena. Bez nej sa fakturuje základná cena z katalógu.")}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-xs text-muted-foreground">
+                    <thead className="bg-muted/40 text-xs text-muted-foreground">
                       <tr className="border-b border-border">
                         <th className="px-4 py-2 text-left font-medium">{t("Produkt")}</th>
                         <th className="px-4 py-2 text-left font-medium">{t("Pre koho")}</th>
@@ -291,8 +294,8 @@ function CennikPage() {
                         const rozdiel = zakladna - dohodnuta;
                         return (
                           <tr key={c.id} className="border-b border-border last:border-0">
-                            <td className="px-4 py-2">{c.products?.name ?? "—"}</td>
-                            <td className="px-4 py-2">
+                            <td className="min-w-[10rem] break-words px-4 py-2 font-medium">{c.products?.name ?? "—"}</td>
+                            <td className="min-w-[9rem] px-4 py-2">
                               {c.customers?.name ? (
                                 <span className="inline-flex items-center gap-1">
                                   <Tag className="h-3.5 w-3.5 text-muted-foreground" />
@@ -307,14 +310,14 @@ function CennikPage() {
                             <td className="px-4 py-2 text-right tabular-nums">
                               {cislo(c.min_quantity) > 0 ? cislo(c.min_quantity) : "—"}
                             </td>
-                            <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
+                            <td className="suma whitespace-nowrap px-4 py-2 text-right font-normal text-muted-foreground">
                               {suma(zakladna)}
                             </td>
-                            <td className="px-4 py-2 text-right tabular-nums font-medium">
-                              {suma(dohodnuta)}
+                            <td className="whitespace-nowrap px-4 py-2 text-right">
+                              <span className="suma">{suma(dohodnuta)}</span>
                               {rozdiel !== 0 && (
                                 <span
-                                  className={`ml-2 text-xs ${rozdiel > 0 ? "text-emerald-700" : "text-amber-700"}`}
+                                  className={`ml-2 text-xs font-semibold tabular-nums ${rozdiel > 0 ? "text-primary-hover" : "text-warning"}`}
                                 >
                                   {rozdiel > 0 ? "−" : "+"}
                                   {suma(Math.abs(rozdiel))}
@@ -331,7 +334,7 @@ function CennikPage() {
                                     adresat: c.customer_id ? "odberatel" : "skupina",
                                   })
                                 }
-                                className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                               >
                                 <Pencil className="h-4 w-4" />
                               </button>
@@ -343,7 +346,7 @@ function CennikPage() {
                                   await zmazCenu({ data: { company_id: cid!, id: c.id } });
                                   nacitaj();
                                 }}
-                                className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -507,11 +510,16 @@ function CennikPage() {
 function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   useZatvorNaEscape(onClose);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      data-slot="dialog-overlay"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        data-slot="dialog-content"
+        className="w-full max-w-lg rounded-xl border border-border bg-card p-5 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -527,13 +535,13 @@ function Tlacidla({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         onClick={onClose}
-        className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
+        className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
       >
         {t("Zrušiť")}
       </button>
       <button
         type="submit"
-        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
       >
         {t("Uložiť")}
       </button>

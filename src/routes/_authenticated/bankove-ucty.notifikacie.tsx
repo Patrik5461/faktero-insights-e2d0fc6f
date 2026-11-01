@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Copy, Mail, RefreshCw, ExternalLink, Trash2, Check, AlertCircle } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
@@ -44,7 +45,7 @@ const STAVY: Record<string, string> = {
 
 const vstup = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const tlacidlo =
-  "inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50";
+  "inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50";
 
 function NotifikaciePage() {
   const { t, jazyk } = useT();
@@ -119,7 +120,7 @@ function NotifikaciePage() {
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-6">
-          <div className="rounded-xl border border-border bg-card p-4 text-sm text-foreground/80">
+          <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground sm:p-5">
             <ul className="space-y-1">
               <li>
                 •{" "}
@@ -145,29 +146,27 @@ function NotifikaciePage() {
           {stav?.adresy?.map((a: any) => {
             const b = bankaPodlaKodu(a.banka);
             return (
-              <div key={a.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <div key={a.id} className="rounded-xl border border-border bg-card p-4 sm:p-5">
                 <div className="flex flex-wrap items-start gap-3">
-                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                     <Mail className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">{a.ucet?.nazov ?? a.ucet?.iban ?? t("Účet")}</div>
+                    <div className="break-words font-semibold">{a.ucet?.nazov ?? a.ucet?.iban ?? t("Účet")}</div>
                     <div className="font-mono text-xs text-muted-foreground">
                       {a.ucet?.iban ?? "—"}
                     </div>
                   </div>
                   {a.active ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                      <Check className="h-3 w-3" /> {t("Prijíma")}
-                    </span>
+                    <StavOdznak ton="uspech" ikona={<Check />}>
+                      {t("Prijíma")}
+                    </StavOdznak>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                      {t("Vypnuté")}
-                    </span>
+                    <StavOdznak ton="pozor">{t("Vypnuté")}</StavOdznak>
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-3">
                   <code className="min-w-0 flex-1 break-all text-sm">{a.adresa}</code>
                   <button onClick={() => kopiruj(a.adresa)} className={tlacidlo}>
                     <Copy className="h-3.5 w-3.5" /> {t("Kopírovať")}
@@ -192,8 +191,8 @@ function NotifikaciePage() {
                 </div>
 
                 {a.potvrdenie && (a.potvrdenie.code || a.potvrdenie.confirm_url) && (
-                  <div className="mt-4 rounded-lg border border-sky-300/60 bg-sky-50 p-3 text-sm dark:border-sky-900/50 dark:bg-sky-950/30">
-                    <div className="font-medium">{t("Potvrdenie preposielania z Gmailu")}</div>
+                  <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                    <div className="font-semibold">{t("Potvrdenie preposielania z Gmailu")}</div>
                     <p className="mt-1 text-foreground/80">
                       {a.potvrdenie.source_email
                         ? t("Gmail ({schranka}) čaká na potvrdenie, že sem smie preposielať.", {
@@ -214,7 +213,7 @@ function NotifikaciePage() {
                         href={a.potvrdenie.confirm_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 inline-flex items-center gap-1 text-sky-700 hover:underline dark:text-sky-300"
+                        className="mt-2 inline-flex items-center gap-1 font-semibold text-primary hover:underline"
                       >
                         <ExternalLink className="h-3.5 w-3.5" /> {t("Potvrdiť v Gmaile")}
                       </a>
@@ -223,7 +222,7 @@ function NotifikaciePage() {
                 )}
 
                 <div className="mt-4">
-                  <label className="text-xs font-medium text-muted-foreground">{t("Banka")}</label>
+                  <label className="text-sm font-semibold">{t("Banka")}</label>
                   <select
                     aria-label={t("Banka")}
                     value={a.banka}
@@ -301,13 +300,13 @@ function NotifikaciePage() {
             );
           })}
 
-          <div className="rounded-2xl border border-dashed border-border bg-card p-5">
-            <h2 className="font-semibold">
+          <div className="rounded-xl border border-dashed border-border bg-card p-4 sm:p-5">
+            <h2 className="text-base font-semibold">
               {stav?.adresy?.length ? t("Pridať ďalší účet") : t("Zapnúť pre účet")}
             </h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("Banka")}</label>
+                <label className="text-sm font-semibold">{t("Banka")}</label>
                 <select
                   aria-label={t("Banka")}
                   value={banka}
@@ -323,7 +322,7 @@ function NotifikaciePage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("Účet")}</label>
+                <label className="text-sm font-semibold">{t("Účet")}</label>
                 <select
                   aria-label={t("Účet")}
                   value={ucet}
@@ -341,7 +340,7 @@ function NotifikaciePage() {
               {ucet === NOVY && (
                 <>
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground">IBAN</label>
+                    <label className="text-sm font-semibold">IBAN</label>
                     <input
                       aria-label="IBAN"
                       value={iban}
@@ -351,7 +350,7 @@ function NotifikaciePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label className="text-sm font-semibold">
                       {t("Názov účtu")}
                     </label>
                     <input
@@ -362,7 +361,7 @@ function NotifikaciePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground">{t("Mena")}</label>
+                    <label className="text-sm font-semibold">{t("Mena")}</label>
                     <select
                       aria-label={t("Mena")}
                       value={mena}
@@ -402,7 +401,7 @@ function NotifikaciePage() {
                   t("Adresa je pripravená — skopírujte ju do internetbankingu."),
                 )
               }
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <Mail className="h-4 w-4" />{" "}
               {busy === "zapni" ? t("Vytváram…") : t("Vytvoriť adresu")}
@@ -416,7 +415,7 @@ function NotifikaciePage() {
 
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h2 className="text-base font-semibold">
                 {vsetky ? t("Všetky prijaté e-maily") : t("E-maily na kontrolu")}
               </h2>
               <button onClick={() => setVsetky(!vsetky)} className={tlacidlo}>
@@ -424,7 +423,7 @@ function NotifikaciePage() {
               </button>
             </div>
             {maily.length === 0 ? (
-              <p className="mt-3 rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              <p className="mt-3 rounded-xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
                 {vsetky ? t("Zatiaľ neprišiel žiadny e-mail.") : t("Nič nečaká na kontrolu.")}
               </p>
             ) : (
@@ -445,7 +444,7 @@ function Navod({ banka }: { banka: ReturnType<typeof bankaPodlaKodu> }) {
   const { t } = useT();
   return (
     <div className="mt-3 rounded-lg bg-muted/40 p-3 text-sm">
-      <div className="font-medium">{t("Ako to zapnúť v banke")}</div>
+      <div className="font-semibold">{t("Ako to zapnúť v banke")}</div>
       {banka && banka.navod.length > 0 ? (
         <ol className="mt-1 list-decimal space-y-1 pl-5 text-foreground/80">
           {banka.navod.map((k) => (
@@ -465,7 +464,7 @@ function Navod({ banka }: { banka: ReturnType<typeof bankaPodlaKodu> }) {
         )}
       </p>
       {banka?.poznamka && (
-        <p className="mt-2 text-amber-700 dark:text-amber-300">{t(banka.poznamka)}</p>
+        <p className="mt-2 text-warning">{t(banka.poznamka)}</p>
       )}
       {banka?.zdroj && (
         <a
@@ -563,7 +562,7 @@ function MailNaKontrolu({
 
   const policko = (kluc: keyof typeof f, popis: string, extra = "") => (
     <div>
-      <label className="text-xs font-medium text-muted-foreground">{popis}</label>
+      <label className="text-sm font-semibold">{popis}</label>
       <input
         value={f[kluc]}
         onChange={(e) => setF({ ...f, [kluc]: e.target.value })}
@@ -576,33 +575,29 @@ function MailNaKontrolu({
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{mail.subject ?? t("(bez predmetu)")}</div>
+          <div className="truncate text-sm font-semibold">{mail.subject ?? t("(bez predmetu)")}</div>
           <div className="truncate text-xs text-muted-foreground">
             {new Date(mail.received_at).toLocaleString(loc)} · {mail.from_email ?? "—"}
           </div>
         </div>
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-            mail.stav === "spracovane"
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-              : caka
-                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                : "bg-muted text-muted-foreground"
-          }`}
+        <StavOdznak
+          ton={mail.stav === "spracovane" ? "uspech" : mail.stav === "chyba" ? "chyba" : caka ? "pozor" : "neutralny"}
         >
           {t(STAVY[mail.stav] ?? mail.stav)}
-        </span>
+        </StavOdznak>
       </div>
       {u.suma != null && (
-        <div className="mt-2 text-sm tabular-nums">
-          {u.smer === "debet" ? "\u2212" : "+"}
-          {formatujSumu(Number(u.suma), u.mena ?? "EUR")}
+        <div className="mt-2 break-words text-sm tabular-nums">
+          <span className="suma">
+            {u.smer === "debet" ? "\u2212" : "+"}
+            {formatujSumu(Number(u.suma), u.mena ?? "EUR")}
+          </span>
           {u.vs ? ` · VS ${u.vs}` : ""}
           {u.protistrana ? ` · ${u.protistrana}` : ""}
         </div>
       )}
       {mail.dovod && (
-        <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-300">
+        <p className="mt-2 flex items-start gap-1.5 text-xs text-warning">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {t(mail.dovod)}
         </p>
       )}
@@ -642,7 +637,7 @@ function MailNaKontrolu({
           {caka && (
             <div className="grid content-start gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("Smer")}</label>
+                <label className="text-sm font-semibold">{t("Smer")}</label>
                 <select
                   aria-label={t("Smer")}
                   value={f.smer}
@@ -656,7 +651,7 @@ function MailNaKontrolu({
               {policko("suma", t("Suma"), "tabular-nums")}
               {policko("mena", t("Mena"))}
               <div>
-                <label className="text-xs font-medium text-muted-foreground">{t("Dátum")}</label>
+                <label className="text-sm font-semibold">{t("Dátum")}</label>
                 <input
                   aria-label={t("Dátum")}
                   type="date"
@@ -675,7 +670,7 @@ function MailNaKontrolu({
                 <button
                   disabled={busy || !(sumaCislo > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(f.datum)}
                   onClick={() => zarad()}
-                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy ? t("Zakladám…") : t("Založiť pohyb")}
                 </button>

@@ -10,6 +10,10 @@ import { zoznamZmluvFn } from "@/lib/faktero/financovanie.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
 import { nazovDruhuFinancovania, type StavRamca } from "@/lib/faktero/kontokorent";
 import { Banknote, Car, Landmark, Plus, TriangleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/financovanie/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Leasingy a úvery — Faktero") }] }),
@@ -66,37 +70,40 @@ function Stranka() {
         title={t("Leasingy a úvery")}
         description={t("Splátkový kalendár s rozpadom na istinu, úrok a DPH, aj kontokorentné úvery. Platby z banky sa k splátkam a úroky ku kontokorentu párujú samy.")}
         action={
-          <Link
-            to="/financovanie/nova"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-          >
-            <Plus className="h-4 w-4" /> {t("Nová zmluva")}
-          </Link>
+          <Button asChild>
+            <Link to="/financovanie/nova">
+              <Plus className="h-4 w-4" /> {t("Nová zmluva")}
+            </Link>
+          </Button>
         }
       />
       <PageBody>
         {zmluvy === null ? (
-          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+          <div className="rounded-xl border border-border bg-card">
+            <NacitavanieStav />
+          </div>
         ) : zmluvy.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-10 text-center">
-            <Banknote className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-            <p className="text-sm font-medium">{t("Zatiaľ tu nie je žiadny leasing ani úver")}</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              {t("Zapíšte zmluvu raz — Faktero z nej vyrobí splátkový kalendár a platby z banky si k splátkam bude párovať samo.")}
-            </p>
-            <Link
-              to="/financovanie/nova"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary"
-            >
-              <Plus className="h-4 w-4" /> {t("Zapísať prvú zmluvu")}
-            </Link>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={Banknote}
+              title="Zatiaľ tu nie je žiadny leasing ani úver"
+              description="Zapíšte zmluvu raz — Faktero z nej vyrobí splátkový kalendár a platby z banky si k splátkam bude párovať samo."
+              action={
+                <Link
+                  to="/financovanie/nova"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-hover"
+                >
+                  <Plus className="h-4 w-4" /> {t("Zapísať prvú zmluvu")}
+                </Link>
+              }
+            />
           </div>
         ) : (
           <div className="space-y-6">
             {aktivne.length > 0 && (
-              <div className="rounded-xl border bg-card p-5">
+              <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
                 <div className="text-sm text-muted-foreground">{t("Zostáva splatiť")}</div>
-                <div className="mt-1 text-3xl font-semibold tabular-nums">
+                <div className="suma mt-1 text-2xl sm:text-3xl">
                   {formatujSumu(dlhSpolu, mena)}
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">
@@ -116,18 +123,18 @@ function Stranka() {
               .filter((s) => s.polozky.length > 0)
               .map((s) => (
                 <div key={s.nadpis}>
-                  <h2 className="mb-2 px-1 text-sm font-medium text-muted-foreground">
+                  <h2 className="mb-2 px-1 text-base font-semibold text-foreground">
                     {t(s.nadpis)}
                   </h2>
-                  <div className="divide-y rounded-xl border bg-card">
+                  <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
                     {s.polozky.map((z) => (
                       <Link
                         key={z.id}
                         to="/financovanie/$id"
                         params={{ id: z.id }}
-                        className="flex items-center gap-4 p-4 hover:bg-muted/40"
+                        className="flex items-center gap-3 p-4 transition-colors hover:bg-muted/50 sm:gap-4 sm:px-5"
                       >
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-secondary">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-border bg-muted">
                           {z.kind === "leasing" ? (
                             <Car className="h-5 w-5 text-muted-foreground" />
                           ) : z.kind === "kontokorent" ? (
@@ -137,19 +144,18 @@ function Stranka() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-medium">{z.name}</span>
-                            <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="min-w-0 max-w-full truncate font-semibold">{z.name}</span>
+                            <span className="shrink-0 rounded-sm border border-border bg-muted px-1.5 py-px text-xs font-semibold text-muted-foreground">
                               {t(nazovDruhuFinancovania(z.kind))}
                             </span>
                             {z.poSplatnosti > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-                                <TriangleAlert className="h-3 w-3" />
+                              <StavOdznak ton="chyba" maly ikona={<TriangleAlert />} className="shrink-0">
                                 {t("{n} po splatnosti", { n: z.poSplatnosti })}
-                              </span>
+                              </StavOdznak>
                             )}
                           </div>
-                          <div className="truncate text-sm text-muted-foreground">
+                          <div className="mt-0.5 truncate text-sm text-muted-foreground">
                             {z.provider_name ? `${z.provider_name} · ` : ""}
                             {z.kind === "kontokorent" ? (
                               <>
@@ -172,7 +178,7 @@ function Stranka() {
                         </div>
                         {z.kind === "kontokorent" ? (
                           <div className="shrink-0 text-right">
-                            <div className="font-medium tabular-nums">
+                            <div className="suma">
                               {z.ramec?.znamy ? formatujSumu(z.ramec.cerpanie, z.currency) : "—"}
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -181,7 +187,7 @@ function Stranka() {
                           </div>
                         ) : (
                           <div className="shrink-0 text-right">
-                            <div className="font-medium tabular-nums">
+                            <div className="suma">
                               {formatujSumu(z.zostavaSuma, z.currency)}
                             </div>
                             <div className="text-xs text-muted-foreground">{t("zostáva")}</div>

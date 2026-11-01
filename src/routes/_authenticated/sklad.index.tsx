@@ -9,6 +9,7 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { hodnotaPohybu, pohybNazov, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/")({
@@ -44,7 +45,7 @@ function SkladDashboard() {
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : !data ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             {t("Žiadne dáta.")}{" "}
@@ -66,13 +67,14 @@ function SkladDashboard() {
                 icon={TrendingUp}
                 label="Hodnota skladu"
                 value={formatujMenu(data.total_value, mena.kod)}
-                accent="text-emerald-700"
+                accent="text-primary"
+                suma
               />
               <Stat
                 icon={AlertTriangle}
                 label="Pod minimom"
                 value={String(data.below_min_count)}
-                accent={data.below_min_count ? "text-amber-700" : "text-muted-foreground"}
+                accent={data.below_min_count ? "text-warning" : "text-muted-foreground"}
               />
             </div>
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -95,7 +97,7 @@ function SkladDashboard() {
                             <span className="ml-1 text-xs text-muted-foreground">{it.sku}</span>
                           )}
                         </Link>
-                        <span className="whitespace-nowrap tabular-nums text-amber-700">
+                        <span className="shrink-0 whitespace-nowrap tabular-nums font-medium text-warning">
                           {formatujCislo(it.current, 0, 2)} / {formatujCislo(it.min, 0, 2)}{" "}
                           {it.unit ?? ""}
                         </span>
@@ -125,16 +127,16 @@ function SkladDashboard() {
                           <div className="truncate font-medium hover:underline">
                             {m.name ?? m.sku ?? "—"}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="whitespace-nowrap text-xs text-muted-foreground">
                             {t(pohybNazov(m.type))} ·{" "}
                             {new Date(m.created_at).toLocaleDateString("sk-SK")}
                           </div>
                         </Link>
-                        <div className="text-right">
-                          <div className="whitespace-nowrap tabular-nums">
+                        <div className="shrink-0 text-right">
+                          <div className="whitespace-nowrap font-medium tabular-nums">
                             {pohybText(m.type, m.quantity)} {m.unit ?? ""}
                           </div>
-                          <div className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
+                          <div className="suma whitespace-nowrap text-xs font-normal text-muted-foreground">
                             {formatujMenu(hodnotaPohybu(m), mena.kod)}
                           </div>
                         </div>
@@ -173,20 +175,26 @@ function Stat({
   label,
   value,
   accent,
+  suma,
 }: {
   icon: any;
   label: string;
   value: string;
   accent?: string;
+  suma?: boolean;
 }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</span>
-        <Icon className={`h-4 w-4 ${accent ?? ""}`} />
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm text-muted-foreground">{t(label)}</span>
+        <Icon className={`h-4 w-4 shrink-0 ${accent ?? ""}`} />
       </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
+      <div
+        className={`mt-2 text-2xl font-semibold tracking-tight tabular-nums ${suma ? "suma whitespace-nowrap" : ""}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -194,9 +202,9 @@ function Stat({
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-        <Warehouse className="h-4 w-4 text-primary" />
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="mb-3 flex items-center gap-2 text-base font-semibold">
+        <Warehouse className="h-4 w-4 shrink-0 text-primary" />
         {t(title)}
       </div>
       {children}
@@ -209,13 +217,13 @@ function QuickLink({ to, label, icon: Icon }: { to: string; label: string; icon?
   return (
     <Link
       to={to as any}
-      className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium shadow-sm hover:border-primary/40 hover:bg-secondary/40"
+      className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium shadow-sm transition-colors hover:border-primary/40 hover:bg-accent"
     >
-      <span className="inline-flex items-center gap-2">
-        {Icon && <Icon className="h-4 w-4 text-primary" />}
+      <span className="inline-flex min-w-0 items-center gap-2">
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-primary" />}
         {t(label)}
       </span>
-      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
     </Link>
   );
 }

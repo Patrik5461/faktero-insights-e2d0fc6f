@@ -24,6 +24,9 @@ import { DetailKontokorentu } from "@/components/faktero/DetailKontokorentu";
 import { SadzbaZmluvy } from "@/components/faktero/SadzbaZmluvy";
 import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
+import { Button } from "@/components/ui/button";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/financovanie/$id")({
@@ -126,16 +129,21 @@ function Stranka() {
         <PageBody>
           {nenajdene ? (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
-              <p>{t("Táto zmluva v aktívnej firme neexistuje.")}</p>
+              <p className="text-[15px] font-semibold">{t("Táto zmluva v aktívnej firme neexistuje.")}</p>
               <p className="mt-1 text-muted-foreground">
                 {t("Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}
               </p>
-              <Link to="/financovanie" className="mt-4 inline-block text-primary underline">
+              <Link
+                to="/financovanie"
+                className="mt-4 inline-block font-semibold text-primary underline-offset-2 hover:text-primary-hover hover:underline"
+              >
                 {t("Späť na leasingy a úvery")}
               </Link>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+            <div className="rounded-xl border border-border bg-card">
+              <NacitavanieStav />
+            </div>
           )}
         </PageBody>
       </>
@@ -162,17 +170,15 @@ function Stranka() {
           .filter(Boolean)
           .join(" · ")}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {z.document_path && (
-              <button
-                onClick={() => void otvorDokument(z.document_path, t)}
-                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-              >
+              <Button variant="outline" onClick={() => void otvorDokument(z.document_path, t)}>
                 <FileText className="h-4 w-4" /> {t("Zmluva")}
-              </button>
+              </Button>
             )}
             {!kontokorent && (
-              <button
+              <Button
+                variant="outline"
                 onClick={() =>
                   void urobit(async () => {
                     const r = await sparujTeraz({ data: { company_id: cid } });
@@ -194,18 +200,15 @@ function Stranka() {
                   }, t("Párovanie s bankou prebehlo."))
                 }
                 disabled={busy}
-                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
               >
                 <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> {t("Spárovať s bankou")}
-              </button>
+              </Button>
             )}
-            <button
-              onClick={() => setUpravujem((x) => !x)}
-              className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-            >
+            <Button variant="outline" aria-pressed={upravujem} onClick={() => setUpravujem((x) => !x)}>
               <Pencil className="h-4 w-4" /> {upravujem ? t("Zavrieť úpravu") : t("Upraviť")}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={async () => {
                 if (
                   !(await potvrdAkciu(
@@ -222,10 +225,10 @@ function Stranka() {
                   navigate({ to: "/financovanie" });
                 }, t("Zmluva zmazaná."));
               }}
-              className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-destructive"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" /> {t("Zmazať")}
-            </button>
+            </Button>
           </div>
         }
       />
@@ -266,9 +269,9 @@ function Stranka() {
                   ),
                 ],
               ].map(([popis, hodnota]) => (
-                <div key={popis} className="rounded-xl border bg-card p-4">
-                  <div className="text-xs text-muted-foreground">{t(popis)}</div>
-                  <div className="mt-1 text-xl font-semibold tabular-nums">{hodnota}</div>
+                <div key={popis} className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
+                  <div className="text-sm text-muted-foreground">{t(popis)}</div>
+                  <div className="suma mt-1 text-xl">{hodnota}</div>
                 </div>
               ))}
             </div>
@@ -293,9 +296,9 @@ function Stranka() {
             )}
 
             {navrhy.length > 0 && (
-              <div className="mb-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
-                <h2 className="mb-1 flex items-center gap-2 text-sm font-medium">
-                  <Link2 className="h-4 w-4" /> {t("Platby, ktoré sem asi patria")}
+              <div className="mb-6 rounded-xl border border-warning/40 bg-warning/10 p-4 sm:p-5">
+                <h2 className="mb-1 flex items-center gap-2 text-base font-semibold">
+                  <Link2 className="h-4 w-4 text-warning" /> {t("Platby, ktoré sem asi patria")}
                 </h2>
                 <p className="mb-3 text-xs text-muted-foreground">
                   {t("Sami sa nespárovali — buď sa suma trochu líši, alebo platbu nič jednoznačne neidentifikuje.")}
@@ -307,12 +310,12 @@ function Stranka() {
                     return (
                       <div
                         key={n.transactionId}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-background p-3 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"
                       >
                         <div className="min-w-0">
-                          <div className="font-medium">
-                            {p ? datum(p.booking_date, jazyk) : "—"} ·{" "}
-                            {p ? formatujSumu(Math.abs(p.amount), z.currency) : "—"}
+                          <div className="font-semibold">
+                            <span className="whitespace-nowrap">{p ? datum(p.booking_date, jazyk) : "—"}</span> ·{" "}
+                            <span className="suma">{p ? formatujSumu(Math.abs(p.amount), z.currency) : "—"}</span>
                             {sp ? ` → ${t("splátka č. {n}", { n: sp.number })}` : ""}
                           </div>
                           <div className="text-xs text-muted-foreground">
@@ -334,7 +337,7 @@ function Stranka() {
                             )
                           }
                           disabled={busy}
-                          className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                          className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                         >
                           {t("Priradiť")}
                         </button>
@@ -345,54 +348,55 @@ function Stranka() {
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-xl border bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full min-w-[46rem] text-sm">
-                <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+                <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-3 text-left font-medium">{t("Č.")}</th>
-                    <th className="p-3 text-left font-medium">{t("Splatnosť")}</th>
-                    <th className="p-3 text-right font-medium">{t("Splátka")}</th>
-                    <th className="p-3 text-right font-medium">{t("Istina")}</th>
-                    <th className="p-3 text-right font-medium">{t("Úrok")}</th>
-                    {Number(z.vat_rate) > 0 && <th className="p-3 text-right font-medium">{t("DPH")}</th>}
-                    <th className="p-3 text-right font-medium">{t("Zostatok istiny")}</th>
-                    <th className="p-3 text-right font-medium">{t("Stav")}</th>
+                    <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Č.")}</th>
+                    <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Splatnosť")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Splátka")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Istina")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Úrok")}</th>
+                    {Number(z.vat_rate) > 0 && <th className="p-3 text-right font-semibold whitespace-nowrap">{t("DPH")}</th>}
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Zostatok istiny")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Stav")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {splatky.map((r) => {
                     const poSplatnosti = !r.paid_at && r.due_date < dnes;
                     return (
-                      <tr key={r.id} className="border-b last:border-0">
-                        <td className="p-3 text-muted-foreground">{r.number}</td>
-                        <td className={`p-3 ${poSplatnosti ? "text-destructive" : ""}`}>
+                      <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/30">
+                        <td className="p-3 tabular-nums text-muted-foreground">{r.number}</td>
+                        <td
+                          className={`whitespace-nowrap p-3 ${poSplatnosti ? "font-semibold text-destructive" : ""}`}
+                        >
                           {datum(r.due_date, jazyk)}
                         </td>
-                        <td className="p-3 text-right font-medium tabular-nums">
+                        <td className="suma p-3 text-right">
                           {formatujSumu(r.amount, z.currency)}
                         </td>
-                        <td className="p-3 text-right tabular-nums">
+                        <td className="suma p-3 text-right font-normal">
                           {formatujSumu(r.principal_part, z.currency)}
                         </td>
-                        <td className="p-3 text-right tabular-nums text-muted-foreground">
+                        <td className="suma p-3 text-right font-normal text-muted-foreground">
                           {formatujSumu(r.interest_part, z.currency)}
                         </td>
                         {Number(z.vat_rate) > 0 && (
-                          <td className="p-3 text-right tabular-nums text-muted-foreground">
+                          <td className="suma p-3 text-right font-normal text-muted-foreground">
                             {formatujSumu(r.vat_amount, z.currency)}
                           </td>
                         )}
-                        <td className="p-3 text-right tabular-nums text-muted-foreground">
+                        <td className="suma p-3 text-right font-normal text-muted-foreground">
                           {formatujSumu(r.remaining_principal, z.currency)}
                         </td>
                         <td className="p-3 text-right">
                           {r.paid_at ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
-                                <Check className="h-3.5 w-3.5" />
+                            <div className="flex items-center justify-end gap-1.5">
+                              <StavOdznak ton="uspech" maly ikona={<Check />} className="whitespace-nowrap">
                                 {datum(r.paid_at, jazyk)}
                                 {r.bank_transaction_id ? ` ${t("(z banky)")}` : ""}
-                              </span>
+                              </StavOdznak>
                               <button
                                 title={t("Vrátiť späť")}
                                 onClick={() =>
@@ -411,7 +415,7 @@ function Stranka() {
                                   )
                                 }
                                 disabled={busy}
-                                className="text-muted-foreground hover:text-foreground"
+                                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                               >
                                 <Undo2 className="h-3.5 w-3.5" />
                               </button>
@@ -433,7 +437,7 @@ function Stranka() {
                                 )
                               }
                               disabled={busy}
-                              className="rounded-lg border px-2.5 py-1 text-xs"
+                              className="whitespace-nowrap rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                             >
                               {t("Zaplatené")}
                             </button>
@@ -448,7 +452,7 @@ function Stranka() {
 
             <p className="mt-4 px-1 text-xs text-muted-foreground">
               {t("Platby z napojenej banky sa priraďujú samy pri každom sťahovaní pohybov. Ručne odškrtnúť sa dá vždy — hodí sa, keď splátka odišla z účtu, ktorý vo Fakteri napojený nie je.")}{" "}
-              <Link to="/financovanie" className="text-primary">
+              <Link to="/financovanie" className="font-semibold text-primary hover:text-primary-hover hover:underline">
                 {t("Späť na zoznam")}
               </Link>
             </p>
@@ -456,7 +460,7 @@ function Stranka() {
         )}
 
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-medium">{t("Doklady k zmluve")}</h2>
+          <h2 className="mb-2 px-1 text-base font-semibold">{t("Doklady k zmluve")}</h2>
           <PrepojeneOstatneDoklady
             cid={cid}
             financingContractId={id}

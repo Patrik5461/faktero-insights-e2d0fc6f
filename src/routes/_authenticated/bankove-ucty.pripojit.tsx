@@ -84,9 +84,9 @@ function ConnectPage() {
       <PageBody>
         {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-8 shadow-sm">
+          <div className="min-w-0 rounded-xl border border-primary/25 bg-primary/5 p-5 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-700 text-white">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
                 <Building2 className="h-6 w-6" />
               </div>
               <div>
@@ -108,8 +108,8 @@ function ConnectPage() {
               Najčastejšia otázka na tejto obrazovke: „a čo keď mám inú banku?".
               Z názvu panela to nikto neuhádne, tak je to napísané rovno pod ním.
             */}
-            <div className="mt-4 rounded-xl border border-emerald-300/60 bg-white/70 p-4 text-sm dark:border-emerald-900/40 dark:bg-card/70">
-              <p className="font-medium">{t("Máte inú banku?")}</p>
+            <div className="mt-4 rounded-lg border border-border bg-card p-4 text-sm">
+              <p className="font-semibold">{t("Máte inú banku?")}</p>
               <p className="mt-1 text-foreground/80">
                 {t("Ak ju máte v internetbankingu Tatra banky pripojenú cez multibanking (Slovenská sporiteľňa, VÚB, ČSOB a ďalšie), natiahnu sa aj tieto účty — zostatky aj pohyby. Oficiálne výpisy na stiahnutie vydá banka len pre účty vedené v TB.")}
               </p>
@@ -117,7 +117,7 @@ function ConnectPage() {
             <button
               onClick={connect}
               disabled={busy}
-              className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+              className="mt-6 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <ExternalLink className="h-4 w-4" />
               {busy ? t("Presmerovanie…") : t("Pripojiť cez Tatra banku")}
@@ -132,9 +132,9 @@ function ConnectPage() {
           <RevolutPripojenie />
           {!ceska && <FioPripojenie />}
           {/* Ktorákoľvek iná banka: pohyby z e-mailových notifikácií. */}
-          <div className="rounded-2xl border border-border bg-card p-8 shadow-sm lg:col-span-2">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-5 sm:p-6 lg:col-span-2">
             <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-sky-600 text-white">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-border bg-muted text-foreground">
                 <Mail className="h-6 w-6" />
               </div>
               <div>
@@ -149,7 +149,7 @@ function ConnectPage() {
             </p>
             <Link
               to="/bankove-ucty/notifikacie"
-              className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+              className="mt-6 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Mail className="h-4 w-4" /> {t("Nastaviť e-mailové notifikácie")}
             </Link>
@@ -230,9 +230,9 @@ function FioPripojenie() {
   const platny = /^[A-Za-z0-9]{20,128}$/.test(token.trim());
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#0067b1] text-white">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-border bg-muted text-foreground">
           <Landmark className="h-6 w-6" />
         </div>
         <div>
@@ -248,7 +248,7 @@ function FioPripojenie() {
           {ucty.map((u) => (
             <li key={u.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3 text-sm">
               <span className="min-w-0 flex-1">
-                <span className="font-medium">{u.iban ?? u.cislo}</span>
+                <span className="break-all font-semibold">{u.iban ?? u.cislo}</span>
                 {u.mena ? ` · ${u.mena}` : ""}
                 <span className="block text-xs text-muted-foreground">
                   {u.last_synced_at
@@ -265,7 +265,7 @@ function FioPripojenie() {
                     (r) => t("Nových pohybov: {n}", { n: r.vlozenych }),
                   )
                 }
-                className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                className="inline-flex h-8 items-center rounded-md border border-input bg-background px-2.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
               >
                 {busy === `sync-${u.id}` ? t("Sťahujem…") : t("Stiahnuť pohyby")}
               </button>
@@ -278,7 +278,7 @@ function FioPripojenie() {
                     () => t("Fio účet odpojený. Pohyby ostávajú."),
                   )
                 }
-                className="inline-flex h-8 items-center rounded-md border border-border px-2.5 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                className="inline-flex h-8 items-center rounded-md border border-destructive/30 bg-background px-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
               >
                 {t("Odpojiť")}
               </button>
@@ -311,7 +311,7 @@ function FioPripojenie() {
             },
           )
         }
-        className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
       >
         {busy === "pripojenie" ? t("Overujem token…") : ucty.length ? t("Pripojiť ďalší účet") : t("Pripojiť Fio")}
       </button>
@@ -365,9 +365,9 @@ function WisePripojenie() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#163300] text-white">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-border bg-muted text-foreground">
           <Wallet className="h-6 w-6" />
         </div>
         <div>
@@ -401,7 +401,7 @@ function WisePripojenie() {
                 () => t("Wise pripojený. Nahrajte ešte verejný kľúč."),
               )
             }
-            className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy === "pripojenie" ? t("Overujem token…") : t("Pripojiť Wise")}
           </button>
@@ -416,8 +416,8 @@ function WisePripojenie() {
           </p>
 
           {stav.verejnyKluc && (
-            <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
-              <p className="text-sm font-medium">{t("Verejný kľúč pre Wise")}</p>
+            <div className="mt-4 rounded-lg border border-warning/40 bg-warning/5 p-4">
+              <p className="text-sm font-semibold">{t("Verejný kľúč pre Wise")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Bez neho Wise nepustí výpisy — zostatky sa načítajú, pohyby nie. Nahrajte ho vo Wise pri tokene (Settings → API tokens → Manage public keys).")}
               </p>
@@ -431,7 +431,7 @@ function WisePripojenie() {
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   onClick={() => stiahniKluc(stav.verejnyKluc)}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
                 >
                   <Download className="h-4 w-4" /> {t("Stiahnuť ako súbor")}
                 </button>
@@ -444,7 +444,7 @@ function WisePripojenie() {
                       toast.error(t("Skopírovať sa nepodarilo, označte text a použite Ctrl+C."));
                     }
                   }}
-                  className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                  className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
                 >
                   {t("Kopírovať")}
                 </button>
@@ -462,7 +462,7 @@ function WisePripojenie() {
                   (r) => t("Načítaných zostatkov: {n}", { n: r.pocet }),
                 )
               }
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
             >
               {busy === "ucty" ? t("Načítavam…") : t("Načítať zostatky")}
             </button>
@@ -481,7 +481,7 @@ function WisePripojenie() {
                       : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
                 )
               }
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
             >
               {busy === "pohyby" ? t("Sťahujem…") : t("Stiahnuť pohyby")}
             </button>
@@ -540,9 +540,9 @@ function WallesterPripojenie() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#1b1b3a] text-white">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-border bg-muted text-foreground">
           <CreditCard className="h-6 w-6" />
         </div>
         <div>
@@ -574,15 +574,15 @@ function WallesterPripojenie() {
               () => t("Kľúč vyrobený. Pošlite ho Wallesteru."),
             )
           }
-          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {busy === "kluc" ? t("Vyrábam kľúč…") : t("Vyrobiť verejný kľúč")}
         </button>
       ) : null}
 
       {stav?.verejnyKluc && (
-        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
-          <p className="text-sm font-medium">{t("Verejný kľúč pre Wallester")}</p>
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/5 p-4">
+          <p className="text-sm font-semibold">{t("Verejný kľúč pre Wallester")}</p>
           <textarea
             readOnly
             value={stav.verejnyKluc}
@@ -593,7 +593,7 @@ function WallesterPripojenie() {
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               onClick={() => stiahniKluc(stav.verejnyKluc, "faktero-wallester-public-key.pem")}
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
             >
               <Download className="h-4 w-4" /> {t("Stiahnuť ako súbor")}
             </button>
@@ -606,7 +606,7 @@ function WallesterPripojenie() {
                   toast.error(t("Skopírovať sa nepodarilo, označte text a použite Ctrl+C."));
                 }
               }}
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
             >
               {t("Kopírovať")}
             </button>
@@ -625,7 +625,7 @@ function WallesterPripojenie() {
             ] as const
           ).map(([kluc, label]) => (
             <label key={kluc} className="block">
-              <span className="text-xs font-medium text-muted-foreground">{t(label)}</span>
+              <span className="text-sm font-semibold">{t(label)}</span>
               <input
                 value={(udaje as any)[kluc]}
                 onChange={(e) => setUdaje({ ...udaje, [kluc]: e.target.value })}
@@ -653,7 +653,7 @@ function WallesterPripojenie() {
                   () => t("Wallester pripojený."),
                 )
               }
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy === "dokoncenie" ? t("Overujem…") : t("Dokončiť pripojenie")}
             </button>
@@ -679,7 +679,7 @@ function WallesterPripojenie() {
                   (r) => t("Načítaných kartových účtov: {n}", { n: r.pocet }),
                 )
               }
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
             >
               {busy === "ucty" ? t("Načítavam…") : t("Načítať účty")}
             </button>
@@ -698,7 +698,7 @@ function WallesterPripojenie() {
                       : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
                 )
               }
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
             >
               {busy === "pohyby" ? t("Sťahujem…") : t("Stiahnuť pohyby")}
             </button>
@@ -754,9 +754,9 @@ function RevolutPripojenie() {
   const navratova = stav?.redirect_uri ?? "";
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-black text-white">
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-border bg-muted text-foreground">
           <Landmark className="h-6 w-6" />
         </div>
         <div>
@@ -791,15 +791,15 @@ function RevolutPripojenie() {
               () => t("Certifikát vyrobený. Nahrajte ho v Revolute."),
             )
           }
-          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {busy === "cert" ? t("Vyrábam certifikát…") : t("Vyrobiť certifikát")}
         </button>
       )}
 
       {stav?.certifikat && stav.stav !== "pripojene" && (
-        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
-          <p className="text-sm font-medium">{t("Certifikát pre Revolut")}</p>
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/5 p-4">
+          <p className="text-sm font-semibold">{t("Certifikát pre Revolut")}</p>
           <textarea
             readOnly
             value={stav.certifikat}
@@ -810,7 +810,7 @@ function RevolutPripojenie() {
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               onClick={() => stiahniKluc(stav.certifikat, "faktero-revolut-certificate.cer")}
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
             >
               <Download className="h-4 w-4" /> {t("Stiahnuť ako súbor")}
             </button>
@@ -823,7 +823,7 @@ function RevolutPripojenie() {
                   toast.error(t("Skopírovať sa nepodarilo, označte text a použite Ctrl+C."));
                 }
               }}
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
             >
               {t("Kopírovať")}
             </button>
@@ -834,7 +834,7 @@ function RevolutPripojenie() {
       {stav && stav.stav !== "pripojene" && stav.stav !== "ziadne" && (
         <div className="mt-4 flex flex-wrap items-end gap-2">
           <label className="block flex-1">
-            <span className="text-xs font-medium text-muted-foreground">{t("Client ID z portálu")}</span>
+            <span className="text-sm font-semibold">{t("Client ID z portálu")}</span>
             <input
               value={clientId || stav.client_id || ""}
               onChange={(e) => setClientId(e.target.value)}
@@ -858,7 +858,7 @@ function RevolutPripojenie() {
               );
               if (r?.adresa) window.open(r.adresa, "_blank", "noopener");
             }}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             <ExternalLink className="h-4 w-4" />
             {busy === "clientid" ? t("Pripravujem…") : t("Potvrdiť prístup")}
@@ -887,7 +887,7 @@ function RevolutPripojenie() {
                   (r) => t("Načítaných účtov: {n}", { n: r.pocet }),
                 )
               }
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
             >
               {busy === "ucty" ? t("Načítavam…") : t("Načítať účty")}
             </button>
@@ -906,7 +906,7 @@ function RevolutPripojenie() {
                       : t("Načítaných pohybov: {n}", { n: r.vlozenych }),
                 )
               }
-              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
             >
               {busy === "pohyby" ? t("Sťahujem…") : t("Stiahnuť pohyby")}
             </button>

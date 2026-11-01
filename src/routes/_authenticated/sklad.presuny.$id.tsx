@@ -10,6 +10,8 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: ({ match }) => ({
@@ -23,10 +25,11 @@ const STATUS_LABEL: Record<string, string> = {
   completed: "Dokončený",
   cancelled: "Zrušený",
 };
-const STATUS_STYLE: Record<string, string> = {
-  draft: "bg-amber-100 text-amber-800",
-  completed: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-muted text-muted-foreground",
+/** Tón stavu presunu — rovnaký jazyk ako doklady (koncept, hotovo, neplatí). */
+const TON_PRESUNU: Record<string, TonStavu> = {
+  draft: "neutralny",
+  completed: "uspech",
+  cancelled: "zruseny",
 };
 
 function TransferDetailPage() {
@@ -64,8 +67,8 @@ function TransferDetailPage() {
       <>
         <PageHeader title={t("Detail presunu")} />
         <PageBody>
-          <div className="rounded-md border p-6 text-sm text-muted-foreground">
-            {t("Načítavam…")}
+          <div className="rounded-xl border border-border bg-card">
+            <NacitavanieStav />
           </div>
         </PageBody>
       </>
@@ -81,9 +84,9 @@ function TransferDetailPage() {
       <>
         <PageHeader title={t("Detail presunu")} />
         <PageBody>
-          <div className="rounded-md border p-6 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
             {t("Presun sa nenašiel. Možno bol zrušený alebo patrí inej firme.")}{" "}
-            <Link to="/sklad/presuny" className="text-primary hover:underline">
+            <Link to="/sklad/presuny" className="font-semibold text-primary hover:underline">
               {t("Späť na presuny")}
             </Link>
           </div>
@@ -149,45 +152,43 @@ function TransferDetailPage() {
         })}
       />
       <PageBody>
-        <div className="mx-auto max-w-4xl space-y-5">
-          <div className="rounded-md border p-4">
-            <div className="flex items-center justify-between">
-              <span
-                className={`inline-block rounded px-2 py-0.5 text-xs ${STATUS_STYLE[transfer.status] ?? ""}`}
-              >
+        <div className="mx-auto max-w-4xl space-y-6">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <StavOdznak ton={tonStavu(TON_PRESUNU, transfer.status)}>
                 {t(STATUS_LABEL[transfer.status] ?? transfer.status)}
-              </span>
+              </StavOdznak>
               {transfer.status === "draft" && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     disabled={busy}
                     onClick={doCancel}
-                    className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
                   >
                     <XCircle className="h-4 w-4" /> {t("Zrušiť")}
                   </button>
                   <button
                     disabled={busy}
                     onClick={doComplete}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     <CheckCircle2 className="h-4 w-4" /> {t("Dokončiť presun")}
                   </button>
                 </div>
               )}
             </div>
-            <div className="mt-4 flex items-center gap-3 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">{t("Zo skladu")}</div>
-                <div className="font-medium">{whMap[transfer.warehouse_from_id]?.name ?? "—"}</div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-muted-foreground">{t("Zo skladu")}</div>
+                <div className="break-words font-semibold">{whMap[transfer.warehouse_from_id]?.name ?? "—"}</div>
                 <div className="text-xs text-muted-foreground">
                   {coMap[transfer.company_id]?.name ?? ""}
                 </div>
               </div>
-              <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">{t("presun::Do")}</div>
-                <div className="font-medium">
+              <ArrowRightLeft className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-muted-foreground">{t("presun::Do")}</div>
+                <div className="break-words font-semibold">
                   {transfer.warehouse_to_id ? (whMap[transfer.warehouse_to_id]?.name ?? "—") : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -198,44 +199,44 @@ function TransferDetailPage() {
               </div>
             </div>
             {transfer.note && (
-              <div className="mt-3 text-sm text-muted-foreground">{transfer.note}</div>
+              <div className="mt-3 break-words border-t border-border pt-3 text-sm text-muted-foreground">{transfer.note}</div>
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-md border">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left">
+              <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-2">{t("Položka")}</th>
-                  <th className="px-3 py-2">{t("Kód")}</th>
-                  <th className="px-3 py-2 text-right">{t("Množstvo")}</th>
-                  <th className="px-3 py-2 text-right">{t("Jedn. cena")}</th>
-                  <th className="px-3 py-2 text-right">{t("Spolu")}</th>
+                  <th className="p-3">{t("Položka")}</th>
+                  <th className="p-3">{t("Kód")}</th>
+                  <th className="p-3 text-right">{t("Množstvo")}</th>
+                  <th className="p-3 text-right">{t("Jedn. cena")}</th>
+                  <th className="p-3 text-right">{t("Spolu")}</th>
                   {transfer.target_company_id && (
-                    <th className="px-3 py-2">{t("Cieľ. položka")}</th>
+                    <th className="p-3">{t("Cieľ. položka")}</th>
                   )}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {items.map((it: any) => {
                   const src = siMap[it.source_stock_item_id];
                   const tgt = it.target_stock_item_id ? siMap[it.target_stock_item_id] : null;
                   const name = src?.product_id ? prodMap[src.product_id]?.name : null;
                   return (
-                    <tr key={it.id} className="border-t">
-                      <td className="px-3 py-2">{name ?? "—"}</td>
-                      <td className="px-3 py-2">{src?.sku ?? "—"}</td>
-                      <td className="px-3 py-2 text-right">
+                    <tr key={it.id}>
+                      <td className="p-3 font-medium">{name ?? "—"}</td>
+                      <td className="whitespace-nowrap p-3 text-muted-foreground">{src?.sku ?? "—"}</td>
+                      <td className="whitespace-nowrap p-3 text-right tabular-nums">
                         {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}
                       </td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="suma p-3 text-right font-normal">
                         {formatujJednotkovuCenu(it.unit_price, mena.kod)}
                       </td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="suma p-3 text-right">
                         {formatujMenu(Number(it.quantity) * Number(it.unit_price), mena.kod)}
                       </td>
                       {transfer.target_company_id && (
-                        <td className="px-3 py-2 text-muted-foreground">
+                        <td className="p-3 text-muted-foreground">
                           {tgt
                             ? (tgt.sku ?? tgt.id.slice(0, 8))
                             : transfer.status === "draft"
@@ -248,11 +249,11 @@ function TransferDetailPage() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t bg-muted/30 font-medium">
-                  <td className="px-3 py-2" colSpan={4}>
+                <tr className="border-t border-border bg-muted/40 font-semibold">
+                  <td className="p-3" colSpan={4}>
                     {t("Spolu")}
                   </td>
-                  <td className="px-3 py-2 text-right">{formatujMenu(total, mena.kod)}</td>
+                  <td className="suma p-3 text-right">{formatujMenu(total, mena.kod)}</td>
                   {transfer.target_company_id && <td />}
                 </tr>
               </tfoot>

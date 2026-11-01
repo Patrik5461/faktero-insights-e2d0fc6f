@@ -226,7 +226,7 @@ export function CzVykazyDph() {
         )}
       />
       <PageBody>
-        <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 sm:p-5 lg:grid-cols-6">
           <label className="block">
             <span className={popis}>{t("Rok")}</span>
             <input
@@ -347,26 +347,26 @@ export function CzVykazyDph() {
           </label>
         </div>
 
-        <p className="mb-4 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {t(
             "Kódy finančných úradov a pracovísk nájdete v číselníkoch na portáli MOJE daně (napr. 451 = Finanční úřad pro hlavní město Prahu). Kontrolné hlásenie podáva právnická osoba vždy za mesiac — pri štvrťročnom priznaní sa zostaví za každý mesiac zvlášť.",
           )}
         </p>
 
         {chyba && (
-          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
             {chyba}
           </div>
         )}
         {nacitavam && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Zostavujem z dokladov…")}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" /> {t("Zostavujem z dokladov…")}
           </div>
         )}
 
         {data && (
           <>
-            <p className="mb-4 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t(
                 "V období je {vystavene} vystavených faktúr, {prijate} prijatých a {doklady} dokladov s DPH.",
                 {
@@ -378,12 +378,12 @@ export function CzVykazyDph() {
             </p>
 
             {data.vytky.length > 0 && (
-              <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+              <div className="rounded-lg border border-warning/30 bg-[color:var(--stav-pozor-plocha)] p-4 text-[color:var(--stav-pozor-text)]">
+                <div className="flex items-center gap-2 font-semibold">
                   <AlertTriangle className="h-4 w-4" />
                   {t("Pred podaním doplňte ({n})", { n: data.vytky.length })}
                 </div>
-                <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
+                <ul className="mt-2 space-y-1 text-sm">
                   {data.vytky.slice(0, 20).map((v, i) => (
                     <li key={i}>
                       <span className="font-medium">{v.doklad}</span>: {v.text}
@@ -394,10 +394,10 @@ export function CzVykazyDph() {
             )}
 
             {/* Přiznání */}
-            <section className="mb-6 rounded-xl border border-border bg-card">
+            <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Priznanie k DPH")}</div>
+                  <div className="text-base font-semibold">{t("Priznanie k DPH")}</div>
                   <div className="text-xs text-muted-foreground">
                     {t("DPHDP3 · sumy v celých korunách")}
                   </div>
@@ -422,13 +422,13 @@ export function CzVykazyDph() {
                         dp3NaXml(data.priznani, hlavicka, data.obdobie, formaDp),
                       )
                     }
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                   >
                     <Download className="h-4 w-4" /> XML
                   </button>
                   <button
                     onClick={() => oznacPodane("cz_dp3", formaDp, data.priznani)}
-                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
@@ -439,12 +439,13 @@ export function CzVykazyDph() {
                   <tbody>
                     {RIADKY.filter((x) => data.priznani[x.k] !== undefined).map((x) => (
                       <tr key={x.k} className="border-b border-border last:border-0">
-                        <td className="w-14 px-4 py-2 text-muted-foreground">
+                        <td className="w-16 whitespace-nowrap py-2 pl-4 pr-2 text-right text-muted-foreground tabular-nums">
                           {t("r. {r}", { r: x.r })}
                         </td>
                         <td className="px-4 py-2">{t(x.popis)}</td>
-                        <td className="px-4 py-2 text-right tabular-nums">
-                          {kc(data.priznani[x.k])} Kč
+                        <td className="suma px-4 py-2 text-right">
+                          {kc(data.priznani[x.k])}
+                          <span className="suma-mena">Kč</span>
                         </td>
                       </tr>
                     ))}
@@ -454,10 +455,10 @@ export function CzVykazyDph() {
             </section>
 
             {/* Souhrnné hlášení VIES — dodávky do EU */}
-            <section className="mb-6 rounded-xl border border-border bg-card">
+            <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Súhrnné hlásenie")}</div>
+                  <div className="text-base font-semibold">{t("Súhrnné hlásenie")}</div>
                   <div className="text-xs text-muted-foreground">
                     {t("DPHSHV · dodanie tovaru a služieb do EÚ · v celých korunách")}
                   </div>
@@ -483,13 +484,13 @@ export function CzVykazyDph() {
                           }),
                         )
                       }
-                      className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90"
+                      className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                     >
                       <Download className="h-4 w-4" /> XML
                     </button>
                     <button
                       onClick={() => oznacPodane("cz_sh", formaSh, { riadky: data.souhrnne })}
-                      className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                      className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                     >
                       <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                     </button>
@@ -504,11 +505,11 @@ export function CzVykazyDph() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                      <tr className="border-b border-border bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                         <th className="px-4 py-2">{t("Odberateľ (IČ DPH)")}</th>
                         <th className="px-4 py-2">{t("Kód plnenia")}</th>
-                        <th className="px-4 py-2 text-right">{t("Počet")}</th>
-                        <th className="px-4 py-2 text-right">{t("Hodnota")}</th>
+                        <th className="whitespace-nowrap px-4 py-2 text-right">{t("Počet")}</th>
+                        <th className="whitespace-nowrap px-4 py-2 text-right">{t("Hodnota")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -517,7 +518,7 @@ export function CzVykazyDph() {
                           key={`${r.stat}${r.vatId}${r.kod}`}
                           className="border-b border-border last:border-0"
                         >
-                          <td className="px-4 py-2 font-mono">
+                          <td className="whitespace-nowrap px-4 py-2 tabular-nums">
                             {r.stat}
                             {r.vatId}
                           </td>
@@ -529,7 +530,10 @@ export function CzVykazyDph() {
                                 : t("3 – služba")}
                           </td>
                           <td className="px-4 py-2 text-right tabular-nums">{r.pocet}</td>
-                          <td className="px-4 py-2 text-right tabular-nums">{kc(r.hodnota)} Kč</td>
+                          <td className="suma px-4 py-2 text-right">
+                            {kc(r.hodnota)}
+                            <span className="suma-mena">Kč</span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -539,7 +543,7 @@ export function CzVykazyDph() {
               {data.souhrnne.length > 0 &&
                 rezim === "stvrtrok" &&
                 data.souhrnne.some((r) => r.kod !== 3) && (
-                  <p className="border-t border-border px-4 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  <p className="border-t border-border px-4 py-2 text-xs text-[color:var(--stav-pozor-text)]">
                     {t(
                       "Pri dodaní tovaru sa súhrnné hlásenie podáva za každý mesiac — prepnite obdobie na mesiac.",
                     )}
@@ -655,10 +659,10 @@ function KontrolniHlaseniKarta({
     },
   ];
   return (
-    <section className="mb-6 rounded-xl border border-border bg-card">
+    <section className="rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div>
-          <div className="font-medium">
+          <div className="text-base font-semibold">
             {t("Kontrolné hlásenie — {mesic}", { mesic: t(MESICE[mesiac - 1]) })}
           </div>
           <div className="text-xs text-muted-foreground">{t("DPHKH1 · sumy na halier")}</div>
@@ -676,31 +680,36 @@ function KontrolniHlaseniKarta({
           </select>
           <button
             onClick={onXml}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             <Download className="h-4 w-4" /> XML
           </button>
           <button
             onClick={onPodane}
-            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
           >
             <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
           </button>
         </div>
       </div>
-      <table className="w-full text-sm">
-        <tbody>
-          {oddiely.map((o) => (
-            <tr key={o.nazov} className="border-b border-border last:border-0">
-              <td className="px-4 py-2">{t(o.nazov)}</td>
-              <td className="px-4 py-2 text-right text-muted-foreground">
-                {o.pocet ? `${o.pocet}×` : "—"}
-              </td>
-              <td className="px-4 py-2 text-right tabular-nums">{kc(o.zaklad, true)} Kč</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody>
+            {oddiely.map((o) => (
+              <tr key={o.nazov} className="border-b border-border last:border-0">
+                <td className="px-4 py-2">{t(o.nazov)}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-right text-muted-foreground tabular-nums">
+                  {o.pocet ? `${o.pocet}×` : "—"}
+                </td>
+                <td className="suma px-4 py-2 text-right">
+                  {kc(o.zaklad, true)}
+                  <span className="suma-mena">Kč</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

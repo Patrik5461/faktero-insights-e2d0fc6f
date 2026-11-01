@@ -113,7 +113,7 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
       {ucty === null ? (
         <p className="mt-4 text-sm text-muted-foreground">{t("Načítavam…")}</p>
       ) : ucty.length === 0 ? (
-        <p className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-400">
+        <p className="mt-4 rounded-md border border-warning/40 bg-warning/5 p-3 text-sm text-warning">
           {t("Zatiaľ žiadny účet — faktúry nebudú mať číslo účtu ani QR platbu.")}
         </p>
       ) : (
@@ -127,7 +127,7 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
                     <span className="ml-2 text-xs text-muted-foreground">{u.currency}</span>
                   )}
                   {u.is_default && (
-                    <span className="ml-2 rounded-full bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary-hover">
                       {t("predvolený")}
                     </span>
                   )}

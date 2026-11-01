@@ -11,6 +11,8 @@ import {
 import { formatujSumu } from "@/lib/faktero/zostatky";
 import { OBDOBIA_UROCENIA, type StavRamca } from "@/lib/faktero/kontokorent";
 import { useT } from "@/lib/i18n/useT";
+import { Button } from "@/components/ui/button";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { SadzbaZmluvy } from "./SadzbaZmluvy";
 import { nazovIndexu } from "@/lib/faktero/pohybliva-sadzba";
 
@@ -135,17 +137,17 @@ export function DetailKontokorentu({
             d ? formatujSumu(d.sucty.uroky + d.sucty.poplatky, mena) : "—",
           ],
         ].map(([popis, hodnota]) => (
-          <div key={popis} className="rounded-xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">{t(popis)}</div>
-            <div className="mt-1 text-xl font-semibold tabular-nums">{hodnota}</div>
+          <div key={popis} className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="text-sm text-muted-foreground">{t(popis)}</div>
+            <div className="suma mt-1 text-xl">{hodnota}</div>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border bg-card p-5 text-sm">
-        <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+      <div className="rounded-xl border border-border bg-card p-4 text-sm sm:p-5">
+        <dl className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
           <div className="flex min-w-0 justify-between gap-3">
-            <dt className="text-muted-foreground">{t("Účet")}</dt>
+            <dt className="shrink-0 text-muted-foreground">{t("Účet")}</dt>
             <dd className="min-w-0 truncate text-right">
               {d?.ucet
                 ? [d.ucet.account_name, d.ucet.iban].filter(Boolean).join(" · ")
@@ -155,14 +157,14 @@ export function DetailKontokorentu({
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{t("Zostatok účtu")}</dt>
-            <dd className="text-right tabular-nums">
+            <dt className="shrink-0 text-muted-foreground">{t("Zostatok účtu")}</dt>
+            <dd className={stav?.znamy ? "suma text-right" : "text-right"}>
               {stav?.znamy ? formatujSumu(stav.zostatok, mena) : t("zostatok účtu nie je známy")}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{t("Úrok")}</dt>
-            <dd className="text-right tabular-nums">
+            <dt className="shrink-0 text-muted-foreground">{t("Úrok")}</dt>
+            <dd className="min-w-0 text-right tabular-nums">
               {zmluva.rate_type === "pohybliva"
                 ? t("{index} + marža {marza} % p. a.", {
                     index: nazovIndexu(zmluva.reference_index),
@@ -178,20 +180,20 @@ export function DetailKontokorentu({
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{t("Poplatok za rámec")}</dt>
-            <dd className="tabular-nums">
+            <dt className="shrink-0 text-muted-foreground">{t("Poplatok za rámec")}</dt>
+            <dd className="text-right tabular-nums">
               {Number(zmluva.limit_fee_yearly) > 0
                 ? t("{suma} ročne", { suma: formatujSumu(Number(zmluva.limit_fee_yearly), mena) })
                 : "—"}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{t("Rámec platí do")}</dt>
-            <dd>{zmluva.valid_until ? datum(zmluva.valid_until) : t("doba neurčitá")}</dd>
+            <dt className="shrink-0 text-muted-foreground">{t("Rámec platí do")}</dt>
+            <dd className="whitespace-nowrap text-right">{zmluva.valid_until ? datum(zmluva.valid_until) : t("doba neurčitá")}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">{t("Úroky / poplatky")}</dt>
-            <dd className="tabular-nums">
+            <dt className="shrink-0 text-muted-foreground">{t("Úroky / poplatky")}</dt>
+            <dd className="text-right tabular-nums">
               {d
                 ? `${formatujSumu(d.sucty.uroky, mena)} / ${formatujSumu(d.sucty.poplatky, mena)}`
                 : "—"}
@@ -206,7 +208,7 @@ export function DetailKontokorentu({
           </p>
         )}
         {!zmluva.bank_account_id && (
-          <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
+          <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium text-warning">
             {t(
               "Zmluva nemá vybraný napojený účet — čerpanie sa nedá zistiť a úroky sa samy nespárujú. Vyberte účet v úprave zmluvy.",
             )}
@@ -224,9 +226,9 @@ export function DetailKontokorentu({
       />
 
       {(d?.navrhy.length ?? 0) > 0 && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5">
-          <h2 className="mb-1 flex items-center gap-2 text-sm font-medium">
-            <Link2 className="h-4 w-4" /> {t("Pohyby, ktoré sem asi patria")}
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-4 sm:p-5">
+          <h2 className="mb-1 flex items-center gap-2 text-base font-semibold">
+            <Link2 className="h-4 w-4 text-warning" /> {t("Pohyby, ktoré sem asi patria")}
           </h2>
           <p className="mb-3 text-xs text-muted-foreground">
             {t(
@@ -237,17 +239,18 @@ export function DetailKontokorentu({
             {d!.navrhy.map((n) => (
               <div
                 key={n.transactionId}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-background p-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm"
               >
                 <div className="min-w-0">
-                  <div className="font-medium">
-                    {datum(n.datum)} · {formatujSumu(n.suma, mena)} · {t(NAZOV_DRUHU[n.druh])}
+                  <div className="font-semibold">
+                    <span className="whitespace-nowrap">{datum(n.datum)}</span> ·{" "}
+                    <span className="suma">{formatujSumu(n.suma, mena)}</span> · {t(NAZOV_DRUHU[n.druh])}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {[n.popis, ...n.dovody].filter(Boolean).join(" · ")}
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
                   {(["urok", "poplatok"] as const).map((druh) => (
                     <button
                       key={druh}
@@ -266,8 +269,10 @@ export function DetailKontokorentu({
                         )
                       }
                       disabled={busy}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                        druh === n.druh ? "bg-primary text-primary-foreground" : "border"
+                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        druh === n.druh
+                          ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                          : "border border-input bg-background hover:bg-accent"
                       }`}
                     >
                       {druh === "urok" ? t("Je to úrok") : t("Je to poplatok")}
@@ -280,10 +285,12 @@ export function DetailKontokorentu({
         </div>
       )}
 
-      <div className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-          <h2 className="text-sm font-medium">{t("Úroky a poplatky strhnuté bankou")}</h2>
-          <button
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4 sm:px-5">
+          <h2 className="text-base font-semibold">{t("Úroky a poplatky strhnuté bankou")}</h2>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() =>
               void urobit(async () => {
                 const r = await sparuj({ data: { company_id: cid } });
@@ -300,14 +307,13 @@ export function DetailKontokorentu({
               }, "Párovanie s bankou prebehlo.")
             }
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
           >
             <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />{" "}
             {t("Spárovať s bankou")}
-          </button>
+          </Button>
         </div>
         {!d ? (
-          <p className="p-4 text-sm text-muted-foreground">{t("Načítavam…")}</p>
+          <NacitavanieStav className="py-8" />
         ) : d.poplatky.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
             {t(
@@ -317,12 +323,12 @@ export function DetailKontokorentu({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm">
-              <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-3 text-left font-medium">{t("Dátum")}</th>
-                  <th className="p-3 text-left font-medium">{t("Druh")}</th>
-                  <th className="p-3 text-left font-medium">{t("Pohyb")}</th>
-                  <th className="p-3 text-right font-medium">{t("Suma")}</th>
+                  <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Dátum")}</th>
+                  <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Druh")}</th>
+                  <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Pohyb")}</th>
+                  <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Suma")}</th>
                   <th className="p-3">
                     <span className="sr-only">{t("Akcie")}</span>
                   </th>
@@ -330,14 +336,14 @@ export function DetailKontokorentu({
               </thead>
               <tbody>
                 {d.poplatky.map((r) => (
-                  <tr key={r.id} className="border-b last:border-0">
-                    <td className="p-3">{datum(r.charged_on)}</td>
+                  <tr key={r.id} className="border-b border-border last:border-0">
+                    <td className="whitespace-nowrap p-3">{datum(r.charged_on)}</td>
                     <td className="p-3">{t(NAZOV_DRUHU[r.kind])}</td>
                     <td className="max-w-[18rem] truncate p-3 text-muted-foreground">
                       {r.popis ?? "—"}
                       {r.source === "rucne" ? " " + t("(priradené ručne)") : ""}
                     </td>
-                    <td className="p-3 text-right font-medium tabular-nums">
+                    <td className="suma p-3 text-right">
                       {formatujSumu(r.amount, r.currency)}
                     </td>
                     <td className="p-3 text-right">
@@ -350,7 +356,7 @@ export function DetailKontokorentu({
                           )
                         }
                         disabled={busy}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
                         <Undo2 className="h-3.5 w-3.5" />
                       </button>

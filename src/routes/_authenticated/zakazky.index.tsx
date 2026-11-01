@@ -10,17 +10,24 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/zakazky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazky — Faktero") }] }),
   component: JobsPage,
 });
 
-const FARBA_STAVU: Record<StavZakazky, string> = {
-  active: "bg-blue-500/10 text-blue-600",
-  closed: "bg-emerald-500/10 text-emerald-700",
-  cancelled: "bg-muted text-muted-foreground line-through",
+/** Stav zákazky → tón jednotného stavového odznaku (text ostáva z STAV_ZAKAZKY_POPIS). */
+const TON_ZAKAZKY: Record<StavZakazky, TonStavu> = {
+  active: "informacia",
+  closed: "uspech",
+  cancelled: "zruseny",
 };
+
+/** Kladný zisk — tón „úspech“ z dizajnového systému (nie pevná zelená). */
+const KLADNE = "text-[color:var(--stav-uspech-text)]";
 
 function suma(n: number) {
   return formatovacMeny("EUR", "sk-SK")(n || 0);
@@ -80,14 +87,14 @@ function JobsPage() {
         action={
           <Link
             to="/zakazky/nova"
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             <Plus className="h-4 w-4" /> {t("Nová zákazka")}
           </Link>
         }
       />
       <PageBody>
-        <div className="mb-3 inline-flex rounded-md border border-border bg-card p-0.5 text-sm">
+        <div className="mb-4 inline-flex max-w-full flex-wrap rounded-lg border border-border bg-card p-0.5 text-sm">
           {(
             [
               ["otvorene", "Otvorené"],
@@ -99,8 +106,11 @@ function JobsPage() {
               key={k}
               type="button"
               onClick={() => setFilter(k)}
-              className={`rounded px-3 py-1.5 ${
-                filter === k ? "bg-secondary font-medium" : "text-muted-foreground"
+              aria-pressed={filter === k}
+              className={`rounded-md px-3 py-1.5 ${
+                filter === k
+                  ? "bg-primary/10 font-semibold text-primary-hover"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {t(label)}
@@ -109,20 +119,20 @@ function JobsPage() {
         </div>
 
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <div className="rounded-xl border border-border bg-card">
+            <NacitavanieStav />
+          </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center">
-            <HardHat className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <div className="text-sm text-muted-foreground">
-              {filter === "otvorene"
-                ? t("Žiadna otvorená zákazka.")
-                : t("Zatiaľ ste nezaložili žiadnu zákazku.")}
-            </div>
-            <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
-              {t(
-                "Zákazku priradíte faktúre, prijatej faktúre, výdaju zo skladu aj jazde. Náklady a výnosy sa potom zbierajú samy.",
-              )}
-            </p>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={HardHat}
+              title={
+                filter === "otvorene"
+                  ? "Žiadna otvorená zákazka."
+                  : "Zatiaľ ste nezaložili žiadnu zákazku."
+              }
+              description="Zákazku priradíte faktúre, prijatej faktúre, výdaju zo skladu aj jazde. Náklady a výnosy sa potom zbierajú samy."
+            />
           </div>
         ) : (
           <>
@@ -131,9 +141,9 @@ function JobsPage() {
               desktop={
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full min-w-[860px] text-sm">
-                    <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                       <tr>
-                        <th className="p-3">{t("Číslo")}</th>
+                        <th className="whitespace-nowrap p-3">{t("Číslo")}</th>
                         <th className="p-3">{t("Názov")}</th>
                         <th className="p-3">{t("Odberateľ")}</th>
                         <th className="p-3 text-right">{t("Výnosy")}</th>
@@ -146,21 +156,23 @@ function JobsPage() {
                     <tbody className="divide-y divide-border">
                       {rows.map((j) => (
                         <tr key={j.id} className="hover:bg-muted/30">
-                          <td className="p-3 font-medium">
+                          <td className="whitespace-nowrap p-3">
                             <Link
                               to="/zakazky/$id"
                               params={{ id: j.id }}
-                              className="text-primary hover:underline"
+                              className="cislo-dokladu text-primary hover:underline"
                             >
                               {j.job_number}
                             </Link>
                           </td>
-                          <td className="p-3">{j.name}</td>
-                          <td className="p-3 text-muted-foreground">{j.customer_name ?? "—"}</td>
-                          <td className="p-3 text-right tabular-nums">{suma(j.vynosy)}</td>
+                          <td className="max-w-[18rem] p-3 break-words">{j.name}</td>
+                          <td className="max-w-[14rem] p-3 break-words text-muted-foreground">
+                            {j.customer_name ?? "—"}
+                          </td>
+                          <td className="suma p-3 text-right">{suma(j.vynosy)}</td>
                           <td
-                            className={`p-3 text-right tabular-nums ${
-                              prekrocenyRozpocet(j) ? "font-medium text-destructive" : ""
+                            className={`suma p-3 text-right ${
+                              prekrocenyRozpocet(j) ? "font-bold text-destructive" : ""
                             }`}
                             title={
                               prekrocenyRozpocet(j)
@@ -173,37 +185,33 @@ function JobsPage() {
                             {suma(j.naklady)}
                           </td>
                           <td
-                            className={`p-3 text-right font-medium tabular-nums ${
-                              j.zisk < 0 ? "text-destructive" : "text-emerald-700"
+                            className={`suma p-3 text-right ${
+                              j.zisk < 0 ? "text-destructive" : KLADNE
                             }`}
                           >
                             {suma(j.zisk)}
                           </td>
-                          <td className="p-3 text-right tabular-nums text-muted-foreground">
+                          <td className="whitespace-nowrap p-3 text-right tabular-nums text-muted-foreground">
                             {j.marza == null ? "—" : `${j.marza} %`}
                           </td>
                           <td className="p-3">
-                            <span
-                              className={`inline-block rounded px-2 py-0.5 text-xs ${
-                                FARBA_STAVU[j.status as StavZakazky] ?? ""
-                              }`}
-                            >
+                            <StavOdznak ton={TON_ZAKAZKY[j.status as StavZakazky] ?? "neutralny"}>
                               {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
-                            </span>
+                            </StavOdznak>
                           </td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="border-t-2 border-border bg-muted/20 font-medium">
+                    <tfoot className="border-t-2 border-border bg-muted/30 font-bold">
                       <tr>
                         <td className="p-3" colSpan={3}>
                           {t("Spolu ({n})", { n: rows.length })}
                         </td>
-                        <td className="p-3 text-right tabular-nums">{suma(spolu.vynosy)}</td>
-                        <td className="p-3 text-right tabular-nums">{suma(spolu.naklady)}</td>
+                        <td className="suma p-3 text-right !font-bold">{suma(spolu.vynosy)}</td>
+                        <td className="suma p-3 text-right !font-bold">{suma(spolu.naklady)}</td>
                         <td
-                          className={`p-3 text-right tabular-nums ${
-                            spolu.zisk < 0 ? "text-destructive" : "text-emerald-700"
+                          className={`suma p-3 text-right !font-bold ${
+                            spolu.zisk < 0 ? "text-destructive" : KLADNE
                           }`}
                         >
                           {suma(spolu.zisk)}
@@ -220,13 +228,9 @@ function JobsPage() {
                   title={j.job_number}
                   subtitle={j.customer_name ? `${j.name} · ${j.customer_name}` : j.name}
                   status={
-                    <span
-                      className={`inline-block rounded px-2 py-0.5 text-xs ${
-                        FARBA_STAVU[j.status as StavZakazky] ?? ""
-                      }`}
-                    >
+                    <StavOdznak ton={TON_ZAKAZKY[j.status as StavZakazky] ?? "neutralny"} maly>
                       {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
-                    </span>
+                    </StavOdznak>
                   }
                   meta={
                     <>
@@ -239,7 +243,7 @@ function JobsPage() {
                   }
                   amount={
                     <span
-                      className={`tabular-nums ${j.zisk < 0 ? "text-destructive" : "text-emerald-700"}`}
+                      className={`suma ${j.zisk < 0 ? "text-destructive" : KLADNE}`}
                     >
                       {suma(j.zisk)}
                     </span>
@@ -248,14 +252,14 @@ function JobsPage() {
               )}
             />
             {/* Súčtový riadok tabuľky — na telefóne ako samostatná karta pod zoznamom. */}
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-border bg-muted/20 p-3 text-sm font-medium sm:hidden">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-border bg-card p-3 text-sm font-bold sm:hidden">
               <span>{t("Spolu ({n})", { n: rows.length })}</span>
               <span
-                className={`tabular-nums ${spolu.zisk < 0 ? "text-destructive" : "text-emerald-700"}`}
+                className={`suma !font-bold ${spolu.zisk < 0 ? "text-destructive" : KLADNE}`}
               >
                 {suma(spolu.zisk)}
               </span>
-              <span className="w-full text-xs font-normal text-muted-foreground">
+              <span className="w-full text-xs font-normal text-muted-foreground tabular-nums">
                 {t("Výnosy")} {suma(spolu.vynosy)} · {t("Náklady")} {suma(spolu.naklady)}
               </span>
             </div>

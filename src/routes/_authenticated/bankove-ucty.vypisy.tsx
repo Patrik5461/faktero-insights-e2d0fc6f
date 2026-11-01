@@ -11,6 +11,8 @@ import {
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { triedaStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import {
   FileText,
   FileCode2,
@@ -134,17 +136,17 @@ function BankStatementsPage() {
         action={
           <Link
             to="/bankove-ucty"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary"
+            className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
           >
             <ArrowLeft className="h-4 w-4" /> {t("Späť na účty")}
           </Link>
         }
       />
       <PageBody>
-        {loading && <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>}
+        {loading && <NacitavanieStav className="rounded-xl border border-border bg-card" />}
 
         {!loading && zoradeneObdobia.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
+          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
             <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">
               {t("Zatiaľ tu nie sú žiadne výpisy. Sťahujú sa automaticky vždy na začiatku mesiaca za mesiac predchádzajúci.")}
@@ -160,7 +162,7 @@ function BankStatementsPage() {
           if (riadky.length === 0) return null;
           return (
             <div key={obdobie} className="mt-6 first:mt-0">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h2 className="text-base font-semibold">
                 {fmtObdobie(obdobie, t)}
               </h2>
               <div className="mt-3 space-y-2">
@@ -170,21 +172,21 @@ function BankStatementsPage() {
                   return (
                     <div
                       key={ucetId}
-                      className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4"
+                      className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 sm:px-5"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{ucet?.account_name ?? t("Účet")}</span>
+                          <span className="min-w-0 break-words font-semibold">{ucet?.account_name ?? t("Účet")}</span>
                           {vlastny && (
                             <span
-                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-200"
+                              className={triedaStavu("informacia")}
                               title={t("Banka pre tento účet výpis nevydáva, zostavilo ho Faktero z načítaných transakcií.")}
                             >
-                              <Sparkles className="h-3 w-3" /> {t("Zostavené Fakterom")}
+                              <Sparkles /> {t("Zostavené Fakterom")}
                             </span>
                           )}
                         </div>
-                        <div className="font-mono text-xs text-muted-foreground">
+                        <div className="break-all font-mono text-xs text-muted-foreground">
                           {ucet?.iban ?? "—"}
                         </div>
                       </div>
@@ -199,11 +201,11 @@ function BankStatementsPage() {
                               key={typ}
                               onClick={() => onDownload(s)}
                               disabled={busy === s.id}
-                              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary disabled:opacity-50"
+                              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                             >
-                              <Ikona className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                              <Ikona className="h-4 w-4 text-primary" />
                               {typ}
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs font-normal tabular-nums text-muted-foreground">
                                 {fmtVelkost(s.file_size)}
                               </span>
                               <Download className="h-3.5 w-3.5" />
@@ -214,7 +216,7 @@ function BankStatementsPage() {
                           return (
                             <span
                               key={typ}
-                              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-dashed border-border px-3 text-sm text-muted-foreground"
+                              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-dashed border-border px-3 text-sm text-muted-foreground"
                               title={t("Banka výpis ešte generuje, skúste neskôr")}
                             >
                               <Clock className="h-4 w-4" /> {t("{typ} sa pripravuje", { typ })}
@@ -224,7 +226,7 @@ function BankStatementsPage() {
                         return (
                           <span
                             key={typ}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-destructive"
+                            className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-destructive/30 bg-destructive/5 px-3 text-sm font-semibold text-destructive"
                             title={s.error ?? undefined}
                           >
                             <AlertCircle className="h-4 w-4" /> {t("{typ} zlyhalo", { typ })}
@@ -240,11 +242,11 @@ function BankStatementsPage() {
         })}
 
         {maVlastne && (
-          <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40">
+          <div className="mt-8 rounded-xl border border-border bg-card p-4 sm:p-5">
             <div className="flex gap-2">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300" />
-              <div className="text-sm text-amber-900 dark:text-amber-100">
-                <p className="font-medium">{t("Výpisy označené „Zostavené Fakterom“")}</p>
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div className="max-w-3xl text-sm text-muted-foreground">
+                <p className="font-semibold text-foreground">{t("Výpisy označené „Zostavené Fakterom“")}</p>
                 <p className="mt-1">
                   {t("Pre účty vedené v inej banke Tatra banka výpis nevydáva, preto ho zostavíme z transakcií, ktoré sme z účtu načítali. Formát je rovnaký ako od banky — PDF na čítanie a XML (camt.053) na import do účtovníctva. Nejde však o doklad vydaný bankou a nemusí obsahovať položky, ktoré banka do prehľadu transakcií neposiela (napríklad niektoré poplatky).")}
                 </p>
@@ -254,7 +256,7 @@ function BankStatementsPage() {
         )}
 
         {nepodporovane.length > 0 && (
-          <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 sm:p-5">
             <div className="flex gap-2">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="text-sm text-muted-foreground">
@@ -263,7 +265,7 @@ function BankStatementsPage() {
                 </p>
                 <ul className="mt-2 space-y-0.5 text-xs">
                   {nepodporovane.map((a) => (
-                    <li key={a.id}>
+                    <li key={a.id} className="break-words">
                       <span className="font-mono">{a.iban ?? a.account_name}</span>
                       {dovodPreLudi(a.dovod) && (
                         <span className="ml-2">— {t(dovodPreLudi(a.dovod)!)}</span>

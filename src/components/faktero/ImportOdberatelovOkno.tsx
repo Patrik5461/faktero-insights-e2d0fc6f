@@ -202,32 +202,32 @@ export function ImportOdberatelovOkno({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--w-prekrytie,rgb(0_0_0/0.5))] p-2 backdrop-blur-[2px] sm:p-6"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t(dod ? "Import dodávateľov" : "Import odberateľov")}
-        className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-card shadow-xl"
+        className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--w-tien-okno)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 border-b border-border p-4">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
           <h2 className="flex-1 text-lg font-semibold">
             {t(dod ? "Import dodávateľov" : "Import odberateľov")}
           </h2>
           <button
             onClick={onClose}
             aria-label={t("Zavrieť")}
-            className="rounded-md p-1 hover:bg-secondary"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4 text-sm">
-          <div>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:opacity-90">
+        <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4 text-sm sm:p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary-hover">
               <Upload className="h-4 w-4" /> {subor ? t("Vybrať iný súbor") : t("Vybrať súbor")}
               <input
                 type="file"
@@ -244,13 +244,13 @@ export function ImportOdberatelovOkno({
               <button
                 type="button"
                 onClick={zPrijatychFaktur}
-                className="ml-2 inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 hover:bg-secondary"
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-4 py-2 font-semibold hover:bg-secondary"
               >
                 {t("Načítať z prijatých faktúr")}
               </button>
             )}
-            {subor && <span className="ml-3 text-muted-foreground">{subor.name}</span>}
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+            {subor && <span className="min-w-0 break-all text-muted-foreground">{subor.name}</span>}
+            <ul className="mt-1 w-full list-disc space-y-1 pl-5 text-xs text-muted-foreground">
               <li>
                 <strong>Pohoda:</strong>{" "}
                 {t(
@@ -274,8 +274,8 @@ export function ImportOdberatelovOkno({
           {citam && <p className="text-muted-foreground">{t("Čítam súbor…")}</p>}
 
           {vysledok?.druh === "tabulka" && (
-            <div className="rounded-lg border border-border p-3">
-              <div className="mb-2 font-medium">
+            <div className="rounded-xl border border-border p-3 sm:p-4">
+              <div className="mb-2 font-semibold">
                 {t("Stĺpce ({zdroj})", { zdroj: vysledok.zdroj })}
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -295,7 +295,7 @@ export function ImportOdberatelovOkno({
                         else delete m[i];
                         setMapovanie(m);
                       }}
-                      className="min-w-0 flex-1 rounded border border-input bg-background px-2 py-1"
+                      className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1"
                     >
                       <option value="">{t("— neimportovať —")}</option>
                       {POLIA.map((p) => (
@@ -314,7 +314,7 @@ export function ImportOdberatelovOkno({
           )}
 
           {vysledok && !citam && odberatelia.length === 0 && !chybaNazov && (
-            <p className="rounded-lg border border-dashed border-border p-4 text-center text-muted-foreground">
+            <p className="rounded-xl border border-dashed border-border p-4 text-center text-muted-foreground">
               {t(
                 dod
                   ? vysledok.druh === "xml"
@@ -329,7 +329,7 @@ export function ImportOdberatelovOkno({
 
           {plan && odberatelia.length > 0 && (
             <>
-              <div className="rounded-lg bg-muted/40 p-3">
+              <div className="rounded-xl border border-border bg-muted/40 p-3 sm:p-4">
                 <div>
                   {t("Zdroj:")} <strong>{t(vysledok?.zdroj ?? "")}</strong> ·{" "}
                   {t("v súbore {n}", { n: odberatelia.length })}
@@ -378,9 +378,9 @@ export function ImportOdberatelovOkno({
               </div>
 
               {plan.novi.length > 0 && (
-                <div className="overflow-x-auto rounded-lg border border-border">
+                <div className="overflow-x-auto rounded-xl border border-border">
                   <table className="w-full min-w-[36rem] text-xs">
-                    <thead className="bg-muted/40 text-left uppercase tracking-wide text-muted-foreground">
+                    <thead className="bg-muted/40 text-left font-semibold text-muted-foreground">
                       <tr>
                         <th className="p-2">{t("Názov")}</th>
                         <th className="p-2">{t("IČO")}</th>
@@ -393,8 +393,8 @@ export function ImportOdberatelovOkno({
                       {plan.novi.slice(0, 50).map((o, i) => (
                         <tr key={i} className="border-t border-border">
                           <td className="p-2 font-medium">{o.name}</td>
-                          <td className="p-2">{o.ico ?? "—"}</td>
-                          <td className="p-2">{o.ic_dph ?? "—"}</td>
+                          <td className="whitespace-nowrap p-2 tabular-nums">{o.ico ?? "—"}</td>
+                          <td className="whitespace-nowrap p-2 tabular-nums">{o.ic_dph ?? "—"}</td>
                           <td className="p-2">
                             {[o.street, [o.zip, o.city].filter(Boolean).join(" "), o.country]
                               .filter(Boolean)
@@ -416,10 +416,10 @@ export function ImportOdberatelovOkno({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-border p-4">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border px-4 py-3 sm:px-5">
           <button
             onClick={onClose}
-            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary"
           >
             {t("Zrušiť")}
           </button>
@@ -431,7 +431,7 @@ export function ImportOdberatelovOkno({
               chybaNazov ||
               (plan.novi.length === 0 && plan.doplnit.length === 0)
             }
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {importujem
               ? t("Importujem…")

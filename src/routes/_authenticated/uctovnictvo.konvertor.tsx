@@ -117,9 +117,9 @@ function KonvertorPage() {
         )}
       />
       <PageBody>
-        <div className="max-w-3xl space-y-4">
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="max-w-3xl space-y-6">
+          <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="text-base font-semibold">
               {t("1. Druh dokladov")}
             </h2>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -134,8 +134,8 @@ function KonvertorPage() {
                   }}
                   className={`rounded-md border px-3 py-1.5 text-sm ${
                     druh === d.kod
-                      ? "border-primary bg-primary/10 font-medium text-primary-hover"
-                      : "border-border hover:bg-secondary"
+                      ? "border-primary bg-primary/10 font-semibold text-primary-hover"
+                      : "border-input bg-background font-medium hover:bg-secondary"
                   }`}
                 >
                   {t(d.nazov)}
@@ -144,8 +144,8 @@ function KonvertorPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="text-base font-semibold">
               {t("2. Šablóna")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -156,7 +156,7 @@ function KonvertorPage() {
             <button
               type="button"
               onClick={stiahniSablonu}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
             >
               <Download className="h-4 w-4" /> {t("Stiahnuť šablónu XLSX")}
             </button>
@@ -168,8 +168,8 @@ function KonvertorPage() {
             </p>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="text-base font-semibold">
               {t("3. Prevod")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -179,7 +179,7 @@ function KonvertorPage() {
               </Link>
               .
             </p>
-            <label className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+            <label className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
               {t("Nahrať vyplnenú šablónu a stiahnuť XML")}
               <input
@@ -195,7 +195,7 @@ function KonvertorPage() {
               />
             </label>
             {vysledok && (
-              <div className="mt-4 rounded-md border border-border p-3 text-sm">
+              <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm" role="status">
                 <p>
                   {t("Počet dokladov v súbore {subor}: {n}.", {
                     subor: vysledok.subor,
@@ -204,7 +204,7 @@ function KonvertorPage() {
                 </p>
                 {vysledok.preskocene.length > 0 && (
                   <>
-                    <p className="mt-2 font-medium text-amber-700 dark:text-amber-400">
+                    <p className="mt-2 font-medium text-warning">
                       {t("Vynechané ({n}):", { n: vysledok.preskocene.length })}
                     </p>
                     <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">

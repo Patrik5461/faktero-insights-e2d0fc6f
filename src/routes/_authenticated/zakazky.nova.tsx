@@ -91,7 +91,7 @@ function NewJob() {
 
   const pole =
     "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
-  const popis = "mb-1 block text-xs font-medium text-muted-foreground";
+  const popis = "mb-1 block text-sm font-semibold text-foreground";
 
   return (
     <>
@@ -104,12 +104,12 @@ function NewJob() {
       <PageBody>
         <form onSubmit={ulozit} className="max-w-2xl space-y-4">
           {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
             <label className={popis}>{t("Názov zákazky")}</label>
             <input
               aria-label={t("Názov zákazky")}
@@ -160,8 +160,8 @@ function NewJob() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-medium">{t("Plán zákazky")}</div>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="mb-3 text-base font-semibold">{t("Plán zákazky")}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={popis}>
@@ -194,8 +194,10 @@ function NewJob() {
               <div className="mt-3 text-sm text-muted-foreground">
                 {t("Plánovaný zisk:")}{" "}
                 <span
-                  className={`font-medium tabular-nums ${
-                    planovanyZisk < 0 ? "text-destructive" : "text-emerald-700"
+                  className={`suma ${
+                    planovanyZisk < 0
+                      ? "text-destructive"
+                      : "text-[color:var(--stav-uspech-text)]"
                   }`}
                 >
                   {formatujMenu(planovanyZisk, mena.kod)}
@@ -204,7 +206,7 @@ function NewJob() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
             <label className={popis}>{t("Poznámka")}</label>
             <textarea
               aria-label={t("Poznámka")}
@@ -217,7 +219,7 @@ function NewJob() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {saving ? t("Ukladám…") : t("Založiť zákazku")}
           </button>
