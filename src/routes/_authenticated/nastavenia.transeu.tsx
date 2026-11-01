@@ -6,6 +6,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
@@ -367,6 +369,7 @@ function Objednavky({ companyId }: { companyId: string }) {
   const [rows, setRows] = useState<Riadok[] | null>(null);
   const [dni, setDni] = useState(60);
   const [busy, setBusy] = useState<string | null>(null);
+  const klik = useKlikNaRiadok();
 
   async function nacitaj() {
     try {
@@ -431,8 +434,16 @@ function Objednavky({ companyId }: { companyId: string }) {
         <ul className="mt-4 divide-y divide-border rounded-lg border border-border bg-card">
           {rows.map((r) => {
             const fakturovat = daSaFakturovat(r.stav);
+            // Klik na riadok len keď vedie jednoznačne na jeden doklad (objednávka alebo faktúra).
+            const ciel =
+              r.objednavka && !r.faktura
+                ? { to: "/objednavky/$id" as const, params: { id: r.objednavka.id } }
+                : r.faktura && !r.objednavka
+                  ? { to: "/faktury/$id" as const, params: { id: r.faktura.id } }
+                  : null;
+            const p = klik(ciel, { klavesnica: false });
             return (
-              <li key={r.id} className="flex flex-wrap items-start gap-3 p-3 text-sm">
+              <li key={r.id} {...p} className={cn("flex flex-wrap items-start gap-3 p-3 text-sm", p.className)}>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <strong className="cislo-dokladu">{r.cislo ?? r.transeu_id.slice(0, 8)}</strong>

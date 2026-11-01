@@ -5,6 +5,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { getActiveCompanyId, setActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -163,6 +166,9 @@ function CompanyManagementPage() {
     }
     await load();
   }
+
+  // Klik na riadok inej ako aktívnej firmy ju prepne (ako klik na názov); aktívna firma riadkom nič nerobí.
+  const klik = useKlikNaRiadok();
 
   function switchTo(id: string, kam = "/dashboard") {
     setActiveCompanyId(id);
@@ -447,10 +453,17 @@ function CompanyManagementPage() {
               {t("Nič sa nenašlo.")}
             </div>
           )}
-          {zobrazene.map((r) => (
+          {zobrazene.map((r) => {
+            const karta = klik(null, {
+              naKlik: () => switchTo(r.id),
+              vypnute: r.id === activeId,
+              klavesnica: false,
+            });
+            return (
             <div
               key={r.id}
-              className="rounded-xl border border-border bg-card p-4 text-sm shadow-sm"
+              {...karta}
+              className={cn("rounded-xl border border-border bg-card p-4 text-sm shadow-sm", karta.className)}
             >
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <AvatarFirmy nazov={r.name} />
@@ -482,7 +495,8 @@ function CompanyManagementPage() {
               </dl>
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
           <table className="w-full text-sm">
@@ -521,7 +535,12 @@ function CompanyManagementPage() {
                 </tr>
               )}
               {zobrazene.map((r) => (
-                <tr key={r.id} className="border-t border-border align-top">
+                <KlikatelnyRiadok
+                  key={r.id}
+                  naKlik={() => switchTo(r.id)}
+                  vypnute={r.id === activeId}
+                  className="border-t border-border align-top"
+                >
                   <td className="min-w-[220px] px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <AvatarFirmy nazov={r.name} />
@@ -547,7 +566,7 @@ function CompanyManagementPage() {
                   <td className="px-4 py-3">{poSplatnosti(r)}</td>
                   <td className="px-4 py-3">{banka(r)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

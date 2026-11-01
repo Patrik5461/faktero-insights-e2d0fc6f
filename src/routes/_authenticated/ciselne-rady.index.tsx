@@ -5,6 +5,8 @@ import { CislovaniePoImporte } from "@/components/faktero/CislovaniePoImporte";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { Plus, Star, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -71,6 +73,7 @@ function CiselneRadyPage() {
   const [rady, setRady] = useState<CiselnyRad[]>([]);
   const [loading, setLoading] = useState(true);
   const [upravovany, setUpravovany] = useState<Partial<CiselnyRad> | null>(null);
+  const klik = useKlikNaRiadok();
   const [mazany, setMazany] = useState<CiselnyRad | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -213,7 +216,11 @@ function CiselneRadyPage() {
                   ) : (
                     <ul className="divide-y divide-border">
                       {zoznam.map((r) => (
-                        <li key={r.id} className="flex flex-wrap items-center gap-3 py-2.5">
+                        <li
+                          key={r.id}
+                          {...klik(null, { naKlik: () => setUpravovany(r) })}
+                          className={cn("flex flex-wrap items-center gap-3 py-2.5", TRIEDA_KLIK_RIADKU)}
+                        >
                           <span className="min-w-[10rem] flex-1 font-semibold">
                             {r.name}
                             {r.is_default && (

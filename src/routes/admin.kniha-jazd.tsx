@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { getAdminKnihaJazd } from "@/lib/faktero/admin.functions";
 
 export const Route = createFileRoute("/admin/kniha-jazd")({
@@ -104,9 +105,10 @@ function AdminKnihaJazdPage() {
                     </tr>
                   ) : (
                     rows.map((r) => (
-                      <tr
+                      <KlikatelnyRiadok
                         key={r.company_id}
-                        className="border-t border-border align-top hover:bg-muted/30"
+                        ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }}
+                        className="border-t border-border align-top"
                       >
                         <td className="px-3 py-2 font-medium">
                           <Link
@@ -149,7 +151,7 @@ function AdminKnihaJazdPage() {
                         <td className="px-3 py-2 text-xs text-muted-foreground">
                           {zdroje(r) || "—"}
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
@@ -158,6 +160,7 @@ function AdminKnihaJazdPage() {
           }
           mobileCard={(r) => (
             <MobileListCard
+              ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }}
               title={r.name}
               subtitle={r.vozidla.map((v) => v.nazov).join(", ") || "bez vozidla"}
               meta={`Za 30 dní ${r.jazd_30_dni} jázd · ${r.km_30_dni} km · posledná ${datum(r.posledna_jazda)} · ${zdroje(r)}`}

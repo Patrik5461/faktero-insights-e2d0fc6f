@@ -7,6 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Undo2, XCircle } from "lucide-react";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -160,7 +161,7 @@ function Stranka() {
                   {d.polozky.map((p) => {
                     const k = `${p.agenda}:${p.id}`;
                     return (
-                      <tr key={k} className="border-t border-border">
+                      <KlikatelnyRiadok key={k} ciel={odkazNaDetail(p.agenda, p.id) as any} className="border-t border-border">
                         <td className="py-2 pl-2">
                           <input
                             type="checkbox"
@@ -191,7 +192,7 @@ function Stranka() {
                           </StavOdznak>{" "}
                           <span className="text-muted-foreground">· {p.odznak}</span>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     );
                   })}
                 </tbody>

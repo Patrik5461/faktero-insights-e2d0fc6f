@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { getAdminUsage } from "@/lib/faktero/admin.functions";
 
 export const Route = createFileRoute("/admin/usage")({
@@ -89,8 +90,12 @@ function AdminUsagePage() {
                     </tr>
                   ) : (
                     slice.map((r) => (
-                      <tr key={r.company_id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-3 py-2 font-medium">{r.name}</td>
+                      <KlikatelnyRiadok key={r.company_id} ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }} className="border-t border-border">
+                        <td className="px-3 py-2 font-medium">
+                          <Link to="/admin/companies/$id" params={{ id: r.company_id }} className="hover:underline">
+                            {r.name}
+                          </Link>
+                        </td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.invoices}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.pdfs}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.api_calls}</td>
@@ -99,7 +104,7 @@ function AdminUsagePage() {
                         <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                           {r.storage_mb == null ? "—" : `${r.storage_mb} MB`}
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
@@ -108,6 +113,7 @@ function AdminUsagePage() {
           }
           mobileCard={(r) => (
             <MobileListCard
+              ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }}
               title={r.name}
               meta={`Faktúry ${r.invoices} · PDF ${r.pdfs} · API ${r.api_calls} · E-maily ${r.emails} · Webhooky ${r.webhooks}`}
               amount={r.storage_mb == null ? "—" : `${r.storage_mb} MB`}

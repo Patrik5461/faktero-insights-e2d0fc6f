@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { retryWebhookDelivery } from "@/lib/faktero/webhook-delivery.functions";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -214,7 +215,7 @@ function WebhookLogsPage() {
                     </tr>
                   ) : (
                     logs.map((l) => (
-                      <tr key={l.id}>
+                      <KlikatelnyRiadok key={l.id} naKlik={() => setViewing({ kind: "payload", log: l })}>
                         <td className="px-3 py-2.5">
                           <StavDoruceniaWebhooku status={l.status} />
                         </td>
@@ -263,7 +264,7 @@ function WebhookLogsPage() {
                             </IconBtn>
                           </div>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
