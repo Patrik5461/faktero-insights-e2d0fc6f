@@ -1317,7 +1317,7 @@ function PurchaseInvoicesPage() {
                       </StavOdznak>
                     )}
                   </td>
-                  <td className="p-3">
+                  <td className="min-w-[11rem] p-3">
                     {r.odberatel_nesedi ? (
                       <CudziaFakturaZnak nesedi={nacitajNesedi(r.odberatel_nesedi)} className="mr-1.5 align-middle" />
                     ) : null}

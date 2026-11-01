@@ -1264,7 +1264,7 @@ function DokladyPage() {
                     {je("datum") && (
                       <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.issue_date)}</td>
                     )}
-                    <td className="px-3 py-2">
+                    <td className="min-w-[11rem] px-3 py-2">
                       <button
                         onClick={() =>
                           {

@@ -102,14 +102,16 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
         aria-expanded={otvorene}
         className="flex w-full items-center justify-between gap-2 rounded-xl p-4 text-left hover:bg-accent/50"
       >
-        <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
           <Split className="h-4 w-4 shrink-0 text-primary" />
-          {t("Rozdeľovač — jedna adresa a nahratie pre všetky firmy")}
-          {caka > 0 && (
-            <StavOdznak ton="pozor" maly>
-              {t("{n} nepriradené", { n: caka })}
-            </StavOdznak>
-          )}
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
+            {t("Rozdeľovač — jedna adresa a nahratie pre všetky firmy")}
+            {caka > 0 && (
+              <StavOdznak ton="pozor" maly>
+                {t("{n} nepriradené", { n: caka })}
+              </StavOdznak>
+            )}
+          </span>
         </span>
         {otvorene ? (
           <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
