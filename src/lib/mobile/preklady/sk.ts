@@ -1395,6 +1395,31 @@ export const sk = {
   "efs.kanal.manual": "Ručne",
   "efs.filterOdoslane": "eFaktúra: odoslané",
   "efs.filterChyba": "eFaktúra: chyba",
+
+  // eFaktúra prijatá pri prijatých faktúrach (efr.*)
+  "efr.nadpis": "eFaktúra",
+  "efr.odznak": "eFaktúra prijatá",
+  "efr.odznakChyby": "eFaktúra prijatá — kontrola našla chyby",
+  "efr.filterPrijate": "eFaktúra: prijaté",
+  "efr.od": "Od",
+  "efr.peppolId": "Peppol ID",
+  "efr.kanal": "Kanál",
+  "efr.prisla": "Prišla",
+  "efr.zaevidovana": "Zaevidovaná",
+  "efr.kanal.peppol": "Peppol cez ePoštáka",
+  "efr.kanal.digitalnyPostar": "Digitálny poštár",
+  "efr.kanal.email": "E-mail",
+  "efr.kanal.manual": "Ručne",
+  "efr.kontrolaOk": "Automatická kontrola prešla bez chýb.",
+  "efr.kontrolaVarovania": "Automatická kontrola: bez chýb, varovaní {varovania}.",
+  "efr.kontrolaChyby": "Automatická kontrola našla chyby ({chyby}) a varovania ({varovania}).",
+  "efr.kontrolaChybyRada": "Skontrolujte sumy, DPH a povinné údaje — v prípade potreby požiadajte dodávateľa o opravu.",
+  "efr.kontrolaNebezala": "Automatická kontrola ešte nebežala.",
+  "efr.bezRiadku": "Pôvodná eFaktúra už nie je uložená — faktúra z nej vznikla, podrobnosti chýbajú.",
+  "efr.zobrazitPovodnu": "Zobraziť pôvodnú eFaktúru",
+  "efr.zPamate": "Bez pripojenia — posledný známy stav z {kedy}.",
+  "efr.bezPripojenia": "Bez pripojenia — zobrazený posledný známy stav.",
+  "efr.zoznamZPamate": "Bez pripojenia — zobrazené naposledy načítané prijaté faktúry.",
 } as const;
 
 export type Kluc = keyof typeof sk;
