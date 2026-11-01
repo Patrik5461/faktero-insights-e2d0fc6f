@@ -10,6 +10,15 @@
  */
 
 import { bezVzorca } from "@/lib/bezpecny-text";
+import { dvadsiatyNasledujuceho, LEHOTA_ODHLASENIA_DNI, LEHOTA_ZP_DNI } from "./zamestnanci-cz";
+
+/**
+ * Krajina, podľa ktorej predpisov modul pracuje. Česká firma má české lehoty,
+ * zmluvy a šablóny; všetko ostatné (aj nemecká, ktorá modul nemá) slovenské.
+ */
+export type KrajinaZamestnancov = "SK" | "CZ";
+export const krajinaZamestnancov = (krajina?: string | null): KrajinaZamestnancov =>
+  krajina === "CZ" ? "CZ" : "SK";
 export type DruhZmluvy = "pracovna_zmluva" | "dovp" | "dopc" | "brigadnicka" | "ina";
 export type DruhNepritomnosti =
   | "dovolenka"
@@ -35,6 +44,29 @@ export const DRUH_ZMLUVY: Record<DruhZmluvy, string> = {
   brigadnicka: "Dohoda o brigádnickej práci študenta",
   ina: "Iná zmluva",
 };
+
+/**
+ * Druhy zmlúv českej firmy (zák. 262/2006 Sb.): pracovný pomer na dobu
+ * určitú či neurčitú (podľa konca zmluvy), DPP (§ 75) a DPČ (§ 76).
+ * Brigádnická práca študentov je slovenský inštitút — v Česku nie je.
+ * Kľúče v databáze ostávajú rovnaké, mení sa len názov.
+ */
+export const DRUH_ZMLUVY_CZ: Partial<Record<DruhZmluvy, string>> = {
+  pracovna_zmluva: "Pracovná zmluva (pracovný pomer)",
+  dovp: "Dohoda o provedení práce (DPP)",
+  dopc: "Dohoda o pracovní činnosti (DPČ)",
+  ina: "Iná zmluva",
+};
+
+/** Názvy druhov zmlúv, ktoré firma v danej krajine ponúka. */
+export function druhyZmluv(krajina: KrajinaZamestnancov): Partial<Record<DruhZmluvy, string>> {
+  return krajina === "CZ" ? DRUH_ZMLUVY_CZ : DRUH_ZMLUVY;
+}
+
+/** Názov druhu zmluvy (aj druhu, ktorý krajina už neponúka — staré záznamy). */
+export function nazovZmluvy(kind: string, krajina: KrajinaZamestnancov = "SK"): string {
+  return druhyZmluv(krajina)[kind as DruhZmluvy] ?? DRUH_ZMLUVY[kind as DruhZmluvy] ?? kind;
+}
 
 export const DRUH_NEPRITOMNOSTI: Record<DruhNepritomnosti, string> = {
   dovolenka: "Dovolenka",
@@ -68,6 +100,9 @@ export type Zamestnanec = {
   status: string;
   sp_registered_at?: string | null;
   zp_registered_at?: string | null;
+  /** CZ: odhlásenie z ČSSZ a od zdravotnej poisťovne po skončení. */
+  sp_deregistered_at?: string | null;
+  zp_deregistered_at?: string | null;
   medical_check_due?: string | null;
   bozp_training_due?: string | null;
 };
@@ -145,6 +180,8 @@ export function celeMeno(z: Pick<Zamestnanec, "first_name" | "last_name" | "titl
 export type DruhPripomienky =
   | "sp_prihlaska"
   | "zp_prihlaska"
+  | "sp_odhlaska"
+  | "zp_odhlaska"
   | "skusobna_doba"
   | "koniec_zmluvy"
   | "lekarska_prehliadka"
@@ -167,6 +204,12 @@ export type Pripomienka = {
   nastup?: string;
   /** Druh zmluvy (skúšobná doba, koniec zmluvy). */
   zmluva?: DruhZmluvy;
+  /** Len pri českej firme — texty a lehoty sú podľa českých predpisov. */
+  krajina?: "CZ";
+  /** CZ: zamestnanec má len DPP/DPČ (zdravotná poisťovňa do 20. dňa nasl. mesiaca). */
+  lenDohoda?: boolean;
+  /** CZ: dátum skončenia (odhlášky). */
+  koniec?: string;
 };
 
 /** Od koľkých dní pred termínom sa pripomienka ukazuje. */
@@ -177,7 +220,18 @@ export const PREDSTIH_DNI: Record<DruhPripomienky, number> = {
   koniec_zmluvy: 30,
   lekarska_prehliadka: 30,
   bozp: 30,
+  sp_odhlaska: 14,
+  zp_odhlaska: 14,
 };
+
+/**
+ * CZ: registrácia na ČSSZ sa smie podať najskôr 8 dní pred nástupom
+ * (§ 19 odst. 1 písm. a) zák. 323/2025 Sb.) — skôr ju nemá zmysel pripomínať.
+ */
+const PREDSTIH_DNI_CZ: Partial<Record<DruhPripomienky, number>> = { sp_prihlaska: 8 };
+
+/** CZ: odhlášky sa pripomínajú len pri skončení najviac pred toľkými dňami (staré karty nestrašia). */
+export const ODHLASKY_SPATNE_DNI = 90;
 
 /**
  * Pripomienky pre aktívnych zamestnancov k dnešnému dňu.
@@ -195,7 +249,9 @@ export function pripomienkyZamestnancov(
   dnes: string,
   zamestnanci: Zamestnanec[],
   zmluvy: Zmluva[],
+  krajina: KrajinaZamestnancov = "SK",
 ): Pripomienka[] {
+  if (krajina === "CZ") return pripomienkyCz(dnes, zamestnanci, zmluvy);
   const vysledok: Pripomienka[] = [];
   const pridaj = (
     z: Zamestnanec,
@@ -250,8 +306,121 @@ export function pripomienkyZamestnancov(
     }
   }
 
+  return zorad(vysledok);
+}
+
+function zorad(vysledok: Pripomienka[]): Pripomienka[] {
   const poradie = { danger: 0, warning: 1, info: 2 } as const;
   return vysledok.sort((a, b) => poradie[a.zavaznost] - poradie[b.zavaznost] || a.termin.localeCompare(b.termin));
+}
+
+function kedy(dnes: string, termin: string): string {
+  const zostava = dniDo(dnes, termin);
+  return zostava < 0 ? `termín ${datumSk(termin)} už uplynul` : zostava === 0 ? "termín je dnes" : `do ${datumSk(termin)}`;
+}
+
+/**
+ * Pripomienky českej firmy (zdroje v `zamestnanci-cz.ts`):
+ *
+ * - ČSSZ: Registrace zaměstnance (REGZEC) najneskôr pred nástupom, najskôr
+ *   8 dní vopred (§ 19 odst. 1 písm. a) zák. 323/2025 Sb.) — termínom je deň
+ *   nástupu. Platí pre pracovný pomer aj dohody.
+ * - Zdravotná poisťovňa: nástup do 8 dní (§ 10 zák. 48/1997 Sb.); kto má len
+ *   DPP/DPČ, do 20. dňa nasledujúceho mesiaca.
+ * - Po skončení: odhlásenie z ČSSZ do 8 dní (§ 19 odst. 6 zák. 323/2025 Sb.)
+ *   a oznámenie zdravotnej poisťovni do 8 dní (pri dohodách do 20. dňa).
+ *   Platí aj pre kartu už v stave „ukončený“, kým sa odhláška nezapíše —
+ *   najviac 90 dní po skončení, aby staré karty nesvietili navždy.
+ * - Skúšobná doba, koniec doby určitej, lekárska prehliadka a BOZP ako v SK.
+ * - ELDP sa nepripomína: od 1. 4. 2026 ho zamestnávateľ nevyhotovuje (JMHZ).
+ */
+function pripomienkyCz(dnes: string, zamestnanci: Zamestnanec[], zmluvy: Zmluva[]): Pripomienka[] {
+  const vysledok: Pripomienka[] = [];
+  const pridaj = (
+    z: Zamestnanec,
+    druh: DruhPripomienky,
+    termin: string,
+    nadpis: string,
+    text: string,
+    extra: Partial<Pick<Pripomienka, "nastup" | "zmluva" | "lenDohoda" | "koniec" | "kluc">> = {},
+  ) => {
+    const zostava = dniDo(dnes, termin);
+    if (zostava > (PREDSTIH_DNI_CZ[druh] ?? PREDSTIH_DNI[druh])) return;
+    const { kluc, ...ostatne } = extra;
+    vysledok.push({
+      kluc: kluc ?? `zam:${druh}:${z.id}:${termin}`,
+      druh,
+      employee_id: z.id,
+      meno: celeMeno(z),
+      termin,
+      zavaznost: zostava < 0 ? "danger" : zostava <= 3 ? "warning" : "info",
+      zostava,
+      krajina: "CZ",
+      ...ostatne,
+      nadpis,
+      text: `${text} — ${kedy(dnes, termin)}`,
+    });
+  };
+
+  for (const z of zamestnanci) {
+    const meno = celeMeno(z);
+    const aktivne = zmluvy.filter((k) => k.employee_id === z.id && k.status === "active");
+    const lenDohoda = aktivne.length > 0 && aktivne.every((k) => k.kind === "dovp" || k.kind === "dopc");
+
+    if (z.status === "active") {
+      if (z.start_date && !z.sp_registered_at) {
+        pridaj(z, "sp_prihlaska", z.start_date, "Registrácia zamestnanca na ČSSZ", `${meno}: prihlásiť na ČSSZ najneskôr pred nástupom ${datumSk(z.start_date)}`, { nastup: z.start_date });
+      }
+      if (z.start_date && !z.zp_registered_at) {
+        const termin = lenDohoda ? dvadsiatyNasledujuceho(z.start_date) : pridajDni(z.start_date, LEHOTA_ZP_DNI);
+        pridaj(
+          z,
+          "zp_prihlaska",
+          termin,
+          "Oznámenie zdravotnej poisťovni",
+          lenDohoda
+            ? `${meno}: pri dohode oznámiť zdravotnej poisťovni do 20. dňa nasledujúceho mesiaca`
+            : `${meno}: oznámiť nástup zdravotnej poisťovni do 8 dní`,
+          { nastup: z.start_date, lenDohoda },
+        );
+      }
+      if (z.medical_check_due) {
+        pridaj(z, "lekarska_prehliadka", z.medical_check_due, "Lekárska prehliadka", `${meno}: preventívna prehliadka`);
+      }
+      if (z.bozp_training_due) {
+        pridaj(z, "bozp", z.bozp_training_due, "Školenie BOZP", `${meno}: školenie bezpečnosti a ochrany zdravia`);
+      }
+      for (const k of aktivne) {
+        if (k.probation_end && dniDo(dnes, k.probation_end) >= 0) {
+          pridaj(z, "skusobna_doba", k.probation_end, "Koniec skúšobnej doby", `${meno}: ${nazovZmluvy(k.kind, "CZ")}`, { kluc: `zam:skusobna_doba:${k.id}:${k.probation_end}`, zmluva: k.kind });
+        }
+        if (k.end_date && dniDo(dnes, k.end_date) >= 0) {
+          pridaj(z, "koniec_zmluvy", k.end_date, "Koniec zmluvy na dobu určitú", `${meno}: ${nazovZmluvy(k.kind, "CZ")}`, { kluc: `zam:koniec_zmluvy:${k.id}:${k.end_date}`, zmluva: k.kind });
+        }
+      }
+    }
+
+    // Odhlášky po skončení — aj pri karte v stave „ukončený“.
+    if (z.end_date && dniDo(dnes, z.end_date) >= -ODHLASKY_SPATNE_DNI) {
+      if (!z.sp_deregistered_at) {
+        pridaj(z, "sp_odhlaska", pridajDni(z.end_date, LEHOTA_ODHLASENIA_DNI), "Odhlásenie zamestnanca z ČSSZ", `${meno}: odhlásiť z ČSSZ do 8 dní od skončenia ${datumSk(z.end_date)}`, { koniec: z.end_date });
+      }
+      if (!z.zp_deregistered_at) {
+        const termin = lenDohoda ? dvadsiatyNasledujuceho(z.end_date) : pridajDni(z.end_date, LEHOTA_ZP_DNI);
+        pridaj(
+          z,
+          "zp_odhlaska",
+          termin,
+          "Skončenie oznámiť zdravotnej poisťovni",
+          lenDohoda
+            ? `${meno}: pri dohode oznámiť skončenie zdravotnej poisťovni do 20. dňa nasledujúceho mesiaca`
+            : `${meno}: oznámiť skončenie zdravotnej poisťovni do 8 dní`,
+          { koniec: z.end_date, lenDohoda },
+        );
+      }
+    }
+  }
+  return zorad(vysledok);
 }
 
 /* ── Dochádzka ──────────────────────────────────────────────────────────── */
@@ -494,6 +663,115 @@ V {{miesto}} dňa {{dnes}}
 pečiatka a podpis zamestnávateľa`,
 };
 
+/* ── Šablóny českej firmy (zák. 262/2006 Sb., zákoník práce) ─────────────── */
+
+/** Brigádnická práca študentov v Česku nie je — šablóna sa českej firme neponúka. */
+export const NAZOV_SABLONY_CZ: Partial<Record<KlucSablony, string>> = {
+  pracovna_zmluva: "Pracovní smlouva",
+  dovp: "Dohoda o provedení práce",
+  dopc: "Dohoda o pracovní činnosti",
+  vypoved: "Výpověď",
+  potvrdenie_prijmu: "Potvrzení o příjmu",
+};
+
+const HLAVICKA_CZ = `Zaměstnavatel: {{firma.nazov}}, IČO {{firma.ico}}, se sídlem {{firma.adresa}}
+Zaměstnanec: {{zamestnanec.meno}}, nar. {{zamestnanec.datum_narodenia}}, r. č. {{zamestnanec.rodne_cislo}}, bytem {{zamestnanec.adresa}}`;
+
+const PODPISY_CZ = `V {{miesto}} dne {{dnes}}
+
+
+.................................                .................................
+zaměstnavatel                                          zaměstnanec`;
+
+/** Predvolené české texty — dokument pre českého zamestnanca je po česky. */
+export const PREDVOLENE_SABLONY_CZ: Partial<Record<KlucSablony, string>> = {
+  pracovna_zmluva: `# PRACOVNÍ SMLOUVA
+uzavřená podle § 33 a násl. zákona č. 262/2006 Sb., zákoník práce
+
+${HLAVICKA_CZ}
+
+1. Druh práce: {{zmluva.pozicia}}
+2. Místo výkonu práce: {{zmluva.miesto_vykonu}}
+3. Den nástupu do práce: {{zmluva.zaciatok}}
+4. Pracovní poměr se sjednává {{zmluva.koniec}}.
+5. Zkušební doba trvá do {{zmluva.skusobna_doba}} (nejvýše 4 měsíce, u vedoucího zaměstnance 8 měsíců – § 35 zákoníku práce).
+6. Týdenní pracovní doba: {{zmluva.uvazok}}.
+7. Mzda: {{zmluva.mzda}}.
+8. Dovolená činí nejméně 4 týdny v kalendářním roce (§ 212 zákoníku práce). Výpovědní doba je nejméně 2 měsíce a začíná dnem doručení výpovědi (§ 51 zákoníku práce). Ostatní pracovní podmínky se řídí zákoníkem práce.
+
+Smlouva je vyhotovena ve dvou stejnopisech, z nichž každá strana obdrží jeden.
+
+${PODPISY_CZ}`,
+
+  dovp: `# DOHODA O PROVEDENÍ PRÁCE
+uzavřená podle § 75 zákona č. 262/2006 Sb., zákoník práce
+
+${HLAVICKA_CZ}
+
+1. Pracovní úkol: {{zmluva.pozicia}}
+2. Doba, ve které má být úkol proveden: od {{zmluva.zaciatok}} {{zmluva.koniec}}.
+3. Rozsah práce nepřesáhne 300 hodin v kalendářním roce (§ 75 zákoníku práce).
+4. Sjednaná odměna: {{zmluva.mzda}}.
+
+${PODPISY_CZ}`,
+
+  dopc: `# DOHODA O PRACOVNÍ ČINNOSTI
+uzavřená podle § 76 zákona č. 262/2006 Sb., zákoník práce
+
+${HLAVICKA_CZ}
+
+1. Sjednaná práce: {{zmluva.pozicia}}
+2. Rozsah pracovní doby: {{zmluva.uvazok}} (v průměru nejvýše polovina stanovené týdenní pracovní doby – § 76 odst. 2 zákoníku práce).
+3. Dohoda se uzavírá od {{zmluva.zaciatok}} {{zmluva.koniec}}.
+4. Sjednaná odměna: {{zmluva.mzda}}.
+
+${PODPISY_CZ}`,
+
+  vypoved: `# VÝPOVĚĎ Z PRACOVNÍHO POMĚRU
+
+${HLAVICKA_CZ}
+
+Zaměstnavatel tímto dává zaměstnanci výpověď z pracovního poměru podle § 52 zákoníku práce.
+
+Důvod výpovědi: {{vypoved.dovod}}
+Výpovědní doba: {{vypoved.vypovedna_doba}}. Začíná dnem, v němž byla výpověď doručena zaměstnanci (§ 51 odst. 1 zákoníku práce).
+
+${PODPISY_CZ}`,
+
+  potvrdenie_prijmu: `# POTVRZENÍ O PŘÍJMU
+
+Zaměstnavatel {{firma.nazov}}, IČO {{firma.ico}}, se sídlem {{firma.adresa}}, potvrzuje, že
+{{zamestnanec.meno}}, nar. {{zamestnanec.datum_narodenia}}, bytem {{zamestnanec.adresa}},
+je u něj zaměstnán od {{zmluva.zaciatok}} jako {{zmluva.pozicia}}.
+
+Za období {{prijem.obdobie}} dosáhl:
+- průměrný měsíční hrubý příjem: {{prijem.hruba_mzda}}
+- průměrný měsíční čistý příjem: {{prijem.cista_mzda}}
+
+Zaměstnanec není ve výpovědní době.
+
+V {{miesto}} dne {{dnes}}
+
+
+.................................
+razítko a podpis zaměstnavatele`,
+};
+
+/** Kľúče šablón, ktoré firma v danej krajine má. */
+export function kluceSablon(krajina: KrajinaZamestnancov): KlucSablony[] {
+  return (Object.keys(NAZOV_SABLONY) as KlucSablony[]).filter(
+    (k) => krajina !== "CZ" || k in NAZOV_SABLONY_CZ,
+  );
+}
+
+export function nazovSablony(k: KlucSablony, krajina: KrajinaZamestnancov = "SK"): string {
+  return (krajina === "CZ" ? NAZOV_SABLONY_CZ[k] : undefined) ?? NAZOV_SABLONY[k];
+}
+
+export function predvolenaSablona(k: KlucSablony, krajina: KrajinaZamestnancov = "SK"): string {
+  return (krajina === "CZ" ? PREDVOLENE_SABLONY_CZ[k] : undefined) ?? PREDVOLENE_SABLONY[k];
+}
+
 /** Nahradí `{{token}}` hodnotami; neznámy alebo prázdny token ostane ako „…“. */
 export function vyplnSablonu(text: string, hodnoty: Record<string, string | null | undefined>): string {
   return text.replace(/\{\{\s*([a-z_.]+)\s*\}\}/gi, (_, token: string) => {
@@ -515,8 +793,16 @@ function adresa(x: { street?: string | null; zip?: string | null; city?: string 
   return [x.street, [x.zip, x.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 }
 
-function mzdaSlovom(k: Zmluva | null): string {
+function mzdaSlovom(k: Zmluva | null, krajina: KrajinaZamestnancov): string {
   if (!k?.salary) return "";
+  if (krajina === "CZ") {
+    const suma = new Intl.NumberFormat("cs-CZ", { style: "currency", currency: k.currency || "CZK" }).format(k.salary);
+    return k.salary_period === "hodinovo"
+      ? `${suma} za hodinu`
+      : k.salary_period === "odmena"
+        ? `${suma} za vykonanou práci`
+        : `${suma} měsíčně`;
+  }
   const suma = new Intl.NumberFormat("sk-SK", { style: "currency", currency: k.currency || "EUR" }).format(k.salary);
   return k.salary_period === "hodinovo"
     ? `${suma} za hodinu`
@@ -533,8 +819,10 @@ export function hodnotyTokenov(args: {
   rodneCislo?: string | null;
   dnes: string;
   doplnky?: Record<string, string>;
+  krajina?: KrajinaZamestnancov;
 }): Record<string, string> {
   const { firma, zamestnanec: z, zmluva: k } = args;
+  const cz = args.krajina === "CZ";
   return {
     "firma.nazov": firma.name,
     "firma.ico": firma.ico ?? "",
@@ -548,10 +836,18 @@ export function hodnotyTokenov(args: {
     "zmluva.pozicia": k?.position ?? z.position ?? "",
     "zmluva.miesto_vykonu": k?.workplace ?? "",
     "zmluva.zaciatok": datumSk(k?.start_date ?? z.start_date),
-    "zmluva.koniec": k?.end_date ? `na dobu určitú do ${datumSk(k.end_date)}` : "na dobu neurčitú",
+    "zmluva.koniec": cz
+      ? k?.end_date
+        ? `na dobu určitou do ${datumSk(k.end_date)}`
+        : "na dobu neurčitou"
+      : k?.end_date
+        ? `na dobu určitú do ${datumSk(k.end_date)}`
+        : "na dobu neurčitú",
     "zmluva.skusobna_doba": k?.probation_end ? datumSk(k.probation_end) : "",
-    "zmluva.uvazok": k?.weekly_hours ? `${String(k.weekly_hours).replace(".", ",")} hodín týždenne` : "",
-    "zmluva.mzda": mzdaSlovom(k),
+    "zmluva.uvazok": k?.weekly_hours
+      ? `${String(k.weekly_hours).replace(".", ",")} ${cz ? "hodin týdně" : "hodín týždenne"}`
+      : "",
+    "zmluva.mzda": mzdaSlovom(k, cz ? "CZ" : "SK"),
     dnes: datumSk(args.dnes),
     miesto: firma.city ?? "",
     ...(args.doplnky ?? {}),

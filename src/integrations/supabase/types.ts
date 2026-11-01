@@ -3386,6 +3386,7 @@ export type Database = {
           phone: string | null
           position: string | null
           rodne_cislo_enc: string | null
+          sp_deregistered_at: string | null
           sp_registered_at: string | null
           start_date: string | null
           status: string
@@ -3394,6 +3395,7 @@ export type Database = {
           title_before: string | null
           updated_at: string
           zip: string | null
+          zp_deregistered_at: string | null
           zp_registered_at: string | null
         }
         Insert: {
@@ -3420,6 +3422,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           rodne_cislo_enc?: string | null
+          sp_deregistered_at?: string | null
           sp_registered_at?: string | null
           start_date?: string | null
           status?: string
@@ -3428,6 +3431,7 @@ export type Database = {
           title_before?: string | null
           updated_at?: string
           zip?: string | null
+          zp_deregistered_at?: string | null
           zp_registered_at?: string | null
         }
         Update: {
@@ -3454,6 +3458,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           rodne_cislo_enc?: string | null
+          sp_deregistered_at?: string | null
           sp_registered_at?: string | null
           start_date?: string | null
           status?: string
@@ -3462,6 +3467,7 @@ export type Database = {
           title_before?: string | null
           updated_at?: string
           zip?: string | null
+          zp_deregistered_at?: string | null
           zp_registered_at?: string | null
         }
         Relationships: [

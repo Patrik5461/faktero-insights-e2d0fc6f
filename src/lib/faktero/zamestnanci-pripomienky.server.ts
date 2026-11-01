@@ -12,7 +12,17 @@
  * vec nevybaví, ale e-mail sa neopakuje každý deň.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { pripomienkyZamestnancov, datumSk, type Pripomienka } from "./zamestnanci";
+import {
+  pripomienkyZamestnancov,
+  datumSk,
+  krajinaZamestnancov,
+  ODHLASKY_SPATNE_DNI,
+  pridajDni,
+  type KrajinaZamestnancov,
+  type Pripomienka,
+} from "./zamestnanci";
+import { textPripomienky } from "./zamestnanci-texty";
+import { nacitajSlovnik, preloz } from "@/lib/i18n/jazyk";
 import { agendaPreKrajinu } from "./agendy-krajiny";
 import { krajinaDane } from "./vat-rates";
 
@@ -44,13 +54,25 @@ function dnes(): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
 }
 
-/** Obsah e-mailu — mená a termíny, žiadne citlivé údaje. */
-export function textPripomienok(firma: string, pripomienky: Pripomienka[]) {
-  const riadky = pripomienky.map((p) => `• ${p.nadpis}: ${p.text}`);
-  const text = `Dobrý deň,\n\npre firmu ${firma} treba vybaviť:\n\n${riadky.join("\n")}\n\nKartu zamestnanca nájdete vo Fakteri v časti Zamestnanci.\n`;
-  const html = `<p>Dobrý deň,</p><p>pre firmu <strong>${escapeHtml(firma)}</strong> treba vybaviť:</p><ul>${pripomienky
+/**
+ * Obsah e-mailu — mená a termíny, žiadne citlivé údaje. Českej firme ide
+ * po česky (slovník `cs` musí byť načítaný, inak ostane slovenčina).
+ */
+export function textPripomienok(firma: string, pripomienky: Pripomienka[], krajina: KrajinaZamestnancov = "SK") {
+  const cz = krajina === "CZ";
+  const t = (s: string, p?: Record<string, string | number>) => (cz ? preloz("cs", s, p) : preloz("sk", s, p));
+  const polozky = pripomienky.map((p) => (cz ? textPripomienky(p, t) : { nadpis: p.nadpis, text: p.text }));
+  const riadky = polozky.map((p) => `• ${p.nadpis}: ${p.text}`);
+  const uvod = t("Dobrý deň,");
+  const vybavit = t("pre firmu {firma} treba vybaviť:", { firma });
+  const zaver = t("Kartu zamestnanca nájdete vo Fakteri v časti Zamestnanci.");
+  const text = `${uvod}\n\n${vybavit}\n\n${riadky.join("\n")}\n\n${zaver}\n`;
+  const html = `<p>${escapeHtml(uvod)}</p><p>${escapeHtml(t("pre firmu {firma} treba vybaviť:", { firma: "\u0000" })).replace(
+    "\u0000",
+    `<strong>${escapeHtml(firma)}</strong>`,
+  )}</p><ul>${polozky
     .map((p) => `<li><strong>${escapeHtml(p.nadpis)}</strong>: ${escapeHtml(p.text)}</li>`)
-    .join("")}</ul><p>Kartu zamestnanca nájdete vo Fakteri v časti <a href="https://www.faktero.sk/zamestnanci">Zamestnanci</a>.</p>`;
+    .join("")}</ul><p>${escapeHtml(t("Kartu zamestnanca nájdete vo Fakteri v časti")).trim()} <a href="https://www.faktero.sk/zamestnanci">${escapeHtml(t("Zamestnanci"))}</a>.</p>`;
   return { text, html };
 }
 
@@ -73,9 +95,10 @@ export async function runEmployeeReminders() {
       const [zam, zml, log] = await Promise.all([
         supabaseAdmin
           .from("employees")
-          .select("id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, medical_check_due, bozp_training_due")
+          .select("id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, sp_deregistered_at, zp_deregistered_at, medical_check_due, bozp_training_due")
           .eq("company_id", f.id)
-          .eq("status", "active"),
+          // Nedávno ukončení — česká firma ich potrebuje na odhlášky, slovenská ich preskočí.
+          .or(`status.eq.active,end_date.gte.${pridajDni(dnesnyDen, -ODHLASKY_SPATNE_DNI)}`),
         supabaseAdmin
           .from("employee_contracts")
           .select("id, employee_id, kind, start_date, end_date, probation_end, status")
@@ -85,7 +108,9 @@ export async function runEmployeeReminders() {
       ]);
       if (zam.error) throw new Error(zam.error.message);
 
-      const vsetky = pripomienkyZamestnancov(dnesnyDen, (zam.data ?? []) as any, (zml.data ?? []) as any);
+      const krajina = krajinaZamestnancov((f as { country?: string | null }).country);
+      if (krajina === "CZ") await nacitajSlovnik("cs");
+      const vsetky = pripomienkyZamestnancov(dnesnyDen, (zam.data ?? []) as any, (zml.data ?? []) as any, krajina);
       const poslane = new Set((log.data ?? []).map((r: any) => `${r.employee_id}|${r.kind}|${r.due_date}`));
       const nove = vsetky.filter((p) => !poslane.has(`${p.employee_id}|${p.druh}|${p.termin}`));
       if (!nove.length) {
@@ -103,10 +128,14 @@ export async function runEmployeeReminders() {
         continue;
       }
 
-      const { text, html } = textPripomienok(f.name, nove);
+      const { text, html } = textPripomienok(f.name, nove, krajina);
+      const predmet =
+        krajina === "CZ"
+          ? `Zaměstnanci: ${nove.length === 1 ? preloz("cs", nove[0].nadpis) : `${nove.length} věcí k vyřízení`} — ${f.name}`
+          : `Zamestnanci: ${nove.length === 1 ? nove[0].nadpis : `${nove.length} veci na vybavenie`} — ${f.name}`;
       await sendMail({
         to: prijemca,
-        subject: `Zamestnanci: ${nove.length === 1 ? nove[0].nadpis : `${nove.length} veci na vybavenie`} — ${f.name}`,
+        subject: predmet,
         text,
         html,
       });

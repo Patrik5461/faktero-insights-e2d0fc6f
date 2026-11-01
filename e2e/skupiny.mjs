@@ -80,6 +80,8 @@ export const SKUPINY = [
   {
     meno: "test2-cz",
     toky: [
+      // Zakladá a maže vlastného zamestnanca v QA Českej (výkazy DPH neovplyvní).
+      "zamestnanci-cz",
       "blocky-pohoda",
       "vyuctovanie-pokladna",
       "prikaz-vynechane",

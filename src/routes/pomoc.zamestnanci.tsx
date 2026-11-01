@@ -93,6 +93,72 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "ceska-firma",
+    title: "Česká firma",
+    body: (
+      <>
+        <p>
+          Firma so sídlom v Česku má ten istý modul, ale{" "}
+          <strong>pravidlá podľa českých predpisov</strong> — podľa krajiny firmy v nastaveniach,
+          nie podľa jazyka.
+        </p>
+        <ul>
+          <li>
+            Zmluvy: pracovný pomer na dobu určitú alebo neurčitú, dohoda o provedení práce (DPP,
+            najviac 300 hodín za rok) a dohoda o pracovní činnosti (DPČ, v priemere najviac polovica
+            týždenného pracovného času). Brigádnická dohoda študenta je slovenská, česká firma ju
+            nemá.
+          </li>
+          <li>
+            Pri zmluve Faktero upozorní na skúšobnú dobu dlhšiu ako 4 mesiace (8 mesiacov len u
+            vedúceho zamestnanca), mzdu pod minimálnou mzdou (2026: 22 400 Kč mesačne, 134,40 Kč za
+            hodinu) a pripomenie dovolenku najmenej 4 týždne a výpovednú dobu najmenej 2 mesiace,
+            ktorá plynie odo dňa doručenia výpovede.
+          </li>
+          <li>
+            DPP zakladá účasť na poistení od odmeny 12 000 Kč za mesiac (2026), DPČ od 4 500 Kč.
+            Mzdy ani poistné Faktero nepočíta — upozornenie je len na kontrolu.
+          </li>
+          <li>
+            Rodné číslo sa kontroluje (dátum a deliteľnosť 11), číslo účtu v tvare
+            19-2000145399/0800 alebo IBAN, zdravotná poisťovňa sa vyberá zo siedmich českých (111
+            VZP až 213 RBP).
+          </li>
+          <li>
+            Šablóny dokumentov sú po česky: pracovní smlouva, DPP, DPČ, výpověď a potvrzení o
+            příjmu.
+          </li>
+        </ul>
+        <p>Pripomienky českej firmy:</p>
+        <ul>
+          <li>
+            <strong>Registrácia zamestnanca na ČSSZ</strong> najneskôr pred nástupom (najskôr 8 dní
+            vopred), aj pri dohodách.
+          </li>
+          <li>
+            <strong>Zdravotná poisťovňa</strong> — nástup do 8 dní; kto má len DPP alebo DPČ, do 20.
+            dňa nasledujúceho mesiaca.
+          </li>
+          <li>
+            <strong>Po skončení</strong> — odhlásenie z ČSSZ do 8 dní a oznámenie zdravotnej
+            poisťovni do 8 dní (pri dohodách do 20. dňa nasledujúceho mesiaca). Na karte sa zapíše
+            dátum, kedy ste to podali.
+          </li>
+          <li>Koniec skúšobnej doby, koniec doby určitej, lekárska prehliadka a školenie BOZP.</li>
+        </ul>
+        <p>
+          ELDP sa nepripomína: od apríla 2026 ho zamestnávateľ nevyhotovuje, ČSSZ ho zostaví z
+          jednotného mesačného hlásenia, ktoré sa podáva do 20. dňa nasledujúceho mesiaca.
+          Podrobnosti sú na{" "}
+          <a href="https://www.cssz.gov.cz" target="_blank" rel="noreferrer">
+            cssz.gov.cz
+          </a>
+          .
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {
