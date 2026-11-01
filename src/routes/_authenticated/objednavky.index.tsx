@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -18,6 +18,7 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
@@ -51,7 +52,6 @@ function datum(s?: string | null) {
 
 function OrdersPage() {
   const { t } = useT();
-  const navigate = useNavigate();
   const nacitaj = useServerFn(listSalesOrders);
   const menyFirmy = useFormatMenyFirmy();
   const suma = (n: unknown, mena: unknown) => menyFirmy.suma(Number(n) || 0, mena);
@@ -183,8 +183,9 @@ function OrdersPage() {
                       const meska = jePoTermine(o.requested_date, stav, dnes);
                       const percento = percentoVybavenia(o.sales_order_items ?? []);
                       return (
-                        <tr
+                        <KlikatelnyRiadok
                           key={o.id}
+                          ciel={{ to: "/objednavky/$id", params: { id: o.id } }}
                           className="border-b border-border last:border-0 hover:bg-muted/40"
                         >
                           <td className="px-4 py-2">
@@ -237,7 +238,7 @@ function OrdersPage() {
                             </div>
                           </td>
                           <td className="suma whitespace-nowrap px-4 py-2 text-right">{suma(o.total, o.currency)}</td>
-                        </tr>
+                        </KlikatelnyRiadok>
                       );
                     })}
                   </tbody>
@@ -250,7 +251,7 @@ function OrdersPage() {
               const percento = percentoVybavenia(o.sales_order_items ?? []);
               return (
                 <MobileListCard
-                  onClick={() => navigate({ to: "/objednavky/$id", params: { id: o.id } })}
+                  ciel={{ to: "/objednavky/$id", params: { id: o.id } }}
                   title={
                     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                       {o.order_number}

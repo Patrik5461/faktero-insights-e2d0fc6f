@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -55,6 +57,7 @@ type Item = {
 
 function RecurringDetail() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   /* Sadzby DPH podľa krajiny registrácie firmy. */
@@ -416,8 +419,14 @@ function RecurringDetail() {
               </div>
             ) : (
               <div className="divide-y divide-border text-sm">
-                {logs.map((l) => (
-                  <div key={l.id} className="flex items-center justify-between gap-3 py-2">
+                {logs.map((l) => {
+                  // Beh bez faktúry (chyba) nemá kam viesť.
+                  const p = klik(
+                    l.invoice_id ? { to: "/faktury/$id", params: { id: l.invoice_id } } : null,
+                    { klavesnica: false },
+                  );
+                  return (
+                  <div key={l.id} {...p} className={cn("flex items-center justify-between gap-3 py-2", p.className)}>
                     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                       <StavOdznak ton={TON_BEHU[l.status] ?? "chyba"}>
                         {l.status === "success" ? t("Úspech") : t("Chyba")}
@@ -442,7 +451,8 @@ function RecurringDetail() {
                       </Link>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

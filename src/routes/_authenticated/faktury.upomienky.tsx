@@ -2,6 +2,9 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Settings, ChevronDown, ChevronRight } from "lucide-react";
@@ -48,6 +51,9 @@ const casOdoslania = (iso: string) =>
 
 function OdoslaneUpomienky() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
+  const cielFaktury = (r: RiadokUpomienky): CielDetailu | null =>
+    r.invoice_id ? { to: "/faktury/$id", params: { id: r.invoice_id } } : null;
   const [companyId, setCompanyId] = useState<string | null>(null);
   useEffect(() => setCompanyId(getActiveCompanyId()), []);
   const lf = useListFilters({ pageSizeKey: "upomienky" });
@@ -162,7 +168,7 @@ function OdoslaneUpomienky() {
 
   function riadokTabulky(r: RiadokUpomienky, sKlientom = true) {
     return (
-      <tr key={r.id} className="align-top">
+      <KlikatelnyRiadok key={r.id} ciel={cielFaktury(r)} className="align-top">
         <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
           {casOdoslania(r.sent_at)}
         </td>
@@ -178,7 +184,7 @@ function OdoslaneUpomienky() {
         <td className="whitespace-nowrap p-3 text-xs">{stupen(r.reminder_number)}</td>
         <td className="p-3 text-xs text-muted-foreground">{sposobText(r)}</td>
         <td className="p-3">{stavBunka(r)}</td>
-      </tr>
+      </KlikatelnyRiadok>
     );
   }
 
@@ -363,8 +369,10 @@ function OdoslaneUpomienky() {
           <>
             {/* Mobil: karty namiesto širokej tabuľky. */}
             <div className="space-y-3 md:hidden">
-              {viditelne.map((r) => (
-                <div key={r.id} className="rounded-xl border border-border bg-card p-4">
+              {viditelne.map((r) => {
+                const karta = klik(cielFaktury(r), { klavesnica: false });
+                return (
+                <div key={r.id} {...karta} className={cn("rounded-xl border border-border bg-card p-4", karta.className)}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="truncate font-medium">{nazovKlienta(r)}</div>
@@ -381,7 +389,8 @@ function OdoslaneUpomienky() {
                   </div>
                   <div className="mt-2">{stavBunka(r)}</div>
                 </div>
-              ))}
+                );
+              })}
               {zarazka()}
             </div>
             <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">

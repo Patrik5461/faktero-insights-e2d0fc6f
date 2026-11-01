@@ -61,6 +61,7 @@ import {
   BulkBar,
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { supabase } from "@/integrations/supabase/client";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
@@ -1152,7 +1153,7 @@ function InvoicesPage() {
           emptyText={list.showDeleted ? t("Žiadne vymazané faktúry.") : t("Žiadne faktúry.")}
           mobileCard={(i: any) => (
             <MobileListCard
-              onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
+              ciel={{ to: "/faktury/$id", params: { id: i.id } }}
               vybrane={!!list.selected[i.id]}
               onVyber={(v) => list.toggleSelect(i.id, v)}
               vyberPopis={t("Vybrať faktúru {cislo}", { cislo: i.invoice_number ?? "" })}
@@ -1286,11 +1287,12 @@ function InvoicesPage() {
                       znovunačítaním stránky. Klikateľný je po novom celý
                       riadok cez router; výber a akcie si kliknutie ponechajú.
                     */
-                    <tr
+                    <KlikatelnyRiadok
                       key={i.id}
                       data-nahlad-id={i.id}
-                      className={`cursor-pointer hover:bg-muted/30 ${bocny.zapnuty && bocny.vybrany === i.id ? "bg-primary/10" : ""}`}
-                      onClick={() =>
+                      className={bocny.zapnuty && bocny.vybrany === i.id ? "bg-primary/10" : undefined}
+                      ciel={{ to: "/faktury/$id", params: { id: i.id } }}
+                      naKlik={() =>
                         bocny.aktivny()
                           ? bocny.setVybrany(i.id)
                           : navigate({ to: "/faktury/$id", params: { id: i.id } })
@@ -1308,7 +1310,20 @@ function InvoicesPage() {
                       <td className="px-2 py-3 font-medium">
                         {/* Odznaky (eFaktúra, upomienka…) sa zalomia pod číslo, aby tabuľka nevytlačila stĺpec Stav. */}
                         <span className="inline-flex max-w-[12rem] flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
+                          <Link
+                            to="/faktury/$id"
+                            params={{ id: i.id }}
+                            className="cislo-dokladu whitespace-nowrap text-inherit no-underline"
+                            onClick={(e) => {
+                              // Pri bočnom náhľade číslo len vyberie faktúru ako zvyšok riadku.
+                              if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && bocny.aktivny()) {
+                                e.preventDefault();
+                                bocny.setVybrany(i.id);
+                              }
+                            }}
+                          >
+                            {i.invoice_number}
+                          </Link>
                           <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                           {i.type === "credit_note" || i.type === "debit_note" ? (
                             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -1459,7 +1474,7 @@ function InvoicesPage() {
                           </div>
                         )}
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   ))}
                 </tbody>
               </table>

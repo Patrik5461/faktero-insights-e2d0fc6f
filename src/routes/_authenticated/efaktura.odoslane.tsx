@@ -1,6 +1,9 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +41,10 @@ export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
 
 function SentPage() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
+  // Riadok bez faktúry (vymazaná) nemá kam viesť — ostane bez kliku.
+  const cielFaktury = (row: any): CielDetailu | null =>
+    row.invoice_id ? { to: "/faktury/$id", params: { id: row.invoice_id } } : null;
   const chyb = (n: number) =>
     t(n === 1 ? "{n} chyba" : n > 1 && n < 5 ? "{n} chyby" : "{n} chýb", { n });
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -149,9 +156,9 @@ function SentPage() {
     return (
       <div className={`flex flex-wrap gap-1 ${className}`}>
         {row.invoice_id && (
-          <a href={`/faktury/${row.invoice_id}`} className={btn}>
+          <Link to="/faktury/$id" params={{ id: row.invoice_id }} className={btn}>
             <Eye className="h-3.5 w-3.5" /> {t("Detail")}
-          </a>
+          </Link>
         )}
         <button onClick={() => row.invoice_id && handleRevalidate(row.invoice_id)} className={btn}>
           <RefreshCw className="h-3.5 w-3.5" /> {t("Validovať")}
@@ -224,8 +231,14 @@ function SentPage() {
               {t("Nič nevyhovuje filtru.")}
             </div>
           )}
-          {zobrazene.map((row: any) => (
-            <div key={row.id} className="rounded-xl border border-border bg-card p-4">
+          {zobrazene.map((row: any) => {
+            const karta = klik(cielFaktury(row), { klavesnica: false });
+            return (
+            <div
+              key={row.id}
+              {...karta}
+              className={cn("rounded-xl border border-border bg-card p-4", karta.className)}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="cislo-dokladu">{cislo(row)}</div>
@@ -247,7 +260,8 @@ function SentPage() {
               </div>
               {akcieBunka(row, "mt-3")}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
@@ -287,7 +301,7 @@ function SentPage() {
                 </tr>
               )}
               {zobrazene.map((row: any) => (
-                <tr key={row.id} className="align-top">
+                <KlikatelnyRiadok key={row.id} ciel={cielFaktury(row)} className="align-top">
                   <td className="cislo-dokladu whitespace-nowrap p-3">{cislo(row)}</td>
                   <td className="p-3">
                     <span
@@ -312,7 +326,7 @@ function SentPage() {
                     {/* Tlačidlá sa zalomia do dvoch riadkov, aby stĺpec neutiekol za okraj. */}
                     {akcieBunka(row, "ml-auto max-w-[190px] justify-end")}
                   </td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

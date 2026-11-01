@@ -1,7 +1,7 @@
 import { formatujMenu } from "@/lib/faktero/mena";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Trash2, RotateCcw, Hash } from "lucide-react";
@@ -13,6 +13,7 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { filtrujObdobie } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/ponuky/")({
@@ -41,7 +42,6 @@ const TON_PONUKY: Record<string, TonStavu> = {
 
 function QuotesPage() {
   const { t } = useT();
-  const navigate = useNavigate();
   // Hľadanie, filtre, strana a počet na stranu sú v adrese.
   const lf = useListFilters({
     pageSizeKey: "quotes",
@@ -169,7 +169,7 @@ function QuotesPage() {
           emptyText={list.showDeleted ? t("Žiadne vymazané ponuky.") : t("Žiadne cenové ponuky.")}
           mobileCard={(q: any) => (
             <MobileListCard
-              onClick={() => navigate({ to: "/ponuky/$id", params: { id: q.id } })}
+              ciel={{ to: "/ponuky/$id", params: { id: q.id } }}
               vybrane={!!list.selected[q.id]}
               onVyber={(zapnut) => list.toggleSelect(q.id, zapnut)}
               vyberPopis={t("Vybrať riadok")}
@@ -255,11 +255,7 @@ function QuotesPage() {
                       ani akcie na ťuknutie nereagovali. Preklikateľný je po novom
                       celý riadok a ide to cez router — rovnako ako inde.
                     */
-                    <tr
-                      key={q.id}
-                      className="cursor-pointer hover:bg-muted/30"
-                      onClick={() => navigate({ to: "/ponuky/$id", params: { id: q.id } })}
-                    >
+                    <KlikatelnyRiadok key={q.id} ciel={{ to: "/ponuky/$id", params: { id: q.id } }}>
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -268,7 +264,15 @@ function QuotesPage() {
                           onChange={(e) => list.toggleSelect(q.id, e.target.checked)}
                         />
                       </td>
-                      <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">{q.quote_number}</td>
+                      <td className="whitespace-nowrap p-3 font-medium">
+                        <Link
+                          to="/ponuky/$id"
+                          params={{ id: q.id }}
+                          className="cislo-dokladu text-inherit no-underline"
+                        >
+                          {q.quote_number}
+                        </Link>
+                      </td>
                       <td className="p-3">
                         <span className="block max-w-[260px] truncate" title={q.customer_name ?? undefined}>
                           {q.customer_name ?? "—"}
@@ -308,7 +312,7 @@ function QuotesPage() {
                           </button>
                         )}
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   ))}
                 </tbody>
               </table>

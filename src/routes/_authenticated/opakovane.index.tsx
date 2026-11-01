@@ -17,6 +17,7 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 export const Route = createFileRoute("/_authenticated/opakovane/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Opakované faktúry — Faktero") }] }),
@@ -231,7 +232,7 @@ function RecurringList() {
                       </tr>
                     )}
                     {list.rows.map((r) => (
-                      <tr key={r.id} className="hover:bg-muted/30">
+                      <KlikatelnyRiadok key={r.id} ciel={{ to: "/opakovane/$id", params: { id: r.id } }}>
                         <td className="p-3" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
@@ -315,7 +316,7 @@ function RecurringList() {
                             )}
                           </div>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))}
                   </tbody>
                 </table>
@@ -323,7 +324,7 @@ function RecurringList() {
             }
             mobileCard={(r: any) => (
               <MobileListCard
-                onClick={() => navigate({ to: "/opakovane/$id", params: { id: r.id } })}
+                ciel={{ to: "/opakovane/$id", params: { id: r.id } }}
                 vybrane={!!list.selected[r.id]}
                 onVyber={(zapnut) => list.toggleSelect(r.id, zapnut)}
                 vyberPopis={t("Vybrať riadok")}

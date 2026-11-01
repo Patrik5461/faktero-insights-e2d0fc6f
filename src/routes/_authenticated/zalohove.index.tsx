@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { ListPagination, ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { filtrujObdobie, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
@@ -28,7 +29,6 @@ export const Route = createFileRoute("/_authenticated/zalohove/")({
 
 function ProformaListPage() {
   const { t } = useT();
-  const navigate = useNavigate();
   // Hľadanie, filtre, strana a počet na stranu sú v adrese.
   const lf = useListFilters({
     pageSizeKey: "invoices-proforma",
@@ -181,7 +181,7 @@ function ProformaListPage() {
             const s = statusFor(i);
             return (
               <MobileListCard
-                onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
+                ciel={{ to: "/faktury/$id", params: { id: i.id } }}
                 title={i.invoice_number}
                 subtitle={i.customer_name ?? "—"}
                 status={<ProformaStatus value={s} settled={settledMap[i.id]} />}
@@ -258,12 +258,16 @@ function ProformaListPage() {
                         nereagovali. Klikateľný je po novom celý riadok cez
                         router; bunka s odkazom a akciami si kliknutie ponechá.
                       */
-                      <tr
-                        key={i.id}
-                        className="cursor-pointer hover:bg-muted/30"
-                        onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
-                      >
-                        <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">{i.invoice_number}</td>
+                      <KlikatelnyRiadok key={i.id} ciel={{ to: "/faktury/$id", params: { id: i.id } }}>
+                        <td className="whitespace-nowrap p-3 font-medium">
+                          <Link
+                            to="/faktury/$id"
+                            params={{ id: i.id }}
+                            className="cislo-dokladu text-inherit no-underline"
+                          >
+                            {i.invoice_number}
+                          </Link>
+                        </td>
                         <td className="p-3">
                           <span
                             className="block max-w-[14rem] truncate 2xl:max-w-[22rem]"
@@ -319,7 +323,7 @@ function ProformaListPage() {
                             </button>
                           )}
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     );
                   })}
                 </tbody>

@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -62,6 +64,7 @@ function datum(s?: string | null) {
 
 function OrderDetail() {
   const { t, jazyk } = useT();
+  const klik = useKlikNaRiadok();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const nacitaj = useServerFn(getSalesOrder);
@@ -335,8 +338,10 @@ function OrderDetail() {
               </p>
             ) : (
               <ul className="space-y-1 text-sm">
-                {o.faktury.map((f: any) => (
-                  <li key={f.id} className="flex items-center justify-between gap-3">
+                {o.faktury.map((f: any) => {
+                  const p = klik({ to: "/faktury/$id", params: { id: f.id } }, { klavesnica: false });
+                  return (
+                  <li key={f.id} {...p} className={cn("flex items-center justify-between gap-3", p.className)}>
                     <Link
                       to="/faktury/$id"
                       params={{ id: f.id }}
@@ -349,7 +354,8 @@ function OrderDetail() {
                       <span className="suma text-foreground">{suma(f.total, f.currency ?? o.currency)}</span>
                     </span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </div>

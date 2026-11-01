@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
@@ -252,7 +253,13 @@ function ParovaniePage() {
                     </thead>
                     <tbody>
                       {vsetky.map((z) => (
-                        <tr key={z.transactionId} className="border-t border-border align-top">
+                        /* Zoznam slúži na výber: klik na riadok ho označí/odznačí, faktúru otvára odkaz na čísle. */
+                        <KlikatelnyRiadok
+                          key={z.transactionId}
+                          naKlik={() => prepni(z.transactionId)}
+                          klavesnica={false}
+                          className="border-t border-border align-top"
+                        >
                           <td className="px-3 py-3">
                             <input
                               type="checkbox"
@@ -303,7 +310,7 @@ function ParovaniePage() {
                               </div>
                             )}
                           </td>
-                        </tr>
+                        </KlikatelnyRiadok>
                       ))}
                     </tbody>
                   </table>

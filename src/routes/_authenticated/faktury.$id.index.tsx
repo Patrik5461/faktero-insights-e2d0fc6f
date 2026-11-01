@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
@@ -160,6 +162,7 @@ function InvoiceDetail() {
   const { t, jazyk } = useT();
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const klik = useKlikNaRiadok();
   // Vlastné stavy dokladov firmy (číselník v Účtovníctvo → Predkontácie).
   const ciselnikyFirmy = useCiselnikyDokladov(getActiveCompanyId(), null, false);
   const [inv, setInv] = useState<any>(null);
@@ -1635,8 +1638,10 @@ function InvoiceDetail() {
             {odpocitaneZalohy.length === 1 ? t("Zúčtovaná záloha") : t("Zúčtované zálohy")}
           </div>
           <ul className="mt-2 space-y-1">
-            {odpocitaneZalohy.map((o) => (
-              <li key={o.advance_invoice_id} className="flex flex-wrap items-baseline gap-2">
+            {odpocitaneZalohy.map((o) => {
+              const p = klik({ to: "/faktury/$id", params: { id: o.advance_invoice_id } }, { klavesnica: false });
+              return (
+              <li key={o.advance_invoice_id} {...p} className={cn("flex flex-wrap items-baseline gap-2", p.className)}>
                 <Link
                   to="/faktury/$id"
                   params={{ id: o.advance_invoice_id }}
@@ -1649,7 +1654,8 @@ function InvoiceDetail() {
                   <span className="suma">{formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}</span>
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ul>
           {/* Súčet len pri jednej mene — zálohy v inej mene ostávajú každá so svojou sumou. */}
           {odpocitaneZalohy.length > 1 && sucetOdpocitanychZaloh(odpocitaneZalohy, inv.currency) !== null && (

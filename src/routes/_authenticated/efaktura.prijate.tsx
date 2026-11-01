@@ -33,6 +33,8 @@ import {
 import { nacitajUlozenuKontrolu } from "@/lib/faktero/efaktura/kontrola/ulozenie";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import type { CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { odkazNaZaradenie } from "@/lib/faktero/efaktura/zaevidovanie-efaktury";
 import { StavOdznak, TON_EFAKTURY, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
@@ -469,6 +471,20 @@ function ReceivedPage() {
   const lenOdosielanie = profilQ.data?.rezim === "len_odosielanie";
   const poskytovatel = profilQ.data?.prijem_poskytovatel ?? null;
 
+  /** Kam vedie klik na riadok: zaevidovaný doklad, inak Nespracované. */
+  function cielRiadku(r: any): CielDetailu | null {
+    if (r.matched_supplier_invoice_id)
+      return { to: "/prijate-faktury/$id", params: { id: r.matched_supplier_invoice_id } };
+    if (r.nespracovany_id) return { to: "/nespracovane/$id", params: { id: r.nespracovany_id } };
+    return null;
+  }
+  /** Nezaevidovaná eFaktúra nemá detail — klik na riadok otvorí náhľad PDF. */
+  function nahladRiadku(r: any) {
+    return cielRiadku(r) ? undefined : () => {
+      if (nacitavamNahlad !== r.id) void otvorNahlad(r.id);
+    };
+  }
+
   /** Akcie riadku — rovnaké v tabuľke aj na kartách pre telefón. */
   function akcieRiadku(r: any) {
     return (
@@ -488,19 +504,21 @@ function ReceivedPage() {
           <Paperclip className="h-3.5 w-3.5" /> {t("Prílohy")}
         </button>
         {r.matched_supplier_invoice_id ? (
-          <a
-            href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
+          <Link
+            to="/prijate-faktury/$id"
+            params={{ id: r.matched_supplier_invoice_id }}
             className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary"
           >
             <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť doklad")}
-          </a>
+          </Link>
         ) : r.nespracovany_id ? (
-          <a
-            href={`/nespracovane/${r.nespracovany_id}`}
+          <Link
+            to="/nespracovane/$id"
+            params={{ id: r.nespracovany_id }}
             className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary"
           >
             <ExternalLink className="h-3.5 w-3.5" /> {t("V Nespracovaných")}
-          </a>
+          </Link>
         ) : (
           <button
             onClick={() => zaevidujDoklad(r.id)}
@@ -605,6 +623,8 @@ function ReceivedPage() {
             mobileCard={(r: any) => (
               <>
                 <MobileListCard
+                  ciel={cielRiadku(r)}
+                  onClick={nahladRiadku(r)}
                   title={r.document_number ?? "—"}
                   subtitle={r.sender_name ?? "—"}
                   status={<StavDokladu stav={r.status} />}
@@ -662,7 +682,7 @@ function ReceivedPage() {
                 )}
                 {zobrazene.map((r) => (
                   <Fragment key={r.id}>
-                  <tr>
+                  <KlikatelnyRiadok ciel={cielRiadku(r)} naKlik={nahladRiadku(r)}>
                     <td className="px-2 py-3 text-xs text-muted-foreground tabular-nums">
                       {r.received_at ? new Date(r.received_at).toLocaleString("sk-SK") : "—"}
                     </td>
@@ -700,7 +720,7 @@ function ReceivedPage() {
                         {akcieRiadku(r)}
                       </div>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                   {rozbalene === r.id && (
                     <tr className="bg-muted/20">
                       <td colSpan={9} className="px-2 py-3">
