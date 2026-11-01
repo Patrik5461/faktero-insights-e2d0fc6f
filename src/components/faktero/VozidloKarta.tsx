@@ -6,6 +6,8 @@ import { ExternalLink, FileText, Loader2, ScanText, Trash2, Upload } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
+import { useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { potvrd } from "@/lib/potvrdenie";
@@ -192,6 +194,7 @@ export function VozidloKarta({
   // J-14: rola s „Len čítať“ v oblasti jazdy nemá tlačidlá zápisu.
   const smieUpravovat = useMozeUpravovat("jazdy");
   const navigate = useNavigate();
+  const klik = useKlikNaRiadok();
   const precitaj = useServerFn(precitajTechnickyPreukazFn);
   const cid = typeof window !== "undefined" ? getActiveCompanyId() : null;
   const [f, setF] = useState<Formular | null>(id ? null : zRiadku({ fuel_type: "diesel" }));
@@ -747,53 +750,61 @@ export function VozidloKarta({
                 {t("Zatiaľ žiadne dokumenty.")}
               </li>
             )}
-            {dokumenty.map((d) => (
-              <li key={d.file_path} className="flex items-start gap-2 py-2 text-sm">
-                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => void otvor(d)}
-                    className="block max-w-full truncate text-left hover:underline"
-                  >
-                    {d.nazov}
-                  </button>
-                  <div className="text-xs text-muted-foreground">
-                    {t(nazovDruhu(d.druh))}
-                    {d.platne_do
-                      ? ` · ${t("platné do {datum}", { datum: datumNaDoklade(d.platne_do) })}`
-                      : ""}
-                    {!d.id ? ` · ${t("uloží sa s vozidlom")}` : ""}
+            {dokumenty.map((d) => {
+              // Klik na riadok dokumentu ho otvorí (to isté čo klik na názov).
+              const kp = klik(null, { naKlik: () => void otvor(d), klavesnica: false });
+              return (
+                <li
+                  key={d.file_path}
+                  {...kp}
+                  className={cn(kp.className, "flex items-start gap-2 py-2 text-sm")}
+                >
+                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => void otvor(d)}
+                      className="block max-w-full truncate text-left hover:underline"
+                    >
+                      {d.nazov}
+                    </button>
+                    <div className="text-xs text-muted-foreground">
+                      {t(nazovDruhu(d.druh))}
+                      {d.platne_do
+                        ? ` · ${t("platné do {datum}", { datum: datumNaDoklade(d.platne_do) })}`
+                        : ""}
+                      {!d.id ? ` · ${t("uloží sa s vozidlom")}` : ""}
+                    </div>
                   </div>
-                </div>
-                {(d.druh === "tp1" || d.druh === "tp2") && (
-                  <button
-                    type="button"
-                    title={t("Vyčítať údaje z preukazu")}
-                    aria-label={t("Vyčítať údaje z preukazu")}
-                    onClick={() => void citajDokument(d.file_path)}
-                    disabled={citam !== null}
-                    className="rounded p-1 text-muted-foreground hover:bg-secondary disabled:opacity-50"
-                  >
-                    {citam === d.file_path ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ScanText className="h-4 w-4" />
-                    )}
-                  </button>
-                )}
-                {smieUpravovat && (
-                  <button
-                    type="button"
-                    aria-label={t("Zmazať dokument")}
-                    onClick={() => void zmazDokument(d)}
-                    className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </li>
-            ))}
+                  {(d.druh === "tp1" || d.druh === "tp2") && (
+                    <button
+                      type="button"
+                      title={t("Vyčítať údaje z preukazu")}
+                      aria-label={t("Vyčítať údaje z preukazu")}
+                      onClick={() => void citajDokument(d.file_path)}
+                      disabled={citam !== null}
+                      className="rounded p-1 text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                    >
+                      {citam === d.file_path ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ScanText className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
+                  {smieUpravovat && (
+                    <button
+                      type="button"
+                      aria-label={t("Zmazať dokument")}
+                      onClick={() => void zmazDokument(d)}
+                      className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
 
@@ -847,6 +858,7 @@ type Naklad = {
  */
 function NakladyVozidla({ id }: { id: string }) {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
   const [naklady, setNaklady] = useState<Naklad[] | null>(null);
   const rok = new Date().getFullYear();
 
@@ -968,39 +980,36 @@ function NakladyVozidla({ id }: { id: string }) {
             </div>
           </dl>
           <ul className="mt-3 divide-y divide-border text-sm">
-            {naklady.slice(0, 10).map((n) => (
-              <li
-                key={`${n.druh}-${n.id}`}
-                className="flex items-start justify-between gap-2 py-1.5"
-              >
-                <Link
-                  to={
-                    n.druh === "blocek"
-                      ? "/doklady/novy"
-                      : n.druh === "karta"
-                        ? "/vozovy-park/palivove-karty"
-                        : "/prijate-faktury/$id"
-                  }
-                  {...(n.druh === "blocek"
-                    ? { search: { id: n.id } as any }
-                    : n.druh === "prijata"
-                      ? { params: { id: n.id } as any }
-                      : {})}
-                  className="min-w-0 hover:underline"
+            {naklady.slice(0, 10).map((n) => {
+              const ciel: CielDetailu =
+                n.druh === "blocek"
+                  ? { to: "/doklady/novy", search: { id: n.id } as any }
+                  : n.druh === "prijata"
+                    ? { to: "/prijate-faktury/$id", params: { id: n.id } as any }
+                    : { to: "/vozovy-park/palivove-karty" };
+              // Klik kdekoľvek na riadok (aj na sumu) otvorí doklad.
+              const kp = klik(ciel, { klavesnica: false });
+              return (
+                <li
+                  key={`${n.druh}-${n.id}`}
+                  {...kp}
+                  className={cn(kp.className, "flex items-start justify-between gap-2 py-1.5")}
                 >
-                  <span className="block truncate">{n.dodavatel ?? (n.cislo || "—")}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {datumNaDoklade(n.datum)} ·{" "}
-                    {n.druh === "blocek"
-                      ? t("bloček")
-                      : n.druh === "karta"
-                        ? t("palivová karta")
-                        : t("prijatá faktúra")}
-                  </span>
-                </Link>
-                <span className="suma shrink-0 whitespace-nowrap font-medium">{formatujMenu(n.bezDph, n.mena)}</span>
-              </li>
-            ))}
+                  <Link {...(ciel as any)} className="min-w-0 hover:underline">
+                    <span className="block truncate">{n.dodavatel ?? (n.cislo || "—")}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {datumNaDoklade(n.datum)} ·{" "}
+                      {n.druh === "blocek"
+                        ? t("bloček")
+                        : n.druh === "karta"
+                          ? t("palivová karta")
+                          : t("prijatá faktúra")}
+                    </span>
+                  </Link>
+                  <span className="suma shrink-0 whitespace-nowrap font-medium">{formatujMenu(n.bezDph, n.mena)}</span>
+                </li>
+              );
+            })}
           </ul>
           {naklady.length > 10 && (
             <p className="mt-2 text-xs text-muted-foreground">

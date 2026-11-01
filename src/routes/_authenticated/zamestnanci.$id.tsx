@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PrepojeneOstatneDoklady } from "@/components/faktero/ostatne/PrepojeneOstatneDoklady";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { AlertTriangle, ArrowLeft, Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -399,6 +401,20 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
   const uloz = useServerFn(ulozZmluvu);
   const zmaz = useServerFn(zmazZaznam);
   const [forma, setForma] = useState<ReturnType<typeof prazdnaZmluva> | null>(null);
+  const formular = useRef<HTMLFormElement>(null);
+  const klik = useKlikNaRiadok();
+  const upravZmluvu = (k: (typeof detail.zmluvy)[number]) => {
+    setForma({
+      ...prazdnaZmluva(),
+      ...Object.fromEntries(Object.entries(k).map(([a, b]) => [a, b == null ? "" : String(b)])),
+      id: k.id,
+    } as any);
+    // Formulár je nad zoznamom — posuň naň a zameraj prvé pole.
+    requestAnimationFrame(() => {
+      formular.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      formular.current?.querySelector<HTMLElement>("select, input")?.focus({ preventScroll: true });
+    });
+  };
 
   async function ulozit(e: React.FormEvent) {
     e.preventDefault();
@@ -423,7 +439,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
         </button>
       )}
       {forma && (
-        <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4 sm:p-5">
+        <form ref={formular} onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={popis} htmlFor="k-kind">{t("Druh")}</label>
@@ -508,58 +524,60 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
         <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadna zmluva.")}</p>
       ) : (
         <ul className="space-y-2">
-          {detail.zmluvy.map((k) => (
-            <li key={k.id} className="rounded-xl border border-border bg-card p-4 text-sm sm:px-5">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="font-semibold">
-                    {t(nazovZmluvy(k.kind, krajina))}{" "}
-                    {k.number ? t("č. {cislo}", { cislo: k.number }) : ""}
+          {detail.zmluvy.map((k) => {
+            // Klik na zmluvu otvorí jej úpravu (to isté čo „Upraviť“).
+            const kp = klik(null, { naKlik: () => upravZmluvu(k), klavesnica: false });
+            return (
+              <li
+                key={k.id}
+                {...kp}
+                className={cn(kp.className, "rounded-xl border border-border bg-card p-4 text-sm sm:px-5")}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold">
+                      {t(nazovZmluvy(k.kind, krajina))}{" "}
+                      {k.number ? t("č. {cislo}", { cislo: k.number }) : ""}
+                    </div>
+                    <div className="mt-0.5 tabular-nums text-muted-foreground">
+                      {datumSk(k.start_date)} – {k.end_date ? datumSk(k.end_date) : t("na dobu neurčitú")}
+                      {k.probation_end
+                        ? ` · ${t("skúšobná doba do {datum}", { datum: datumSk(k.probation_end) })}`
+                        : ""}
+                      {k.status !== "active"
+                        ? ` · ${k.status === "draft" ? t("návrh") : t("ukončená")}`
+                        : ""}
+                    </div>
                   </div>
-                  <div className="mt-0.5 tabular-nums text-muted-foreground">
-                    {datumSk(k.start_date)} – {k.end_date ? datumSk(k.end_date) : t("na dobu neurčitú")}
-                    {k.probation_end
-                      ? ` · ${t("skúšobná doba do {datum}", { datum: datumSk(k.probation_end) })}`
-                      : ""}
-                    {k.status !== "active"
-                      ? ` · ${k.status === "draft" ? t("návrh") : t("ukončená")}`
-                      : ""}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={tlacidloObrys}
+                      onClick={() => upravZmluvu(k)}
+                    >
+                      {t("Upraviť")}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={t("Zmazať zmluvu")}
+                      className={`${tlacidloObrys} text-destructive`}
+                      onClick={async () => {
+                        if (!(await potvrd(t("Zmazať túto zmluvu?")))) return;
+                        try {
+                          await zmaz({ data: { company_id: cid, id: k.id, tabulka: "employee_contracts" } });
+                          obnov();
+                        } catch (err: any) {
+                          toast.error(err?.message ?? t("Zmluvu sa nepodarilo zmazať."));
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className={tlacidloObrys}
-                    onClick={() =>
-                      setForma({
-                        ...prazdnaZmluva(),
-                        ...Object.fromEntries(Object.entries(k).map(([a, b]) => [a, b == null ? "" : String(b)])),
-                        id: k.id,
-                      } as any)
-                    }
-                  >
-                    {t("Upraviť")}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t("Zmazať zmluvu")}
-                    className={`${tlacidloObrys} text-destructive`}
-                    onClick={async () => {
-                      if (!(await potvrd(t("Zmazať túto zmluvu?")))) return;
-                      try {
-                        await zmaz({ data: { company_id: cid, id: k.id, tabulka: "employee_contracts" } });
-                        obnov();
-                      } catch (err: any) {
-                        toast.error(err?.message ?? t("Zmluvu sa nepodarilo zmazať."));
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -599,6 +617,15 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
   const pridaj = useServerFn(pridajDokument);
   const odkaz = useServerFn(odkazNaDokument);
   const zmaz = useServerFn(zmazDokument);
+  const klik = useKlikNaRiadok();
+  async function otvorDokument(id: string) {
+    try {
+      const { url } = await odkaz({ data: { company_id: cid, id } });
+      window.open(url, "_blank", "noopener");
+    } catch (err: any) {
+      toast.error(err?.message ?? t("Dokument sa nepodarilo otvoriť."));
+    }
+  }
   const [sablona, setSablona] = useState<KlucSablony>("pracovna_zmluva");
   const [zmluva, setZmluva] = useState<string>(detail.zmluvy[0]?.id ?? "");
   const [doplnky, setDoplnky] = useState<Record<string, string>>({});
@@ -720,46 +747,47 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
         <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadne dokumenty.")}</p>
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {detail.dokumenty.map((d) => (
-            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-              <div className="min-w-0">
-                <div className="truncate font-semibold">{d.title}</div>
-                <div className="text-xs tabular-nums text-muted-foreground">{datumSk(d.created_at)}</div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={tlacidloObrys}
-                  onClick={async () => {
-                    try {
-                      const { url } = await odkaz({ data: { company_id: cid, id: d.id } });
-                      window.open(url, "_blank", "noopener");
-                    } catch (err: any) {
-                      toast.error(err?.message ?? t("Dokument sa nepodarilo otvoriť."));
-                    }
-                  }}
-                >
-                  {t("Otvoriť")}
-                </button>
-                <button
-                  type="button"
-                  aria-label={t("Zmazať dokument")}
-                  className={`${tlacidloObrys} text-destructive`}
-                  onClick={async () => {
-                    if (!(await potvrd(t("Zmazať dokument „{nazov}“?", { nazov: d.title })))) return;
-                    try {
-                      await zmaz({ data: { company_id: cid, id: d.id } });
-                      obnov();
-                    } catch (err: any) {
-                      toast.error(err?.message ?? t("Dokument sa nepodarilo zmazať."));
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </li>
-          ))}
+          {detail.dokumenty.map((d) => {
+            // Klik na riadok dokumentu ho otvorí (to isté čo „Otvoriť“).
+            const kp = klik(null, { naKlik: () => void otvorDokument(d.id), klavesnica: false });
+            return (
+              <li
+                key={d.id}
+                {...kp}
+                className={cn(kp.className, "flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm")}
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-semibold">{d.title}</div>
+                  <div className="text-xs tabular-nums text-muted-foreground">{datumSk(d.created_at)}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={tlacidloObrys}
+                    onClick={() => void otvorDokument(d.id)}
+                  >
+                    {t("Otvoriť")}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("Zmazať dokument")}
+                    className={`${tlacidloObrys} text-destructive`}
+                    onClick={async () => {
+                      if (!(await potvrd(t("Zmazať dokument „{nazov}“?", { nazov: d.title })))) return;
+                      try {
+                        await zmaz({ data: { company_id: cid, id: d.id } });
+                        obnov();
+                      } catch (err: any) {
+                        toast.error(err?.message ?? t("Dokument sa nepodarilo zmazať."));
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

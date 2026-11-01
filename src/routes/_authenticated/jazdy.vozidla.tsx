@@ -11,6 +11,8 @@ import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { useT } from "@/lib/i18n/useT";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
@@ -40,6 +42,7 @@ function VehiclesPage() {
   const mena = useMenaFirmy();
   // J-14: rola s „Len čítať“ nevidí tlačidlá, ktoré by skončili na RLS.
   const smieUpravovat = useMozeUpravovat("jazdy");
+  const klik = useKlikNaRiadok();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [fuel, setFuel] = useState<any[]>([]);
   const [editing, setEditing] = useState<Vehicle | null>(null);
@@ -181,68 +184,80 @@ function VehiclesPage() {
               )}
             </div>
           )}
-          {vehicles.map((v) => (
-            <div
-              key={v.id}
-              className={`rounded-xl border p-4 shadow-sm ${v.active ? "border-border bg-card" : "border-dashed border-input bg-muted/40 opacity-75"}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="truncate text-base font-semibold">{v.name}</div>
-                  <div className="text-xs font-semibold tabular-nums text-muted-foreground">{v.license_plate ?? "—"}</div>
-                </div>
-                {smieUpravovat && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setEditing(v)}
-                      title={t("Upraviť vozidlo")}
-                      aria-label={t("Upraviť vozidlo")}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => toggleActive(v)}
-                      title={v.active ? t("Deaktivovať") : t("Aktivovať")}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    >
-                      <Power className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => zmazVozidlo(v)}
-                      title={t("Zmazať vozidlo")}
-                      aria-label={t("Zmazať vozidlo")}
-                      className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+          {vehicles.map((v) => {
+            // Klik na kartu otvorí úpravu vozidla (to isté čo ceruzka).
+            const p = klik(null, {
+              naKlik: () => setEditing(v),
+              klavesnica: false,
+              vypnute: !smieUpravovat,
+            });
+            return (
+              <div
+                key={v.id}
+                {...p}
+                className={cn(
+                  p.className,
+                  `rounded-xl border p-4 shadow-sm ${v.active ? "border-border bg-card" : "border-dashed border-input bg-muted/40 opacity-75"}`,
                 )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold">{v.name}</div>
+                    <div className="text-xs font-semibold tabular-nums text-muted-foreground">{v.license_plate ?? "—"}</div>
+                  </div>
+                  {smieUpravovat && (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setEditing(v)}
+                        title={t("Upraviť vozidlo")}
+                        aria-label={t("Upraviť vozidlo")}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleActive(v)}
+                        title={v.active ? t("Deaktivovať") : t("Aktivovať")}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <Power className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => zmazVozidlo(v)}
+                        title={t("Zmazať vozidlo")}
+                        aria-label={t("Zmazať vozidlo")}
+                        className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">{t("Typ")}</dt>
+                    <dd>{v.vehicle_type ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{t("Palivo")}</dt>
+                    <dd>{v.fuel_type ? t(popisPaliva(v.fuel_type)!) : "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{t("Spotreba")}</dt>
+                    <dd>
+                      {v.consumption_l_100km
+                        ? `${formatujCislo(v.consumption_l_100km, 1, 2)} l/100 km`
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{t("Počiatočný stav")}</dt>
+                    <dd className="tabular-nums">{formatujCislo(v.initial_odometer ?? 0, 0)} km</dd>
+                  </div>
+                </dl>
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3 text-xs">
-                <div>
-                  <dt className="text-muted-foreground">{t("Typ")}</dt>
-                  <dd>{v.vehicle_type ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">{t("Palivo")}</dt>
-                  <dd>{v.fuel_type ? t(popisPaliva(v.fuel_type)!) : "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">{t("Spotreba")}</dt>
-                  <dd>
-                    {v.consumption_l_100km
-                      ? `${formatujCislo(v.consumption_l_100km, 1, 2)} l/100 km`
-                      : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">{t("Počiatočný stav")}</dt>
-                  <dd className="tabular-nums">{formatujCislo(v.initial_odometer ?? 0, 0)} km</dd>
-                </div>
-              </dl>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <h2 className="mt-8 mb-3 text-base font-semibold">

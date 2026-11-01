@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useT } from "@/lib/i18n/useT";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -80,6 +82,16 @@ function PalivoveKarty() {
   const [formular, setFormular] = useState<{ poskytovatel: string; id: string | null } | null>(
     null,
   );
+  const klik = useKlikNaRiadok();
+  const upravPripojenie = (p: Pripojenie) => {
+    setFormular({ poskytovatel: p.poskytovatel, id: p.id });
+    // Formulár je pod zoznamom — posuň naň, aby bolo vidno, že sa otvoril.
+    requestAnimationFrame(() =>
+      document
+        .getElementById("formular-pripojenia")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
   const [bezi, setBezi] = useState<string | null>(null);
   const [nahratie, setNahratie] = useState<Pripojenie | null>(null);
 
@@ -249,105 +261,113 @@ function PalivoveKarty() {
               </p>
             ) : (
               <ul className="mt-3 divide-y divide-border">
-                {pripojenia.map((p) => (
-                  <li key={p.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 font-semibold">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" /> {p.nazov}
-                        <StavPripojenia stav={p.aktivne ? p.stav : "vypnute"} />
-                      </div>
-                      {poskytovatel(p.poskytovatel)?.nahratie ? (
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {t("Zmluva")}: {p.prihlasenie_verejne?.zmluva || "—"} ·{" "}
-                          {t("Posledné nahratie")}: {cas(p.posledna_sync_at)}
-                        </p>
-                      ) : (
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {t("Payer number")}: {p.prihlasenie_verejne?.payer_number ?? "—"} ·{" "}
-                          {t("Client ID")}: {p.prihlasenie_verejne?.client_id_koniec ?? "••••"} ·{" "}
-                          {t("Posledná synchronizácia")}: {cas(p.posledna_sync_at)}
-                        </p>
-                      )}
-                      {p.posledna_chyba && (
-                        <p className="mt-1 text-xs text-destructive">{p.posledna_chyba}</p>
-                      )}
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-                        <label className="inline-flex items-center gap-2">
-                          <span className="text-muted-foreground">{t("Doklady")}</span>
-                          <select
-                            className="rounded-md border border-input bg-background px-2 py-1 text-sm"
-                            value={p.rezim}
-                            onChange={(e) =>
-                              void nastav(p, { rezim: e.target.value as Pripojenie["rezim"] })
-                            }
-                          >
-                            <option value="faktura">
-                              {t("Mesačná faktúra ako prijatá faktúra")}
-                            </option>
-                            <option value="len_tankovania">
-                              {t("Len tankovania, bez dokladov")}
-                            </option>
-                          </select>
-                        </label>
-                        {!poskytovatel(p.poskytovatel)?.nahratie && (
-                          <label className="inline-flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={p.auto_sync}
-                              onChange={(e) => void nastav(p, { auto_sync: e.target.checked })}
-                            />
-                            {t("Každú noc")}
-                          </label>
+                {pripojenia.map((p) => {
+                  // Klik na pripojenie otvorí jeho úpravu (to isté čo „Upraviť“).
+                  const kp = klik(null, { naKlik: () => upravPripojenie(p), klavesnica: false });
+                  return (
+                    <li
+                      key={p.id}
+                      {...kp}
+                      className={cn(kp.className, "flex flex-wrap items-start justify-between gap-3 py-3")}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 font-semibold">
+                          <CreditCard className="h-4 w-4 text-muted-foreground" /> {p.nazov}
+                          <StavPripojenia stav={p.aktivne ? p.stav : "vypnute"} />
+                        </div>
+                        {poskytovatel(p.poskytovatel)?.nahratie ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {t("Zmluva")}: {p.prihlasenie_verejne?.zmluva || "—"} ·{" "}
+                            {t("Posledné nahratie")}: {cas(p.posledna_sync_at)}
+                          </p>
+                        ) : (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {t("Payer number")}: {p.prihlasenie_verejne?.payer_number ?? "—"} ·{" "}
+                            {t("Client ID")}: {p.prihlasenie_verejne?.client_id_koniec ?? "••••"} ·{" "}
+                            {t("Posledná synchronizácia")}: {cas(p.posledna_sync_at)}
+                          </p>
                         )}
+                        {p.posledna_chyba && (
+                          <p className="mt-1 text-xs text-destructive">{p.posledna_chyba}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                          <label className="inline-flex items-center gap-2">
+                            <span className="text-muted-foreground">{t("Doklady")}</span>
+                            <select
+                              className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                              value={p.rezim}
+                              onChange={(e) =>
+                                void nastav(p, { rezim: e.target.value as Pripojenie["rezim"] })
+                              }
+                            >
+                              <option value="faktura">
+                                {t("Mesačná faktúra ako prijatá faktúra")}
+                              </option>
+                              <option value="len_tankovania">
+                                {t("Len tankovania, bez dokladov")}
+                              </option>
+                            </select>
+                          </label>
+                          {!poskytovatel(p.poskytovatel)?.nahratie && (
+                            <label className="inline-flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={p.auto_sync}
+                                onChange={(e) => void nastav(p, { auto_sync: e.target.checked })}
+                              />
+                              {t("Každú noc")}
+                            </label>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {poskytovatel(p.poskytovatel)?.nahratie ? (
+                      <div className="flex flex-wrap gap-2">
+                        {poskytovatel(p.poskytovatel)?.nahratie ? (
+                          <button
+                            type="button"
+                            className={TLACIDLO}
+                            disabled={!p.aktivne}
+                            onClick={() => {
+                              setFormular(null);
+                              setNahratie(p);
+                            }}
+                          >
+                            <FileUp className="h-4 w-4" />
+                            {t("Nahrať výpis")}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className={TLACIDLO}
+                            disabled={bezi === p.id}
+                            onClick={() => void synchronizuj(p.id)}
+                          >
+                            <RefreshCcw
+                              className={`h-4 w-4 ${bezi === p.id ? "animate-spin" : ""}`}
+                            />
+                            {t("Synchronizovať teraz")}
+                          </button>
+                        )}
                         <button
                           type="button"
                           className={TLACIDLO}
-                          disabled={!p.aktivne}
-                          onClick={() => {
-                            setFormular(null);
-                            setNahratie(p);
-                          }}
+                          onClick={() => upravPripojenie(p)}
                         >
-                          <FileUp className="h-4 w-4" />
-                          {t("Nahrať výpis")}
+                          {poskytovatel(p.poskytovatel)?.nahratie
+                            ? t("Upraviť")
+                            : t("Upraviť prístup")}
                         </button>
-                      ) : (
                         <button
                           type="button"
                           className={TLACIDLO}
-                          disabled={bezi === p.id}
-                          onClick={() => void synchronizuj(p.id)}
+                          onClick={() => void odpoj(p)}
+                          aria-label={t("Odpojiť")}
                         >
-                          <RefreshCcw
-                            className={`h-4 w-4 ${bezi === p.id ? "animate-spin" : ""}`}
-                          />
-                          {t("Synchronizovať teraz")}
+                          <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        className={TLACIDLO}
-                        onClick={() => setFormular({ poskytovatel: p.poskytovatel, id: p.id })}
-                      >
-                        {poskytovatel(p.poskytovatel)?.nahratie
-                          ? t("Upraviť")
-                          : t("Upraviť prístup")}
-                      </button>
-                      <button
-                        type="button"
-                        className={TLACIDLO}
-                        onClick={() => void odpoj(p)}
-                        aria-label={t("Odpojiť")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>
@@ -635,7 +655,10 @@ function FormularPripojenia({
   }
 
   return (
-    <section className="rounded-xl border border-primary/40 bg-card p-5 shadow-sm">
+    <section
+      id="formular-pripojenia"
+      className="rounded-xl border border-primary/40 bg-card p-5 shadow-sm"
+    >
       <h2 className="text-base font-semibold">
         {pripojenie
           ? t("Upraviť prístup — {nazov}", { nazov: meta.nazov })

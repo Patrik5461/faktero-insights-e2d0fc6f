@@ -9,6 +9,7 @@ import { celeMeno, datumSk, krajinaZamestnancov, nazovZmluvy, type Pripomienka }
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { ChybaModulu, FARBA_PRIPOMIENKY, TextPripomienky, tlacidlo } from "@/components/faktero/zamestnanci/ui";
 import { useT } from "@/lib/i18n/useT";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -132,7 +133,11 @@ function ZamestnanciPage() {
                     {data.zamestnanci.map((z) => {
                       const k = zmluvaZamestnanca(z.id);
                       return (
-                        <tr key={z.id} className="transition-colors hover:bg-muted/40">
+                        <KlikatelnyRiadok
+                          key={z.id}
+                          ciel={{ to: "/zamestnanci/$id", params: { id: z.id } }}
+                          className="transition-colors hover:bg-muted/40"
+                        >
                           <td className="px-4 py-3 font-semibold">
                             <Link to="/zamestnanci/$id" params={{ id: z.id }} className="hover:text-primary hover:underline">
                               {celeMeno(z)}
@@ -146,7 +151,7 @@ function ZamestnanciPage() {
                               {z.status === "active" ? t("Aktívny") : t("Ukončený")}
                             </StavOdznak>
                           </td>
-                        </tr>
+                        </KlikatelnyRiadok>
                       );
                     })}
                   </tbody>
