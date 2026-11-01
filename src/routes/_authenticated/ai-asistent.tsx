@@ -71,7 +71,7 @@ function AiAssistantPage() {
         title="Faktero AI"
         description={t("Inteligentný asistent pre faktúry, odberateľov, eFaktúru a administratívu.")}
         action={
-          <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
+          <div className="flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-muted p-1">
             {(
               [
                 ["chat", "Chat", MessageSquare],
@@ -83,10 +83,11 @@ function AiAssistantPage() {
               <button
                 key={k}
                 onClick={() => setTab(k)}
-                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                aria-pressed={tab === k}
+                className={`inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-[13px] font-semibold transition-colors ${
                   tab === k
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary"
+                    ? "bg-card text-foreground shadow-md [&>svg]:text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" /> {t(l)}
@@ -97,7 +98,7 @@ function AiAssistantPage() {
       />
       <PageBody>
         {!companyId ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-sm">
             {t("Vyberte aktívnu firmu, aby som vám mohol pomôcť.")}
           </div>
         ) : tab === "chat" ? (
@@ -194,7 +195,7 @@ function ChatView({ companyId }: { companyId: string }) {
         <div
           key={c.id}
           className={`group flex items-center gap-2 rounded-md px-2 py-2 text-sm ${
-            activeId === c.id ? "bg-primary/10 text-primary-hover" : "hover:bg-secondary"
+            activeId === c.id ? "bg-primary/10 font-semibold text-primary-hover" : "hover:bg-accent"
           }`}
         >
           <button onClick={() => setActiveId(c.id)} className="min-w-0 flex-1 truncate text-left">
@@ -205,7 +206,7 @@ function ChatView({ companyId }: { companyId: string }) {
               if (await potvrd(t("Vymazať konverzáciu?"))) delConv.mutate(c.id);
             }}
             aria-label={t("Vymazať konverzáciu")}
-            className="text-muted-foreground transition hover:text-destructive lg:opacity-0 lg:group-hover:opacity-100"
+            className="rounded p-0.5 text-muted-foreground transition hover:text-destructive focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -221,11 +222,11 @@ function ChatView({ companyId }: { companyId: string }) {
   return (
     <div className="grid h-[calc(100vh-220px)] min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
       {/* Sidebar */}
-      <aside className="hidden flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex">
+      <aside className="hidden flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:flex">
         <div className="border-b border-border p-3">
           <button
             onClick={() => newConv.mutate()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             <Plus className="h-4 w-4" /> {t("Nová konverzácia")}
           </button>
@@ -234,7 +235,7 @@ function ChatView({ companyId }: { companyId: string }) {
       </aside>
 
       {/* Chat */}
-      <section className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
+      <section className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         {/* Na mobile je bočný zoznam skrytý — konverzácie sú v rozbaľovacom paneli nad chatom. */}
         <details className="group/konv border-b border-border lg:hidden">
           <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm">
@@ -250,7 +251,7 @@ function ChatView({ companyId }: { companyId: string }) {
           <div className="border-t border-border p-2">
             <button
               onClick={() => newConv.mutate()}
-              className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="mb-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nová konverzácia")}
             </button>
@@ -278,7 +279,7 @@ function ChatView({ companyId }: { companyId: string }) {
             e.preventDefault();
             send(input);
           }}
-          className="border-t border-border bg-background/60 p-3"
+          className="border-t border-border bg-muted/40 p-3"
         >
           <div className="mx-auto flex max-w-3xl items-end gap-2">
             <textarea
@@ -293,12 +294,12 @@ function ChatView({ companyId }: { companyId: string }) {
               placeholder={t("Napíšte správu pre Faktero AI…")}
               rows={1}
               autoFocus
-              className="min-h-[44px] max-h-40 flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="min-h-[44px] max-h-40 min-w-0 flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/20"
             />
             <button aria-label={t("Odoslať")}
               type="submit"
               disabled={!input.trim() || sendMut.isPending}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Send className="h-4 w-4" />
             </button>
@@ -313,10 +314,10 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
   const { t } = useT();
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center py-8 text-center">
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-lg">
-        <Sparkles className="h-7 w-7 text-primary-foreground" />
+      <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
+        <Sparkles className="h-6 w-6" />
       </div>
-      <h2 className="mt-4 text-xl font-semibold">{t("Vitajte vo Faktero AI")}</h2>
+      <h2 className="mt-4 text-xl font-semibold tracking-tight">{t("Vitajte vo Faktero AI")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {t("Asistent pre faktúry, odberateľov a administratívu vašej firmy.")}
       </p>
@@ -325,7 +326,7 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
           <button
             key={s}
             onClick={() => onPick(t(s))}
-            className="rounded-lg border border-border bg-background px-3 py-2.5 text-left text-sm hover:border-primary/40 hover:bg-primary/5"
+            className="rounded-lg border border-input bg-card px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/50 hover:bg-accent"
           >
             {t(s)}
           </button>
@@ -343,13 +344,13 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70">
-          <Sparkles className="h-4 w-4 text-primary-foreground" />
+        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Sparkles className="h-4 w-4" />
         </div>
       )}
       <div
         className={`group max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-          isUser ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
+          isUser ? "bg-primary text-primary-foreground" : "border border-border bg-muted/60 text-foreground"
         }`}
       >
         {isUser ? (
@@ -366,7 +367,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}
-            className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground opacity-0 transition group-hover:opacity-100 hover:text-foreground"
+            className="mt-2 inline-flex items-center gap-1 rounded text-xs text-muted-foreground opacity-0 transition group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100"
           >
             {copied ? (
               <>
@@ -405,8 +406,8 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
 
   if (isLoading)
     return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" /> {t("Načítavam…")}
       </div>
     );
   if (!data) return null;
@@ -416,7 +417,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
       ? [
           {
             icon: AlertTriangle,
-            color: "text-amber-700",
+            color: "text-[var(--stav-pozor-text)]",
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
             hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
@@ -425,7 +426,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
           },
           {
             icon: Webhook,
-            color: "text-rose-600",
+            color: "text-destructive",
             title: "Neúspešné webhooky",
             value: data.failedWebhooks,
             hint: t("Posledných 30 dní"),
@@ -433,7 +434,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
           },
           {
             icon: Building2,
-            color: "text-orange-600",
+            color: "text-warning",
             title: "Chýbajúce firemné údaje",
             value: data.missingCompanyFields.length,
             hint: data.missingCompanyFields.map((f) => t(f)).join(", ") || t("Všetko vyplnené"),
@@ -452,7 +453,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: TrendingUp,
-              color: "text-emerald-700",
+              color: "text-[var(--stav-uspech-text)]",
               title: "Top dlžníci",
               value: data.topDebtors.length,
               hint: data.topDebtors[0]?.name ?? t("Žiadni dlžníci"),
@@ -462,7 +463,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
         : [
             {
               icon: AlertTriangle,
-              color: "text-amber-700",
+              color: "text-[var(--stav-pozor-text)]",
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
               hint: t("{suma} nezaplatených", { suma: sumyNezaplatenych(data, mena.kod) }),
@@ -479,7 +480,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: Building2,
-              color: "text-orange-600",
+              color: "text-warning",
               title: "Chýbajúce firemné údaje",
               value: data.missingCompanyFields.length,
               hint: data.missingCompanyFields.map((f) => t(f)).join(", ") || t("Všetko vyplnené"),
@@ -487,7 +488,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: Webhook,
-              color: "text-rose-600",
+              color: "text-destructive",
               title: "Neúspešné webhooky",
               value: data.failedWebhooks,
               hint: t("Posledných 30 dní"),
@@ -495,7 +496,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: FileText,
-              color: "text-sky-600",
+              color: "text-[var(--stav-informacia-text)]",
               title: "Neodoslané faktúry",
               value: data.unsentInvoices,
               hint: t("Koncepty: {n}", { n: data.draftInvoices }),
@@ -504,7 +505,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             },
             {
               icon: TrendingUp,
-              color: "text-emerald-700",
+              color: "text-[var(--stav-uspech-text)]",
               title: "Top dlžníci",
               value: data.topDebtors.length,
               hint: data.topDebtors[0]?.name ?? "—",
@@ -525,13 +526,15 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
           key={c.title}
           to={c.to}
           search={("search" in c ? c.search : {}) as never}
-          className="group rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-md"
+          className="group min-w-0 rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md"
         >
-          <div className="flex items-start justify-between">
-            <c.icon className={`h-5 w-5 ${c.color}`} />
-            <span className="text-2xl font-bold tracking-tight">{c.value}</span>
+          <div className="flex items-start justify-between gap-3">
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted ${c.color}`}>
+              <c.icon className="h-[18px] w-[18px]" />
+            </span>
+            <span className="suma text-2xl font-bold tracking-tight">{c.value}</span>
           </div>
-          <div className="mt-3 text-sm font-semibold">{t(c.title)}</div>
+          <div className="mt-3 text-sm font-semibold group-hover:text-primary-hover">{t(c.title)}</div>
           <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.hint}</div>
         </Link>
       ))}

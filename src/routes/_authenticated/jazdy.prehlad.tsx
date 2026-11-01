@@ -157,7 +157,7 @@ function OverviewPage() {
                   search: (prev: any) => ({ ...prev, vehicle_id: e.target.value || undefined }),
                 })
               }
-              className="rounded-md border border-border bg-card px-3 py-2 text-sm"
+              className="h-9 w-full min-w-0 max-w-[22rem] truncate rounded-md border border-input bg-background px-3 text-sm font-medium sm:w-auto"
             >
               <option value="">{t("Všetky vozidlá")}</option>
               {vehicles.map((v) => (
@@ -170,7 +170,7 @@ function OverviewPage() {
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="rounded-md border border-border bg-card px-3 py-2 text-sm"
+              className="h-9 min-w-0 max-w-full rounded-md border border-input bg-background px-3 text-sm font-medium"
             >
               {[0, 1, 2].map((d) => {
                 const y = new Date().getFullYear() - d;
@@ -200,61 +200,61 @@ function OverviewPage() {
           <Stat icon={Wallet} label={t("Náklady PHM {rok}", { rok: year })} value={formatujMenu(fuelCost, mena.kod)} />
         </div>
 
-        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
+        <h2 className="mt-8 mb-3 text-base font-semibold">
           {t("Mesačný report {rok}", { rok: year })}
         </h2>
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="border-b border-border bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
               <tr>
-                <th className="p-3">{t("Mesiac")}</th>
-                <th className="p-3 text-right">{t("Jazdy")}</th>
-                <th className="p-3 text-right">Km</th>
-                <th className="p-3 text-right">{t("PHM (l)")}</th>
-                <th className="p-3 text-right">{t("Náklady ({mena})", { mena: mena.symbol })}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Mesiac")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">{t("Jazdy")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">Km</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">{t("PHM (l)")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">{t("Náklady ({mena})", { mena: mena.symbol })}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {byMonth.map(([m, v]) => (
                 <tr key={m}>
-                  <td className="p-3">
+                  <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">
                     {m}/{year}
                   </td>
-                  <td className="p-3 text-right tabular-nums">{v.trips}</td>
-                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.km, 1)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.liters, 1)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.cost, 2)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{v.trips}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{formatujCislo(v.km, 1)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{formatujCislo(v.liters, 1)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{formatujCislo(v.cost, 2)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">{t("Podľa vozidla")}</h2>
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <h2 className="mt-8 mb-3 text-base font-semibold">{t("Podľa vozidla")}</h2>
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="border-b border-border bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
               <tr>
-                <th className="p-3">{t("Vozidlo")}</th>
-                <th className="p-3 text-right">{t("Jazdy")}</th>
-                <th className="p-3 text-right">Km</th>
-                <th className="p-3 text-right">{t("PHM (l)")}</th>
-                <th className="p-3 text-right">{t("Náklady ({mena})", { mena: mena.symbol })}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Vozidlo")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">{t("Jazdy")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">Km</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">{t("PHM (l)")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">{t("Náklady ({mena})", { mena: mena.symbol })}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {Object.entries(byVehicle).map(([id, v]) => (
                 <tr key={id}>
-                  <td className="p-3">
-                    {vehicleMap[id]?.name ?? "—"}{" "}
-                    <span className="text-xs text-muted-foreground">
+                  <td className="px-3 py-2.5">
+                    <span className="font-medium">{vehicleMap[id]?.name ?? "—"}</span>{" "}
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
                       {vehicleMap[id]?.license_plate}
                     </span>
                   </td>
-                  <td className="p-3 text-right tabular-nums">{v.trips}</td>
-                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.km, 1)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.liters, 1)}</td>
-                  <td className="p-3 text-right tabular-nums">{formatujCislo(v.cost, 2)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{v.trips}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{formatujCislo(v.km, 1)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{formatujCislo(v.liters, 1)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{formatujCislo(v.cost, 2)}</td>
                 </tr>
               ))}
               {Object.keys(byVehicle).length === 0 && (
@@ -274,12 +274,14 @@ function OverviewPage() {
 
 function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="min-w-0 text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
-        <Icon className="h-4 w-4 text-primary" />
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <span className="min-w-0 text-xs font-semibold text-muted-foreground">{label}</span>
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+          <Icon className="h-3.5 w-3.5" />
+        </span>
       </div>
-      <div className="mt-2 text-xl font-semibold tabular-nums sm:text-2xl">{value}</div>
+      <div className="suma mt-1.5 text-xl font-bold tracking-tight sm:text-2xl">{value}</div>
     </div>
   );
 }

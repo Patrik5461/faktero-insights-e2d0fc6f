@@ -30,26 +30,30 @@ export function BankWidget() {
   }, null);
 
   return (
-    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-          <Landmark className="h-3.5 w-3.5" /> {t("Bankový účet")}
+    /* Redizajn: bez zeleného prechodu farieb — karta ako ostatné, zelená len v ikone a odkaze. */
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+            <Landmark className="h-3.5 w-3.5" />
+          </span>
+          {t("Bankový účet")}
         </div>
         <Link
           to="/bankove-ucty"
-          className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
         >
           {t("Detail")} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
       {accounts === null ? (
-        <div className="mt-3 h-6 w-32 animate-pulse rounded bg-emerald-100" />
+        <div className="mt-3 h-7 w-40 animate-pulse rounded bg-muted" />
       ) : accounts.length === 0 ? (
         <div className="mt-3 text-sm text-muted-foreground">
           {t("Žiadny bankový účet.")}{" "}
           <Link
             to="/bankove-ucty/pripojit"
-            className="text-emerald-700 dark:text-emerald-300 hover:underline"
+            className="font-semibold text-primary hover:text-primary-hover hover:underline"
           >
             {t("Pripojiť banku")}
           </Link>
@@ -59,7 +63,7 @@ export function BankWidget() {
           {zostatky.map((z) => (
             <div
               key={z.mena}
-              className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100"
+              className="suma mt-2 text-2xl font-bold tracking-tight"
             >
               {formatujSumu(z.suma, z.mena)}
             </div>

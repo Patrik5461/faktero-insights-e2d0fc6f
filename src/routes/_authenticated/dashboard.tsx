@@ -52,6 +52,7 @@ import {
   ClipboardList,
   Package,
   Car,
+  ChevronDown,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -97,14 +98,60 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Stornované",
 };
 
+/*
+  Farby výsekov = bodky stavových odznakov (web.css, `--stav-*-bod`), takže
+  „Zaplatené“ má v grafe tú istú farbu ako odznak „Uhradená“ v zozname a obe
+  sa prepnú aj do tmavého motívu. Koncept a Stornované sú obe sivé (ako
+  predtým), Stornované tmavšie, aby sa dali rozoznať.
+*/
 const STATUS_COLOR: Record<string, string> = {
-  draft: "oklch(0.80 0.02 250)",
-  issued: "oklch(0.70 0.12 240)",
-  sent: "oklch(0.85 0.13 85)",
-  paid: "oklch(0.68 0.16 162)",
-  overdue: "var(--destructive)",
-  cancelled: "oklch(0.60 0.02 250)",
+  draft: "var(--stav-neutralny-bod)",
+  issued: "var(--stav-informacia-bod)",
+  sent: "var(--stav-priebeh-bod)",
+  paid: "var(--stav-uspech-bod)",
+  overdue: "var(--stav-chyba-bod)",
+  cancelled: "color-mix(in oklch, var(--muted-foreground) 70%, var(--foreground))",
 };
+
+/** Tóny čísel (zelená = v poriadku, jantárová = pozor, červená = problém). */
+const TON_CISLA = {
+  uspech: "text-[var(--stav-uspech-text)]",
+  pozor: "text-[var(--stav-pozor-text)]",
+  chyba: "text-destructive",
+} as const;
+
+/** Bublina grafu — rovnaký tvar ako ponuky (plávajúci tieň, tokeny). */
+function BublinaGrafu({
+  active,
+  payload,
+  label,
+  hodnota,
+}: {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  hodnota: (v: number) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="min-w-[10rem] rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg">
+      {label ? <div className="mb-1 font-semibold">{label}</div> : null}
+      <ul className="space-y-1">
+        {payload.map((p: any) => (
+          <li key={p.name} className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 shrink-0 rounded-sm"
+              style={{ background: p.payload?.color ?? p.color }}
+            />
+            <span className="min-w-0 flex-1 text-muted-foreground">{p.name}</span>
+            <span className="suma">{hodnota(Number(p.value))}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function useCountdown(target: Date) {
   const [now, setNow] = useState(() => new Date());
@@ -361,15 +408,17 @@ function Dashboard() {
               }
             />
             <div className="mt-3 border-t border-border pt-3">
-              <div className="mb-1.5 text-[12px] text-muted-foreground">{t("Najväčší dlžníci")}</div>
+              <div className="mb-1.5 text-xs font-semibold text-muted-foreground">{t("Najväčší dlžníci")}</div>
               {topDebtors.length === 0 ? (
                 <div className="text-xs text-muted-foreground">{t("Žiadni dlžníci.")}</div>
               ) : (
                 <ul className="space-y-1.5 text-sm">
                   {topDebtors.map((d) => (
-                    <li key={d.name} className="flex items-center justify-between">
-                      <span className="truncate">{d.neznamy ? t("Neznámy") : d.name}</span>
-                      <span className="ml-2 font-medium tabular-nums">{fmt(d.amount)}</span>
+                    <li key={d.name} className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate" title={d.neznamy ? undefined : d.name}>
+                        {d.neznamy ? t("Neznámy") : d.name}
+                      </span>
+                      <span className="suma shrink-0 font-medium">{fmt(d.amount)}</span>
                     </li>
                   ))}
                 </ul>
@@ -416,7 +465,7 @@ function Dashboard() {
             <div className="mt-3 border-t border-border pt-3">
               <Link
                 to="/prijate-faktury"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
               >
                 {t("Otvoriť prijaté faktúry")} <ArrowUpRight className="h-3 w-3" />
               </Link>
@@ -432,20 +481,19 @@ function Dashboard() {
             niečo, čo sa jej netýka a čo jej ani nepôjde použiť.
           */}
           {krajina === "SK" && (
-            <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6">
-              <div className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
-              <div className="relative">
-                <div className="flex items-center justify-between">
+            <div className="min-w-0 rounded-xl border border-primary/35 bg-card p-4 shadow-sm" data-w-efaktura-odpocet="">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">{t("eFaktúra 2027")}</h3>
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <h3 className="text-base font-semibold">{t("eFaktúra 2027")}</h3>
                   </div>
-                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-400">
-                    {t("Pripravujeme")}
-                  </span>
+                  <StavOdznak ton="pozor">{t("Pripravujeme")}</StavOdznak>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{t("Povinná eFaktúra od 1.1.2027")}</p>
-                <div className="mt-5 grid grid-cols-4 gap-2">
+                <p className="mt-2 text-sm text-muted-foreground">{t("Povinná eFaktúra od 1.1.2027")}</p>
+                <div className="mt-4 grid grid-cols-4 gap-2">
                   {[
                     { v: countdown.days, l: "dní" },
                     { v: countdown.hours, l: "hod" },
@@ -454,9 +502,9 @@ function Dashboard() {
                   ].map((x) => (
                     <div
                       key={x.l}
-                      className="rounded-xl border border-border bg-card/60 px-2 py-3 text-center backdrop-blur"
+                      className="rounded-lg border border-border bg-muted/50 px-1 py-3 text-center"
                     >
-                      <div className="text-2xl font-bold tabular-nums">
+                      <div className="suma text-2xl font-bold tracking-tight">
                         {String(x.v).padStart(2, "0")}
                       </div>
                       <div className="text-[12px] text-muted-foreground">{t(x.l)}</div>
@@ -465,7 +513,7 @@ function Dashboard() {
                 </div>
                 <Link
                   to="/efaktura"
-                  className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="mt-4 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
                 >
                   {t("Zobraziť eFaktúru")} <ArrowUpRight className="h-4 w-4" />
                 </Link>
@@ -489,30 +537,27 @@ function Dashboard() {
                     innerRadius={55}
                     outerRadius={90}
                     paddingAngle={2}
+                    stroke="var(--card)"
+                    strokeWidth={2}
                   >
                     {statusData.map((d, i) => (
                       <Cell key={i} fill={d.color} />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
+                    content={(p: any) => <BublinaGrafu {...p} hodnota={(v) => String(v)} />}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <ul className="mt-2 space-y-1 text-xs">
+            <ul className="mt-2 space-y-1 text-[13px]">
               {statusData.map((s) => (
-                <li key={s.name} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                    {s.name}
+                <li key={s.name} className="flex items-center justify-between gap-3 py-0.5">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: s.color }} />
+                    <span className="truncate">{s.name}</span>
                   </span>
-                  <span className="font-medium tabular-nums">{s.value}</span>
+                  <span className="suma font-semibold">{s.value}</span>
                 </li>
               ))}
             </ul>
@@ -531,7 +576,7 @@ function Dashboard() {
               <MiniStat label="Aktívne webhooky" value={String(webhooksCount)} icon={Webhook} />
               <Link
                 to="/api-kluce"
-                className="flex items-center justify-center rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs font-medium hover:bg-muted/60"
+                className="flex items-center justify-center rounded-lg border border-input bg-card px-3 py-2 text-center text-xs font-semibold text-primary transition-colors hover:bg-accent hover:text-primary-hover"
               >
                 {t("Spravovať API →")}
               </Link>
@@ -546,15 +591,15 @@ function Dashboard() {
             <Link
               to="/sklad/produkty"
               search={{ filter: "low_stock" }}
-              className={`group flex items-center justify-between rounded-2xl border p-5 transition-colors ${lowStockCount > 0 ? "border-amber-400/40 bg-amber-500/5 hover:bg-amber-500/10" : "border-border bg-card hover:bg-muted/30"}`}
+              className={`group flex items-center justify-between gap-4 rounded-xl border p-4 transition-colors ${lowStockCount > 0 ? "border-[var(--stav-pozor-bod)]/50 bg-[var(--stav-pozor-plocha)] hover:border-[var(--stav-pozor-bod)]" : "border-border bg-card shadow-sm hover:bg-accent/60"}`}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-4">
                 <div
-                  className={`grid h-12 w-12 place-items-center rounded-xl ${lowStockCount > 0 ? "bg-amber-500/15 text-amber-800 dark:text-amber-400" : "bg-muted text-muted-foreground"}`}
+                  className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${lowStockCount > 0 ? "bg-card text-[var(--stav-pozor-text)]" : "bg-muted text-muted-foreground"}`}
                 >
                   <Package className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-sm font-semibold">{t("Nízky stav skladu")}</div>
                   <div className="text-xs text-muted-foreground">
                     {lowStockCount > 0
@@ -570,13 +615,13 @@ function Dashboard() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3">
                 <div
-                  className={`text-2xl font-bold tabular-nums ${lowStockCount > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}
+                  className={`suma text-2xl font-bold ${lowStockCount > 0 ? "text-[var(--stav-pozor-text)]" : "text-muted-foreground"}`}
                 >
                   {lowStockCount}
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
               </div>
             </Link>
           </div>
@@ -585,13 +630,13 @@ function Dashboard() {
           <div className="mb-6">
             <Link
               to="/jazdy"
-              className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
+              className="group flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent/60"
             >
-              <div className="flex items-center gap-4">
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                   <Car className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-sm font-semibold">{t("Kniha jázd")}</div>
                   <div className="text-xs text-muted-foreground">
                     {tripStats?.last
@@ -604,14 +649,14 @@ function Dashboard() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-3">
                 <div className="text-right">
-                  <div className="text-2xl font-bold tabular-nums">
+                  <div className="suma text-2xl font-bold">
                     {(tripStats?.km_month ?? 0).toFixed(1).replace(".", ",")}
                   </div>
                   <div className="text-[12px] text-muted-foreground">{t("km tento mesiac")}</div>
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
               </div>
             </Link>
           </div>
@@ -619,23 +664,23 @@ function Dashboard() {
           <div className="mb-6 grid gap-6 lg:grid-cols-2">
             <Panel title="Opakované faktúry" icon={Repeat}>
               <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded-lg border border-border bg-muted/30 px-2 py-1.5">
+                <div className="min-w-0 rounded-lg border border-border bg-muted/40 px-2.5 py-2">
                   <div className="text-muted-foreground">{t("Posledný beh")}</div>
-                  <div className="mt-0.5 font-medium">
+                  <div className="mt-0.5 font-semibold tabular-nums break-words">
                     {recurringStats?.last_success_at
                       ? new Date(recurringStats.last_success_at).toLocaleString("sk-SK")
                       : "—"}
                   </div>
                 </div>
-                <div className="rounded-lg border border-border bg-muted/30 px-2 py-1.5">
+                <div className="min-w-0 rounded-lg border border-border bg-muted/40 px-2.5 py-2">
                   <div className="text-muted-foreground">{t("Najbližší beh")}</div>
-                  <div className="mt-0.5 font-medium">{recurringStats?.next_run ?? "—"}</div>
+                  <div className="mt-0.5 font-semibold tabular-nums break-words">{recurringStats?.next_run ?? "—"}</div>
                 </div>
                 <div
-                  className={`rounded-lg border px-2 py-1.5 ${(recurringStats?.failed_24h ?? 0) > 0 ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/30"}`}
+                  className={`min-w-0 rounded-lg border px-2.5 py-2 ${(recurringStats?.failed_24h ?? 0) > 0 ? "border-destructive/40 bg-[var(--stav-chyba-plocha)]" : "border-border bg-muted/40"}`}
                 >
                   <div className="text-muted-foreground">{t("Chyby (24h)")}</div>
-                  <div className="mt-0.5 font-medium tabular-nums">
+                  <div className="suma mt-0.5">
                     {recurringStats?.failed_24h ?? 0}
                   </div>
                 </div>
@@ -650,12 +695,13 @@ function Dashboard() {
               ) : (
                 <ul className="divide-y divide-border">
                   {activeRecurring.map((r) => (
-                    <li key={r.id} className="flex items-center justify-between py-2.5 text-sm">
-                      <div className="min-w-0">
+                    <li key={r.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <div className="min-w-0 flex-1">
                         <Link
                           to="/opakovane/$id"
                           params={{ id: r.id }}
-                          className="truncate font-medium hover:underline"
+                          title={r.name}
+                          className="block truncate font-medium hover:text-primary hover:underline"
                         >
                           {r.name}
                         </Link>
@@ -666,7 +712,7 @@ function Dashboard() {
                           })}
                         </div>
                       </div>
-                      <div className="shrink-0 font-medium tabular-nums">
+                      <div className="suma shrink-0">
                         {fmt(Number(r.total), r.currency)}
                       </div>
                     </li>
@@ -675,7 +721,7 @@ function Dashboard() {
               )}
               <Link
                 to="/opakovane"
-                className="mt-3 inline-block text-xs font-medium text-primary hover:underline"
+                className="mt-3 inline-block text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
               >
                 {t("Zobraziť všetky →")}
               </Link>
@@ -691,12 +737,12 @@ function Dashboard() {
               ) : (
                 <ul className="divide-y divide-border">
                   {pendingQuotes.map((q) => (
-                    <li key={q.id} className="flex items-center justify-between py-2.5 text-sm">
-                      <div className="min-w-0">
+                    <li key={q.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <div className="min-w-0 flex-1">
                         <Link
                           to="/ponuky/$id"
                           params={{ id: q.id }}
-                          className="truncate font-medium hover:underline"
+                          className="cislo-dokladu block truncate hover:text-primary hover:underline"
                         >
                           {q.quote_number}
                         </Link>
@@ -707,7 +753,7 @@ function Dashboard() {
                           })}
                         </div>
                       </div>
-                      <div className="shrink-0 font-medium tabular-nums">
+                      <div className="suma shrink-0">
                         {fmt(Number(q.total), q.currency)}
                       </div>
                     </li>
@@ -716,7 +762,7 @@ function Dashboard() {
               )}
               <Link
                 to="/ponuky"
-                className="mt-3 inline-block text-xs font-medium text-primary hover:underline"
+                className="mt-3 inline-block text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
               >
                 {t("Zobraziť všetky →")}
               </Link>
@@ -740,7 +786,7 @@ function Dashboard() {
                       <div className="truncate text-sm font-medium">{t(a.title, a.titleP)}</div>
                       <div className="truncate text-xs text-muted-foreground">{t(a.subtitle, a.subtitleP)}</div>
                     </div>
-                    <time className="shrink-0 text-xs text-muted-foreground">{a.time}</time>
+                    <time className="shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground">{a.time}</time>
                   </li>
                 ))}
               </ul>
@@ -792,8 +838,8 @@ function Delta({ pct }: { pct: number | null }) {
   const up = pct > 0;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${
-        up ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"
+      className={`inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums ${
+        up ? TON_CISLA.uspech : TON_CISLA.chyba
       }`}
     >
       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -849,9 +895,9 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="space-y-2 rounded-xl border border-border bg-card p-4">
-            <div className="h-3 w-24 animate-pulse rounded bg-muted/60" />
-            <div className="h-7 w-32 animate-pulse rounded bg-muted/60" />
-            <div className="h-3 w-20 animate-pulse rounded bg-muted/60" />
+            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            <div className="h-7 w-32 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-20 animate-pulse rounded bg-muted" />
           </div>
         ))}
       </div>
@@ -890,7 +936,7 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
           <Link
             to="/faktury"
             search={{ neuhradene: true } as any}
-            className="inline-flex items-center gap-1 hover:underline"
+            className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-hover hover:underline"
           >
             {t("Zobraziť pohľadávky")} <ArrowUpRight className="h-3 w-3" />
           </Link>
@@ -916,21 +962,28 @@ function KpiKarta({
 }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div
+      className={`min-w-0 rounded-xl border bg-card p-4 shadow-sm ${stav === "zle" ? "border-destructive/35" : "border-border"}`}
+      data-w-kpi=""
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[12px] text-muted-foreground">{t(label)}</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+          <div className="text-xs font-semibold text-muted-foreground">{t(label)}</div>
+          <div
+            className={`suma mt-1.5 text-2xl font-bold tracking-tight ${stav === "zle" ? "text-destructive" : ""}`}
+          >
+            {value}
+          </div>
         </div>
         <span
-          className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-            stav === "zle" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+            stav === "zle" ? "bg-[var(--stav-chyba-plocha)] text-destructive" : "bg-muted text-muted-foreground"
           }`}
         >
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      {meta && <div className="mt-2 text-[12px] text-muted-foreground">{meta}</div>}
+      {meta && <div className="mt-2 text-xs text-muted-foreground">{meta}</div>}
     </div>
   );
 }
@@ -939,8 +992,8 @@ function EmptyDashboard() {
   const { t } = useT();
   return (
     <div className="rounded-xl border border-border bg-card px-6 py-16 text-center">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10">
-        <HandCoins className="h-5 w-5 text-primary" />
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl border border-border bg-card text-primary shadow-sm">
+        <HandCoins className="h-5 w-5" />
       </div>
       <h2 className="mt-4 text-base font-semibold">{t("Zatiaľ tu nie sú žiadne dáta")}</h2>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
@@ -948,7 +1001,7 @@ function EmptyDashboard() {
       </p>
       <Link
         to="/faktury/nova"
-        className="mt-5 inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
+        className="mt-5 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
       >
         {t("Vytvoriť faktúru")}
       </Link>
@@ -972,10 +1025,10 @@ function Panel({
     /* Rovnaký jazyk ako KPI karty: 1px rám v plnej farbe, `rounded-xl` a 16
        bodov vnútri. Predtým 24 — pri dvoch kartách vedľa seba to na notebooku
        ubralo z obsahu celý stĺpec. */
-    <div className={`min-w-0 rounded-xl border border-border bg-card p-4 ${className ?? ""}`}>
-      <div className="mb-3 flex items-center gap-2">
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-        <h2 className="text-sm font-medium">{t(title)}</h2>
+    <div className={`min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm ${className ?? ""}`}>
+      <div className="mb-3 flex min-w-0 items-center gap-2">
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        <h2 className="min-w-0 text-sm font-semibold">{t(title)}</h2>
       </div>
       {children}
     </div>
@@ -995,10 +1048,10 @@ function Row({
 }) {
   const { t } = useT();
   return (
-    <div className="flex items-center justify-between py-1.5 text-sm">
-      <span className="text-muted-foreground">{t(label)}</span>
+    <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
+      <span className="min-w-0 text-muted-foreground">{t(label)}</span>
       <span
-        className={`tabular-nums ${strong ? "font-semibold" : ""} ${tone === "destructive" ? "text-destructive" : ""}`}
+        className={`suma shrink-0 ${strong ? "font-bold" : "font-medium"} ${tone === "destructive" ? "text-destructive" : ""}`}
       >
         {value}
       </span>
@@ -1009,11 +1062,11 @@ function Row({
 function MiniStat({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
   const { t } = useT();
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-3">
-      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-        <Icon className="h-3 w-3" /> {t(label)}
+    <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-3">
+      <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <Icon className="mt-0.5 h-3 w-3 shrink-0" /> <span className="min-w-0">{t(label)}</span>
       </div>
-      <div className="mt-1 text-lg font-bold tabular-nums">{value}</div>
+      <div className="suma mt-1 text-lg font-bold">{value}</div>
     </div>
   );
 }
@@ -1080,7 +1133,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
   invoices.slice(0, 30).forEach((i) => {
     items.push({
       icon: FilePlus2,
-      tone: "bg-primary/15 text-primary-hover",
+      tone: "bg-primary/10 text-primary-hover",
       title: "Faktúra {cislo} vytvorená",
       titleP: { cislo: i.invoice_number },
       subtitle: "{v}",
@@ -1093,7 +1146,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
     if (i.status === "sent" || i.status === "paid") {
       items.push({
         icon: Send,
-        tone: "bg-primary/15 text-primary-hover",
+        tone: "bg-primary/10 text-primary-hover",
         title: "Faktúra {cislo} odoslaná",
         titleP: { cislo: i.invoice_number },
         subtitle: "{v}",
@@ -1105,7 +1158,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
     if (i.status === "paid" && i.paid_at) {
       items.push({
         icon: CheckCircle2,
-        tone: "bg-emerald-500/15 text-emerald-500",
+        tone: "bg-[var(--stav-uspech-plocha)] text-[var(--stav-uspech-text)]",
         title: "Faktúra {cislo} zaplatená",
         titleP: { cislo: i.invoice_number },
         subtitle: "{v}",
@@ -1131,7 +1184,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
   customers.slice(0, 10).forEach((c) => {
     items.push({
       icon: Users,
-      tone: "bg-purple-500/15 text-purple-500",
+      tone: "bg-[var(--stav-informacia-plocha)] text-[var(--stav-informacia-text)]",
       title: "Nový odberateľ: {meno}",
       titleP: { meno: c.name },
       subtitle: "Vytvorený v systéme",
@@ -1143,7 +1196,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
   deliveries.slice(0, 10).forEach((w) => {
     items.push({
       icon: Webhook,
-      tone: "bg-cyan-500/15 text-cyan-500",
+      tone: "bg-[var(--stav-priebeh-plocha)] text-[var(--stav-priebeh-text)]",
       title: "Webhook {udalost}",
       titleP: { udalost: w.event_type ?? "delivered" },
       subtitle: "Status {kod}",
@@ -1156,7 +1209,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
   apiLogs.slice(0, 5).forEach((l) => {
     items.push({
       icon: KeyRound,
-      tone: "bg-amber-500/15 text-amber-500",
+      tone: "bg-[var(--stav-pozor-plocha)] text-[var(--stav-pozor-text)]",
       title: "API {cesta}",
       titleP: { cesta: l.path ?? "request" },
       subtitle: "Status {kod}",
@@ -1181,21 +1234,21 @@ function buildAging(kose: KosVeku[]): AgingBucket[] {
       label: "V termíne",
       count: 0,
       amount: 0,
-      tone: "text-emerald-700 dark:text-emerald-400",
+      tone: TON_CISLA.uspech,
     },
     {
       key: "1_30",
       label: "1–30 dní",
       count: 0,
       amount: 0,
-      tone: "text-amber-700 dark:text-amber-400",
+      tone: TON_CISLA.pozor,
     },
     {
       key: "31_60",
       label: "31–60 dní",
       count: 0,
       amount: 0,
-      tone: "text-amber-700 dark:text-amber-300",
+      tone: TON_CISLA.pozor,
     },
     { key: "61_90", label: "61–90 dní", count: 0, amount: 0, tone: "text-destructive" },
     {
@@ -1269,19 +1322,19 @@ function AgingPanel({
     {
       kluc: "current",
       nazov: "V termíne",
-      farba: "bg-emerald-500",
+      farba: "bg-[var(--stav-uspech-bod)]",
       suma: sumaZa(buckets, ["current"]),
     },
     {
       kluc: "1_60",
       nazov: "1–60 dní",
-      farba: "bg-amber-500",
+      farba: "bg-[var(--stav-pozor-bod)]",
       suma: sumaZa(buckets, ["1_30", "31_60"]),
     },
     {
       kluc: "60_plus",
       nazov: "60+ dní",
-      farba: "bg-destructive",
+      farba: "bg-[var(--stav-chyba-bod)]",
       suma: sumaZa(buckets, ["61_90", "90_plus"]),
     },
   ];
@@ -1290,19 +1343,20 @@ function AgingPanel({
     <Panel title={title} icon={icon}>
       {loading ? (
         <div className="space-y-2">
-          <div className="h-3 animate-pulse rounded-full bg-muted/50" />
-          <div className="h-9 animate-pulse rounded-md bg-muted/50" />
+          <div className="h-3 animate-pulse rounded-full bg-muted" />
+          <div className="h-9 animate-pulse rounded-md bg-muted" />
         </div>
       ) : total === 0 ? (
         <div className="py-6 text-center">
-          <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-muted">
-            <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+          <div className="mx-auto grid h-10 w-10 place-items-center rounded-lg bg-[var(--stav-uspech-plocha)]">
+            <CheckCircle2 className="h-5 w-5 text-[var(--stav-uspech-text)]" />
           </div>
           <p className="mt-3 text-sm text-muted-foreground">{t("Nič otvorené — všetko je vyrovnané.")}</p>
         </div>
       ) : (
         <>
-          <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+          {/* Medzi pásmi je 2 px medzera vo farbe karty — susedné pásy sa nezlejú ani v tme. */}
+          <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-muted">
             {pasy.map((p) =>
               p.suma > 0 ? (
                 <div
@@ -1318,23 +1372,27 @@ function AgingPanel({
           <ul className="mt-3 space-y-1.5">
             {pasy.map((p) => (
               <li key={p.kluc} className="flex items-center gap-2 text-[13px]">
-                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${p.farba}`} />
-                <span className="flex-1 text-muted-foreground">{t(p.nazov)}</span>
-                <span className="tabular-nums">{fmt(p.suma)}</span>
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-sm ${p.farba}`} />
+                <span className="min-w-0 flex-1 text-muted-foreground">{t(p.nazov)}</span>
+                <span className="suma font-medium">{fmt(p.suma)}</span>
               </li>
             ))}
           </ul>
 
-          <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[13px]">
-            <span className="text-muted-foreground">{t("Spolu · {n}", { n: pocetSpolu })}</span>
-            <span className="font-semibold tabular-nums">{fmt(total)}</span>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-2.5 text-sm">
+            <span className="font-semibold">{t("Spolu · {n}", { n: pocetSpolu })}</span>
+            <span className="suma font-bold">{fmt(total)}</span>
           </div>
 
           <button
             onClick={() => setRozpis((v) => !v)}
             aria-expanded={rozpis}
-            className="mt-2 text-[12px] text-muted-foreground hover:text-foreground hover:underline"
+            className="mt-2 inline-flex items-center gap-1 rounded-md px-1 py-0.5 -mx-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
           >
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${rozpis ? "rotate-180" : ""}`}
+              aria-hidden
+            />
             {rozpis ? t("Skryť rozpis") : t("Zobraziť rozpis")}
           </button>
 
@@ -1342,18 +1400,18 @@ function AgingPanel({
             <div className="mt-2 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-[12px] text-muted-foreground">
-                    <th className="py-1.5 font-medium">{t("Obdobie")}</th>
-                    <th className="py-1.5 text-right font-medium">{t("Počet")}</th>
-                    <th className="py-1.5 text-right font-medium">{t("Suma")}</th>
+                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                    <th className="py-1.5 font-semibold">{t("Obdobie")}</th>
+                    <th className="py-1.5 text-right font-semibold">{t("Počet")}</th>
+                    <th className="py-1.5 text-right font-semibold">{t("Suma")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {buckets.map((b) => (
                     <tr key={b.key}>
-                      <td className="py-2">{t(b.label)}</td>
+                      <td className={`whitespace-nowrap py-2 ${b.tone}`}>{t(b.label)}</td>
                       <td className="py-2 text-right tabular-nums">{b.count}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(b.amount)}</td>
+                      <td className="suma py-2 text-right font-medium">{fmt(b.amount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1381,40 +1439,34 @@ function DsoCard({
   hasPaid?: boolean;
 }) {
   const { t } = useT();
-  const tone =
-    dso.days < 30
-      ? "text-emerald-700 dark:text-emerald-400"
-      : dso.days <= 60
-        ? "text-amber-700 dark:text-amber-400"
-        : "text-destructive";
+  const tone = dso.days < 30 ? TON_CISLA.uspech : dso.days <= 60 ? TON_CISLA.pozor : TON_CISLA.chyba;
+  const tonOdznaku = dso.days < 30 ? "uspech" : dso.days <= 60 ? "pozor" : "chyba";
   const badge = dso.days < 30 ? "Vynikajúce" : dso.days <= 60 ? "Priemerné" : "Kritické";
   return (
     <Panel title="Doba inkasa (DSO)" icon={Clock}>
       {loading ? (
         <div className="space-y-3">
-          <div className="h-12 w-32 animate-pulse rounded-md bg-muted/50" />
-          <div className="h-4 w-48 animate-pulse rounded-md bg-muted/50" />
+          <div className="h-12 w-32 animate-pulse rounded-md bg-muted" />
+          <div className="h-4 w-48 animate-pulse rounded-md bg-muted" />
         </div>
       ) : (
         <>
-          <div className={`text-4xl font-bold tabular-nums ${tone}`}>{dso.days.toFixed(1).replace(".", ",")}</div>
+          <div className={`suma text-4xl font-bold tracking-tight ${tone}`}>{dso.days.toFixed(1).replace(".", ",")}</div>
           <div className="mt-1 text-xs text-muted-foreground">{t("Priemerná doba inkasa (dní)")}</div>
           {hasPaid && (
-            <div
-              className={`mt-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone} bg-muted/40`}
-            >
+            <StavOdznak ton={tonOdznaku} className="mt-3">
               {t(badge)}
-            </div>
+            </StavOdznak>
           )}
 
-          <div className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+          <div className="mt-4 space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
             <div className="flex justify-between">
               <span>{t("Pohľadávky")}</span>
-              <span className="tabular-nums">{fmt(dso.receivables)}</span>
+              <span className="suma font-medium text-foreground">{fmt(dso.receivables)}</span>
             </div>
             <div className="flex justify-between">
               <span>{t("Obrat 365 dní")}</span>
-              <span className="tabular-nums">{fmt(dso.revenue365)}</span>
+              <span className="suma font-medium text-foreground">{fmt(dso.revenue365)}</span>
             </div>
           </div>
         </>
@@ -1438,18 +1490,18 @@ function ForecastPanel({
       {loading ? (
         <div className="space-y-2">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-10 animate-pulse rounded-md bg-muted/50" />
+            <div key={i} className="h-10 animate-pulse rounded-md bg-muted" />
           ))}
         </div>
       ) : (
         <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>
           <table className="w-full min-w-[26rem] text-sm">
             <thead>
-              <tr className="text-left text-[12px] text-muted-foreground">
-                <th className="py-1.5 font-medium">{t("Obdobie")}</th>
-                <th className="py-1.5 text-right font-medium">{t("Príjmy")}</th>
-                <th className="py-1.5 text-right font-medium">{t("Výdavky")}</th>
-                <th className="py-1.5 text-right font-medium">{t("Zostatok")}</th>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <th className="py-1.5 font-semibold">{t("Obdobie")}</th>
+                <th className="py-1.5 text-right font-semibold">{t("Príjmy")}</th>
+                <th className="py-1.5 text-right font-semibold">{t("Výdavky")}</th>
+                <th className="py-1.5 text-right font-semibold">{t("Zostatok")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -1457,16 +1509,16 @@ function ForecastPanel({
                 <tr key={r.label}>
                   <td className="py-2">
                     <div className="font-medium">{t("Týždeň {n}", { n: r.tyzden })}</div>
-                    <div className="text-xs text-muted-foreground">{r.range}</div>
+                    <div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{r.range}</div>
                   </td>
-                  <td className="py-2 text-right tabular-nums text-emerald-700 dark:text-emerald-400">
+                  <td className={`suma py-2 text-right font-medium ${TON_CISLA.uspech}`}>
                     {fmt(r.income)}
                   </td>
-                  <td className="py-2 text-right tabular-nums text-destructive">
+                  <td className="suma py-2 text-right font-medium text-destructive">
                     {r.expense > 0 ? `−${fmt(r.expense)}` : fmt(0)}
                   </td>
                   <td
-                    className={`py-2 text-right font-semibold tabular-nums ${r.balance >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}
+                    className={`suma py-2 text-right font-bold ${r.balance >= 0 ? TON_CISLA.uspech : TON_CISLA.chyba}`}
                   >
                     {fmt(r.balance)}
                   </td>
@@ -1475,16 +1527,16 @@ function ForecastPanel({
             </tbody>
             <tfoot>
               <tr className="border-t border-border">
-                <td className="pt-2 text-[12px] text-muted-foreground">{t("Spolu 4 týždne")}</td>
-                <td className="pt-2 text-right text-xs tabular-nums text-emerald-700 dark:text-emerald-400">
+                <td className="pt-2.5 text-xs font-semibold">{t("Spolu 4 týždne")}</td>
+                <td className={`suma pt-2.5 text-right text-xs ${TON_CISLA.uspech}`}>
                   {fmt(rows.reduce((a, r) => a + r.income, 0))}
                 </td>
-                <td className="pt-2 text-right text-xs tabular-nums text-destructive">
+                <td className="suma pt-2.5 text-right text-xs text-destructive">
                   {rows.some((r) => r.expense > 0) ? "−" : ""}
                   {fmt(rows.reduce((a, r) => a + r.expense, 0))}
                 </td>
                 <td
-                  className={`pt-2 text-right font-bold tabular-nums ${rows.reduce((a, r) => a + r.balance, 0) >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`suma pt-2.5 text-right font-bold ${rows.reduce((a, r) => a + r.balance, 0) >= 0 ? TON_CISLA.uspech : TON_CISLA.chyba}`}
                 >
                   {fmt(rows.reduce((a, r) => a + r.balance, 0))}
                 </td>
