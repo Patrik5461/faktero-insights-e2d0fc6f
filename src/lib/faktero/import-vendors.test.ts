@@ -114,6 +114,19 @@ describe("summarize", () => {
     expect(summarize(parseVendorFile("money-s3", "VF.xml", VYDANA)).currency).toBe("CZK");
     expect(summarize(parseVendorFile("money-s3", "VF.xml", CUDZIA_MENA)).currency).toBe("EUR");
   });
+
+  // E-04/E-05: rôzne meny sa nesčítajú do jedného čísla a ukážka nesie menu riadku.
+  it("hodnotu vracia po menách a ukážka má menu faktúry", () => {
+    const s = summarize([
+      { invoice_number: "1", total: "100", currency: "EUR" },
+      { invoice_number: "1", total: "100", currency: "EUR" },
+      { invoice_number: "2", total: "2500", currency: "czk" },
+      { invoice_number: "3", total: "20.10", currency: "EUR" },
+      { invoice_number: "4", total: "5" },
+    ]);
+    expect(s.hodnotaPoMenach).toEqual({ EUR: 120.1, CZK: 2500, "": 5 });
+    expect(s.sampleInvoices.map((x) => x.currency)).toEqual(["EUR", "CZK", "EUR", ""]);
+  });
 });
 
 describe("CSV z iDokladu, Omegy a KROSu", () => {

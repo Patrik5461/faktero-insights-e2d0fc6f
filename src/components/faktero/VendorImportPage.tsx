@@ -21,6 +21,8 @@ import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { ZonaSuboru } from "@/components/faktero/ZonaSuboru";
+import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 
 export type VendorId = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
 
@@ -97,14 +99,7 @@ export function VendorImportPage(props: {
        * napríklad na uzamknuté obdobie, hláška „importovaných 0 faktúr"
        * vyzerá ako úspech a dôvod ostane schovaný v histórii.
        */
-      if (r.failed_rows > 0) {
-        toast.warning(
-          t("{n} dokladov sa nezapísalo. Dôvod pri každom nájdete v histórii importov.", {
-            n: r.failed_rows,
-          }),
-          { duration: 12000 },
-        );
-      }
+      upozornNaChyby(r.failed_rows, t);
     } catch (e: any) {
       toast.error(t(e?.message ?? "Import zlyhal."));
     } finally {
@@ -137,7 +132,11 @@ export function VendorImportPage(props: {
               </section>
               <section className="rounded-2xl border border-border bg-card p-6">
                 <h2 className="text-base font-semibold">{t("Nahrajte súbor")}</h2>
-                <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-10 text-sm hover:border-primary/50">
+                <ZonaSuboru
+                  className="mt-4"
+                  accept={props.accept}
+                  onSubory={(s) => setFile(s[0] ?? null)}
+                >
                   <Upload className="h-8 w-8 text-primary" />
                   <span className="font-medium">
                     {file ? file.name : t("Vyberte alebo presuňte súbor")}
@@ -145,13 +144,7 @@ export function VendorImportPage(props: {
                   <span className="text-xs text-muted-foreground">
                     {props.accept.split(",").join(" · ")}
                   </span>
-                  <input
-                    type="file"
-                    accept={props.accept}
-                    className="hidden"
-                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  />
-                </label>
+                </ZonaSuboru>
                 <div className="mt-5 flex justify-end">
                   <button
                     onClick={handleUpload}
@@ -177,7 +170,10 @@ export function VendorImportPage(props: {
                 <Stat label="Faktúry" value={preview.invoicesCount} />
                 <Stat label="Odberatelia" value={preview.customersCount} />
                 <Stat label="Riadky" value={preview.itemsCount} />
-                <Stat label="Hodnota" value={formatujMenu(preview.totalValue, preview.currency)} />
+                <Stat
+                  label="Hodnota"
+                  value={<HodnotaPoMenach preview={preview} className="text-base" />}
+                />
               </div>
               {(preview.storna > 0 || preview.stornujuce > 0) && (
                 <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
@@ -210,7 +206,7 @@ export function VendorImportPage(props: {
                             {s.issue_date ? datumNaDoklade(s.issue_date) : "—"}
                           </td>
                           <td className="px-3 py-2 text-right tabular-nums">
-                            {formatujMenu(s.total, preview.currency)}
+                            {formatujMenu(s.total, s.currency || preview.currency)}
                           </td>
                         </tr>
                       ))}
@@ -283,26 +279,7 @@ export function VendorImportPage(props: {
                 <Stat label="Duplikáty" value={result.duplicates} />
                 <Stat label="Chyby" value={result.failed_rows} />
               </div>
-              {result.stornovane > 0 && (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  {t("Stornované doklady: {n}", { n: result.stornovane })}
-                </p>
-              )}
-              {result.upozornenia?.length > 0 && (
-                <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm">
-                  <p className="flex items-center gap-2 font-medium">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-                    {t("Na čo dať pozor")}
-                  </p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
-                    {result.upozornenia.map((u: string, i: number) => (
-                      <li key={i} className="break-words">
-                        {u}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <UpozorneniaImportu result={result} />
               <CislovaniePoImporte rady={(result as any).ciselneRady} />
               <div className="mt-6 flex justify-center gap-2">
                 <Link
@@ -333,5 +310,81 @@ function Stat({ label, value }: { label: string; value: any }) {
       <div className="text-xs text-muted-foreground">{t(label)}</div>
       <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
     </div>
+  );
+}
+
+/**
+ * Hodnota náhľadu po menách (E-04) — rôzne meny sa nesčítajú do jedného čísla.
+ * Starší náhľad bez `hodnotaPoMenach` ukáže súčet v mene prvého riadku.
+ */
+export function HodnotaPoMenach({
+  preview,
+  className,
+}: {
+  preview: { totalValue: number; currency?: string; hodnotaPoMenach?: Record<string, number> };
+  className?: string;
+}) {
+  const fm = useFormatMenyFirmy();
+  const dvojice = Object.entries(
+    preview.hodnotaPoMenach ?? { [preview.currency ?? ""]: preview.totalValue },
+  );
+  // Prázdna mena (súbor ju neuvádza) = domáca mena firmy, tak ju import aj zapíše.
+  const sucty = fm.sucty(
+    dvojice,
+    ([, v]) => v,
+    ([m]) => m,
+  );
+  return <SuctyPoMenach sucty={sucty} className={className} />;
+}
+
+/**
+ * Odmietnuté riadky sa musia povedať nahlas. Keď faktúry spadnú napríklad na
+ * uzamknuté obdobie, hláška „importovaných 0 faktúr" vyzerá ako úspech a dôvod
+ * ostane schovaný v histórii.
+ */
+export function upozornNaChyby(
+  failedRows: number | null | undefined,
+  t: (k: string, p?: Record<string, string | number>) => string,
+) {
+  if (!failedRows || failedRows <= 0) return;
+  toast.warning(
+    t("{n} dokladov sa nezapísalo. Dôvod pri každom nájdete v histórii importov.", {
+      n: failedRows,
+    }),
+    { duration: 12000 },
+  );
+}
+
+/** Storná a upozornenia po importe — spoločné pre účtovné importy aj SuperFaktúru. */
+export function UpozorneniaImportu({
+  result,
+}: {
+  result: { stornovane?: number; upozornenia?: string[] } | null | undefined;
+}) {
+  const { t } = useT();
+  if (!result) return null;
+  return (
+    <>
+      {(result.stornovane ?? 0) > 0 && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {t("Stornované doklady: {n}", { n: result.stornovane ?? 0 })}
+        </p>
+      )}
+      {(result.upozornenia?.length ?? 0) > 0 && (
+        <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm">
+          <p className="flex items-center gap-2 font-medium">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+            {t("Na čo dať pozor")}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {result.upozornenia!.map((u, i) => (
+              <li key={i} className="break-words">
+                {u}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
   );
 }

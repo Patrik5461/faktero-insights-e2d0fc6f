@@ -108,7 +108,7 @@ export function PredlohyUctovania({ companyId }: { companyId: string }) {
                   <td className="p-3 text-muted-foreground">
                     {t(DRUHY_PREDLOH.find((d) => d.kod === (r.druh ?? null))?.nazov ?? "")}
                   </td>
-                  <td className="p-3">{popisPredlohy(r)}</td>
+                  <td className="p-3">{popisPredlohy(r, t)}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
                       <button

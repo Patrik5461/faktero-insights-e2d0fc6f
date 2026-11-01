@@ -19,6 +19,58 @@ export const AGENDY_SCHVALOVANIA: AgendaSchvalovania[] = [
   "nespracovany",
   "vyuctovanie",
 ];
+
+/** Odkaz na detail dokladu pre `<Link>` — parametre zvlášť, router ich z reťazca neprečíta. */
+export type OdkazNaDetail = {
+  to: string;
+  params?: Record<string, string>;
+  search?: Record<string, string>;
+};
+
+/**
+ * Jedna mapa agenda → detail dokladu. Používa ju stránka Na schválenie
+ * (odkaz aj hromadná akcia), Moje úlohy aj zvonček — nová agenda sa
+ * doplní len sem.
+ */
+export const ODKAZY_AGEND: Record<AgendaSchvalovania, (id: string) => OdkazNaDetail> = {
+  doklad: (id) => ({ to: "/doklady/novy", search: { id } }),
+  prijata: (id) => ({ to: "/prijate-faktury/$id", params: { id } }),
+  vystavena: (id) => ({ to: "/faktury/$id", params: { id } }),
+  nespracovany: (id) => ({ to: "/nespracovane/$id", params: { id } }),
+  vyuctovanie: (id) => ({ to: "/doklady/vyuctovania/$id", params: { id } }),
+};
+
+export function jeAgendaSchvalovania(agenda: string): agenda is AgendaSchvalovania {
+  return (AGENDY_SCHVALOVANIA as string[]).includes(agenda);
+}
+
+/** Odkaz na detail; neznáma agenda (staršie dáta) vedie na vystavenú faktúru ako doteraz. */
+export function odkazNaDetail(agenda: string, id: string): OdkazNaDetail {
+  return (jeAgendaSchvalovania(agenda) ? ODKAZY_AGEND[agenda] : ODKAZY_AGEND.vystavena)(id);
+}
+
+/** Tá istá cesta ako reťazec (`/faktury/123`, `/doklady/novy?id=…`). */
+export function cestaNaDetail(agenda: string, id: string): string {
+  const o = odkazNaDetail(agenda, id);
+  let cesta = o.to;
+  for (const [k, v] of Object.entries(o.params ?? {})) cesta = cesta.replace(`$${k}`, encodeURIComponent(v));
+  const q = new URLSearchParams(o.search ?? {}).toString();
+  return q ? `${cesta}?${q}` : cesta;
+}
+
+/**
+ * Vybrané riadky (kľúče `agenda:id`) rozdelené po agendách pre hromadnú
+ * akciu — každá agenda z AGENDY_SCHVALOVANIA, nič sa nevynechá.
+ */
+export function vyberPoAgendach(
+  polozky: { agenda: string; id: string }[],
+  vyber: Set<string>,
+): { agenda: AgendaSchvalovania; ids: string[] }[] {
+  return AGENDY_SCHVALOVANIA.map((agenda) => ({
+    agenda,
+    ids: polozky.filter((p) => p.agenda === agenda && vyber.has(`${agenda}:${p.id}`)).map((p) => p.id),
+  })).filter((x) => x.ids.length > 0);
+}
 export type StavSchvalovania = "caka" | "schvaleny" | "zamietnuty" | "vrateny";
 export type Urovne = string[][];
 

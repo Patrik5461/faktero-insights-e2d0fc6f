@@ -238,9 +238,8 @@ export const programUctovaniaFn = createServerFn({ method: "POST" })
       Nemecká firma, ktorá si program ešte nevybrala (v stĺpci je predvolená
       Pohoda), dostane DATEV — Pohodu ani Omegu nemecký poradca nepoužíva.
     */
-    const { krajinaDane } = await import("./vat-rates");
-    if (f.uctovny_program === "pohoda" && String(krajinaDane(f.country)) === "DE")
-      f.uctovny_program = "datev";
+    const { uctovnyProgramFirmy } = await import("./odovzdanie-exportu");
+    f.uctovny_program = uctovnyProgramFirmy(f.uctovny_program, f.country);
     if (data.program || data.nastavenia) {
       const program = data.program ?? f.uctovny_program;
       const zmena: Record<string, unknown> = {};

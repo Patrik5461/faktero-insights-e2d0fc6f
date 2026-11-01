@@ -549,12 +549,7 @@ export function rozoberTabulku(
     const v = (pole: string) => (mapa[pole] === undefined ? "" : bunka(r?.[mapa[pole]]));
     const kod = v("kod").slice(0, 30);
     if (!kod) continue;
-    const druhText = bezDiakritiky(v("druh"));
-    const druh: DruhCiselnika = /clen|dph|vat/.test(druhText)
-      ? "clenenie_dph"
-      : /predkont/.test(druhText)
-        ? "predkontacia"
-        : predvolenyDruh;
+    const druh = druhZTextu(v("druh"), predvolenyDruh);
     out.push({
       druh,
       kod,
@@ -570,6 +565,26 @@ export function rozoberTabulku(
     zaznamy: bezDuplicit(out),
     chyba: out.length ? null : "Tabuľka nemá pod hlavičkou žiadny riadok s kódom.",
   };
+}
+
+/**
+ * Druh číselníka zo stĺpca „Druh“ tabuľky (E-31). Predtým sa rozoznali len
+ * predkontácie a členenia — strediská, činnosti, rady či pokladne skončili
+ * ako predkontácie. Prázdny alebo neznámy text = `predvoleny` (záložka, ktorú
+ * má človek otvorenú).
+ */
+export function druhZTextu(text: string, predvoleny: DruhCiselnika = "predkontacia"): DruhCiselnika {
+  const s = bezDiakritiky(text);
+  if (!s) return predvoleny;
+  if (/clen|dph|vat/.test(s)) return "clenenie_dph";
+  if (/predkont/.test(s)) return "predkontacia";
+  if (/stredis|centr/.test(s)) return "stredisko";
+  if (/cinnost|activit/.test(s)) return "cinnost";
+  if (/poklad|cash/.test(s)) return "pokladna";
+  if (/zakaz|contract|projekt/.test(s)) return "zakazka";
+  if (/bank|ucet|account/.test(s)) return "bankovy_ucet";
+  if (/\brad|series/.test(s)) return "ciselny_rad";
+  return predvoleny;
 }
 
 /** Jednoduché CSV (aj s bodkočiarkou a úvodzovkami) na bunky. */

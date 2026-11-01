@@ -48,7 +48,7 @@ import {
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
-import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
 import { potvrd } from "@/lib/potvrdenie";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 import { nesediZChyby } from "@/lib/faktero/cudzia-faktura";
@@ -163,7 +163,12 @@ function Detail() {
   const zle = (k: string) => chyby.includes(k);
   const ram = (k: string) => (zle(k) ? "border-red-500 ring-1 ring-red-300" : "border-input");
   const s = u ? sucty(u) : { zaklad: 0, dph: 0, celkom: 0 };
-  const sadzby = useMemo(() => sadzbyKrajiny("SK", u?.datumVystavenia || null), [u?.datumVystavenia]);
+  // Sadzby podľa krajiny firmy (CZ 21/12/0), nie napevno slovenské.
+  const krajinaFirmy = d?.krajinaFirmy ?? null;
+  const sadzby = useMemo(
+    () => sadzbyNespracovaneho(krajinaFirmy, u?.datumVystavenia || null),
+    [krajinaFirmy, u?.datumVystavenia],
+  );
 
   if (nenajdene)
     return (
@@ -463,6 +468,10 @@ function Detail() {
               />
             }
           />
+          {/* Schvaľovanie aj v kompaktnom rozložení — rovnako ako v klasickom. */}
+          <div className="mt-6 max-w-xl">
+            <SchvalovaniePanel companyId={d.companyId} agenda="nespracovany" id={d.id} />
+          </div>
         </PageBody>
       </>
     );

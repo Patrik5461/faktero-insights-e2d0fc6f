@@ -32,7 +32,7 @@ export default {
     t.uprac("pokladničný doklad a história importu", async () => {
       await t.rest.delete(`cash_entries?company_id=eq.${firma}&pohoda_cislo=eq.${cislo}`);
       const jobs = await t.rest.get(
-        `import_jobs?company_id=eq.${firma}&created_at=gte.${od}&source=like.Prijat*&select=id`,
+        `import_jobs?company_id=eq.${firma}&created_at=gte.${od}&or=(source.like.Prijat*,source.eq.doklady)&select=id`,
       );
       for (const j of jobs.data ?? []) await t.rest.delete(`import_jobs?id=eq.${j.id}`);
     });

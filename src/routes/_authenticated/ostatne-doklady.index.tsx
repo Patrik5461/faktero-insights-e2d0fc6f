@@ -39,6 +39,12 @@ import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import {
+  naHromadnuAkciu,
+  prepniVsetkyZobrazene,
+  vsetkyZobrazeneVybrane,
+  vybraneZobrazene,
+} from "@/lib/faktero/vyber-dokladov";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iné doklady — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({
@@ -108,7 +114,7 @@ function OstatneDokladyPage() {
     const { error } = await supabase
       .from("other_documents")
       .update({ priecinok: nazov.trim().slice(0, 60) || null } as any)
-      .in("id", Array.from(selected));
+      .in("id", idsVybranych);
     if (error) return toast.error(error.message);
     toast.success(
       nazov.trim()
@@ -119,6 +125,13 @@ function OstatneDokladyPage() {
   }
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Hromadné akcie len nad zobrazenými — vybraný riadok skrytý filtrom sa nepočíta.
+  const vybrane = vybraneZobrazene(selected, zobrazene);
+  const idsVybranych = vybrane.map((r) => r.id);
+  // Zmena filtra na obrazovke výber zruší, aby sa nemiešal so skrytými riadkami.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [priecinok, stitokFiltra, hladane]);
   const [nespracovanych, setNespracovanych] = useState<number | null>(null);
   const [pracujem, setPracujem] = useState(false);
   const dnes = dnesBratislava();
@@ -211,8 +224,9 @@ function OstatneDokladyPage() {
   }
 
   async function odovzdaj(oznacit: boolean) {
-    if (!cid || !rows.length) return;
-    const vyber = selected.size ? rows.filter((r) => selected.has(r.id)) : rows;
+    // Bez výberu všetky zobrazené (filter priečinka, štítka a hľadania platí), nie celá záložka.
+    const vyber = naHromadnuAkciu(selected, zobrazene);
+    if (!cid || !vyber.length) return;
     const nesprac = vyber.filter((r) => r.status === "new").length;
     if (
       oznacit &&
@@ -265,17 +279,18 @@ function OstatneDokladyPage() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => odovzdaj(false)}
-              disabled={pracujem || !rows.length}
+              disabled={pracujem || !zobrazene.length}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
+              <Download className="h-4 w-4" /> ZIP{" "}
+              {vybrane.length ? `(${vybrane.length})` : t("všetky zobrazené ({n})", { n: zobrazene.length })}
             </button>
             <button
               onClick={() => odovzdaj(true)}
-              disabled={pracujem || !rows.length || zalozka === "odovzdane"}
+              disabled={pracujem || !zobrazene.length || zalozka === "odovzdane"}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
+              <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")} ({vybrane.length || zobrazene.length})
             </button>
             <Link
               to="/ostatne-doklady/novy"
@@ -376,26 +391,26 @@ function OstatneDokladyPage() {
           }
         />
 
-        {selected.size > 0 && (
+        {vybrane.length > 0 && (
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <button
               onClick={() => void doPriecinka()}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
-              <FolderOpen className="h-4 w-4" /> {t("Do priečinka")} ({selected.size})
+              <FolderOpen className="h-4 w-4" /> {t("Do priečinka")} ({vybrane.length})
             </button>
             {cid ? (
               <HromadnaAkciaDokladov
                 companyId={cid}
                 agenda="ostatny"
-                ids={Array.from(selected)}
+                ids={idsVybranych}
                 onHotovo={() => void refresh()}
               />
             ) : null}
             {(zalozka === "nespracovane" || zalozka === "spracovane") && (
               <button
                 onClick={() =>
-                  zmenStav(Array.from(selected), zalozka === "nespracovane" ? "processed" : "new")
+                  zmenStav(idsVybranych, zalozka === "nespracovane" ? "processed" : "new")
                 }
                 disabled={pracujem}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
@@ -403,11 +418,11 @@ function OstatneDokladyPage() {
                 {zalozka === "nespracovane" ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-emerald-700" /> {t("Označiť ako spracované")} (
-                    {selected.size})
+                    {vybrane.length})
                   </>
                 ) : (
                   <>
-                    <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({selected.size})
+                    <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({vybrane.length})
                   </>
                 )}
               </button>
@@ -560,12 +575,8 @@ function OstatneDokladyPage() {
                           <input
                             type="checkbox"
                             aria-label={t("Označiť všetky")}
-                            checked={rows.length > 0 && selected.size === rows.length}
-                            onChange={() =>
-                              setSelected((p) =>
-                                p.size === rows.length ? new Set() : new Set(rows.map((r) => r.id)),
-                              )
-                            }
+                            checked={vsetkyZobrazeneVybrane(selected, zobrazene)}
+                            onChange={() => setSelected((p) => prepniVsetkyZobrazene(p, zobrazene))}
                           />
                           <span className="sr-only">{t("Výber")}</span>
                         </th>

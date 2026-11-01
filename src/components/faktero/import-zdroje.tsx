@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { useT } from "@/lib/i18n/useT";
 import type { VendorId } from "@/components/faktero/VendorImportPage";
+import { NAZVY_ZDROJOV } from "@/lib/faktero/import-zdroj";
 
 /**
  * Jeden zoznam systémov, z ktorých sa dá do Faktera prejsť.
@@ -229,7 +230,7 @@ function NavodDoklady() {
 export const IMPORT_ZDROJE: ImportZdroj[] = [
   {
     id: "pohoda",
-    label: "Pohoda a mPohoda",
+    label: NAZVY_ZDROJOV["pohoda"],
     title: "Import z Pohody a mPohody",
     description:
       "Naimportujte faktúry a odberateľov z XML exportu programu Pohoda, zo súboru ISDOC alebo z údajov mPohody.",
@@ -238,7 +239,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
   {
     id: "superfaktura",
-    label: "SuperFaktúra",
+    label: NAZVY_ZDROJOV["superfaktura"],
     title: "Import zo SuperFaktúry",
     description: "Naimportujte faktúry a odberateľov z exportu agendy zo SuperFaktúry.",
     cesta: "/importy/superfaktura",
@@ -246,7 +247,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
   {
     id: "idoklad",
-    label: "iDoklad",
+    label: NAZVY_ZDROJOV["idoklad"],
     title: "Import z iDoklad",
     description: "Naimportujte faktúry a odberateľov z CSV exportu z iDoklad.",
     accept: ".csv",
@@ -254,7 +255,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
   {
     id: "money-s3",
-    label: "Money S3",
+    label: NAZVY_ZDROJOV["money-s3"],
     title: "Import z Money S3",
     description: "Naimportujte faktúry a odberateľov z XML exportu Money S3 (Seyfor).",
     accept: ".xml",
@@ -262,7 +263,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
   {
     id: "omega",
-    label: "KROS Omega",
+    label: NAZVY_ZDROJOV["omega"],
     title: "Import z Omega (KROS)",
     description: "Naimportujte faktúry a odberateľov z CSV alebo XML exportu z KROS Omega.",
     accept: ".csv,.xml",
@@ -270,7 +271,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
   {
     id: "kros",
-    label: "KROS Alfa plus",
+    label: NAZVY_ZDROJOV["kros"],
     title: "Import z KROS (Alfa plus / Omega)",
     description: "Naimportujte faktúry a odberateľov z XML alebo CSV exportu z KROS.",
     accept: ".xml,.csv",
@@ -278,7 +279,7 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
   {
     id: "doklady",
-    label: "Prijaté doklady (Doklado, skeny)",
+    label: NAZVY_ZDROJOV["doklady"],
     title: "Import prijatých dokladov",
     description:
       "Prechod z Doklado alebo inej aplikácie: prijaté faktúry, bločky a skeny dokladov.",

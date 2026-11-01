@@ -15,14 +15,12 @@ import { OZNACENIA } from "@/lib/faktero/vypis-oznacenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import {
   MAX_TOLERANCIA_CENTOV,
-  nastaveniaNespracovanych,
   PREDVOLENE_NESPRACOVANE,
   type NastaveniaNespracovanych,
 } from "@/lib/faktero/nespracovane-nastavenia";
 import {
   AGENDY,
   PREDVOLENE,
-  STLPCE_PREDVOLENYCH,
   nazovAgendy,
   ponuka,
   ponukaClenenia,
@@ -46,6 +44,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { KV_CLENENIA, KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/lib/faktero/kv-clenenie";
 import { useT } from "@/lib/i18n/useT";
+import { otlacok, predvoleneZFirmy } from "@/lib/faktero/formular-z-firmy";
 import { preloz } from "@/lib/i18n/jazyk";
 
 /**
@@ -206,23 +205,22 @@ function Predvolene({
   const [nesp, setNesp] = useState<NastaveniaNespracovanych>(PREDVOLENE_NESPRACOVANE);
   const [busy, setBusy] = useState(false);
 
+  /* Formulár sa prepíše len pri zmene jeho vlastných hodnôt vo firme (E-22) —
+     uloženie číselníka či Nastavení exportu načíta firmu znova a predtým tu
+     zmizli neuložené zmeny. */
+  const zFirmy = useMemo(() => predvoleneZFirmy(firma), [firma]);
+  const otlacokFirmy = otlacok(zFirmy);
   useEffect(() => {
-    setNesp(nastaveniaNespracovanych(firma.uctovanie_nastavenia));
-    setH(Object.fromEntries(STLPCE_PREDVOLENYCH.map((s) => [s, String(firma[s] ?? "")])));
-    setOznaceni({
-      ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}),
-    });
-    setBlockyAgenda(firma.pohoda_blocky_agenda === "faktura" ? "faktura" : "podla_platby");
-    setPokladna(String(firma.pohoda_pokladna ?? ""));
-    setOdkazNaDoklady(firma.pohoda_odkaz_na_doklady !== false);
-    setPolozkyBlockov(Boolean(firma.pohoda_polozky_blockov));
-    setIne({
-      parovaciSymbol: (firma.pohoda_parovaci_symbol as any) || "vs",
-      predkontaciaZaokruhlenie: String(firma.pohoda_predkontacia_zaokruhlenie ?? ""),
-      qrDoNespracovanych: Boolean(firma.qr_blocky_do_nespracovanych),
-      povinnePolia: Array.isArray(firma.povinne_polia_dokladu) ? firma.povinne_polia_dokladu : [],
-    });
-  }, [firma]);
+    setNesp(zFirmy.nesp);
+    setH(zFirmy.h);
+    setOznaceni(zFirmy.oznaceni);
+    setBlockyAgenda(zFirmy.blockyAgenda);
+    setPokladna(zFirmy.pokladna);
+    setOdkazNaDoklady(zFirmy.odkazNaDoklady);
+    setPolozkyBlockov(zFirmy.polozkyBlockov);
+    setIne(zFirmy.ine);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId, otlacokFirmy]);
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
     zaznamy.filter((z) => z.druh === druh && z.aktivne && z.druhy_dokladov?.includes(kluc)).length;
@@ -814,6 +812,8 @@ function Import({
   const importuj = useServerFn(importCiselnikaFn);
   const subor = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  /** Druh pre riadky tabuľky bez stĺpca „Druh“ (E-31) — XML z Pohody ho nesie sám. */
+  const [druhSuboru, setDruhSuboru] = useState<DruhCiselnika>("predkontacia");
   const caka = Boolean(firma.pohoda_nacitat_ciselniky);
 
   async function konektor(zapnut: boolean) {
@@ -851,7 +851,7 @@ function Import({
       for (let i = 0; i < b.length; i += 0x8000)
         bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
       const r = await importuj({
-        data: { company_id: companyId, nazov: f.name, base64: btoa(bin) },
+        data: { company_id: companyId, nazov: f.name, base64: btoa(bin), druh: druhSuboru },
       });
       toast.success(
         t("Načítané: {p} predkontácií, {c} členení DPH", { p: r.predkontacii, c: r.cleneni }) +
@@ -942,6 +942,20 @@ function Import({
               "Odpoveď Pohody (XML), alebo tabuľka CSV či Excel so stĺpcami Kód, Popis, prípadne Agenda, MD, D.",
             )}
           </p>
+          <label className="mt-2 block text-xs text-muted-foreground">
+            {t("Tabuľka bez stĺpca Druh sa načíta ako")}
+            <select
+              value={druhSuboru}
+              onChange={(e) => setDruhSuboru(e.target.value as DruhCiselnika)}
+              className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+            >
+              {DRUHY_CISELNIKA.map((d) => (
+                <option key={d.kod} value={d.kod}>
+                  {t(d.nazov)}
+                </option>
+              ))}
+            </select>
+          </label>
           <input
             ref={subor}
             type="file"
@@ -1331,7 +1345,7 @@ function Ciselnik({
       {riadky.length === 0 ? (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {pocty[druh] === 0
-            ? t("Číselník je prázdny. Načítajte ho z Pohody vyššie alebo pridajte kód ručne.")
+            ? t("Číselník je prázdny. Načítajte ho z Pohody nižšie alebo pridajte kód ručne.")
             : t("Nič nevyhovuje filtru.")}
         </p>
       ) : (

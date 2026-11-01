@@ -113,7 +113,8 @@ export const executeVendorImport = createServerFn({ method: "POST" })
       .from("import_jobs")
       .insert({
         company_id: data.companyId,
-        source: sourceLabels[data.source] ?? data.source,
+        // Stabilný kľúč (id v IMPORT_ZDROJE), nie text — história importov podľa neho filtruje.
+        source: data.source,
         status: "running",
         file_path: data.path,
         file_name: data.fileName,

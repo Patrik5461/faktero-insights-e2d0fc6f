@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { preloz } from "@/lib/i18n/jazyk";
+import { lokalJazyka, preloz } from "@/lib/i18n/jazyk";
 import React, { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -10,6 +10,15 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
+import {
+  KLUCE_ZDROJOV,
+  NAZVY_ZDROJOV,
+  hodnotyZdrojaPreFilter,
+  nazovDruhuLogu,
+  nazovStavuImportu,
+  nazovZdrojaImportu,
+  type KlucZdroja,
+} from "@/lib/faktero/import-zdroj";
 
 export const Route = createFileRoute("/_authenticated/importy/")({
   head: ({ match }) => ({
@@ -19,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/importy/")({
 });
 
 function ImportHistoryPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const [logs, setLogs] = useState<Record<string, any[]>>({});
   const [openId, setOpenId] = useState<string | null>(null);
   const [status, setStatus] = useState("all");
@@ -40,7 +49,11 @@ function ImportHistoryPage() {
   } = usePagedLogs({
     resource: "import_jobs",
     searchColumns: ["file_name", "source", "status"],
-    filters: { status: status === "all" ? null : status, source: source === "all" ? null : source },
+    filters: {
+      status: status === "all" ? null : status,
+      // Zdroj je kľúč z IMPORT_ZDROJE; staršie riadky majú v `source` text („Pohoda“).
+      source: source === "all" ? null : hodnotyZdrojaPreFilter(source as KlucZdroja),
+    },
     dateFrom: dateFrom || null,
     dateTo: dateTo || null,
     pageSizeKey: "import_jobs",
@@ -120,9 +133,7 @@ function ImportHistoryPage() {
                   onChange: setSource,
                   options: [
                     { value: "all", label: t("Všetky") },
-                    { value: "superfaktura", label: "SuperFaktúra" },
-                    { value: "csv", label: "CSV" },
-                    { value: "xml", label: "XML" },
+                    ...KLUCE_ZDROJOV.map((k) => ({ value: k, label: NAZVY_ZDROJOV[k] })),
                   ],
                 },
               ]}
@@ -181,9 +192,9 @@ function ImportHistoryPage() {
                     <React.Fragment key={j.id}>
                       <tr className="border-t border-border">
                         <td className="px-4 py-2 whitespace-nowrap">
-                          {new Date(j.created_at).toLocaleString("sk-SK")}
+                          {new Date(j.created_at).toLocaleString(lokalJazyka(jazyk))}
                         </td>
-                        <td className="px-4 py-2">{j.source}</td>
+                        <td className="px-4 py-2">{t(nazovZdrojaImportu(j.source))}</td>
                         <td className="px-4 py-2 max-w-[240px] truncate" title={j.file_name}>
                           {j.file_name ?? "—"}
                         </td>
@@ -229,7 +240,9 @@ function ImportHistoryPage() {
                                   {(logs[j.id] ?? []).map((l) => (
                                     <tr key={l.id} className="border-t border-border">
                                       <td className="px-2 py-1 tabular-nums">{l.row_number}</td>
-                                      <td className="px-2 py-1">{l.entity_type}</td>
+                                      <td className="px-2 py-1">
+                                        {t(nazovDruhuLogu(l.entity_type))}
+                                      </td>
                                       <td className="px-2 py-1">
                                         <StatusPill status={l.status} />
                                       </td>
@@ -272,6 +285,7 @@ function ImportHistoryPage() {
 }
 
 function StatusPill({ status }: { status: string }) {
+  const { t } = useT();
   const map: Record<string, string> = {
     completed: "bg-primary/10 text-primary-hover",
     running: "bg-amber-500/10 text-amber-800",
@@ -286,7 +300,7 @@ function StatusPill({ status }: { status: string }) {
     <span
       className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${map[status] ?? "bg-secondary"}`}
     >
-      {status}
+      {t(nazovStavuImportu(status))}
     </span>
   );
 }

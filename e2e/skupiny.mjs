@@ -49,6 +49,7 @@ export const SKUPINY = [
       "zauctovanie-kv",
       "odovzdanie-exportu",
       "odovzdanie-uctovania",
+      "exporty-predvolene",
       "faktura-eu",
       "apka-faktura",
       "apka-efaktura-odoslanie",
@@ -67,6 +68,10 @@ export const SKUPINY = [
       // B3: zoznam a detail vystavených faktúr (faktúry so značkou behu v Test).
       "faktury-zoznam-filtre",
       "faktura-detail-stavy",
+      // Zakladá vlastné iné doklady so značkou behu, ZIP bez odovzdania.
+      "ine-doklady-vyber",
+      // Len číta (výber súborov bez nahratia, filter histórie importov).
+      "importy-zdroj",
     ],
   },
   {

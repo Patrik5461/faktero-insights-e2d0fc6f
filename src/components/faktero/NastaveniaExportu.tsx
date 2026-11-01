@@ -9,6 +9,7 @@ import {
   type NastaveniaExportu as Nastavenia,
 } from "@/lib/faktero/export-nastavenia";
 import { ulozNastaveniaUctovaniaFn } from "@/lib/faktero/export-nastavenia.functions";
+import { otlacok } from "@/lib/faktero/formular-z-firmy";
 
 type Moznost = [string, string];
 
@@ -73,7 +74,15 @@ export function NastaveniaExportu({
   const uloz = useServerFn(ulozNastaveniaUctovaniaFn);
   const [n, setN] = useState<Nastavenia>(() => nastaveniaExportu(firma?.uctovanie_nastavenia));
   const [busy, setBusy] = useState(false);
-  useEffect(() => setN(nastaveniaExportu(firma?.uctovanie_nastavenia)), [firma]);
+  // Prepísať len pri zmene nastavení exportu, nie pri každom novom objekte firmy (E-22) —
+  // inak uloženie Predvolených či číselníka zahodí neuložené zmeny v tejto karte.
+  const zFirmy = nastaveniaExportu(firma?.uctovanie_nastavenia);
+  const otlacokFirmy = otlacok(zFirmy);
+  useEffect(
+    () => setN(zFirmy),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [companyId, otlacokFirmy],
+  );
 
   const upozornenie = upozornenieOdpoctu(n);
 

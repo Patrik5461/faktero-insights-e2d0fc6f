@@ -139,7 +139,7 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
       vsetkoAkoData((zac, kon) =>
         supabase
           .from("invoices")
-          .select("id, total")
+          .select("id, total, type, currency")
           .eq("company_id", data.companyId)
           .gte("issue_date", od)
           .lt("issue_date", doDatumu)
@@ -180,7 +180,11 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
           .order("id")
           .range(zac, kon),
       ),
-      supabase.from("companies").select("uctovnik_email").eq("id", data.companyId).single(),
+      supabase
+        .from("companies")
+        .select("uctovnik_email, country")
+        .eq("id", data.companyId)
+        .single(),
       vsetkoAkoData((zac, kon) =>
         supabase
           .from("purchase_invoices")
@@ -196,6 +200,8 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
       ),
     ]);
     const { zapocitatelna } = await import("./samofakturacia");
+    const { sumyOdovzdania } = await import("./odovzdanie-exportu");
+    const { domacaMena } = await import("./kurzy");
     const prij = (prijate ?? []).filter((p: Riadok) => zapocitatelna(p));
 
     const odovzdane = new Set((logy ?? []).map((r: Riadok) => r.invoice_id));
@@ -205,7 +211,8 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
       obdobie: nazov,
       spolu: spolu.length,
       odovzdanych: spolu.filter((f: Riadok) => odovzdane.has(f.id)).length,
-      suma: spolu.reduce((a: number, f: Riadok) => a + Number(f.total ?? 0), 0),
+      // Po menách, bez zálohových faktúr a dokladov k platbe (E-01, E-02).
+      sumy: sumyOdovzdania(spolu, domacaMena(firma?.country)),
       pokladnicnych: pokladnica?.length ?? 0,
       dokladov: dok.length,
       dokladovNovych: dok.filter((d: Riadok) => !d.exported_at).length,

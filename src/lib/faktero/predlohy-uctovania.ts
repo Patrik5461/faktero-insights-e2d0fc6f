@@ -3,6 +3,7 @@
   pomenovaná šablóna kódov bez podmienky. Nič sa neuplatní samo — účtovník
   ju jedným klikom použije v paneli zaúčtovania dokladu.
 */
+import { bezPrekladu, type PrekladPopisu } from "./preklad-popisu";
 
 export type DruhPredlohy = "blocek" | "prijata" | "vystavena";
 
@@ -78,14 +79,14 @@ export function predlohyPreDruh<T extends Predloha>(predlohy: T[], druh: DruhPre
     .sort((a, b) => a.poradie - b.poradie || a.nazov.localeCompare(b.nazov, "sk"));
 }
 
-/** „518 / PD / KV B2 / rad 26FP" na jeden riadok. */
-export function popisPredlohy(p: Predloha): string {
+/** „518 / PD / KV B2 / rad 26FP" na jeden riadok. Texty idú cez `t` (E-28). */
+export function popisPredlohy(p: Predloha, t: PrekladPopisu = bezPrekladu): string {
   return [
     !prazdne(p.predkontacia) && p.predkontacia!.trim(),
     !prazdne(p.clenenie_dph) && p.clenenie_dph!.trim(),
     !prazdne(p.kv_clenenie) && `KV ${p.kv_clenenie!.trim()}`,
-    !prazdne(p.pokladna) && `pokladňa ${p.pokladna!.trim()}`,
-    !prazdne(p.rad) && `rad ${p.rad!.trim()}`,
+    !prazdne(p.pokladna) && t("pokladňa {kod}", { kod: p.pokladna!.trim() }),
+    !prazdne(p.rad) && t("rad {kod}", { kod: p.rad!.trim() }),
     !prazdne(p.poznamka) && `„${p.poznamka!.trim()}"`,
   ]
     .filter(Boolean)

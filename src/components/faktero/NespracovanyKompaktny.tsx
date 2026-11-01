@@ -496,92 +496,91 @@ export function NespracovanyKompaktny({
           </Sekcia>
         ) : null}
 
-        {druh ? (
-          <Sekcia nadpis={druh === "ostatny" ? "Odosielateľ" : "Dodávateľ"}>
-            <Pole popis="Názov" chyba={zle("dodavatel")}>
-              <input
-                aria-label={t("Dodávateľ")}
-                value={u.dodavatel.nazov}
-                onChange={(e) => setDod({ nazov: e.target.value })}
-                className={ram("dodavatel")}
-              />
-            </Pole>
-            {druh !== "ostatny" ? (
-              <div className="grid grid-cols-2 gap-3">
-                <Pole popis="IČO">
+        {/* Dodávateľ aj pri neurčenom druhu — ako v klasickom rozložení. */}
+        <Sekcia nadpis={druh === "ostatny" ? "Odosielateľ" : "Dodávateľ"}>
+          <Pole popis="Názov" chyba={zle("dodavatel")}>
+            <input
+              aria-label={t("Dodávateľ")}
+              value={u.dodavatel.nazov}
+              onChange={(e) => setDod({ nazov: e.target.value })}
+              className={ram("dodavatel")}
+            />
+          </Pole>
+          {druh !== "ostatny" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Pole popis="IČO">
+                <input
+                  value={u.dodavatel.ico}
+                  onChange={(e) => setDod({ ico: e.target.value })}
+                  className={ram("")}
+                />
+              </Pole>
+              <Pole popis="IČ DPH">
+                <input
+                  value={u.dodavatel.icDph}
+                  onChange={(e) => setDod({ icDph: e.target.value })}
+                  className={ram("")}
+                />
+              </Pole>
+            </div>
+          ) : null}
+          {faktura ? (
+            // Adresa, krajina, DIČ a e-mail sú menej dôležité — pod „Zobraziť viac“.
+            <Rozsirene>
+              <Pole popis="Ulica a číslo">
+                <input
+                  value={u.dodavatel.ulica}
+                  onChange={(e) => setDod({ ulica: e.target.value })}
+                  className={ram("")}
+                />
+              </Pole>
+              <div className="grid grid-cols-[2fr_1fr] gap-3">
+                <Pole popis="Mesto">
                   <input
-                    value={u.dodavatel.ico}
-                    onChange={(e) => setDod({ ico: e.target.value })}
+                    value={u.dodavatel.mesto}
+                    onChange={(e) => setDod({ mesto: e.target.value })}
                     className={ram("")}
                   />
                 </Pole>
-                <Pole popis="IČ DPH">
+                <Pole popis="PSČ">
                   <input
-                    value={u.dodavatel.icDph}
-                    onChange={(e) => setDod({ icDph: e.target.value })}
+                    value={u.dodavatel.psc}
+                    onChange={(e) => setDod({ psc: e.target.value })}
                     className={ram("")}
                   />
                 </Pole>
               </div>
-            ) : null}
-            {faktura ? (
-              // Adresa, krajina, DIČ a e-mail sú menej dôležité — pod „Zobraziť viac“.
-              <Rozsirene>
-                <Pole popis="Ulica a číslo">
+              <div className="grid grid-cols-2 gap-3">
+                <Pole popis="Krajina">
                   <input
-                    value={u.dodavatel.ulica}
-                    onChange={(e) => setDod({ ulica: e.target.value })}
+                    aria-label={t("Krajina dodávateľa")}
+                    maxLength={2}
+                    placeholder="SK"
+                    value={u.dodavatel.krajina ?? ""}
+                    onChange={(e) => setDod({ krajina: e.target.value.toUpperCase() })}
                     className={ram("")}
                   />
                 </Pole>
-                <div className="grid grid-cols-[2fr_1fr] gap-3">
-                  <Pole popis="Mesto">
-                    <input
-                      value={u.dodavatel.mesto}
-                      onChange={(e) => setDod({ mesto: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                  <Pole popis="PSČ">
-                    <input
-                      value={u.dodavatel.psc}
-                      onChange={(e) => setDod({ psc: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Pole popis="Krajina">
-                    <input
-                      aria-label={t("Krajina dodávateľa")}
-                      maxLength={2}
-                      placeholder="SK"
-                      value={u.dodavatel.krajina ?? ""}
-                      onChange={(e) => setDod({ krajina: e.target.value.toUpperCase() })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                  <Pole popis="DIČ">
-                    <input
-                      value={u.dodavatel.dic}
-                      onChange={(e) => setDod({ dic: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                </div>
-                <Pole popis="E-mail">
+                <Pole popis="DIČ">
                   <input
-                    type="email"
-                    aria-label={t("E-mail dodávateľa")}
-                    value={u.dodavatel.email ?? ""}
-                    onChange={(e) => setDod({ email: e.target.value })}
+                    value={u.dodavatel.dic}
+                    onChange={(e) => setDod({ dic: e.target.value })}
                     className={ram("")}
                   />
                 </Pole>
-              </Rozsirene>
-            ) : null}
-          </Sekcia>
-        ) : null}
+              </div>
+              <Pole popis="E-mail">
+                <input
+                  type="email"
+                  aria-label={t("E-mail dodávateľa")}
+                  value={u.dodavatel.email ?? ""}
+                  onChange={(e) => setDod({ email: e.target.value })}
+                  className={ram("")}
+                />
+              </Pole>
+            </Rozsirene>
+          ) : null}
+        </Sekcia>
 
         {faktura ? (
           <Sekcia nadpis="Platobné údaje">

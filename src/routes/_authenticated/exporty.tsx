@@ -34,8 +34,12 @@ import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPoho
 import {
   PROGRAM_FORMATU,
   nazovProgramuExportu,
+  predvolenyMesiacOdovzdania,
+  predvolenyZaciatokExportu,
   predvoleneOznacit,
+  uctovnyProgramFirmy,
 } from "@/lib/faktero/odovzdanie-exportu";
+import { SuctyPoMenach } from "@/components/faktero/SuctyPoMenach";
 import { riadkyPreIds, vsetkyRiadky } from "@/lib/faktero/strankovanie";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
@@ -104,9 +108,7 @@ function ExportsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [picked, setPicked] = useState<Record<string, boolean>>({});
-  const [dateFrom, setDateFrom] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
-  );
+  const [dateFrom, setDateFrom] = useState(() => predvolenyZaciatokExportu());
   const [dateTo, setDateTo] = useState(dnesBratislava());
   const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
   const [lenNeexportovane, setLenNeexportovane] = useState(false);
@@ -168,9 +170,12 @@ function ExportsPage() {
           .order("id")
           .range(od, po);
       }).then((data) => ({ data })),
-      supabase.from("companies").select("uctovny_program").eq("id", cid).maybeSingle(),
+      supabase.from("companies").select("uctovny_program, country").eq("id", cid).maybeSingle(),
     ]);
-    setUctovnyProgram((firma as any)?.uctovny_program ?? "pohoda");
+    // Nemecká firma s predvolenou Pohodou má DATEV — rovnako ako server.
+    setUctovnyProgram(
+      uctovnyProgramFirmy((firma as any)?.uctovny_program, (firma as any)?.country),
+    );
     setJobs(js ?? []);
     setInvoices(inv ?? []);
     // Ktoré už odišli ako eFaktúra — v Pohode sa nesmú poslať cez Peppol znova.
@@ -598,7 +603,8 @@ type Prehlad = {
   obdobie: string;
   spolu: number;
   odovzdanych: number;
-  suma: number;
+  /** Súčet po menách — len riadne faktúry, dobropisy a ťarchopisy. */
+  sumy: { mena: string; suma: number }[];
   pokladnicnych: number;
   dokladov: number;
   dokladovNovych: number;
@@ -609,7 +615,7 @@ type Prehlad = {
 
 function OdovzdanieZaMesiac() {
   const { t, jazyk } = useT();
-  const [mesiac, setMesiac] = useState(() => new Date().toISOString().slice(0, 7));
+  const [mesiac, setMesiac] = useState(() => predvolenyMesiacOdovzdania());
   const [prehlad, setPrehlad] = useState<Prehlad | null>(null);
   const [busy, setBusy] = useState<null | "stiahnut" | "odovzdat" | "mail">(null);
   const odovzdaj = useServerFn(odovzdajUctovnikoviFn);
@@ -809,7 +815,7 @@ function OdovzdanieZaMesiac() {
                 {t(tvar(prehlad.spolu, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
                   n: prehlad.spolu,
                 })}{" "}
-                · {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
+                · <SuctyPoMenach sucty={prehlad.sumy} className="align-baseline" />
                 {prehlad.prijatych
                   ? ` · ${t(
                       tvar(
@@ -908,9 +914,7 @@ function ZauctovaneDoProgramu() {
   const [program, setProgram] = useState<string>("pohoda");
   const [nastavenia, setNastavenia] = useState<Record<string, Record<string, unknown>>>({});
   const [agenda, setAgenda] = useState<AgendaExportu>("prijata");
-  const [od, setOd] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().slice(0, 10),
-  );
+  const [od, setOd] = useState(() => predvolenyZaciatokExportu(1));
   const [doDna, setDoDna] = useState(dnesBratislava());
   const [riadky, setRiadky] = useState<any[]>([]);
   const [vyber, setVyber] = useState<Record<string, boolean>>({});
@@ -936,22 +940,40 @@ function ZauctovaneDoProgramu() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     let data: any[] = [];
+    try {
+      data = await nacitajRiadky(cid);
+    } catch (e: any) {
+      toast.error(e?.message || t("Doklady sa nepodarilo načítať."));
+      return;
+    }
+    setRiadky(data);
+    setVyber({});
+  }
+
+  async function nacitajRiadky(cid: string): Promise<any[]> {
+    let data: any[] = [];
+    // Po stránkach — Supabase vráti najviac 1 000 riadkov naraz (E-06).
     if (agenda === "vystavena") {
-      const r = await filtrujObdobie(
-        supabase
-          .from("invoices")
-          .select(
-            "id, invoice_number, customer_name, issue_date, delivery_date, total, currency, zauctovane_at",
-          )
-          .eq("company_id", cid),
-        podlaZ,
-        od,
-        doDna,
-      )
-        .neq("status", "draft")
-        .is("deleted_at", null)
-        .order("issue_date", { ascending: false });
-      data = (r.data ?? []).map((x: any) => ({
+      const r = await vsetkyRiadky<any>((zac, kon) =>
+        filtrujObdobie(
+          supabase
+            .from("invoices")
+            .select(
+              "id, invoice_number, customer_name, issue_date, delivery_date, total, currency, zauctovane_at, status",
+            )
+            .eq("company_id", cid),
+          podlaZ,
+          od,
+          doDna,
+        )
+          // Stornované tu ostávajú (nerozhodnuté, E-07) — v zozname sú označené.
+          .neq("status", "draft")
+          .is("deleted_at", null)
+          .order("issue_date", { ascending: false })
+          .order("id")
+          .range(zac, kon),
+      );
+      data = r.map((x: any) => ({
         id: x.id,
         cislo: x.invoice_number,
         partner: x.customer_name,
@@ -961,23 +983,28 @@ function ZauctovaneDoProgramu() {
         mena: x.currency,
         zauctovany: Boolean(x.zauctovane_at),
         odovzdany: false,
+        stornovany: x.status === "cancelled",
       }));
     } else if (agenda === "prijata") {
-      const r = await filtrujObdobie(
-        supabase
-          .from("purchase_invoices")
-          .select(
-            "id, invoice_number, supplier_name, issue_date, delivery_date, amount_total, currency, zauctovane_at, exported_at, type",
-          )
-          .eq("company_id", cid),
-        podlaZ,
-        od,
-        doDna,
-      )
-        .eq("type", "regular")
-        .is("deleted_at", null)
-        .order("issue_date", { ascending: false });
-      data = (r.data ?? []).map((x: any) => ({
+      const r = await vsetkyRiadky<any>((zac, kon) =>
+        filtrujObdobie(
+          supabase
+            .from("purchase_invoices")
+            .select(
+              "id, invoice_number, supplier_name, issue_date, delivery_date, amount_total, currency, zauctovane_at, exported_at, type",
+            )
+            .eq("company_id", cid),
+          podlaZ,
+          od,
+          doDna,
+        )
+          .eq("type", "regular")
+          .is("deleted_at", null)
+          .order("issue_date", { ascending: false })
+          .order("id")
+          .range(zac, kon),
+      );
+      data = r.map((x: any) => ({
         id: x.id,
         cislo: x.invoice_number,
         partner: x.supplier_name,
@@ -989,17 +1016,21 @@ function ZauctovaneDoProgramu() {
         odovzdany: Boolean(x.exported_at),
       }));
     } else {
-      const r = await supabase
-        .from("expense_documents")
-        .select(
-          "id, document_number, supplier_name, issue_date, total_amount, currency, status, exported_at, pohoda_predkontacia",
-        )
-        .eq("company_id", cid)
-        .gte("issue_date", od)
-        .lte("issue_date", doDna)
-        .neq("status", "new")
-        .order("issue_date", { ascending: false });
-      data = (r.data ?? []).map((x: any) => ({
+      const r = await vsetkyRiadky<any>((zac, kon) =>
+        supabase
+          .from("expense_documents")
+          .select(
+            "id, document_number, supplier_name, issue_date, total_amount, currency, status, exported_at, pohoda_predkontacia",
+          )
+          .eq("company_id", cid)
+          .gte("issue_date", od)
+          .lte("issue_date", doDna)
+          .neq("status", "new")
+          .order("issue_date", { ascending: false })
+          .order("id")
+          .range(zac, kon),
+      );
+      data = r.map((x: any) => ({
         id: x.id,
         cislo: x.document_number || t("bloček"),
         partner: x.supplier_name,
@@ -1010,8 +1041,7 @@ function ZauctovaneDoProgramu() {
         odovzdany: Boolean(x.exported_at) || x.status === "exported",
       }));
     }
-    setRiadky(data);
-    setVyber({});
+    return data;
   }
   useEffect(() => {
     if (program !== "pohoda") void nacitaj();
@@ -1249,6 +1279,11 @@ function ZauctovaneDoProgramu() {
                       {formatujMenu(r.suma ?? 0, r.mena)}
                     </td>
                     <td className="p-2 text-xs">
+                      {r.stornovany ? (
+                        <span className="mr-1 inline-block whitespace-nowrap rounded bg-destructive/10 px-1.5 py-0.5 font-medium text-destructive">
+                          {t("stornovaná")}
+                        </span>
+                      ) : null}
                       {r.odovzdany ? (
                         <span className="text-emerald-700">{t("odovzdaný")}</span>
                       ) : r.zauctovany ? (

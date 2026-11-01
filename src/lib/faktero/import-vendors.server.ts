@@ -480,7 +480,10 @@ export function summarize(rows: CanonicalRow[]) {
     customer_name: string;
     total: number;
     issue_date: string;
+    currency: string;
   }> = [];
+  /** Súčet po menách — rôzne meny sa nesčítajú do jedného čísla. "" = mena neuvedená. */
+  const hodnotaPoMenach: Record<string, number> = {};
   /*
    * Celková suma sa počíta **raz na faktúru**, nie za každý riadok. Riadok je
    * položka a hlavičkové `total` sa na nich opakuje — faktúra s tromi
@@ -490,13 +493,19 @@ export function summarize(rows: CanonicalRow[]) {
   for (const r of rows) {
     if (r.invoice_number && !invoiceNumbers.has(r.invoice_number)) {
       invoiceNumbers.add(r.invoice_number);
-      if (r.total && !isNaN(Number(r.total))) totalValue += Number(r.total);
+      if (r.total && !isNaN(Number(r.total))) {
+        totalValue += Number(r.total);
+        const m = (r.currency ?? "").trim().toUpperCase();
+        hodnotaPoMenach[m] = (hodnotaPoMenach[m] ?? 0) + Number(r.total);
+      }
     }
     if (r.customer_name || r.customer_ico)
       customers.add((r.customer_ico ?? "") + "|" + (r.customer_name ?? ""));
     if (!mena && r.currency) mena = r.currency;
   }
   totalValue = Math.round((totalValue + Number.EPSILON) * 100) / 100;
+  for (const m of Object.keys(hodnotaPoMenach))
+    hodnotaPoMenach[m] = Math.round((hodnotaPoMenach[m]! + Number.EPSILON) * 100) / 100;
   const seen = new Set<string>();
   for (const r of rows) {
     if (!r.invoice_number || seen.has(r.invoice_number)) continue;
@@ -506,6 +515,7 @@ export function summarize(rows: CanonicalRow[]) {
       customer_name: r.customer_name ?? "",
       total: Number(r.total ?? 0) || 0,
       issue_date: r.issue_date ?? "",
+      currency: (r.currency ?? "").trim().toUpperCase(),
     });
     if (sample.length >= 5) break;
   }
@@ -513,7 +523,9 @@ export function summarize(rows: CanonicalRow[]) {
     invoicesCount: invoiceNumbers.size,
     customersCount: customers.size,
     itemsCount: rows.length,
+    /** Súčet všetkých mien — len pre spätnú kompatibilitu, zobrazuje sa `hodnotaPoMenach`. */
     totalValue,
+    hodnotaPoMenach,
     currency: mena || "EUR",
     sampleInvoices: sample,
   };

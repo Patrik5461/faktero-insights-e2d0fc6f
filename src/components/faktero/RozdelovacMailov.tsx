@@ -12,6 +12,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   caka: { text: "Čaká na priradenie", trieda: "text-amber-700" },
@@ -248,9 +249,9 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                                 {nahraty ? "" : `${p.nazov ?? t("príloha")} — `}
                                 {p.dodavatel ?? t("dodávateľ ?")}
                                 {p.suma != null
-                                  ? `, ${p.suma} ${p.mena ?? mena.symbol}`
-                                  : ""} ·{" "}
-                                {t("odberateľ {meno}", { meno: p.odberatel ?? t("neuvedený") })}
+                                  ? `, ${formatujMenu(p.suma, p.mena ?? mena.kod, lokalJazyka(jazyk))}`
+                                  : ""}{" "}
+                                · {t("odberateľ {meno}", { meno: p.odberatel ?? t("neuvedený") })}
                                 {p.ico
                                   ? ` (${t("IČO {ico}", { ico: p.ico })})`
                                   : p.ic_dph
@@ -330,13 +331,21 @@ export function RozdelovacMailov({ otvorenyNaZaciatku = false }: { otvorenyNaZac
                           {(n.status === "priradene" ||
                             (n.status === "chyba" && n.prilohy.length === 0)) && (
                             <button
+                              disabled={pracuje}
                               onClick={async () => {
-                                await prirad({
-                                  data: { id: n.id, company_id: null, zahodit: true },
-                                });
-                                await obnov();
+                                setPracuje(true);
+                                try {
+                                  await prirad({
+                                    data: { id: n.id, company_id: null, zahodit: true },
+                                  });
+                                  await obnov();
+                                } catch (e: any) {
+                                  toast.error(t(e?.message ?? "Nepodarilo sa"));
+                                } finally {
+                                  setPracuje(false);
+                                }
                               }}
-                              className="mt-2 text-xs text-primary hover:underline"
+                              className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
                             >
                               {t("Skryť")}
                             </button>

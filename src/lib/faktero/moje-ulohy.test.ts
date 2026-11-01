@@ -9,8 +9,10 @@ import {
   popisDokladu,
   spoluUloh,
   stavCitania,
+  sumaUlohy,
   zmenVyriesenie,
 } from "./moje-ulohy";
+import { AGENDY_SCHVALOVANIA, ODKAZY_AGEND, vyberPoAgendach } from "./schvalovanie";
 
 describe("komentár čakajúci na mňa", () => {
   const k = { user_id: "autor", upozornit: ["jana", "peter"], vyriesili: [] as string[] };
@@ -82,6 +84,29 @@ describe("odkaz na doklad", () => {
     expect(cestaNaDoklad("vystavena", "x")).toBe("/faktury/x");
   });
 
+  it("nespracovaný doklad a vyúčtovanie nevedú na faktúru (H-07)", () => {
+    expect(odkazNaDoklad("nespracovany", "x")).toEqual({
+      to: "/nespracovane/$id",
+      params: { id: "x" },
+    });
+    expect(odkazNaDoklad("vyuctovanie", "x")).toEqual({
+      to: "/doklady/vyuctovania/$id",
+      params: { id: "x" },
+    });
+    expect(cestaNaDoklad("nespracovany", "x")).toBe("/nespracovane/x");
+    expect(cestaNaDoklad("vyuctovanie", "x")).toBe("/doklady/vyuctovania/x");
+  });
+
+  it("Moje úlohy a Na schválenie berú odkaz z tej istej mapy", () => {
+    for (const agenda of AGENDY_SCHVALOVANIA) {
+      expect(odkazNaDoklad(agenda, "abc")).toEqual(ODKAZY_AGEND[agenda]("abc"));
+    }
+  });
+
+  it("neznáma agenda ostáva na vystavenej faktúre", () => {
+    expect(odkazNaDoklad("ina", "x")).toEqual({ to: "/faktury/$id", params: { id: "x" } });
+  });
+
   it("popis dokladu", () => {
     expect(popisDokladu("prijata", "2026015", "Orange")).toBe("Prijatá faktúra 2026015 · Orange");
     expect(popisDokladu("doklad", null, null)).toBe("Bloček / doklad bez čísla");
@@ -104,5 +129,38 @@ describe("nespracované", () => {
     const b = [{ id: "b1", vytvorene: "2026-10-02T10:00:00Z" }];
     expect(najnovsie([a, b], 2).map((x) => x.id)).toEqual(["a2", "b1"]);
     expect(najnovsie([[], []])).toEqual([]);
+  });
+});
+
+describe("hromadné schválenie (H-06)", () => {
+  const polozky = AGENDY_SCHVALOVANIA.map((agenda) => ({ agenda, id: `${agenda}-1` }));
+
+  it("rozdelí výber do všetkých agend, aj nespracovaných a vyúčtovaní", () => {
+    const vyber = new Set(polozky.map((p) => `${p.agenda}:${p.id}`));
+    const r = vyberPoAgendach(polozky, vyber);
+    expect(r.map((x) => x.agenda).sort()).toEqual([...AGENDY_SCHVALOVANIA].sort());
+    expect(r.find((x) => x.agenda === "nespracovany")?.ids).toEqual(["nespracovany-1"]);
+    expect(r.find((x) => x.agenda === "vyuctovanie")?.ids).toEqual(["vyuctovanie-1"]);
+  });
+
+  it("nevybrané agendy vynechá", () => {
+    expect(vyberPoAgendach(polozky, new Set(["vyuctovanie:vyuctovanie-1"]))).toEqual([
+      { agenda: "vyuctovanie", ids: ["vyuctovanie-1"] },
+    ]);
+    expect(vyberPoAgendach(polozky, new Set())).toEqual([]);
+  });
+});
+
+describe("suma úlohy (H-08)", () => {
+  it("bez sumy pomlčka, nie nula", () => {
+    expect(sumaUlohy(null, "EUR")).toBe("—");
+    expect(sumaUlohy(undefined, "EUR")).toBe("—");
+    expect(sumaUlohy("", "EUR")).toBe("—");
+    expect(sumaUlohy("abc", "EUR")).toBe("—");
+  });
+
+  it("nula a suma sa formátujú", () => {
+    expect(sumaUlohy(0, "EUR")).toMatch(/^0,00\s€$/);
+    expect(sumaUlohy(12.5, "CZK")).toMatch(/^12,50\s(Kč|CZK)$/);
   });
 });

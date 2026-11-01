@@ -76,12 +76,18 @@ export const spustiImportPrijatychFn = createServerFn({ method: "POST" })
       .from("import_jobs")
       .insert({
         company_id: data.companyId,
-        source: `Prijaté doklady (${data.zdrojAplikacie})`,
+        // Stabilný kľúč zdroja; aplikácia, z ktorej doklady prišli, ide do `options`.
+        source: "doklady",
         status: "running",
         file_path: data.subory[0]!.path,
         file_name: data.subory.map((s) => s.meno).join(", ").slice(0, 250),
         total_rows: celkom,
-        options: { stav: data.stav, doPokladne: data.doPokladne, citatSkeny: data.citatSkeny },
+        options: {
+          stav: data.stav,
+          doPokladne: data.doPokladne,
+          citatSkeny: data.citatSkeny,
+          zdrojAplikacie: data.zdrojAplikacie,
+        },
         preview: suhrnPlanu(plan),
         created_by: context.userId,
       })
