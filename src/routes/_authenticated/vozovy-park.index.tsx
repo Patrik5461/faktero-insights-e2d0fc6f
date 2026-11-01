@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Car, CreditCard, FileText, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useT } from "@/lib/i18n/useT";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -21,7 +22,6 @@ export const Route = createFileRoute("/_authenticated/vozovy-park/")({
 
 function VozovyPark() {
   const { t } = useT();
-  const navigate = useNavigate();
   const [vozidla, setVozidla] = useState<any[] | null>(null);
   const [dokumenty, setDokumenty] = useState<Record<string, number>>({});
   const [ajVyradene, setAjVyradene] = useState(false);
@@ -122,13 +122,17 @@ function VozovyPark() {
                 {zobrazene.map((v) => {
                   const terminy = terminyNaRiesenie(v, dnes);
                   return (
-                    <tr
+                    <KlikatelnyRiadok
                       key={v.id}
-                      className={`cursor-pointer transition-colors hover:bg-muted/40 ${v.active === false ? "opacity-60" : ""}`}
-                      onClick={() => navigate({ to: "/vozovy-park/$id", params: { id: v.id } })}
+                      ciel={{ to: "/vozovy-park/$id", params: { id: v.id } }}
+                      className={`transition-colors hover:bg-muted/40 ${v.active === false ? "opacity-60" : ""}`}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-semibold">{v.name}</div>
+                        <div className="font-semibold">
+                          <Link to="/vozovy-park/$id" params={{ id: v.id }}>
+                            {v.name}
+                          </Link>
+                        </div>
                         {(v.znacka || v.model) && (
                           <div className="text-xs text-muted-foreground">
                             {[v.znacka, v.model, v.rok_vyroby].filter(Boolean).join(" · ")}
@@ -169,7 +173,7 @@ function VozovyPark() {
                           "—"
                         )}
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   );
                 })}
               </tbody>

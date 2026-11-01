@@ -23,6 +23,9 @@ import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useMozeUpravovat } from "@/lib/faktero/use-opravnenia";
 
@@ -86,6 +89,7 @@ function TripsPage() {
   const smieUpravovat = useMozeUpravovat("jazdy");
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/" });
+  const klik = useKlikNaRiadok();
   const [rows, setRows] = useState<Trip[]>([]);
   const [vehicleList, setVehicleList] = useState<
     Array<{ id: string; name: string; license_plate: string | null }>
@@ -405,10 +409,10 @@ function TripsPage() {
                       dotyk aj myšou zbytočne úzky cieľ. Akcie si kliknutie
                       ponechávajú pre seba.
                     */
-                    <tr
+                    <KlikatelnyRiadok
                       key={r.id}
-                      className="cursor-pointer align-top transition-colors hover:bg-accent/50"
-                      onClick={() => navigate({ to: "/jazdy/nova", search: { id: r.id } })}
+                      ciel={{ to: "/jazdy/nova", search: { id: r.id } }}
+                      className="align-top transition-colors hover:bg-accent/50"
                     >
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -502,7 +506,7 @@ function TripsPage() {
                           </>
                         )}
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   ))}
                 </tbody>
               </table>
@@ -510,91 +514,89 @@ function TripsPage() {
 
             {/* Mobile cards */}
             <div className="space-y-2 md:hidden">
-              {rows.map((r) => (
-                <div
-                  key={r.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate({ to: "/jazdy/nova", search: { id: r.id } })}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      navigate({ to: "/jazdy/nova", search: { id: r.id } });
-                    }
-                  }}
-                  className="cursor-pointer rounded-xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-input"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex min-w-0 gap-2">
-                      <input
-                        type="checkbox"
-                        aria-label={t("Označiť jazdu z {datum}", {
-                          datum: datumNaDoklade(r.trip_date),
-                        })}
-                        checked={!!vybrane[r.id]}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => prepniJazdu(r.id, e.target.checked)}
-                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
-                      />
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold">
-                          {datumNaDoklade(r.trip_date)} · {vehicles[r.vehicle_id]?.name ?? "—"}
-                        </div>
-                        <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                          {r.start_location ?? "—"} → {r.end_location ?? "—"}
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                          <span>
-                            {t("Trvanie: {cas}", { cas: formatDuration(r.duration_seconds) })}
-                          </span>
-                          <span>
-                            Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
-                          </span>
-                          <span className="font-medium">
-                            {jeSukromna(r.classification) ? t("Súkromná") : t("Služobná")}
-                          </span>
-                          {ucelNaZobrazenie(r.purpose, r.classification) && (
-                            <span>{ucelNaZobrazenie(r.purpose, r.classification)}</span>
-                          )}
+              {rows.map((r) => {
+                const p = klik({ to: "/jazdy/nova", search: { id: r.id } });
+                return (
+                  <div
+                    key={r.id}
+                    {...p}
+                    className={cn(
+                      p.className,
+                      "rounded-xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-input",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 gap-2">
+                        <input
+                          type="checkbox"
+                          aria-label={t("Označiť jazdu z {datum}", {
+                            datum: datumNaDoklade(r.trip_date),
+                          })}
+                          checked={!!vybrane[r.id]}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => prepniJazdu(r.id, e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold">
+                            {datumNaDoklade(r.trip_date)} · {vehicles[r.vehicle_id]?.name ?? "—"}
+                          </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                            {r.start_location ?? "—"} → {r.end_location ?? "—"}
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                            <span>
+                              {t("Trvanie: {cas}", { cas: formatDuration(r.duration_seconds) })}
+                            </span>
+                            <span>
+                              Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
+                            </span>
+                            <span className="font-medium">
+                              {jeSukromna(r.classification) ? t("Súkromná") : t("Služobná")}
+                            </span>
+                            {ucelNaZobrazenie(r.purpose, r.classification) && (
+                              <span>{ucelNaZobrazenie(r.purpose, r.classification)}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="whitespace-nowrap text-sm font-semibold tabular-nums">
-                        {formatujCislo(r.distance_km, 1)} km
-                      </div>
-                      {(r.route || koncoveBody(r)) && (
-                        <button
-                          onClick={() => otvorTrasu(r)}
-                          aria-label={t("Zobraziť trasu na mape")}
-                          className="mt-1 rounded p-1 text-muted-foreground"
-                        >
-                          <MapIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                      {smieUpravovat && (
-                        <>
-                          <Link
-                            to="/jazdy/nova"
-                            search={{ id: r.id }}
-                            aria-label={t("Upraviť jazdu")}
-                            className="mt-1 inline-block rounded p-1 text-muted-foreground"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Link>
+                      <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="whitespace-nowrap text-sm font-semibold tabular-nums">
+                          {formatujCislo(r.distance_km, 1)} km
+                        </div>
+                        {(r.route || koncoveBody(r)) && (
                           <button
-                            onClick={() => zmazJednu(r.id)}
-                            aria-label={t("Vymazať jazdu")}
-                            className="mt-1 rounded p-1 text-destructive"
+                            onClick={() => otvorTrasu(r)}
+                            aria-label={t("Zobraziť trasu na mape")}
+                            className="mt-1 rounded p-1 text-muted-foreground"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <MapIcon className="h-4 w-4" />
                           </button>
-                        </>
-                      )}
+                        )}
+                        {smieUpravovat && (
+                          <>
+                            <Link
+                              to="/jazdy/nova"
+                              search={{ id: r.id }}
+                              aria-label={t("Upraviť jazdu")}
+                              className="mt-1 inline-block rounded p-1 text-muted-foreground"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => zmazJednu(r.id)}
+                              aria-label={t("Vymazať jazdu")}
+                              className="mt-1 rounded p-1 text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
