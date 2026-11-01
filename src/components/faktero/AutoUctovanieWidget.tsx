@@ -21,10 +21,10 @@ export function AutoUctovanieWidget({ companyId }: { companyId: string }) {
     <div className="mb-6">
       <Link
         to="/uctovnictvo/na-kontrolu"
-        className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
+        className="group flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent/60"
       >
         <div className="flex min-w-0 items-center gap-4">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Bot className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -39,14 +39,14 @@ export function AutoUctovanieWidget({ companyId }: { companyId: string }) {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <div className="text-right">
-            <div className="text-2xl font-bold tabular-nums">
+            <div className="suma text-2xl font-bold">
               {s.percent === null ? "—" : `${s.percent} %`}
             </div>
             <div className="text-[12px] text-muted-foreground">{t("automaticky")}</div>
           </div>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
         </div>
       </Link>
     </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Pencil, Undo2 } from "lucide-react";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { formatujSumu } from "@/lib/faktero/zostatky";
@@ -112,8 +113,8 @@ export function SadzbaZmluvy({
 
   if (!d) {
     return (
-      <div className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
-        {t("Načítavam…")}
+      <div className="rounded-xl border border-border bg-card">
+        <NacitavanieStav className="py-8" />
       </div>
     );
   }
@@ -123,15 +124,15 @@ export function SadzbaZmluvy({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border bg-card p-5 text-sm">
-        <h2 className="mb-2 text-sm font-medium">{t("Úroková sadzba")}</h2>
+      <div className="rounded-xl border border-border bg-card p-4 text-sm sm:p-5">
+        <h2 className="mb-2 text-base font-semibold">{t("Úroková sadzba")}</h2>
         {!pohybliva ? (
           <p>
             {t("Pevná sadzba {sadzba} p. a.", { sadzba: pct(a.sadzba) })}
             {a.zdroj === "rucne" ? ` ${t("(za toto obdobie zadaná ručne)")}` : ""}
           </p>
         ) : a.sadzba === null ? (
-          <p className="text-amber-700 dark:text-amber-400">
+          <p className="font-medium text-warning">
             {t(
               "Hodnota indexu {index} ešte nie je načítaná — sadzba sa dopočíta po najbližšom stiahnutí sadzieb (denne ráno).",
               { index: nazovIndexu(a.index) },
@@ -176,14 +177,14 @@ export function SadzbaZmluvy({
           </p>
         )}
         {pohybliva && a.odhad && (
-          <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+          <p className="mt-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
             {t(
               "Odhad: EURIBOR je verejne zadarmo len ako mesačný priemer (ECB), zmluva ho však berie k dňu fixingu. Skutočný úrok určuje banka. Keď sadzbu poznáte (oznámenie banky, výpis), zadajte ju za obdobie ručne — prepíše vypočítanú.",
             )}
           </p>
         )}
         {pohybliva && a.predbezna && (
-          <p className="mt-2 text-xs text-amber-800 dark:text-amber-400">
+          <p className="mt-2 text-xs font-medium text-warning">
             {t(
               "Predbežné: hodnota indexu k dňu fixingu ešte nie je zverejnená, použitá je posledná známa.",
             )}
@@ -192,9 +193,9 @@ export function SadzbaZmluvy({
       </div>
 
       {d.odhad && (
-        <div className="rounded-xl border bg-card">
-          <div className="border-b p-4">
-            <h2 className="text-sm font-medium">{t("Vypočítaný úrok a skutočnosť")}</h2>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="border-b border-border p-4 sm:px-5">
+            <h2 className="text-base font-semibold">{t("Vypočítaný úrok a skutočnosť")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {t(
                 "Úrok z čerpania na konci každého dňa (zaúčtovaný zostatok a pohyby z banky) × sadzba platná v ten deň, {konvencia}. Rozdiel oproti úroku, ktorý banka strhla, je najlepšia kontrola, či sadzba a fixing sedia.",
@@ -209,14 +210,14 @@ export function SadzbaZmluvy({
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[44rem] text-sm">
-                <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+                <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-3 text-left font-medium">{t("Obdobie")}</th>
-                    <th className="p-3 text-right font-medium">{t("Priemerné čerpanie")}</th>
-                    <th className="p-3 text-right font-medium">{t("Sadzba")}</th>
-                    <th className="p-3 text-right font-medium">{t("Vypočítaný úrok")}</th>
-                    <th className="p-3 text-right font-medium">{t("Strhla banka")}</th>
-                    <th className="p-3 text-right font-medium">{t("Rozdiel")}</th>
+                    <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Obdobie")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Priemerné čerpanie")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Sadzba")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Vypočítaný úrok")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Strhla banka")}</th>
+                    <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Rozdiel")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,8 +232,8 @@ export function SadzbaZmluvy({
                       r.rozdiel !== null &&
                       Math.abs(r.rozdiel) >= 0.05;
                     return (
-                      <tr key={r.od} className="border-b last:border-0 align-top">
-                        <td className="p-3">
+                      <tr key={r.od} className="border-b border-border last:border-0 align-top">
+                        <td className="whitespace-nowrap p-3">
                           {datum(r.od)} – {datum(r.do)}
                           {r.predbezny && (
                             <span className="ml-1 text-xs text-muted-foreground">
@@ -240,7 +241,7 @@ export function SadzbaZmluvy({
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-right tabular-nums">
+                        <td className="suma p-3 text-right font-normal">
                           {formatujSumu(r.priemerneCerpanie, mena)}
                         </td>
                         <td className="p-3 text-right tabular-nums">
@@ -254,24 +255,24 @@ export function SadzbaZmluvy({
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-right font-medium tabular-nums">
+                        <td className="suma p-3 text-right">
                           {formatujSumu(r.urok, mena)}
                           {r.bezSadzby && (
-                            <div className="text-xs font-normal text-amber-700 dark:text-amber-400">
+                            <div className="text-xs font-medium text-warning">
                               {t("niektoré dni bez sadzby")}
                             </div>
                           )}
                         </td>
-                        <td className="p-3 text-right tabular-nums">
+                        <td className="suma p-3 text-right font-normal">
                           {r.skutocny === null ? "—" : formatujSumu(r.skutocny, mena)}
                         </td>
-                        <td className="p-3 text-right tabular-nums">
+                        <td className="suma p-3 text-right font-normal">
                           {r.rozdiel === null ? (
                             "—"
                           ) : (
                             <span
                               className={
-                                Math.abs(r.rozdiel) >= 1 ? "text-amber-700 dark:text-amber-400" : ""
+                                Math.abs(r.rozdiel) >= 1 ? "font-semibold text-warning" : ""
                               }
                             >
                               {r.rozdiel > 0 ? "+" : ""}
@@ -282,7 +283,7 @@ export function SadzbaZmluvy({
                             <button
                               disabled={busy}
                               onClick={() => void ulozSadzbu(fixacia!.od, navrh!, "banka")}
-                              className="mt-1 block w-full text-right text-xs text-primary underline"
+                              className="mt-1 block w-full whitespace-normal text-right text-xs font-semibold text-primary underline-offset-2 hover:text-primary-hover hover:underline"
                               title={t(
                                 "Uloží sadzbu za obdobie fixácie tak, aby výpočet sedel so strhnutým úrokom.",
                               )}
@@ -302,20 +303,20 @@ export function SadzbaZmluvy({
       )}
 
       {d.historia.length > 0 && (
-        <details className="rounded-xl border bg-card">
-          <summary className="cursor-pointer p-4 text-sm font-medium">
+        <details className="overflow-hidden rounded-xl border border-border bg-card">
+          <summary className="cursor-pointer p-4 text-base font-semibold hover:bg-muted/40 sm:px-5">
             {t("História sadzby po obdobiach")}
           </summary>
-          <div className="overflow-x-auto border-t">
+          <div className="overflow-x-auto border-t border-border">
             <table className="w-full min-w-[40rem] text-sm">
-              <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+              <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-3 text-left font-medium">{t("Obdobie")}</th>
-                  {pohybliva && <th className="p-3 text-left font-medium">{t("Fixing")}</th>}
-                  {pohybliva && <th className="p-3 text-right font-medium">{t("Index")}</th>}
-                  {pohybliva && <th className="p-3 text-right font-medium">{t("Marža")}</th>}
-                  <th className="p-3 text-right font-medium">{t("Sadzba")}</th>
-                  <th className="p-3 text-left font-medium">{t("Zdroj")}</th>
+                  <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Obdobie")}</th>
+                  {pohybliva && <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Fixing")}</th>}
+                  {pohybliva && <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Index")}</th>}
+                  {pohybliva && <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Marža")}</th>}
+                  <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Sadzba")}</th>
+                  <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Zdroj")}</th>
                   <th className="p-3">
                     <span className="sr-only">{t("Akcie")}</span>
                   </th>
@@ -323,11 +324,11 @@ export function SadzbaZmluvy({
               </thead>
               <tbody>
                 {d.historia.map((h) => (
-                  <tr key={h.od} className="border-b last:border-0">
-                    <td className="p-3">
+                  <tr key={h.od} className="border-b border-border last:border-0">
+                    <td className="whitespace-nowrap p-3">
                       {datum(h.od)} – {datum(h.do)}
                     </td>
-                    {pohybliva && <td className="p-3">{datum(h.fixing)}</td>}
+                    {pohybliva && <td className="whitespace-nowrap p-3">{datum(h.fixing)}</td>}
                     {pohybliva && (
                       <td className="p-3 text-right tabular-nums">
                         {pct(h.indexHodnota, 3)}
@@ -335,12 +336,13 @@ export function SadzbaZmluvy({
                       </td>
                     )}
                     {pohybliva && <td className="p-3 text-right tabular-nums">{pct(h.marza)}</td>}
-                    <td className="p-3 text-right font-medium tabular-nums">
+                    <td className="p-3 text-right font-semibold tabular-nums">
                       {upravujem === h.od ? (
                         <input
                           autoFocus
                           inputMode="decimal"
-                          className="w-24 rounded border bg-background px-2 py-1 text-right"
+                          aria-label={t("Sadzba")}
+                          className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right"
                           value={hodnota}
                           onChange={(e) => setHodnota(e.target.value)}
                           onKeyDown={(e) => {
@@ -376,13 +378,13 @@ export function SadzbaZmluvy({
                               }
                               void ulozSadzbu(h.od, n);
                             }}
-                            className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
+                            className="rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
                           >
                             {t("Uložiť")}
                           </button>
                           <button
                             onClick={() => setUpravujem(null)}
-                            className="rounded-lg border px-2.5 py-1 text-xs"
+                            className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold hover:bg-accent"
                           >
                             {t("Zrušiť")}
                           </button>
@@ -392,7 +394,7 @@ export function SadzbaZmluvy({
                           disabled={busy}
                           title={t("Zrušiť ručnú sadzbu")}
                           onClick={() => void ulozSadzbu(h.od, null)}
-                          className="text-muted-foreground hover:text-foreground"
+                          className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                         >
                           <Undo2 className="h-3.5 w-3.5" />
                         </button>
@@ -403,7 +405,7 @@ export function SadzbaZmluvy({
                             setUpravujem(h.od);
                             setHodnota(h.sadzba === null ? "" : String(h.sadzba).replace(".", ","));
                           }}
-                          className="text-muted-foreground hover:text-foreground"
+                          className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
@@ -414,7 +416,7 @@ export function SadzbaZmluvy({
               </tbody>
             </table>
           </div>
-          <p className="border-t p-4 text-xs text-muted-foreground">
+          <p className="border-t border-border p-4 text-xs text-muted-foreground sm:px-5">
             {t(
               "Ručne zadaná sadzba (celková, teda index + marža) prepíše vypočítanú za celé obdobie fixácie — keď banka oznámi skutočnú sadzbu, alebo keď ju prevezmete zo strhnutého úroku.",
             )}

@@ -91,21 +91,21 @@ export function PravaSchvalovaniaTabulka({
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 className="text-base font-semibold text-foreground">
         {t("Povolenia používateľov")}
       </h2>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 max-w-prose text-sm text-muted-foreground">
         {t(
           "Čo smie ktorý používateľ so schvaľovaným dokladom urobiť. Majiteľ má vždy všetko. Kto je v schvaľovacej ceste, smie len zaškrtnuté; bez cesty schvaľuje každý, kto má zaškrtnuté Schvaľovanie.",
         )}
       </p>
-      <div className="mt-3 overflow-x-auto rounded-md border border-border">
+      <div className="mt-3 overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
-              <th className="p-2">{t("Používateľ")}</th>
+              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Používateľ")}</th>
               {PRAVA_SCHVALOVANIA.map((p) => (
-                <th key={p.kluc} className="p-2 text-center">
+                <th key={p.kluc} className="px-3 py-2.5 text-center font-semibold">
                   {t(p.nazov)}
                 </th>
               ))}
@@ -117,15 +117,15 @@ export function PravaSchvalovaniaTabulka({
               const p = prava[l.id] ?? predvolene(l.rola, vCeste.has(l.id));
               return (
                 <tr key={l.id}>
-                  <td className="p-2">
-                    <div className="min-w-0 break-words">{l.meno}</div>
+                  <td className="px-3 py-2">
+                    <div className="min-w-0 break-words font-semibold">{l.meno}</div>
                     <div className="text-xs text-muted-foreground">
                       {t(ROLY[l.rola] ?? l.rola)}
                       {!majitel && !l.prava && !zmenene.has(l.id) ? ` · ${t("podľa roly")}` : ""}
                     </div>
                   </td>
                   {PRAVA_SCHVALOVANIA.map((k) => (
-                    <td key={k.kluc} className="p-2 text-center">
+                    <td key={k.kluc} className="px-3 py-2 text-center">
                       <input
                         type="checkbox"
                         aria-label={`${t(k.nazov)} — ${l.meno}`}
@@ -135,7 +135,7 @@ export function PravaSchvalovaniaTabulka({
                           setPrava({ ...prava, [l.id]: { ...p, [k.kluc]: e.target.checked } });
                           setZmenene(new Set(zmenene).add(l.id));
                         }}
-                        className="h-4 w-4"
+                        className="h-4 w-4 accent-primary"
                       />
                     </td>
                   ))}
@@ -150,7 +150,7 @@ export function PravaSchvalovaniaTabulka({
           <button
             onClick={ulozit}
             disabled={busy || !zmenene.size}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť povolenia")}
           </button>

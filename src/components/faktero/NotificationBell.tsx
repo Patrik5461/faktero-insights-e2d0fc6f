@@ -25,7 +25,7 @@ const IKONA: Record<NotificationSeverity, typeof Info> = {
 
 const FARBA: Record<NotificationSeverity, string> = {
   danger: "text-destructive",
-  warning: "text-amber-700 dark:text-amber-400",
+  warning: "text-warning",
   info: "text-muted-foreground",
 };
 
@@ -116,13 +116,13 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-[min(22rem,calc(100vw-1.5rem))] p-0">
-        <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <span className="text-sm font-medium">{t("Notifikácie")}</span>
+        <div className="flex min-h-11 items-center justify-between gap-2 border-b border-border px-3 py-2">
+          <span className="text-sm font-semibold">{t("Notifikácie")}</span>
           {unread > 0 && (
             <button
               type="button"
               onClick={oznacVsetko}
-              className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold text-primary hover:bg-accent hover:text-primary-hover"
             >
               <Check className="h-3 w-3" /> {t("Označiť ako prečítané")}
             </button>
@@ -148,19 +148,21 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
                     setOpen(false);
                     if (!n.read) oznacJednu(n);
                   }}
-                  className={`flex gap-2.5 border-b border-border/60 px-3 py-2.5 last:border-b-0 hover:bg-secondary ${
+                  className={`flex gap-2.5 border-b border-border/60 px-3 py-2.5 outline-none last:border-b-0 hover:bg-accent focus-visible:bg-accent ${
                     n.read ? "opacity-60" : ""
                   }`}
                 >
                   <Ikona className={`mt-0.5 h-4 w-4 shrink-0 ${FARBA[n.severity]}`} />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm text-foreground">{textNotifikacie(n, "title", t)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block truncate text-sm text-foreground ${n.read ? "" : "font-semibold"}`}>
+                      {textNotifikacie(n, "title", t)}
+                    </span>
                     <span className="block truncate text-xs text-muted-foreground">{textNotifikacie(n, "detail", t)}</span>
                   </span>
                   {!n.read && (
                     <span
                       aria-hidden
-                      className="mt-1.5 h-1.5 w-1.5 shrink-0 self-start rounded-full bg-primary"
+                      className="mt-1.5 h-2 w-2 shrink-0 self-start rounded-full bg-primary"
                     />
                   )}
                 </Link>
@@ -172,7 +174,7 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
         <Link
           to="/moje-ulohy"
           onClick={() => setOpen(false)}
-          className="block border-t border-border px-3 py-2 text-center text-xs font-medium text-primary hover:bg-secondary"
+          className="block border-t border-border bg-muted/40 px-3 py-2.5 text-center text-xs font-semibold text-primary hover:bg-accent hover:text-primary-hover"
         >
           {t("Všetky moje úlohy →")}
         </Link>

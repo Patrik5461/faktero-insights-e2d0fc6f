@@ -5,7 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listPurchaseOrders } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
-import { Plus, Truck } from "lucide-react";
+import { Plus, SearchX, Truck } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -13,6 +13,9 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
   head: ({ match }) => ({
@@ -22,12 +25,13 @@ export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
   component: PurchaseOrdersPage,
 });
 
-const FARBA_STAVU: Record<StavObjednavky, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-blue-500/10 text-blue-600",
-  partially_received: "bg-amber-500/10 text-amber-800",
-  received: "bg-emerald-500/10 text-emerald-700",
-  cancelled: "bg-muted text-muted-foreground line-through",
+/** Tón stavu objednávky (texty ostávajú zo `STAV_POPIS`). */
+const TON_OBJEDNAVKY: Record<StavObjednavky, TonStavu> = {
+  draft: "neutralny",
+  sent: "priebeh",
+  partially_received: "pozor",
+  received: "uspech",
+  cancelled: "zruseny",
 };
 
 function suma(n: number, mena: string) {
@@ -85,7 +89,7 @@ function PurchaseOrdersPage() {
             <OdkazNaRady />
             <Link
               to="/sklad/objednavky/nova"
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nová objednávka")}
             </Link>
@@ -109,30 +113,34 @@ function PurchaseOrdersPage() {
         />
 
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav />
         ) : rows.length > 0 && zobrazene.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {t("Nič nevyhovuje filtru.")}
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState icon={SearchX} title="Nič nevyhovuje filtru." />
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center">
-            <Truck className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <div className="text-sm text-muted-foreground">
-              {filter === "otvorene"
-                ? t("Žiadna otvorená objednávka.")
-                : t("Zatiaľ ste nevystavili žiadnu objednávku.")}
-            </div>
-            <Link
-              to="/sklad/minimum"
-              className="mt-3 inline-block text-sm text-primary hover:underline"
-            >
-              {t("Pozrieť, čo je pod minimom →")}
-            </Link>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={Truck}
+              title={
+                filter === "otvorene"
+                  ? "Žiadna otvorená objednávka."
+                  : "Zatiaľ ste nevystavili žiadnu objednávku."
+              }
+              action={
+                <Link
+                  to="/sklad/minimum"
+                  className="inline-block text-sm font-semibold text-primary hover:underline"
+                >
+                  {t("Pozrieť, čo je pod minimom →")}
+                </Link>
+              }
+            />
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="p-3">{t("Číslo")}</th>
                   <th className="p-3">{t("Dodávateľ")}</th>
@@ -146,30 +154,28 @@ function PurchaseOrdersPage() {
               <tbody className="divide-y divide-border">
                 {zobrazene.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/30">
-                    <td className="p-3 font-medium">
+                    <td className="whitespace-nowrap p-3">
                       <Link
                         to="/sklad/objednavky/$id"
                         params={{ id: o.id }}
-                        className="text-primary hover:underline"
+                        className="cislo-dokladu text-primary hover:underline"
                       >
                         {o.order_number}
                       </Link>
                     </td>
-                    <td className="p-3">{o.supplier_name ?? "—"}</td>
-                    <td className="p-3 text-muted-foreground">{datumNaDoklade(o.order_date)}</td>
-                    <td className="p-3 text-muted-foreground">
+                    <td className="max-w-[16rem] truncate p-3" title={o.supplier_name ?? undefined}>
+                      {o.supplier_name ?? "—"}
+                    </td>
+                    <td className="whitespace-nowrap p-3 text-muted-foreground">{datumNaDoklade(o.order_date)}</td>
+                    <td className="whitespace-nowrap p-3 text-muted-foreground">
                       {o.expected_date ? datumNaDoklade(o.expected_date) : "—"}
                     </td>
                     <td className="p-3 text-right tabular-nums">{o.items_count}</td>
-                    <td className="p-3 text-right tabular-nums">{suma(o.total, o.currency)}</td>
+                    <td className="suma p-3 text-right">{suma(o.total, o.currency)}</td>
                     <td className="p-3">
-                      <span
-                        className={`inline-block rounded px-2 py-0.5 text-xs ${
-                          FARBA_STAVU[o.status as StavObjednavky] ?? ""
-                        }`}
-                      >
+                      <StavOdznak ton={tonStavu(TON_OBJEDNAVKY, o.status)}>
                         {t(STAV_POPIS[o.status as StavObjednavky] ?? o.status)}
-                      </span>
+                      </StavOdznak>
                     </td>
                   </tr>
                 ))}

@@ -85,6 +85,7 @@ import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
@@ -140,10 +141,11 @@ const ZDROJ_DOKLADU: Record<string, string> = {
   web: "ručne zapísaný",
   import: "import",
 };
-const STATUS_STYLE: Record<string, string> = {
-  new: "bg-amber-500/10 text-amber-800",
-  processed: "bg-secondary text-foreground/70",
-  exported: "bg-primary/10 text-primary-hover",
+/** Tón stavového odznaku (redizajn webu) — texty ostávajú zo `STATUS_LABEL`. */
+const STATUS_TON: Record<string, TonStavu> = {
+  new: "pozor",
+  processed: "informacia",
+  exported: "uspech",
 };
 
 function DokladyPage() {
@@ -738,13 +740,13 @@ function DokladyPage() {
                   ? t("Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.")
                   : undefined
               }
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <Download className="h-4 w-4" /> {t("Odovzdať účtovníkovi")}
             </button>
             <Link
               to="/doklady/novy"
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nový doklad")}
             </Link>
@@ -774,13 +776,13 @@ function DokladyPage() {
               onClick={() => prepniZalozku(z.kluc)}
               className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm ${
                 zalozka === z.kluc
-                  ? "border-primary font-medium text-foreground"
+                  ? "border-primary font-semibold text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t(z.nazov)}
               {z.kluc === "nespracovane" && nespracovanych ? (
-                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
+                <span className="dk-pozor rounded-full px-1.5 text-xs font-semibold tabular-nums">
                   {nespracovanych}
                 </span>
               ) : null}
@@ -791,7 +793,7 @@ function DokladyPage() {
         {!bezMesiaca && nespracovanych ? (
           <Link
             to="/nespracovane"
-            className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            className="dk-pozor mb-4 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm hover:brightness-[0.97]"
           >
             <span>
               {t(mnozne(nespracovanych, CAKAJUCE_BLOCKY), { n: nespracovanych })}
@@ -889,7 +891,7 @@ function DokladyPage() {
             >
               {zalozka === "nespracovane" ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-700" /> {t("Označiť ako spracované")} (
+                  <CheckCircle2 className="h-4 w-4 text-primary" /> {t("Označiť ako spracované")} (
                   {selected.size})
                 </>
               ) : (
@@ -1116,11 +1118,9 @@ function DokladyPage() {
                   }
                   status={
                     <span className="flex flex-col items-end gap-1">
-                      <span
-                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[r.status]}`}
-                      >
+                      <StavOdznak ton={tonStavu(STATUS_TON, r.status)}>
                         {t(STATUS_LABEL[r.status] ?? r.status)}
-                      </span>
+                      </StavOdznak>
                       <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
                     </span>
                   }
@@ -1129,7 +1129,7 @@ function DokladyPage() {
                       {datumNaDoklade(r.issue_date)}
                       {r.pohoda_predkontacia ? ` · ${r.pohoda_predkontacia}` : ""}
                       {r.status === "new" && chybajuceUdaje(r).length > 0 ? (
-                        <span className="block truncate text-amber-700 dark:text-amber-400">
+                        <span className="dk-text-pozor block truncate">
                           {t("Chýba: {polia}", { polia: chybajuceUdaje(r).map((x) => t(x)).join(", ") })}
                         </span>
                       ) : null}
@@ -1142,7 +1142,7 @@ function DokladyPage() {
                         <button
                           onClick={() => zmenStav([r.id], "processed")}
                           disabled={menimStav}
-                          className="mr-auto inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-1 text-xs font-medium text-emerald-700 disabled:opacity-50 dark:text-emerald-400"
+                          className="mr-auto inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary-hover disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                         </button>
@@ -1194,7 +1194,7 @@ function DokladyPage() {
               {postupne.zarazka()}
             </div>
             <table className="w-full text-sm max-sm:hidden">
-              <thead className="bg-secondary/40 text-xs text-muted-foreground">
+              <thead className="bg-secondary/40 text-xs font-semibold whitespace-nowrap text-muted-foreground">
                 <tr>
                   <th className="w-8 px-3 py-2">
                     <input
@@ -1249,7 +1249,7 @@ function DokladyPage() {
                     {je("datum") && (
                       <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.issue_date)}</td>
                     )}
-                    <td className="px-3 py-2">
+                    <td className="min-w-[11rem] px-3 py-2">
                       <button
                         onClick={() =>
                           {
@@ -1283,14 +1283,14 @@ function DokladyPage() {
                         </div>
                       ) : null}
                       {r.status === "new" && chybajuceUdaje(r).length > 0 && (
-                        <div className="text-xs text-amber-700 dark:text-amber-400">
+                        <div className="dk-text-pozor text-xs">
                           {t("Chýba: {polia}", { polia: chybajuceUdaje(r).map((x) => t(x)).join(", ") })}
                         </div>
                       )}
                     </td>
                     {je("cislo") && (
                       <td className="px-3 py-2">
-                        {r.document_number ?? "—"}
+                        <span className="cislo-dokladu">{r.document_number ?? "—"}</span>
                         {r.pohoda_predkontacia || r.pohoda_clenenie_dph ? (
                           <div
                             className="text-xs text-muted-foreground"
@@ -1343,17 +1343,17 @@ function DokladyPage() {
                       </td>
                     )}
                     {je("zaklad") && (
-                      <td className="px-3 py-2 text-right tabular-nums">
+                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                         {r.net_amount != null ? formatujCislo(r.net_amount) : "—"}
                       </td>
                     )}
                     {je("dph") && (
-                      <td className="px-3 py-2 text-right tabular-nums">
+                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                         {r.vat_amount != null ? formatujCislo(r.vat_amount) : "—"}
                       </td>
                     )}
                     {je("celkom") && (
-                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
+                      <td className="suma px-3 py-2 text-right">
                         {r.total_amount != null ? formatujMenu(r.total_amount, r.currency) : "—"}
                       </td>
                     )}
@@ -1383,7 +1383,8 @@ function DokladyPage() {
                     )}
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span
+                        <StavOdznak
+                          ton={tonStavu(STATUS_TON, r.status)}
                           title={
                             r.processed_at
                               ? t("Spracované {datum}", {
@@ -1391,10 +1392,9 @@ function DokladyPage() {
                                 })
                               : undefined
                           }
-                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[r.status]}`}
                         >
                           {t(STATUS_LABEL[r.status] ?? r.status)}
-                        </span>
+                        </StavOdznak>
                         {r.locked_at ? (
                           <span title={t("Zamknutý doklad")} className="text-muted-foreground">
                             <Lock className="h-3.5 w-3.5" />
@@ -1413,7 +1413,7 @@ function DokladyPage() {
                             <button
                               onClick={() => zmenStav([r.id], "processed")}
                               disabled={menimStav}
-                              className="inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                              className="inline-flex h-6 items-center gap-1 rounded-md border border-input bg-card px-2 text-xs font-semibold text-primary-hover hover:bg-accent disabled:opacity-50"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                             </button>
@@ -1472,7 +1472,7 @@ function DokladyPage() {
                       <td className="px-3 py-2 text-xs whitespace-nowrap">
                         {uhrady[r.id] ? (
                           <span className="inline-flex items-center gap-1.5">
-                            <span className="text-emerald-700 dark:text-emerald-400">
+                            <span className="dk-text-uspech">
                               {uhrady[r.id].datum}
                             </span>
                             <button
@@ -1600,7 +1600,7 @@ function SummaryCard({
     >
       <div className="text-xs text-muted-foreground">{label}</div>
       {/* Každá mena sa láme ako celok — „€“ sa na úzkej karte neodtrhne. */}
-      <div className="mt-1 min-w-0 text-base font-semibold tabular-nums sm:text-xl">
+      <div className="suma mt-1 min-w-0 text-base sm:text-xl">
         <SuctyPoMenach sucty={value} />
       </div>
     </div>

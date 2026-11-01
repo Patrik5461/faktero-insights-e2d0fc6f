@@ -11,6 +11,7 @@ import {
   koniecPredoslehoStvrtroka,
 } from "@/lib/faktero/uzavierka";
 import { Lock, Unlock, ShieldCheck } from "lucide-react";
+import { NacitavanieStav, ZamknutyStav } from "@/components/faktero/web/StavyObsahu";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -95,7 +96,7 @@ function UzavierkaPage() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav />
       </PageBody>
     );
   }
@@ -103,7 +104,7 @@ function UzavierkaPage() {
   const zamknute = stav?.locked_until as string | null;
   const admin = !!stav?.je_admin;
   const tlacidlo =
-    "rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50";
+    "rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold tabular-nums hover:bg-accent disabled:opacity-50";
 
   return (
     <>
@@ -115,29 +116,29 @@ function UzavierkaPage() {
       />
       <PageBody>
         {chyba && (
-          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {chyba}
           </div>
         )}
         {sprava && (
-          <div className="mb-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+          <div role="status" className="rounded-lg border border-primary/25 bg-[color:var(--stav-uspech-plocha)] px-3 py-2 text-sm text-[color:var(--stav-uspech-text)]">
             {sprava}
           </div>
         )}
 
         <div className="max-w-3xl space-y-4">
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
             <div className="flex items-center gap-3">
               {zamknute ? (
-                <Lock className="h-6 w-6 text-emerald-700" />
+                <Lock className="h-6 w-6 shrink-0 text-[color:var(--stav-uspech-text)]" />
               ) : (
-                <Unlock className="h-6 w-6 text-muted-foreground" />
+                <Unlock className="h-6 w-6 shrink-0 text-muted-foreground" />
               )}
-              <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="min-w-0">
+                <div className="text-sm text-muted-foreground">
                   {t("Súčasný stav")}
                 </div>
-                <div className="text-lg font-semibold">
+                <div className="text-lg font-semibold tabular-nums">
                   {zamknute
                     ? t("Uzamknuté do {datum}", { datum: formatujDatum(zamknute) })
                     : t("Zatiaľ nie je uzamknuté nič")}
@@ -153,9 +154,9 @@ function UzavierkaPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="mb-1 flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="h-4 w-4" /> {t("Čoho sa zámok týka")}
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="mb-1 flex items-center gap-2 text-base font-semibold">
+              <ShieldCheck className="h-4 w-4 text-muted-foreground" /> {t("Čoho sa zámok týka")}
             </div>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li>
@@ -185,12 +186,10 @@ function UzavierkaPage() {
           </div>
 
           {!admin ? (
-            <div className="rounded-xl border border-border bg-muted/40 p-5 text-sm text-muted-foreground">
-              {t("Uzávierku môže meniť len správca firmy.")}
-            </div>
+            <ZamknutyStav nadpis="Uzávierku môže meniť len správca firmy." />
           ) : (
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 text-sm font-medium">{t("Uzamknúť do")}</div>
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <div className="mb-3 text-base font-semibold">{t("Uzamknúť do")}</div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -226,7 +225,7 @@ function UzavierkaPage() {
 
               <div className="mt-4 flex flex-wrap items-end gap-2">
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Vlastný dátum")}</span>
+                  <span className="mb-1 block text-xs font-semibold text-muted-foreground">{t("Vlastný dátum")}</span>
                   <input
                     type="date"
                     value={vlastny}
@@ -238,7 +237,7 @@ function UzavierkaPage() {
                   type="button"
                   disabled={busy || !vlastny}
                   onClick={() => uloz(vlastny)}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {t("Uzamknúť")}
                 </button>
@@ -250,7 +249,7 @@ function UzavierkaPage() {
                     type="button"
                     disabled={busy}
                     onClick={() => uloz(null)}
-                    className="inline-flex items-center gap-1 text-sm text-destructive hover:underline disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-destructive hover:underline disabled:opacity-50"
                   >
                     <Unlock className="h-4 w-4" /> {t("Zrušiť uzamknutie")}
                   </button>

@@ -110,7 +110,7 @@ export function NespracovanyKompaktny({
   const blocek = druh === "blocek";
   const faktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
   const zle = (k: string) => chyby.includes(k);
-  const ram = (k: string) => `${ramik} ${zle(k) ? "border-red-500" : "border-input"}`;
+  const ram = (k: string) => `${ramik} ${zle(k) ? "dk-ramik-chyba" : "border-input"}`;
   const set = (z: Partial<UdajeNespracovaneho>) => setU({ ...u, ...z });
   const setDod = (z: Partial<UdajeNespracovaneho["dodavatel"]>) =>
     setU({ ...u, dodavatel: { ...u.dodavatel, ...z } });
@@ -122,11 +122,11 @@ export function NespracovanyKompaktny({
   const pata = (
     <>
       {chyby.length > 0 && druh ? (
-        <p className="text-xs text-red-600">
+        <p className="text-xs font-medium text-destructive">
           {t("Chýba: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") })}
         </p>
       ) : rozdielVyrovna != null && druh ? (
-        <p className="text-xs text-amber-700 dark:text-amber-300">
+        <p className="dk-text-pozor text-xs font-medium">
           {t("Položky nesedia so sumou o {rozdiel} — doplní sa vyrovnávacia položka.", {
             rozdiel: rozdielVyrovna.toFixed(2),
           })}
@@ -174,7 +174,7 @@ export function NespracovanyKompaktny({
           </div>
         )}
         {chybaCitania && (
-          <div className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="dk-pozor m-4 rounded-lg border p-3 text-sm">
             {t(chybaCitania)}
           </div>
         )}
@@ -182,7 +182,7 @@ export function NespracovanyKompaktny({
           <div
             key={v}
             role="alert"
-            className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            className="dk-pozor m-4 rounded-lg border p-3 text-sm"
           >
             {t(v)}
           </div>
@@ -377,7 +377,7 @@ export function NespracovanyKompaktny({
                 value={u.jobId}
                 onChange={(v) => set({ jobId: v })}
                 companyId={companyId}
-                className={zle("zakazka") ? "[&_select]:border-red-500" : ""}
+                className={zle("zakazka") ? "[&_select]:border-destructive" : ""}
               />
               <VozidloPicker
                 value={u.vehicleId ?? ""}

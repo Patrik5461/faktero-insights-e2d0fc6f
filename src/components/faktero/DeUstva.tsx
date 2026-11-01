@@ -188,7 +188,7 @@ export function DeUstva() {
         )}
       />
       <PageBody>
-        <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
+        <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 sm:p-5">
           <label className="block">
             <span className={popis}>{t("Rok")}</span>
             <input
@@ -209,7 +209,7 @@ export function DeUstva() {
               <option value="stvrtrok">{t("Štvrťrok")}</option>
             </select>
             {nast && (nast.obdobie === "stvrtrocne") !== (rezim === "stvrtrok") && (
-              <span className="mt-1 block text-xs text-amber-700 dark:text-amber-400">
+              <span className="mt-1 block text-xs text-[color:var(--stav-pozor-text)]">
                 {nast.obdobie === "stvrtrocne"
                   ? t("V Nastaveniach firmy je štvrťročné podávanie.")
                   : t("V Nastaveniach firmy je mesačné podávanie.")}
@@ -246,10 +246,10 @@ export function DeUstva() {
           </label>
         </div>
 
-        <div className="mb-4 flex gap-3 rounded-xl border border-border bg-card p-4 text-sm">
+        <div className="flex gap-3 rounded-xl border border-border bg-card p-4 text-sm">
           <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div className="min-w-0">
-            <div className="font-medium">
+            <div className="font-semibold">
               {t("Termín podania a zaplatenia: {datum}", { datum: datum(termin.termin) })}
             </div>
             <p className="mt-1 text-muted-foreground">
@@ -286,21 +286,21 @@ export function DeUstva() {
         </div>
 
         {chyba && (
-          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
             {chyba}
           </div>
         )}
         {nacitavam && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Zostavujem z dokladov…")}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" /> {t("Zostavujem z dokladov…")}
           </div>
         )}
 
         {data?.kleinunternehmer && (
-          <div className="mb-6 flex gap-3 rounded-xl border border-border bg-card p-4 text-sm">
+          <div className="flex gap-3 rounded-xl border border-border bg-card p-4 text-sm">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div>
-              <div className="font-medium">{t("Kleinunternehmer UStVA nepodáva")}</div>
+              <div className="font-semibold">{t("Kleinunternehmer UStVA nepodáva")}</div>
               <p className="mt-1 text-muted-foreground">
                 {t(
                   "Firma je vedená ako Kleinunternehmer podľa § 19 UStG — faktúry vystavuje bez dane, daň neodvádza a odpočet nemá, takže mesačné ani štvrťročné priznanie (UStVA) sa nepodáva. Výnimkou je daň, ktorú dlhuje ako príjemca (§ 13b, napr. služba od podnikateľa z EÚ) — tú priznáva aj Kleinunternehmer, prehľad ju zatiaľ nepočíta. Ak obrat v predchádzajúcom roku prekročil 25 000 € alebo v bežnom roku prekročí 100 000 €, režim končí — zmeňte ho v Nastaveniach firmy.",
@@ -313,7 +313,7 @@ export function DeUstva() {
         {u && data && (
           <>
             {data.pocty && (
-              <p className="mb-4 text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {t(
                   "V období je {vystavene} vystavených faktúr, {prijate} prijatých a {doklady} dokladov s DPH.",
                   {
@@ -330,10 +330,10 @@ export function DeUstva() {
               nadpis={t("Pred podaním skontrolujte ({n})", { n: data.vytky.length })}
             />
 
-            <section className="mb-6 rounded-xl border border-border bg-card">
+            <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div className="min-w-0">
-                  <div className="font-medium">{t("Prehľad UStVA")}</div>
+                  <div className="text-base font-semibold">{t("Prehľad UStVA")}</div>
                   <div className="text-xs text-muted-foreground">
                     {t("Základy dane v celých eurách, daň a odpočet na centy · {obdobie}", {
                       obdobie: obdobieText,
@@ -344,7 +344,7 @@ export function DeUstva() {
                   <button
                     type="button"
                     onClick={stiahniCsv}
-                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     <Download className="h-4 w-4" /> CSV
                   </button>
@@ -352,7 +352,7 @@ export function DeUstva() {
                     type="button"
                     onClick={stiahniPdf}
                     disabled={pdfBezi}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                   >
                     {pdfBezi ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -366,11 +366,11 @@ export function DeUstva() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                      <th className="w-14 px-4 py-2">KZ</th>
+                    <tr className="border-b border-border bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
+                      <th className="w-14 whitespace-nowrap px-4 py-2 text-right">KZ</th>
                       <th className="px-4 py-2">{t("Popis")}</th>
-                      <th className="px-4 py-2 text-right">{t("Základ dane")}</th>
-                      <th className="px-4 py-2 text-right">{t("Daň")}</th>
+                      <th className="whitespace-nowrap px-4 py-2 text-right">{t("Základ dane")}</th>
+                      <th className="whitespace-nowrap px-4 py-2 text-right">{t("Daň")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -388,9 +388,11 @@ export function DeUstva() {
                       return (
                         <tr
                           key={r.kz}
-                          className={`border-b border-border last:border-0 ${vysledok ? "font-semibold" : ""}`}
+                          className={`border-b border-border last:border-0 ${vysledok ? "bg-muted/40 font-bold" : ""}`}
                         >
-                          <td className="px-4 py-2 text-muted-foreground">{r.kz}</td>
+                          <td className="whitespace-nowrap px-4 py-2 text-right text-muted-foreground tabular-nums">
+                            {r.kz}
+                          </td>
                           <td className="px-4 py-2">
                             {t(r.popis)}
                             {vysledok && (
@@ -401,10 +403,8 @@ export function DeUstva() {
                               </span>
                             )}
                           </td>
-                          <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
-                            {lenDan ? "" : eur(zaklad)}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
+                          <td className="suma px-4 py-2 text-right">{lenDan ? "" : eur(zaklad)}</td>
+                          <td className="suma px-4 py-2 text-right">
                             {lenDan ? eur(zaklad ?? 0) : eur(dan)}
                           </td>
                         </tr>
@@ -416,17 +416,19 @@ export function DeUstva() {
               <div className="grid gap-1 border-t border-border px-4 py-3 text-sm sm:grid-cols-2">
                 <div className="flex justify-between gap-4 sm:block">
                   <span className="text-muted-foreground">{t("Daň spolu")}: </span>
-                  <span className="tabular-nums">{eur(u.danSpolu)}</span>
+                  <span className="suma">{eur(u.danSpolu)}</span>
                 </div>
                 <div className="flex justify-between gap-4 sm:block">
                   <span className="text-muted-foreground">{t("Odpočet dane spolu")}: </span>
-                  <span className="tabular-nums">{eur(u.vorsteuerSpolu)}</span>
+                  <span className="suma">{eur(u.vorsteuerSpolu)}</span>
                 </div>
               </div>
             </section>
 
-            <section className="mb-6 rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 font-medium">{t("Riadky, ktoré z dokladov nevyplývajú")}</div>
+            <section className="rounded-xl border border-border bg-card p-4">
+              <div className="mb-3 text-base font-semibold">
+                {t("Riadky, ktoré z dokladov nevyplývajú")}
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {RUCNE.map((r) => (
                   <label key={r.kz} className="block min-w-0">
@@ -443,7 +445,7 @@ export function DeUstva() {
               <button
                 type="button"
                 onClick={() => void nacitaj()}
-                className="mt-3 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                className="mt-3 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
               >
                 {t("Prepočítať")}
               </button>

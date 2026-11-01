@@ -37,7 +37,12 @@ import {
 
 type Predvolba = "rok" | "minuly_rok" | "12_mesiacov" | "vlastne";
 
-const FARBA_VYNOS = "var(--chart-2)";
+/*
+  Redizajn: výnosy sú `--chart-1` (sýta značková zelená) — `--chart-2` bola
+  na bielej taká svetlá, že sa 40 % „očakávané“ nad ňou strácali. Typ grafu,
+  série, poradie a legenda sa nemenia.
+*/
+const FARBA_VYNOS = "var(--chart-1)";
 const FARBA_NAKLAD = "var(--destructive)";
 const FARBA_BILANCIA = "var(--foreground)";
 /*
@@ -45,7 +50,7 @@ const FARBA_BILANCIA = "var(--foreground)";
   legenda grafu priehľadnosť ignoruje a „Očakávané“ v nej vyzerali rovnako
   ako uhradené.
 */
-const FARBA_VYNOS_SVETLA = "color-mix(in oklch, var(--chart-2) 40%, transparent)";
+const FARBA_VYNOS_SVETLA = "color-mix(in oklch, var(--chart-1) 40%, transparent)";
 const FARBA_NAKLAD_SVETLA = "color-mix(in oklch, var(--destructive) 40%, transparent)";
 
 const MESIACE = [
@@ -73,6 +78,39 @@ const RIADKY: { kluc: keyof CislaVN | "bilancia"; nazov: string }[] = [
 
 function hodnota(c: CislaVN, kluc: keyof CislaVN | "bilancia"): number {
   return kluc === "bilancia" ? bilancia(c) : c[kluc];
+}
+
+/** Bublina grafu: mesiac, farba série, názov a suma — text v plnej farbe, nie vo farbe série. */
+function BublinaVN({
+  active,
+  payload,
+  label,
+  fmt,
+}: {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  fmt: (n: number) => string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="min-w-[12rem] rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg">
+      <div className="mb-1 font-semibold">{label}</div>
+      <ul className="space-y-1">
+        {payload.map((p: any) => (
+          <li key={p.dataKey} className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className={p.dataKey === "bilancia" ? "h-0.5 w-2.5 shrink-0 rounded-full" : "h-2.5 w-2.5 shrink-0 rounded-sm"}
+              style={{ background: p.dataKey === "bilancia" ? p.stroke ?? p.color : p.fill ?? p.color }}
+            />
+            <span className="min-w-0 flex-1 text-muted-foreground">{p.name}</span>
+            <span className={`suma ${p.dataKey === "bilancia" ? "font-bold" : ""}`}>{fmt(Number(p.value))}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
@@ -154,17 +192,17 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
   ];
 
   const tlacidlo = (aktivne: boolean) =>
-    `px-3 py-1.5 text-xs font-medium transition-colors ${aktivne ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`;
+    `h-7 rounded-[5px] px-3 text-xs font-semibold transition-colors ${aktivne ? "bg-card text-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`;
 
   return (
     <section
-      className="min-w-0 rounded-xl border border-border bg-card p-4"
+      className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm"
       aria-labelledby="vn-nadpis"
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          <h2 id="vn-nadpis" className="text-sm font-medium">
+          <h2 id="vn-nadpis" className="text-sm font-semibold">
             {t("Výnosy a náklady")}
           </h2>
         </div>
@@ -173,7 +211,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
             value={predvolba}
             onChange={(e) => setPredvolba(e.target.value as Predvolba)}
             aria-label={t("Obdobie")}
-            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium"
           >
             <option value="rok">{t("Tento rok")}</option>
             <option value="minuly_rok">{t("Minulý rok")}</option>
@@ -187,7 +225,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                 value={vlastne.od}
                 onChange={(e) => setVlastne((v) => ({ ...v, od: e.target.value }))}
                 aria-label={t("Od")}
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs tabular-nums"
               />
               <span className="text-muted-foreground">–</span>
               <input
@@ -195,12 +233,12 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                 value={vlastne.do}
                 onChange={(e) => setVlastne((v) => ({ ...v, do: e.target.value }))}
                 aria-label={t("Do")}
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs tabular-nums"
               />
             </div>
           )}
           <div
-            className="inline-flex overflow-hidden rounded-md border border-border"
+            className="inline-flex gap-0.5 rounded-md bg-muted p-0.5"
             role="group"
             aria-label={t("Sumy")}
           >
@@ -222,7 +260,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
             </button>
           </div>
           <span
-            className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground"
+            className="inline-flex h-8 items-center rounded-md border border-border px-2 text-xs font-semibold tabular-nums text-muted-foreground"
             title={t("Doklady v cudzej mene sú prepočítané kurzom uloženým na doklade.")}
           >
             {mena}
@@ -240,10 +278,10 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
             {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-muted/50" />
+              <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
             ))}
           </div>
-          <div className="h-72 animate-pulse rounded-lg bg-muted/50" />
+          <div className="h-72 animate-pulse rounded-lg bg-muted" />
         </div>
       ) : (
         <div className={nacitava ? "opacity-60 transition-opacity" : ""}>
@@ -251,9 +289,9 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
             {dlazdice.map((d) => (
               <div
                 key={d.nazov}
-                className="min-w-0 rounded-lg border border-border bg-muted/30 px-3 py-2"
+                className="min-w-0 rounded-lg border border-border bg-muted/40 px-3 py-2.5"
               >
-                <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   {d.farba && (
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-sm"
@@ -263,7 +301,8 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                   <span className="truncate">{t(d.nazov)}</span>
                 </div>
                 <div
-                  className={`mt-0.5 truncate text-base font-semibold tabular-nums ${d.ton ?? ""}`}
+                  className={`suma mt-1 truncate text-base font-bold ${d.ton ?? ""}`}
+                  title={fmt(d.suma)}
                 >
                   {fmt(d.suma)}
                 </div>
@@ -294,10 +333,12 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                     margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                     barGap={2}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <CartesianGrid stroke="var(--border)" strokeOpacity={0.8} vertical={false} />
                     <XAxis
                       dataKey="mesiac"
                       stroke="var(--muted-foreground)"
+                      tick={{ fill: "var(--muted-foreground)" }}
+                      tickMargin={6}
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
@@ -306,6 +347,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                     />
                     <YAxis
                       stroke="var(--muted-foreground)"
+                      tick={{ fill: "var(--muted-foreground)" }}
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
@@ -317,19 +359,17 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                         }).format(v)
                       }
                     />
-                    <ReferenceLine y={0} stroke="var(--border)" />
+                    <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.5} />
                     <Tooltip
-                      cursor={{ fill: "var(--muted)", opacity: 0.5 }}
-                      contentStyle={{
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        fontSize: 12,
-                        color: "var(--foreground)",
-                      }}
-                      formatter={(v: any) => fmt(Number(v))}
+                      cursor={{ fill: "var(--muted)", opacity: 0.7 }}
+                      content={(p: any) => <BublinaVN {...p} fmt={fmt} />}
                     />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    {/* Text legendy v plnej farbe — „Očakávané“ (40 %) by inak bolo takmer nečitateľné. */}
+                    <Legend
+                      wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                      iconSize={10}
+                      formatter={(v: any) => <span className="text-foreground">{v}</span>}
+                    />
                     <Bar
                       dataKey="vynosy"
                       name={t("Výnosy")}
@@ -366,12 +406,13 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                       name={t("Bilancia")}
                       stroke={FARBA_BILANCIA}
                       strokeWidth={2}
-                      dot={{ r: 3, fill: FARBA_BILANCIA }}
+                      dot={{ r: 3, fill: FARBA_BILANCIA, stroke: "var(--card)", strokeWidth: 1.5 }}
+                      activeDot={{ r: 5, fill: FARBA_BILANCIA, stroke: "var(--card)", strokeWidth: 2 }}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-              <p className="mt-1 text-[12px] text-muted-foreground">
+              <p className="mt-2 max-w-[75ch] text-xs text-muted-foreground">
                 {t(
                   "Výnosy sú uhradené vystavené faktúry, náklady uhradené prijaté faktúry a bločky. Bilancia = výnosy − náklady. Zálohové faktúry sa nepočítajú, dobropisy odpočítavajú.",
                 )}
@@ -384,19 +425,19 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                 <table className="w-full min-w-[40rem] text-sm">
                   <caption className="sr-only">{t("Súhrn po mesiacoch")}</caption>
                   <thead>
-                    <tr className="text-[12px] text-muted-foreground">
-                      <th className="sticky left-0 bg-card py-1.5 pr-3 text-left font-medium">
+                    <tr className="border-b border-border text-xs text-muted-foreground">
+                      <th className="sticky left-0 bg-card py-1.5 pr-3 text-left font-semibold">
                         {t("Súhrn po mesiacoch")}
                       </th>
                       {graf.map((m, i) => (
                         <th
                           key={i}
-                          className="whitespace-nowrap px-2 py-1.5 text-right font-medium"
+                          className="whitespace-nowrap px-2 py-1.5 text-right font-semibold"
                         >
                           {m.mesiac}
                         </th>
                       ))}
-                      <th className="whitespace-nowrap py-1.5 pl-2 text-right font-semibold">
+                      <th className="whitespace-nowrap py-1.5 pl-2 text-right font-bold text-foreground">
                         {t("Spolu")}
                       </th>
                     </tr>
@@ -405,7 +446,10 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
                     {RIADKY.map((r) => {
                       const celkom = hodnota(spolu, r.kluc);
                       return (
-                        <tr key={r.kluc} className={r.kluc === "bilancia" ? "font-semibold" : ""}>
+                        <tr
+                          key={r.kluc}
+                          className={r.kluc === "bilancia" ? "border-t-2 border-border font-semibold" : ""}
+                        >
                           <th
                             scope="row"
                             className="sticky left-0 whitespace-nowrap bg-card py-2 pr-3 text-left font-normal"

@@ -9,6 +9,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { Plus, Star, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import {
   DRUHY_RADOV,
@@ -152,15 +154,15 @@ function CiselneRadyPage() {
       />
       <PageBody>
         {loading ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {t("Načítavam…")}
+          <div className="rounded-xl border border-border bg-card">
+            <NacitavanieStav />
           </div>
         ) : (
           <div className="space-y-6">
-            <section className="rounded-2xl border border-border bg-card p-5">
+            <section className="rounded-xl border border-border bg-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-[13px] font-semibold uppercase tracking-wide text-foreground">
+                  <h3 className="text-base font-semibold text-foreground">
                     {t("Prechod z iného programu")}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -171,7 +173,7 @@ function CiselneRadyPage() {
                   type="button"
                   onClick={rozpoznaj}
                   disabled={hladam}
-                  className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                  className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                 >
                   {hladam ? t("Hľadám…") : t("Rozpoznať z naimportovaných faktúr")}
                 </button>
@@ -181,10 +183,10 @@ function CiselneRadyPage() {
             {DRUHY_RADOV.map((druh) => {
               const zoznam = podlaDruhu.get(druh) ?? [];
               return (
-                <section key={druh} className="rounded-2xl border border-border bg-card p-5">
+                <section key={druh} className="rounded-xl border border-border bg-card p-5">
                   {/* Bez flex-wrap: dlhý názov druhu sa zalomí v nadpise a tlačidlo ostane vpravo ako všade. */}
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h3 className="min-w-0 text-[13px] font-semibold uppercase tracking-wide text-foreground">
+                    <h3 className="min-w-0 text-base font-semibold text-foreground">
                       {t(NAZVY_DRUHOV[druh])}
                     </h3>
                     <button
@@ -198,7 +200,7 @@ function CiselneRadyPage() {
                           active: true,
                         })
                       }
-                      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                     >
                       <Plus className="h-3.5 w-3.5" /> {t("Pridať rad")}
                     </button>
@@ -212,20 +214,20 @@ function CiselneRadyPage() {
                     <ul className="divide-y divide-border">
                       {zoznam.map((r) => (
                         <li key={r.id} className="flex flex-wrap items-center gap-3 py-2.5">
-                          <span className="min-w-[10rem] flex-1 font-medium">
+                          <span className="min-w-[10rem] flex-1 font-semibold">
                             {r.name}
                             {r.is_default && (
-                              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary-hover">
-                                <Star className="h-3 w-3" /> {t("predvolený")}
-                              </span>
+                              <StavOdznak ton="uspech" maly className="ml-2" ikona={<Star className="h-3 w-3" />}>
+                                {t("predvolený")}
+                              </StavOdznak>
                             )}
                             {!r.active && (
-                              <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                              <StavOdznak ton="neutralny" maly className="ml-2">
                                 {t("vypnutý")}
-                              </span>
+                              </StavOdznak>
                             )}
                           </span>
-                          <code className="rounded bg-muted px-2 py-1 text-xs">{r.format}</code>
+                          <code className="rounded-md border border-border bg-muted px-2 py-1 font-mono text-xs">{r.format}</code>
                           <span className="text-sm tabular-nums text-muted-foreground">
                             → {ukazkaCisla(r.format, r.start_from ?? 1)}
                           </span>
@@ -233,14 +235,14 @@ function CiselneRadyPage() {
                             <button
                               type="button"
                               onClick={() => setUpravovany(r)}
-                              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                              className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                             >
                               {t("Upraviť")}
                             </button>
                             <button
                               type="button"
                               onClick={() => setMazany(r)}
-                              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               title={t("Zmazať")}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -311,16 +313,20 @@ function FormularRadu({
       role="dialog"
       aria-modal="true"
       aria-label={t("Číselný rad")}
+      data-slot="dialog-overlay"
       className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && onZrus()}
     >
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-lg">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">
+      <div
+        data-slot="dialog-content"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-lg"
+      >
+        <h3 className="mb-4 text-lg font-semibold">
           {rad.id ? t("Úprava radu") : t("Nový rad")} — {t(NAZVY_DRUHOV[rad.kind as DruhRadu])}
         </h3>
         <div className="space-y-4">
           <label className="block">
-            <span className="text-[13px] font-semibold text-foreground">{t("Názov")}</span>
+            <span className="text-sm font-semibold text-foreground">{t("Názov")}</span>
             <input
               value={rad.name ?? ""}
               onChange={(e) => onZmena({ ...rad, name: e.target.value })}
@@ -329,7 +335,7 @@ function FormularRadu({
             />
           </label>
           <div className="block">
-            <label className="text-[13px] font-semibold text-foreground">{t("Šablóna čísla")}</label>
+            <label className="text-sm font-semibold text-foreground">{t("Šablóna čísla")}</label>
             {/*
               Väčšina firiem si vyberie jeden z bežných tvarov — tokeny sú
               zrozumiteľné, až keď je vidieť, čo z nich vyjde. Vlastný tvar
@@ -383,7 +389,7 @@ function FormularRadu({
               </span>
             )}
             {upozornenie && !chyba && (
-              <span className="mt-2 block rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+              <span className="mt-2 block rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground">
                 {t(upozornenie)}
               </span>
             )}
@@ -394,7 +400,7 @@ function FormularRadu({
             )}
           </div>
           <label className="block">
-            <span className="text-[13px] font-semibold text-foreground">{t("Začať od poradia")}</span>
+            <span className="block text-sm font-semibold text-foreground">{t("Začať od poradia")}</span>
             <input
               type="number"
               min="1"
@@ -429,7 +435,7 @@ function FormularRadu({
           <button
             type="button"
             onClick={onZrus}
-            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
           >
             {t("Zrušiť")}
           </button>
@@ -437,7 +443,7 @@ function FormularRadu({
             type="button"
             disabled={busy || !!chyba}
             onClick={onUloz}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť")}
           </button>

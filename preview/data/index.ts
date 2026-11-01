@@ -1,0 +1,45 @@
+/**
+ * Naplnenie demo databázy. Poradie je dôležité — neskoršie moduly odkazujú
+ * na riadky zo skorších (firmy → kontakty → faktúry → doklady → banka …).
+ *
+ * Nový modul: vytvor `preview/data/<agenda>.ts` s funkciou `napln…(db)` a
+ * zaraď ju sem. Návod je v /home/patrik/redizajn-web/PREVIEW.md.
+ */
+import type { DemoDb } from "../server/db";
+import { naplnZaklad } from "./zaklad";
+import { naplnKontakty } from "./kontakty";
+import { naplnFaktury } from "./faktury";
+import { naplnSklad } from "./sklad";
+import { naplnZakazky } from "./zakazky";
+import { naplnDoklady } from "./doklady";
+import { naplnBanka } from "./banka";
+import { naplnJazdy } from "./jazdy";
+import { naplnZamestnanci } from "./zamestnanci";
+import { naplnUctovnictvo } from "./uctovnictvo";
+import { naplnEfaktura } from "./efaktura";
+import { naplnNastavenia } from "./nastavenia";
+
+const MODULY: [string, (db: DemoDb) => void][] = [
+  ["základ", naplnZaklad],
+  ["kontakty a produkty", naplnKontakty],
+  ["faktúry, ponuky, objednávky", naplnFaktury],
+  ["sklad a cenník", naplnSklad],
+  ["zákazky", naplnZakazky],
+  ["doklady", naplnDoklady],
+  ["banka a pokladňa", naplnBanka],
+  ["kniha jázd a vozový park", naplnJazdy],
+  ["zamestnanci", naplnZamestnanci],
+  ["účtovníctvo", naplnUctovnictvo],
+  ["eFaktúra", naplnEfaktura],
+  ["nastavenia, integrácie, podpora", naplnNastavenia],
+];
+
+export function naplnDemoData(db: DemoDb) {
+  for (const [meno, f] of MODULY) {
+    try {
+      f(db);
+    } catch (e) {
+      console.error(`[demo] modul dát „${meno}" zlyhal:`, e);
+    }
+  }
+}

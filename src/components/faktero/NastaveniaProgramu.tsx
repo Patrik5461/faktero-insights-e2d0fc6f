@@ -306,17 +306,17 @@ export function NastaveniaProgramu({
   const skupiny = POLIA[program] ?? [];
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 text-sm">
+    <div className="mt-4 rounded-lg border border-border bg-muted/40 p-4 text-sm">
       <p className="text-muted-foreground">{t(NAPOVEDA[program])}</p>
       {skupiny.map((s) => (
         <div key={s.nazov} className="mt-4">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="mb-2 text-sm font-semibold text-foreground">
             {t(s.nazov)}
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {s.polia.map((p) => (
               <label key={p.kluc} className="block">
-                <span className="text-xs text-muted-foreground">{t(p.nazov)}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t(p.nazov)}</span>
                 {p.moznosti ? (
                   <select
                     value={h[p.kluc] ?? p.moznosti[0]![0]}
@@ -359,7 +359,7 @@ export function NastaveniaProgramu({
               setBusy(false);
             }
           }}
-          className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
         >
           {t("Uložiť nastavenia")}
         </button>

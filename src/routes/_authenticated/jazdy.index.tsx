@@ -17,7 +17,9 @@ import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { useServerFn } from "@tanstack/react-start";
 import { trasaMedziBodmi } from "@/lib/faktero/trasa.server";
 import { gpsZapisZaradenie } from "@/lib/faktero/gps.functions";
-import { BulkBar, ConfirmDialog } from "@/components/faktero/ListControls";
+import { BulkBar, ConfirmDialog, EmptyState } from "@/components/faktero/ListControls";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -286,7 +288,7 @@ function TripsPage() {
           smieUpravovat && (
             <Link
               to="/jazdy/nova"
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nová jazda")}
             </Link>
@@ -295,7 +297,7 @@ function TripsPage() {
       />
       <PageBody>
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <label className="text-sm font-medium">{t("Vozidlo")}</label>
+          <label className="text-sm font-semibold text-muted-foreground">{t("Vozidlo")}</label>
           <select
             aria-label={t("Vozidlo")}
             value={vehicle_id ?? ""}
@@ -303,7 +305,7 @@ function TripsPage() {
               const v = e.target.value || undefined;
               navigate({ search: { vehicle_id: v } as any });
             }}
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm"
+            className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:w-80"
           >
             <option value="">{t("Všetky vozidlá")}</option>
             {vehicleList.map((v) => (
@@ -315,19 +317,23 @@ function TripsPage() {
           </select>
         </div>
         {loading && rows.length === 0 ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-10 text-center">
-            <Car className="mx-auto h-10 w-10 text-muted-foreground" />
-            <div className="mt-3 text-sm text-muted-foreground">{t("Zatiaľ žiadne jazdy.")}</div>
-            {smieUpravovat && (
-              <Link
-                to="/jazdy/nova"
-                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-              >
-                <Plus className="h-4 w-4" /> {t("Pridať prvú jazdu")}
-              </Link>
-            )}
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={Car}
+              title="Zatiaľ žiadne jazdy."
+              action={
+                smieUpravovat ? (
+                  <Link
+                    to="/jazdy/nova"
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                  >
+                    <Plus className="h-4 w-4" /> {t("Pridať prvú jazdu")}
+                  </Link>
+                ) : undefined
+              }
+            />
           </div>
         ) : (
           <>
@@ -343,13 +349,13 @@ function TripsPage() {
                     <>
                       <button
                         onClick={() => nastavZaradenie("business")}
-                        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+                        className="h-8 rounded-md border border-input bg-background px-3 text-xs font-semibold hover:bg-accent"
                       >
                         {t("Označiť ako služobné")}
                       </button>
                       <button
                         onClick={() => nastavZaradenie("private")}
-                        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+                        className="h-8 rounded-md border border-input bg-background px-3 text-xs font-semibold hover:bg-accent"
                       >
                         {t("Označiť ako súkromné")}
                       </button>
@@ -362,7 +368,7 @@ function TripsPage() {
             {/* Desktop */}
             <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
               <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="whitespace-nowrap bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="p-3 w-10">
                       <input
@@ -401,7 +407,7 @@ function TripsPage() {
                     */
                     <tr
                       key={r.id}
-                      className="cursor-pointer hover:bg-muted/30"
+                      className="cursor-pointer align-top transition-colors hover:bg-accent/50"
                       onClick={() => navigate({ to: "/jazdy/nova", search: { id: r.id } })}
                     >
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
@@ -416,21 +422,21 @@ function TripsPage() {
                         />
                       </td>
                       <td className="p-3 whitespace-nowrap">{datumNaDoklade(r.trip_date)}</td>
-                      <td className="p-3">
-                        {vehicles[r.vehicle_id]?.name ?? "—"}{" "}
-                        <span className="text-xs text-muted-foreground">
+                      <td className="min-w-[11rem] p-3">
+                        <span className="font-medium">{vehicles[r.vehicle_id]?.name ?? "—"}</span>{" "}
+                        <span className="whitespace-nowrap text-xs text-muted-foreground">
                           {vehicles[r.vehicle_id]?.license_plate}
                         </span>
                       </td>
-                      <td className="p-3">{r.driver_name ?? "—"}</td>
-                      <td className="p-3">{r.start_location ?? "—"}</td>
-                      <td className="p-3">{r.end_location ?? "—"}</td>
+                      <td className="min-w-[8rem] p-3">{r.driver_name ?? "—"}</td>
+                      <td className="min-w-[9rem] p-3">{r.start_location ?? "—"}</td>
+                      <td className="min-w-[9rem] p-3">{r.end_location ?? "—"}</td>
                       {/* Odberateľ je to, čo z jazdy robí služobnú cestu —
                           v knihe jázd patrí do prehľadu, nie len do detailu. */}
                       <td className="p-3">
                         {r.customer_name ?? <span className="text-muted-foreground">—</span>}
                       </td>
-                      <td className="p-3 text-right tabular-nums font-medium">
+                      <td className="p-3 text-right whitespace-nowrap tabular-nums font-semibold">
                         {formatujCislo(r.distance_km, 1)}
                       </td>
                       <td className="p-3 text-right tabular-nums">
@@ -448,22 +454,19 @@ function TripsPage() {
                         {/* Charakter jazdy je štítok, účel je to, čo appka nevie
                             — za čím sa išlo. Kým sa účel vypĺňal zástupným
                             textom, stálo tu dvakrát to isté. */}
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs ${
-                            jeSukromna(r.classification)
-                              ? "bg-muted text-muted-foreground"
-                              : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                          }`}
+                        <StavOdznak
+                          maly
+                          ton={jeSukromna(r.classification) ? "neutralny" : "informacia"}
                         >
                           {jeSukromna(r.classification) ? t("Súkromná") : t("Služobná")}
-                        </span>
+                        </StavOdznak>
                         {ucelNaZobrazenie(r.purpose, r.classification) && (
                           <div className="mt-1 text-xs text-muted-foreground">
                             {ucelNaZobrazenie(r.purpose, r.classification)}
                           </div>
                         )}
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground">
+                      <td className="p-3 whitespace-nowrap text-xs text-muted-foreground">
                         {t(sourceLabel(r.external_source))}
                       </td>
                       <td
@@ -474,7 +477,7 @@ function TripsPage() {
                           <button
                             onClick={() => otvorTrasu(r)}
                             title={t("Zobraziť trasu na mape")}
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                           >
                             <MapIcon className="h-4 w-4" />
                           </button>
@@ -485,14 +488,14 @@ function TripsPage() {
                               to="/jazdy/nova"
                               search={{ id: r.id }}
                               title={t("Upraviť jazdu")}
-                              className="inline-block rounded p-1.5 text-muted-foreground hover:bg-muted"
+                              className="inline-block rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                             >
                               <Pencil className="h-4 w-4" />
                             </Link>
                             <button
                               onClick={() => zmazJednu(r.id)}
                               title={t("Vymazať jazdu")}
-                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                              className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -519,7 +522,7 @@ function TripsPage() {
                       navigate({ to: "/jazdy/nova", search: { id: r.id } });
                     }
                   }}
-                  className="cursor-pointer rounded-xl border border-border bg-card p-3 shadow-sm"
+                  className="cursor-pointer rounded-xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-input"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 gap-2">
@@ -534,7 +537,7 @@ function TripsPage() {
                         className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
                       />
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold">
+                        <div className="truncate text-sm font-semibold">
                           {datumNaDoklade(r.trip_date)} · {vehicles[r.vehicle_id]?.name ?? "—"}
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground truncate">
@@ -557,7 +560,7 @@ function TripsPage() {
                       </div>
                     </div>
                     <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="text-sm font-bold tabular-nums">
+                      <div className="whitespace-nowrap text-sm font-semibold tabular-nums">
                         {formatujCislo(r.distance_km, 1)} km
                       </div>
                       {(r.route || koncoveBody(r)) && (
@@ -604,7 +607,7 @@ function TripsPage() {
                 <button
                   onClick={() => setLimit((l) => l + DAVKA)}
                   disabled={loading}
-                  className="rounded-md border border-border bg-card px-3 py-1.5 font-medium text-foreground hover:bg-secondary disabled:opacity-60"
+                  className="h-9 rounded-md border border-input bg-background px-3 font-semibold text-foreground hover:bg-accent disabled:opacity-60"
                 >
                   {loading
                     ? t("Načítavam…")

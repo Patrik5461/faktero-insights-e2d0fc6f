@@ -82,7 +82,7 @@ export function PredlzitSplatnost({
       </button>
       {otvorene && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dk-prekrytie p-4"
           onClick={() => setOtvorene(false)}
         >
           <div

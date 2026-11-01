@@ -27,14 +27,14 @@ export function EfakturaTestovaciRezim({ className = "" }: { className?: string 
   return (
     <div
       role="status"
-      className={`flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm ${className}`}
+      className={`fk-oznam fk-oznam-pozor flex items-start gap-2.5 rounded-lg px-4 py-3 text-sm ${className}`}
     >
-      <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-800 dark:text-amber-400" />
-      <div>
-        <div className="font-semibold text-foreground">{t("eFaktúra beží v testovacom režime")}</div>
-        <p className="mt-0.5 text-muted-foreground">
+      <FlaskConical className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="min-w-0">
+        <div className="font-semibold">{t("eFaktúra beží v testovacom režime")}</div>
+        <p className="mt-0.5">
           {t("Faktúry sa odosielajú do skúšobného prostredia, nie do skutočnej siete Peppol —")}{" "}
-          <strong className="text-foreground">{t("odberateľovi nepríde nič")}</strong>
+          <strong className="font-semibold">{t("odberateľovi nepríde nič")}</strong>
           {t(", hoci doklad bude vyzerať ako odoslaný. Faktúru mu pošlite e-mailom.")}
         </p>
       </div>

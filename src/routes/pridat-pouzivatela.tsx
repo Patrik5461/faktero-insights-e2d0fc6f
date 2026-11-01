@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { Logo } from "@/components/faktero/Logo";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,8 +30,10 @@ export const Route = createFileRoute("/pridat-pouzivatela")({
 
 /** Logo nad každým stavom stránky — predtým bola chybová hláška sama na prázdnej ploche. */
 function Obal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
+    <div className="min-h-screen bg-page px-4 py-10">
       <div className="mx-auto mb-8 flex max-w-md justify-center">
         <Link to="/" aria-label="Faktero">
           <Logo className="h-9 w-[144px]" />
@@ -153,7 +156,7 @@ function AcceptInvitationPage() {
   if (cakaNaPotvrdenie)
     return (
       <Obal>
-        <h1 className="text-2xl font-bold">{t("Potvrďte e-mail")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Potvrďte e-mail")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Na adresu")} <strong className="text-foreground">{inv?.email}</strong>{" "}
           {t("sme poslali odkaz na potvrdenie účtu. Kliknite naň — vrátite sa sem a pripojíte sa k firme")}{" "}
@@ -171,7 +174,7 @@ function AcceptInvitationPage() {
   if (!token || !inv || !inv.valid) {
     return (
       <Obal className="text-center">
-        <h1 className="text-2xl font-bold">{t("Neplatná pozvánka")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Neplatná pozvánka")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {inv?.reason === "expired"
             ? t("Platnosť pozvánky vypršala.")
@@ -185,13 +188,13 @@ function AcceptInvitationPage() {
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
             to="/prihlasenie"
-            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             {t("Prihlásiť sa")}
           </Link>
           <Link
             to="/"
-            className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
+            className="inline-flex items-center rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors hover:bg-secondary"
           >
             {t("Na úvodnú stránku")}
           </Link>
@@ -205,7 +208,7 @@ function AcceptInvitationPage() {
 
   return (
     <Obal>
-      <h1 className="text-2xl font-bold">{t("Pozvánka do firmy")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t("Pozvánka do firmy")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {t("Firma")} <strong>{inv.company_name}</strong> {t("vás pozvala ako")}{" "}
         <strong>{ROLA_POPIS[inv.role] ? t(ROLA_POPIS[inv.role]) : inv.role}</strong>.
@@ -215,7 +218,7 @@ function AcceptInvitationPage() {
         className="mt-6 space-y-4 rounded-xl border border-border bg-card p-6"
       >
         <label className="block">
-          <span className="text-sm font-medium">{t("E-mail")}</span>
+          <span className="text-sm font-semibold">{t("E-mail")}</span>
           <input
             value={inv.email}
             disabled
@@ -224,7 +227,7 @@ function AcceptInvitationPage() {
         </label>
         {!alreadySignedIn && (
           <label className="block">
-            <span className="text-sm font-medium">{t("Zvoľte heslo (min. 8 znakov)")}</span>
+            <span className="text-sm font-semibold">{t("Zvoľte heslo (min. 8 znakov)")}</span>
             <input
               type="password"
               value={pwd}
@@ -236,7 +239,7 @@ function AcceptInvitationPage() {
           </label>
         )}
         {emailMismatch && (
-          <p className="rounded-md bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+          <p className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
             {t("Ste prihlásený ako")} <strong>{userEmail}</strong>.{" "}
             {t(
               "Pozvánka je pre {email} — buď sa odhláste a prijmite ju pod správnym účtom, alebo pokračujte a pripojte túto firmu k svojmu súčasnému účtu.",
@@ -247,7 +250,7 @@ function AcceptInvitationPage() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {busy
             ? t("Prijímam…")

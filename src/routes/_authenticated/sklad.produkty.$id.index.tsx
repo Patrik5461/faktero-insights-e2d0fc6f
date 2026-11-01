@@ -18,6 +18,8 @@ import { Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucid
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { StavOdznak, TON_DOKLADU } from "@/components/faktero/web/Stav";
 import { preloz } from "@/lib/i18n/jazyk";
 
 import { csvBunka } from "@/lib/faktero/export-helpers";
@@ -115,13 +117,15 @@ function ProductStockDetail() {
   if (loading)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav className="rounded-xl border border-border bg-card" />
       </PageBody>
     );
   if (!data?.product)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Produkt sa nenašiel.")}</div>
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          {t("Produkt sa nenašiel.")}
+        </div>
       </PageBody>
     );
 
@@ -141,14 +145,14 @@ function ProductStockDetail() {
               <Link
                 to="/sklad/produkty/$id/upravit"
                 params={{ id: p.id }}
-                className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 <Pencil className="h-4 w-4" /> {t("Upraviť kartu")}
               </Link>
             )}
             <button
               onClick={exportMovementsCsv}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
             >
               <Download className="h-4 w-4" /> {t("Export pohybov CSV")}
             </button>
@@ -167,7 +171,7 @@ function ProductStockDetail() {
             label="K dispozícii"
             value={`${formatujCislo(Number(data.totalQuantity) - Number(data.reservedQuantity ?? 0), 0, 2)} ${si?.unit ?? ""}`}
           />
-          <Stat label="Hodnota skladu" value={formatujMenu(stockValue, mena.kod)} />
+          <Stat label="Hodnota skladu" value={formatujMenu(stockValue, mena.kod)} suma />
           <Stat
             label="Minimálny stav"
             value={si ? `${formatujCislo(si.min_stock, 0, 2)} ${si.unit}` : "—"}
@@ -175,14 +179,17 @@ function ProductStockDetail() {
           <Stat
             label="Nákupná cena"
             value={si ? formatujJednotkovuCenu(si.purchase_price, mena.kod) : "—"}
+            suma
           />
           <Stat
             label="Predajná cena"
             value={si ? formatujJednotkovuCenu(si.sale_price, mena.kod) : "—"}
+            suma
           />
           <Stat
             label="Priemerná nákupná cena"
             value={si ? formatujJednotkovuCenu(si.avg_purchase_price ?? 0, mena.kod) : "—"}
+            suma
           />
           <Stat
             label="Posledná nákupná cena"
@@ -191,6 +198,7 @@ function ProductStockDetail() {
                 ? formatujJednotkovuCenu(si.last_purchase_price, mena.kod)
                 : "—"
             }
+            suma
           />
         </div>
         {canManage && si && (
@@ -198,7 +206,7 @@ function ProductStockDetail() {
             <button
               onClick={handleRecompute}
               disabled={recomputing}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
               {recomputing ? t("Prepočítavam…") : t("Prepočítať priemernú cenu")}
@@ -206,28 +214,28 @@ function ProductStockDetail() {
           </div>
         )}
 
-        <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
-          <div className="rounded-xl border border-border bg-card p-3">
-            <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="mt-6 grid gap-4 md:grid-cols-[220px_1fr]">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="mb-3 text-sm font-semibold">
               {t("Fotografia")}
             </div>
             {data.photoSignedUrl ? (
               <img
                 src={data.photoSignedUrl}
                 alt={p.name}
-                className="aspect-square w-full rounded-md object-cover"
+                className="aspect-square w-full rounded-lg object-cover"
               />
             ) : (
-              <div className="flex h-24 w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground md:h-auto md:aspect-square">
+              <div className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 text-xs text-muted-foreground md:h-auto md:aspect-square">
                 {t("Bez fotografie")}
               </div>
             )}
           </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex items-center gap-2 text-base font-semibold">
               <Package className="h-4 w-4 text-primary" /> {t("Detaily produktu")}
             </div>
-            <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+            <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
               <Pair label="Názov (SK)" value={p.name} />
               <Pair label="Názov (EN)" value={si?.name_en ?? "—"} />
               <Pair label="Kód" value={p.code ?? "—"} />
@@ -242,10 +250,10 @@ function ProductStockDetail() {
             </dl>
             {(si?.description || p.description) && (
               <div className="mt-3 border-t border-border pt-3 text-sm">
-                <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="mb-1 text-xs font-medium text-muted-foreground">
                   {t("Popis")}
                 </div>
-                <p className="whitespace-pre-wrap text-muted-foreground">
+                <p className="whitespace-pre-wrap break-words text-foreground">
                   {si?.description ?? p.description}
                 </p>
               </div>
@@ -255,7 +263,7 @@ function ProductStockDetail() {
 
         {/* Bez skladovej karty niet čo rezervovať (SA-09a). */}
         {si && (
-          <div className="mt-4">
+          <div className="mt-6">
             <ReservationsPanel
               companyId={si.company_id ?? p.company_id}
               stockItemId={si.id}
@@ -265,8 +273,8 @@ function ProductStockDetail() {
           </div>
         )}
 
-        <div className="mt-4 rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <div className="mt-6 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="mb-3 flex items-center gap-2 text-base font-semibold">
             <Warehouse className="h-4 w-4 text-primary" /> {t("Stav v skladoch")}
           </div>
           {data.levels.length === 0 ? (
@@ -274,7 +282,7 @@ function ProductStockDetail() {
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="border-b border-border text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="p-2">{t("Sklad")}</th>
                   <th className="p-2 text-right">{t("Množstvo")}</th>
@@ -284,11 +292,11 @@ function ProductStockDetail() {
               <tbody className="divide-y divide-border">
                 {data.levels.map((l: any) => (
                   <tr key={l.warehouse_id}>
-                    <td className="p-2">{l.warehouses?.name ?? l.warehouse_id.slice(0, 8)}</td>
-                    <td className="p-2 text-right tabular-nums">
+                    <td className="p-2 font-medium">{l.warehouses?.name ?? l.warehouse_id.slice(0, 8)}</td>
+                    <td className="p-2 text-right whitespace-nowrap tabular-nums font-medium">
                       {formatujCislo(l.quantity, 0, 2)} {si?.unit ?? ""}
                     </td>
-                    <td className="p-2 text-right tabular-nums text-muted-foreground">
+                    <td className="p-2 text-right whitespace-nowrap tabular-nums text-muted-foreground">
                       {formatujCislo(l.reserved_quantity ?? 0, 0, 2)} {si?.unit ?? ""}
                     </td>
                   </tr>
@@ -304,22 +312,22 @@ function ProductStockDetail() {
             <Link
               to="/sklad/prijem"
               search={{ polozka: si.id }}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               {t("Príjem")}
             </Link>
             <Link
               to="/sklad/vydaj"
               search={{ polozka: si.id }}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
             >
               {t("Výdaj")}
             </Link>
           </div>
         )}
 
-        <div className="mt-4 rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <div className="mt-6 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="mb-3 flex items-center gap-2 text-base font-semibold">
             <FileText className="h-4 w-4 text-primary" /> {t("Posledných 20 pohybov")}
           </div>
           {data.movements.length === 0 ? (
@@ -327,7 +335,7 @@ function ProductStockDetail() {
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="border-b border-border text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="p-2">{t("Dátum")}</th>
                   <th className="p-2">{t("Typ")}</th>
@@ -344,16 +352,16 @@ function ProductStockDetail() {
                     <td className="p-2 whitespace-nowrap text-muted-foreground">
                       {new Date(m.created_at).toLocaleString("sk-SK")}
                     </td>
-                    <td className="p-2">{t(TYPE_LABEL[m.type] ?? m.type)}</td>
+                    <td className="p-2 whitespace-nowrap">{t(TYPE_LABEL[m.type] ?? m.type)}</td>
                     <td
-                      className={`p-2 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"}`}
+                      className={`p-2 text-right whitespace-nowrap tabular-nums font-medium ${pohybDelta(m.type, m.quantity) >= 0 ? "text-primary" : "text-destructive"}`}
                     >
                       {pohybText(m.type, m.quantity)}
                     </td>
-                    <td className="p-2 text-right tabular-nums whitespace-nowrap">
+                    <td className="suma p-2 text-right whitespace-nowrap font-normal">
                       {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost, mena.kod) : "—"}
                     </td>
-                    <td className="p-2 text-right tabular-nums whitespace-nowrap">
+                    <td className="suma p-2 text-right whitespace-nowrap">
                       {formatujMenu(hodnotaPohybu(m), mena.kod)}
                     </td>
                     <td className="p-2">
@@ -363,7 +371,7 @@ function ProductStockDetail() {
                       <Link
                         to="/sklad/pohyby/$id"
                         params={{ id: m.id }}
-                        className="text-xs text-primary hover:underline"
+                        className="whitespace-nowrap text-xs font-medium text-primary hover:underline"
                       >
                         {t("Detail")}
                       </Link>
@@ -377,20 +385,26 @@ function ProductStockDetail() {
         </div>
 
         {data.invoiceRefs.length > 0 && (
-          <div className="mt-4 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">{t("Súvisiace faktúry")}</div>
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 text-base font-semibold">{t("Súvisiace faktúry")}</div>
             <ul className="divide-y divide-border text-sm">
               {data.invoiceRefs.map((inv: any) => (
-                <li key={inv.id} className="flex items-center justify-between py-2">
+                <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                   <Link
                     to="/faktury/$id"
                     params={{ id: inv.id }}
-                    className="text-primary hover:underline"
+                    className="cislo-dokladu font-medium text-primary hover:underline"
                   >
                     {inv.invoice_number}
                   </Link>
-                  <span className="text-xs text-muted-foreground">
-                    {t(STAV_FAKTURY[inv.status] ?? inv.status)} · {formatujMenu(inv.total ?? 0, mena.kod)}
+                  <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    <StavOdznak ton={TON_DOKLADU[inv.status] ?? "neutralny"} maly>
+                      {t(STAV_FAKTURY[inv.status] ?? inv.status)}
+                    </StavOdznak>
+                    <span aria-hidden>·</span>
+                    <span className="suma whitespace-nowrap text-sm text-foreground">
+                      {formatujMenu(inv.total ?? 0, mena.kod)}
+                    </span>
                   </span>
                 </li>
               ))}
@@ -402,12 +416,16 @@ function ProductStockDetail() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, suma }: { label: string; value: string; suma?: boolean }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</div>
-      <div className="mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl">{value}</div>
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="text-sm text-muted-foreground">{t(label)}</div>
+      <div
+        className={`mt-1 break-words text-lg font-semibold tabular-nums sm:text-xl ${suma ? "suma" : ""}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -444,8 +462,8 @@ function Pair({ label, value }: { label: string; value: string }) {
   const { t } = useT();
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</dt>
-      <dd className="mt-0.5">{value}</dd>
+      <dt className="text-xs font-medium text-muted-foreground">{t(label)}</dt>
+      <dd className="mt-0.5 break-words">{value}</dd>
     </div>
   );
 }

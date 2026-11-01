@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, Bot, CheckCheck, Loader2, Wand2 } from "lucide-react";
+import { AlertTriangle, Bot, CheckCheck, Loader2, Search, Wand2 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
@@ -26,6 +26,8 @@ import {
   vsetkyZobrazeneVybrane,
   vybraneZobrazene,
 } from "@/lib/faktero/vyber-zobrazenych";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/na-kontrolu")({
   head: ({ match }) => ({
@@ -160,7 +162,7 @@ function NaKontroluPage() {
       <Link
         to="/prijate-faktury/$id"
         params={{ id: r.id }}
-        className="font-medium text-primary hover:underline"
+        className="cislo-dokladu font-medium text-primary hover:underline"
       >
         {r.cislo || "—"}
       </Link>
@@ -168,7 +170,7 @@ function NaKontroluPage() {
       <Link
         to="/faktury/$id"
         params={{ id: r.id }}
-        className="font-medium text-primary hover:underline"
+        className="cislo-dokladu font-medium text-primary hover:underline"
       >
         {r.cislo || "—"}
       </Link>
@@ -176,7 +178,7 @@ function NaKontroluPage() {
       <Link
         to="/doklady/novy"
         search={{ id: r.id } as any}
-        className="font-medium text-primary hover:underline"
+        className="cislo-dokladu font-medium text-primary hover:underline"
       >
         {r.cislo || t("bloček")}
       </Link>
@@ -193,7 +195,7 @@ function NaKontroluPage() {
           <button
             onClick={() => void navrhnut()}
             disabled={!!navrhujem}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
           >
             {navrhujem ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -214,12 +216,12 @@ function NaKontroluPage() {
         )}
 
         <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
             {t("Druh")}
             <select
               value={typ}
               onChange={(e) => setTyp(e.target.value as any)}
-              className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm"
+              className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
             >
               {TYPY.map((x) => (
                 <option key={x.kod} value={x.kod}>
@@ -228,12 +230,12 @@ function NaKontroluPage() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
             {t("Stav návrhu")}
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as Filter)}
-              className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm"
+              className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
             >
               <option value="vsetky">{t("Všetky")}</option>
               <option value="navrh">{t("Návrh bez blokátora")}</option>
@@ -241,12 +243,12 @@ function NaKontroluPage() {
               <option value="bez_navrhu">{t("Bez návrhu")}</option>
             </select>
           </label>
-          <label className="text-xs text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
             {t("Zdroj")}
             <select
               value={zdroj}
               onChange={(e) => setZdroj(e.target.value)}
-              className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm"
+              className="mt-1 block h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
             >
               <option value="">{t("Všetky")}</option>
               <option value="pravidlo">{t("pravidlo")}</option>
@@ -254,19 +256,19 @@ function NaKontroluPage() {
               <option value="ai">AI</option>
             </select>
           </label>
-          <label className="min-w-0 flex-1 text-xs text-muted-foreground">
+          <label className="min-w-[12rem] flex-1 text-xs font-medium text-muted-foreground">
             {t("Hľadať")}
             <input
               value={hladaj}
               onChange={(e) => setHladaj(e.target.value)}
               placeholder={t("Číslo alebo partner")}
-              className="mt-1 block h-9 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm"
+              className="mt-1 block h-9 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm text-foreground"
             />
           </label>
           <button
             onClick={() => void potvrdit()}
             disabled={busy || !naPotvrdenie.length}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -278,8 +280,8 @@ function NaKontroluPage() {
         </div>
 
         {riadky === null ? (
-          <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
+          <div className="mt-4 rounded-xl border border-border bg-card">
+            <NacitavanieStav />
           </div>
         ) : chyba ? (
           <div
@@ -302,15 +304,18 @@ function NaKontroluPage() {
             </button>
           </div>
         ) : zobrazene.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            {riadky.length ? t("Filtru nezodpovedá žiadny doklad.") : t("Všetko je zaúčtované. 🎉")}
+          <div className="mt-4 rounded-xl border border-dashed border-border bg-card">
+            <EmptyState
+              icon={riadky.length ? Search : CheckCheck}
+              title={riadky.length ? "Filtru nezodpovedá žiadny doklad." : "Všetko je zaúčtované. 🎉"}
+            />
           </div>
         ) : (
           <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="border-b border-border text-left text-xs text-muted-foreground">
+              <thead className="border-b border-border bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                 <tr>
-                  <th className="w-8 p-3">
+                  <th className="w-8 px-3 py-2.5">
                     <input
                       type="checkbox"
                       aria-label={t("Vybrať všetky")}
@@ -319,12 +324,12 @@ function NaKontroluPage() {
                     />
                     <span className="sr-only">{t("Výber")}</span>
                   </th>
-                  <th className="p-3">{t("Doklad")}</th>
-                  <th className="p-3">{t("Partner")}</th>
-                  <th className="p-3">{t("Dátum")}</th>
-                  <th className="p-3 text-right">{t("Suma")}</th>
-                  <th className="p-3">{t("Návrh")}</th>
-                  <th className="p-3">{t("Prečo čaká")}</th>
+                  <th className="whitespace-nowrap px-3 py-2.5">{t("Doklad")}</th>
+                  <th className="whitespace-nowrap px-3 py-2.5">{t("Partner")}</th>
+                  <th className="whitespace-nowrap px-3 py-2.5">{t("Dátum")}</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right">{t("Suma")}</th>
+                  <th className="whitespace-nowrap px-3 py-2.5">{t("Návrh")}</th>
+                  <th className="whitespace-nowrap px-3 py-2.5">{t("Prečo čaká")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,7 +343,7 @@ function NaKontroluPage() {
                     .filter(Boolean)
                     .join(" · ");
                   return (
-                    <tr key={kluc(r)} className="border-b border-border last:border-0 align-top">
+                    <tr key={kluc(r)} className="border-b border-border align-top last:border-0 hover:bg-muted/30">
                       <td className="p-3">
                         <input
                           type="checkbox"
@@ -353,7 +358,7 @@ function NaKontroluPage() {
                         />
                       </td>
                       <td className="p-3">
-                        <div className="text-[11px] uppercase text-muted-foreground">
+                        <div className="whitespace-nowrap text-xs text-muted-foreground">
                           {t(NAZOV_TYPU[r.typ])}
                         </div>
                         {odkaz(r)}
@@ -364,7 +369,7 @@ function NaKontroluPage() {
                       <td className="whitespace-nowrap p-3">
                         {r.datum ? new Date(r.datum).toLocaleDateString(loc) : "—"}
                       </td>
-                      <td className="whitespace-nowrap p-3 text-right tabular-nums">
+                      <td className="suma whitespace-nowrap p-3 text-right">
                         {r.suma != null
                           ? r.suma.toLocaleString(loc, {
                               style: "currency",
@@ -387,7 +392,7 @@ function NaKontroluPage() {
                       </td>
                       <td className="p-3">
                         {n?.blokatory?.length ? (
-                          <ul className="space-y-0.5 text-xs text-amber-800 dark:text-amber-300">
+                          <ul className="space-y-0.5 text-xs text-warning">
                             {n.blokatory.map((b) => (
                               <li key={b} className="flex items-start gap-1">
                                 <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />

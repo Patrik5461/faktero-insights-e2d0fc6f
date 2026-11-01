@@ -86,14 +86,14 @@ export function PredkontaciaDokladovOkno({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dk-prekrytie p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Predkontácia vybraných dokladov")}
-        className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-xl"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-popover p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">{t("Predkontácia — {pocet}", { pocet })}</h2>
@@ -119,7 +119,7 @@ export function PredkontaciaDokladovOkno({
           <button
             onClick={ulozit}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("Nastaviť")}

@@ -35,6 +35,8 @@ import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { odkazNaZaradenie } from "@/lib/faktero/efaktura/zaevidovanie-efaktury";
+import { StavOdznak, TON_EFAKTURY, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté eFaktúry — Faktero") }] }),
@@ -66,14 +68,24 @@ const NAZVY_STAVOV: Record<string, string> = {
   archived: "Archivovaná",
 };
 
+/* Tón stavu prijatej eFaktúry — accepted/rejected z TON_EFAKTURY, ostatné
+   stavy rozobratia sú len tu (Stav.tsx ich nemá). */
+const TON_PRIJATEJ: Record<string, TonStavu> = {
+  ...TON_EFAKTURY,
+  received: "informacia",
+  parsed: "pozor",
+  parse_error: "chyba",
+  matched: "uspech",
+  archived: "neutralny",
+};
+
 function StavDokladu({ stav }: { stav: string | null }) {
   const { t } = useT();
-  const zle = stav === "parse_error" || stav === "rejected";
   const nazov = stav ? NAZVY_STAVOV[stav] : null;
   return (
-    <span className={`text-xs ${zle ? "text-destructive" : "text-muted-foreground"}`}>
+    <StavOdznak ton={tonStavu(TON_PRIJATEJ, stav)}>
       {nazov ? t(nazov) : (stav ?? "—")}
-    </span>
+    </StavOdznak>
   );
 }
 
@@ -223,7 +235,7 @@ function PrilohyPrijatejOkno({
                   <button
                     onClick={() => stiahni(p)}
                     disabled={stahujem === p.index}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
                   >
                     <Download className="h-3.5 w-3.5" />{" "}
                     {stahujem === p.index ? t("Sťahujem…") : t("Stiahnuť")}
@@ -233,7 +245,7 @@ function PrilohyPrijatejOkno({
                     href={p.odkaz}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary"
                   >
                     <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť odkaz")}
                   </a>
@@ -464,28 +476,28 @@ function ReceivedPage() {
         <button
           onClick={() => otvorNahlad(r.id)}
           disabled={nacitavamNahlad === r.id}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
         >
           <Eye className="h-3.5 w-3.5" />{" "}
           {nacitavamNahlad === r.id ? t("Načítavam…") : t("Náhľad")}
         </button>
         <button
           onClick={() => setPrilohyOkno({ id: r.id, cislo: r.document_number ?? "" })}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+          className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary"
         >
           <Paperclip className="h-3.5 w-3.5" /> {t("Prílohy")}
         </button>
         {r.matched_supplier_invoice_id ? (
           <a
             href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+            className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary"
           >
             <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť doklad")}
           </a>
         ) : r.nespracovany_id ? (
           <a
             href={`/nespracovane/${r.nespracovany_id}`}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+            className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary"
           >
             <ExternalLink className="h-3.5 w-3.5" /> {t("V Nespracovaných")}
           </a>
@@ -493,7 +505,7 @@ function ReceivedPage() {
           <button
             onClick={() => zaevidujDoklad(r.id)}
             disabled={evidujem === r.id}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             <FileInput className="h-3.5 w-3.5" />{" "}
             {evidujem === r.id ? t("Evidujem…") : t("Zaevidovať")}
@@ -516,7 +528,7 @@ function ReceivedPage() {
               onClick={() => void stiahniBis()}
               disabled={bisBusy}
               title={t("Pôvodné XML zobrazených eFaktúr v ZIP-e — Pohoda ich načíta povelom Import z BIS.")}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm hover:bg-secondary disabled:opacity-50"
             >
               <Download className="h-4 w-4" /> {t("XML pre Pohodu (BIS)")}
             </button>
@@ -525,14 +537,14 @@ function ReceivedPage() {
             to="/efaktura"
             hash="prijem"
             title={t("Kam sa zaevidovaná eFaktúra zaradí, automatické zaevidovanie")}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm hover:bg-secondary"
           >
             <Settings2 className="h-4 w-4" /> {t("Nastavenia príjmu")}
           </Link>
           <button
             onClick={stiahniNove}
             disabled={stahujem || !companyId}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${stahujem ? "animate-spin" : ""}`} />{" "}
             {stahujem ? t("Sťahujem…") : t("Stiahnuť nové")}
@@ -543,15 +555,15 @@ function ReceivedPage() {
       />
       <PageBody>
         {lenOdosielanie && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
-            <Send className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div>
-              <div className="font-medium">
+          <div className="fk-oznam fk-oznam-info mb-6 flex items-start gap-3 rounded-xl p-4 text-sm">
+            <Send className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="min-w-0">
+              <div className="font-semibold">
                 {poskytovatel
                   ? t("Len odosielanie — prijaté eFaktúry prichádzajú k {poskytovatel}", { poskytovatel })
                   : t("Len odosielanie — prijaté eFaktúry prichádzajú k vášmu poskytovateľovi príjmu")}
               </div>
-              <p className="mt-1 text-muted-foreground">
+              <p className="mt-1">
                 {t("Z Faktera eFaktúry len odosielate. Doručené eFaktúry aj odpovede odberateľov nájdete u poskytovateľa, u ktorého ich prijímate.")}
               </p>
             </div>
@@ -577,14 +589,12 @@ function ReceivedPage() {
         )}
         {!q.isLoading && riadky.length === 0 ? (
           lenOdosielanie ? null : (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
-            <div className="rounded-full bg-primary/10 p-4">
-              <Inbox className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="text-lg font-semibold">{t("Zatiaľ tu nič nie je")}</h2>
-            <p className="max-w-md text-sm text-muted-foreground">
-              {t("Doručené eFaktúry sa sem stiahnu tlačidlom hore. Firma musí byť spárovaná s ePoštákom — spraví sa to na prehľade eFaktúry.")}
-            </p>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={Inbox}
+              title="Zatiaľ tu nič nie je"
+              description="Doručené eFaktúry sa sem stiahnu tlačidlom hore. Firma musí byť spárovaná s ePoštákom — spraví sa to na prehľade eFaktúry."
+            />
           </div>
           )
         ) : (
@@ -622,17 +632,17 @@ function ReceivedPage() {
             desktop={
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                 <tr>
-                  <th className="p-3">{t("Doručené")}</th>
-                  <th className="p-3">{t("Dodávateľ")}</th>
-                  <th className="p-3">{t("Doklad")}</th>
-                  <th className="p-3">{t("Vystavená")}</th>
-                  <th className="p-3">{t("Splatnosť")}</th>
-                  <th className="p-3 text-right">{t("Suma")}</th>
-                  <th className="p-3">{t("Stav")}</th>
-                  <th className="p-3">{t("Kontrola")}</th>
-                  <th className="p-3 text-right">{t("Akcie")}</th>
+                  <th className="px-2 py-3">{t("Doručené")}</th>
+                  <th className="px-2 py-3">{t("Dodávateľ")}</th>
+                  <th className="px-2 py-3">{t("Doklad")}</th>
+                  <th className="px-2 py-3">{t("Vystavená")}</th>
+                  <th className="px-2 py-3">{t("Splatnosť")}</th>
+                  <th className="px-2 py-3 text-right">{t("Suma")}</th>
+                  <th className="px-2 py-3">{t("Stav")}</th>
+                  <th className="px-2 py-3">{t("Kontrola")}</th>
+                  <th className="px-2 py-3 text-right">{t("Akcie")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -653,29 +663,31 @@ function ReceivedPage() {
                 {zobrazene.map((r) => (
                   <Fragment key={r.id}>
                   <tr>
-                    <td className="p-3 text-xs text-muted-foreground">
+                    <td className="px-2 py-3 text-xs text-muted-foreground tabular-nums">
                       {r.received_at ? new Date(r.received_at).toLocaleString("sk-SK") : "—"}
                     </td>
-                    <td className="p-3">
-                      {r.sender_name ?? "—"}
+                    <td className="max-w-[190px] px-2 py-3 2xl:max-w-[280px]">
+                      <span className="block truncate" title={r.sender_name ?? undefined}>
+                        {r.sender_name ?? "—"}
+                      </span>
                       {r.sender_participant_id && (
                         <div className="font-mono text-[11px] text-muted-foreground">
                           {r.sender_participant_id}
                         </div>
                       )}
                     </td>
-                    <td className="p-3 font-medium">{r.document_number ?? "—"}</td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="cislo-dokladu whitespace-nowrap px-2 py-3">{r.document_number ?? "—"}</td>
+                    <td className="px-2 py-3 whitespace-nowrap">
                       {r.issue_date ? datumNaDoklade(r.issue_date) : "—"}
                     </td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="px-2 py-3 whitespace-nowrap">
                       {r.due_date ? datumNaDoklade(r.due_date) : "—"}
                     </td>
-                    <td className="p-3 text-right tabular-nums">{suma(r.total, r.currency)}</td>
-                    <td className="p-3">
+                    <td className="suma whitespace-nowrap px-2 py-3 text-right">{suma(r.total, r.currency)}</td>
+                    <td className="whitespace-nowrap px-2 py-3">
                       <StavDokladu stav={r.status} />
                     </td>
-                    <td className="p-3">
+                    <td className="px-2 py-3">
                       <OdznakKontrolyEfaktury
                         chyby={kontroly.get(r.id)?.kontrola_chyby}
                         varovania={kontroly.get(r.id)?.kontrola_varovania}
@@ -683,7 +695,7 @@ function ReceivedPage() {
                         onClick={() => setRozbalene((x) => (x === r.id ? null : r.id))}
                       />
                     </td>
-                    <td className="p-3">
+                    <td className="px-2 py-3">
                       <div className="flex flex-wrap justify-end gap-1.5">
                         {akcieRiadku(r)}
                       </div>
@@ -691,7 +703,7 @@ function ReceivedPage() {
                   </tr>
                   {rozbalene === r.id && (
                     <tr className="bg-muted/20">
-                      <td colSpan={9} className="p-3">
+                      <td colSpan={9} className="px-2 py-3">
                         <NalezyPrijatej receivedId={r.id} />
                       </td>
                     </tr>

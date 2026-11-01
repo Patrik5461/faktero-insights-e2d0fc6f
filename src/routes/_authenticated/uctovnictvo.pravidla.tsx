@@ -46,6 +46,8 @@ import {
   stropNahladu,
   type StropNahladu,
 } from "@/lib/faktero/pravidla-zobrazenie";
+import { triedaStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -417,7 +419,7 @@ function PravidlaPage() {
             onClick={() =>
               setUprava({ ...NOVE, druh: zalozka === "vsetky" ? null : zalozka })
             }
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             <Plus className="h-4 w-4" /> {t("Nové pravidlo")}
           </button>
@@ -430,7 +432,7 @@ function PravidlaPage() {
             <AutopilotKarta companyId={cid} />
           </div>
         )}
-        <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground sm:p-5">
           {t(
             "Pravidlo zaberie pri každom novom doklade — naskenovanom, z e-mailu, z appky aj z importu. Dopĺňa len to, čo je prázdne; čo vyplníte sami, neprepíše. Predkontácia a členenie DPH idú do Pohody namiesto spoločných z",
           )}{" "}
@@ -451,15 +453,15 @@ function PravidlaPage() {
                 role="tab"
                 aria-selected={zalozka === z.kod}
                 onClick={() => setZalozka(z.kod)}
-                className={`rounded-md px-3 py-1.5 text-sm ${
+                className={`whitespace-nowrap rounded-md border px-3 py-1.5 text-sm ${
                   zalozka === z.kod
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-border hover:bg-secondary"
+                    ? "border-primary/40 bg-primary/10 font-semibold text-primary-hover"
+                    : "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 {t(z.nazov)}
                 {pravidla && z.kod !== "predlohy" ? (
-                  <span className="ml-1 opacity-70">{pocet}</span>
+                  <span className="ml-1 tabular-nums opacity-80">{pocet}</span>
                 ) : null}
               </button>
             );
@@ -471,29 +473,29 @@ function PravidlaPage() {
             <PredlohyUctovania companyId={cid} />
           ) : null
         ) : pravidla === null ? (
-          <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
+          <div className="mt-4 rounded-xl border border-border bg-card">
+            <NacitavanieStav />
           </div>
         ) : prazdnyStavPravidiel(pravidla, zalozka) === "ziadne" ? (
-          <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <div className="mt-4 rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center text-sm text-muted-foreground">
             {t("Zatiaľ žiadne pravidlo. Typický začiatok: „dodávateľ obsahuje")} <em>Slovnaft</em>{" "}
             {t("→ kategória Palivo, predkontácia PHM“.")}
           </div>
         ) : prazdnyStavPravidiel(pravidla, zalozka) === "zalozka" ? (
-          <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <div className="mt-4 rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center text-sm text-muted-foreground">
             {t("V tejto záložke zatiaľ nie je žiadne pravidlo.")}
           </div>
         ) : (
           <>
-            <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-card">
+            <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="border-b border-border text-left text-xs text-muted-foreground">
+                <thead className="border-b border-border bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
-                    <th className="p-3">{t("Poradie")}</th>
-                    <th className="p-3">{t("Pravidlo")}</th>
-                    <th className="p-3">{t("Keď")}</th>
-                    <th className="p-3">{t("Doplní")}</th>
-                    <th className="p-3 text-right">
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Poradie")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Pravidlo")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Keď")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Doplní")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right">
                       {t("Sedí na")}
                       {pravidla.some(
                         (r) => vZalozke(r, zalozka) && pocetZoStropu(r, strop),
@@ -503,7 +505,7 @@ function PravidlaPage() {
                         </span>
                       ) : null}
                     </th>
-                    <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
+                    <th className="px-3 py-2.5"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -532,7 +534,7 @@ function PravidlaPage() {
                             setTahane(null);
                           }}
                           onDragEnd={() => setTahane(null)}
-                          className={`border-b border-border last:border-0 ${r.aktivne ? "" : "opacity-50"} ${tahane === r.id ? "bg-secondary" : ""}`}
+                          className={`border-b border-border align-top last:border-0 hover:bg-muted/30 ${r.aktivne ? "" : "opacity-50"} ${tahane === r.id ? "bg-secondary" : ""}`}
                         >
                           <td className="p-3 tabular-nums">
                             <div className="flex items-center gap-1">
@@ -559,21 +561,21 @@ function PravidlaPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="p-3 font-medium">
-                            {r.nazov}
+                          <td className="min-w-[10rem] p-3 font-semibold">
+                            <span className="break-words">{r.nazov}</span>
                             {zalozka === "vsetky" && (
-                              <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+                              <span className="ml-2 inline-block rounded-sm border border-border bg-secondary px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                                 {t(DRUHY_PRAVIDIEL.find((d) => d.kod === (r.druh ?? null))?.nazov ?? "")}
                               </span>
                             )}
                             {!r.aktivne && (
-                              <span className="ml-2 text-xs font-normal">{t("(vypnuté)")}</span>
+                              <span className={`ml-2 ${triedaStavu("neutralny", true)}`}>{t("(vypnuté)")}</span>
                             )}
                           </td>
-                          <td className="p-3">{ked}</td>
-                          <td className="p-3">{doplni}</td>
+                          <td className="min-w-[12rem] p-3 break-words">{ked}</td>
+                          <td className="min-w-[12rem] p-3 break-words">{doplni}</td>
                           <td
-                            className="p-3 text-right tabular-nums text-muted-foreground"
+                            className="whitespace-nowrap p-3 text-right tabular-nums text-muted-foreground"
                             title={
                               pocet !== null && pocetZoStropu(r, strop)
                                 ? t("Počíta sa len z posledných 1 000 dokladov.")
@@ -603,14 +605,14 @@ function PravidlaPage() {
                             <div className="flex justify-end gap-1">
                               <button
                                 onClick={() => void prepni(r)}
-                                className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                                className="rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold hover:bg-secondary"
                               >
                                 {r.aktivne ? t("Vypnúť") : t("Zapnúť")}
                               </button>
                               <button
                                 onClick={() => setUprava({ ...r })}
                                 aria-label={t("Upraviť {nazov}", { nazov: r.nazov })}
-                                className="rounded-md border border-border p-1.5 hover:bg-secondary"
+                                className="rounded-md border border-input bg-card p-1.5 hover:bg-secondary"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
@@ -633,7 +635,7 @@ function PravidlaPage() {
               <button
                 onClick={() => void uplatni()}
                 disabled={uplatnujem}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
               >
                 {uplatnujem ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -642,7 +644,7 @@ function PravidlaPage() {
                 )}
                 {t("Uplatniť na doklady a faktúry, ktoré už sú")}
               </button>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 {t(
                   "Týka sa bločkov a prijatých či vystavených faktúr, ktoré ešte neodišli do účtovníctva (vystavené: nie sú zaúčtované) a žiadne pravidlo ich zatiaľ nedoplnilo.",
                 )}
@@ -771,12 +773,12 @@ function UpravaPravidla({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/30 p-4 backdrop-blur-[2px]" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={p.id ? t("Upraviť pravidlo") : t("Nové pravidlo")}
-        className="w-full max-w-xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-popover p-5 shadow-2xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold">{p.id ? t("Upraviť pravidlo") : t("Nové pravidlo")}</h3>
@@ -806,13 +808,13 @@ function UpravaPravidla({
           </select>
         </label>
 
-        <div className="mt-5 text-sm font-medium">
+        <div className="mt-5 border-t border-border pt-4 text-sm font-semibold">
           {banka ? t("Keď pohyb na výpise…") : t("Keď doklad…")}
         </div>
         {banka ? (
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Na účte (IBAN)")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Na účte (IBAN)")}</span>
               <input
                 value={p.bankovy_ucet ?? ""}
                 onChange={(e) => zmen({ bankovy_ucet: e.target.value })}
@@ -827,7 +829,7 @@ function UpravaPravidla({
               </datalist>
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Smer")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Smer")}</span>
               <select
                 value={p.smer ?? ""}
                 onChange={(e) => zmen({ smer: (e.target.value || null) as Pravidlo["smer"] })}
@@ -842,7 +844,7 @@ function UpravaPravidla({
               </select>
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Typ pohybu")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Typ pohybu")}</span>
               <select
                 value={p.oznacenie ?? ""}
                 onChange={(e) => zmen({ oznacenie: e.target.value || null })}
@@ -857,7 +859,7 @@ function UpravaPravidla({
               </select>
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 {t("Protistrana alebo popis obsahuje")}
               </span>
               <input
@@ -868,7 +870,7 @@ function UpravaPravidla({
               />
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("IBAN protistrany")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("IBAN protistrany")}</span>
               <input
                 value={p.iban_protistrany ?? ""}
                 onChange={(e) => zmen({ iban_protistrany: e.target.value })}
@@ -877,7 +879,7 @@ function UpravaPravidla({
               />
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Variabilný symbol")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Variabilný symbol")}</span>
               <input
                 value={p.variabilny_symbol ?? ""}
                 onChange={(e) => zmen({ variabilny_symbol: e.target.value })}
@@ -887,7 +889,7 @@ function UpravaPravidla({
               />
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Poradie (menšie vyhráva)")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Poradie (menšie vyhráva)")}</span>
               <input
                 type="number"
                 value={p.poradie}
@@ -899,7 +901,7 @@ function UpravaPravidla({
         ) : (
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("{partner} obsahuje", { partner })}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("{partner} obsahuje", { partner })}</span>
               <input
                 value={p.dodavatel_text ?? ""}
                 onChange={(e) => zmen({ dodavatel_text: e.target.value })}
@@ -908,7 +910,7 @@ function UpravaPravidla({
               />
             </label>
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("alebo má IČO")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("alebo má IČO")}</span>
               <input
                 value={p.dodavatel_ico ?? ""}
                 onChange={(e) => zmen({ dodavatel_ico: e.target.value })}
@@ -919,7 +921,7 @@ function UpravaPravidla({
             </label>
             {(p.druh === "prijata" || vystavena) && (
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">{t("Typ faktúry")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("Typ faktúry")}</span>
                 <select
                   value={p.typ_dokladu ?? ""}
                   onChange={(e) => zmen({ typ_dokladu: e.target.value || null })}
@@ -936,7 +938,7 @@ function UpravaPravidla({
             )}
             {!vystavena && (
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">{t("Spôsob úhrady")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("Spôsob úhrady")}</span>
                 <select
                   value={p.sposob_uhrady ?? ""}
                   onChange={(e) => zmen({ sposob_uhrady: e.target.value || null })}
@@ -952,7 +954,7 @@ function UpravaPravidla({
               </label>
             )}
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 {vystavena ? t("Faktúru vystavil") : t("Doklad nahral")}
               </span>
               <select
@@ -970,7 +972,7 @@ function UpravaPravidla({
             </label>
             {!vystavena && (
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">{t("Predmet mailu obsahuje")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("Predmet mailu obsahuje")}</span>
                 <input
                   value={p.predmet_text ?? ""}
                   onChange={(e) => zmen({ predmet_text: e.target.value })}
@@ -981,7 +983,7 @@ function UpravaPravidla({
             )}
             {!vystavena && (
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">{t("E-mail odosielateľa obsahuje")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("E-mail odosielateľa obsahuje")}</span>
                 <input
                   value={p.odosielatel_text ?? ""}
                   onChange={(e) => zmen({ odosielatel_text: e.target.value })}
@@ -992,7 +994,7 @@ function UpravaPravidla({
             )}
             {!vystavena && (
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">{t("Krajina dodávateľa")}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("Krajina dodávateľa")}</span>
                 <input
                   value={p.krajina ?? ""}
                   onChange={(e) => zmen({ krajina: e.target.value.toUpperCase().slice(0, 2) })}
@@ -1004,7 +1006,7 @@ function UpravaPravidla({
             )}
             {p.druh !== "blocek" && !vystavena && (
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs font-medium text-muted-foreground">
                   {t("Variabilný symbol (stály, napr. zmluva)")}
                 </span>
                 <input
@@ -1017,7 +1019,7 @@ function UpravaPravidla({
               </label>
             )}
             <label className="block text-sm">
-              <span className="text-xs text-muted-foreground">{t("Poradie (menšie vyhráva)")}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("Poradie (menšie vyhráva)")}</span>
               <input
                 type="number"
                 value={p.poradie}
@@ -1042,7 +1044,7 @@ function UpravaPravidla({
               <button
                 type="button"
                 onClick={() => zmen({ odosielatel_text: navrhPodmienok.email ?? null })}
-                className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+                className="rounded-md border border-input bg-card px-2 py-1 font-semibold hover:bg-secondary"
               >
                 + {t("e-mail {x}", { x: navrhPodmienok.email })}
               </button>
@@ -1051,7 +1053,7 @@ function UpravaPravidla({
               <button
                 type="button"
                 onClick={() => zmen({ variabilny_symbol: navrhPodmienok.vs ?? null })}
-                className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+                className="rounded-md border border-input bg-card px-2 py-1 font-semibold hover:bg-secondary"
               >
                 + {t("VS {x}", { x: navrhPodmienok.vs })}
               </button>
@@ -1059,7 +1061,7 @@ function UpravaPravidla({
           </div>
         ) : null}
 
-        <div className="mt-5 text-sm font-medium">{t("…doplní sa")}</div>
+        <div className="mt-5 border-t border-border pt-4 text-sm font-semibold">{t("…doplní sa")}</div>
         <div className="mt-2 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
           {banka && (
             <label className="block text-sm">
@@ -1237,7 +1239,7 @@ function UpravaPravidla({
         </label>
 
         {sedi !== null && (
-          <p className="mt-4 rounded-md bg-secondary/50 p-3 text-sm">
+          <p className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm">
             {t("Zo súčasných dokladov by sedelo na")}{" "}
             <strong>
               {t(
@@ -1250,17 +1252,17 @@ function UpravaPravidla({
         )}
         {chyba && p.nazov && <p className="mt-3 text-sm text-destructive">{t(chyba)}</p>}
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
           >
             {t("Zrušiť")}
           </button>
           <button
             onClick={() => void uloz()}
             disabled={busy || !!chyba}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("Uložiť")}

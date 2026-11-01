@@ -146,16 +146,16 @@ function VehiclesPage() {
         description={t("Správa služobných vozidiel a evidencia PHM.")}
         action={
           smieUpravovat && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFuelOpen(true)}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+                className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 text-sm hover:bg-accent font-semibold"
               >
                 <Fuel className="h-4 w-4" /> {t("Tankovanie")}
               </button>
               <button
                 onClick={() => setEditing(EMPTY)}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" /> {t("Pridať vozidlo")}
               </button>
@@ -166,15 +166,15 @@ function VehiclesPage() {
       <PageBody>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {vehicles.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center sm:col-span-2 lg:col-span-3">
-              <div className="text-sm font-medium">{t("Zatiaľ nemáte žiadne vozidlo")}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-input bg-card p-8 text-center sm:col-span-2 lg:col-span-3">
+              <div className="text-[15px] font-semibold">{t("Zatiaľ nemáte žiadne vozidlo")}</div>
+              <div className="mt-1 text-sm text-muted-foreground">
                 {t("Pridajte prvé vozidlo a môžete zapisovať jazdy aj tankovania.")}
               </div>
               {smieUpravovat && (
                 <button
                   onClick={() => setEditing(EMPTY)}
-                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   <Plus className="h-4 w-4" /> {t("Pridať vozidlo")}
                 </button>
@@ -184,12 +184,12 @@ function VehiclesPage() {
           {vehicles.map((v) => (
             <div
               key={v.id}
-              className={`rounded-xl border p-4 shadow-sm ${v.active ? "border-border bg-card" : "border-border bg-muted/30 opacity-70"}`}
+              className={`rounded-xl border p-4 shadow-sm ${v.active ? "border-border bg-card" : "border-dashed border-input bg-muted/40 opacity-75"}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="truncate text-base font-semibold">{v.name}</div>
-                  <div className="text-xs text-muted-foreground">{v.license_plate ?? "—"}</div>
+                  <div className="text-xs font-semibold tabular-nums text-muted-foreground">{v.license_plate ?? "—"}</div>
                 </div>
                 {smieUpravovat && (
                   <div className="flex gap-1">
@@ -197,14 +197,14 @@ function VehiclesPage() {
                       onClick={() => setEditing(v)}
                       title={t("Upraviť vozidlo")}
                       aria-label={t("Upraviť vozidlo")}
-                      className="rounded p-1.5 hover:bg-muted"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => toggleActive(v)}
                       title={v.active ? t("Deaktivovať") : t("Aktivovať")}
-                      className="rounded p-1.5 hover:bg-muted"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       <Power className="h-4 w-4" />
                     </button>
@@ -212,14 +212,14 @@ function VehiclesPage() {
                       onClick={() => zmazVozidlo(v)}
                       title={t("Zmazať vozidlo")}
                       aria-label={t("Zmazať vozidlo")}
-                      className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                      className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 )}
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3 text-xs">
                 <div>
                   <dt className="text-muted-foreground">{t("Typ")}</dt>
                   <dd>{v.vehicle_type ?? "—"}</dd>
@@ -245,7 +245,7 @@ function VehiclesPage() {
           ))}
         </div>
 
-        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
+        <h2 className="mt-8 mb-3 text-base font-semibold">
           {t("Posledné tankovania")}
         </h2>
         {/* Mobil: karty — osem stĺpcov sa na 390 px nezmestí. */}
@@ -259,7 +259,7 @@ function VehiclesPage() {
             <div key={f.id} className="rounded-xl border border-border bg-card p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-medium">{f.vehicles?.name ?? "—"}</div>
+                  <div className="truncate font-semibold">{f.vehicles?.name ?? "—"}</div>
                   <div className="text-xs text-muted-foreground">
                     {formatujDatum(f.fuel_date)}
                     {f.station_name ? ` · ${f.station_name}` : ""}
@@ -274,7 +274,7 @@ function VehiclesPage() {
                       onClick={() => zmazTankovanie(f)}
                       title={t("Zmazať tankovanie")}
                       aria-label={t("Zmazať tankovanie")}
-                      className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                      className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -291,7 +291,7 @@ function VehiclesPage() {
         </div>
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="whitespace-nowrap bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
               <tr>
                 <th className="p-3">{t("Dátum")}</th>
                 <th className="p-3">{t("Vozidlo")}</th>
@@ -316,23 +316,23 @@ function VehiclesPage() {
               {fuel.map((f: any) => (
                 <tr key={f.id}>
                   <td className="p-3 whitespace-nowrap">{formatujDatum(f.fuel_date)}</td>
-                  <td className="p-3">{f.vehicles?.name ?? "—"}</td>
+                  <td className="p-3 font-medium">{f.vehicles?.name ?? "—"}</td>
                   <td className="p-3 text-right tabular-nums">{formatujCislo(f.liters, 2)}</td>
                   <td className="p-3 text-right tabular-nums">
                     {formatujJednotkovuCenu(f.price_per_liter, mena.kod)}
                   </td>
-                  <td className="p-3 text-right tabular-nums font-medium whitespace-nowrap">
+                  <td className="p-3 text-right suma">
                     {formatujMenu(f.total_amount, mena.kod)}
                   </td>
                   <td className="p-3 pl-6">{f.station_name ?? "—"}</td>
-                  <td className="p-3">{f.receipt_number ?? "—"}</td>
+                  <td className="p-3 cislo-dokladu whitespace-nowrap">{f.receipt_number ?? "—"}</td>
                   <td className="p-3 text-right">
                     {smieUpravovat && (
                       <button
                         onClick={() => zmazTankovanie(f)}
                         title={t("Zmazať tankovanie")}
                         aria-label={t("Zmazať tankovanie")}
-                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                        className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -375,15 +375,20 @@ function VehicleDialog({
   const [v, setV] = useState<Vehicle>(initial);
   useZatvorNaEscape(onClose);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      data-slot="dialog-overlay"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={v.id ? t("Upraviť vozidlo") : t("Nové vozidlo")}
+        data-slot="dialog-content"
         className="w-full max-w-xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">{v.id ? t("Upraviť vozidlo") : t("Nové vozidlo")}</h2>
+        <h2 data-slot="dialog-title" className="text-lg font-semibold">{v.id ? t("Upraviť vozidlo") : t("Nové vozidlo")}</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -409,7 +414,7 @@ function VehicleDialog({
             onChange={(x) => setV({ ...v, vehicle_type: x })}
           />
           <label className="block">
-            <span className="text-sm font-medium">{t("Palivo")}</span>
+            <span className="text-sm font-semibold">{t("Palivo")}</span>
             <select
               value={v.fuel_type ?? ""}
               onChange={(e) => setV({ ...v, fuel_type: e.target.value })}
@@ -440,13 +445,13 @@ function VehicleDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent font-semibold"
             >
               {t("Zrušiť")}
             </button>
             <button
               type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               {t("Uložiť")}
             </button>
@@ -499,18 +504,23 @@ function FuelDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      data-slot="dialog-overlay"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Nové tankovanie")}
+        data-slot="dialog-content"
         className="w-full max-w-md rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">{t("Nové tankovanie")}</h2>
+        <h2 data-slot="dialog-title" className="text-lg font-semibold">{t("Nové tankovanie")}</h2>
         <form onSubmit={submit} className="mt-4 grid gap-3">
           <label className="block">
-            <span className="text-sm font-medium">{t("Vozidlo *")}</span>
+            <span className="text-sm font-semibold">{t("Vozidlo *")}</span>
             <select
               required
               value={f.vehicle_id}
@@ -549,8 +559,8 @@ function FuelDialog({
               onChange={(x) => setF({ ...f, price_per_liter: x })}
             />
           </div>
-          <div className="rounded-md bg-muted/40 px-3 py-2 text-sm">
-            {t("Spolu:")} <strong className="tabular-nums">{formatujMenu(total, mena.kod)}</strong>
+          <div className="rounded-md border border-border bg-muted/60 px-3 py-2 text-sm">
+            {t("Spolu:")} <strong className="suma">{formatujMenu(total, mena.kod)}</strong>
           </div>
           <In
             label="Čerpacia stanica"
@@ -566,13 +576,13 @@ function FuelDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent font-semibold"
             >
               {t("Zrušiť")}
             </button>
             <button
               type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               {t("Uložiť")}
             </button>
@@ -603,7 +613,7 @@ function In({
   const { t } = useT();
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <input
         type={type}
         step={step}

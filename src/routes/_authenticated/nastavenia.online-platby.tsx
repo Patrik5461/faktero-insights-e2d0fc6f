@@ -34,14 +34,14 @@ function OnlinePlatbyPage() {
       />
       <PageBody>
         <div className="mx-auto max-w-2xl space-y-4">
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
                 <CreditCard className="h-5 w-5" />
               </span>
               <div>
                 <h2 className="text-lg font-semibold">{t("Platby kartou zatiaľ neponúkame")}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 max-w-[75ch] text-sm text-muted-foreground">
                   {t(
                     "Aby ste mohli prijímať platby kartou pod vlastným účtom, potrebuje poskytovateľ platobnej brány zmluvu, ktorá to na spoločnej doméne umožňuje. Kým ju nemáme, funkciu radšej neponúkame, než aby vás sklamala v momente, keď na ňu spoľahnete.",
                   )}
@@ -50,17 +50,17 @@ function OnlinePlatbyPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="text-base font-semibold">
               {t("Čo funguje už teraz")}
             </h3>
             <ul className="mt-4 space-y-4">
               <li className="flex items-start gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary-hover">
                   <QrCode className="h-[18px] w-[18px]" />
                 </span>
                 <span className="text-sm">
-                  <span className="block font-medium">{t("QR platba na každej faktúre")}</span>
+                  <span className="block font-semibold">{t("QR platba na každej faktúre")}</span>
                   <span className="block text-muted-foreground">
                     {t(
                       "Odberateľ naskenuje kód v mobilnej banke a má predvyplnenú sumu aj variabilný symbol. Netreba nič nastavovať — je to na PDF automaticky.",
@@ -69,11 +69,11 @@ function OnlinePlatbyPage() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary-hover">
                   <Landmark className="h-[18px] w-[18px]" />
                 </span>
                 <span className="text-sm">
-                  <span className="block font-medium">{t("Párovanie úhrad z banky")}</span>
+                  <span className="block font-semibold">{t("Párovanie úhrad z banky")}</span>
                   <span className="block text-muted-foreground">
                     {t("Keď platba príde, Faktero ju samo priradí k faktúre a označí ju za uhradenú.")}
                   </span>
@@ -82,7 +82,7 @@ function OnlinePlatbyPage() {
             </ul>
             <Link
               to="/bankove-ucty"
-              className="mt-5 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="mt-5 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               {t("Pripojiť bankový účet")}
             </Link>

@@ -27,14 +27,14 @@ export function ZoznamVytiek({
   const zvysok = vytky.length - zobraz.length;
   return (
     <div
-      className={cn("mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4", className)}
+      className={cn("mb-6 rounded-lg border border-warning/30 bg-[color:var(--stav-pozor-plocha)] p-4 text-[color:var(--stav-pozor-text)]", className)}
       data-testid="zoznam-vytiek"
     >
-      <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+      <div className="flex items-center gap-2 font-semibold">
         <AlertTriangle className="h-4 w-4" />
         {nadpis}
       </div>
-      <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
+      <ul className="mt-2 space-y-1 text-sm">
         {zobraz.map((v, i) => (
           <li key={i}>
             <span className="font-medium">{v.doklad}</span>: {t(v.text)}
@@ -44,7 +44,7 @@ export function ZoznamVytiek({
       {zvysok > 0 && (
         <button
           type="button"
-          className="mt-2 text-sm font-medium text-amber-900 underline underline-offset-2 dark:text-amber-300"
+          className="mt-2 text-sm font-semibold underline underline-offset-2"
           onClick={() => setVsetky(true)}
         >
           {t("… a ďalších {n} — zobraziť všetky", { n: zvysok })}

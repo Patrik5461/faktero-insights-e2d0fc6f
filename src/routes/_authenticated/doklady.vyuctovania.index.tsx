@@ -4,7 +4,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus } from "lucide-react";
+import { HandCoins, Plus, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { toast } from "sonner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -125,16 +128,16 @@ function Zoznam() {
           />
         </div>
         {rows === null || zobrazene === null ? (
-          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
+          <div className="mt-3 rounded-xl border border-border bg-card">
+            <NacitavanieStav />
           </div>
         ) : rows.length === 0 ? (
-          <div className="mt-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            {t("Zatiaľ žiadne vyúčtovanie.")}
+          <div className="mt-3 rounded-xl border border-dashed border-border bg-card">
+            <EmptyState title="Zatiaľ žiadne vyúčtovanie." icon={HandCoins} />
           </div>
         ) : zobrazene.length === 0 ? (
-          <div className="mt-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            {t("Nič nevyhovuje filtru.")}
+          <div className="mt-3 rounded-xl border border-dashed border-border bg-card">
+            <EmptyState title="Nič nevyhovuje filtru." icon={SearchX} />
           </div>
         ) : (
           // Na telefóne karty — v tabuľke na 390 px nebolo vidieť sumu.
@@ -156,11 +159,9 @@ function Zoznam() {
                 status={
                   <span className="text-xs">
                     {r.stav === "uzavrete" ? (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
-                        {t("uzavreté")}
-                      </span>
+                      <StavOdznak ton="uspech">{t("uzavreté")}</StavOdznak>
                     ) : (
-                      <span className="rounded-full bg-secondary px-2 py-0.5">{t("otvorené")}</span>
+                      <StavOdznak ton="neutralny">{t("otvorené")}</StavOdznak>
                     )}
                   </span>
                 }
@@ -174,7 +175,7 @@ function Zoznam() {
             desktop={
               <div className="overflow-x-auto rounded-xl border border-border bg-card">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-border text-left text-xs text-muted-foreground">
+                  <thead className="border-b border-border bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                     <tr>
                       <th className="p-3">{t("Vyúčtovanie")}</th>
                       <th className="p-3">{t("Zamestnanec")}</th>
@@ -199,12 +200,12 @@ function Zoznam() {
                           >
                             {r.nazov}
                           </Link>
-                          <div className="text-xs text-muted-foreground">{datum(r.created_at)}</div>
+                          <div className="whitespace-nowrap text-xs text-muted-foreground">{datum(r.created_at)}</div>
                         </td>
                         <td className="p-3">{r.zamestnanec_meno ?? "—"}</td>
                         <td className="p-3 text-xs">{t(nazovTypu(r.typ)).replace("Vyúčtovanie ", "").replace("Abrechnung ", "")}</td>
                         <td className="p-3 text-right tabular-nums">{r.suhrn.pocet}</td>
-                        <td className="p-3 text-right tabular-nums">
+                        <td className="suma p-3 text-right">
                           {formatujMenu(r.suhrn.spolu, r.mena)}
                         </td>
                         <td className="p-3 text-xs">
@@ -212,11 +213,9 @@ function Zoznam() {
                         </td>
                         <td className="p-3 text-xs">
                           {r.stav === "uzavrete" ? (
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
-                              {t("uzavreté")}
-                            </span>
+                            <StavOdznak ton="uspech">{t("uzavreté")}</StavOdznak>
                           ) : (
-                            <span className="rounded-full bg-secondary px-2 py-0.5">{t("otvorené")}</span>
+                            <StavOdznak ton="neutralny">{t("otvorené")}</StavOdznak>
                           )}
                         </td>
                       </tr>

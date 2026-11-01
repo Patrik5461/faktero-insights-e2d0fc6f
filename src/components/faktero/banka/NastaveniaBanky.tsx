@@ -53,8 +53,8 @@ export function NastaveniaBanky({ companyId }: { companyId: string }) {
 
   const pole = "mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm";
   return (
-    <details className="mt-8 rounded-xl border border-border bg-card p-5">
-      <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <details className="mt-8 rounded-xl border border-border bg-card p-4 sm:p-5">
+      <summary className="cursor-pointer text-base font-semibold">
         {t("Nastavenia banky")}
       </summary>
       {!n ? (
@@ -62,7 +62,7 @@ export function NastaveniaBanky({ companyId }: { companyId: string }) {
       ) : (
         <div className="mt-4 space-y-4 text-sm">
           <fieldset className="rounded-md border border-border p-3">
-            <legend className="px-1 font-medium">{t("Párovanie pohybov s bločkami")}</legend>
+            <legend className="px-1 font-semibold">{t("Párovanie pohybov s bločkami")}</legend>
             <label className="flex items-start gap-2">
               <input
                 type="checkbox"
@@ -83,7 +83,7 @@ export function NastaveniaBanky({ companyId }: { companyId: string }) {
 
           <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
             <label className="block">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm font-semibold">
                 {t("Synchronizovať banku od (vrátane)")}
               </span>
               <input
@@ -99,7 +99,7 @@ export function NastaveniaBanky({ companyId }: { companyId: string }) {
               </span>
             </label>
             <label className="block">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm font-semibold">
                 {t("Najskorší dátum automatického párovania")}
               </span>
               <input
@@ -115,7 +115,7 @@ export function NastaveniaBanky({ companyId }: { companyId: string }) {
               </span>
             </label>
             <label className="block sm:col-span-2">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm font-semibold">
                 {t("Predvolený text pre príjemcu pri úhrade faktúr")}
               </span>
               <select
@@ -151,7 +151,7 @@ export function NastaveniaBanky({ companyId }: { companyId: string }) {
             <button
               onClick={ulozit}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-semibold hover:bg-primary-hover disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("Uložiť nastavenia banky")}

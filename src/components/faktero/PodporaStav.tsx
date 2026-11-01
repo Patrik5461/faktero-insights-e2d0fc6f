@@ -1,5 +1,6 @@
 import { nazovStavu } from "@/lib/faktero/podpora";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 
 const FARBA: Record<string, string> = {
   nova: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
@@ -15,5 +16,24 @@ export function PodporaStav({ stav, nazov }: { stav: string; nazov?: string }) {
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FARBA[stav] ?? ""}`}>
       {t(nazov ?? nazovStavu(stav))}
     </span>
+  );
+}
+
+/*
+ * Webová varianta (redizajn 2026-11) — jednotný stavový odznak s bodkou.
+ * Text je ten istý ako pri `PodporaStav`; pôvodný štítok ostáva pre administráciu,
+ * ktorá do redizajnu nepatrí.
+ */
+const TON_POZIADAVKY: Record<string, TonStavu> = {
+  nova: "informacia",
+  otvorena: "priebeh",
+  caka_na_zakaznika: "pozor",
+  vyriesena: "uspech",
+};
+
+export function PodporaStavWeb({ stav, nazov }: { stav: string; nazov?: string }) {
+  const { t } = useT();
+  return (
+    <StavOdznak ton={TON_POZIADAVKY[stav] ?? "neutralny"}>{t(nazov ?? nazovStavu(stav))}</StavOdznak>
   );
 }

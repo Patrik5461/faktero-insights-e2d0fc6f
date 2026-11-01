@@ -24,7 +24,6 @@ import {
   PoTermine,
   SekundarnaAkcia,
   PrimarnaAkcia,
-  StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkno";
@@ -44,6 +43,8 @@ import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { StatusBadge } from "./dashboard";
+import { StavOdznak as StavWeb, TON_SCHVALOVANIA, TON_EFAKTURY } from "@/components/faktero/web/Stav";
+import { ChybovyStav, NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
@@ -949,18 +950,25 @@ function InvoiceDetail() {
   if (nenajdene)
     return (
       <PageBody>
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
-          <p>{t("Táto faktúra v aktívnej firme neexistuje.")}</p>
-          <p className="mt-1 text-muted-foreground">
-            {t("Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}
-          </p>
-          <Link to="/faktury" className="mt-4 inline-block text-primary underline">
-            {t("Späť na faktúry")}
-          </Link>
+        <div className="rounded-xl border border-border bg-card">
+          <ChybovyStav
+            nadpis="Táto faktúra v aktívnej firme neexistuje."
+            popis={t("Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.")}
+            akcia={
+              <Link to="/faktury" className="text-sm font-medium text-primary underline">
+                {t("Späť na faktúry")}
+              </Link>
+            }
+          />
         </div>
       </PageBody>
     );
-  if (!inv) return <PageBody>{t("Načítavam…")}</PageBody>;
+  if (!inv)
+    return (
+      <PageBody>
+        <NacitavanieStav />
+      </PageBody>
+    );
 
   /*
     Čo sa s faktúrou v jej stave dá robiť — spoločné pre klasický aj
@@ -1183,7 +1191,7 @@ function InvoiceDetail() {
   const kartaStrany = (
     <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
       <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="text-sm font-semibold text-muted-foreground">
           {t("Dodávateľ")}
         </div>
         <div className="mt-1 font-medium">{company?.name}</div>
@@ -1198,13 +1206,13 @@ function InvoiceDetail() {
         {company?.ic_dph && <div className="text-sm">{t("IČ DPH")}: {company.ic_dph}</div>}
       </div>
       <div>
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           {t("Odberateľ")}
           {inv.status !== "cancelled" && !inv.deleted_at && (
             <Link
               to="/faktury/$id/upravit"
               params={{ id }}
-              className="normal-case tracking-normal text-primary hover:underline print:hidden"
+              className="font-medium text-primary hover:underline print:hidden"
             >
               {t("Zmeniť")}
             </Link>
@@ -1237,14 +1245,14 @@ function InvoiceDetail() {
   const kartaPolozky = (
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
           <tr>
             <th className="p-3">{t("Položka")}</th>
-            <th className="p-3 text-right">{t("Mn.")}</th>
-            <th className="p-3">{t("MJ")}</th>
-            <th className="p-3 text-right">{t("Cena")}</th>
-            <th className="p-3 text-right">{t("DPH")}</th>
-            <th className="p-3 text-right">{t("Spolu")}</th>
+            <th className="whitespace-nowrap p-3 text-right">{t("Mn.")}</th>
+            <th className="whitespace-nowrap p-3">{t("MJ")}</th>
+            <th className="whitespace-nowrap p-3 text-right">{t("Cena")}</th>
+            <th className="whitespace-nowrap p-3 text-right">{t("DPH")}</th>
+            <th className="whitespace-nowrap p-3 text-right">{t("Spolu")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -1257,22 +1265,22 @@ function InvoiceDetail() {
                   <div className="whitespace-pre-line text-xs text-muted-foreground">{it.description}</div>
                 )}
                 {Number((it as any).discount_percent ?? 0) > 0 && (
-                  <div className="text-xs text-emerald-700">
+                  <div className="fk-text-uspech text-xs">
                     {t("Zľava {n} %", { n: Number((it as any).discount_percent) })}
                   </div>
                 )}
               </td>
-              <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
+              <td className="whitespace-nowrap p-3 text-right tabular-nums">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
               <td className="p-3">{it.unit}</td>
-              <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
-              <td className="p-3 text-right">
+              <td className="whitespace-nowrap p-3 text-right tabular-nums">{formatujJednotkovuCenu(it.unit_price)}</td>
+              <td className="whitespace-nowrap p-3 text-right">
                 {inv.reverse_charge || (it as any).prenesenie ? (
                   <span title={t("Prenesenie daňovej povinnosti — daň priznáva odberateľ")}>{t("PDP")}</span>
                 ) : (
                   `${it.vat_rate}%`
                 )}
               </td>
-              <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
+              <td className="suma whitespace-nowrap p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
             </tr>
           ))}
         </tbody>
@@ -1314,7 +1322,7 @@ function InvoiceDetail() {
       <ZasielkovnaFaktury inv={inv} onZmena={() => void load()} />
       {zakazka && (
         <div className="rounded-xl border border-border bg-card p-5">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Zákazka")}</div>
+          <div className="text-sm font-semibold text-muted-foreground">{t("Zákazka")}</div>
           <Link
             to="/zakazky/$id"
             params={{ id: zakazka.id }}
@@ -1328,7 +1336,7 @@ function InvoiceDetail() {
   );
   const kartaSumar = (
     <div className="rounded-xl border border-border bg-card p-5">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
+      <div className="text-sm font-semibold text-muted-foreground">{t("Sumár")}</div>
       <div className="mt-3 space-y-1 text-sm">
         {Number(inv.discount_total ?? 0) > 0 && (
           <>
@@ -1368,7 +1376,7 @@ function InvoiceDetail() {
         )}
       </div>
       <div className="mt-3 border-t border-border pt-3">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="text-sm font-semibold text-muted-foreground">
           {inv.status === "paid"
             ? t("Uhradené")
             : jeDobropisNaZobrazenie(inv)
@@ -1377,7 +1385,7 @@ function InvoiceDetail() {
                 ? t("Zostáva k úhrade")
                 : t("Spolu k úhrade")}
         </div>
-        <div className="text-lg font-semibold tabular-nums">
+        <div className="suma text-lg font-semibold">
           {formatujMenu(
             sumaNaZobrazenie(
               inv,
@@ -1471,9 +1479,9 @@ function InvoiceDetail() {
     ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
   */
   const chybaIban = !sUctomFaktury(company ?? {}, inv).iban && (
-    <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
-      <div className="font-medium text-foreground">{t("Chýba IBAN")}</div>
-      <p className="mt-0.5 text-muted-foreground">
+    <div className="fk-oznam fk-oznam-pozor mt-3 rounded-md p-3 text-xs">
+      <div className="font-semibold">{t("Chýba IBAN")}</div>
+      <p className="mt-0.5">
         {t("Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.")}
       </p>
       <Link
@@ -1486,12 +1494,12 @@ function InvoiceDetail() {
   );
   const kartaPlatba = (sumaHore: boolean) =>
     inv.status === "paid" ? (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
-        <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+      <div className="fk-oznam fk-oznam-uspech rounded-xl p-5 text-sm">
+        <div className="text-sm font-semibold">
           {t("Uhradené")}
         </div>
         {sumaHore && (
-          <div className="text-lg font-semibold tabular-nums">
+          <div className="suma text-lg font-semibold">
             {formatujMenu(sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)), inv.currency)}
           </div>
         )}
@@ -1499,7 +1507,7 @@ function InvoiceDetail() {
           {t("Dátum úhrady:")} {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
         </div>
         <div>{t("Forma úhrady:")} {t(paymentMethodLabel(inv.payment_method))}</div>
-        <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
+        <div className="mt-2 text-xs">
           {t("Platobné údaje sa nezobrazujú — faktúra je zaplatená.")}
         </div>
       </div>
@@ -1508,14 +1516,14 @@ function InvoiceDetail() {
         {sumaHore ? (
           /* Pri náhľade PDF je suma na úhradu hneď nad platobnými údajmi. */
           <div className="mb-3 border-b border-border pb-3">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="text-sm font-semibold text-muted-foreground">
               {jeDobropisNaZobrazenie(inv)
                 ? t("Spolu")
                 : ciastocneUhradena
                   ? t("Zostáva k úhrade")
                   : t("Spolu k úhrade")}
             </div>
-            <div className="text-2xl font-semibold tabular-nums">
+            <div className="suma text-2xl font-semibold">
               {formatujMenu(
                 sumaNaZobrazenie(inv, zostavaPoUhradach(inv.total, inv.advance_amount, uhradene)),
                 inv.currency,
@@ -1523,7 +1531,7 @@ function InvoiceDetail() {
             </div>
           </div>
         ) : null}
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Platba")}</div>
+        <div className="text-sm font-semibold text-muted-foreground">{t("Platba")}</div>
         <div className="mt-2">
           {t("IBAN:")}{" "}
           <span className="font-mono">
@@ -1546,26 +1554,26 @@ function InvoiceDetail() {
     <>
       {inv.type === "proforma" && (
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="text-sm font-semibold text-muted-foreground">
             {t("Zálohová faktúra")}
           </div>
           {settledIn ? (
             <div className="mt-2 space-y-1">
-              <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                {t("Zúčtovaná")}
+              <div>
+                <StavWeb ton="uspech" maly>{t("Zúčtovaná")}</StavWeb>
               </div>
               <div>
                 {t("Zúčtovaná vo faktúre:")}{" "}
                 <Link
                   to="/faktury/$id"
                   params={{ id: settledIn.id }}
-                  className="font-medium text-primary hover:underline"
+                  className="cislo-dokladu font-medium text-primary hover:underline"
                 >
                   {settledIn.invoice_number}
                 </Link>
               </div>
               <div className="text-xs text-muted-foreground">
-                {datumNaDoklade(settledIn.issue_date)} · {formatujMenu(settledIn.total, settledIn.currency)}
+                {datumNaDoklade(settledIn.issue_date)} · <span className="suma">{formatujMenu(settledIn.total, settledIn.currency)}</span>
               </div>
             </div>
           ) : (
@@ -1582,7 +1590,7 @@ function InvoiceDetail() {
           {/* Neplatiteľ DPH doklad k platbe nevystavuje — karta len pri už existujúcom doklade. */}
           {(company?.vat_payer !== false || dokladKPlatbe) && (
           <div className="mt-4 border-t border-border pt-3">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="text-sm font-semibold text-muted-foreground">
               {t("Daňový doklad k prijatej platbe")}
             </div>
             {dokladKPlatbe ? (
@@ -1590,12 +1598,12 @@ function InvoiceDetail() {
                 <Link
                   to="/faktury/$id"
                   params={{ id: dokladKPlatbe.id }}
-                  className="font-medium text-primary hover:underline"
+                  className="cislo-dokladu font-medium text-primary hover:underline"
                 >
                   {dokladKPlatbe.invoice_number}
                 </Link>
                 <div className="text-xs text-muted-foreground">
-                  {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · {t("daň sa priznáva v tomto období")}
+                  {datumNaDoklade(dokladKPlatbe.issue_date)} · <span className="suma">{formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)}</span> · {t("daň sa priznáva v tomto období")}
                 </div>
               </div>
             ) : akcie.dokladKPlatbe ? (
@@ -1623,7 +1631,7 @@ function InvoiceDetail() {
       )}
       {odpocitaneZalohy.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="text-sm font-semibold text-muted-foreground">
             {odpocitaneZalohy.length === 1 ? t("Zúčtovaná záloha") : t("Zúčtované zálohy")}
           </div>
           <ul className="mt-2 space-y-1">
@@ -1632,13 +1640,13 @@ function InvoiceDetail() {
                 <Link
                   to="/faktury/$id"
                   params={{ id: o.advance_invoice_id }}
-                  className="font-medium text-primary hover:underline"
+                  className="cislo-dokladu font-medium text-primary hover:underline"
                 >
                   {o.zaloha?.invoice_number ?? t("zálohová faktúra")}
                 </Link>
                 <span className="text-xs text-muted-foreground">
                   {o.zaloha?.issue_date ? datumNaDoklade(o.zaloha.issue_date) : ""} · {t("odpočítané")}{" "}
-                  {formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}
+                  <span className="suma">{formatujMenu(o.amount, o.zaloha?.currency ?? inv.currency)}</span>
                 </span>
               </li>
             ))}
@@ -1647,7 +1655,7 @@ function InvoiceDetail() {
           {odpocitaneZalohy.length > 1 && sucetOdpocitanychZaloh(odpocitaneZalohy, inv.currency) !== null && (
             <div className="mt-2 text-xs text-muted-foreground">
               {t("Spolu odpočítané")}{" "}
-              <strong>
+              <strong className="suma">
                 {formatujMenu(sucetOdpocitanychZaloh(odpocitaneZalohy, inv.currency) ?? 0, inv.currency)}
               </strong>
             </div>
@@ -1656,7 +1664,7 @@ function InvoiceDetail() {
       )}
       {stockMoves.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sklad")}</div>
+          <div className="text-sm font-semibold text-muted-foreground">{t("Sklad")}</div>
           <div className="mt-2 space-y-2">
             {stockMoves.map((m) => {
               const reversed = m.type === "dobropis";
@@ -1678,7 +1686,7 @@ function InvoiceDetail() {
                     </div>
                   </div>
                   <div
-                    className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-700" : "text-destructive"}`}
+                    className={`whitespace-nowrap text-right font-semibold tabular-nums ${reversed ? "fk-text-uspech" : "text-destructive"}`}
                   >
                     {reversed ? "+" : "−"}
                     {Math.abs(Number(m.quantity))}
@@ -1722,7 +1730,7 @@ function InvoiceDetail() {
             <Link
               to="/faktury/$id/upravit"
               params={{ id }}
-              className="rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-secondary"
+              className="rounded-md border border-input bg-background px-3 py-1.5 font-medium hover:bg-secondary"
             >
               {t("Upraviť")}
             </Link>
@@ -1750,7 +1758,7 @@ function InvoiceDetail() {
         <span className="text-muted-foreground">{t("eFaktúra:")}</span>
         <EfakturaStatusBadge status={efakturaUi} />
         {efakturaTest && (
-          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-800 dark:text-amber-300">
+          <span className="fk-oznam fk-oznam-pozor rounded-full px-2.5 py-1">
             {t("testovací režim — odberateľovi nič nepríde")}
           </span>
         )}
@@ -1767,8 +1775,8 @@ function InvoiceDetail() {
         )}
       </div>
       {inv.approval_status === "rejected" && inv.approval_note && (
-        <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+        <div className="fk-oznam fk-oznam-chyba mb-4 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold">
             <XCircle className="h-4 w-4" /> {t("Faktúra bola zamietnutá zákazníkom")}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -1776,15 +1784,15 @@ function InvoiceDetail() {
               ? new Date(inv.approval_responded_at).toLocaleString("sk-SK")
               : ""}
           </div>
-          <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("Dôvod:")} </span>
+          <div className="mt-2 whitespace-pre-wrap text-sm">
+            <span className="text-xs font-semibold">{t("Dôvod:")} </span>
             {inv.approval_note}
           </div>
         </div>
       )}
       {inv.approval_status === "pending" && inv.approval_requested_at && (
-        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
-          <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+        <div className="fk-oznam fk-oznam-pozor mb-4 rounded-xl p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold">
             <ClockIcon className="h-4 w-4" /> {t("Čaká sa na schválenie zákazníkom")}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -1798,8 +1806,8 @@ function InvoiceDetail() {
         nemal kam zaplatiť.
       */}
       {company && !sUctomFaktury(company, inv).iban && (
-        <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
-          <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+        <div className="fk-oznam fk-oznam-pozor mb-4 rounded-xl p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle className="h-4 w-4" /> {t("Faktúra nemá platobné údaje")}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -1813,10 +1821,10 @@ function InvoiceDetail() {
       {/* Import histórie smie zapísať DPH aj neplatiteľovi (poistka v DB) — treba ho skontrolovať. */}
       {importDphNeplatitela(inv as any, company) && (
         <div
-          className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm"
+          className="mb-4 rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm"
           data-testid="import-dph-neplatitel"
         >
-          <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+          <div className="flex items-center gap-2 font-semibold text-warning">
             <AlertTriangle className="h-4 w-4" /> {t("Importovaný doklad s DPH, hoci firma nie je platiteľ")}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -1914,39 +1922,43 @@ function InvoiceDetail() {
           <>
             <StatusBadge status={akcie.odznak} />
             {akcie.vymazana && (
-              <StavOdznak className="bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400">
-                <Trash2 className="h-3 w-3" /> {t("V koši")}
-              </StavOdznak>
+              <StavWeb ton="chyba" ikona={<Trash2 className="h-3 w-3" />}>
+                {t("V koši")}
+              </StavWeb>
             )}
             {inv.approval_status === "pending" && (
-              <StavOdznak className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
-                <ClockIcon className="h-3 w-3" /> {t("Čaká na schválenie")}
-              </StavOdznak>
+              <StavWeb ton={TON_SCHVALOVANIA.pending} ikona={<ClockIcon className="h-3 w-3" />}>
+                {t("Čaká na schválenie")}
+              </StavWeb>
             )}
             {inv.approval_status === "approved" && (
-              <StavOdznak className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
-                <CheckCircle2 className="h-3 w-3" /> {t("Schválené")}
-              </StavOdznak>
+              <StavWeb ton={TON_SCHVALOVANIA.approved} ikona={<CheckCircle2 className="h-3 w-3" />}>
+                {t("Schválené")}
+              </StavWeb>
             )}
             {inv.approval_status === "rejected" && (
-              <StavOdznak className="bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400">
-                <XCircle className="h-3 w-3" /> {t("Zamietnuté")}
-              </StavOdznak>
+              <StavWeb ton={TON_SCHVALOVANIA.rejected} ikona={<XCircle className="h-3 w-3" />}>
+                {t("Zamietnuté")}
+              </StavWeb>
             )}
             {/* Stav eFaktúry (opakované odoslanie je v hlavnej akcii). */}
             {inv.status !== "draft" && inv.status !== "cancelled" && inv.type !== "proforma" && stavEf && (
-              <StavOdznak
-                className={
+              <StavWeb
+                ton={
                   jeChybaEfaktury(stavEf)
-                    ? "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400"
-                    : "bg-emerald-600/10 text-emerald-700 dark:text-emerald-400"
+                    ? "chyba"
+                    : TON_EFAKTURY[
+                        ({ odoslana: "sent", dorucena: "delivered", prijata: "accepted" } as Record<string, string>)[
+                          stavEf.stav
+                        ] ?? "sent"
+                      ]
                 }
                 title={popisEfaktury(stavEf)}
+                ikona={<IkonaEfaktury stav={stavEf} />}
               >
-                <IkonaEfaktury stav={stavEf} />
                 <span data-efaktura-stav={stavEf.stav}>{t(textStavuEfaktury(stavEf))}</span>
                 {efakturaTest ? ` (${t("test")})` : ""}
-              </StavOdznak>
+              </StavWeb>
             )}
           </>
         }
@@ -2382,7 +2394,7 @@ function InvoiceDetail() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setEmailOpen(false)}
-                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+                className="rounded-md border border-input px-4 py-2 text-sm hover:bg-secondary"
               >
                 {t("Zrušiť")}
               </button>
@@ -2459,7 +2471,7 @@ function InvoiceDetail() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setReminderOpen(false)}
-                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+                className="rounded-md border border-input px-4 py-2 text-sm hover:bg-secondary"
               >
                 {t("Zrušiť")}
               </button>
@@ -2496,7 +2508,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <span className="text-muted-foreground">{label}</span>
-      <span>{value}</span>
+      <span className="whitespace-nowrap text-right tabular-nums">{value}</span>
     </div>
   );
 }

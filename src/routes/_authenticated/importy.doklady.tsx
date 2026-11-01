@@ -216,7 +216,7 @@ function ImportDokladovPage() {
         action={
           <Link
             to="/importy"
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
           >
             <History className="h-4 w-4" /> {t("História importov")}
           </Link>
@@ -226,8 +226,8 @@ function ImportDokladovPage() {
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
           <div className="min-w-0 space-y-6">
             {/* 1. Súbory */}
-            <section className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">{t("1. Nahrajte export")}</h2>
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="text-base font-semibold">{t("1. Nahrajte export")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t(
                   "XML pre Pohodu, CSV/XLSX alebo ZIP so skenmi (PDF, fotky) — aj viac súborov naraz. Najlepšie je nahrať XML a k nemu ZIP s PDF: údaje sa vezmú presne z XML a skeny sa priradia k dokladom.",
@@ -239,7 +239,7 @@ function ImportDokladovPage() {
                   e.preventDefault();
                   pridaj(e.dataTransfer.files);
                 }}
-                className="mt-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center text-sm"
+                className="mt-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-muted/40 p-8 text-center text-sm"
               >
                 <FileArchive className="mb-2 h-7 w-7 text-muted-foreground" />
                 {t("Pretiahnite súbory sem alebo")}
@@ -247,7 +247,7 @@ function ImportDokladovPage() {
                   type="button"
                   onClick={() => inputRef.current?.click()}
                   disabled={Boolean(pracujem) || bezi}
-                  className="mt-2 rounded-md border border-border bg-secondary px-3 py-1.5 text-sm hover:bg-secondary/70 disabled:opacity-50"
+                  className="mt-2 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                 >
                   {t("Vybrať súbory")}
                 </button>
@@ -268,7 +268,7 @@ function ImportDokladovPage() {
                   {subory.map((f, i) => (
                     <li key={`${f.name}-${i}`} className="flex items-center gap-2">
                       <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                         {formatujCislo(f.size / 1024 / 1024, 1)} MB
                       </span>
                       {!nahrate.length && (
@@ -288,7 +288,7 @@ function ImportDokladovPage() {
                 <button
                   onClick={nahrajAPozri}
                   disabled={!subory.length || Boolean(pracujem)}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {pracujem ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -302,8 +302,8 @@ function ImportDokladovPage() {
 
             {/* 2. Náhľad a voľby */}
             {nahlad && (
-              <section className="rounded-2xl border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold">{t("2. Čo sa naimportuje")}</h2>
+              <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                <h2 className="text-base font-semibold">{t("2. Čo sa naimportuje")}</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Cislo popis={t("Prijaté faktúry")} hodnota={nahlad.faktury} />
                   <Cislo popis={t("Bločky")} hodnota={nahlad.blocky} />
@@ -328,7 +328,7 @@ function ImportDokladovPage() {
                 {nahlad.ukazka.length > 0 && (
                   <div className="mt-4 overflow-x-auto rounded-lg border border-border">
                     <table className="w-full text-sm">
-                      <thead className="bg-secondary/40 text-xs text-muted-foreground">
+                      <thead className="whitespace-nowrap bg-muted/40 text-xs font-semibold text-muted-foreground">
                         <tr>
                           <th className="px-3 py-2 text-left">{t("Typ")}</th>
                           <th className="px-3 py-2 text-left">{t("Číslo")}</th>
@@ -348,10 +348,10 @@ function ImportDokladovPage() {
                               {r.typ === "faktura" ? t("Faktúra") : t("Bloček")}
                               {r.duplicita && ` ${t("(už je)")}`}
                             </td>
-                            <td className="px-3 py-1.5">{r.cislo ?? "—"}</td>
-                            <td className="px-3 py-1.5">{r.dodavatel ?? "—"}</td>
+                            <td className="cislo-dokladu whitespace-nowrap px-3 py-1.5">{r.cislo ?? "—"}</td>
+                            <td className="min-w-[10rem] px-3 py-1.5 break-words">{r.dodavatel ?? "—"}</td>
                             <td className="px-3 py-1.5 whitespace-nowrap">{r.vystavenie ?? "—"}</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">
+                            <td className="suma px-3 py-1.5 text-right whitespace-nowrap">
                               {r.spolu != null ? formatujMenu(r.spolu, r.mena) : "—"}
                             </td>
                             <td className="max-w-[10rem] truncate px-3 py-1.5 text-xs text-muted-foreground">
@@ -373,13 +373,13 @@ function ImportDokladovPage() {
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">
                       {t("Odkiaľ doklady sú")}
                     </span>
                     <select
                       value={zdroj}
                       onChange={(e) => setZdroj(e.target.value)}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       {ZDROJE.map((z) => (
                         <option key={z} value={z}>
@@ -389,13 +389,13 @@ function ImportDokladovPage() {
                     </select>
                   </label>
                   <label className="block text-sm">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">
                       {t("Stav po importe")}
                     </span>
                     <select
                       value={stav}
                       onChange={(e) => setStav(e.target.value as typeof stav)}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="exported">{t("Odovzdané účtovníkovi (už zaúčtované)")}</option>
                       <option value="processed">{t("Spracované")}</option>
@@ -439,7 +439,7 @@ function ImportDokladovPage() {
                   <button
                     onClick={spusti}
                     disabled={Boolean(pracujem)}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pracujem ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -454,8 +454,8 @@ function ImportDokladovPage() {
 
             {/* 3. Priebeh a výsledok */}
             {priebeh && (
-              <section className="rounded-2xl border border-border bg-card p-5" role="status">
-                <h2 className="text-sm font-semibold">
+              <section className="rounded-xl border border-border bg-card p-4 sm:p-5" role="status">
+                <h2 className="text-base font-semibold">
                   3. {bezi ? t("Importujem…") : neisty ? t("Stav importu") : t("Hotovo")}
                 </h2>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
@@ -506,7 +506,7 @@ function ImportDokladovPage() {
                 )}
                 {hotovy && priebeh.vysledok?.upozornenia?.length > 0 && (
                   <details className="mt-3 text-sm" open>
-                    <summary className="cursor-pointer text-amber-700 dark:text-amber-400">
+                    <summary className="dk-text-pozor cursor-pointer font-medium">
                       {t("Na čo dať pozor")}
                     </summary>
                     <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
@@ -520,7 +520,7 @@ function ImportDokladovPage() {
                 )}
                 {priebeh.vysledok?.chyby?.length > 0 && (
                   <details className="mt-3 text-sm">
-                    <summary className="cursor-pointer text-amber-700 dark:text-amber-400">
+                    <summary className="dk-text-pozor cursor-pointer font-medium">
                       {t("{n} dokladov sa nepodarilo naimportovať", {
                         n: priebeh.vysledok.chyby.length,
                       })}
@@ -536,21 +536,21 @@ function ImportDokladovPage() {
                   <div className="mt-4 flex flex-wrap gap-2 text-sm">
                     <Link
                       to="/prijate-faktury"
-                      className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                      className="rounded-md border border-input bg-card px-3 py-1.5 font-semibold hover:bg-accent"
                     >
                       {t("Prijaté faktúry")}
                     </Link>
                     <Link
                       to="/doklady"
                       search={{ stav: "vsetky" }}
-                      className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                      className="rounded-md border border-input bg-card px-3 py-1.5 font-semibold hover:bg-accent"
                     >
                       {t("Doklady")}
                     </Link>
                     <Link
                       to="/ostatne-doklady"
                       search={{ stav: "vsetky" }}
-                      className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                      className="rounded-md border border-input bg-card px-3 py-1.5 font-semibold hover:bg-accent"
                     >
                       {t("Iné doklady")}
                     </Link>
@@ -560,8 +560,8 @@ function ImportDokladovPage() {
             )}
           </div>
 
-          <aside className="min-w-0 rounded-2xl border border-border bg-card p-5 text-sm">
-            <h2 className="font-semibold">{t("Ako vyviezť doklady z Doklado")}</h2>
+          <aside className="min-w-0 self-start rounded-xl border border-border bg-card p-4 sm:p-5 text-sm">
+            <h2 className="text-base font-semibold">{t("Ako vyviezť doklady z Doklado")}</h2>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
               <li>
                 {t("V Doklado označte doklady (prijaté faktúry, bločky) a zvoľte")}{" "}
@@ -592,9 +592,9 @@ function ImportDokladovPage() {
 
 function Cislo({ popis, hodnota }: { popis: string; hodnota: number }) {
   return (
-    <div className="rounded-xl border border-border p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="text-xs text-muted-foreground">{popis}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{hodnota}</div>
+      <div className="suma mt-1 text-xl">{hodnota}</div>
     </div>
   );
 }

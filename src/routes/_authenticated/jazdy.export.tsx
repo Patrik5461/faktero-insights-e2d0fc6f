@@ -289,7 +289,7 @@ function ExportPage() {
       <PageBody>
         <div className="mx-auto grid max-w-2xl gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
           <label className="block">
-            <span className="text-sm font-medium">{t("Vozidlo")}</span>
+            <span className="text-sm font-semibold">{t("Vozidlo")}</span>
             <select
               value={vehicle_id ?? ""}
               onChange={(e) =>
@@ -308,7 +308,7 @@ function ExportPage() {
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium">{t("Od")}</span>
+              <span className="text-sm font-semibold">{t("Od")}</span>
               <input
                 type="date"
                 value={from}
@@ -317,7 +317,7 @@ function ExportPage() {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium">{t("Do")}</span>
+              <span className="text-sm font-semibold">{t("Do")}</span>
               <input
                 type="date"
                 value={to}
@@ -331,7 +331,7 @@ function ExportPage() {
               type="checkbox"
               checked={sMapami}
               onChange={(e) => setSMapami(e.target.checked)}
-              className="mt-0.5 h-4 w-4"
+              className="mt-0.5 h-4 w-4 accent-primary"
             />
             <span>
               {t("Priložiť do PDF mapy trás")}
@@ -347,21 +347,21 @@ function ExportPage() {
             <button
               disabled={busy}
               onClick={exportPdf}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               <Download className="h-4 w-4" /> PDF
             </button>
             <button
               disabled={busy}
               onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent disabled:opacity-60 font-semibold"
             >
               <Download className="h-4 w-4" /> CSV
             </button>
             <button
               disabled={busy}
               onClick={exportXlsx}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm hover:bg-accent disabled:opacity-60 font-semibold"
             >
               <Download className="h-4 w-4" /> Excel (.xls)
             </button>

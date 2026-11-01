@@ -3,11 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
-  BookOpen,
   Check,
   CreditCard,
   Crown,
@@ -38,6 +36,9 @@ import { mozePrenesenieDph, vetaObnovy } from "@/lib/faktero/predplatne-cena";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { preloz, type Jazyk, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { StavOdznak, triedaStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 type ProductMode = "invoicing" | "logbook" | "both";
 type ProductTab = "invoicing" | "logbook";
@@ -307,9 +308,15 @@ function PredplatnePage() {
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <>
+        <PageHeader
+          title={t("Predplatné")}
+          description={t("Spravujte plán a fakturáciu vašej firmy.")}
+        />
+        <PageBody>
+          <NacitavanieStav className="min-h-[50vh]" />
+        </PageBody>
+      </>
     );
   }
 
@@ -317,315 +324,327 @@ function PredplatnePage() {
   const isAdminLike = billing?.role === "owner" || billing?.role === "admin";
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Predplatné")}</h1>
-          {/* Vlastná hlavička znamená, že odkaz na manuál, ktorý `PageHeader`
-              pridáva sám, tu chýbal — hoci mapovanie ho sľubuje. */}
-          <a
-            href="/pomoc/predplatne"
-            target="_blank"
-            rel="noreferrer"
-            title={t("Otvoriť manuál v novom okne")}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
-          >
-            <BookOpen className="h-3 w-3" /> {t("Manuál")}
-          </a>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {t("Spravujte plán a fakturáciu vašej firmy.")}
-        </p>
-      </header>
-
-      {/* Current plan card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle className="text-base">{t("Aktuálny plán")}</CardTitle>
-            {/* `div`, nie `p` — Badge je `div` a v odseku rozbije hydratáciu (S-23). */}
-            <div className="mt-1 text-sm text-muted-foreground">
-              {plan?.plan_name ?? "—"} ·{" "}
-              <Badge variant={plan?.is_active ? "default" : "destructive"} className="ml-1">
-                {t(STATUS_LABEL[plan?.status ?? ""] ?? plan?.status ?? "—")}
-              </Badge>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-semibold">
-              {plan?.plan_slug === "enterprise"
-                ? "—"
-                : fmtEur(planPriceFromSlug(plans, plan?.plan_slug))}
-            </div>
-            <div className="text-xs text-muted-foreground">{t("/ mesiac")}</div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {plan?.is_trialing && plan.trial_days_left != null && (
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
-              <strong>{t("Skúšobná verzia končí")}</strong>{" "}
-              {t(
-                plDni(plan.trial_days_left) === "deň"
-                  ? "o {n} deň"
-                  : plDni(plan.trial_days_left) === "dni"
-                    ? "o {n} dni"
-                    : "o {n} dní",
-                { n: plan.trial_days_left },
-              )}{" "}
-              · {fmtDate(plan.trial_ends_at, jazyk)}
-            </div>
-          )}
-          {!plan?.is_active && (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              {t(
-                "Predplatné je neaktívne. Aplikácia je v režime len na čítanie. Aktivujte plán nižšie.",
+    <>
+      {/* Redizajn: rovnaká hlavička ako ostatné stránky nastavení. Odkaz
+          „Manuál“ (/pomoc/predplatne, nové okno) pridáva `PageHeader` sám
+          podľa mapy MANUALY — predtým ho tu dopĺňala vlastná hlavička. */}
+      <PageHeader
+        title={t("Predplatné")}
+        description={t("Spravujte plán a fakturáciu vašej firmy.")}
+      />
+      <PageBody>
+        <div className="max-w-6xl space-y-6">
+          {/* Current plan card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+              <div>
+                <CardTitle className="text-base">{t("Aktuálny plán")}</CardTitle>
+                {/* `div`, nie `p` — S-23 (hydratácia). */}
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {plan?.plan_name ?? "—"} ·{" "}
+                  <StavOdznak ton={plan?.is_active ? "uspech" : "chyba"} className="ml-1">
+                    {t(STATUS_LABEL[plan?.status ?? ""] ?? plan?.status ?? "—")}
+                  </StavOdznak>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="suma text-2xl font-bold">
+                  {plan?.plan_slug === "enterprise"
+                    ? "—"
+                    : fmtEur(planPriceFromSlug(plans, plan?.plan_slug))}
+                </div>
+                <div className="text-xs text-muted-foreground">{t("/ mesiac")}</div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {plan?.is_trialing && plan.trial_days_left != null && (
+                <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm">
+                  <strong>{t("Skúšobná verzia končí")}</strong>{" "}
+                  {t(
+                    plDni(plan.trial_days_left) === "deň"
+                      ? "o {n} deň"
+                      : plDni(plan.trial_days_left) === "dni"
+                        ? "o {n} dni"
+                        : "o {n} dní",
+                    { n: plan.trial_days_left },
+                  )}{" "}
+                  · {fmtDate(plan.trial_ends_at, jazyk)}
+                </div>
               )}
-            </div>
-          )}
+              {!plan?.is_active && (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  {t(
+                    "Predplatné je neaktívne. Aplikácia je v režime len na čítanie. Aktivujte plán nižšie.",
+                  )}
+                </div>
+              )}
 
-          {plan?.is_active && (
-            /*
+              {plan?.is_active && (
+                /*
               Konkrétny dátum a suma, nie len veta o tom, že sa niečo obnovuje.
               Podmienky sľubujú upozornenie 7 dní vopred; kto sem príde skôr,
               má to vidieť rovno tu.
             */
-            <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
-              <div className="space-y-1">
-                {vetaObnovy(plan) === "zdarma" ? (
-                  /* Pridelený plán sa neúčtuje — veta o mesačnej obnove by tu
+                <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-3 text-sm text-foreground">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="space-y-1">
+                    {vetaObnovy(plan) === "zdarma" ? (
+                      /* Pridelený plán sa neúčtuje — veta o mesačnej obnove by tu
                      len strašila. */
-                  <p>
-                    {t("Tento plán máte pridelený")} <strong>{t("zadarmo a natrvalo")}</strong>.{" "}
-                    {t("Nič sa neúčtuje a nič netreba obnovovať.")}
-                  </p>
-                ) : vetaObnovy(plan) === "zrusene" ? (
-                  <p>
-                    {t("Predplatné je zrušené k")}{" "}
-                    <strong>
-                      {fmtDate(plan.current_period_end ?? plan.next_billing_at, jazyk)}
-                    </strong>
-                    . {t("Do toho dňa funguje všetko ako doteraz a nič sa už nestrhne.")}
-                  </p>
-                ) : vetaObnovy(plan) === "karta" ? (
-                  <p>
-                    {t("Najbližšia platba")} <strong>{fmtDate(plan.next_billing_at, jazyk)}</strong>{" "}
-                    — <strong>{fmtEurSDph(planPriceFromSlug(plans, plan?.plan_slug))}</strong>{" "}
-                    {t(
-                      "s DPH z uloženej karty cez GoPay. Upozornenie pošleme 7 dní vopred, zrušiť môžete kedykoľvek.",
-                    )}
-                  </p>
-                ) : vetaObnovy(plan) === "skusobna" ? (
-                  /* Skúšobná verzia bez karty: nič sa nestrhne a tlačidlo
+                      <p>
+                        {t("Tento plán máte pridelený")} <strong>{t("zadarmo a natrvalo")}</strong>.{" "}
+                        {t("Nič sa neúčtuje a nič netreba obnovovať.")}
+                      </p>
+                    ) : vetaObnovy(plan) === "zrusene" ? (
+                      <p>
+                        {t("Predplatné je zrušené k")}{" "}
+                        <strong>
+                          {fmtDate(plan.current_period_end ?? plan.next_billing_at, jazyk)}
+                        </strong>
+                        . {t("Do toho dňa funguje všetko ako doteraz a nič sa už nestrhne.")}
+                      </p>
+                    ) : vetaObnovy(plan) === "karta" ? (
+                      <p>
+                        {t("Najbližšia platba")}{" "}
+                        <strong>{fmtDate(plan.next_billing_at, jazyk)}</strong> —{" "}
+                        <strong>{fmtEurSDph(planPriceFromSlug(plans, plan?.plan_slug))}</strong>{" "}
+                        {t(
+                          "s DPH z uloženej karty cez GoPay. Upozornenie pošleme 7 dní vopred, zrušiť môžete kedykoľvek.",
+                        )}
+                      </p>
+                    ) : vetaObnovy(plan) === "skusobna" ? (
+                      /* Skúšobná verzia bez karty: nič sa nestrhne a tlačidlo
                      „Zrušiť predplatné“ sa tu ani neukazuje — veta o mesačnej
                      obnove by sľubovala niečo, čo neexistuje. */
-                  <p>
-                    {t(
-                      "Skúšobná verzia je zadarmo a karta nie je uložená, takže sa nič samo nestrhne. Ak chcete pokračovať aj po jej skončení, aktivujte plán nižšie.",
+                      <p>
+                        {t(
+                          "Skúšobná verzia je zadarmo a karta nie je uložená, takže sa nič samo nestrhne. Ak chcete pokračovať aj po jej skončení, aktivujte plán nižšie.",
+                        )}
+                      </p>
+                    ) : (
+                      <p>
+                        {t(
+                          "Predplatné sa obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.",
+                        )}
+                      </p>
                     )}
-                  </p>
-                ) : (
-                  <p>
-                    {t(
-                      "Predplatné sa obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.",
+                    {(plan.renewal_attempts ?? 0) > 0 && (
+                      <p className="text-destructive">
+                        {t(
+                          "Posledné strhnutie neprešlo ({n}.\u00a0pokus). Skúsime to znovu zajtra — ak kartu medzitým vymeníte, zaplatiť sa dá aj hneď nižšie.",
+                          { n: plan.renewal_attempts },
+                        )}
+                      </p>
                     )}
-                  </p>
-                )}
-                {(plan.renewal_attempts ?? 0) > 0 && (
-                  <p className="text-destructive">
-                    {t(
-                      "Posledné strhnutie neprešlo ({n}.\u00a0pokus). Skúsime to znovu zajtra — ak kartu medzitým vymeníte, zaplatiť sa dá aj hneď nižšie.",
-                      { n: plan.renewal_attempts },
-                    )}
-                  </p>
-                )}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <UsageRow
+                  label={t("Faktúry tento mesiac")}
+                  used={planUsageInvoices.used}
+                  limit={planUsageInvoices.limit}
+                  pct={planUsageInvoices.pct}
+                />
+                <UsageRow
+                  label={t("Používatelia")}
+                  used={planUsageUsers.used}
+                  limit={planUsageUsers.limit}
+                  pct={planUsageUsers.pct}
+                />
               </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
+                <FeaturePill enabled={plan?.api_enabled} label="API" />
+                <FeaturePill enabled={plan?.webhooks_enabled} label={t("Webhooky")} />
+                <FeaturePill enabled={plan?.recurring_enabled} label={t("Opakované faktúry")} />
+                <FeaturePill enabled={plan?.efaktura_enabled} label={t("eFaktúra")} />
+                <FeaturePill enabled={plan?.bank_matching_enabled} label={t("Bankové párovanie")} />
+              </div>
+
+              {isAdminLike && plan?.status === "active" && !plan?.zdarma && (
+                <div className="flex flex-wrap gap-2 pt-3">
+                  <Button variant="outline" size="sm" onClick={doCancel}>
+                    {t("Zrušiť predplatné")}
+                  </Button>
+                </div>
+              )}
+              {isAdminLike && plan?.status === "cancelled" && (
+                <Button variant="outline" size="sm" onClick={doReactivate}>
+                  {t("Obnoviť predplatné")}
+                </Button>
+              )}
+              {isAdminLike && (
+                <div className="flex flex-wrap gap-2 pt-3">
+                  <Button variant="secondary" size="sm" onClick={doSync} disabled={syncing}>
+                    {syncing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                    {t("Synchronizovať stav platby")}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Plans grid */}
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">{t("Zmeniť plán")}</h2>
+              {productMode === "both" && (
+                <div className="inline-flex rounded-lg border border-border bg-muted p-1 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setTab("invoicing")}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "invoicing" ? "bg-card font-semibold shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <FileText className="h-3.5 w-3.5" /> {t("Fakturačný systém")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTab("logbook")}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "logbook" ? "bg-card font-semibold shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Car className="h-3.5 w-3.5" /> {t("Kniha jázd")}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <UsageRow
-              label={t("Faktúry tento mesiac")}
-              used={planUsageInvoices.used}
-              limit={planUsageInvoices.limit}
-              pct={planUsageInvoices.pct}
-            />
-            <UsageRow
-              label={t("Používatelia")}
-              used={planUsageUsers.used}
-              limit={planUsageUsers.limit}
-              pct={planUsageUsers.pct}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
-            <FeaturePill enabled={plan?.api_enabled} label="API" />
-            <FeaturePill enabled={plan?.webhooks_enabled} label={t("Webhooky")} />
-            <FeaturePill enabled={plan?.recurring_enabled} label={t("Opakované faktúry")} />
-            <FeaturePill enabled={plan?.efaktura_enabled} label={t("eFaktúra")} />
-            <FeaturePill enabled={plan?.bank_matching_enabled} label={t("Bankové párovanie")} />
-          </div>
-
-          {isAdminLike && plan?.status === "active" && !plan?.zdarma && (
-            <div className="flex flex-wrap gap-2 pt-3">
-              <Button variant="outline" size="sm" onClick={doCancel}>
-                {t("Zrušiť predplatné")}
-              </Button>
-            </div>
-          )}
-          {isAdminLike && plan?.status === "cancelled" && (
-            <Button variant="outline" size="sm" onClick={doReactivate}>
-              {t("Obnoviť predplatné")}
-            </Button>
-          )}
-          {isAdminLike && (
-            <div className="flex flex-wrap gap-2 pt-3">
-              <Button variant="secondary" size="sm" onClick={doSync} disabled={syncing}>
-                {syncing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                {t("Synchronizovať stav platby")}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Plans grid */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">{t("Zmeniť plán")}</h2>
-          {productMode === "both" && (
-            <div className="inline-flex rounded-lg border border-border bg-muted p-1 text-sm">
-              <button
-                type="button"
-                onClick={() => setTab("invoicing")}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "invoicing" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <FileText className="h-3.5 w-3.5" /> {t("Fakturačný systém")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("logbook")}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "logbook" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Car className="h-3.5 w-3.5" /> {t("Kniha jázd")}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {tab === "invoicing" ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {plans.map((p) => (
-              <PlanCard
-                key={p.slug}
-                p={p}
-                current={p.slug === plan?.plan_slug}
-                wanted={p.slug === wantedPlan}
-                loading={busySlug === p.slug}
-                disabled={!isAdminLike || busySlug !== null}
-                onSelect={() => selectPlan(p.slug)}
-                bezDph={bezDph}
-              />
-            ))}
-          </div>
-        ) : (
-          <LogbookPlans isAdminLike={isAdminLike} />
-        )}
-
-        {!isAdminLike && (
-          <p className="text-xs text-muted-foreground">
-            {t("Plán môže meniť iba majiteľ alebo administrátor firmy.")}
-          </p>
-        )}
-      </section>
-
-      {/* Payment history */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("História platieb")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadne platby.")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2">{t("Dátum")}</th>
-                    <th className="px-3 py-2">{t("Plán")}</th>
-                    <th className="px-3 py-2">{t("Suma")}</th>
-                    <th className="px-3 py-2">{t("Stav")}</th>
-                    <th className="px-3 py-2">GoPay ID</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((h) => (
-                    <tr key={h.id} className="border-t border-border">
-                      <td className="px-3 py-2">{fmtDate(h.paid_at ?? h.created_at, jazyk)}</td>
-                      <td className="px-3 py-2">{h.plan_slug ?? "—"}</td>
-                      <td className="px-3 py-2">{fmtEur(h.amount_cents)}</td>
-                      <td className="px-3 py-2">
-                        <Badge variant={h.status === "PAID" ? "default" : "secondary"}>
-                          {h.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2 font-mono text-xs">{h.provider_payment_id}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground space-y-1.5">
-        <p>
-          <strong className="text-foreground">{t("Ceny a DPH:")}</strong>{" "}
-          {t("Uvedené ceny sú bez DPH. Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba")}{" "}
-          <strong>23 %</strong> {t("(Starter 9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).")}
-        </p>
-        {bezDph && (
-          <p>
-            <strong className="text-foreground">{t("Platiteľ DPH z inej krajiny EÚ:")}</strong>{" "}
-            {t(
-              "vaša firma má zahraničné IČ DPH, takže predplatné sa fakturuje bez DPH s prenesením daňovej povinnosti — daň priznáte vy. IČ DPH sa pri platbe overí v registri VIES; ak by nebolo platné, účtuje sa s DPH 23 %.",
+            {tab === "invoicing" ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {plans.map((p) => (
+                  <PlanCard
+                    key={p.slug}
+                    p={p}
+                    current={p.slug === plan?.plan_slug}
+                    wanted={p.slug === wantedPlan}
+                    loading={busySlug === p.slug}
+                    disabled={!isAdminLike || busySlug !== null}
+                    onSelect={() => selectPlan(p.slug)}
+                    bezDph={bezDph}
+                  />
+                ))}
+              </div>
+            ) : (
+              <LogbookPlans isAdminLike={isAdminLike} />
             )}
-          </p>
-        )}
-        <p>
-          <strong className="text-foreground">{t("Automatické obnovenie:")}</strong>{" "}
-          {t(
-            "Predplatné sa po skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek — prístup ostáva do konca zaplateného obdobia.",
-          )}
-        </p>
-        <p>
-          <strong className="text-foreground">{t("Platba:")}</strong>{" "}
-          {t(
-            "Bezpečne cez GoPay (Visa, Mastercard, 3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.",
-          )}
-        </p>
-        <p>
-          {t("Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s")}{" "}
-          <a href="/pravne/obchodne-podmienky" target="_blank" rel="noopener" className="underline">
-            {t("Obchodnými podmienkami")}
-          </a>{" "}
-          {t("a")}{" "}
-          <a href="/pravne/gopay-podmienky" target="_blank" rel="noopener" className="underline">
-            {t("GoPay podmienkami")}
-          </a>
-          .
-        </p>
-      </div>
 
-      <p className="pt-2 text-center text-xs text-muted-foreground">
-        {t("Platby spracováva GoPay.")}{" "}
-        <Link to={"/" as any} className="underline">
-          {t("Späť na úvod")}
-        </Link>
-      </p>
-    </div>
+            {!isAdminLike && (
+              <p className="text-xs text-muted-foreground">
+                {t("Plán môže meniť iba majiteľ alebo administrátor firmy.")}
+              </p>
+            )}
+          </section>
+
+          {/* Payment history */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("História platieb")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {history.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadne platby.")}</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2">{t("Dátum")}</th>
+                        <th className="px-3 py-2">{t("Plán")}</th>
+                        <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                        <th className="px-3 py-2">{t("Stav")}</th>
+                        <th className="px-3 py-2">GoPay ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map((h) => (
+                        <tr key={h.id} className="border-t border-border">
+                          <td className="whitespace-nowrap px-3 py-2">
+                            {fmtDate(h.paid_at ?? h.created_at, jazyk)}
+                          </td>
+                          <td className="px-3 py-2">{h.plan_slug ?? "—"}</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-right">
+                            <span className="suma">{fmtEur(h.amount_cents)}</span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <StavOdznak ton={h.status === "PAID" ? "uspech" : "neutralny"}>
+                              {h.status}
+                            </StavOdznak>
+                          </td>
+                          <td className="px-3 py-2 font-mono text-xs">{h.provider_payment_id}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="space-y-1.5 rounded-xl border border-border bg-card p-4 text-xs leading-relaxed text-muted-foreground">
+            <p>
+              <strong className="text-foreground">{t("Ceny a DPH:")}</strong>{" "}
+              {t(
+                "Uvedené ceny sú bez DPH. Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba",
+              )}{" "}
+              <strong>23 %</strong>{" "}
+              {t("(Starter 9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).")}
+            </p>
+            {bezDph && (
+              <p>
+                <strong className="text-foreground">{t("Platiteľ DPH z inej krajiny EÚ:")}</strong>{" "}
+                {t(
+                  "vaša firma má zahraničné IČ DPH, takže predplatné sa fakturuje bez DPH s prenesením daňovej povinnosti — daň priznáte vy. IČ DPH sa pri platbe overí v registri VIES; ak by nebolo platné, účtuje sa s DPH 23 %.",
+                )}
+              </p>
+            )}
+            <p>
+              <strong className="text-foreground">{t("Automatické obnovenie:")}</strong>{" "}
+              {t(
+                "Predplatné sa po skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek — prístup ostáva do konca zaplateného obdobia.",
+              )}
+            </p>
+            <p>
+              <strong className="text-foreground">{t("Platba:")}</strong>{" "}
+              {t(
+                "Bezpečne cez GoPay (Visa, Mastercard, 3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.",
+              )}
+            </p>
+            <p>
+              {t("Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s")}{" "}
+              <a
+                href="/pravne/obchodne-podmienky"
+                target="_blank"
+                rel="noopener"
+                className="font-medium text-primary underline hover:text-primary-hover"
+              >
+                {t("Obchodnými podmienkami")}
+              </a>{" "}
+              {t("a")}{" "}
+              <a
+                href="/pravne/gopay-podmienky"
+                target="_blank"
+                rel="noopener"
+                className="font-medium text-primary underline hover:text-primary-hover"
+              >
+                {t("GoPay podmienkami")}
+              </a>
+              .
+            </p>
+          </div>
+
+          <p className="pt-2 text-center text-xs text-muted-foreground">
+            {t("Platby spracováva GoPay.")}{" "}
+            <Link
+              to={"/" as any}
+              className="font-medium text-primary underline hover:text-primary-hover"
+            >
+              {t("Späť na úvod")}
+            </Link>
+          </p>
+        </div>
+      </PageBody>
+    </>
   );
 }
 
@@ -655,7 +674,7 @@ function UsageRow({
     <div>
       <div className="mb-1 flex items-baseline justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">
+        <span className="font-semibold tabular-nums">
           {used}
           {limit != null && <span className="text-muted-foreground"> / {limit}</span>}
           {limit == null && <span className="text-muted-foreground"> · {t("neobmedzené")}</span>}
@@ -668,14 +687,7 @@ function UsageRow({
 
 function FeaturePill({ enabled, label }: { enabled: boolean | undefined; label: string }) {
   return (
-    <span
-      className={
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs " +
-        (enabled
-          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-          : "bg-muted text-muted-foreground line-through")
-      }
-    >
+    <span className={enabled ? triedaStavu("uspech") : `${triedaStavu("neutralny")} line-through`}>
       <Check className="h-3 w-3" /> {label}
     </span>
   );
@@ -739,10 +751,10 @@ function PlanCard({
       }
     >
       <CardHeader>
-        <div className="flex items-center gap-2 text-sm font-medium">
+        <div className="flex items-center gap-2 text-sm font-semibold">
           {icon} {p.name}
           {wanted && !current && (
-            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary-hover">
+            <span className="ml-auto rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary-hover">
               {t("Vami vybraný")}
             </span>
           )}
@@ -752,7 +764,7 @@ function PlanCard({
             <div className="text-2xl font-semibold">{t("Individuálne")}</div>
           ) : (
             <>
-              <span className="text-3xl font-semibold">{fmtEur(p.price_monthly_cents)}</span>
+              <span className="suma text-3xl font-bold">{fmtEur(p.price_monthly_cents)}</span>
               <span className="text-sm text-muted-foreground"> {t("/ mes.")}</span>
             </>
           )}
@@ -765,7 +777,7 @@ function PlanCard({
           ) : (
             <p className="text-xs text-muted-foreground">
               {t("s DPH 23 %:")}{" "}
-              <span className="font-medium text-foreground">
+              <span className="suma font-semibold text-foreground">
                 {((p.price_monthly_cents * 1.23) / 100).toFixed(2).replace(".", ",")} €
               </span>
             </p>
@@ -775,7 +787,7 @@ function PlanCard({
         <ul className="space-y-1.5 text-sm">
           {features.map((f) => (
             <li key={f} className="flex items-start gap-2">
-              <Check className="mt-0.5 h-4 w-4 text-emerald-700" />
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span>{f}</span>
             </li>
           ))}
@@ -805,8 +817,8 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
   const { t } = useT();
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
+      <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <p>
           {t("Predplatné pre")} <strong>{t("Knihu jázd")}</strong>{" "}
           {t("je zatiaľ dostupné na vyžiadanie. Napíšte nám a aktivujeme vám vybraný plán.")}
@@ -816,11 +828,11 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
         {LOGBOOK_PLANS.map((p) => (
           <Card key={p.slug} className={p.featured ? "border-primary ring-1 ring-primary/30" : ""}>
             <CardHeader>
-              <div className="flex items-center gap-2 text-sm font-medium">
+              <div className="flex items-center gap-2 text-sm font-semibold">
                 <Car className="h-4 w-4" /> {t(p.name)}
               </div>
               <div className="pt-2">
-                <span className="text-3xl font-semibold">{p.price}</span>
+                <span className="suma text-3xl font-bold">{p.price}</span>
                 <span className="text-sm text-muted-foreground"> {t("/ mes.")}</span>
               </div>
               <p className="pt-1 text-xs text-muted-foreground">{t(p.tagline)}</p>
@@ -829,7 +841,7 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
               <ul className="space-y-1.5 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
-                    <Check className="mt-0.5 h-4 w-4 text-emerald-700" />
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>{t(f)}</span>
                   </li>
                 ))}

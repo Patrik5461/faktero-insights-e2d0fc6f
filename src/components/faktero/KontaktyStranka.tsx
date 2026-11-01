@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Pencil, Trash2, RotateCcw, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, Upload, Users } from "lucide-react";
 import { ImportOdberatelovOkno } from "@/components/faktero/ImportOdberatelovOkno";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
@@ -25,7 +25,9 @@ import {
   ConfirmDialog,
   BulkBar,
   DeletedToggle,
+  EmptyState,
 } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 /** Fyzická osoba nemá IČO ani daňové čísla — formulár sa jej prispôsobí. */
 function jeFyzicka(c: { typ?: string | null }): boolean {
@@ -257,7 +259,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           aria-label={t("Upraviť")}
           title={t("Upraviť")}
           onClick={() => setEditing(c)}
-          className="rounded p-1.5 hover:bg-muted"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Pencil className="h-4 w-4" />
         </button>
@@ -274,7 +276,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
               toast.error(e?.message ?? t("Chyba"));
             }
           }}
-          className="rounded p-1.5 text-primary hover:bg-primary/10"
+          className="rounded-md p-1.5 text-primary hover:bg-primary/10"
         >
           <RotateCcw className="h-4 w-4" />
         </button>
@@ -283,7 +285,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           aria-label={t("Zmazať")}
           title={t("Zmazať")}
           onClick={() => setRowDelete(c)}
-          className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+          className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -300,13 +302,13 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setImportOtvoreny(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary"
             >
               <Upload className="h-4 w-4" /> {t("Importovať")}
             </button>
             <button
               onClick={() => setEditing(PRAZDNY)}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t(T.novy)}
             </button>
@@ -322,12 +324,13 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
         />
       )}
       <PageBody>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <input
+            aria-label={t("Hľadať názov, IČO, email…")}
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
             placeholder={t("Hľadať názov, IČO, email…")}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-72"
           />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
@@ -350,10 +353,10 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           }}
           onClear={list.clearSelection}
         />
-        <div className="mt-3 rounded-xl border border-border bg-card">
+        <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                 <tr>
                   <th className="w-10 p-3">
                     <input
@@ -374,15 +377,18 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
               <tbody className="divide-y divide-border">
                 {list.loading && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      {t("Načítavam…")}
+                    <td colSpan={6} className="p-0">
+                      <NacitavanieStav />
                     </td>
                   </tr>
                 )}
                 {!list.loading && list.rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      {t(list.showDeleted ? T.ziadniVymazani : T.ziadni)}
+                    <td colSpan={6} className="p-0">
+                      <EmptyState
+                        icon={Users}
+                        title={list.showDeleted ? T.ziadniVymazani : T.ziadni}
+                      />
                     </td>
                   </tr>
                 )}
@@ -401,24 +407,24 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                     Meno je to, na čo človek ťukne — v zozname faktúr to tak je
                     tiež.
                   */}
-                    <td className="p-3 font-medium">
+                    <td className="max-w-[28rem] p-3 font-semibold">
                       <button
                         onClick={() => setEditing(c)}
-                        className="text-left hover:underline"
+                        className="break-words text-left hover:text-primary hover:underline"
                         title={t(T.karta)}
                       >
                         {c.name}
                       </button>
                       {jeFyzicka(c) && (
-                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        <span className="ml-2 inline-block whitespace-nowrap rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                           {t("fyzická osoba")}
                         </span>
                       )}
                     </td>
-                    <td className="p-3">{c.ico ?? "—"}</td>
-                    <td className="p-3">{c.dic ?? "—"}</td>
-                    <td className="p-3">{c.email ?? "—"}</td>
-                    <td className="p-3 text-right">{akcie(c)}</td>
+                    <td className="whitespace-nowrap p-3 tabular-nums">{c.ico ?? "—"}</td>
+                    <td className="whitespace-nowrap p-3 tabular-nums">{c.dic ?? "—"}</td>
+                    <td className="max-w-[18rem] break-all p-3 text-muted-foreground">{c.email ?? "—"}</td>
+                    <td className="whitespace-nowrap p-3 text-right">{akcie(c)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -426,10 +432,14 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
           </div>
           {/* Na mobile karty — v tabuľke by ikony Upraviť/Zmazať ostali mimo obrazovky. */}
           <ul className="divide-y divide-border md:hidden">
-            {list.loading && <li className="p-6 text-center text-muted-foreground">{t("Načítavam…")}</li>}
+            {list.loading && (
+              <li>
+                <NacitavanieStav />
+              </li>
+            )}
             {!list.loading && list.rows.length === 0 && (
-              <li className="p-6 text-center text-muted-foreground">
-                {t(list.showDeleted ? T.ziadniVymazani : T.ziadni)}
+              <li>
+                <EmptyState icon={Users} title={list.showDeleted ? T.ziadniVymazani : T.ziadni} />
               </li>
             )}
             {list.rows.map((c) => (
@@ -444,17 +454,17 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                 <div className="min-w-0 flex-1">
                   <button
                     onClick={() => setEditing(c)}
-                    className="break-words text-left font-medium hover:underline"
+                    className="break-words text-left font-semibold hover:text-primary hover:underline"
                     title={t(T.karta)}
                   >
                     {c.name}
                   </button>
                   {jeFyzicka(c) && (
-                    <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                    <span className="ml-2 inline-block whitespace-nowrap rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                       {t("fyzická osoba")}
                     </span>
                   )}
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground tabular-nums">
                     {c.ico && <span>{t("IČO")} {c.ico}</span>}
                     {c.dic && <span>{t("DIČ")} {c.dic}</span>}
                     {c.email && <span className="min-w-0 break-all">{c.email}</span>}
@@ -579,12 +589,15 @@ function CustomerDialog({
     return () => clearTimeout(h);
   }, [c.ico, c.id]);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-[var(--w-prekrytie,rgb(0_0_0/0.4))] p-4 backdrop-blur-[2px]"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={tr(c.id ? TEXTY[rola].upravit : TEXTY[rola].novy)}
-        className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-card p-5 shadow-[var(--w-tien-okno)] max-h-[calc(100dvh-2rem)] overflow-y-auto sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">{tr(c.id ? TEXTY[rola].upravit : TEXTY[rola].novy)}</h2>
@@ -596,7 +609,7 @@ function CustomerDialog({
           className="mt-4 grid gap-4 sm:grid-cols-2"
         >
           {/* Spoločný adresár: ten istý kontakt môže byť odberateľ aj dodávateľ. */}
-          <div className="sm:col-span-2 flex flex-wrap gap-4 text-sm">
+          <div className="sm:col-span-2 flex flex-wrap items-center gap-4 text-sm font-semibold">
             <label className="inline-flex items-center gap-2">
               <input
                 type="checkbox"
@@ -614,7 +627,7 @@ function CustomerDialog({
               {tr("Dodávateľ")}
             </label>
             {c.odberatel === false && !c.dodavatel && (
-              <span className="text-xs text-destructive">{tr("Vyberte aspoň jedno.")}</span>
+              <span className="text-xs font-normal text-destructive">{tr("Vyberte aspoň jedno.")}</span>
             )}
           </div>
           {/* Firma alebo súkromná osoba. Rozhoduje to o tom, čo sa vypĺňa:
@@ -628,10 +641,11 @@ function CustomerDialog({
                 key={t.kod}
                 type="button"
                 onClick={() => setC((prev) => ({ ...(prev as Customer), typ: t.kod }))}
+                aria-pressed={(c.typ ?? "firma") === t.kod}
                 className={`rounded-md border px-3 py-1.5 text-sm ${
                   (c.typ ?? "firma") === t.kod
-                    ? "border-primary bg-primary/10 font-medium text-primary-hover"
-                    : "border-border hover:bg-secondary"
+                    ? "border-primary bg-primary/10 font-semibold text-primary-hover"
+                    : "border-input hover:bg-secondary"
                 }`}
               >
                 {tr(t.popis)}
@@ -640,7 +654,7 @@ function CustomerDialog({
           </div>
 
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-semibold">
               {tr(jeFyzicka(c) ? "Meno a priezvisko *" : "Názov *")}
             </span>
             <div className="mt-1">
@@ -668,7 +682,7 @@ function CustomerDialog({
             </div>
           </label>
           {dup && (
-            <div className="sm:col-span-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+            <div role="status" className="sm:col-span-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-foreground">
               {tr("Kontakt s týmto IČO už v adresári je:")} <strong>{dup.name}</strong>.{" "}
               {tr(
                 rola === "dodavatel"
@@ -679,7 +693,7 @@ function CustomerDialog({
           )}
           {!jeFyzicka(c) && (
             <label className="block">
-              <span className="text-sm font-medium">{tr("IČO")}</span>
+              <span className="text-sm font-semibold">{tr("IČO")}</span>
               <div className="mt-1 flex -space-x-px items-start">
                 <input
                   value={c.ico ?? ""}
@@ -745,7 +759,7 @@ function CustomerDialog({
           {c.dodavatel && (
             <>
               <label className="block">
-                <span className="text-sm font-medium">IBAN</span>
+                <span className="text-sm font-semibold">IBAN</span>
                 <input
                   value={c.iban ?? ""}
                   onChange={(e) =>
@@ -759,7 +773,7 @@ function CustomerDialog({
                 </span>
               </label>
               <label className="block">
-                <span className="text-sm font-medium">SWIFT/BIC</span>
+                <span className="text-sm font-semibold">SWIFT/BIC</span>
                 <input
                   value={c.swift ?? ""}
                   onChange={(e) => f("swift", e.target.value.toUpperCase().trim() || null)}
@@ -781,7 +795,7 @@ function CustomerDialog({
               />
               {skupiny.length > 0 && (
                 <label className="block">
-                  <span className="text-sm font-medium">{tr("Cenová skupina")}</span>
+                  <span className="text-sm font-semibold">{tr("Cenová skupina")}</span>
                   <select
                     value={c.price_group_id ?? ""}
                     onChange={(e) => f("price_group_id", e.target.value || null)}
@@ -800,7 +814,7 @@ function CustomerDialog({
                 </label>
               )}
               <label className="block">
-                <span className="text-sm font-medium">{tr("Individuálna zľava (%)")}</span>
+                <span className="text-sm font-semibold">{tr("Individuálna zľava (%)")}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -819,7 +833,7 @@ function CustomerDialog({
                 </span>
               </label>
               <label className="block">
-                <span className="text-sm font-medium">{tr("Jazyk dokladov")}</span>
+                <span className="text-sm font-semibold">{tr("Jazyk dokladov")}</span>
                 {/* Prázdne = jazyk podľa krajiny firmy (nemecká firma po nemecky, inak slovensky). */}
                 <select
                   value={c.invoice_language ?? jazykFirmy}
@@ -848,7 +862,7 @@ function CustomerDialog({
               className="mt-0.5 h-4 w-4 rounded border-input"
             />
             <span>
-              <span className="font-medium">{tr("Povinné číslo objednávky")}</span>
+              <span className="font-semibold">{tr("Povinné číslo objednávky")}</span>
               <span className="block text-xs text-muted-foreground">
                 {tr("Keď doklad od tohto partnera alebo preňho nemá číslo objednávky, Faktero upozorní pri vystavení faktúry aj v Nespracovaných.")}
               </span>
@@ -857,7 +871,7 @@ function CustomerDialog({
           {/* Samofakturácia je dohoda s dodávateľom; staršie dohody ostávajú viditeľné. */}
           {(c.dodavatel || c.samofakturacia_od) && <SamofakturaciaDohoda c={c} f={f} />}
           <label className="sm:col-span-2 block">
-            <span className="text-sm font-medium">{tr("Poznámky")}</span>
+            <span className="text-sm font-semibold">{tr("Poznámky")}</span>
             <textarea
               value={c.notes ?? ""}
               onChange={(e) => f("notes", e.target.value)}
@@ -869,13 +883,13 @@ function CustomerDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary"
             >
               {tr("Zrušiť")}
             </button>
             <button
               type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               {tr("Uložiť")}
             </button>
@@ -913,8 +927,8 @@ function SamofakturaciaDohoda({
     );
   }
   return (
-    <fieldset className="sm:col-span-2 rounded-md border border-border p-3">
-      <legend className="px-1 text-sm font-medium">{t("Dohoda o samofakturácii")}</legend>
+    <fieldset className="sm:col-span-2 rounded-lg border border-border p-3 sm:p-4">
+      <legend className="px-1 text-sm font-semibold">{t("Dohoda o samofakturácii")}</legend>
       <p className="mb-3 text-xs text-muted-foreground">
         {t(
           "Faktúry za tohto dodávateľa vyhotovujete vy a on ich odsúhlasí. Zákon chce písomnú dohodu uzavretú vopred — zapíšte, od kedy platí.",
@@ -922,7 +936,7 @@ function SamofakturaciaDohoda({
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-sm font-medium">{t("Platí od")}</span>
+          <span className="text-sm font-semibold">{t("Platí od")}</span>
           <input
             type="date"
             value={c.samofakturacia_od ?? ""}
@@ -931,7 +945,7 @@ function SamofakturaciaDohoda({
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">{t("Platí do (nepovinné)")}</span>
+          <span className="text-sm font-semibold">{t("Platí do (nepovinné)")}</span>
           <input
             type="date"
             value={c.samofakturacia_do ?? ""}
@@ -941,7 +955,7 @@ function SamofakturaciaDohoda({
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-sm font-medium">{t("Dohoda (číslo, dátum podpisu, poznámka)")}</span>
+          <span className="text-sm font-semibold">{t("Dohoda (číslo, dátum podpisu, poznámka)")}</span>
           <input
             value={c.samofakturacia_dohoda ?? ""}
             placeholder={t("napr. Zmluva o samofakturácii č. 3/2026 zo dňa 1. 10. 2026")}
@@ -984,7 +998,7 @@ function In({
 }) {
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-semibold">{label}</span>
       <input
         type={type}
         required={required}

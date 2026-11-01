@@ -11,6 +11,7 @@ import { Send } from "lucide-react";
 import { kanalDorucenia, kratkyCas } from "@/components/faktero/EfakturaStatusBadge";
 import { BunkaStavuEfaktury } from "@/components/faktero/EfakturaStavWeb";
 import { stavEfaktury } from "@/lib/faktero/efaktura/stav-efaktury";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 function prijemca(d: {
   recipient_participant_id?: string | null;
@@ -44,7 +45,7 @@ function DeliveriesPage() {
       <PageBody>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
                 <th className="p-3">{t("Kanál")}</th>
                 <th className="p-3">{t("Príjemca")}</th>
@@ -64,15 +65,11 @@ function DeliveriesPage() {
               )}
               {q.data && q.data.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center">
-                    <div className="mx-auto flex max-w-md flex-col items-center gap-3 text-muted-foreground">
-                      <div className="rounded-full bg-muted p-3">
-                        <Send className="h-6 w-6" />
-                      </div>
-                      <p className="text-sm">
-                        {t("Zatiaľ neboli odoslané žiadne eFaktúry. Doručenia sa zobrazia po napojení Peppol prepravy.")}
-                      </p>
-                    </div>
+                  <td colSpan={6}>
+                    <EmptyState
+                      icon={Send}
+                      title="Zatiaľ neboli odoslané žiadne eFaktúry. Doručenia sa zobrazia po napojení Peppol prepravy."
+                    />
                   </td>
                 </tr>
               )}
@@ -89,7 +86,7 @@ function DeliveriesPage() {
                     <BunkaStavuEfaktury stav={stavEfaktury([d])} />
                   </td>
                   <td className="p-3 tabular-nums">{d.attempt_count}</td>
-                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
+                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground tabular-nums">
                     {kratkyCas(d.sent_at)}
                   </td>
                   {/* Dlhá chyba v jednom riadku (celá v title), aby riadky s chybou

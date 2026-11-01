@@ -46,14 +46,14 @@ export function KopirovatNastaveniaOkno({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Kopírovať nastavenia do iných firiem")}
-        className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-popover p-5 shadow-2xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">{t("Kopírovať nastavenia do iných firiem")}</h2>
@@ -61,9 +61,10 @@ export function KopirovatNastaveniaOkno({
           {t("Rovnaký kód v cieľovej firme sa prepíše, nič sa nemaže. Najviac 10 firiem naraz.")}
         </p>
         <div className="mt-4 space-y-2 text-sm">
-          <label className="flex items-center gap-2">
+          <label className="flex items-start gap-2">
             <input
               type="checkbox"
+              className="mt-1 shrink-0"
               checked={ciselnik}
               onChange={(e) => setCiselnik(e.target.checked)}
             />
@@ -71,16 +72,17 @@ export function KopirovatNastaveniaOkno({
               "Číselník — predkontácie s účtami a pomermi, členenia, strediská, činnosti, rady, pokladne",
             )}
           </label>
-          <label className="flex items-center gap-2">
+          <label className="flex items-start gap-2">
             <input
               type="checkbox"
+              className="mt-1 shrink-0"
               checked={predvolene}
               onChange={(e) => setPredvolene(e.target.checked)}
             />
             {t("Predvolené kódy podľa druhu dokladu a účtovný program")}
           </label>
         </div>
-        <div className="mt-4 max-h-64 space-y-1 overflow-auto rounded-md border border-border p-2 text-sm">
+        <div className="mt-4 max-h-64 space-y-0.5 overflow-auto rounded-lg border border-border bg-background p-1.5 text-sm">
           {firmy.length === 0 ? (
             <p className="p-2 text-muted-foreground">
               {t("Nemáte inú firmu, do ktorej by sa dalo kopírovať.")}
@@ -89,7 +91,7 @@ export function KopirovatNastaveniaOkno({
             firmy.map((f) => (
               <label
                 key={f.id}
-                className="flex items-center gap-2 rounded px-2 py-1 hover:bg-muted/40"
+                className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
               >
                 <input
                   type="checkbox"
@@ -97,16 +99,16 @@ export function KopirovatNastaveniaOkno({
                   disabled={!vyber[f.id] && ciele.length >= 10}
                   onChange={(e) => setVyber({ ...vyber, [f.id]: e.target.checked })}
                 />
-                {f.name}
+                <span className="min-w-0 truncate">{f.name}</span>
               </label>
             ))
           )}
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
           >
             {t("Zavrieť")}
           </button>
@@ -139,7 +141,7 @@ export function KopirovatNastaveniaOkno({
                 setBusy(false);
               }
             }}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
           >
             {t("Kopírovať ({n})", { n: ciele.length })}
           </button>

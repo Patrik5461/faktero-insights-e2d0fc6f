@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { EmptyState } from "./ListControls";
+import { NacitavanieStav } from "./web/StavyObsahu";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "./KodPohody";
@@ -66,55 +68,55 @@ export function PredlohyUctovania({ companyId }: { companyId: string }) {
 
   return (
     <div className="mt-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-        <p className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground sm:p-5">
+        <p className="min-w-0 max-w-prose flex-1">
           {t(
             "Predloha je pomenované zaúčtovanie bez podmienky — napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije; v zaúčtovaní dokladu ju vyberiete cez „Použiť predlohu…“ a doplní predkontáciu, členenie, pokladňu, rad aj poznámku naraz.",
           )}
         </p>
         <button
           onClick={() => setUprava({ ...NOVA_PREDLOHA })}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           <Plus className="h-4 w-4" /> {t("Nová predloha")}
         </button>
       </div>
 
       {predlohy === null ? (
-        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
+        <div className="mt-4 rounded-xl border border-border bg-card">
+          <NacitavanieStav />
         </div>
       ) : predlohy.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          {t("Zatiaľ žiadna predloha.")}
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-card">
+          <EmptyState icon={FileText} title="Zatiaľ žiadna predloha." />
         </div>
       ) : (
         <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full min-w-[520px] text-sm">
-            <thead className="border-b border-border text-left text-xs text-muted-foreground">
+            <thead className="border-b border-border bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
               <tr>
-                <th className="p-3">{t("Predloha")}</th>
-                <th className="p-3">{t("Pre")}</th>
-                <th className="p-3">{t("Doplní")}</th>
-                <th className="p-3">
+                <th className="whitespace-nowrap px-3 py-2.5">{t("Predloha")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5">{t("Pre")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5">{t("Doplní")}</th>
+                <th className="px-3 py-2.5">
                   <span className="sr-only">{t("Akcie")}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {predlohy.map((r) => (
-                <tr key={r.id} className="border-b border-border last:border-0">
-                  <td className="p-3 font-medium">{r.nazov}</td>
-                  <td className="p-3 text-muted-foreground">
+                <tr key={r.id} className="border-b border-border align-top last:border-0 hover:bg-muted/30">
+                  <td className="p-3 font-semibold break-words">{r.nazov}</td>
+                  <td className="whitespace-nowrap p-3 text-muted-foreground">
                     {t(DRUHY_PREDLOH.find((d) => d.kod === (r.druh ?? null))?.nazov ?? "")}
                   </td>
-                  <td className="p-3">{popisPredlohy(r, t)}</td>
+                  <td className="p-3 break-words">{popisPredlohy(r, t)}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
                       <button
                         onClick={() => setUprava({ ...r })}
                         aria-label={t("Upraviť {nazov}", { nazov: r.nazov })}
-                        className="rounded-md border border-border p-1.5 hover:bg-secondary"
+                        className="rounded-md border border-input bg-card p-1.5 hover:bg-secondary"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -199,12 +201,12 @@ function UpravaPredlohy({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/30 p-4 backdrop-blur-[2px]" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={p.id ? t("Upraviť predlohu") : t("Nová predloha")}
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto rounded-xl border border-border bg-card p-6"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-popover p-5 shadow-2xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold">
@@ -212,7 +214,7 @@ function UpravaPredlohy({
         </h3>
         <div className="mt-4 grid grid-cols-1 gap-3 [&>*]:min-w-0">
           <label className="block text-sm">
-            <span className="font-medium">{t("Názov")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Názov")}</span>
             <input
               value={p.nazov}
               onChange={(e) => zmen({ nazov: e.target.value })}
@@ -222,7 +224,7 @@ function UpravaPredlohy({
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">{t("Ponúkať pri")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Ponúkať pri")}</span>
             <select
               value={p.druh ?? ""}
               onChange={(e) => zmen({ druh: (e.target.value || null) as DruhPredlohy | null })}
@@ -236,7 +238,7 @@ function UpravaPredlohy({
             </select>
           </label>
           <label className="block text-sm">
-            <span className="font-medium">{t("Predkontácia (Pohoda)")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
             <KodPohody
               ariaLabel="Predkontácia"
               value={p.predkontacia ?? ""}
@@ -247,7 +249,7 @@ function UpravaPredlohy({
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">{t("Členenie DPH (Pohoda)")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Členenie DPH (Pohoda)")}</span>
             <KodPohody
               ariaLabel="Členenie DPH"
               value={p.clenenie_dph ?? ""}
@@ -258,7 +260,7 @@ function UpravaPredlohy({
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">{t("Členenie kontrolného výkazu")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Členenie kontrolného výkazu")}</span>
             <select
               value={p.kv_clenenie ?? ""}
               onChange={(e) => zmen({ kv_clenenie: e.target.value || null })}
@@ -274,7 +276,7 @@ function UpravaPredlohy({
           </label>
           {p.druh === "blocek" || p.druh === null ? (
             <label className="block text-sm">
-              <span className="font-medium">{t("Pokladňa (hotovostný bloček)")}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{t("Pokladňa (hotovostný bloček)")}</span>
               <KodPohody
                 ariaLabel="Pokladňa v Pohode"
                 value={p.pokladna ?? ""}
@@ -287,7 +289,7 @@ function UpravaPredlohy({
             </label>
           ) : null}
           <label className="block text-sm">
-            <span className="font-medium">{t("Číselný rad v Pohode")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Číselný rad v Pohode")}</span>
             <KodPohody
               ariaLabel="Číselný rad v Pohode"
               value={p.rad ?? ""}
@@ -298,7 +300,7 @@ function UpravaPredlohy({
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">{t("Interná poznámka pre účtovníka (do Pohody)")}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{t("Interná poznámka pre účtovníka (do Pohody)")}</span>
             <input
               value={p.poznamka ?? ""}
               onChange={(e) => zmen({ poznamka: e.target.value })}
@@ -308,17 +310,17 @@ function UpravaPredlohy({
           </label>
         </div>
         {chyba && p.nazov ? <p className="mt-3 text-sm text-destructive">{t(chyba)}</p> : null}
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
           >
             {t("Zrušiť")}
           </button>
           <button
             onClick={() => void uloz()}
             disabled={busy || !!chyba}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("Uložiť")}

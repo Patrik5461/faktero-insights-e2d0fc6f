@@ -15,6 +15,11 @@ import { POCET_ZALOH, velkostSlovom } from "@/lib/faktero/zalohy-firmy";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+
+const TON_ZALOHY: Record<string, TonStavu> = { bezi: "priebeh", hotovo: "uspech", chyba: "chyba" };
 
 export const Route = createFileRoute("/_authenticated/nastavenia/zalohy")({
   head: ({ match }) => ({
@@ -114,7 +119,7 @@ function ZalohyStranka() {
             type="button"
             onClick={spusti}
             disabled={pracuje === "nova" || bezi}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {pracuje === "nova" || bezi ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -134,19 +139,21 @@ function ZalohyStranka() {
             )}
           </p>
           {zoznam === null ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <NacitavanieStav className="justify-start px-0 py-6" />
           ) : zoznam.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              {t("Zatiaľ žiadna záloha.")}
+            <div className="rounded-xl border border-border bg-card">
+              <EmptyState icon={Archive} title="Zatiaľ žiadna záloha." />
             </div>
           ) : (
             <ul className="divide-y divide-border rounded-xl border border-border bg-card">
               {zoznam.map((z) => (
                 <li key={z.id} className="flex min-w-0 flex-wrap items-center gap-3 p-4">
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">{datum(z.created_at)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {t(STAV[z.stav] ?? z.stav)}
+                    <div className="text-sm font-semibold tabular-nums">{datum(z.created_at)}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-muted-foreground tabular-nums">
+                      <StavOdznak ton={TON_ZALOHY[z.stav] ?? "neutralny"} maly>
+                        {t(STAV[z.stav] ?? z.stav)}
+                      </StavOdznak>
                       {z.stav === "hotovo" && ` · ${velkostSlovom(z.velkost)}`}
                       {z.stav === "hotovo" &&
                         z.pocty?.["faktúry"] != null &&
@@ -164,7 +171,7 @@ function ZalohyStranka() {
                       type="button"
                       onClick={() => naStiahnutie(z)}
                       disabled={pracuje === z.id}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       <Download className="h-4 w-4" />
                       {t("Stiahnuť")}
@@ -176,7 +183,7 @@ function ZalohyStranka() {
                       aria-label={t("Zmazať zálohu")}
                       onClick={() => odstran(z)}
                       disabled={pracuje === z.id}
-                      className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive disabled:opacity-50"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-50"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

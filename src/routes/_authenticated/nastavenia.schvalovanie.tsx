@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   nastavenieSchvalovaniaFn,
@@ -86,7 +88,7 @@ function Stranka() {
       <>
         <PageHeader title={t("Schvaľovanie dokladov")} />
         <PageBody>
-          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+          <NacitavanieStav />
         </PageBody>
       </>
     );
@@ -161,11 +163,11 @@ function Stranka() {
               checked={n.zapnute}
               disabled={!spravca}
               onChange={(e) => setN({ ...n, zapnute: e.target.checked })}
-              className="mt-1 h-4 w-4"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
             />
             <span>
-              <span className="font-medium">{t("Schvaľovať doklady")}</span>
-              <span className="block text-xs text-muted-foreground">
+              <span className="font-semibold">{t("Schvaľovať doklady")}</span>
+              <span className="mt-0.5 block max-w-prose text-sm text-muted-foreground">
                 {t(
                   "Platí pre doklady pridané od zapnutia. Do Pohody, do mesačného balíka a do príkazu na úhradu potom idú len schválené.",
                 )}
@@ -184,7 +186,7 @@ function Stranka() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <div className="text-xs text-muted-foreground">{t("Čo sa schvaľuje")}</div>
+              <div className="text-xs font-semibold text-muted-foreground">{t("Čo sa schvaľuje")}</div>
               <div className="mt-1 flex flex-wrap gap-3">
                 {AGENDY.map((a) => (
                   <label key={a} className="flex items-center gap-1.5 text-sm">
@@ -210,7 +212,7 @@ function Stranka() {
               </p>
             </div>
             <label className="block">
-              <span className="text-xs text-muted-foreground">{t("Automaticky schváliť doklad so sumou pod ({mena})", { mena: mena.symbol })}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{t("Automaticky schváliť doklad so sumou pod ({mena})", { mena: mena.symbol })}</span>
               <input
                 value={n.autoPod}
                 disabled={!spravca}
@@ -240,7 +242,7 @@ function Stranka() {
               <button
                 onClick={ulozNastavenie}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť")}
               </button>
@@ -261,7 +263,7 @@ function Stranka() {
         <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h2 className="text-base font-semibold text-foreground">
                 {t("Schvaľovacie cesty")}
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -275,7 +277,7 @@ function Stranka() {
                 onClick={() =>
                   setForm({ nazov: "", urovne: [[]], podmienky: {}, predvolena: !d.cesty.length, poradie: d.cesty.length })
                 }
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" /> {t("Nová cesta")}
               </button>
@@ -285,12 +287,12 @@ function Stranka() {
           {form && (
             <div className="mt-4 space-y-3 rounded-md border border-primary/30 bg-primary/5 p-3">
               <label className="block">
-                <span className="text-xs text-muted-foreground">{t("Názov")}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{t("Názov")}</span>
                 <input value={form.nazov} onChange={(e) => setForm({ ...form, nazov: e.target.value })} className={vstup} />
               </label>
               {form.urovne.map((u, i) => (
                 <div key={i}>
-                  <div className="text-xs text-muted-foreground">{t("{n}. úroveň — schvaľovatelia", { n: i + 1 })}</div>
+                  <div className="text-xs font-semibold text-muted-foreground">{t("{n}. úroveň — schvaľovatelia", { n: i + 1 })}</div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
                     {[...ludia, { id: "manazer", rola: "", meno: t("manažér zákazky dokladu") }].map((l) => (
                       <label key={l.id} className="flex items-center gap-1.5 text-sm">
@@ -312,7 +314,7 @@ function Stranka() {
                     {form.urovne.length > 1 && (
                       <button
                         onClick={() => setForm({ ...form, urovne: form.urovne.filter((_, j) => j !== i) })}
-                        className="text-xs text-destructive hover:underline"
+                        className="text-xs font-semibold text-destructive hover:underline"
                       >
                         {t("odobrať úroveň")}
                       </button>
@@ -323,14 +325,14 @@ function Stranka() {
               {form.urovne.length < 15 && (
                 <button
                   onClick={() => setForm({ ...form, urovne: [...form.urovne, []] })}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
                 >
                   <Plus className="h-3.5 w-3.5" /> {t("Pridať ďalšiu úroveň")}
                 </button>
               )}
               <div className="grid gap-3 sm:grid-cols-4">
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">{t("Pre doklady")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Pre doklady")}</span>
                   <select
                     value={form.podmienky.agenda ?? ""}
                     onChange={(e) => setForm({ ...form, podmienky: { ...form.podmienky, agenda: e.target.value as any } })}
@@ -345,7 +347,7 @@ function Stranka() {
                   </select>
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">{t("IČO dodávateľa / odberateľa")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("IČO dodávateľa / odberateľa")}</span>
                   <input
                     value={form.podmienky.ico ?? ""}
                     onChange={(e) => setForm({ ...form, podmienky: { ...form.podmienky, ico: e.target.value } })}
@@ -353,7 +355,7 @@ function Stranka() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">{t("Suma od ({mena})", { mena: mena.symbol })}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Suma od ({mena})", { mena: mena.symbol })}</span>
                   <input
                     value={form.podmienky.suma_od ?? ""}
                     inputMode="decimal"
@@ -370,7 +372,7 @@ function Stranka() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs text-muted-foreground">{t("Predkontácia")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Predkontácia")}</span>
                   <input
                     value={form.podmienky.predkontacia ?? ""}
                     onChange={(e) => setForm({ ...form, podmienky: { ...form.podmienky, predkontacia: e.target.value } })}
@@ -387,13 +389,13 @@ function Stranka() {
                 {t("Predvolená cesta (pre doklady, na ktoré nesedí iné pravidlo)")}
               </label>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setForm(null)} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+                <button onClick={() => setForm(null)} className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent">
                   {t("Zrušiť")}
                 </button>
                 <button
                   onClick={ulozCestu}
                   disabled={busy || !form.nazov.trim() || !form.urovne.some((u) => u.length)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť cestu")}
                 </button>
@@ -408,12 +410,14 @@ function Stranka() {
           ) : (
             <ul className="mt-4 divide-y divide-border">
               {d.cesty.map((c: any) => (
-                <li key={c.id} className="flex flex-wrap items-start gap-2 py-2 text-sm">
+                <li key={c.id} className="flex flex-wrap items-start gap-2 py-3 text-sm">
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">
+                    <div className="font-semibold">
                       {c.nazov}
                       {c.predvolena && (
-                        <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{t("predvolená")}</span>
+                        <StavOdznak ton="neutralny" maly className="ml-2">
+                          {t("predvolená")}
+                        </StavOdznak>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -447,7 +451,7 @@ function Stranka() {
                             poradie: c.poradie ?? 0,
                           })
                         }
-                        className="rounded p-1 text-muted-foreground hover:bg-secondary"
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
                         aria-label={t("Upraviť {nazov}", { nazov: c.nazov })}
                       >
                         <Pencil className="h-4 w-4" />
@@ -462,7 +466,7 @@ function Stranka() {
                             toast.error(e?.message ?? t("Nepodarilo sa"));
                           }
                         }}
-                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive"
                         aria-label={t("Zmazať {nazov}", { nazov: c.nazov })}
                       >
                         <Trash2 className="h-4 w-4" />

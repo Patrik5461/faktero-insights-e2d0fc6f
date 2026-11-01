@@ -87,7 +87,7 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
           <button
             type="button"
             onClick={() => setVlozit((v) => !v)}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary"
+            className="rounded-lg border border-input px-4 py-2 text-sm font-semibold hover:bg-secondary"
           >
             {t("Vložiť XML ako text")}
           </button>
@@ -118,7 +118,7 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
               '<?xml version="1.0" encoding="UTF-8"?>\n<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" …'
             }
             aria-label={t("XML e-faktúry")}
-            className="w-full rounded-lg border border-border bg-background p-3 font-mono text-xs"
+            className="w-full rounded-lg border border-input bg-background p-3 font-mono text-xs"
           />
           <button
             type="button"
@@ -153,12 +153,12 @@ export function KontrolaEfaktury({ maxVelkost }: { maxVelkost: number }) {
           <div
             className={`flex flex-wrap items-start gap-3 rounded-xl border p-4 ${
               vysledok.platny
-                ? "border-emerald-500/40 bg-emerald-500/10"
+                ? "border-primary/40 bg-primary/10"
                 : "border-destructive/40 bg-destructive/10"
             }`}
           >
             {vysledok.platny ? (
-              <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-700 dark:text-emerald-400" />
+              <CheckCircle2 className="h-6 w-6 shrink-0 text-primary" />
             ) : (
               <XCircle className="h-6 w-6 shrink-0 text-destructive" />
             )}

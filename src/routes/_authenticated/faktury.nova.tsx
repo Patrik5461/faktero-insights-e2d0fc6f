@@ -1576,7 +1576,7 @@ function NewInvoice() {
           <button
             type="button"
             onClick={() => setAiOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-gradient-to-r from-primary/15 to-primary/5 px-3 py-2 text-sm font-medium text-primary hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary-hover hover:bg-primary/15"
           >
             <Sparkles className="h-4 w-4" /> {t("AI vytvorenie")}
             <kbd className="ml-1 hidden rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono sm:inline">
@@ -1598,7 +1598,7 @@ function NewInvoice() {
           {/* items-stretch: obe karty končia na tej istej čiare, aj keď má jedna menej polí. */}
           <div className="grid gap-6 lg:grid-cols-2">
           {/* SECTION 1 — basic info */}
-          <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
+          <section className="min-w-0 rounded-xl border border-border bg-card p-5">
             <SectionHeader icon={FileText} title={t("Základné údaje")}>
               <CisloDokladuOdznak cislo={cisloNahlad} />
             </SectionHeader>
@@ -1876,7 +1876,7 @@ function NewInvoice() {
                   vyúčtuje inou faktúrou. Odpočet je preto na jedno kliknutie,
                   ale nikto ho nevnucuje.
                 */
-                <div className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
+                <div className="fk-oznam fk-oznam-pozor w-full rounded-lg p-3 text-sm">
                   <div className="font-medium">
                     {zostavajuceZalohy.length === 1
                       ? t("Odberateľ má zaplatenú zálohu, ktorá ešte nie je zúčtovaná.")
@@ -1913,7 +1913,7 @@ function NewInvoice() {
                             );
                             toast.success(t("Záloha {cislo} pripojená", { cislo: z.invoice_number }));
                           }}
-                          className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+                          className="rounded-md bg-warning px-2 py-1 text-xs font-medium text-warning-foreground hover:opacity-90"
                         >
                           {t("Odpočítať")}
                         </button>
@@ -1954,7 +1954,7 @@ function NewInvoice() {
           </section>
 
           {/* SECTION 1b — payment & symbols */}
-          <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
+          <section className="min-w-0 rounded-xl border border-border bg-card p-5">
             <SectionHeader icon={CreditCard} title={t("Platobné údaje a symboly")} />
             {/* Tie isté polia a mriežka ako Základné údaje (PoleDokladu). */}
             <MriezkaDokladu>
@@ -2062,7 +2062,7 @@ function NewInvoice() {
             sadzby na položkách, nie ďalší symbol k platbe. Prepínače sú dlaždice,
             nech je na prvý pohľad vidieť, ktorý režim je zapnutý.
           */}
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section className="rounded-xl border border-border bg-card p-5">
             <SectionHeader icon={Percent} title={t("Daňový režim")} />
             <p className="-mt-1 mb-4 text-xs text-muted-foreground">
               {t(textRezimu("Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ alebo predávate spotrebiteľovi v inom štáte EÚ."))}
@@ -2326,7 +2326,7 @@ function NewInvoice() {
             obdobie. Bez neho ľudia píšu tieto vety do názvu prvej položky,
             kde potom kazia súčty aj export do účtovníctva.
           */}
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section className="rounded-xl border border-border bg-card p-5">
             <label className="block">
               <span className="text-[13px] font-semibold text-foreground">
                 {t("Text nad položkami")} <span className="text-destructive">*</span>
@@ -2347,7 +2347,7 @@ function NewInvoice() {
 
 
           {/* SECTION 2 — items */}
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section className="rounded-xl border border-border bg-card p-5">
             <SectionHeader icon={Package} title={t("Položky")}>
               <ProductSearch
                 products={products}
@@ -2393,7 +2393,7 @@ function NewInvoice() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
+                  <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground">
                     <th className="py-2 font-medium">{t("Názov")}</th>
                     <th className="py-2 pl-3 font-medium">{t("Mn.")}</th>
                     <th className="py-2 pl-3 font-medium">{t("MJ")}</th>
@@ -2445,7 +2445,7 @@ function NewInvoice() {
                           label={t("Jednotková cena")}
                         />
                         {it._dovod && (
-                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-700">
+                          <div className="fk-text-uspech pr-2 text-right text-[10px] leading-tight">
                             {it._zakladna != null && it._zakladna !== it.unit_price && (
                               <span className="mr-1 text-muted-foreground line-through">
                                 {formatujMenu(it._zakladna, mena.kod)}
@@ -2467,7 +2467,7 @@ function NewInvoice() {
                       <td className="py-2 pl-3">
                         {form.reverse_charge ? (
                           <span
-                            className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100"
+                            className="fk-oznam fk-oznam-pozor inline-block rounded px-2 py-1 text-[10px] font-semibold"
                             title={t("Prenesenie daňovej povinnosti")}
                           >
                             {t("PDP")}
@@ -2586,7 +2586,7 @@ function NewInvoice() {
                     <div className="col-span-2 min-w-0 text-xs text-muted-foreground">
                       {t("DPH")}
                     {form.reverse_charge ? (
-                      <span className="mt-1 flex items-center justify-center rounded bg-amber-100 px-2 py-1.5 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
+                      <span className="fk-oznam fk-oznam-pozor mt-1 flex items-center justify-center rounded px-2 py-1.5 text-[10px] font-semibold">
                         {t("PDP")}
                       </span>
                     ) : (
@@ -2695,7 +2695,7 @@ function NewInvoice() {
           </section>
 
           {/* SECTION 3 — totals */}
-          <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
+          <section className="rounded-xl border border-border bg-card p-5">
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               {/*
                 Zľava na celý doklad — dohodne sa až na konci, preto stojí
@@ -2739,13 +2739,13 @@ function NewInvoice() {
                 <>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Medzisúčet")}</span>
-                    <span className="tabular-nums">
+                    <span className="whitespace-nowrap tabular-nums">
                       {formatujMenu(zobrazene.medzisucet, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Zľava")}</span>
-                    <span className="tabular-nums">
+                    <span className="whitespace-nowrap tabular-nums">
                       −{formatujMenu(totals.zlava, form.currency)}
                     </span>
                   </div>
@@ -2753,13 +2753,13 @@ function NewInvoice() {
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("Bez DPH")}</span>
-                <span className="tabular-nums">
+                <span className="whitespace-nowrap tabular-nums">
                   {formatujMenu(zobrazene.subtotal, form.currency)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("DPH")}</span>
-                <span className="tabular-nums">
+                <span className="whitespace-nowrap tabular-nums">
                   {formatujMenu(zobrazene.vat_total, form.currency)}
                 </span>
               </div>
@@ -2770,7 +2770,7 @@ function NewInvoice() {
               />
               <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                 <span>{t("Celkom")}</span>
-                <span className="tabular-nums">
+                <span className="whitespace-nowrap tabular-nums">
                   {formatujMenu(zobrazene.total, form.currency)}
                 </span>
               </div>
@@ -2778,13 +2778,13 @@ function NewInvoice() {
                 <>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Odpočet zálohy")}</span>
-                    <span className="tabular-nums">
+                    <span className="whitespace-nowrap tabular-nums">
                       −{formatujMenu(totals.advance, form.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                     <span>{t("K úhrade")}</span>
-                    <span className="tabular-nums text-primary">
+                    <span className="whitespace-nowrap tabular-nums text-primary">
                       {formatujMenu(zobrazene.payable, form.currency)}
                     </span>
                   </div>
@@ -2794,7 +2794,7 @@ function NewInvoice() {
               {totals.advance === 0 && form.type !== "credit_note" && (
                 <div className="flex justify-between text-lg font-bold">
                   <span>{t("K úhrade")}</span>
-                  <span className="tabular-nums text-primary">
+                  <span className="whitespace-nowrap tabular-nums text-primary">
                     {formatujMenu(zobrazene.total, form.currency)}
                   </span>
                 </div>
@@ -2803,7 +2803,7 @@ function NewInvoice() {
           </section>
 
           {/* SECTION 4 — advanced */}
-          <section className="rounded-2xl border border-border bg-card">
+          <section className="rounded-xl border border-border bg-card">
             <button
               type="button"
               onClick={() => setAdvancedOpen((v) => !v)}
@@ -2866,7 +2866,7 @@ function NewInvoice() {
               „Vystaviť faktúru" — na užšom okne z neho ostalo „Vystaviť fak…".
               Lišta si preto vpravo nechá miesto.
             */
-            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             {/* Na telefóne klávesnicu nikto nemá — nápoveda by lištu len zvýšila a zakryla viac obsahu. */}
             <div className="hidden text-xs text-muted-foreground sm:block">
               <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">{mod}↵</kbd> {t("uložiť")} ·
@@ -2999,7 +2999,7 @@ function SectionHeader({
     <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2">
       <div className="flex min-w-0 items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-primary" />
-        <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       {children}
     </div>
@@ -3455,9 +3455,9 @@ function InvoicePickerModal({
                     {/* Odpočítava sa uhradená záloha — neuhradenú je vidieť hneď. */}
                     {mode === "advance" &&
                       (inv.status === "paid" ? (
-                        <span className="ml-1 text-emerald-700 dark:text-emerald-400">· {t("uhradená")}</span>
+                        <span className="fk-text-uspech ml-1">· {t("uhradená")}</span>
                       ) : (
-                        <span className="ml-1 text-amber-700 dark:text-amber-400">· {t("neuhradená")}</span>
+                        <span className="fk-text-pozor ml-1">· {t("neuhradená")}</span>
                       ))}
                   </div>
                 </div>
@@ -3507,7 +3507,7 @@ function UpozornenieRezimu({
     return (
       <div
         role="alert"
-        className="mb-4 flex flex-wrap items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100"
+        className="fk-oznam fk-oznam-pozor mb-4 flex flex-wrap items-start gap-3 rounded-lg p-3 text-sm"
       >
         <span className="min-w-0 flex-1">
           {navrh.druh === "eu_b2b"
@@ -3528,7 +3528,7 @@ function UpozornenieRezimu({
         <button
           type="button"
           onClick={onNastav}
-          className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+          className="rounded-md bg-warning px-2 py-1 text-xs font-medium text-warning-foreground hover:opacity-90"
         >
           {navrh.druh === "eu_b2b" ? t("Nastaviť dodanie do EÚ") : t("Nastaviť plnenie mimo EÚ")}
         </button>

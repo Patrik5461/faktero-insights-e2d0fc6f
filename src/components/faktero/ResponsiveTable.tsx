@@ -121,7 +121,7 @@ export function MobileListCard({
             <div className="mt-2 flex items-end justify-between gap-2 text-xs">
               <div className="min-w-0 truncate text-muted-foreground">{meta}</div>
               {amount && (
-                <div className="shrink-0 text-sm font-semibold text-foreground">{amount}</div>
+                <div className="suma shrink-0 text-sm text-foreground">{amount}</div>
               )}
             </div>
           )}

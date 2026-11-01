@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
@@ -23,6 +24,8 @@ export const Route = createFileRoute("/nove-heslo")({
  * adrese, ktorý spracuje klient Supabase) — tu sa už len mení heslo.
  */
 function NoveHesloPage() {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   const { t } = useT();
   const [stav, setStav] = useState<"overujem" | "formular" | "bez-relacie" | "hotovo">("overujem");
   const [heslo, setHeslo] = useState("");
@@ -62,12 +65,12 @@ function NoveHesloPage() {
     "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+    <div className="grid min-h-screen place-items-center bg-page px-4 py-10">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Nové heslo")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Nové heslo")}</h1>
 
         {stav === "overujem" && <p className="mt-3 text-sm text-muted-foreground">{t("Overujem odkaz…")}</p>}
 
@@ -78,7 +81,7 @@ function NoveHesloPage() {
             </p>
             <Link
               to="/zabudnute-heslo"
-              className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               {t("Poslať nový odkaz")}
             </Link>
@@ -88,7 +91,7 @@ function NoveHesloPage() {
         {stav === "formular" && (
           <form onSubmit={uloz} className="mt-5 space-y-3">
             <label className="block">
-              <span className="text-sm font-medium">{t("Nové heslo")}</span>
+              <span className="text-sm font-semibold">{t("Nové heslo")}</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -100,7 +103,7 @@ function NoveHesloPage() {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium">{t("Nové heslo znova")}</span>
+              <span className="text-sm font-semibold">{t("Nové heslo znova")}</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -115,7 +118,7 @@ function NoveHesloPage() {
             <button
               type="submit"
               disabled={ukladam}
-              className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {ukladam ? t("Ukladám…") : t("Uložiť nové heslo")}
             </button>
@@ -129,7 +132,7 @@ function NoveHesloPage() {
             </p>
             <Link
               to="/dashboard"
-              className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               {t("Pokračovať do Faktera")}
             </Link>

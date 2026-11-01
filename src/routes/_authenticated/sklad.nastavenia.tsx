@@ -8,6 +8,9 @@ import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/nastavenia")({
@@ -119,7 +122,7 @@ function WarehousesPage() {
         action={
           <button
             onClick={() => setEditing(EMPTY)}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             <Plus className="h-4 w-4" /> {t("Nový sklad")}
           </button>
@@ -128,7 +131,7 @@ function WarehousesPage() {
       <PageBody>
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
               <tr>
                 <th className="p-3">{t("Názov")}</th>
                 <th className="p-3">{t("Adresa")}</th>
@@ -141,35 +144,37 @@ function WarehousesPage() {
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                    {t("Načítavam…")}
+                  <td colSpan={4} className="p-0">
+                    <NacitavanieStav />
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                    {t("Žiadne sklady.")}
+                  <td colSpan={4} className="p-0">
+                    <EmptyState title="Žiadne sklady." />
                   </td>
                 </tr>
               )}
               {rows.map((w) => (
                 <tr key={w.id}>
-                  <td className="p-3 font-medium">{w.name}</td>
-                  <td className="p-3 text-muted-foreground">{w.address ?? "—"}</td>
+                  <td className="p-3 min-w-[8rem] font-medium break-words">{w.name}</td>
+                  <td className="p-3 min-w-[10rem] break-words text-muted-foreground">
+                    {w.address ?? "—"}
+                  </td>
                   <td className="p-3">
                     {w.active ? (
-                      <span className="text-emerald-700">{t("Aktívny")}</span>
+                      <StavOdznak ton="uspech">{t("Aktívny")}</StavOdznak>
                     ) : (
-                      <span className="text-muted-foreground">{t("Neaktívny")}</span>
+                      <StavOdznak ton="neutralny">{t("Neaktívny")}</StavOdznak>
                     )}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 whitespace-nowrap text-right">
                     <button
                       onClick={() => setEditing(w)}
                       title={t("Upraviť sklad")}
                       aria-label={t("Upraviť sklad")}
-                      className="rounded p-1.5 hover:bg-muted"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -177,7 +182,7 @@ function WarehousesPage() {
                       onClick={() => zmaz(w)}
                       title={t("Zmazať sklad")}
                       aria-label={t("Zmazať sklad")}
-                      className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                      className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -191,14 +196,14 @@ function WarehousesPage() {
 
       {editing && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 grid place-items-center bg-[var(--w-prekrytie)] p-4 backdrop-blur-[2px]"
           onClick={() => setEditing(null)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label={t("Sklad")}
-            className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            className="w-full max-w-lg rounded-2xl border border-border bg-card p-5 shadow-[var(--w-tien-okno)] sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
@@ -209,10 +214,10 @@ function WarehousesPage() {
                 e.preventDefault();
                 save(editing);
               }}
-              className="mt-4 grid gap-3"
+              className="mt-4 grid gap-4"
             >
               <label className="block">
-                <span className="text-sm font-medium">{t("Názov *")}</span>
+                <span className="text-sm font-semibold">{t("Názov *")}</span>
                 <input
                   required
                   value={editing.name}
@@ -221,7 +226,7 @@ function WarehousesPage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium">{t("Adresa")}</span>
+                <span className="text-sm font-semibold">{t("Adresa")}</span>
                 <input
                   value={editing.address ?? ""}
                   onChange={(e) => setEditing({ ...editing, address: e.target.value })}
@@ -240,13 +245,13 @@ function WarehousesPage() {
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+                  className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary"
                 >
                   {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
                   {t("Uložiť")}
                 </button>

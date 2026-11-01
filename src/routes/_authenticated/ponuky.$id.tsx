@@ -12,8 +12,8 @@ import {
   PoTermine,
   PrimarnaAkcia,
   SekundarnaAkcia,
-  StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PonukaDetailKompaktna } from "@/components/faktero/PonukaDetailKompaktna";
 import { BEZ_RAMU, type SuborKompaktny } from "@/components/faktero/KompaktnyDetail";
@@ -56,13 +56,14 @@ const STATUS_LABEL: Record<string, string> = {
   expired: "Expirovaná",
   converted: "Konvertovaná",
 };
-const STATUS_CLS: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-secondary text-secondary-foreground",
-  accepted: "bg-primary/15 text-primary-hover",
-  rejected: "bg-destructive/15 text-destructive",
-  expired: "bg-muted text-muted-foreground",
-  converted: "bg-primary/15 text-primary-hover",
+/* Tón odznaku stavu ponuky (Stav.tsx nemá mapu pre ponuky). */
+const TON_PONUKY: Record<string, TonStavu> = {
+  draft: "neutralny",
+  sent: "priebeh",
+  accepted: "uspech",
+  rejected: "chyba",
+  expired: "neutralny",
+  converted: "uspech",
 };
 
 function QuoteDetail() {
@@ -267,7 +268,7 @@ function QuoteDetail() {
         title={t("Ponuka")}
         number={q.quote_number}
         status={
-          <StavOdznak className={STATUS_CLS[q.status] ?? "bg-muted"}>
+          <StavOdznak ton={tonStavu(TON_PONUKY, q.status)}>
             {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
           </StavOdznak>
         }
@@ -372,7 +373,7 @@ function QuoteDetail() {
             q={q}
             polozky={items}
             stav={
-              <StavOdznak className={STATUS_CLS[q.status] ?? "bg-muted"}>
+              <StavOdznak ton={tonStavu(TON_PONUKY, q.status)}>
                 {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
               </StavOdznak>
             }
@@ -384,17 +385,15 @@ function QuoteDetail() {
                       inak stratí v pošte a pri ďalšej ponuke nikto nevie, čo mu vadilo. */}
                   {q.responded_at && (q.status === "accepted" || q.status === "rejected") && (
                     <div
-                      className={`rounded-xl border p-5 text-sm ${
-                        q.status === "accepted"
-                          ? "border-emerald-500/40 bg-emerald-500/10"
-                          : "border-destructive/40 bg-destructive/10"
+                      className={`fk-oznam rounded-xl p-5 text-sm ${
+                        q.status === "accepted" ? "fk-oznam-uspech" : "fk-oznam-chyba"
                       }`}
                     >
                       <div className="font-medium">
                         {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) })}
                       </div>
                       {q.response_note && (
-                        <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                        <div className="mt-2 whitespace-pre-wrap">
                           {t("Dôvod:")} {q.response_note}
                         </div>
                       )}
@@ -418,14 +417,15 @@ function QuoteDetail() {
         ) : (
           <>
             {converted && q.converted_invoice_id && (
-              <div className="mb-6 flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm">
+              <div className="fk-oznam fk-oznam-uspech mb-6 flex items-center justify-between gap-3 rounded-xl p-4 text-sm">
                 <span>{t("Táto ponuka bola konvertovaná na faktúru.")}</span>
                 <Link
                   to="/faktury/$id"
                   params={{ id: q.converted_invoice_id }}
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                  className="shrink-0 whitespace-nowrap rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground no-underline hover:bg-primary-hover"
                 >
-                  {t("Otvoriť faktúru →")}
+                  {/* Šípka za textom tlačidla preč; kľúč prekladu ostáva rovnaký. */}
+                  {t("Otvoriť faktúru →").replace(/\s*→$/, "")}
                 </Link>
               </div>
             )}
@@ -433,7 +433,7 @@ function QuoteDetail() {
               <div className="space-y-6">
                 <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <div className="text-sm font-semibold text-muted-foreground">
                       {t("Dodávateľ")}
                     </div>
                     <div className="mt-1 font-medium">{company?.name}</div>
@@ -447,7 +447,7 @@ function QuoteDetail() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <div className="text-sm font-semibold text-muted-foreground">
                       {t("Odberateľ")}
                     </div>
                     <div className="mt-1 font-medium">{q.customer_name}</div>
@@ -464,7 +464,7 @@ function QuoteDetail() {
 
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                       <tr>
                         <th className="p-3">{t("Položka")}</th>
                         <th className="p-3 text-right">{t("Mn.")}</th>
@@ -495,11 +495,11 @@ function QuoteDetail() {
                               </div>
                             )}
                           </td>
-                          <td className="p-3 text-right">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
+                          <td className="whitespace-nowrap p-3 text-right tabular-nums">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
                           <td className="p-3">{it.unit}</td>
-                          <td className="p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
-                          <td className="p-3 text-right">{it.vat_rate}%</td>
-                          <td className="p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
+                          <td className="suma whitespace-nowrap p-3 text-right">{formatujJednotkovuCenu(it.unit_price)}</td>
+                          <td className="whitespace-nowrap p-3 text-right tabular-nums">{it.vat_rate}%</td>
+                          <td className="suma whitespace-nowrap p-3 text-right">{formatujCislo(it.total, 2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -516,17 +516,15 @@ function QuoteDetail() {
                     inak stratí v pošte a pri ďalšej ponuke nikto nevie, čo mu vadilo. */}
                 {q.responded_at && (q.status === "accepted" || q.status === "rejected") && (
                   <div
-                    className={`rounded-xl border p-5 text-sm ${
-                      q.status === "accepted"
-                        ? "border-emerald-500/40 bg-emerald-500/10"
-                        : "border-destructive/40 bg-destructive/10"
+                    className={`fk-oznam rounded-xl p-5 text-sm ${
+                      q.status === "accepted" ? "fk-oznam-uspech" : "fk-oznam-chyba"
                     }`}
                   >
                     <div className="font-medium">
                       {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) })}
                     </div>
                     {q.response_note && (
-                      <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                      <div className="mt-2 whitespace-pre-wrap">
                         {t("Dôvod:")} {q.response_note}
                       </div>
                     )}
@@ -543,45 +541,45 @@ function QuoteDetail() {
 
               <aside className="space-y-4">
                 <div className="rounded-xl border border-border bg-card p-5">
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Sumár")}</div>
+                  <div className="text-sm font-semibold text-foreground">{t("Sumár")}</div>
                   <div className="mt-3 space-y-1 text-sm">
                     {Number(q.discount_total ?? 0) > 0 && (
                       <>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("Medzisúčet")}</span>
-                          <span>
-                            {formatujCislo(Number(q.subtotal) + Number(q.discount_total), 2)} {q.currency}
+                          <span className="suma whitespace-nowrap">
+                            {formatujCislo(Number(q.subtotal) + Number(q.discount_total), 2)} <span className="suma-mena">{q.currency}</span>
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t("Zľava")}</span>
-                          <span>
-                            −{formatujCislo(Number(q.discount_total), 2)} {q.currency}
+                          <span className="suma whitespace-nowrap">
+                            −{formatujCislo(Number(q.discount_total), 2)} <span className="suma-mena">{q.currency}</span>
                           </span>
                         </div>
                       </>
                     )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("Bez DPH")}</span>
-                      <span>
-                        {formatujCislo(Number(q.subtotal), 2)} {q.currency}
+                      <span className="suma whitespace-nowrap">
+                        {formatujCislo(Number(q.subtotal), 2)} <span className="suma-mena">{q.currency}</span>
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("DPH")}</span>
-                      <span>
-                        {formatujCislo(Number(q.vat_total), 2)} {q.currency}
+                      <span className="suma whitespace-nowrap">
+                        {formatujCislo(Number(q.vat_total), 2)} <span className="suma-mena">{q.currency}</span>
                       </span>
                     </div>
                   </div>
-                  <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
-                    {formatujCislo(Number(q.total), 2)} {q.currency}
+                  <div className="suma mt-3 border-t border-border pt-3 text-lg font-semibold">
+                    {formatujCislo(Number(q.total), 2)} <span className="suma-mena">{q.currency}</span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Údaje")}</div>
+                  <div className="text-sm font-semibold text-foreground">{t("Údaje")}</div>
                   <div className="mt-2">
-                    {t("Číslo:")} <span className="font-mono">{q.quote_number}</span>
+                    {t("Číslo:")} <span className="cislo-dokladu">{q.quote_number}</span>
                   </div>
                   <div>{t("Mena:")} {q.currency}</div>
                   <div>{t("Platnosť do:")} {datumNaDoklade(q.valid_until)}</div>

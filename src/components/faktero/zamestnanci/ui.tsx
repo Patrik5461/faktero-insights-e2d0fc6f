@@ -3,6 +3,7 @@
  */
 import { IdCard } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
+import { ChybovyStav } from "@/components/faktero/web/StavyObsahu";
 import { type KrajinaZamestnancov, type Pripomienka } from "@/lib/faktero/zamestnanci";
 import { textPripomienky } from "@/lib/faktero/zamestnanci-texty";
 import {
@@ -14,7 +15,7 @@ import {
 /** Farba pripomienky podľa závažnosti – spoločná pre zoznam aj kartu (Z-07). */
 export const FARBA_PRIPOMIENKY: Record<Pripomienka["zavaznost"], string> = {
   danger: "border-destructive/30 bg-destructive/10 text-destructive",
-  warning: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400",
+  warning: "border-warning/30 bg-warning/10 text-warning",
   info: "border-border bg-muted/40 text-foreground",
 };
 
@@ -32,28 +33,32 @@ export function TextPripomienky({ p, className }: { p: Pripomienka; className?: 
 
 export const pole =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
-export const popis = "mb-1 block text-xs font-medium text-muted-foreground";
+export const popis = "mb-1.5 block text-xs font-semibold text-muted-foreground";
 export const tlacidlo =
-  "inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60";
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60";
 export const tlacidloObrys =
-  "inline-flex items-center justify-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-60";
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-card px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-60";
 
 /** Chyba zo servera — pri vypnutom module ju zobrazíme ako vysvetlenie, nie ako poruchu. */
 export function ChybaModulu({ sprava }: { sprava: string }) {
   const { t } = useT();
   const vypnuty = /nie je pre túto firmu zapnutý/.test(sprava);
-  return (
-    <div className="rounded-xl border border-border bg-card p-8 text-center">
-      <IdCard className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-      <div className="text-sm font-medium">
-        {vypnuty ? t("Modul Zamestnanci nie je zapnutý") : t("Niečo sa nepodarilo")}
+  if (!vypnuty)
+    return (
+      <div className="rounded-xl border border-border bg-card">
+        <ChybovyStav nadpis="Niečo sa nepodarilo" popis={t(sprava)} />
       </div>
-      <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
-        {vypnuty
-          ? t(
-              "Evidencia zamestnancov je pre túto firmu vypnutá. Ak ju chcete znova zapnúť, napíšte na servis@faktero.sk.",
-            )
-          : t(sprava)}
+    );
+  return (
+    <div className="flex flex-col items-center rounded-xl border border-border bg-card px-6 py-12 text-center">
+      <div className="grid h-12 w-12 place-items-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm">
+        <IdCard className="h-5 w-5" />
+      </div>
+      <div className="mt-4 text-[15px] font-semibold">{t("Modul Zamestnanci nie je zapnutý")}</div>
+      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        {t(
+          "Evidencia zamestnancov je pre túto firmu vypnutá. Ak ju chcete znova zapnúť, napíšte na servis@faktero.sk.",
+        )}
       </p>
     </div>
   );
@@ -207,7 +212,7 @@ export function FormularZamestnanca({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">{t("Osobné údaje")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("first_name", "Meno *", "text", { autoComplete: "off" })}
@@ -237,7 +242,7 @@ export function FormularZamestnanca({
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">{t("Kontakt a adresa")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("email", "E-mail", "email")}
@@ -265,7 +270,7 @@ export function FormularZamestnanca({
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">{t("Pracovný pomer")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {vstup("position", "Pracovná pozícia")}
@@ -289,7 +294,7 @@ export function FormularZamestnanca({
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h3 className="mb-1 text-sm font-semibold">{t("Povinnosti zamestnávateľa")}</h3>
         <p className="mb-3 text-xs text-muted-foreground">
           {t("Podľa týchto dátumov Faktero pripomína prihlášky a termíny v zvončeku aj e-mailom.")}
@@ -320,7 +325,7 @@ export function FormularZamestnanca({
         )}
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <label className={popis} htmlFor="zam-note">
           {t("Poznámka")}
         </label>

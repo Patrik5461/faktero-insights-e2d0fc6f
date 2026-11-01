@@ -13,6 +13,8 @@ import { getMovementDetail } from "@/lib/faktero/stock.functions";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/$id")({
@@ -85,13 +87,15 @@ function MovementDetail() {
   if (loading)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav />
       </PageBody>
     );
   if (!data?.movement)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Pohyb sa nenašiel.")}</div>
+        <div className="rounded-xl border border-border bg-card">
+          <EmptyState title="Pohyb sa nenašiel." />
+        </div>
         {SHOW_STOCK_DEBUG && error && (
           <pre className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
             {error}
@@ -112,15 +116,17 @@ function MovementDetail() {
         description={new Date(m.created_at).toLocaleString("sk-SK")}
       />
       <PageBody>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <dl className="grid gap-3 text-sm">
+        <div className="grid max-w-5xl gap-4 md:grid-cols-2 md:gap-6">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <dl className="grid gap-4 text-sm">
               <Pair label="Typ pohybu" value={t(TYPE_LABEL[m.type] ?? m.type)} />
               <Pair
                 label="Množstvo"
                 value={pohybText(m.type, m.quantity)}
                 accent={
-                  pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"
+                  pohybDelta(m.type, m.quantity) >= 0
+                    ? "suma text-[var(--stav-uspech-text)]"
+                    : "suma text-destructive"
                 }
               />
               {/* Nákladová cena ako v zozname pohybov; pri výdaji je `unit_price`
@@ -128,8 +134,13 @@ function MovementDetail() {
               <Pair
                 label="Jednotková cena"
                 value={formatujJednotkovuCenu(nakladovaCenaPohybu(m), mena.kod)}
+                accent="suma"
               />
-              <Pair label="Celková hodnota" value={formatujMenu(hodnotaPohybu(m), mena.kod)} />
+              <Pair
+                label="Celková hodnota"
+                value={formatujMenu(hodnotaPohybu(m), mena.kod)}
+                accent="suma"
+              />
               {(m.type === "vydaj" || m.type === "faktura") &&
                 Number(m.unit_cost) > 0 &&
                 Number(m.unit_price) > 0 &&
@@ -137,6 +148,7 @@ function MovementDetail() {
                   <Pair
                     label="Predajná cena"
                     value={formatujJednotkovuCenu(m.unit_price, mena.kod)}
+                    accent="suma"
                   />
                 )}
               <Pair label="Sklad" value={data.warehouse?.name ?? "—"} />
@@ -147,7 +159,7 @@ function MovementDetail() {
                     <Link
                       to="/sklad/produkty/$id"
                       params={{ id: data.product.id }}
-                      className="text-primary hover:underline"
+                      className="font-medium text-primary hover:underline"
                     >
                       {data.product.name}
                     </Link>
@@ -158,12 +170,13 @@ function MovementDetail() {
               />
             </dl>
           </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <dl className="grid gap-3 text-sm">
-              <Pair label="Vytvoril" value={data.createdByEmail ?? "—"} />
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <dl className="grid gap-4 text-sm">
+              <Pair label="Vytvoril" value={data.createdByEmail ?? "—"} accent="break-words" />
               <Pair
                 label="Dátum vytvorenia"
                 value={new Date(m.created_at).toLocaleString("sk-SK")}
+                accent="whitespace-nowrap tabular-nums"
               />
               <Pair
                 label="Referencia"
@@ -172,7 +185,7 @@ function MovementDetail() {
                     <Link
                       to="/faktury/$id"
                       params={{ id: data.invoice.id }}
-                      className="text-primary hover:underline"
+                      className="cislo-dokladu text-primary hover:underline"
                     >
                       {t("Faktúra {cislo}", { cislo: data.invoice.invoice_number })}
                     </Link>
@@ -181,7 +194,11 @@ function MovementDetail() {
                   )
                 }
               />
-              <Pair label="Poznámka" value={m.note ?? "—"} />
+              <Pair
+                label="Poznámka"
+                value={m.note ?? "—"}
+                accent="whitespace-pre-line break-words"
+              />
             </dl>
           </div>
         </div>
@@ -202,8 +219,8 @@ function Pair({
   const { t } = useT();
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</dt>
-      <dd className={`mt-0.5 ${accent ?? ""}`}>{value}</dd>
+      <dt className="text-xs font-semibold text-muted-foreground">{t(label)}</dt>
+      <dd className={`mt-1 min-w-0 text-foreground ${accent ?? ""}`}>{value}</dd>
     </div>
   );
 }

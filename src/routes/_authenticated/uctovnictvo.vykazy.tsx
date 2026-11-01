@@ -406,7 +406,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
       />
       <PageBody>
         {uvod}
-        <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 sm:p-5 lg:grid-cols-6">
           <label className="block">
             <span className="text-xs font-medium text-muted-foreground">{t("Rok")}</span>
             <input
@@ -488,20 +488,20 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
         </div>
 
         {chyba && (
-          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
             {chyba}
           </div>
         )}
 
         {nacitavam && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Zostavujem z dokladov…")}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" /> {t("Zostavujem z dokladov…")}
           </div>
         )}
 
         {data && (
           <>
-            <p className="mb-4 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("V období: {vystavene}, {prijate} a {doklady}.", {
                 vystavene: t(
                   slovoPodlaPoctu(
@@ -534,10 +534,10 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
               />
 
             {/* Priznanie */}
-            <section className="mb-6 rounded-xl border border-border bg-card">
+            <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Priznanie k DPH")}</div>
+                  <div className="text-base font-semibold">{t("Priznanie k DPH")}</div>
                   <div className="text-xs text-muted-foreground">
                     {verzia === "2025"
                       ? t("Vzor DPH2025 (od 07/2025)")
@@ -561,7 +561,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                         ),
                       )
                     }
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                   >
                     <Download className="h-4 w-4" /> XML
                   </button>
@@ -569,7 +569,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                     onClick={() =>
                       ulozAOznac("priznanie", data.priznanie as Record<string, unknown>)
                     }
-                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
@@ -581,8 +581,9 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                     {riadkyPriznania.map((k) => (
                       <tr key={k} className="border-b border-border last:border-0">
                         <td className="px-4 py-1.5 text-muted-foreground">{t(POPIS_RIADKOV[k])}</td>
-                        <td className="px-4 py-1.5 text-right font-medium tabular-nums">
-                          {eur((data.priznanie as Record<string, number>)[k])} €
+                        <td className="suma px-4 py-1.5 text-right">
+                          {eur((data.priznanie as Record<string, number>)[k])}
+                          <span className="suma-mena">€</span>
                         </td>
                       </tr>
                     ))}
@@ -590,7 +591,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                 </table>
               </div>
               <details className="border-t border-border px-4 py-3 text-sm">
-                <summary className="cursor-pointer font-medium">
+                <summary className="cursor-pointer font-semibold">
                   {t("Riadky, ktoré z dokladov nevyplývajú")}
                 </summary>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -611,10 +612,10 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
             </section>
 
             {/* Kontrolný výkaz */}
-            <section className="mb-6 rounded-xl border border-border bg-card">
+            <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Kontrolný výkaz")}</div>
+                  <div className="text-base font-semibold">{t("Kontrolný výkaz")}</div>
                   <div className="text-xs text-muted-foreground">{t("Schéma KVDPH 2025")}</div>
                 </div>
                 <div className="flex gap-2">
@@ -626,13 +627,13 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                         kvNaXml(data.kv, firmaXml, data.obdobie, typ),
                       )
                     }
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                   >
                     <Download className="h-4 w-4" /> XML
                   </button>
                   <button
                     onClick={() => ulozAOznac("kv", data.kv as unknown as Record<string, unknown>)}
-                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
@@ -650,9 +651,9 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                   ["C.2 — prijaté opravné doklady", data.kv.c2.length],
                   ["D.2 — ostatné vydané faktúry sumárne", data.kv.d2 ? 1 : 0],
                 ].map(([popis, pocet]) => (
-                  <li key={String(popis)} className="flex justify-between px-4 py-2">
-                    <span className={pocet ? "" : "text-muted-foreground"}>{t(String(popis))}</span>
-                    <span className="tabular-nums">{pocet as number}</span>
+                  <li key={String(popis)} className="flex justify-between gap-3 px-4 py-2">
+                    <span className={`min-w-0 ${pocet ? "" : "text-muted-foreground"}`}>{t(String(popis))}</span>
+                    <span className={`shrink-0 tabular-nums ${pocet ? "font-semibold" : "text-muted-foreground"}`}>{pocet as number}</span>
                   </li>
                 ))}
               </ul>
@@ -662,7 +663,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
             <section className="rounded-xl border border-border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div>
-                  <div className="font-medium">{t("Súhrnný výkaz")}</div>
+                  <div className="text-base font-semibold">{t("Súhrnný výkaz")}</div>
                   <div className="text-xs text-muted-foreground">{t("Dodania do EÚ, vzor SVDPHv20")}</div>
                 </div>
                 <div className="flex gap-2">
@@ -675,14 +676,14 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                       )
                     }
                     disabled={data.sv.riadky.length === 0}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     <Download className="h-4 w-4" /> XML
                   </button>
                   <button
                     onClick={() => ulozAOznac("sv", data.sv as unknown as Record<string, unknown>)}
                     disabled={data.sv.riadky.length === 0}
-                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                   >
                     <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
@@ -695,20 +696,21 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                   )}
                 </p>
               ) : (
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-2 font-medium">{t("Štát")}</th>
-                      <th className="px-4 py-2 font-medium">{t("IČ DPH odberateľa")}</th>
-                      <th className="px-4 py-2 font-medium">{t("Druh plnenia")}</th>
-                      <th className="px-4 py-2 text-right font-medium">{t("Hodnota")}</th>
+                      <th className="whitespace-nowrap px-4 py-2">{t("Štát")}</th>
+                      <th className="whitespace-nowrap px-4 py-2">{t("IČ DPH odberateľa")}</th>
+                      <th className="whitespace-nowrap px-4 py-2">{t("Druh plnenia")}</th>
+                      <th className="whitespace-nowrap px-4 py-2 text-right">{t("Hodnota")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.sv.riadky.map((r, i) => (
                       <tr key={i} className="border-t border-border">
                         <td className="px-4 py-2">{r.kodStatu}</td>
-                        <td className="px-4 py-2">{r.idCislo}</td>
+                        <td className="whitespace-nowrap px-4 py-2 tabular-nums">{r.idCislo}</td>
                         <td className="px-4 py-2">
                           {r.kod === ""
                             ? t("Tovar")
@@ -716,15 +718,19 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                               ? t("Trojstranný obchod")
                               : t("Služba")}
                         </td>
-                        <td className="px-4 py-2 text-right tabular-nums">{eur(r.hodnota)} €</td>
+                        <td className="suma px-4 py-2 text-right">
+                          {eur(r.hodnota)}
+                          <span className="suma-mena">€</span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </section>
 
-            <p className="mt-6 text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {t(
                 "XML sa nahráva do eDane alebo na portál finančnej správy, kde sa podpíše. Faktero výkazy neodosiela — kontrolu a podanie robí ten, kto za priznanie zodpovedá.",
               )}

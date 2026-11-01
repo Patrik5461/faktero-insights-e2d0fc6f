@@ -28,6 +28,8 @@ import { nicNecaka, odkazNaDoklad, popisDokladu, stavCitania, sumaUlohy } from "
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 /**
  * Moje úlohy — čo čaká práve na prihláseného: doklady na jeho schválenie,
@@ -163,26 +165,28 @@ function Stranka() {
       />
       <PageBody>
         {prepinam ? (
-          <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Prepínam firmu…")}
-          </p>
+          <NacitavanieStav text="Prepínam firmu…" className="rounded-xl border border-border bg-card" />
         ) : !companyId ? (
           <p className="text-sm text-muted-foreground">{t("Vyberte firmu.")}</p>
         ) : !nacitane ? (
-          <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
-          </p>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : (
           <>
             {chyba && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
-                {chyba}
+              <p
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-[var(--stav-pozor-bod)]/50 bg-[var(--stav-pozor-plocha)] px-3 py-2 text-sm text-[var(--stav-pozor-text)]"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span className="min-w-0 break-words">{chyba}</span>
               </p>
             )}
             {nicNecaka(pocty) && !chyba && (
-              <div className="rounded-xl border border-border bg-card p-6 text-center">
-                <PartyPopper className="mx-auto mb-2 h-8 w-8 text-primary" />
-                <p className="font-medium">{t("Nič na vás nečaká")}</p>
+              <div className="rounded-xl border border-border bg-card px-6 py-10 text-center shadow-sm">
+                <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl border border-border bg-card text-primary shadow-sm">
+                  <PartyPopper className="h-5 w-5" />
+                </div>
+                <p className="text-[15px] font-semibold">{t("Nič na vás nečaká")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {t("Keď vám niekto pošle doklad na schválenie alebo vás označí v komentári, objaví sa tu.")}
                 </p>
@@ -200,7 +204,7 @@ function Stranka() {
               {!schvalenie.zapnute ? (
                 <Prazdne>
                   {t("Schvaľovanie dokladov nie je vo firme zapnuté.")}{" "}
-                  <Link to="/nastavenia/schvalovanie" className="underline">
+                  <Link to="/nastavenia/schvalovanie" className="font-semibold text-primary underline underline-offset-2 hover:text-primary-hover">
                     {t("Nastavenia → Schvaľovanie dokladov")}
                   </Link>
                 </Prazdne>
@@ -212,22 +216,24 @@ function Stranka() {
                     <li key={`${p.agenda}:${p.id}`}>
                       <Link
                         {...(odkazNaDoklad(p.agenda, p.id) as any)}
-                        className="block rounded-lg border border-border p-3 hover:bg-muted/30"
+                        className="block rounded-lg border border-border p-3 transition-colors hover:border-input hover:bg-accent/60"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                           <div className="min-w-0">
-                            <div className="break-words font-medium">{p.cislo || t("bez čísla")}</div>
+                            <div className={`break-words ${p.cislo ? "cislo-dokladu" : "font-medium text-muted-foreground"}`}>
+                              {p.cislo || t("bez čísla")}
+                            </div>
                             <div className="break-words text-sm text-muted-foreground">
                               {p.partner ?? "—"}
                             </div>
                           </div>
-                          <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">
+                          <div className="suma shrink-0">
                             {sumaUlohy(p.suma, p.mena)}
                           </div>
                         </div>
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <span>{t(NAZVY_AGEND[p.agenda as AgendaSchvalovania])}</span>
-                          {p.datum ? <span>{datumNaDoklade(p.datum)}</span> : null}
+                          {p.datum ? <span className="whitespace-nowrap tabular-nums">{datumNaDoklade(p.datum)}</span> : null}
                           <span>
                             {t(NAZVY_STAVOV[p.stav as keyof typeof NAZVY_STAVOV] ?? "")} · {p.odznak}
                           </span>
@@ -238,7 +244,7 @@ function Stranka() {
                   {schvalenie.polozky.length > NAJVIAC_NA_SCHVALENIE && (
                     <li className="text-sm text-muted-foreground">
                       {t("…a ďalších {n} na stránke", { n: schvalenie.polozky.length - NAJVIAC_NA_SCHVALENIE })}{" "}
-                      <Link to="/schvalovanie" className="underline">
+                      <Link to="/schvalovanie" className="font-semibold text-primary underline underline-offset-2 hover:text-primary-hover">
                         {t("Na schválenie")}
                       </Link>
                       .
@@ -258,19 +264,19 @@ function Stranka() {
               ) : (
                 <ul className="space-y-2">
                   {ulohy.komentare.map((k) => (
-                    <li key={k.id} className="rounded-lg border border-border p-3">
+                    <li key={k.id} className="rounded-lg border border-border bg-card p-3">
                       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="min-w-0 break-words">
                           <span className="font-medium text-foreground">{k.autor}</span> ·{" "}
-                          {new Date(k.vytvorene).toLocaleString(lokalJazyka(jazyk), {
+                          <span className="whitespace-nowrap tabular-nums">{new Date(k.vytvorene).toLocaleString(lokalJazyka(jazyk), {
                             dateStyle: "short",
                             timeStyle: "short",
-                          })}
+                          })}</span>
                         </span>
                         {k.dokladDostupny ? (
                           <Link
                             {...(odkazNaDoklad(k.agenda, k.dokladId) as any)}
-                            className="min-w-0 break-words font-medium text-primary hover:underline"
+                            className="min-w-0 break-words font-semibold text-primary hover:text-primary-hover hover:underline"
                           >
                             {popisDokladu(k.agenda, k.cislo, k.partner)}
                           </Link>
@@ -285,12 +291,12 @@ function Stranka() {
                           type="button"
                           onClick={() => void vyriesit(k.id, true)}
                           disabled={riesim === k.id}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-semibold transition-colors hover:bg-accent disabled:opacity-50"
                         >
                           {riesim === k.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
                           )}
                           {t("Vyriešiť")}
                         </button>
@@ -315,7 +321,7 @@ function Stranka() {
                       <Link
                         to="/efaktura/prijate"
                         search={(r.cislo ? { q: r.cislo } : {}) as any}
-                        className="block rounded-lg border border-border p-3 hover:bg-muted/30"
+                        className="block rounded-lg border border-border p-3 transition-colors hover:border-input hover:bg-accent/60"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                           <div className="min-w-0">
@@ -333,7 +339,7 @@ function Stranka() {
                                 .join(" · ")}
                             </div>
                           </div>
-                          <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">
+                          <div className="suma shrink-0">
                             {r.suma != null && Number.isFinite(r.suma) ? formatujMenu(r.suma, r.mena) : "—"}
                           </div>
                         </div>
@@ -343,7 +349,7 @@ function Stranka() {
                   {ulohy.efaktury.length >= 10 && (
                     <li className="text-sm text-muted-foreground">
                       {t("Ďalšie nájdete v")}{" "}
-                      <Link to="/efaktura/prijate" className="underline">
+                      <Link to="/efaktura/prijate" className="font-semibold text-primary underline underline-offset-2 hover:text-primary-hover">
                         {t("Prijatých eFaktúrach")}
                       </Link>
                       .
@@ -374,7 +380,7 @@ function Stranka() {
                           {...((r.typ === "blocek"
                             ? { to: "/doklady/novy", search: { id: r.id } }
                             : { to: "/nespracovane/$id", params: { id: r.id } }) as any)}
-                          className="block rounded-lg border border-border p-3 hover:bg-muted/30"
+                          className="block rounded-lg border border-border p-3 transition-colors hover:border-input hover:bg-accent/60"
                         >
                           <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
                             <div className="min-w-0">
@@ -393,21 +399,32 @@ function Stranka() {
                                   .join(" · ")}
                               </div>
                             </div>
-                            <div className="shrink-0 whitespace-nowrap font-semibold tabular-nums">
+                            <div className="suma shrink-0">
                               {r.suma != null ? formatujMenu(r.suma, r.mena) : "—"}
                             </div>
                           </div>
-                          <div className="mt-1 text-xs">
+                          {/* Stav čítania — jednotné stavové odznaky (text bez zmeny). */}
+                          <div className="mt-1.5 text-xs">
                             {s.ton === "cita" ? (
-                              <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t(s.text)}
-                              </span>
+                              <StavOdznak
+                                ton="neutralny"
+                                maly
+                                ikona={<Loader2 className="h-3 w-3 animate-spin" aria-hidden />}
+                              >
+                                {t(s.text)}
+                              </StavOdznak>
                             ) : s.ton === "chyba" ? (
-                              <span className="inline-flex items-center gap-1 text-amber-700">
-                                <AlertTriangle className="h-3.5 w-3.5" /> {t(s.text)}
-                              </span>
+                              <StavOdznak
+                                ton="pozor"
+                                maly
+                                ikona={<AlertTriangle className="h-3 w-3" aria-hidden />}
+                              >
+                                {t(s.text)}
+                              </StavOdznak>
                             ) : (
-                              <span className="text-emerald-700">{t(s.text)}</span>
+                              <StavOdznak ton="uspech" maly>
+                                {t(s.text)}
+                              </StavOdznak>
                             )}
                           </div>
                         </Link>
@@ -417,7 +434,7 @@ function Stranka() {
                   {ulohy.nespracovane.pocet > ulohy.nespracovane.polozky.length && (
                     <li className="text-sm text-muted-foreground">
                       {t("…a ďalších {n} v", { n: ulohy.nespracovane.pocet - ulohy.nespracovane.polozky.length })}{" "}
-                      <Link to="/nespracovane" className="underline">
+                      <Link to="/nespracovane" className="font-semibold text-primary underline underline-offset-2 hover:text-primary-hover">
                         {t("Nespracovaných dokladoch")}
                       </Link>
                       .
@@ -448,13 +465,15 @@ function Sekcia({
 }) {
   const { t } = useT();
   return (
-    <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
+    <section className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
-          {ikona}
+        <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+            {ikona}
+          </span>
           <span className="break-words">{t(nadpis)}</span>
           {pocet > 0 && (
-            <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
+            <span className="min-w-5 rounded-full bg-primary px-1.5 py-px text-center text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
               {pocet > 99 ? "99+" : pocet}
             </span>
           )}
@@ -462,7 +481,7 @@ function Sekcia({
         {odkaz && (
           <Link
             to={odkaz.to as any}
-            className="shrink-0 text-sm font-medium text-primary hover:underline"
+            className="shrink-0 text-sm font-semibold text-primary hover:text-primary-hover hover:underline"
           >
             {t(odkaz.text)} →
           </Link>

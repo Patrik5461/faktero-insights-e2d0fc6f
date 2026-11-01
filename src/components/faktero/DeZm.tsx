@@ -115,7 +115,7 @@ export function DeZm() {
     <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 pb-24 sm:px-6 lg:px-6">
       <section className="rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
-          <div className="font-medium">{t("Zusammenfassende Meldung (ZM)")}</div>
+          <div className="text-base font-semibold">{t("Zusammenfassende Meldung (ZM)")}</div>
           <p className="mt-1 text-sm text-muted-foreground">
             {t(
               "Súhrnný výkaz dodaní do EÚ podľa § 18a UStG — súčty podľa USt-IdNr. odberateľa, podáva sa Bundeszentralamt für Steuern (BZSt) do 25. dňa po skončení obdobia.",
@@ -208,7 +208,7 @@ export function DeZm() {
         )}
         {nacitavam && (
           <div className="mx-4 mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Zostavujem z dokladov…")}
+            <Loader2 className="h-4 w-4 animate-spin text-primary" /> {t("Zostavujem z dokladov…")}
           </div>
         )}
 
@@ -216,7 +216,7 @@ export function DeZm() {
           <div className="mx-4 mb-4 flex gap-3 rounded-lg border border-border p-4 text-sm">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0">
-              <div className="font-medium">{t("Kleinunternehmer ZM nepodáva")}</div>
+              <div className="font-semibold">{t("Kleinunternehmer ZM nepodáva")}</div>
               <p className="mt-1 text-muted-foreground">
                 {t(
                   "Firma, ktorá uplatňuje § 19 Abs. 1 UStG, je z povinnosti podávať ZM vyňatá (§ 18a Abs. 4 UStG) — oslobodené dodania tovaru do EÚ robiť nemôže a služby do EÚ fakturuje bez dane. Ak režim Kleinunternehmer skončí, ZM sa podáva za každé obdobie s dodaním do EÚ.",
@@ -229,14 +229,14 @@ export function DeZm() {
         {zm && data && !data.kleinunternehmer && (
           <>
             {data.bezUstIdNr && (
-              <div className="mx-4 mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
+              <div className="mx-4 mb-4 rounded-lg border border-warning/30 bg-[color:var(--stav-pozor-plocha)] p-3 text-sm text-[color:var(--stav-pozor-text)]">
                 {t(
                   "Firma nemá vyplnené USt-IdNr. — bez neho sa dodania do EÚ oslobodiť ani ZM podať nedá. Doplňte ho v Nastaveniach firmy.",
                 )}
               </div>
             )}
             {zm.nadHranicou && (
-              <div className="mx-4 mb-4 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
+              <div className="mx-4 mb-4 flex gap-2 rounded-lg border border-warning/30 bg-[color:var(--stav-pozor-plocha)] p-3 text-sm text-[color:var(--stav-pozor-text)]">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   {t(
@@ -272,7 +272,7 @@ export function DeZm() {
                 type="button"
                 onClick={stiahniCsv}
                 disabled={!zm.riadky.length}
-                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
               >
                 <Download className="h-4 w-4" /> {t("CSV pre BZSt")}
               </button>
@@ -286,12 +286,12 @@ export function DeZm() {
               <div className="overflow-x-auto border-t border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                    <tr className="border-b border-border bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                       <th className="px-4 py-2">{t("Krajina")}</th>
                       <th className="px-4 py-2">USt-IdNr.</th>
                       <th className="px-4 py-2">{t("Odberateľ")}</th>
                       <th className="px-4 py-2">{t("Druh")}</th>
-                      <th className="px-4 py-2 text-right">{t("Suma")}</th>
+                      <th className="whitespace-nowrap px-4 py-2 text-right">{t("Suma")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -302,7 +302,7 @@ export function DeZm() {
                       >
                         <td className="px-4 py-2">{r.krajina}</td>
                         <td className="whitespace-nowrap px-4 py-2 tabular-nums">{r.ustIdNr}</td>
-                        <td className="min-w-0 px-4 py-2">
+                        <td className="min-w-0 break-words px-4 py-2">
                           {r.odberatel ?? ""}
                           <span className="block text-xs text-muted-foreground">
                             {t("{n} dokladov", { n: r.dokladov })}
@@ -312,9 +312,7 @@ export function DeZm() {
                           <span className="font-medium">{r.druh}</span>{" "}
                           <span className="text-muted-foreground">{t(DRUHY[r.druh])}</span>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
-                          {eur(r.suma)}
-                        </td>
+                        <td className="suma px-4 py-2 text-right">{eur(r.suma)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -327,7 +325,7 @@ export function DeZm() {
                 {(Object.keys(DRUHY) as DruhZm[]).map((d) => (
                   <div key={d} className="flex justify-between gap-4 sm:block">
                     <span className="text-muted-foreground">{t(DRUHY[d])}: </span>
-                    <span className="tabular-nums">{eur(sucty[d])}</span>
+                    <span className="suma">{eur(sucty[d])}</span>
                   </div>
                 ))}
               </div>

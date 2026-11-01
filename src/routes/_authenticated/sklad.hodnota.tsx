@@ -8,6 +8,8 @@ import { Download } from "lucide-react";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
 import { csvBunka } from "@/lib/faktero/export-helpers";
@@ -92,16 +94,16 @@ function ValuationPage() {
         description={t("Ocenenie zásob podľa nákupnej a predajnej ceny.")}
         action={
           data ? (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={exportCsv}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
               >
                 <Download className="h-4 w-4" /> CSV
               </button>
               <button
                 onClick={exportXlsx}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
               >
                 <Download className="h-4 w-4" /> XLSX
               </button>
@@ -111,9 +113,11 @@ function ValuationPage() {
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav />
         ) : !data ? (
-          <div className="text-sm text-muted-foreground">{t("Žiadne dáta.")}</div>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState title="Žiadne dáta." />
+          </div>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -127,11 +131,11 @@ function ValuationPage() {
               />
             </div>
 
-            <div className="mt-6 min-w-0 rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">{t("Podľa skladu")}</div>
+            <div className="mt-6 min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="mb-3 text-base font-semibold">{t("Podľa skladu")}</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="text-left text-xs font-semibold text-muted-foreground">
                     <tr>
                       <th className="p-2">{t("Sklad")}</th>
                       <th className="p-2 text-right">{t("Množstvo")}</th>
@@ -142,23 +146,21 @@ function ValuationPage() {
                   <tbody className="divide-y divide-border">
                     {data.by_warehouse.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                        <td colSpan={4} className="p-6 text-center text-muted-foreground">
                           {t("Žiadne stavy.")}
                         </td>
                       </tr>
                     )}
                     {data.by_warehouse.map((w: any) => (
                       <tr key={w.id}>
-                        <td className="p-2">{w.name}</td>
-                        <td className="p-2 text-right tabular-nums">
+                        <td className="p-2 min-w-0 break-words">{w.name}</td>
+                        <td className="p-2 text-right tabular-nums whitespace-nowrap">
                           {formatujCislo(w.qty, 0, 2)}
                         </td>
-                        <td className="p-2 text-right tabular-nums whitespace-nowrap">
+                        <td className="p-2 text-right suma">
                           {formatujMenu(w.purchase, mena.kod)}
                         </td>
-                        <td className="p-2 text-right tabular-nums whitespace-nowrap">
-                          {formatujMenu(w.sale, mena.kod)}
-                        </td>
+                        <td className="p-2 text-right suma">{formatujMenu(w.sale, mena.kod)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -166,11 +168,11 @@ function ValuationPage() {
               </div>
             </div>
 
-            <div className="mt-4 min-w-0 rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">{t("Podľa produktu")}</div>
+            <div className="mt-6 min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="mb-3 text-base font-semibold">{t("Podľa produktu")}</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="text-left text-xs font-semibold text-muted-foreground">
                     <tr>
                       <th className="p-2">{t("Produkt")}</th>
                       <th className="p-2">{t("Kód")}</th>
@@ -182,34 +184,32 @@ function ValuationPage() {
                   <tbody className="divide-y divide-border">
                     {data.by_product.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                        <td colSpan={5} className="p-6 text-center text-muted-foreground">
                           {t("Žiadne stavy.")}
                         </td>
                       </tr>
                     )}
                     {data.by_product.map((p: any) => (
                       <tr key={p.stock_item_id}>
-                        <td className="p-2">{p.name}</td>
+                        <td className="p-2 min-w-[10rem] break-words">{p.name}</td>
                         <td className="p-2 whitespace-nowrap text-muted-foreground">
                           {p.sku ?? "—"}
                         </td>
-                        <td className="p-2 text-right tabular-nums">
+                        <td className="p-2 text-right tabular-nums whitespace-nowrap">
                           {formatujCislo(p.qty, 0, 2)}
                         </td>
-                        <td className="p-2 text-right tabular-nums whitespace-nowrap">
+                        <td className="p-2 text-right suma">
                           {formatujMenu(p.purchase, mena.kod)}
                         </td>
-                        <td className="p-2 text-right tabular-nums whitespace-nowrap">
-                          {formatujMenu(p.sale, mena.kod)}
-                        </td>
+                        <td className="p-2 text-right suma">{formatujMenu(p.sale, mena.kod)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-            <div className="mt-4 text-xs text-muted-foreground">
-              <Link to="/sklad" className="text-primary hover:underline">
+            <div className="mt-6 text-sm text-muted-foreground">
+              <Link to="/sklad" className="font-medium text-primary hover:underline">
                 {t("← Prehľad skladu")}
               </Link>
             </div>
@@ -223,9 +223,9 @@ function ValuationPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{t(label)}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <div className="text-sm text-muted-foreground">{t(label)}</div>
+      <div className="suma mt-1 text-2xl">{value}</div>
     </div>
   );
 }

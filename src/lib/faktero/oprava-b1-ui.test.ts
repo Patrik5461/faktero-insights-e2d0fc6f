@@ -109,8 +109,9 @@ describe("zákazky (K-06 … K-13)", () => {
     expect(d).not.toMatch(/^\s+f\.issue_date,$/m);
     expect(d).not.toMatch(/^\s+t\.trip_date,$/m);
   });
+  // Po redizajne ide text cez EmptyState, ktorý ho prekladá sám (t(title)).
   it("prázdny filter Uzavreté", () =>
-    expect(zdroj(R + "zakazky.index.tsx")).toContain('t("Žiadna uzavretá zákazka.")'));
+    expect(zdroj(R + "zakazky.index.tsx")).toContain('"Žiadna uzavretá zákazka."'));
   it("bez nepoužitých importov", () => {
     const s = zdroj(R + "zakazky.nova.tsx");
     expect(s).not.toContain("ArrowLeft");

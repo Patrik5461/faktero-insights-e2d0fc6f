@@ -1,3 +1,4 @@
+import { triedaStavu } from "@/components/faktero/web/Stav";
 import { popisRoly } from "@/lib/faktero/rola-popis";
 import { akciaUpravyFirmy } from "@/lib/faktero/firmy-akcie";
 import { createFileRoute } from "@tanstack/react-router";
@@ -58,10 +59,10 @@ type Row = {
 
 /** Farby štítkov podľa vážnosti — rovnaké ako doteraz pri banke. */
 const TON: Record<Ton, string> = {
-  ok: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  pozor: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
-  chyba: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
-  neutralny: "bg-secondary text-foreground",
+  ok: triedaStavu("uspech"),
+  pozor: triedaStavu("pozor"),
+  chyba: triedaStavu("chyba"),
+  neutralny: triedaStavu("neutralny"),
 };
 
 function CompanyManagementPage() {
@@ -190,7 +191,7 @@ function CompanyManagementPage() {
         type="button"
         onClick={() => switchTo(r.id, kam)}
         title={titulok}
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums hover:opacity-80 ${TON[ton]}`}
+        className={`${TON[ton]} tabular-nums hover:opacity-80`}
       >
         {ikona} {n}
       </button>
@@ -245,7 +246,7 @@ function CompanyManagementPage() {
               ? t("Príjem u: {poskytovatel}", { poskytovatel: s.efaktura.poskytovatel })
               : t("Otvoriť eFaktúru v tejto firme")
           }
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium hover:opacity-80 ${TON[st.ton]}`}
+          className={`${TON[st.ton]} hover:opacity-80`}
         >
           <Send className="h-3 w-3" /> {t(st.text)}
         </button>
@@ -254,7 +255,7 @@ function CompanyManagementPage() {
             type="button"
             onClick={() => switchTo(r.id, ODKAZY_PREHLADU.efakturyNezaevidovane)}
             title={t("Prijaté eFaktúry, ktoré ešte nie sú zaevidované")}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums hover:opacity-80 ${TON.pozor}`}
+            className={`${TON.pozor} tabular-nums hover:opacity-80`}
           >
             <Inbox className="h-3 w-3" /> {prijate}
           </button>
@@ -275,12 +276,12 @@ function CompanyManagementPage() {
           type="button"
           onClick={() => switchTo(r.id, ODKAZY_PREHLADU.banka)}
           title={sb.text ? t(sb.text) : t("Napojené na banku / všetky bankové účty firmy")}
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums hover:opacity-80 ${TON[sb.ton]}`}
+          className={`${TON[sb.ton]} tabular-nums hover:opacity-80`}
         >
           <Landmark className="h-3 w-3" /> {b.napojene}/{b.spolu}
         </button>
         {sb.ton === "chyba" && sb.text ? (
-          <span className="text-xs text-rose-700 dark:text-rose-300">{t(sb.text)}</span>
+          <span className="text-xs text-destructive">{t(sb.text)}</span>
         ) : null}
         {/* Napojiť banku smie len správa firmy — účtovník k banke prístup nemá. */}
         {sb.ton !== "ok" && (r.role === "owner" || r.role === "admin") ? (
@@ -288,7 +289,7 @@ function CompanyManagementPage() {
             type="button"
             onClick={() => switchTo(r.id, ODKAZY_PREHLADU.pripojitBanku)}
             title={t("Napojiť bankový účet tejto firmy")}
-            className="text-xs font-medium text-primary hover:underline"
+            className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline"
           >
             {b.suhlas > 0 || b.problem > 0 ? t("Obnoviť") : t("Napojiť")}
           </button>
@@ -299,12 +300,12 @@ function CompanyManagementPage() {
 
   const nazovFirmy = (r: Row) =>
     r.id === activeId ? (
-      <span className="min-w-0 break-words font-medium">{r.name}</span>
+      <span className="min-w-0 break-words font-semibold">{r.name}</span>
     ) : (
       <button
         type="button"
         onClick={() => switchTo(r.id)}
-        className="min-w-0 break-words text-left font-medium hover:text-primary hover:underline"
+        className="min-w-0 break-words text-left font-semibold hover:text-primary hover:underline"
       >
         {r.name}
       </button>
@@ -319,7 +320,7 @@ function CompanyManagementPage() {
           onClick={() => switchTo(r.id, ODKAZY_PREHLADU.dokladyMailom)}
           title={t("Doklady e-mailom — adresa na príjem dokladov")}
           aria-label={t("Doklady e-mailom")}
-          className="inline-flex items-center rounded-md border border-border px-2 py-1.5 text-xs hover:bg-secondary"
+          className="inline-flex items-center rounded-md border border-input px-2 py-1.5 text-xs hover:bg-accent"
         >
           <Mail className="h-3.5 w-3.5" />
         </button>
@@ -327,7 +328,7 @@ function CompanyManagementPage() {
       {r.id !== activeId && (
         <button
           onClick={() => switchTo(r.id)}
-          className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+          className="rounded-md border border-input px-3 py-1.5 text-xs font-semibold hover:bg-accent"
         >
           {t("Prepnúť")}
         </button>
@@ -344,14 +345,14 @@ function CompanyManagementPage() {
             <button
               type="button"
               onClick={otvor}
-              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+              className="rounded-md border border-input px-3 py-1.5 text-xs font-semibold hover:bg-accent"
             >
               {t("Upraviť")}
             </button>
             <button
               type="button"
               onClick={otvor}
-              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+              className="rounded-md border border-input px-3 py-1.5 text-xs font-semibold hover:bg-accent"
             >
               {t("Pozvať")}
             </button>
@@ -364,7 +365,7 @@ function CompanyManagementPage() {
       {r.role === "owner" && (rows?.length ?? 0) > 1 && (
         <button
           onClick={() => setMazem(r)}
-          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
+          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="h-3.5 w-3.5" /> {t("Zmazať")}
         </button>
@@ -380,7 +381,7 @@ function CompanyManagementPage() {
         action={
           <button
             onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             <Plus className="h-4 w-4" /> {t("Pridať firmu")}
           </button>
@@ -406,7 +407,7 @@ function CompanyManagementPage() {
                 }}
                 placeholder={t("Hľadať firmu alebo IČO…")}
                 aria-label={t("Hľadať firmu")}
-                className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm"
+                className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm"
               />
             </div>
             {roly.length > 1 && (
@@ -414,7 +415,7 @@ function CompanyManagementPage() {
                 value={rola}
                 onChange={(e) => setRola(e.target.value)}
                 aria-label={t("Rola")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">{t("Všetky roly")}</option>
                 {roly.map((r) => (
@@ -424,7 +425,7 @@ function CompanyManagementPage() {
                 ))}
               </select>
             )}
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs tabular-nums text-muted-foreground">
               {t("Zobrazené {n} z {spolu}", { n: zobrazene.length, spolu: rows?.length ?? 0 })}
             </span>
           </div>
@@ -432,27 +433,30 @@ function CompanyManagementPage() {
         {/* Mobil: karty — stĺpec Akcie bol mimo obrazovky. */}
         <div className="space-y-2 md:hidden">
           {rows === null && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
               {t("Načítavam…")}
             </div>
           )}
           {rows?.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
               {t("Žiadne firmy.")}
             </div>
           )}
           {rows && rows.length > 0 && zobrazene.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
               {t("Nič sa nenašlo.")}
             </div>
           )}
           {zobrazene.map((r) => (
-            <div key={r.id} className="rounded-xl border border-border bg-card p-4 text-sm">
+            <div
+              key={r.id}
+              className="rounded-xl border border-border bg-card p-4 text-sm shadow-sm"
+            >
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <AvatarFirmy nazov={r.name} />
                 {nazovFirmy(r)}
                 {r.id === activeId && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary-hover">
+                  <span className={triedaStavu("uspech")}>
                     <Check className="h-3 w-3" /> {t("Aktívna")}
                   </span>
                 )}
@@ -480,9 +484,9 @@ function CompanyManagementPage() {
             </div>
           ))}
         </div>
-        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">{t("Firma")}</th>
                 <th className="px-4 py-3">{t("Rola")}</th>
@@ -517,24 +521,26 @@ function CompanyManagementPage() {
                 </tr>
               )}
               {zobrazene.map((r) => (
-                <tr key={r.id} className="border-t border-border">
-                  <td className="px-4 py-3">
+                <tr key={r.id} className="border-t border-border align-top">
+                  <td className="min-w-[220px] px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <AvatarFirmy nazov={r.name} />
                       {nazovFirmy(r)}
                       {r.id === activeId && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary-hover">
+                        <span className={triedaStavu("uspech")}>
                           <Check className="h-3 w-3" /> {t("Aktívna")}
                         </span>
                       )}
                     </div>
                     {/* IČO a dátum založenia pod názvom — stĺpce uvoľnili miesto stavu firmy. */}
-                    <div className="mt-0.5 pl-8 text-xs text-muted-foreground">
+                    <div className="mt-0.5 pl-8 text-xs tabular-nums text-muted-foreground">
                       {r.ico ? `${t("IČO {ico}", { ico: r.ico })} · ` : ""}
                       {t("vytvorené")} {datum(r.created_at)}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{t(popisRoly(r.role))}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                    {t(popisRoly(r.role))}
+                  </td>
                   <td className="px-4 py-3">{efaktura(r)}</td>
                   <td className="px-4 py-3">{pocetNespracovanych(r)}</td>
                   <td className="px-4 py-3">{neexportovaneBlocky(r)}</td>
@@ -581,15 +587,18 @@ function ZmazanieFirmyDialog({
   useZatvorNaEscape(onClose);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-[var(--w-prekrytie)] backdrop-blur-[2px] p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Zmazať firmu {nazov}", { nazov: firma.name })}
-        className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-base font-semibold">
+        <h2 className="text-lg font-semibold">
           {t("Zmazať firmu {nazov}?", { nazov: firma.name })}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -597,20 +606,18 @@ function ZmazanieFirmyDialog({
             "Zmažú sa všetky doklady, sklad, jazdy aj prílohy tejto firmy. Vrátiť sa to nedá. Ak si to chcete nechať, firmu len prestaňte používať.",
           )}
         </p>
-        <label className="mt-4 block text-xs font-medium text-muted-foreground">
-          {t("Prepíšte názov firmy")}
-        </label>
+        <label className="mt-4 block text-sm font-semibold">{t("Prepíšte názov firmy")}</label>
         <input
           autoFocus
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={firma.name}
-          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         />
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+            className="rounded-md border border-input px-3 py-2 text-sm font-semibold hover:bg-accent"
           >
             {t("Späť")}
           </button>
@@ -626,7 +633,7 @@ function ZmazanieFirmyDialog({
                 setBusy(false);
               }
             }}
-            className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground hover:opacity-90 disabled:opacity-50"
           >
             {busy ? t("Mažem…") : t("Zmazať natrvalo")}
           </button>

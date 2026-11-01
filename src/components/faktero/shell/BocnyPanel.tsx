@@ -116,6 +116,7 @@ export function SekcieNavigacie({
                 <Ikona className="h-5 w-5" />
                 {s.pocet ? (
                   <span
+                    data-w-pocet
                     className="absolute right-0.5 top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums"
                     aria-label={t("{n} čaká", { n: s.pocet })}
                   >
@@ -146,6 +147,7 @@ export function SekcieNavigacie({
                 {!zbaleny && <span className="min-w-0 flex-1 truncate">{t(s.label)}</span>}
                 {!zbaleny && s.pocet ? (
                   <span
+                    data-w-pocet
                     className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
                     aria-label={t("{n} čaká", { n: s.pocet })}
                   >
@@ -166,9 +168,11 @@ export function SekcieNavigacie({
               className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] ${
                 zbaleny ? "justify-center" : ""
               } ${
-                aktivna
-                  ? "bg-primary/10 font-medium text-primary-hover"
-                  : "text-foreground/80 hover:bg-secondary"
+                aktivna && rozbalena
+                  ? "font-semibold text-foreground hover:bg-secondary [&>svg:first-child]:text-primary"
+                  : aktivna
+                    ? "bg-primary/10 font-medium text-primary-hover"
+                    : "text-foreground/80 hover:bg-secondary hover:text-foreground"
               }`}
             >
               <Ikona className="h-4 w-4 shrink-0" />
@@ -197,9 +201,11 @@ export function SekcieNavigacie({
                         search={p.search as any}
                         onClick={onPrejdi}
                         aria-current={je ? "page" : undefined}
+                        data-w-polozka-menu
+                        data-w-aktivna={je ? "" : undefined}
                         className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
                           je
-                            ? "bg-primary/10 font-medium text-primary-hover"
+                            ? "bg-primary/10 font-semibold text-primary-hover"
                             : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
@@ -208,6 +214,7 @@ export function SekcieNavigacie({
                         </span>
                         {p.pocet ? (
                           <span
+                            data-w-pocet
                             className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
                             aria-label={t("{n} čaká", { n: p.pocet })}
                           >

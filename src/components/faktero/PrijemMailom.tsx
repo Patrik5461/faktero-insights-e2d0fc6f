@@ -19,14 +19,16 @@ import { RozdelovacMailov } from "./RozdelovacMailov";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import { StavOdznak, type TonStavu } from "./web/Stav";
+import { NacitavanieStav } from "./web/StavyObsahu";
 
-const STAVY: Record<string, { text: string; trieda: string }> = {
-  hotovo: { text: "Založené", trieda: "text-emerald-700" },
-  prijate: { text: "Spracúva sa", trieda: "text-muted-foreground" },
-  bez_prilohy: { text: "Bez prílohy", trieda: "text-amber-700" },
-  potvrdenie: { text: "Potvrdenie preposielania", trieda: "text-amber-700" },
-  chyba: { text: "Nepodarilo sa", trieda: "text-destructive" },
-  odmietnute: { text: "Odmietnuté — nepovolený odosielateľ", trieda: "text-destructive" },
+const STAVY: Record<string, { text: string; ton: TonStavu }> = {
+  hotovo: { text: "Založené", ton: "uspech" },
+  prijate: { text: "Spracúva sa", ton: "priebeh" },
+  bez_prilohy: { text: "Bez prílohy", ton: "pozor" },
+  potvrdenie: { text: "Potvrdenie preposielania", ton: "pozor" },
+  chyba: { text: "Nepodarilo sa", ton: "chyba" },
+  odmietnute: { text: "Odmietnuté — nepovolený odosielateľ", ton: "chyba" },
 };
 
 /**
@@ -110,9 +112,9 @@ export function PrijemMailom({
       <div className="mb-4 rounded-xl border border-border bg-card">
         <button
           onClick={() => setOtvorene((o) => !o)}
-          className="flex w-full items-center justify-between gap-2 p-4 text-left"
+          className="flex w-full items-center justify-between gap-2 rounded-xl p-4 text-left hover:bg-accent/50"
         >
-          <span className="flex items-center gap-2 text-sm font-medium">
+          <span className="flex items-center gap-2 text-sm font-semibold">
             <Mail className="h-4 w-4 text-primary" />
             {t("Posielanie dokladov e-mailom")}
           </span>
@@ -128,24 +130,24 @@ export function PrijemMailom({
             {chyba ? (
               <div className="text-sm text-destructive">{chyba}</div>
             ) : !stav ? (
-              <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+              <NacitavanieStav className="py-6" />
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
                   {t("Prepošlite mail od dodávateľa na túto adresu — doklad sa prečíta a počká v")}{" "}
-                  <Link to="/nespracovane" className="text-primary underline">
+                  <Link to="/nespracovane" className="text-primary underline underline-offset-2">
                     {t("Nespracovaných dokladoch")}
                   </Link>{" "}
                   {t("s vyplneným dodávateľom, číslom a sumami. Tam ho zaradíte a zaúčtujete.")}
                 </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <code className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm font-medium">
+                  <code className="rounded-md border border-border bg-muted px-3 py-2 text-sm font-semibold">
                     {stav.adresa}
                   </code>
                   <button
                     onClick={kopiruj}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     {skopirovane ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {skopirovane ? t("Skopírované") : t("Kopírovať")}
@@ -170,7 +172,7 @@ export function PrijemMailom({
                         setPracuje(false);
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-60"
                     title={t("Použite, keď sa adresa dostane tam, kam nemala.")}
                   >
                     <RefreshCw className="h-4 w-4" /> {t("Nová adresa")}
@@ -180,7 +182,7 @@ export function PrijemMailom({
                       setVlastna(stav.local_part);
                       setUpravujem((u) => !u);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                     title={t("Namiesto vygenerovanej si zvoľte vlastnú.")}
                   >
                     <Pencil className="h-4 w-4" /> {upravujem ? t("Zavrieť") : t("Zvoliť vlastnú")}
@@ -241,7 +243,7 @@ export function PrijemMailom({
                       <button
                         type="submit"
                         disabled={pracuje}
-                        className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                        className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                       >
                         {t("Uložiť")}
                       </button>
@@ -277,7 +279,7 @@ export function PrijemMailom({
                 </p>
 
                 <div className="mt-4 rounded-md border border-border p-3">
-                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <div className="text-sm font-semibold">
                     {t("Povolení odosielatelia")}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -310,7 +312,7 @@ export function PrijemMailom({
                         toast.error(t(e?.message ?? "Nepodarilo sa"));
                       }
                     }}
-                    className="mt-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                    className="mt-2 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                   >
                     {t("Uložiť odosielateľov")}
                   </button>
@@ -346,7 +348,7 @@ export function PrijemMailom({
                 </label>
 
                 <div className="mt-4">
-                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <div className="mb-2 text-sm font-semibold">
                     {t("Posledné maily")}
                   </div>
                   {stav.spravy.length === 0 ? (
@@ -359,7 +361,7 @@ export function PrijemMailom({
                   ) : (
                     <ul className="space-y-1.5">
                       {stav.spravy.map((s) => {
-                        const st = STAVY[s.status] ?? { text: s.status, trieda: "" };
+                        const st = STAVY[s.status] ?? { text: s.status, ton: "neutralny" as TonStavu };
                         return (
                           /*
                             Každý riadok má rovnakú stavbu: hore dátum, odosielateľ a stav
@@ -377,9 +379,9 @@ export function PrijemMailom({
                                 </span>{" "}
                                 <span className="font-medium">{s.from_email ?? t("neznámy")}</span>
                               </span>
-                              <span className={`shrink-0 whitespace-nowrap ${st.trieda}`}>
+                              <StavOdznak ton={st.ton} maly className="shrink-0 self-center">
                                 {t(st.text)}
-                              </span>
+                              </StavOdznak>
                             </div>
                             {s.subject ? (
                               <div className="truncate text-muted-foreground">{s.subject}</div>

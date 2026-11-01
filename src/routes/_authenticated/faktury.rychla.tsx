@@ -143,7 +143,7 @@ function QuickInvoicePage() {
 
           {step === 1 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-medium">{t("Odberateľ")}</h2>
+              <h2 className="text-base font-semibold">{t("Odberateľ")}</h2>
               <CustomerSearch
                 ako="pole"
                 id="odberatel-rychla"
@@ -175,7 +175,7 @@ function QuickInvoicePage() {
 
           {step === 2 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-medium">{t("Suma a popis")}</h2>
+              <h2 className="text-base font-semibold">{t("Suma a popis")}</h2>
               <PoleDokladu label={t("Suma (s DPH)")} htmlFor="suma-rychla">
                 <input
                   id="suma-rychla"
@@ -226,7 +226,7 @@ function QuickInvoicePage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
+                  className="flex-1 rounded-md border border-input px-4 py-2 text-sm hover:bg-muted"
                 >
                   {t("Späť")}
                 </button>
@@ -243,7 +243,7 @@ function QuickInvoicePage() {
 
           {step === 3 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <h2 className="font-medium">{t("Súhrn")}</h2>
+              <h2 className="text-base font-semibold">{t("Súhrn")}</h2>
               <div className="space-y-1 text-sm">
                 <Row
                   label={t("Odberateľ")}
@@ -255,7 +255,7 @@ function QuickInvoicePage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
+                  className="flex-1 rounded-md border border-input px-4 py-2 text-sm hover:bg-muted"
                 >
                   {t("Späť")}
                 </button>

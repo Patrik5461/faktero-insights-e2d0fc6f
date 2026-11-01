@@ -269,7 +269,7 @@ function NovyDokladPage() {
   const pasZamku = zamknutyObdobim ? (
     <div
       role="status"
-      className="mx-auto mb-3 flex max-w-6xl items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+      className="dk-pozor mx-auto mb-3 flex max-w-6xl items-start gap-2 rounded-xl border p-3 text-sm"
     >
       <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
       <span>
@@ -1003,7 +1003,7 @@ function NovyDokladPage() {
             />
           ) : null}
           {duplikat && (
-            <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            <div role="alert" className="dk-pozor rounded-xl border p-4 text-sm">
               <div className="font-semibold">{t("Tento bloček už vo firme máte")}</div>
               <div className="mt-1">
                 {duplikat.supplier_name ?? t("Doklad")}
@@ -1036,7 +1036,7 @@ function NovyDokladPage() {
               <button
                 onClick={handleScanPhoto}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 <Camera className="h-5 w-5" /> {t("Odfotiť")}
               </button>
@@ -1111,12 +1111,12 @@ function NovyDokladPage() {
               {ekasaBadge && (
                 <div className="flex flex-wrap gap-2">
                   {ekasaBadge.overeny && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span className="dk-uspech inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold">
                       ✓ {t("Načítané z Finančnej správy")}
                     </span>
                   )}
                   {ekasaBadge.source === "qr" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    <span className="dk-pozor inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold">
                       {t("Len z QR kódu — doklad sa vo Finančnej správe nenašiel")}
                     </span>
                   )}
@@ -1408,11 +1408,11 @@ function NovyDokladPage() {
                 id="zauctovanie"
                 className="sm:col-span-2 scroll-mt-24 rounded-md border border-border p-3 transition-shadow"
               >
-                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="mb-2 text-sm font-semibold">
                   {t("Zaúčtovanie (Pohoda)")}
                 </div>
                 {ulozeny?.exported_at && (
-                  <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
+                  <div className="dk-pozor mb-3 flex flex-wrap items-center gap-2 rounded-md border p-2 text-sm">
                     {t(textOdovzdanyDoklad(programOdovzdania), { program: programOdovzdania ?? "" })}
                     <span className="ml-auto flex flex-wrap gap-2">
                       <OpravitZauctovanie
@@ -1420,12 +1420,12 @@ function NovyDokladPage() {
                         druh="doklad"
                         // Formulár drží kódy vo vlastnom stave — po oprave sa načíta celý znova.
                         onZmena={() => window.location.reload()}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                       />
                       <button
                         type="button"
                         onClick={vratZPohody}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                       >
                         {t(textPoslatOpravu(programOdovzdania), { program: programOdovzdania ?? "" })}
                       </button>
@@ -1710,7 +1710,7 @@ function NovyDokladPage() {
                 <button
                   onClick={() => handleSave(true)}
                   disabled={saving || !form.payment_method}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary-hover hover:bg-primary/15 disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" /> {t("Uložiť a spracovať")}
                 </button>
@@ -1718,7 +1718,7 @@ function NovyDokladPage() {
               <button
                 onClick={() => handleSave()}
                 disabled={saving || !form.payment_method}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />{" "}
                 {form.payment_method ? t("Uložiť doklad") : t("Vyberte spôsob úhrady")}

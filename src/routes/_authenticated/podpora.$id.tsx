@@ -13,7 +13,8 @@ import {
   uzavriPoziadavkuFn,
 } from "@/lib/faktero/podpora.functions";
 import { cisloPoziadavky, nazovKategorie } from "@/lib/faktero/podpora";
-import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { PodporaStavWeb } from "@/components/faktero/PodporaStav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { PrilohyPoziadavky, type PrilohaPoziadavky } from "@/components/faktero/PrilohyPoziadavky";
 import { odkazNaPrilohuPodporyFn } from "@/lib/faktero/podpora-prilohy.functions";
 
@@ -102,9 +103,9 @@ function DetailPoziadavky() {
   if (p === null) {
     return (
       <PageBody>
-        <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-center">
-          <p className="font-medium">{t("Požiadavka sa nenašla.")}</p>
-          <Link to="/podpora" className="mt-4 inline-block text-sm text-primary hover:underline">
+        <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+          <p className="font-semibold">{t("Požiadavka sa nenašla.")}</p>
+          <Link to="/podpora" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
             {t("Späť na Pomoc a podpora")}
           </Link>
         </div>
@@ -120,31 +121,29 @@ function DetailPoziadavky() {
       />
       <PageBody>
         {p === undefined ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
-          </div>
+          <NacitavanieStav />
         ) : (
           <div className="mx-auto max-w-3xl space-y-4">
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <PodporaStav stav={p.stav} />
+              <PodporaStavWeb stav={p.stav} />
               <span>{t(nazovKategorie(p.kategoria))}</span>
-              <span>{t("Založená {datum}", { datum: new Date(p.created_at).toLocaleString("sk-SK") })}</span>
+              <span className="tabular-nums">{t("Založená {datum}", { datum: new Date(p.created_at).toLocaleString("sk-SK") })}</span>
             </div>
 
             <ol className="space-y-3">
               {spravy.map((s) => (
                 <li
                   key={s.id}
-                  className={`rounded-2xl border p-4 ${
-                    s.od_podpory ? "border-primary/30 bg-primary/5" : "border-border bg-card"
+                  className={`rounded-xl border p-4 ${
+                    s.od_podpory ? "border-primary/30 bg-primary/5" : "border-border bg-card shadow-sm"
                   }`}
                 >
-                  <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">
                       {s.od_podpory ? t("Podpora Faktera") : t("Vy")}
                       {s.cez_email && <span className="font-normal text-muted-foreground"> · {t("e‑mailom")}</span>}
                     </span>
-                    <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
+                    <span className="whitespace-nowrap tabular-nums">{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                   </div>
                   <div className="whitespace-pre-wrap text-sm">{s.text}</div>
                   <PrilohyPoziadavky
@@ -155,7 +154,7 @@ function DetailPoziadavky() {
               ))}
             </ol>
 
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -174,7 +173,7 @@ function DetailPoziadavky() {
                   <button
                     onClick={() => void vyriesene()}
                     disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold transition-colors hover:bg-secondary disabled:opacity-50"
                   >
                     <CheckCircle2 className="h-4 w-4" /> {t("Už je to vyriešené")}
                   </button>
@@ -184,7 +183,7 @@ function DetailPoziadavky() {
                 <button
                   onClick={() => void posli()}
                   disabled={busy || !text.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

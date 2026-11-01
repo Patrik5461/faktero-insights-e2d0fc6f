@@ -28,19 +28,19 @@ export function PredponyObjednavky({
   };
   return (
     <div className="block">
-      <span className="text-xs text-muted-foreground">{t("Predpony čísla objednávky")}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{t("Predpony čísla objednávky")}</span>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {hodnota.map((p) => (
           <span
             key={p}
-            className="inline-flex min-w-0 items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 font-mono text-xs"
+            className="inline-flex min-w-0 items-center gap-1 rounded-sm border border-border bg-muted/40 px-2 py-1 font-mono text-xs"
           >
             {p}
             <button
               type="button"
               aria-label={t("Odobrať predponu {predpona}", { predpona: p })}
               onClick={() => onZmena(hodnota.filter((x) => x !== p))}
-              className="rounded p-0.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </button>
@@ -66,7 +66,7 @@ export function PredponyObjednavky({
               type="button"
               disabled={!nova.trim()}
               onClick={pridaj}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold hover:bg-muted disabled:opacity-50"
             >
               <Plus className="h-3.5 w-3.5" /> {t("Pridať predponu")}
             </button>

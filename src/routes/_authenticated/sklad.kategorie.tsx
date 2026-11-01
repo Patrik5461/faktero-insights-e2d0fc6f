@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Tags, Ban } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/kategorie")({
@@ -143,9 +145,9 @@ function CategoriesPage() {
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="min-w-0 self-start overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="p-3">{t("Kategória")}</th>
                   <th className="p-3">{t("Poznámka")}</th>
@@ -158,47 +160,46 @@ function CategoriesPage() {
               <tbody className="divide-y divide-border">
                 {loading && (
                   <tr>
-                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                      {t("Načítavam…")}
+                    <td colSpan={4} className="p-0">
+                      <NacitavanieStav />
                     </td>
                   </tr>
                 )}
                 {!loading && rows.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                      <Tags className="mx-auto mb-2 h-6 w-6 opacity-40" />
-                      {t("Žiadne kategórie. Vytvorte prvú vo formulári.")}
+                    <td colSpan={4} className="p-0">
+                      <EmptyState icon={Tags} title="Žiadne kategórie. Vytvorte prvú vo formulári." />
                     </td>
                   </tr>
                 )}
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td className="p-3">
-                      <span className="inline-flex items-center gap-2">
+                      <span className="inline-flex min-w-0 items-center gap-2">
                         <span
-                          className="h-3 w-3 rounded-full border border-border"
+                          className="h-3 w-3 shrink-0 rounded-full border border-border"
                           style={{ background: r.color ?? "transparent" }}
                         />
-                        <span className="font-medium">{r.name}</span>
+                        <span className="break-words font-medium">{r.name}</span>
                       </span>
                     </td>
-                    <td className="p-3 text-xs text-muted-foreground">{r.note ?? "—"}</td>
-                    <td className="p-3 text-right tabular-nums">{r.product_count}</td>
-                    <td className="p-3 text-right">
-                      <div className="inline-flex gap-1">
+                    <td className="max-w-[20rem] break-words p-3 text-sm text-muted-foreground">{r.note ?? "—"}</td>
+                    <td className="p-3 text-right font-medium tabular-nums">{r.product_count}</td>
+                    <td className="p-2 text-right">
+                      <div className="inline-flex gap-0.5">
                         <button
                           onClick={() => startEdit(r)}
-                          className="rounded-md border border-border p-1.5 hover:bg-muted"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                           title={t("Upraviť")}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => onDelete(r.id, r.product_count)}
-                          className="rounded-md border border-border p-1.5 text-destructive hover:bg-destructive/10"
+                          className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                           title={t("Zmazať")}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -208,11 +209,11 @@ function CategoriesPage() {
             </table>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">
+          <div className="self-start rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 text-base font-semibold">
               {editing ? t("Upraviť kategóriu") : t("Nová kategória")}
             </div>
-            <label className="block text-xs font-medium text-muted-foreground">{t("Názov")}</label>
+            <label className="block text-sm font-semibold">{t("Názov")}</label>
             <input
               aria-label={t("Názov")}
               value={name}
@@ -220,14 +221,14 @@ function CategoriesPage() {
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               placeholder={t("napr. Elektro")}
             />
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+            <label className="mt-3 block text-sm font-semibold">
               {t("Farba")}
             </label>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {/* Bez farby — prečiarknutý krúžok, inak vyzeral ako biela farba. */}
               <button
                 onClick={() => setColor("")}
-                className={`grid h-7 w-7 place-items-center rounded-full border border-dashed border-muted-foreground/60 text-muted-foreground ${color === "" ? "ring-2 ring-primary" : ""}`}
+                className={`grid h-7 w-7 place-items-center rounded-full border border-dashed border-muted-foreground/60 text-muted-foreground ${color === "" ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : ""}`}
                 title={t("Bez farby")}
                 aria-label={t("Bez farby")}
                 aria-pressed={color === ""}
@@ -241,12 +242,12 @@ function CategoriesPage() {
                   aria-label={t(f.nazov)}
                   title={t(f.nazov)}
                   aria-pressed={color === f.kod}
-                  className={`h-7 w-7 rounded-full border border-border ${color === f.kod ? "ring-2 ring-primary" : ""}`}
+                  className={`h-7 w-7 rounded-full border border-border ${color === f.kod ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : ""}`}
                   style={{ background: f.kod }}
                 />
               ))}
             </div>
-            <label className="mt-3 block text-xs font-medium text-muted-foreground">
+            <label className="mt-3 block text-sm font-semibold">
               {t("Poznámka")}
             </label>
             <textarea
@@ -259,7 +260,7 @@ function CategoriesPage() {
               <button
                 disabled={busy || !name.trim()}
                 onClick={onSave}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {editing ? t("Uložiť") : t("Vytvoriť")}
@@ -267,7 +268,7 @@ function CategoriesPage() {
               {editing && (
                 <button
                   onClick={resetForm}
-                  className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+                  className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                 >
                   {t("Zrušiť")}
                 </button>

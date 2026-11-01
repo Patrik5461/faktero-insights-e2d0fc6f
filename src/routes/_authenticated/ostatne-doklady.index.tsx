@@ -45,6 +45,7 @@ import {
   vsetkyZobrazeneVybrane,
   vybraneZobrazene,
 } from "@/lib/faktero/vyber-dokladov";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Iné doklady — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({
@@ -54,10 +55,11 @@ export const Route = createFileRoute("/_authenticated/ostatne-doklady/")({
   component: OstatneDokladyPage,
 });
 
-const STAV_STYLE: Record<string, string> = {
-  new: "bg-amber-500/10 text-amber-800 dark:text-amber-400",
-  processed: "bg-secondary text-foreground/70",
-  exported: "bg-primary/10 text-primary-hover",
+/** Tón stavového odznaku (redizajn webu) — texty ostávajú zo `STAV_DOKLADU_NAZOV`. */
+const STAV_TON: Record<string, TonStavu> = {
+  new: "pozor",
+  processed: "informacia",
+  exported: "uspech",
 };
 
 function OstatneDokladyPage() {
@@ -294,7 +296,7 @@ function OstatneDokladyPage() {
             </button>
             <Link
               to="/ostatne-doklady/novy"
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Pridať doklad")}
             </Link>
@@ -315,13 +317,13 @@ function OstatneDokladyPage() {
               onClick={() => prepniZalozku(z.kluc)}
               className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm ${
                 zalozka === z.kluc
-                  ? "border-primary font-medium text-foreground"
+                  ? "border-primary font-semibold text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t(z.nazov)}
               {z.kluc === "nespracovane" && nespracovanych ? (
-                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
+                <span className="dk-pozor rounded-full px-1.5 text-xs font-semibold tabular-nums">
                   {nespracovanych}
                 </span>
               ) : null}
@@ -417,7 +419,7 @@ function OstatneDokladyPage() {
               >
                 {zalozka === "nespracovane" ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 text-emerald-700" /> {t("Označiť ako spracované")} (
+                    <CheckCircle2 className="h-4 w-4 text-primary" /> {t("Označiť ako spracované")} (
                     {vybrane.length})
                   </>
                 ) : (
@@ -432,7 +434,7 @@ function OstatneDokladyPage() {
 
         {/* Pri kartách na telefóne bez vonkajšieho rámika — karty majú vlastný. */}
         <div
-          className={`overflow-hidden rounded-2xl border border-border bg-card ${!loading && zobrazene.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
+          className={`overflow-hidden rounded-xl border border-border bg-card ${!loading && zobrazene.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
         >
           {loading ? (
             <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
@@ -497,9 +499,9 @@ function OstatneDokladyPage() {
                             <span
                               className={
                                 lehota === "po"
-                                  ? "font-medium text-destructive"
+                                  ? "dk-text-chyba font-medium"
                                   : lehota === "blizko"
-                                    ? "font-medium text-amber-700 dark:text-amber-400"
+                                    ? "dk-text-pozor font-medium"
                                     : ""
                               }
                             >
@@ -511,14 +513,12 @@ function OstatneDokladyPage() {
                     }
                     amount={r.amount != null ? formatujMenu(r.amount, r.currency) : undefined}
                     status={
-                      <span
-                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STAV_STYLE[r.status]}`}
-                      >
+                      <StavOdznak ton={tonStavu(STAV_TON, r.status)}>
                         {t(
                           STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
                             r.status,
                         )}
-                      </span>
+                      </StavOdznak>
                     }
                     actions={
                       <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
@@ -538,7 +538,7 @@ function OstatneDokladyPage() {
                           <button
                             onClick={() => zmenStav([r.id], "processed")}
                             disabled={pracujem}
-                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-600/10 disabled:opacity-50 dark:text-emerald-400"
+                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary-hover hover:bg-primary/10 disabled:opacity-50"
                           >
                             <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                           </button>
@@ -569,7 +569,7 @@ function OstatneDokladyPage() {
               desktop={
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-secondary/40 text-xs text-muted-foreground">
+                    <thead className="bg-secondary/40 text-xs font-semibold whitespace-nowrap text-muted-foreground">
                       <tr>
                         <th className="w-8 px-3 py-2">
                           <input
@@ -669,7 +669,7 @@ function OstatneDokladyPage() {
                                 </div>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
+                            <td className="suma px-3 py-2 text-right">
                               {r.amount != null ? formatujMenu(r.amount, r.currency) : "—"}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap">
@@ -677,9 +677,9 @@ function OstatneDokladyPage() {
                                 <span
                                   className={
                                     lehota === "po"
-                                      ? "font-medium text-destructive"
+                                      ? "dk-text-chyba font-medium"
                                       : lehota === "blizko"
-                                        ? "font-medium text-amber-700 dark:text-amber-400"
+                                        ? "dk-text-pozor font-medium"
                                         : ""
                                   }
                                 >
@@ -691,7 +691,8 @@ function OstatneDokladyPage() {
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span
+                                <StavOdznak
+                                  ton={tonStavu(STAV_TON, r.status)}
                                   title={
                                     r.processed_at
                                       ? t("Spracované {datum}", {
@@ -699,18 +700,17 @@ function OstatneDokladyPage() {
                                         })
                                       : undefined
                                   }
-                                  className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STAV_STYLE[r.status]}`}
                                 >
                                   {t(
                                     STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
                                       r.status,
                                   )}
-                                </span>
+                                </StavOdznak>
                                 {r.status === "new" && (
                                   <button
                                     onClick={() => zmenStav([r.id], "processed")}
                                     disabled={pracujem}
-                                    className="inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                                    className="inline-flex h-6 items-center gap-1 rounded-md border border-input bg-card px-2 text-xs font-semibold text-primary-hover hover:bg-accent disabled:opacity-50"
                                   >
                                     <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                                   </button>

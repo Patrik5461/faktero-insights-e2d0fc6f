@@ -25,7 +25,7 @@ export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" }) 
   if (zdroj === "pravidlo")
     return (
       <span
-        className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+        className="dk-pozor ml-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] font-semibold"
         title={t("Doplnilo pravidlo účtovania podľa dodávateľa.")}
       >
         <Star className="h-2.5 w-2.5 fill-current" /> {t("pravidlo")}
@@ -33,7 +33,7 @@ export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" }) 
     );
   return zdroj === "ai" ? (
     <span
-      className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-violet-100 px-1.5 py-px text-[10px] font-medium text-violet-800 dark:bg-violet-500/20 dark:text-violet-200"
+      className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-[var(--stav-priebeh-plocha)] text-[var(--stav-priebeh-text)] px-1.5 py-px text-[10px] font-semibold"
       title={t("Navrhla AI podľa dodávateľa a položiek — skontrolujte a potvrďte, alebo zmeňte.")}
     >
       <Sparkles className="h-2.5 w-2.5" /> {t("Návrh AI")}
@@ -92,7 +92,7 @@ export function NavrhAiInfo({
 }) {
   const { t } = useT();
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-100">
+    <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-[color-mix(in_oklch,var(--stav-priebeh-bod)_40%,transparent)] bg-[var(--stav-priebeh-plocha)] text-[var(--stav-priebeh-text)] px-3 py-2 text-xs">
       <Sparkles className="h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0 flex-1">
         <strong>{t("Návrh AI")}</strong>
@@ -105,7 +105,7 @@ export function NavrhAiInfo({
         <button
           type="button"
           onClick={onPotvrd}
-          className="rounded-md bg-violet-600 px-2.5 py-1 font-medium text-white hover:opacity-90"
+          className="rounded-md bg-primary px-2.5 py-1 font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           {t("Potvrdiť návrh")}
         </button>
@@ -113,7 +113,7 @@ export function NavrhAiInfo({
       <button
         type="button"
         onClick={onZahod}
-        className="rounded-md border border-violet-300 px-2.5 py-1 hover:bg-violet-100 dark:border-violet-500/40 dark:hover:bg-violet-500/20"
+        className="rounded-md border border-input bg-card px-2.5 py-1 font-semibold text-foreground hover:bg-secondary"
       >
         {t("Zahodiť návrh")}
       </button>

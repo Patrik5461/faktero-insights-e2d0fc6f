@@ -8,7 +8,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deletePriceAction, listPriceActions, savePriceAction } from "@/lib/faktero/ceny.functions";
 import { akciaPlati, cislo } from "@/lib/faktero/ceny";
-import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Percent } from "lucide-react";
 import { PRODUKTY, mnozne } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -16,6 +16,9 @@ import { KROK_CENY } from "@/lib/faktero/mena";
 import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { potvrd } from "@/lib/potvrdenie";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové akcie — Faktero") }] }),
@@ -37,8 +40,8 @@ function formatDatum(s?: string | null) {
   return `${Number(d)}. ${Number(m)}. ${r}`;
 }
 
-const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
-const popis = "mb-1 block text-xs font-medium text-muted-foreground";
+const pole = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+const popis = "mb-1 block text-xs font-semibold text-muted-foreground";
 
 type Polozka = { product_id: string; unit_price: string };
 
@@ -157,17 +160,17 @@ function AkciePage() {
         title={t("Cenové akcie")}
         description={t("Časovo ohraničená zľava alebo akciová cena. Doklad ju použije len vtedy, keď je pre odberateľa výhodnejšia než jeho dohodnutá cena.")}
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link
               to="/ceny"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-muted"
             >
               <ArrowLeft className="h-4 w-4" /> {t("Cenník")}
             </Link>
             <button
               type="button"
               onClick={novaAkcia}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nová akcia")}
             </button>
@@ -176,10 +179,10 @@ function AkciePage() {
       />
       <PageBody>
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav />
         ) : akcie.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
-            {t("Zatiaľ žiadna cenová akcia.")}
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState icon={Percent} title="Zatiaľ žiadna cenová akcia." />
           </div>
         ) : (
           <div className="space-y-3">
@@ -190,36 +193,38 @@ function AkciePage() {
               );
               const skoncila = !!a.valid_to && a.valid_to < dnesok;
               return (
-                <div key={a.id} className="rounded-xl border border-border bg-card p-4">
+                <div key={a.id} className="rounded-xl border border-border bg-card p-4 sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{a.name}</span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs ${
-                            bezi
-                              ? "bg-emerald-500/10 text-emerald-700"
-                              : skoncila || !a.active
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-blue-500/10 text-blue-600"
-                          }`}
+                        <span className="min-w-0 break-words font-semibold">{a.name}</span>
+                        <StavOdznak
+                          ton={
+                            (bezi
+                              ? "uspech"
+                              : skoncila
+                                ? "neutralny"
+                                : !a.active
+                                  ? "neutralny"
+                                  : "informacia") satisfies TonStavu
+                          }
                         >
                           {bezi ? t("beží") : skoncila ? t("skončila") : !a.active ? t("vypnutá") : t("čaká")}
-                        </span>
+                        </StavOdznak>
                         {cislo(a.discount_percent) > 0 && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary-hover">
+                          <span className="rounded-sm bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary-hover">
                             −{cislo(a.discount_percent)} %
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-sm tabular-nums text-muted-foreground">
                         {formatDatum(a.valid_from)} – {t(formatDatum(a.valid_to))} ·{" "}
                         {a.applies_to_all
                           ? t("celý sortiment")
                           : `${(a.price_action_products ?? []).length} ${t(mnozne((a.price_action_products ?? []).length, PRODUKTY))}`}
                       </p>
                       {!a.applies_to_all && (a.price_action_products ?? []).length > 0 && (
-                        <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                        <ul className="mt-2 space-y-0.5 text-sm text-muted-foreground">
                           {(a.price_action_products ?? []).slice(0, 6).map((p: any) => (
                             <li key={p.id}>
                               {p.products?.name ?? "—"}
@@ -227,11 +232,11 @@ function AkciePage() {
                                 <>
                                   {" "}
                                   →{" "}
-                                  <span className="font-medium text-foreground">
+                                  <span className="suma text-foreground">
                                     {suma(p.unit_price)}
                                   </span>
                                   {cislo(p.products?.unit_price) > 0 && (
-                                    <span className="ml-1 line-through">
+                                    <span className="ml-1 whitespace-nowrap tabular-nums line-through">
                                       {suma(p.products.unit_price)}
                                     </span>
                                   )}
@@ -252,7 +257,7 @@ function AkciePage() {
                         type="button"
                         aria-label={t("Upraviť akciu")}
                         onClick={() => upravAkciu(a)}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -269,7 +274,7 @@ function AkciePage() {
                           }
                           nacitaj();
                         }}
-                        className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -284,6 +289,7 @@ function AkciePage() {
 
       {form && (
         <div
+          data-slot="dialog-overlay"
           className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
           onClick={() => setForm(null)}
         >
@@ -291,7 +297,8 @@ function AkciePage() {
             role="dialog"
             aria-modal="true"
             aria-label={t("Cenová akcia")}
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6"
+            data-slot="dialog-content"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
@@ -367,8 +374,8 @@ function AkciePage() {
               </label>
 
               {!form.applies_to_all && (
-                <div className="rounded-lg border border-border p-3">
-                  <div className="mb-2 text-sm font-medium">{t("Produkty v akcii")}</div>
+                <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="mb-2 text-sm font-semibold">{t("Produkty v akcii")}</div>
                   {form.polozky.length === 0 && (
                     <p className="mb-2 text-xs text-muted-foreground">
                       {t("Zatiaľ žiadny. Bez produktov by akcia nemala na čo platiť.")}
@@ -378,10 +385,10 @@ function AkciePage() {
                     {form.polozky.map((p: Polozka, i: number) => {
                       const produkt = produkty.find((x) => x.id === p.product_id);
                       return (
-                        <div key={p.product_id} className="flex items-center gap-2">
+                        <div key={p.product_id} className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                           <span className="min-w-0 flex-1 truncate text-sm">
                             {produkt?.name ?? "—"}
-                            <span className="ml-2 text-xs text-muted-foreground">
+                            <span className="ml-2 whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                               {suma(produkt?.unit_price)}
                             </span>
                           </span>
@@ -390,7 +397,7 @@ function AkciePage() {
                             step={KROK_CENY}
                             min="0"
                             placeholder={t("akciová cena")}
-                            className="w-36 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                            className="w-36 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
                             value={p.unit_price}
                             onChange={(e) => {
                               const polozky = [...form.polozky];
@@ -407,7 +414,7 @@ function AkciePage() {
                                 polozky: form.polozky.filter((_: Polozka, j: number) => j !== i),
                               })
                             }
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -448,13 +455,13 @@ function AkciePage() {
                 <button
                   type="button"
                   onClick={() => setForm(null)}
-                  className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted"
+                  className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
                 >
                   {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   {t("Uložiť akciu")}
                 </button>

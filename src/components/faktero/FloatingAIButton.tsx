@@ -140,7 +140,7 @@ export function FloatingAIButton() {
           title={
             siroka ? t("Faktero AI asistent — potiahnutím ho presuniete") : t("Faktero AI asistent")
           }
-          className="inline-flex h-11 w-8 items-center justify-center gap-2 rounded-l-xl bg-gradient-to-br from-primary to-primary/80 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/30 transition-transform sm:h-auto sm:w-auto sm:touch-none sm:rounded-full sm:p-3 sm:px-4 sm:hover:scale-105"
+          className="inline-flex h-11 w-8 items-center justify-center gap-2 rounded-l-xl bg-primary text-sm font-semibold text-primary-foreground shadow-lg ring-1 ring-primary-hover/40 transition-colors hover:bg-primary-hover sm:h-auto sm:w-auto sm:touch-none sm:rounded-full sm:p-3 sm:px-4"
         >
           {open ? <X className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
           <span className="sr-only sm:not-sr-only">{open ? t("Zavrieť") : "AI"}</span>
@@ -216,7 +216,7 @@ function CompactChat({
       data-plavajuce=""
       role="dialog"
       aria-label={t("Faktero AI asistent")}
-      className={`fixed ${VRSTVA_AI} flex w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 ${
+      className={`fixed ${VRSTVA_AI} flex w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl ${
         p ? "" : "bottom-[4.25rem] right-4 sm:bottom-[4.75rem] sm:right-6"
       }`}
       style={{
@@ -245,7 +245,7 @@ function CompactChat({
         <ChatBody companyId={companyId} />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
-          <Sparkles className="h-8 w-8 text-muted-foreground/60" />
+          <Sparkles className="h-8 w-8 text-muted-foreground" />
           <p>{t("Vyberte aktívnu firmu, aby ste mohli používať Faktero AI.")}</p>
         </div>
       )}
@@ -278,17 +278,17 @@ function Header({
             title: t("Presunúť okno — dvojklikom ho vrátite na pôvodné miesto"),
           }
         : {})}
-      className={`flex items-center justify-between gap-2 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 ${
+      className={`flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-4 py-3 ${
         presuvatelne ? "cursor-move touch-none select-none" : ""
       }`}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 leading-tight">
           <div className="text-sm font-semibold">{t("Faktero AI asistent")}</div>
-          <div className="text-[11px] text-muted-foreground">{t("Pomocník pre vašu firmu")}</div>
+          <div className="text-xs text-muted-foreground">{t("Pomocník pre vašu firmu")}</div>
         </div>
       </div>
       <div className="flex items-center gap-1">
@@ -298,7 +298,7 @@ function Header({
             aria-label={t("Vrátiť na pôvodné miesto")}
             title={t("Vrátiť na pôvodné miesto")}
             onClick={onVratit}
-            className="cursor-pointer rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="grid h-7 w-7 cursor-pointer place-items-center rounded-md text-muted-foreground hover:bg-card hover:text-foreground"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
@@ -307,7 +307,7 @@ function Header({
           type="button"
           aria-label={t("Minimalizovať")}
           onClick={onClose}
-          className="cursor-pointer rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="grid h-7 w-7 cursor-pointer place-items-center rounded-md text-muted-foreground hover:bg-card hover:text-foreground"
         >
           <Minus className="h-4 w-4" />
         </button>
@@ -315,7 +315,7 @@ function Header({
           type="button"
           aria-label={t("Zatvoriť")}
           onClick={onClose}
-          className="cursor-pointer rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="grid h-7 w-7 cursor-pointer place-items-center rounded-md text-muted-foreground hover:bg-card hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
@@ -392,11 +392,11 @@ function ChatBody({ companyId }: { companyId: string }) {
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
         {msgs.length === 0 && !sendMut.isPending && (
           <div className="space-y-2">
-            <div className="rounded-2xl bg-muted px-3 py-2 text-sm leading-relaxed text-foreground">
+            <div className="rounded-2xl rounded-tl-md border border-border bg-muted/60 px-3 py-2 text-sm leading-relaxed text-foreground">
               {t("Ahoj! 👋 Som")} <strong>{t("Faktero AI asistent")}</strong>
               {t(". Pomôžem vám s faktúrami, odberateľmi, eFaktúrou a vašou administratívou.")}
             </div>
-            <div className="px-1 pt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+            <div className="px-1 pt-1 text-xs font-semibold text-muted-foreground">
               {t("Časté otázky")}
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -405,7 +405,7 @@ function ChatBody({ companyId }: { companyId: string }) {
                   key={q}
                   type="button"
                   onClick={() => send(t(q))}
-                  className="rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground hover:border-primary/50 hover:bg-primary/5"
+                  className="rounded-full border border-input bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-accent"
                 >
                   {t(q)}
                 </button>
@@ -420,7 +420,7 @@ function ChatBody({ companyId }: { companyId: string }) {
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                 m.role === "user"
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground"
+                  : "border border-border bg-muted/60 text-foreground"
               }`}
             >
               {m.role === "assistant" ? (
@@ -454,14 +454,14 @@ function ChatBody({ companyId }: { companyId: string }) {
           e.preventDefault();
           send(input);
         }}
-        className="flex items-end gap-2 border-t border-border bg-background p-2"
+        className="flex items-end gap-2 border-t border-border bg-muted/40 p-2"
       >
         <button
           type="button"
           onClick={newChat}
           title={t("Nová konverzácia")}
           aria-label={t("Nová konverzácia")}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-input bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -476,18 +476,18 @@ function ChatBody({ companyId }: { companyId: string }) {
           }}
           placeholder={t("Napíšte správu pre Faktero AI…")}
           rows={1}
-          className="max-h-24 flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          className="max-h-24 min-w-0 flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/20"
         />
         <button
           type="submit"
           disabled={sendMut.isPending || !input.trim()}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
           aria-label={t("Odoslať")}
         >
           <Send className="h-4 w-4" />
         </button>
       </form>
-      <div className="border-t border-border bg-muted/30 px-3 py-1.5 text-center text-[10px] text-muted-foreground">
+      <div className="border-t border-border bg-muted/40 px-3 py-1.5 text-center text-[11px] text-muted-foreground">
         {t("Faktero AI · firemné dáta · neposkytuje právne ani daňové poradenstvo")}
       </div>
     </>

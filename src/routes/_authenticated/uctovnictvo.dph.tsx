@@ -383,10 +383,10 @@ function DphPage() {
         description={t("Informatívny prehľad DPH na výstupe a vstupe")}
       />
       <PageBody>
-        <p className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           {t("Tento prehľad je informatívny.")}{" "}
           {t("Doklady sú v období podľa dátumu dodania, rovnako ako v priznaní.")}{" "}
-          <Link to="/uctovnictvo/vykazy" className="underline">
+          <Link to="/uctovnictvo/vykazy" className="text-primary underline underline-offset-2">
             {t("Výkazy k DPH")}
           </Link>{" "}
           {krajina === "CZ"
@@ -397,8 +397,8 @@ function DphPage() {
                   "z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich v XML pre eDane.",
                 )}
         </p>
-        <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-          <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-[color:var(--stav-pozor-plocha)] p-3 text-[color:var(--stav-pozor-text)]">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="text-sm">
             <b>{t("Upozornenie:")}</b>{" "}
             {t(
@@ -418,10 +418,10 @@ function DphPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("Obdobie")}</CardTitle>
+          <CardHeader className="p-4 sm:p-5">
+            <CardTitle className="text-base">{t("Obdobie")}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-3 items-end">
+          <CardContent className="flex flex-wrap items-end gap-3 p-4 pt-0 sm:p-5 sm:pt-0">
             <div className="w-40">
               <label className="text-xs text-muted-foreground">{t("Typ obdobia")}</label>
               <Select
@@ -496,10 +496,10 @@ function DphPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("DPH sumár")}</CardTitle>
+          <CardHeader className="p-4 sm:p-5">
+            <CardTitle className="text-base">{t("DPH sumár")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-4 pt-0 sm:p-5 sm:pt-0">
             {prepocitane && (
               <p className="text-xs text-muted-foreground" data-testid="dph-prepocitane">
                 {t("Sumy sú v {mena}. Doklady v cudzej mene sú prepočítané kurzom {banka} z dokladu.", {
@@ -510,7 +510,7 @@ function DphPage() {
             )}
             {bezPrepoctu.length > 0 && (
               <div
-                className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40"
+                className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-foreground"
                 data-testid="dph-bez-prepoctu"
               >
                 {t(
@@ -520,30 +520,30 @@ function DphPage() {
               </div>
             )}
             <div>
-              <h2 className="font-semibold mb-2">{t("DPH na výstupe (vystavené faktúry)")}</h2>
+              <h2 className="mb-2 text-sm font-semibold">{t("DPH na výstupe (vystavené faktúry)")}</h2>
               <div className="hidden sm:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("Sadzba DPH")}</TableHead>
-                      <TableHead className="text-right">{t("Základ dane")}</TableHead>
-                      <TableHead className="text-right">{t("Suma DPH")}</TableHead>
-                      <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">{t("Základ dane")}</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">{t("Suma DPH")}</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">{t("Počet faktúr")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rateOrder.map((r) => (
                       <TableRow key={r}>
                         <TableCell>{nazovSadzby(r)}</TableCell>
-                        <TableCell className="text-right">{fmt(riadok(output, r).base)}</TableCell>
-                        <TableCell className="text-right">{fmt(riadok(output, r).vat)}</TableCell>
-                        <TableCell className="text-right">{riadok(output, r).count}</TableCell>
+                        <TableCell className="suma text-right">{fmt(riadok(output, r).base)}</TableCell>
+                        <TableCell className="suma text-right">{fmt(riadok(output, r).vat)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{riadok(output, r).count}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="font-bold bg-muted/40">
                       <TableCell>{t("SPOLU")}</TableCell>
-                      <TableCell className="text-right">{fmt(totalOutputBase)}</TableCell>
-                      <TableCell className="text-right">{fmt(totalOutputVat)}</TableCell>
+                      <TableCell className="suma text-right font-bold">{fmt(totalOutputBase)}</TableCell>
+                      <TableCell className="suma text-right font-bold">{fmt(totalOutputVat)}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
@@ -562,30 +562,30 @@ function DphPage() {
             </div>
 
             <div>
-              <h2 className="font-semibold mb-2">{t("DPH na vstupe (prijaté faktúry)")}</h2>
+              <h2 className="mb-2 text-sm font-semibold">{t("DPH na vstupe (prijaté faktúry)")}</h2>
               <div className="hidden sm:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("Sadzba DPH")}</TableHead>
-                      <TableHead className="text-right">{t("Základ dane")}</TableHead>
-                      <TableHead className="text-right">{t("Suma DPH")}</TableHead>
-                      <TableHead className="text-right">{t("Počet faktúr")}</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">{t("Základ dane")}</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">{t("Suma DPH")}</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">{t("Počet faktúr")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rateOrder.map((r) => (
                       <TableRow key={r}>
                         <TableCell>{nazovSadzby(r)}</TableCell>
-                        <TableCell className="text-right">{fmt(riadok(input, r).base)}</TableCell>
-                        <TableCell className="text-right">{fmt(riadok(input, r).vat)}</TableCell>
-                        <TableCell className="text-right">{riadok(input, r).count}</TableCell>
+                        <TableCell className="suma text-right">{fmt(riadok(input, r).base)}</TableCell>
+                        <TableCell className="suma text-right">{fmt(riadok(input, r).vat)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{riadok(input, r).count}</TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="font-bold bg-muted/40">
                       <TableCell>{t("SPOLU")}</TableCell>
-                      <TableCell className="text-right">{fmt(totalInputBase)}</TableCell>
-                      <TableCell className="text-right">{fmt(totalInputVat)}</TableCell>
+                      <TableCell className="suma text-right font-bold">{fmt(totalInputBase)}</TableCell>
+                      <TableCell className="suma text-right font-bold">{fmt(totalInputVat)}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
@@ -603,12 +603,12 @@ function DphPage() {
               />
             </div>
 
-            <div className="rounded-md border p-4 flex items-center justify-between bg-muted/30">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/30 p-4">
               <div className="font-semibold">
                 {rozdiel >= 0 ? t("Odvod DPH (na úhradu)") : t("Nadmerný odpočet (v prospech)")}
               </div>
               <div
-                className={`text-2xl font-bold ${rozdiel >= 0 ? "text-red-600" : "text-green-600"}`}
+                className={`suma text-2xl font-bold ${rozdiel >= 0 ? "text-destructive" : "text-[color:var(--stav-uspech-text)]"}`}
               >
                 {fmt(Math.abs(rozdiel))}
               </div>
@@ -617,10 +617,10 @@ function DphPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("Vystavené faktúry ({n})", { n: invoices.length })}</CardTitle>
+          <CardHeader className="p-4 sm:p-5">
+            <CardTitle className="text-base">{t("Vystavené faktúry ({n})", { n: invoices.length })}</CardTitle>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
+          <CardContent className="overflow-x-auto p-4 pt-0 sm:p-5 sm:pt-0">
             <MobilnyZoznam
               prazdne={t("Žiadne faktúry v období")}
               riadky={invoices.map((i) => ({
@@ -639,28 +639,28 @@ function DphPage() {
                   <TableHead>{t("Číslo")}</TableHead>
                   <TableHead>{t("Dátum")}</TableHead>
                   <TableHead>{t("Odberateľ")}</TableHead>
-                  <TableHead className="text-right">{t("Základ")}</TableHead>
-                  <TableHead className="text-right">{t("DPH")}</TableHead>
-                  <TableHead className="text-right">{t("Spolu")}</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">{t("Základ")}</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">{t("DPH")}</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">{t("Spolu")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invoices.map((i) => (
                   <TableRow key={i.id}>
-                    <TableCell className="font-medium">{i.invoice_number}</TableCell>
+                    <TableCell className="cislo-dokladu whitespace-nowrap font-medium">{i.invoice_number}</TableCell>
                     <TableCell className="whitespace-nowrap">{datumNaDoklade(denDaneVystavenej(i))}</TableCell>
                     <TableCell>
                       {i.customer_name}
                       {i.reverse_charge ? ` (${t("PDP")})` : ""}
                       {typDokladu(i.type)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="suma text-right">
                       {fmt(sumyVystavenej(i).zaklad, i.currency || domaca)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="suma text-right">
                       {fmt(sumyVystavenej(i).dph, i.currency || domaca)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="suma text-right">
                       {fmt(sumyVystavenej(i).spolu, i.currency || domaca)}
                     </TableCell>
                   </TableRow>
@@ -678,10 +678,10 @@ function DphPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("Prijaté faktúry ({n})", { n: purchases.length })}</CardTitle>
+          <CardHeader className="p-4 sm:p-5">
+            <CardTitle className="text-base">{t("Prijaté faktúry ({n})", { n: purchases.length })}</CardTitle>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
+          <CardContent className="overflow-x-auto p-4 pt-0 sm:p-5 sm:pt-0">
             <MobilnyZoznam
               prazdne={t("Žiadne prijaté faktúry v období")}
               riadky={purchases.map((p) => ({
@@ -700,24 +700,24 @@ function DphPage() {
                   <TableHead>{t("Číslo")}</TableHead>
                   <TableHead>{t("Dátum")}</TableHead>
                   <TableHead>{t("Dodávateľ")}</TableHead>
-                  <TableHead className="text-right">{t("Základ")}</TableHead>
-                  <TableHead className="text-right">{t("DPH")}</TableHead>
-                  <TableHead className="text-right">{t("Spolu")}</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">{t("Základ")}</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">{t("DPH")}</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">{t("Spolu")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {purchases.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.invoice_number}</TableCell>
+                    <TableCell className="cislo-dokladu whitespace-nowrap font-medium">{p.invoice_number}</TableCell>
                     <TableCell className="whitespace-nowrap">{datumNaDoklade(denOdpoctuPrijatej(p))}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="suma text-right">
                       {fmt(Number(p.amount_without_vat || 0), p.currency || domaca)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="suma text-right">
                       {fmt(Number(p.vat_amount || 0), p.currency || domaca)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="suma text-right">
                       {fmt(Number(p.amount_total || 0), p.currency || domaca)}
                     </TableCell>
                   </TableRow>
@@ -763,16 +763,16 @@ function MobilnyZoznam({
       {riadky.map((r) => (
         <li key={r.id} className="py-3 text-sm">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="min-w-0 truncate font-medium">{r.cislo}</span>
+            <span className="cislo-dokladu min-w-0 truncate font-medium">{r.cislo}</span>
             <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
               {r.datum}
             </span>
           </div>
           <div className="mt-0.5 truncate text-muted-foreground">{r.meno}</div>
-          <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs">
+          <div className="mt-1 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs tabular-nums">
             <span className="whitespace-nowrap">{t("Základ {suma}", { suma: r.zaklad })}</span>
             <span className="whitespace-nowrap">{t("DPH {suma}", { suma: r.dph })}</span>
-            <span className="whitespace-nowrap font-semibold">{t("Spolu {suma}", { suma: r.spolu })}</span>
+            <span className="suma">{t("Spolu {suma}", { suma: r.spolu })}</span>
           </div>
         </li>
       ))}

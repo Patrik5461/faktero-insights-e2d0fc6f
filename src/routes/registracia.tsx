@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,6 +37,8 @@ export const Route = createFileRoute("/registracia")({
 export const PLAN_PENDING_KEY = "faktero_plan_pending";
 
 function RegisterPage() {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   const { t, jazyk } = useT();
   const { plan } = Route.useSearch();
   const { siteKey } = Route.useLoaderData();
@@ -134,15 +137,15 @@ function RegisterPage() {
 
   if (cakaNaPotvrdenie) {
     return (
-      <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 outline-none">
-        <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+      <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
           <Link to="/" className="mb-6 inline-flex items-center">
             <Logo variant="header" className="h-8" />
           </Link>
           <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
             <MailCheck className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("Potvrďte si e-mail")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("Potvrďte si e-mail")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {t("Účet")} <strong className="text-foreground">{email}</strong>{" "}
             {t("je vytvorený. Poslali sme naň odkaz — otvorte ho a budete rovno v aplikácii. Bez potvrdenia sa prihlásiť nedá.")}
@@ -153,7 +156,7 @@ function RegisterPage() {
           <button
             onClick={posliPotvrdenieZnova}
             disabled={posielamZnova}
-            className="mt-6 w-full rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+            className="mt-6 w-full rounded-md border border-input bg-card px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-secondary disabled:opacity-60"
           >
             {posielamZnova ? t("Posielam…") : t("Poslať e-mail znova")}
           </button>
@@ -169,12 +172,12 @@ function RegisterPage() {
   }
 
   return (
-    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 outline-none">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Vytvorte si účet")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Vytvorte si účet")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t("30 dní zadarmo na pláne Premium. Bez platobnej karty.")}
         </p>
@@ -189,7 +192,7 @@ function RegisterPage() {
             iOS nevedia, čo do poľa patrí, a registrácia sa vypĺňa ručne.
           */}
           <label className="block">
-            <span className="text-sm font-medium">{t("Meno a priezvisko")}</span>
+            <span className="text-sm font-semibold">{t("Meno a priezvisko")}</span>
             <input
               type="text"
               autoComplete="name"
@@ -200,7 +203,7 @@ function RegisterPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">{t("Email")}</span>
+            <span className="text-sm font-semibold">{t("Email")}</span>
             <input
               type="email"
               autoComplete="email"
@@ -211,7 +214,7 @@ function RegisterPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">{t("Heslo")}</span>
+            <span className="text-sm font-semibold">{t("Heslo")}</span>
             <input
               type="password"
               autoComplete="new-password"
@@ -271,7 +274,7 @@ function RegisterPage() {
           <button
             type="submit"
             disabled={loading || !acceptTerms || !acceptGdpr}
-            className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {loading ? t("Vytváram...") : t("Vytvoriť účet")}
           </button>

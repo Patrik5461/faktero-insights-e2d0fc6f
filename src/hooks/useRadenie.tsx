@@ -44,7 +44,7 @@ export function useRadenie<T>(riadky: T[], hodnoty: Record<string, (r: T) => Hod
       <button
         type="button"
         onClick={() => prepni(kluc)}
-        className="inline-flex items-center gap-1 uppercase hover:text-foreground"
+        className="inline-flex items-center gap-1 whitespace-nowrap font-semibold hover:text-foreground"
         aria-label={t("Zoradiť podľa: {stlpec}", { stlpec: typeof obsah === "string" ? obsah : kluc })}
       >
         {obsah}

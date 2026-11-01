@@ -9,6 +9,7 @@ import { Building2, Copy, Plus, Trash2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { firmyPreKlucUctuFn, vytvorKlucUctuFn } from "@/lib/faktero/api-kluce.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 
@@ -98,19 +99,19 @@ function ApiKeysPage() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setKluceUctu(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm hover:bg-accent"
             >
               <Building2 className="h-4 w-4" /> {t("Kľúč pre viac firiem")}
             </button>
             <button
               onClick={() => create("test")}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm hover:bg-accent"
             >
               <Plus className="h-4 w-4" /> {t("Test kľúč")}
             </button>
             <button
               onClick={() => create("live")}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Live kľúč")}
             </button>
@@ -119,12 +120,12 @@ function ApiKeysPage() {
       />
       <PageBody>
         {revealed && (
-          <div className="mb-4 rounded-xl border border-primary/40 bg-primary/5 p-4">
-            <div className="text-sm font-medium">
+          <div className="mb-6 rounded-xl border border-primary/40 bg-primary/5 p-4">
+            <div className="text-sm font-semibold">
               {t("Skopírujte si kľúč. Po zatvorení ho už nezobrazíme.")}
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <code className="flex-1 rounded bg-background p-2 font-mono text-sm">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <code className="min-w-0 flex-1 break-all rounded-md border border-border bg-background p-2 font-mono text-sm">
                 {revealed.plaintext}
               </code>
               <button aria-label={t("Kopírovať")}
@@ -132,13 +133,13 @@ function ApiKeysPage() {
                   navigator.clipboard.writeText(revealed.plaintext);
                   toast.success(t("Skopírované"));
                 }}
-                className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent"
               >
                 <Copy className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setRevealed(null)}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 {t("Hotovo")}
               </button>
@@ -147,7 +148,7 @@ function ApiKeysPage() {
         )}
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="p-3">{t("Názov")}</th>
                 <th className="p-3">{t("Režim")}</th>
@@ -171,7 +172,7 @@ function ApiKeysPage() {
                   >
                     {k.name}
                     {k.ucet_user_id && (
-                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-normal text-muted-foreground">
+                      <span className="ml-2 inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-border bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                         <Building2 className="h-3 w-3" />
                         {Array.isArray(k.firmy) && k.firmy.length
                           ? t("{n} firiem", { n: k.firmy.length })
@@ -180,17 +181,15 @@ function ApiKeysPage() {
                     )}
                   </td>
                   <td className="p-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs ${k.mode === "live" ? "bg-primary/15 text-primary-hover" : "bg-accent/30"}`}
-                    >
+                    <StavOdznak ton={k.mode === "live" ? "uspech" : "neutralny"} maly>
                       {k.mode}
-                    </span>
+                    </StavOdznak>
                   </td>
-                  <td className="p-3 font-mono">{k.prefix}…</td>
-                  <td className="p-3 text-muted-foreground">
+                  <td className="whitespace-nowrap p-3 font-mono text-xs">{k.prefix}…</td>
+                  <td className="whitespace-nowrap p-3 text-muted-foreground">
                     {new Date(k.created_at).toLocaleDateString("sk-SK")}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="whitespace-nowrap p-3 text-right">
                     {k.revoked_at ? (
                       <span className="text-xs text-muted-foreground">
                         {t("Zneplatnený {datum}", { datum: new Date(k.revoked_at).toLocaleDateString("sk-SK") })}
@@ -200,7 +199,7 @@ function ApiKeysPage() {
                         onClick={() => revoke(k.id)}
                         aria-label={t("Zneplatniť kľúč")}
                         title={t("Zneplatniť kľúč")}
-                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                        className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -212,8 +211,8 @@ function ApiKeysPage() {
           </table>
         </div>
         <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm">
-          <div className="font-medium">{t("Kľúč pre viac firiem")}</div>
-          <p className="mt-1 text-muted-foreground">
+          <div className="font-semibold">{t("Kľúč pre viac firiem")}</div>
+          <p className="mt-1 max-w-[75ch] text-muted-foreground">
             {t(
               "Jeden kľúč pre všetky firmy, ktoré spravujete (ste vlastník alebo admin) — napríklad pre účtovnú kanceláriu. Firmu vyberiete v každej požiadavke hlavičkou",
             )}{" "}
@@ -223,13 +222,13 @@ function ApiKeysPage() {
           </p>
         </div>
         <div className="mt-4 rounded-xl border border-border bg-card p-4 text-sm">
-          <div className="font-medium">{t("Napojenie AI asistenta (MCP)")}</div>
-          <p className="mt-1 text-muted-foreground">
+          <div className="font-semibold">{t("Napojenie AI asistenta (MCP)")}</div>
+          <p className="mt-1 max-w-[75ch] text-muted-foreground">
             {t(
               "Claude, ChatGPT či iný AI asistent sa na Faktero napojí cez MCP. Claude.ai a ChatGPT sa prihlásia cez Faktero bez kľúča, ostatní API kľúčom. Adresa servera je",
             )}{" "}
-            <code className="font-mono text-foreground">https://www.faktero.sk/api/mcp</code>.{" "}
-            <a href="/docs/api#mcp" className="text-primary hover:underline">
+            <code className="break-all font-mono text-foreground">https://www.faktero.sk/api/mcp</code>.{" "}
+            <a href="/docs/api#mcp" className="font-medium text-primary hover:text-primary-hover hover:underline">
               {t("Návod na napojenie")}
             </a>
           </p>
@@ -290,12 +289,12 @@ function KlucUctuOkno({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--w-prekrytie)] backdrop-blur-[2px] p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="kluc-uctu-nadpis"
-        className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="kluc-uctu-nadpis" className="text-lg font-semibold">
@@ -323,14 +322,14 @@ function KlucUctuOkno({
           </label>
         </fieldset>
         {!vsetky && (
-          <div className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border p-2 text-sm">
+          <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-border bg-background p-1.5 text-sm">
             {firmy === null ? (
               <div className="p-2 text-muted-foreground">{t("Načítavam…")}</div>
             ) : firmy.length === 0 ? (
               <div className="p-2 text-muted-foreground">{t("Nespravujete žiadnu firmu.")}</div>
             ) : (
               firmy.map((f) => (
-                <label key={f.id} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-secondary">
+                <label key={f.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
                   <input
                     type="checkbox"
                     checked={vybrane.has(f.id)}
@@ -349,7 +348,7 @@ function KlucUctuOkno({
           </div>
         )}
         <label className="mt-4 block text-sm">
-          <span className="text-xs text-muted-foreground">{t("Režim")}</span>
+          <span className="text-sm font-semibold">{t("Režim")}</span>
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as "live" | "test")}
@@ -360,13 +359,13 @@ function KlucUctuOkno({
           </select>
         </label>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+          <button onClick={onClose} className="rounded-md border border-input px-3 py-2 text-sm hover:bg-accent">
             {t("Zrušiť")}
           </button>
           <button
             onClick={() => void vytvorit()}
             disabled={busy}
-            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary-hover"
           >
             {t("Vytvoriť kľúč")}
           </button>

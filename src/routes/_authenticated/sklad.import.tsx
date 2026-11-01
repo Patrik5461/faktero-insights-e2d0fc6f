@@ -112,8 +112,8 @@ function ImportStockPage() {
         description={t("Nahrajte CSV alebo XLSX so skladovými kartami.")}
       />
       <PageBody>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
             <Upload className="h-4 w-4" /> {t("Vybrať CSV / XLSX")}
             <input
               type="file"
@@ -125,7 +125,7 @@ function ImportStockPage() {
               }}
             />
           </label>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-3 max-w-[75ch] text-sm text-muted-foreground">
             {t(
               "Podporované stĺpce: SKU (kód položky), Názov, Čiarový kód, Jednotka, Nákupná cena, Predajná cena, DPH, Minimálny stav, Počiatočný stav, Sklad.",
             )}{" "}
@@ -136,16 +136,18 @@ function ImportStockPage() {
         </div>
 
         {headers.length > 0 && (
-          <div className="mt-4 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">{t("Mapovanie stĺpcov")}</div>
-            <div className="grid gap-2 sm:grid-cols-2">
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <h2 className="mb-3 text-base font-semibold">{t("Mapovanie stĺpcov")}</h2>
+            <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
               {headers.map((h) => (
-                <label key={h} className="flex items-center gap-2 text-sm">
-                  <span className="w-1/2 truncate text-muted-foreground">{h}</span>
+                <label key={h} className="flex min-w-0 items-center gap-2 text-sm">
+                  <span className="w-1/2 truncate font-medium text-muted-foreground" title={h}>
+                    {h}
+                  </span>
                   <select
                     value={mapping[h] ?? ""}
                     onChange={(e) => setMapping({ ...mapping, [h]: e.target.value })}
-                    className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    className="w-full min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                   >
                     <option value="">{t("— ignorovať —")}</option>
                     {POLIA_IMPORTU.map((f) => (
@@ -165,18 +167,18 @@ function ImportStockPage() {
           inak súbor len so zlými riadkami „nespraví nič“ a nikto nevie prečo.
         */}
         {(preview.length > 0 || pripravene.chyby.length > 0) && (
-          <div className="mt-4 rounded-xl border border-border bg-card p-4">
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-5">
             {preview.length > 0 && (
               <>
-                <div className="mb-3 text-sm font-semibold">
+                <h2 className="mb-3 text-base font-semibold">
                   {t("Náhľad ({n} riadkov, zobrazujem 10)", { n: rows.length })}
-                </div>
-                <div className="overflow-x-auto">
+                </h2>
+                <div className="overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-xs">
-                    <thead className="text-left text-muted-foreground">
+                    <thead className="bg-muted/40 text-left font-semibold text-muted-foreground">
                       <tr>
                         {stlpceNahladu.map((k) => (
-                          <th key={k} className="p-1">
+                          <th key={k} className="whitespace-nowrap px-2 py-2">
                             {t(NAZVY_POLI[k])}
                           </th>
                         ))}
@@ -186,7 +188,7 @@ function ImportStockPage() {
                       {preview.map((r, i) => (
                         <tr key={i}>
                           {stlpceNahladu.map((k) => (
-                            <td key={k} className="p-1">
+                            <td key={k} className="whitespace-nowrap px-2 py-1.5 tabular-nums">
                               {String((r as any)[k] ?? "")}
                             </td>
                           ))}
@@ -198,7 +200,7 @@ function ImportStockPage() {
                 <button
                   disabled={busy}
                   onClick={runImport}
-                  className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                  className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                 >
                   {busy
                     ? t("Importujem…")
@@ -226,36 +228,41 @@ function ImportStockPage() {
         )}
 
         {result && (
-          <div className="mt-4 rounded-xl border border-border bg-card p-4 text-sm">
-            <div className="mb-2 font-semibold">{t("Výsledok importu")}</div>
-            <ul className="space-y-1">
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 text-sm sm:p-5">
+            <h2 className="mb-3 text-base font-semibold">{t("Výsledok importu")}</h2>
+            <ul className="space-y-1.5">
               <li>
-                {t("Nové produkty:")} <strong>{result.createdProducts}</strong>
+                {t("Nové produkty:")}{" "}
+                <strong className="tabular-nums">{result.createdProducts}</strong>
               </li>
               <li>
-                {t("Aktualizované produkty:")} <strong>{result.updatedProducts}</strong>
+                {t("Aktualizované produkty:")}{" "}
+                <strong className="tabular-nums">{result.updatedProducts}</strong>
               </li>
               <li>
-                {t("Nové skladové karty:")} <strong>{result.createdItems}</strong>
+                {t("Nové skladové karty:")}{" "}
+                <strong className="tabular-nums">{result.createdItems}</strong>
               </li>
               <li>
-                {t("Aktualizované skladové karty:")} <strong>{result.updatedItems}</strong>
+                {t("Aktualizované skladové karty:")}{" "}
+                <strong className="tabular-nums">{result.updatedItems}</strong>
               </li>
               <li>
-                {t("Počiatočné pohyby:")} <strong>{result.initialMovements}</strong>
+                {t("Počiatočné pohyby:")}{" "}
+                <strong className="tabular-nums">{result.initialMovements}</strong>
               </li>
               {result.errors > 0 && (
                 <li className="text-destructive">
-                  {t("Chyby:")} <strong>{result.errors}</strong>
+                  {t("Chyby:")} <strong className="tabular-nums">{result.errors}</strong>
                 </li>
               )}
             </ul>
             {result.errorList?.length > 0 && (
               <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-muted-foreground">
+                <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
                   {t("Detaily chýb")}
                 </summary>
-                <ul className="mt-2 space-y-1 text-xs">
+                <ul className="mt-2 space-y-1 break-words text-xs">
                   {result.errorList.map((e: any, i: number) => (
                     <li key={i}>
                       {t("Riadok {n}:", { n: e.row })} {e.reason}

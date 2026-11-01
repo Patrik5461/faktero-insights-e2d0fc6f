@@ -51,10 +51,10 @@ function Stranka() {
             return (
               <div key={k.nadpis} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex items-center gap-2">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary-hover">
                     <Icon className="h-4 w-4" />
                   </span>
-                  <div className="text-sm font-medium">
+                  <div className="text-sm font-semibold">
                     {i + 1}. {t(k.nadpis)}
                   </div>
                 </div>
@@ -67,7 +67,7 @@ function Stranka() {
         <PrijemMailom predvoleneOtvorene />
 
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
-          <h2 className="font-medium">{t("Dobré vedieť")}</h2>
+          <h2 className="text-base font-semibold">{t("Dobré vedieť")}</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
             <li>
               {t("Adresa je")} <strong>{t("pre každú firmu iná")}</strong>
@@ -89,11 +89,11 @@ function Stranka() {
             </li>
             <li>
               {t("Doklady čakajú v")}{" "}
-              <Link to="/nespracovane" className="text-primary underline">
+              <Link to="/nespracovane" className="text-primary underline underline-offset-2">
                 {t("Nespracovaných dokladoch")}
               </Link>
               {t(". AI navrhne druh — faktúra, zálohová, dobropis, bloček, alebo exekúcia, predpis poistného, list z úradu či zmluva (tie pôjdu do")}{" "}
-              <Link to="/ostatne-doklady" className="text-primary underline">
+              <Link to="/ostatne-doklady" className="text-primary underline underline-offset-2">
                 {t("Iných dokladov")}
               </Link>
               {t(") — a vy ho potvrdíte alebo zmeníte.")}
@@ -107,7 +107,7 @@ function Stranka() {
               {t("Nechce sa vám preposielať každý mail ručne?")}{" "}
               <strong>{t("Gmail to vie robiť sám")}</strong>{" "}
               {t("— potvrdenie, ktoré Google pošle na túto adresu, zachytíme a ukážeme vám ho tu ako žltý pruh. Postup je v")}{" "}
-              <Link to="/pomoc/doklady" hash="gmail" className="text-primary underline">
+              <Link to="/pomoc/doklady" hash="gmail" className="text-primary underline underline-offset-2">
                 {t("manuáli")}
               </Link>
               .
@@ -115,7 +115,7 @@ function Stranka() {
           </ul>
           <p className="mt-3 text-muted-foreground">
             {t("Podrobne v")}{" "}
-            <Link to="/pomoc/doklady" className="text-primary underline">
+            <Link to="/pomoc/doklady" className="text-primary underline underline-offset-2">
               {t("manuáli k dokladom")}
             </Link>
             .

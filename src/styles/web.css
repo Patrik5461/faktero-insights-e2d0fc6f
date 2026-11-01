@@ -1,0 +1,707 @@
+/*
+ * Vzhľad webu Faktero — redizajn 2026-11 („účtovná kniha“).
+ *
+ * Plán, tokeny a pravidlá pre ďalšie úpravy: /home/patrik/redizajn-web/DIZAJN.md
+ *
+ * IZOLÁCIA: všetko tu platí len pod atribútom `data-web-redizajn`, ktorý
+ * nastavuje rám webu (`AppShell` → koreň rámu + `<html>`). Mobilná appka
+ * (`/app`, `src/mobile/*`) tento súbor nenačíta (`main.tsx` importuje len
+ * `styles.css`) a atribút nikdy nemá — jej vzhľad sa nemení.
+ *
+ * VRSTVY:
+ * - tokeny (premenné) a pravidlá, ktoré musia prebiť pomocné triedy Tailwindu
+ *   (tiene, prekrytie okien), sú mimo `@layer`;
+ * - predvolené vzhľady, ktoré smie konkrétna stránka prepísať triedou
+ *   (zameranie, hlavička tabuľky), sú v `@layer base` / `@layer components` —
+ *   tie isté vrstvy, ktoré deklaruje Tailwind v `styles.css`.
+ *
+ * Farby sú vždy oklch (`var(--primary)`, nikdy `hsl(var(--primary))`).
+ */
+
+@import "@fontsource-variable/manrope";
+
+/* ------------------------------------------------------------------ */
+/* 1. Tokeny — spoločné (nezávislé od motívu)                          */
+/* ------------------------------------------------------------------ */
+
+[data-web-redizajn] {
+  /* Písmo: Manrope — to isté ako v mobilnej appke, súčasť balíčka (nejde zo siete). */
+  --w-pismo:
+    "Manrope Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--w-pismo);
+  --default-font-family: var(--w-pismo);
+
+  /* Typografická mierka (Tailwind ju číta z týchto premenných):
+     11 · 12 · 13 · 14 · 16 · 18 · 20 · 24 · 30 px. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem; /* 12/18 */
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem; /* 14/22 — husté tabuľky ostanú husté, text sa číta voľnejšie */
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.875rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+
+  /* Zaoblenia podľa hierarchie (klasický dizajn):
+     odznak 4 px (sm) · tlačidlo a pole 6 px (md) · položka ponuky 8 px (lg)
+     · karta 12 px (xl) · okno 16 px (2xl). Kompaktný dizajn má vlastné nižšie. */
+  --radius: 0.5rem;
+
+  /* Rozostupy rámu. */
+  --w-okraj-stranky: 1.5rem; /* vodorovný okraj obsahu od lg */
+  --w-medzera-sekcii: 1.5rem; /* medzi kartami na stránke (= space-y-6) */
+  --w-sirka-obsahu: 1440px;
+
+  /* Ikony: lucide, ťah 1.75 (jemnejší než predvolený 2), veľkosti 14/16/20. */
+  --w-ikona-tah: 1.75;
+
+  font-family: var(--w-pismo);
+  font-feature-settings: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Kompaktný dizajn má zaoblenejšie tvary — tie si drží (Nastavenia → Rozloženie). */
+html[data-dizajn="kompaktny"][data-web-redizajn],
+html[data-dizajn="kompaktny"] [data-web-redizajn] {
+  --radius: 0.875rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* 2. Tokeny — svetlý motív                                            */
+/* ------------------------------------------------------------------ */
+
+html:not(.dark)[data-web-redizajn],
+html:not(.dark) [data-web-redizajn] {
+  /* Plocha stránky — teplý kameň, karty biele. #f5f4f0 */
+  --page: oklch(0.966 0.005 95);
+  /* Pozadie polí formulárov. #fdfdfc */
+  --background: oklch(0.993 0.002 95);
+  /* Atrament so zeleným nádychom. #151b18 — 15,8:1 na ploche */
+  --foreground: oklch(0.215 0.012 160);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.215 0.012 160);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.215 0.012 160);
+
+  /* Značková zelená ostáva. #007e46 (5,2:1 na bielej) */
+  --primary: oklch(0.52 0.13 155);
+  /* Prechod myšou aj text na zelenom podklade. #006c35 (5,7:1 na primary/10) */
+  --primary-hover: oklch(0.46 0.13 155);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.955 0.005 95); /* #f2f1ed */
+  --secondary-foreground: oklch(0.25 0.012 160);
+  --muted: oklch(0.955 0.005 95);
+  /* Sekundárny text. #5f5c54 — 6,0:1 na ploche, 6,7:1 na karte (predtým 4,9:1) */
+  --muted-foreground: oklch(0.475 0.014 95);
+  /* Prechod myšou / vybraná položka — jemná zelená, nie jantárová. */
+  --accent: oklch(0.955 0.014 155);
+  --accent-foreground: oklch(0.215 0.012 160);
+
+  --warning: oklch(0.56 0.15 62); /* #b05b00 */
+  --warning-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.52 0.2 27); /* #c2181d — 6,1:1 */
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Deliace čiary a rámiky kariet. #dfdeda */
+  --border: oklch(0.9 0.006 95);
+  /* Rámik polí — o stupeň výraznejší, pole musí byť vidieť bez kliknutia. #bfbeb8 */
+  --input: oklch(0.8 0.008 95);
+  --ring: oklch(0.52 0.13 155);
+
+  --chart-1: oklch(0.52 0.13 155);
+  --chart-2: oklch(0.68 0.12 155);
+  --chart-3: oklch(0.62 0.15 65);
+  --chart-4: oklch(0.55 0.2 27);
+  --chart-5: oklch(0.5 0.09 220);
+
+  /* Tiene: karta leží na ploche (skoro žiadny), ponuka nad obsahom, okno najvyššie. */
+  --w-tien-karta: 0 1px 2px oklch(0.215 0.012 160 / 0.05);
+  --w-tien-zdvih: 0 1px 2px oklch(0.215 0.012 160 / 0.05), 0 4px 12px -2px oklch(0.215 0.012 160 / 0.08);
+  --w-tien-plavajuci:
+    0 0 0 1px oklch(0.215 0.012 160 / 0.03), 0 10px 28px -8px oklch(0.215 0.012 160 / 0.2),
+    0 2px 6px oklch(0.215 0.012 160 / 0.06);
+  --w-tien-okno:
+    0 0 0 1px oklch(0.215 0.012 160 / 0.04), 0 28px 70px -16px oklch(0.215 0.012 160 / 0.32),
+    0 6px 16px oklch(0.215 0.012 160 / 0.08);
+  --w-prekrytie: oklch(0.215 0.02 160 / 0.42);
+  --w-vyber-textu: oklch(0.52 0.13 155 / 0.18);
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Tokeny — tmavý motív (predtým bridlicovo-modrý bez zelenej)      */
+/* ------------------------------------------------------------------ */
+
+html.dark[data-web-redizajn],
+html.dark [data-web-redizajn] {
+  --page: oklch(0.19 0.01 160); /* #101512 */
+  --background: oklch(0.215 0.011 160); /* #151b18 */
+  --foreground: oklch(0.955 0.006 160); /* #edf1ef */
+  --card: oklch(0.225 0.012 160); /* #171e1a */
+  --card-foreground: oklch(0.955 0.006 160);
+  --popover: oklch(0.255 0.013 160); /* #1e2521 */
+  --popover-foreground: oklch(0.955 0.006 160);
+
+  /* Zelená sa v tme rozsvieti; text na nej je tmavý (7,4:1). #44b879 */
+  --primary: oklch(0.7 0.14 156);
+  --primary-hover: oklch(0.79 0.12 156);
+  --primary-foreground: oklch(0.18 0.03 160);
+
+  --secondary: oklch(0.275 0.013 160); /* #222a25 */
+  --secondary-foreground: oklch(0.955 0.006 160);
+  --muted: oklch(0.275 0.013 160);
+  --muted-foreground: oklch(0.74 0.014 160); /* #a4aea8 — 7,4:1 na karte */
+  --accent: oklch(0.3 0.03 158);
+  --accent-foreground: oklch(0.955 0.006 160);
+
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.2 0.03 70);
+  --destructive: oklch(0.68 0.18 24); /* #f3625f — 5,4:1 na karte */
+  --destructive-foreground: oklch(0.18 0.03 24);
+
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.2);
+  --ring: oklch(0.7 0.14 156);
+
+  --chart-1: oklch(0.7 0.14 156);
+  --chart-2: oklch(0.8 0.1 156);
+  --chart-3: oklch(0.78 0.14 72);
+  --chart-4: oklch(0.68 0.18 24);
+  --chart-5: oklch(0.72 0.08 220);
+
+  --w-tien-karta: 0 1px 2px oklch(0 0 0 / 0.3);
+  --w-tien-zdvih: 0 1px 2px oklch(0 0 0 / 0.3), 0 6px 16px -4px oklch(0 0 0 / 0.4);
+  --w-tien-plavajuci: 0 0 0 1px oklch(1 0 0 / 0.06), 0 14px 32px -8px oklch(0 0 0 / 0.6);
+  --w-tien-okno: 0 0 0 1px oklch(1 0 0 / 0.08), 0 30px 70px -12px oklch(0 0 0 / 0.7);
+  --w-prekrytie: oklch(0.1 0.01 160 / 0.6);
+  --w-vyber-textu: oklch(0.7 0.14 156 / 0.3);
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. Stavové farby — jeden systém pre doklady, platby, eFaktúru,      */
+/*    schvaľovanie. Triedy `.stav` sú nové a globálne (appka ich nemá). */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --stav-neutralny-plocha: oklch(0.955 0.004 95);
+  --stav-neutralny-text: oklch(0.43 0.01 95);
+  --stav-neutralny-bod: oklch(0.65 0.01 95);
+  --stav-informacia-plocha: oklch(0.955 0.03 245);
+  --stav-informacia-text: oklch(0.43 0.12 245);
+  --stav-informacia-bod: oklch(0.6 0.16 245);
+  --stav-priebeh-plocha: oklch(0.955 0.03 285);
+  --stav-priebeh-text: oklch(0.43 0.14 285);
+  --stav-priebeh-bod: oklch(0.6 0.18 285);
+  --stav-uspech-plocha: oklch(0.955 0.04 155);
+  --stav-uspech-text: oklch(0.43 0.11 155);
+  --stav-uspech-bod: oklch(0.6 0.15 155);
+  --stav-pozor-plocha: oklch(0.955 0.05 75);
+  --stav-pozor-text: oklch(0.45 0.11 65);
+  --stav-pozor-bod: oklch(0.72 0.15 70);
+  --stav-chyba-plocha: oklch(0.955 0.03 27);
+  --stav-chyba-text: oklch(0.45 0.17 27);
+  --stav-chyba-bod: oklch(0.6 0.21 27);
+}
+.dark {
+  --stav-neutralny-plocha: oklch(0.3 0.008 160);
+  --stav-neutralny-text: oklch(0.86 0.008 160);
+  --stav-neutralny-bod: oklch(0.7 0.01 160);
+  --stav-informacia-plocha: oklch(0.3 0.05 245);
+  --stav-informacia-text: oklch(0.86 0.09 245);
+  --stav-informacia-bod: oklch(0.74 0.12 245);
+  --stav-priebeh-plocha: oklch(0.3 0.05 285);
+  --stav-priebeh-text: oklch(0.86 0.09 285);
+  --stav-priebeh-bod: oklch(0.74 0.14 285);
+  --stav-uspech-plocha: oklch(0.3 0.06 155);
+  --stav-uspech-text: oklch(0.86 0.09 155);
+  --stav-uspech-bod: oklch(0.74 0.13 155);
+  --stav-pozor-plocha: oklch(0.3 0.06 70);
+  --stav-pozor-text: oklch(0.86 0.09 75);
+  --stav-pozor-bod: oklch(0.78 0.14 72);
+  --stav-chyba-plocha: oklch(0.3 0.06 27);
+  --stav-chyba-text: oklch(0.86 0.09 27);
+  --stav-chyba-bod: oklch(0.72 0.17 25);
+}
+
+@layer components {
+  .stav {
+    --s-plocha: var(--stav-neutralny-plocha);
+    --s-text: var(--stav-neutralny-text);
+    --s-bod: var(--stav-neutralny-bod);
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.375rem;
+    padding: 0 0.5rem 0 0.4375rem;
+    border-radius: 9999px;
+    background: var(--s-plocha);
+    color: var(--s-text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  /* Bodka nesie farbu aj pre toho, kto nerozlíši odtieň plochy. */
+  .stav::before {
+    content: "";
+    width: 0.4375rem;
+    height: 0.4375rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: var(--s-bod);
+  }
+  .stav > svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+  }
+  /* S ikonou bodku netreba. */
+  .stav:has(> svg)::before {
+    display: none;
+  }
+  .stav-informacia {
+    --s-plocha: var(--stav-informacia-plocha);
+    --s-text: var(--stav-informacia-text);
+    --s-bod: var(--stav-informacia-bod);
+  }
+  .stav-priebeh {
+    --s-plocha: var(--stav-priebeh-plocha);
+    --s-text: var(--stav-priebeh-text);
+    --s-bod: var(--stav-priebeh-bod);
+  }
+  .stav-uspech {
+    --s-plocha: var(--stav-uspech-plocha);
+    --s-text: var(--stav-uspech-text);
+    --s-bod: var(--stav-uspech-bod);
+  }
+  .stav-pozor {
+    --s-plocha: var(--stav-pozor-plocha);
+    --s-text: var(--stav-pozor-text);
+    --s-bod: var(--stav-pozor-bod);
+  }
+  .stav-chyba {
+    --s-plocha: var(--stav-chyba-plocha);
+    --s-text: var(--stav-chyba-text);
+    --s-bod: var(--stav-chyba-bod);
+  }
+  /* Stornované / zrušené — neutrálne a preškrtnuté. */
+  .stav-zruseny {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .stav-zruseny::before {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--s-bod);
+  }
+  .stav-maly {
+    height: 1.125rem;
+    gap: 0.3125rem;
+    padding: 0 0.4375rem 0 0.375rem;
+    font-size: 0.6875rem;
+  }
+
+  /* Sumy a čísla — pevná šírka číslic, aby stĺpce sedeli pod sebou. */
+  .suma {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .suma-mena {
+    margin-left: 0.25em;
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+  .cislo-dokladu {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Základ (smie ho prepísať trieda na konkrétnom mieste)            */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  [data-web-redizajn] ::selection {
+    background: var(--w-vyber-textu);
+  }
+
+  /* Viditeľné zameranie klávesnicou všade, kde prvok nemá vlastný ring. */
+  [data-web-redizajn] :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  [data-web-redizajn] :is(h1, h2, h3, h4) {
+    letter-spacing: -0.015em;
+    font-weight: 650;
+  }
+
+  /* Hlavička tabuľky: veta, nie VEĽKÉ PÍSMENÁ — čítajú sa rýchlejšie a
+     dlhé názvy stĺpcov („Dátum dodania“) sa nezalamujú. */
+  [data-web-redizajn] table thead th {
+    text-transform: none;
+    font-size: 0.75rem;
+    letter-spacing: 0;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+  [data-web-redizajn] table {
+    font-variant-numeric: tabular-nums;
+  }
+  [data-web-redizajn] table tbody tr:hover {
+    background-color: color-mix(in oklch, var(--accent) 70%, transparent);
+  }
+
+  /* Ikony lucide: jednotný ťah. Veľkosť nesie trieda (h-4 w-4 …). */
+  [data-web-redizajn] svg.lucide {
+    stroke-width: var(--w-ikona-tah);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. Spoločné komponenty (shadcn `ui/*` cez data-slot)                */
+/* ------------------------------------------------------------------ */
+
+/* Tiene Tailwindu na webe — karta skoro bez tieňa, ponuka a okno vyššie. */
+[data-web-redizajn] :is(.shadow-xs, .shadow-sm, .shadow) {
+  --tw-shadow: var(--w-tien-karta);
+}
+[data-web-redizajn] .shadow-md {
+  --tw-shadow: var(--w-tien-zdvih);
+}
+[data-web-redizajn] :is(.shadow-lg, .shadow-xl) {
+  --tw-shadow: var(--w-tien-plavajuci);
+}
+[data-web-redizajn] .shadow-2xl {
+  --tw-shadow: var(--w-tien-okno);
+}
+
+/* Tlačidlá: plné písmo a jemný prechod; pri stlačení sa nepatrne zatlačia. */
+[data-web-redizajn] [data-slot="button"] {
+  font-weight: 600;
+  letter-spacing: -0.003em;
+  transition:
+    background-color 120ms,
+    color 120ms,
+    border-color 120ms,
+    box-shadow 120ms,
+    transform 80ms;
+}
+[data-web-redizajn] [data-slot="button"]:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+[data-web-redizajn] [data-slot="button"][data-variant="default"]:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+[data-web-redizajn] [data-slot="button"][data-variant="outline"] {
+  border-color: var(--input);
+}
+[data-web-redizajn] [data-slot="button"]:focus-visible {
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring);
+}
+
+/* Polia: výraznejší rámik (token --input), pri zameraní zelený lem. */
+[data-web-redizajn]
+  :is(
+    [data-slot="input"],
+    [data-slot="textarea"],
+    [data-slot="select-trigger"],
+    .input,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+    select,
+    textarea
+  ):focus-visible {
+  border-color: var(--ring);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 22%, transparent);
+}
+[data-web-redizajn] :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]) {
+  box-shadow: none;
+}
+[data-web-redizajn] :is([data-slot="input"], [data-slot="textarea"])::placeholder {
+  color: color-mix(in oklch, var(--muted-foreground) 80%, transparent);
+}
+
+/* Karty. */
+[data-web-redizajn] [data-slot="card-title"] {
+  letter-spacing: -0.01em;
+}
+
+/* Okná (Dialog, AlertDialog = aj `potvrd()`), vysúvací panel. */
+[data-web-redizajn] :is([data-slot="dialog-overlay"], [data-slot="sheet-overlay"]) {
+  background-color: var(--w-prekrytie);
+  backdrop-filter: blur(2px);
+}
+[data-web-redizajn] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
+  border-color: var(--border);
+  background-color: var(--card);
+  box-shadow: var(--w-tien-okno);
+}
+@media (min-width: 640px) {
+  [data-web-redizajn] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
+    border-radius: calc(var(--radius) + 8px);
+  }
+}
+[data-web-redizajn] [data-slot="dialog-title"] {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+[data-web-redizajn] [data-slot="sheet-content"] {
+  background-color: var(--card);
+  box-shadow: var(--w-tien-okno);
+}
+
+/* Plávajúce ponuky. */
+[data-web-redizajn]
+  :is(
+    [data-slot="popover-content"],
+    [data-slot="dropdown-menu-content"],
+    [data-slot="select-content"]
+  ) {
+  border-color: var(--border);
+  background-color: var(--popover);
+  box-shadow: var(--w-tien-plavajuci);
+}
+[data-web-redizajn] :is([data-slot="dropdown-menu-content"], [data-slot="select-content"]) {
+  padding: 0.3125rem;
+}
+[data-web-redizajn] :is([data-slot="dropdown-menu-item"], [data-slot="select-item"]) {
+  min-height: 2rem;
+  border-radius: calc(var(--radius) - 2px);
+}
+[data-web-redizajn] [data-slot="dropdown-menu-label"] {
+  font-weight: 600;
+}
+[data-web-redizajn] [data-slot="tooltip-content"] {
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: var(--w-tien-zdvih);
+}
+
+/* Záložky. */
+[data-web-redizajn] [data-slot="tabs-trigger"] {
+  font-weight: 600;
+}
+[data-web-redizajn] [data-slot="tabs-trigger"][data-state="active"] {
+  box-shadow: var(--w-tien-zdvih);
+}
+
+/* Načítavanie — neutrálna kostra, nie zelená. */
+[data-web-redizajn] [data-slot="skeleton"] {
+  background-color: color-mix(in oklch, var(--foreground) 7%, transparent);
+}
+
+/* Odznak (ui/badge) — menší tvar než tlačidlo. */
+[data-web-redizajn] [data-slot="badge"] {
+  border-radius: calc(var(--radius) - 3px);
+  font-weight: 600;
+}
+
+/* Tabuľka (ui/table). */
+[data-web-redizajn] [data-slot="table-head"] {
+  height: 2.5rem;
+}
+[data-web-redizajn] [data-slot="table-header"] {
+  background-color: color-mix(in oklch, var(--muted) 55%, transparent);
+}
+
+/* ------------------------------------------------------------------ */
+/* 7. Toasty (sonner kreslí štýly za behu → !important)                */
+/* ------------------------------------------------------------------ */
+
+[data-web-redizajn] [data-sonner-toast][data-styled="true"] {
+  border-radius: calc(var(--radius) + 4px) !important;
+  border-color: var(--border) !important;
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  box-shadow: var(--w-tien-plavajuci) !important;
+  font-family: var(--w-pismo) !important;
+}
+[data-web-redizajn] [data-sonner-toast][data-styled="true"] [data-title] {
+  font-weight: 600 !important;
+}
+[data-web-redizajn] [data-sonner-toast][data-styled="true"][data-type="success"] [data-icon] {
+  color: var(--primary);
+}
+[data-web-redizajn] [data-sonner-toast][data-styled="true"][data-type="error"] [data-icon] {
+  color: var(--destructive);
+}
+
+/* ------------------------------------------------------------------ */
+/* 8. Rám webu (AppShell, BocnyPanel, PageHeader) — háčiky data-w-*    */
+/* ------------------------------------------------------------------ */
+
+/* Aktívna podstránka v paneli: zelená značka na zvislej linke („záložka v knihe“). */
+[data-web-redizajn] [data-w-polozka-menu][data-w-aktivna] {
+  position: relative;
+}
+[data-web-redizajn] [data-w-polozka-menu][data-w-aktivna]::before {
+  content: "";
+  position: absolute;
+  top: 0.3125rem;
+  bottom: 0.3125rem;
+  left: calc(-0.5rem - 1.5px);
+  width: 3px;
+  border-radius: 9999px;
+  background: var(--primary);
+}
+
+/* Odznaky počtov v menu — číslice pevnej šírky. */
+[data-web-redizajn] [data-w-pocet] {
+  font-variant-numeric: tabular-nums;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+/* Zelená lišta hlavičky pod 768 px (ako appka). V tme je `--primary` svetlá
+   zelená pre text — biele ikony by na nej nebolo vidieť, preto lišta drží
+   tmavšiu „plochu“ a biely text (5,0:1). */
+@media (max-width: 767px) {
+  html.dark [data-web-redizajn] [data-w-zelena-lista] {
+    --primary: oklch(0.52 0.13 155);
+    --primary-foreground: oklch(0.99 0 0);
+  }
+}
+
+/* Nadpis stránky. */
+[data-web-redizajn] [data-w-nadpis-stranky] {
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+[data-web-redizajn] [data-w-popis-stranky] {
+  max-width: 75ch;
+}
+
+/* ------------------------------------------------------------------ */
+/* 9. Pohyb                                                            */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-web-redizajn] *,
+  [data-web-redizajn] *::before,
+  [data-web-redizajn] *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* fakturacia — pomocné triedy agendy Fakturácia a eFaktúra            */
+/* (faktúry, zálohové, ponuky, objednávky, opakované, eFaktúra).       */
+/* Len tokeny --stav-*; svetlý aj tmavý motív, klasický aj kompaktný.  */
+/* V @layer components → utilita na konkrétnom mieste ju smie prebiť.  */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Oznamový pás / rámček (upozornenie, chyba, informácia, hotovo). */
+  [data-web-redizajn] .fk-oznam {
+    --o-plocha: var(--stav-neutralny-plocha);
+    --o-text: var(--stav-neutralny-text);
+    --o-bod: var(--stav-neutralny-bod);
+    background: var(--o-plocha);
+    color: var(--o-text);
+    border: 1px solid color-mix(in oklch, var(--o-bod) 45%, transparent);
+  }
+  [data-web-redizajn] .fk-oznam-pozor {
+    --o-plocha: var(--stav-pozor-plocha);
+    --o-text: var(--stav-pozor-text);
+    --o-bod: var(--stav-pozor-bod);
+  }
+  [data-web-redizajn] .fk-oznam-chyba {
+    --o-plocha: var(--stav-chyba-plocha);
+    --o-text: var(--stav-chyba-text);
+    --o-bod: var(--stav-chyba-bod);
+  }
+  [data-web-redizajn] .fk-oznam-info {
+    --o-plocha: var(--stav-informacia-plocha);
+    --o-text: var(--stav-informacia-text);
+    --o-bod: var(--stav-informacia-bod);
+  }
+  [data-web-redizajn] .fk-oznam-uspech {
+    --o-plocha: var(--stav-uspech-plocha);
+    --o-text: var(--stav-uspech-text);
+    --o-bod: var(--stav-uspech-bod);
+  }
+  /* Ikona v pásoch nesie výraznejšiu farbu tónu. */
+  [data-web-redizajn] .fk-oznam > svg:first-child,
+  [data-web-redizajn] .fk-oznam .fk-oznam-ikona {
+    color: var(--o-bod);
+  }
+  [data-web-redizajn] .fk-oznam a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  /* Farebný text bez plochy (napr. „predĺžená“, rozdiel sumy, „Zaúčtovaná“). */
+  [data-web-redizajn] .fk-text-pozor { color: var(--stav-pozor-text); }
+  [data-web-redizajn] .fk-text-chyba { color: var(--stav-chyba-text); }
+  [data-web-redizajn] .fk-text-info { color: var(--stav-informacia-text); }
+  [data-web-redizajn] .fk-text-uspech { color: var(--stav-uspech-text); }
+}
+
+/* ------------------------------------------------------------------ */
+/* doklady (agenda Doklady: prijaté faktúry, bločky, nespracované,     */
+/* iné doklady, vyúčtovanie, kôš, schvaľovanie, doklady e-mailom,      */
+/* import dokladov) — redizajn 2026-11, agent „doklady“                */
+/* ------------------------------------------------------------------ */
+
+/* Pásy a rámčeky s upozornením v stavových tónoch (namiesto pevných
+   amber/rose/sky/emerald farieb). Trieda dáva len farby — rozostupy,
+   zaoblenie a rámik (`border`) ostávajú v triedach Tailwindu na mieste. */
+[data-web-redizajn] .dk-pozor {
+  background-color: var(--stav-pozor-plocha);
+  color: var(--stav-pozor-text);
+  border-color: color-mix(in oklch, var(--stav-pozor-bod) 45%, transparent);
+}
+[data-web-redizajn] .dk-chyba {
+  background-color: var(--stav-chyba-plocha);
+  color: var(--stav-chyba-text);
+  border-color: color-mix(in oklch, var(--stav-chyba-bod) 45%, transparent);
+}
+[data-web-redizajn] .dk-uspech {
+  background-color: var(--stav-uspech-plocha);
+  color: var(--stav-uspech-text);
+  border-color: color-mix(in oklch, var(--stav-uspech-bod) 45%, transparent);
+}
+[data-web-redizajn] .dk-info {
+  background-color: var(--stav-informacia-plocha);
+  color: var(--stav-informacia-text);
+  border-color: color-mix(in oklch, var(--stav-informacia-bod) 45%, transparent);
+}
+/* Len farba textu/ikony v tóne (sumy, vety „po lehote“, fajky). */
+[data-web-redizajn] .dk-text-pozor {
+  color: var(--stav-pozor-text);
+}
+[data-web-redizajn] .dk-text-chyba {
+  color: var(--stav-chyba-text);
+}
+[data-web-redizajn] .dk-text-uspech {
+  color: var(--stav-uspech-text);
+}
+[data-web-redizajn] .dk-text-info {
+  color: var(--stav-informacia-text);
+}
+/* Rámik poľa s chybou (povinné chýba) v tóne chyby. */
+[data-web-redizajn] .dk-ramik-chyba {
+  border-color: var(--stav-chyba-bod);
+}
+/* Prekrytie ručne kreslených okien (role="dialog") ako pri ui/dialog. */
+[data-web-redizajn] .dk-prekrytie {
+  background-color: var(--w-prekrytie);
+  backdrop-filter: blur(2px);
+}

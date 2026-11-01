@@ -209,7 +209,7 @@ function ScannerPage() {
 
               {result.vat_breakdown && result.vat_breakdown.length > 1 && (
                 <div className="rounded-lg border border-border">
-                  <div className="border-b border-border bg-muted/50 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+                  <div className="border-b border-border bg-muted/50 px-3 py-2 text-sm font-semibold text-foreground">
                     {t("Rozpis DPH")}
                   </div>
                   <table className="w-full text-xs">
@@ -231,7 +231,7 @@ function ScannerPage() {
               )}
 
               <div>
-                <div className="mb-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="mb-1.5 text-sm font-semibold text-foreground">
                   {t("Spôsob úhrady")}
                   {!uhrada && (
                     <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
@@ -277,7 +277,7 @@ function ScannerPage() {
 
               {result.items.length > 0 && (
                 <div className="rounded-lg border border-border">
-                  <div className="border-b border-border bg-muted/50 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+                  <div className="border-b border-border bg-muted/50 px-3 py-2 text-sm font-semibold text-foreground">
                     {t("Položky ({n})", { n: result.items.length })}
                   </div>
                   <table className="w-full text-xs">
@@ -319,9 +319,9 @@ function ScannerPage() {
           )}
 
           {result && result.zdroj === "nic" && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+            <div className="fk-oznam fk-oznam-pozor rounded-xl p-4 text-sm">
               <div className="flex items-start gap-2">
-                <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-800" />
+                <TriangleAlert className="fk-oznam-ikona mt-0.5 h-4 w-4 shrink-0" />
                 <div>
                   <p className="font-medium">{t("Doklad sa nepodarilo prečítať")}</p>
                   <p className="text-muted-foreground">{result.poznamka ? t(result.poznamka) : null}</p>
@@ -347,10 +347,10 @@ function Povod({ result }: { result: BlocekVysledok }) {
   const { t } = useT();
   if (result.zdroj === "ekasa") {
     return (
-      <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
-        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-700" />
+      <div className="fk-oznam fk-oznam-uspech flex items-start gap-2 rounded-lg p-3">
+        <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
-          <p className="font-medium text-emerald-800 dark:text-emerald-300">
+          <p className="font-medium">
             {t("Načítané z Finančnej správy")}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -361,8 +361,8 @@ function Povod({ result }: { result: BlocekVysledok }) {
     );
   }
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-      <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-800" />
+    <div className="fk-oznam fk-oznam-pozor flex items-start gap-2 rounded-lg p-3">
+      <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
       <div>
         <p className="font-medium">
           {result.zdroj === "qr" ? t("Len z QR kódu") : t("Odhadnuté z fotky")}

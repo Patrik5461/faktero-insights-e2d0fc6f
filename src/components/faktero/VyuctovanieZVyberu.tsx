@@ -112,7 +112,7 @@ function Okno({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 dk-prekrytie p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"

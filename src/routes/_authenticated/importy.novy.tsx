@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/importy/novy")({
 function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void }) {
   const { t } = useT();
   return (
-    <section className="rounded-2xl border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
       <label htmlFor="zdroj-importu" className="text-sm font-semibold text-foreground">
         {t("Odkiaľ importujete")}
       </label>
@@ -31,7 +31,7 @@ function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void
         id="zdroj-importu"
         value={id}
         onChange={(e) => onZmena(e.target.value)}
-        className="mt-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        className="mt-3 w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm"
       >
         {IMPORT_ZDROJE.map((z) => (
           <option key={z.id} value={z.id}>
@@ -61,7 +61,7 @@ function Page() {
           action={
             <Link
               to="/importy"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
               <History className="h-4 w-4" /> {t("História importov")}
             </Link>
@@ -70,13 +70,13 @@ function Page() {
         <PageBody>
           <div className="mx-auto max-w-4xl space-y-6">
             <VyberZdroja id={z.id} onZmena={zmen} />
-            <section className="rounded-2xl border border-border bg-card p-6">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
               <h2 className="text-base font-semibold">{t(z.title)}</h2>
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">{z.guide}</div>
               <div className="mt-5 flex justify-end">
                 <Link
                   to={z.cesta}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   {t("Otvoriť import")} <ArrowRight className="h-4 w-4" />
                 </Link>

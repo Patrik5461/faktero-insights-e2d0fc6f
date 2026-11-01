@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -14,7 +14,9 @@ import {
   ConfirmDialog,
   BulkBar,
   DeletedToggle,
+  EmptyState,
 } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stock.functions";
@@ -187,7 +189,7 @@ function ProductsPage() {
         action={
           <button
             onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) })}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             <Plus className="h-4 w-4" /> {t("Nová položka")}
           </button>
@@ -224,7 +226,7 @@ function ProductsPage() {
         />
         <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="w-10 p-3">
                   <input
@@ -250,15 +252,18 @@ function ProductsPage() {
             <tbody className="divide-y divide-border">
               {list.loading && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    {t("Načítavam…")}
+                  <td colSpan={7} className="p-0">
+                    <NacitavanieStav />
                   </td>
                 </tr>
               )}
               {!list.loading && list.rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    {list.showDeleted ? t("Žiadne vymazané položky.") : t("Žiadne položky.")}
+                  <td colSpan={7} className="p-0">
+                    <EmptyState
+                      icon={Package}
+                      title={list.showDeleted ? "Žiadne vymazané položky." : "Žiadne položky."}
+                    />
                   </td>
                 </tr>
               )}
@@ -272,7 +277,7 @@ function ProductsPage() {
                       onChange={(e) => list.toggleSelect(p.id, e.target.checked)}
                     />
                   </td>
-                  <td className="p-3 font-medium">
+                  <td className="min-w-0 max-w-[16rem] break-words p-3 font-medium sm:max-w-md">
                     {p.name}
                     <div className="mt-0.5 text-xs font-normal text-muted-foreground sm:hidden">
                       {[
@@ -288,10 +293,10 @@ function ProductsPage() {
                     {p.code ?? "—"}
                   </td>
                   <td className="hidden p-3 sm:table-cell">{p.unit}</td>
-                  <td className="whitespace-nowrap p-3 text-right tabular-nums">
+                  <td className="suma whitespace-nowrap p-3 text-right">
                     {formatujJednotkovuCenu(p.unit_price, mena.kod)}
                   </td>
-                  <td className="hidden whitespace-nowrap p-3 text-right sm:table-cell">
+                  <td className="hidden whitespace-nowrap p-3 text-right tabular-nums text-muted-foreground sm:table-cell">
                     {formatujCislo(p.vat_rate, 0, 2)} %
                   </td>
                   <td className="whitespace-nowrap p-3 text-right">
@@ -300,7 +305,7 @@ function ProductsPage() {
                         aria-label={t("Upraviť")}
                         title={t("Upraviť")}
                         onClick={() => setEditing(p)}
-                        className="rounded p-1.5 hover:bg-muted"
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -317,7 +322,7 @@ function ProductsPage() {
                             toast.error(e?.message ?? t("Chyba"));
                           }
                         }}
-                        className="rounded p-1.5 text-primary hover:bg-primary/10"
+                        className="rounded-md p-1.5 text-primary hover:bg-primary/10"
                       >
                         <RotateCcw className="h-4 w-4" />
                       </button>
@@ -326,7 +331,7 @@ function ProductsPage() {
                         aria-label={t("Zmazať")}
                         title={t("Zmazať")}
                         onClick={() => setRowDelete(p)}
-                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                        className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -347,6 +352,7 @@ function ProductsPage() {
 
       {editing && (
         <div
+          data-slot="dialog-overlay"
           className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
           onClick={() => setEditing(null)}
         >
@@ -354,7 +360,8 @@ function ProductsPage() {
             role="dialog"
             aria-modal="true"
             aria-label={t("Produkt")}
-            className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            data-slot="dialog-content"
+            className="w-full max-w-lg rounded-xl border border-border bg-card p-5 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
@@ -408,7 +415,7 @@ function ProductsPage() {
                 </select>
               </label>
               <label className="sm:col-span-2 block">
-                <span className="text-sm font-medium">{t("Popis")}</span>
+                <span className="text-sm font-semibold">{t("Popis")}</span>
                 <textarea
                   rows={2}
                   value={editing.description ?? ""}
@@ -418,7 +425,7 @@ function ProductsPage() {
               </label>
               {/* Colné údaje — len pri tovare, ktorý sa vyváža alebo hlási do Intrastatu. */}
               <label className="block">
-                <span className="text-sm font-medium">{t("Colný kód (KN)")}</span>
+                <span className="text-sm font-semibold">{t("Colný kód (KN)")}</span>
                 <div className="mt-1">
                   <VyberColnehoKodu
                     value={editing.colny_kod}
@@ -449,7 +456,7 @@ function ProductsPage() {
                 />
                 {t("Aktívna")}
               </label>
-              <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm">
+              <label className="sm:col-span-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
                 <input
                   type="checkbox"
                   checked={!!editing.track_stock}
@@ -464,13 +471,13 @@ function ProductsPage() {
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+                  className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
                 >
                   {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   {t("Uložiť")}
                 </button>
@@ -525,7 +532,7 @@ function In({
   const { t } = useT();
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <input
         type={type}
         step={step}

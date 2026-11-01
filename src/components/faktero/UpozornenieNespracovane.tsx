@@ -22,7 +22,7 @@ export function UpozornenieNespracovane() {
   return (
     <Link
       to="/nespracovane"
-      className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
+      className="mb-4 flex items-center gap-2 rounded-xl border dk-pozor px-4 py-3 text-sm font-medium hover:underline"
     >
       <Inbox className="h-4 w-4" />
       {t(

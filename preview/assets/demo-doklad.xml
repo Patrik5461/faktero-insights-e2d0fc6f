@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Vymyslený doklad pre preview Faktero -->
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"><ID>DEMO-20260001</ID><IssueDate>2026-10-01</IssueDate><DocumentCurrencyCode>EUR</DocumentCurrencyCode><LegalMonetaryTotal><PayableAmount currencyID="EUR">879.45</PayableAmount></LegalMonetaryTotal></Invoice>

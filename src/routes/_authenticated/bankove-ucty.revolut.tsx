@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { dokonciRevolut } from "@/lib/faktero/revolut.functions";
 
@@ -69,15 +70,15 @@ function RevolutNavrat() {
     <>
       <PageHeader title="Revolut" description={t("Dokončujeme pripojenie účtu.")} />
       <PageBody>
-        <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-sm">
-          {stav === "pracujem" && <p>{t("Vymieňam kód za prístup…")}</p>}
+        <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-5 text-sm sm:p-6">
+          {stav === "pracujem" && <NacitavanieStav text="Vymieňam kód za prístup…" className="py-6" />}
           {stav === "hotovo" && <p>{t("Hotovo. Presúvam vás na bankové účty.")}</p>}
           {stav === "chyba" && (
             <>
-              <p className="text-destructive">{chyba}</p>
+              <p className="break-words font-medium text-destructive" role="alert">{chyba}</p>
               <button
                 onClick={() => navigate({ to: "/bankove-ucty/pripojit" })}
-                className="mt-4 inline-flex h-9 items-center rounded-md border border-border px-3 hover:bg-secondary"
+                className="mt-4 inline-flex h-9 items-center rounded-md border border-input bg-background px-3 font-semibold hover:bg-accent"
               >
                 {t("Späť na pripojenie")}
               </button>

@@ -120,7 +120,7 @@ export function DocumentDetailHeader({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="@container mx-auto w-full max-w-[1440px] border-b border-border px-4 py-4 sm:px-6 sm:py-5">
+      <div data-w-hlavicka-stranky className="@container mx-auto w-full max-w-[1440px] border-b border-border px-4 py-4 sm:px-6 sm:py-5">
         <div className="flex flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:justify-between @2xl:gap-6">
           {/* Ľavá časť: späť, nadpis so stavom, dátumy */}
           <div className="min-w-0 @2xl:flex-1">
@@ -146,6 +146,7 @@ export function DocumentDetailHeader({
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
                 {/* Keď sa nezmestí, skráti sa typ dokladu — číslo ostane vidieť celé. */}
                 <h1
+                  data-w-nadpis-stranky
                   className="flex min-w-0 max-w-full items-baseline gap-x-[0.3em] whitespace-nowrap text-lg font-semibold tracking-tight @2xl:text-xl @5xl:text-2xl"
                   title={celyNadpis}
                 >

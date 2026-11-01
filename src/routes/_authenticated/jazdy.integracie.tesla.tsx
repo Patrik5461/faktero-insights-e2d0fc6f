@@ -13,6 +13,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { triedaStavu } from "@/components/faktero/web/Stav";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -194,14 +195,14 @@ function TeslaPage() {
           </div>
         )}
         {(state.credentials_invalid || conn?.credentials_invalid) && (
-          <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <div className="mb-4 rounded-xl border border-warning/35 bg-warning/10 p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-800 dark:text-amber-400" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
               <div className="flex-1">
-                <div className="font-medium text-amber-900 dark:text-amber-200">
+                <div className="font-semibold text-foreground">
                   {t("Tesla účet je potrebné znova pripojiť")}
                 </div>
-                <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
+                <p className="mt-1 text-sm text-foreground/80">
                   {t(
                     "Uložené prístupové tokeny sa nedajú dešifrovať. Toto sa stáva po zmene bezpečnostného kľúča systému. Pripojte prosím Tesla účet znovu cez OAuth.",
                   )}
@@ -210,7 +211,7 @@ function TeslaPage() {
                   type="button"
                   disabled={!!busy || !admin}
                   onClick={onConnect}
-                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-warning px-3 py-2 text-sm font-semibold text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
                 >
                   <PlugZap className="h-4 w-4" /> {t("Znova pripojiť Tesla účet")}
                 </button>
@@ -227,7 +228,7 @@ function TeslaPage() {
                   <Car className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="font-medium">{t("Pripojenie Tesla účtu")}</div>
+                  <div className="text-base font-semibold">{t("Pripojenie Tesla účtu")}</div>
                   <div className="text-xs text-muted-foreground">
                     {t("OAuth 2.0 — tokeny sú uložené šifrovane na serveri.")}
                   </div>
@@ -248,7 +249,7 @@ function TeslaPage() {
                   <button
                     disabled={!!busy || !admin}
                     onClick={onConnect}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     <PlugZap className="h-4 w-4" /> {t("Pripojiť Tesla účet")}
                   </button>
@@ -256,7 +257,7 @@ function TeslaPage() {
                   <button
                     disabled={!!busy || !admin}
                     onClick={onDisconnect}
-                    className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
                     <Power className="h-4 w-4" /> {t("Odpojiť")}
                   </button>
@@ -265,14 +266,14 @@ function TeslaPage() {
             </div>
 
             {/* Terms card */}
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm text-emerald-900 dark:text-emerald-200">
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm text-foreground">
               <div className="flex items-start gap-3">
-                <div className="rounded-full bg-emerald-500/15 p-1.5 text-emerald-700 dark:text-emerald-300">
+                <div className="rounded-full bg-primary/10 p-1.5 text-primary-hover">
                   <FileText className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">{t("Podmienky používania Tesla Fleet API")}</div>
-                  <p className="mt-1 text-emerald-800/90 dark:text-emerald-100/80">
+                  <div className="text-base font-semibold">{t("Podmienky používania Tesla Fleet API")}</div>
+                  <p className="mt-1 text-foreground/80">
                     {t(
                       "Pripojením Tesla účtu súhlasíte so spracúvaním údajov o vozidle (VIN, tachometer, poloha) v rozsahu uvedenom v našich podmienkach. Faktero používa výhradne čítacie oprávnenia — žiadne príkazy do vozidla.",
                     )}
@@ -280,7 +281,7 @@ function TeslaPage() {
                   <Link
                     to="/pravne/tesla-podmienky"
                     target="_blank"
-                    className="mt-3 inline-flex items-center gap-1.5 font-medium underline hover:text-emerald-700"
+                    className="mt-3 inline-flex items-center gap-1.5 font-semibold text-primary-hover underline underline-offset-2 hover:text-primary"
                   >
                     {t("Zobraziť podmienky")} <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
@@ -289,7 +290,7 @@ function TeslaPage() {
             </div>
 
             {/* Notice */}
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-900 dark:text-amber-200">
+            <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-foreground">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
@@ -304,7 +305,7 @@ function TeslaPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="font-medium">{t("Tesla vozidlá")}</div>
+                  <div className="text-base font-semibold">{t("Tesla vozidlá")}</div>
                   <div className="text-xs text-muted-foreground">
                     {state.links.length === 0
                       ? t("Žiadne vozidlá ešte neboli synchronizované.")
@@ -314,7 +315,7 @@ function TeslaPage() {
                 <button
                   disabled={!isConnected || !!busy || !admin}
                   onClick={onSyncVehicles}
-                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                 >
                   <RefreshCcw className="h-4 w-4" /> {t("Synchronizovať vozidlá")}
                 </button>
@@ -322,7 +323,7 @@ function TeslaPage() {
               {state.links.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-xs uppercase text-muted-foreground">
+                    <thead className="whitespace-nowrap text-left text-xs font-semibold text-muted-foreground">
                       <tr>
                         <th className="py-2 pr-3">{t("Tesla vozidlo")}</th>
                         <th className="py-2 pr-3">VIN</th>
@@ -365,11 +366,11 @@ function TeslaPage() {
             {/* Tesla data section */}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex items-center justify-between">
-                <div className="font-medium">{t("Tesla dáta")}</div>
+                <div className="text-base font-semibold">{t("Tesla dáta")}</div>
                 <button
                   disabled={!isConnected || !!busy || state.links.length === 0 || !admin}
                   onClick={onSyncSnap}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   <PlugZap className="h-4 w-4" /> {t("Načítať stav vozidiel")}
                 </button>
@@ -381,7 +382,7 @@ function TeslaPage() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-xs uppercase text-muted-foreground">
+                    <thead className="whitespace-nowrap text-left text-xs font-semibold text-muted-foreground">
                       <tr>
                         <th className="py-2 pr-3">{t("Vozidlo")}</th>
                         <th className="py-2 pr-3">{t("Tachometer")}</th>
@@ -423,7 +424,7 @@ function TeslaPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 font-medium">{t("Stav")}</div>
+              <div className="mb-3 text-base font-semibold">{t("Stav")}</div>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Pripojenie")}</dt>
@@ -454,7 +455,7 @@ function TeslaPage() {
               </dl>
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 flex items-center gap-2 font-medium">
+              <div className="mb-3 flex items-center gap-2 text-base font-semibold">
                 <Link2 className="h-4 w-4" /> {t("História synchronizácií")}
               </div>
               {state.logs.length === 0 ? (
@@ -462,11 +463,11 @@ function TeslaPage() {
               ) : (
                 <ul className="space-y-2 text-xs">
                   {state.logs.map((l: any) => (
-                    <li key={l.id} className="rounded-md border border-border p-2">
+                    <li key={l.id} className="rounded-lg border border-border p-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{t(popisSynchronizacie(l.sync_type))}</span>
+                        <span className="font-semibold">{t(popisSynchronizacie(l.sync_type))}</span>
                         <span
-                          className={l.status === "ok" ? "text-emerald-700" : "text-destructive"}
+                          className={triedaStavu(l.status === "ok" ? "uspech" : "chyba", true)}
                         >
                           {t(popisStavuSync(l.status))}
                         </span>
@@ -479,7 +480,7 @@ function TeslaPage() {
               )}
             </div>
             <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
-              <div className="mb-1 font-medium text-foreground">{t("Čo z Tesly dostanete")}</div>
+              <div className="mb-1 font-semibold text-foreground">{t("Čo z Tesly dostanete")}</div>
               <p className="mb-2">
                 {t(
                   "Faktero z vášho vozidla Tesla načíta stav tachometra a polohu. Z nich si potom ľahko doplníte jazdy do knihy jázd.",

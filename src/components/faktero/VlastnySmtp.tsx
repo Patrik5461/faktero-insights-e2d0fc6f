@@ -11,6 +11,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 
 const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
 
@@ -118,11 +119,11 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
 
   const zobrazForm = uprava || !stav;
   return (
-    <div className="mt-6 rounded-xl border border-border bg-card p-6">
+    <div className="mt-6 rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <Mail className="mt-0.5 h-5 w-5 text-primary" />
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold">{t("Odosielanie z vlastnej adresy")}</h2>
+          <h2 className="text-base font-semibold">{t("Odosielanie z vlastnej adresy")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t(
               "Faktúry, upomienky, cenové ponuky a podklady pre účtovníka môžu odberateľom chodiť z vašej firemnej adresy (napr. faktury@vasafirma.sk) cez váš poštový server. Bez nastavenia chodia z adresy Faktera s vaším menom.",
@@ -136,19 +137,19 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
             <div className="mt-3 space-y-2 text-sm">
               <div>
                 {stav.aktivne ? (
-                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  <StavOdznak ton="uspech" maly>
                     {t("zapnuté")}
-                  </span>
+                  </StavOdznak>
                 ) : (
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
+                  <StavOdznak ton="neutralny" maly>
                     {t("vypnuté")}
-                  </span>
+                  </StavOdznak>
                 )}{" "}
                 {stav.od_meno ? `${stav.od_meno} ` : ""}&lt;{stav.od_email}&gt; {t("cez")}{" "}
                 {stav.host}:{stav.port}
               </div>
               {stav.posledna_chyba ? (
-                <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-100">
+                <p className="rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">
                   {t("Posledná chyba")} (
                   {stav.posledna_chyba_at
                     ? new Date(stav.posledna_chyba_at).toLocaleString(lokalJazyka(jazyk))
@@ -161,7 +162,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                 <button
                   type="button"
                   onClick={() => setUprava(true)}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                 >
                   {t("Upraviť")}
                 </button>
@@ -169,7 +170,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   <button
                     type="button"
                     onClick={() => void vypnut(false)}
-                    className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                    className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                   >
                     {t("Vypnúť")}
                   </button>
@@ -177,7 +178,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                 <button
                   type="button"
                   onClick={() => void vypnut(true)}
-                  className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
+                  className="rounded-md border border-destructive/40 bg-card px-3 py-1.5 text-sm font-semibold text-destructive hover:bg-destructive/10"
                 >
                   {t("Zmazať")}
                 </button>
@@ -199,7 +200,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                         zabezpecenie: p.zabezpecenie,
                       }))
                     }
-                    className="rounded-full border border-border px-2.5 py-1 hover:bg-secondary"
+                    className="rounded-full border border-input bg-card px-2.5 py-1 hover:bg-accent"
                   >
                     {p.nazov}
                   </button>
@@ -207,7 +208,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Adresa odosielateľa")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Adresa odosielateľa")}</span>
                   <input
                     value={f.od_email}
                     onChange={(e) => setF({ ...f, od_email: e.target.value })}
@@ -216,7 +217,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Meno odosielateľa")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Meno odosielateľa")}</span>
                   <input
                     value={f.od_meno}
                     onChange={(e) => setF({ ...f, od_meno: e.target.value })}
@@ -225,7 +226,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">SMTP server</span>
+                  <span className="text-xs font-semibold text-muted-foreground">SMTP server</span>
                   <input
                     value={f.host}
                     onChange={(e) => setF({ ...f, host: e.target.value.trim() })}
@@ -235,7 +236,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block text-sm">
-                    <span className="text-xs text-muted-foreground">Port</span>
+                    <span className="text-xs font-semibold text-muted-foreground">Port</span>
                     <input
                       inputMode="numeric"
                       value={f.port}
@@ -246,7 +247,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                     />
                   </label>
                   <label className="block text-sm">
-                    <span className="text-xs text-muted-foreground">{t("Zabezpečenie")}</span>
+                    <span className="text-xs font-semibold text-muted-foreground">{t("Zabezpečenie")}</span>
                     <select
                       value={f.zabezpecenie}
                       onChange={(e) => setF({ ...f, zabezpecenie: e.target.value as any })}
@@ -259,7 +260,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   </label>
                 </div>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Prihlasovacie meno")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Prihlasovacie meno")}</span>
                   <input
                     value={f.pouzivatel}
                     onChange={(e) => setF({ ...f, pouzivatel: e.target.value })}
@@ -269,7 +270,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Heslo")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Heslo")}</span>
                   <input
                     type="password"
                     value={f.heslo}
@@ -292,7 +293,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   type="button"
                   onClick={() => void ulozit()}
                   disabled={busy || !f.host || !f.od_email}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť a otestovať")}
                 </button>
@@ -300,7 +301,7 @@ export function VlastnySmtp({ companyId }: { companyId: string }) {
                   <button
                     type="button"
                     onClick={() => setUprava(false)}
-                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     {t("Zrušiť")}
                   </button>

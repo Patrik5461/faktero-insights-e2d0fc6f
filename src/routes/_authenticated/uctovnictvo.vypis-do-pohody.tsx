@@ -426,7 +426,7 @@ function VypisDoPohodyPage() {
     }
   }
 
-  const vstup = "w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm";
+  const vstup = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm";
 
   return (
     <>
@@ -448,8 +448,8 @@ function VypisDoPohodyPage() {
       <PageBody>
         <div className="space-y-6">
           {brana && riadky.length === 0 && (
-            <div className="rounded-2xl border border-border/70 bg-card p-5 text-sm">
-              <div className="font-medium">{t("Odkiaľ stiahnuť export")}</div>
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 text-sm">
+              <div className="text-base font-semibold">{t("Odkiaľ stiahnuť export")}</div>
               <ul className="mt-2 space-y-1 text-muted-foreground">
                 {EXPORTY_BRAN.map((e) => (
                   <li key={e.brana}>
@@ -493,8 +493,8 @@ function VypisDoPohodyPage() {
               </p>
             </div>
           )}
-          <div className="rounded-2xl border border-border/70 bg-card p-5">
-            <label className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed border-border px-4 py-8 text-center">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <label className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input bg-muted/40 px-4 py-8 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
               {nacitavam ? (
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               ) : (
@@ -531,7 +531,7 @@ function VypisDoPohodyPage() {
             </label>
             {zdroj && <p className="mt-3 text-xs text-muted-foreground">{zdroj}</p>}
             {varovanie && (
-              <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+              <p className="mt-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-sm text-foreground">
                 {varovanie}
               </p>
             )}
@@ -540,9 +540,9 @@ function VypisDoPohodyPage() {
 
           {riadky.length > 0 && (
             <>
-              <div className="grid gap-4 rounded-2xl border border-border/70 bg-card p-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 rounded-xl border border-border bg-card p-4 sm:p-5 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Číslo výpisu")}</span>
+                  <span className="mb-1 block text-xs font-medium text-muted-foreground">{t("Číslo výpisu")}</span>
                   <input
                     className={vstup}
                     value={cisloVypisu}
@@ -550,7 +550,7 @@ function VypisDoPohodyPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Dátum výpisu")}</span>
+                  <span className="mb-1 block text-xs font-medium text-muted-foreground">{t("Dátum výpisu")}</span>
                   <input
                     type="date"
                     className={vstup}
@@ -559,7 +559,7 @@ function VypisDoPohodyPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">
+                  <span className="mb-1 block text-xs font-medium text-muted-foreground">
                     {t("Skratka účtu v Pohode")}
                   </span>
                   <input
@@ -570,7 +570,7 @@ function VypisDoPohodyPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">
+                  <span className="mb-1 block text-xs font-medium text-muted-foreground">
                     {t("Predkontácia (spoločná)")}
                   </span>
                   <input
@@ -607,8 +607,8 @@ function VypisDoPohodyPage() {
               </div>
 
               {pouziteOznacenia.length > 0 && (
-                <div className="rounded-2xl border border-border/70 bg-card p-5">
-                  <div className="text-sm font-medium">{t("Predkontácie podľa označenia platby")}</div>
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                  <div className="text-base font-semibold">{t("Predkontácie podľa označenia platby")}</div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t(
                       "Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne, dostane spoločnú predkontáciu vyššie.",
@@ -630,7 +630,7 @@ function VypisDoPohodyPage() {
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {pouziteOznacenia.map((o) => (
                       <label key={o.kod} className="block">
-                        <span className="mb-1 block text-xs text-muted-foreground">
+                        <span className="mb-1 block text-xs font-medium text-muted-foreground">
                           {t(o.nazov)}
                           <span className="ml-1 opacity-70">({pocetPodlaOznacenia(o.kod)}×)</span>
                         </span>
@@ -653,9 +653,9 @@ function VypisDoPohodyPage() {
                 </div>
               )}
 
-              <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card">
+              <div className="overflow-x-auto rounded-xl border border-border bg-card">
                 <table className="w-full min-w-[1180px] text-sm">
-                  <thead className="border-b border-border/70 text-left text-xs text-muted-foreground">
+                  <thead className="border-b border-border bg-muted/40 text-left text-xs whitespace-nowrap text-muted-foreground">
                     <tr>
                       <th className="p-2"><span className="sr-only">{t("Akcie")}</span></th>
                       <th className="p-2">{t("Dátum")}</th>
@@ -673,7 +673,7 @@ function VypisDoPohodyPage() {
                     {riadky.map((r, i) => (
                       <tr
                         key={i}
-                        className={`border-b border-border/50 last:border-0 ${
+                        className={`border-b border-border last:border-0 ${
                           r.vyviezt ? "" : "opacity-40"
                         }`}
                       >
@@ -709,7 +709,7 @@ function VypisDoPohodyPage() {
                           <input
                             type="number"
                             step="0.01"
-                            className={`${vstup} text-right`}
+                            className={`${vstup} text-right tabular-nums`}
                             value={r.suma}
                             onChange={(e) => uprav(i, { suma: Number(e.target.value) })}
                           />
@@ -781,12 +781,12 @@ function VypisDoPohodyPage() {
                 </table>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-5">
-                <div className="text-sm">
-                  <span className="font-medium">{vybrane.length}</span>{" "}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 sm:p-5">
+                <div className="min-w-0 text-sm">
+                  <span className="font-semibold tabular-nums">{vybrane.length}</span>{" "}
                   {t("z {n} pohybov", { n: riadky.length })} · {t("príjmy")}{" "}
-                  <span className="font-medium">{eur(prijmy)}</span> · {t("výdavky")}{" "}
-                  <span className="font-medium">{eur(vydaje)}</span>
+                  <span className="suma whitespace-nowrap">{eur(prijmy)}</span> · {t("výdavky")}{" "}
+                  <span className="suma whitespace-nowrap">{eur(vydaje)}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -795,7 +795,7 @@ function VypisDoPohodyPage() {
                       setZdroj(null);
                       setVarovanie(null);
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary"
                   >
                     <Trash2 className="h-4 w-4" /> {t("Zahodiť")}
                   </button>
@@ -803,7 +803,7 @@ function VypisDoPohodyPage() {
                     onClick={() => void stiahni("sepa")}
                     disabled={!!vyvazam || !vybrane.length}
                     title={t("Banka → Načítanie výpisov (homebanking, formát SEPA XML)")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
                   >
                     {vyvazam === "sepa" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -816,7 +816,7 @@ function VypisDoPohodyPage() {
                     onClick={() => void stiahni("pohoda")}
                     disabled={!!vyvazam || !vybrane.length}
                     title={t("Súbor → Dátová komunikácia → XML import")}
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     {vyvazam === "pohoda" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

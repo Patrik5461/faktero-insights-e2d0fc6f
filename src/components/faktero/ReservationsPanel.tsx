@@ -14,6 +14,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 
 const SRC_LABEL: Record<string, string> = {
@@ -26,6 +27,12 @@ const STATUS_LABEL: Record<string, string> = {
   active: "Aktívna",
   fulfilled: "Splnená",
   cancelled: "Zrušená",
+};
+/** Tón stavu rezervácie (len vzhľad, text ostáva zo STATUS_LABEL). */
+const TON_REZERVACIE: Record<string, TonStavu> = {
+  active: "informacia",
+  fulfilled: "uspech",
+  cancelled: "zruseny",
 };
 
 export function ReservationsPanel({
@@ -74,13 +81,13 @@ export function ReservationsPanel({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-sm font-semibold">{t("Rezervácie")}</div>
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-base font-semibold">{t("Rezervácie")}</div>
         {canMutate && (
           <button
             onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
           >
             <Plus className="h-3.5 w-3.5" /> {t("Rezervovať ručne")}
           </button>
@@ -91,8 +98,9 @@ export function ReservationsPanel({
       ) : rows.length === 0 ? (
         <div className="text-sm text-muted-foreground">{t("Žiadne rezervácie.")}</div>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="border-b border-border text-left text-xs text-muted-foreground">
             <tr>
               <th className="p-2">{t("Zdroj")}</th>
               <th className="p-2 text-right">{t("Množstvo")}</th>
@@ -120,21 +128,25 @@ export function ReservationsPanel({
                     t(SRC_LABEL[r.source_document_type] ?? r.source_document_type)
                   )}
                 </td>
-                <td className="p-2 text-right tabular-nums">
+                <td className="p-2 text-right whitespace-nowrap tabular-nums font-medium">
                   {formatujCislo(r.quantity, 0, 3)} {unit ?? ""}
                 </td>
-                <td className="p-2 text-xs">{t(STATUS_LABEL[r.status] ?? r.status)}</td>
-                <td className="p-2 text-xs text-muted-foreground">
+                <td className="p-2">
+                  <StavOdznak ton={TON_REZERVACIE[r.status] ?? "neutralny"} maly>
+                    {t(STATUS_LABEL[r.status] ?? r.status)}
+                  </StavOdznak>
+                </td>
+                <td className="p-2 whitespace-nowrap text-xs text-muted-foreground">
                   {r.expires_at
                     ? new Date(r.expires_at).toLocaleDateString(lokalJazyka(jazyk))
                     : "—"}
                 </td>
-                <td className="p-2 text-xs text-muted-foreground">{r.note ?? "—"}</td>
+                <td className="max-w-[16rem] break-words p-2 text-xs text-muted-foreground">{r.note ?? "—"}</td>
                 <td className="p-2 text-right">
                   {canMutate && r.status === "active" && r.source_document_type === "manual" && (
                     <button
                       onClick={() => doCancel(r.id)}
-                      className="inline-flex items-center gap-1 rounded p-1 text-destructive hover:bg-destructive/10"
+                      className="inline-flex items-center gap-1 rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                       title={t("Zrušiť")}
                     >
                       <XCircle className="h-4 w-4" />
@@ -145,6 +157,7 @@ export function ReservationsPanel({
             ))}
           </tbody>
         </table>
+        </div>
       )}
       {open && (
         <ManualReservationDialog
@@ -225,7 +238,7 @@ function ManualReservationDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--w-prekrytie,rgb(0_0_0/0.4))] backdrop-blur-[2px]"
       onClick={onClose}
     >
       <form
@@ -234,11 +247,11 @@ function ManualReservationDialog({
         aria-label={t("Ručná rezervácia")}
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="w-full max-w-md space-y-3 rounded-2xl border border-border bg-popover p-5 shadow-2xl sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
-        <div className="text-base font-semibold">{t("Ručná rezervácia")}</div>
+        <div className="text-lg font-semibold">{t("Ručná rezervácia")}</div>
         <label className="block">
-          <span className="text-sm font-medium">{t("Sklad")}</span>
+          <span className="text-sm font-semibold">{t("Sklad")}</span>
           <select
             value={warehouse}
             onChange={(e) => setWarehouse(e.target.value)}
@@ -252,7 +265,7 @@ function ManualReservationDialog({
           </select>
         </label>
         <label className="block">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-semibold">
             {t("Množstvo")} {unit ? `(${unit})` : ""}
           </span>
           <input
@@ -265,7 +278,7 @@ function ManualReservationDialog({
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">{t("Platnosť do (voliteľné)")}</span>
+          <span className="text-sm font-semibold">{t("Platnosť do (voliteľné)")}</span>
           <input
             type="date"
             value={expires}
@@ -274,7 +287,7 @@ function ManualReservationDialog({
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">{t("Poznámka")}</span>
+          <span className="text-sm font-semibold">{t("Poznámka")}</span>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -285,13 +298,13 @@ function ManualReservationDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
           >
             {t("Zrušiť")}
           </button>
           <button
             disabled={busy}
-            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
           >
             {busy ? t("Ukladám…") : t("Rezervovať")}
           </button>
