@@ -634,15 +634,15 @@ function ReceivedPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                 <tr>
-                  <th className="p-3">{t("Doručené")}</th>
-                  <th className="p-3">{t("Dodávateľ")}</th>
-                  <th className="p-3">{t("Doklad")}</th>
-                  <th className="p-3">{t("Vystavená")}</th>
-                  <th className="p-3">{t("Splatnosť")}</th>
-                  <th className="p-3 text-right">{t("Suma")}</th>
-                  <th className="p-3">{t("Stav")}</th>
-                  <th className="p-3">{t("Kontrola")}</th>
-                  <th className="p-3 text-right">{t("Akcie")}</th>
+                  <th className="px-2 py-3">{t("Doručené")}</th>
+                  <th className="px-2 py-3">{t("Dodávateľ")}</th>
+                  <th className="px-2 py-3">{t("Doklad")}</th>
+                  <th className="px-2 py-3">{t("Vystavená")}</th>
+                  <th className="px-2 py-3">{t("Splatnosť")}</th>
+                  <th className="px-2 py-3 text-right">{t("Suma")}</th>
+                  <th className="px-2 py-3">{t("Stav")}</th>
+                  <th className="px-2 py-3">{t("Kontrola")}</th>
+                  <th className="px-2 py-3 text-right">{t("Akcie")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -663,10 +663,10 @@ function ReceivedPage() {
                 {zobrazene.map((r) => (
                   <Fragment key={r.id}>
                   <tr>
-                    <td className="whitespace-nowrap p-3 text-xs text-muted-foreground tabular-nums">
+                    <td className="px-2 py-3 text-xs text-muted-foreground tabular-nums">
                       {r.received_at ? new Date(r.received_at).toLocaleString("sk-SK") : "—"}
                     </td>
-                    <td className="max-w-[260px] p-3">
+                    <td className="max-w-[190px] px-2 py-3 2xl:max-w-[280px]">
                       <span className="block truncate" title={r.sender_name ?? undefined}>
                         {r.sender_name ?? "—"}
                       </span>
@@ -676,18 +676,18 @@ function ReceivedPage() {
                         </div>
                       )}
                     </td>
-                    <td className="cislo-dokladu whitespace-nowrap p-3">{r.document_number ?? "—"}</td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="cislo-dokladu whitespace-nowrap px-2 py-3">{r.document_number ?? "—"}</td>
+                    <td className="px-2 py-3 whitespace-nowrap">
                       {r.issue_date ? datumNaDoklade(r.issue_date) : "—"}
                     </td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="px-2 py-3 whitespace-nowrap">
                       {r.due_date ? datumNaDoklade(r.due_date) : "—"}
                     </td>
-                    <td className="suma whitespace-nowrap p-3 text-right">{suma(r.total, r.currency)}</td>
-                    <td className="whitespace-nowrap p-3">
+                    <td className="suma whitespace-nowrap px-2 py-3 text-right">{suma(r.total, r.currency)}</td>
+                    <td className="whitespace-nowrap px-2 py-3">
                       <StavDokladu stav={r.status} />
                     </td>
-                    <td className="p-3">
+                    <td className="px-2 py-3">
                       <OdznakKontrolyEfaktury
                         chyby={kontroly.get(r.id)?.kontrola_chyby}
                         varovania={kontroly.get(r.id)?.kontrola_varovania}
@@ -695,7 +695,7 @@ function ReceivedPage() {
                         onClick={() => setRozbalene((x) => (x === r.id ? null : r.id))}
                       />
                     </td>
-                    <td className="p-3">
+                    <td className="px-2 py-3">
                       <div className="flex flex-wrap justify-end gap-1.5">
                         {akcieRiadku(r)}
                       </div>
@@ -703,7 +703,7 @@ function ReceivedPage() {
                   </tr>
                   {rozbalene === r.id && (
                     <tr className="bg-muted/20">
-                      <td colSpan={9} className="p-3">
+                      <td colSpan={9} className="px-2 py-3">
                         <NalezyPrijatej receivedId={r.id} />
                       </td>
                     </tr>

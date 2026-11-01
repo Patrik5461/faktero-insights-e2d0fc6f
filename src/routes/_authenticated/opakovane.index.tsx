@@ -240,7 +240,7 @@ function RecurringList() {
                             onChange={(e) => list.toggleSelect(r.id, e.target.checked)}
                           />
                         </td>
-                        <td className="max-w-[320px] p-3">
+                        <td className="max-w-[280px] 2xl:max-w-[400px] p-3">
                           {/* Dlhý názov šablóny sa skráti, celý je v title. */}
                           <Link
                             to="/opakovane/$id"
@@ -252,7 +252,7 @@ function RecurringList() {
                           </Link>
                         </td>
                         <td className="p-3">
-                          <span className="block max-w-[240px] truncate" title={r.customer_name ?? undefined}>
+                          <span className="block max-w-[220px] 2xl:max-w-[320px] truncate" title={r.customer_name ?? undefined}>
                             {r.customer_name ?? "—"}
                           </span>
                         </td>

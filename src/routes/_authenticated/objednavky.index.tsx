@@ -204,7 +204,7 @@ function OrdersPage() {
                           </td>
                           <td className="px-4 py-2">
                             <span
-                              className="block max-w-[260px] truncate"
+                              className="block max-w-[220px] 2xl:max-w-[320px] truncate"
                               title={o.customers?.name ?? o.customer_name ?? undefined}
                             >
                               {o.customers?.name ?? o.customer_name ?? "—"}

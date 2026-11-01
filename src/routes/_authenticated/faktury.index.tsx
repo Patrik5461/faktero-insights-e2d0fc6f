@@ -1285,7 +1285,7 @@ function InvoicesPage() {
               <table className="w-full text-sm">
                 <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
-                    <th className="w-10 p-3">
+                    <th className="w-10 px-2 py-3">
                       <input
                         type="checkbox"
                         aria-label={t("Vybrať všetko")}
@@ -1294,15 +1294,15 @@ function InvoicesPage() {
                       />
                       <span className="sr-only">{t("Výber")}</span>
                     </th>
-                    <th className="p-3">{t("Číslo")}</th>
-                    <th className="p-3">{t("Odberateľ")}</th>
+                    <th className="px-2 py-3">{t("Číslo")}</th>
+                    <th className="px-2 py-3">{t("Odberateľ")}</th>
                     <th className="px-2 py-3">{t("Vystavená")}</th>
                     <th className="px-2 py-3">{t("Dodaná")}</th>
                     <th className="px-2 py-3">{t("Splatnosť")}</th>
-                    <th className="p-3 text-right">{t("Suma")}</th>
-                    <th className="p-3">{t("Účtovná položka")}</th>
-                    <th className="p-3">{t("Stav")}</th>
-                    <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
+                    <th className="px-2 py-3 text-right">{t("Suma")}</th>
+                    <th className="px-2 py-3">{t("Účtovná položka")}</th>
+                    <th className="px-2 py-3">{t("Stav")}</th>
+                    <th className="px-2 py-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1337,7 +1337,7 @@ function InvoicesPage() {
                       }
                       onDoubleClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
                     >
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           aria-label={t("Vybrať riadok")}
@@ -1345,7 +1345,7 @@ function InvoicesPage() {
                           onChange={(e) => list.toggleSelect(i.id, e.target.checked)}
                         />
                       </td>
-                      <td className="p-3 font-medium">
+                      <td className="px-2 py-3 font-medium">
                         {/* Odznaky (eFaktúra, upomienka…) sa zalomia pod číslo, aby tabuľka nevytlačila stĺpec Stav. */}
                         <span className="inline-flex max-w-[12rem] flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
@@ -1369,10 +1369,10 @@ function InvoicesPage() {
                         </span>
                       </td>
 
-                      <td className="p-3">
+                      <td className="px-2 py-3">
                         {/* Jeden riadok; plné meno v tooltipe. */}
                         <span
-                          className="block max-w-[10rem] truncate 2xl:max-w-[20rem]"
+                          className="block max-w-[9rem] truncate 2xl:max-w-[20rem]"
                           title={i.customer_name ?? undefined}
                         >
                           {i.customer_name ?? "—"}
@@ -1392,11 +1392,11 @@ function InvoicesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap p-3 text-right">
+                      <td className="whitespace-nowrap px-2 py-3 text-right">
                         {/* Dobropis bez mínusu — že znižuje, hovorí štítok Dobropis. */}
                         <span className="suma">{formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}</span>
                       </td>
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
                         {(() => {
                           // Koncept sa účtuje až po vystavení; odovzdanú najprv treba vrátiť z Pohody.
                           const z = dovodZamku(i, cis.zamknuteDo);
@@ -1415,7 +1415,7 @@ function InvoicesPage() {
                           );
                         })()}
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-3">
                         <StatusBadge status={i.status} />
                         {cis.stavy.length && !list.showDeleted ? (
                           <div className="mt-1" onClick={(e) => e.stopPropagation()}>
@@ -1456,7 +1456,7 @@ function InvoicesPage() {
                           </div>
                         ) : null}
                       </td>
-                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         {list.showDeleted ? (
                           <button
                             title={t("Obnoviť")}
