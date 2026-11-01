@@ -6,10 +6,14 @@
     node scripts/jira.mjs komentar FAK-12 "Text"
     node scripts/jira.mjs stav FAK-12 "Hotovo"         # prechod podľa názvu stavu
     node scripts/jira.mjs hladaj "text"
+    node scripts/jira.mjs cas FAK-12 "2h 30m" ["popis"] [začiatok ISO]   # odpracovaný čas
     node scripts/jira.mjs davka subor.json             # epiky s úlohami naraz
 
-  Dávka: [{ "epik": "Názov", "popis": "…", "ulohy": [{ "nazov", "popis", "typ"?, "stav"? }] }].
+  Dávka: [{ "epik": "Názov", "popis": "…", "ulohy": [{ "nazov", "popis", "typ"?, "stav"?,
+           "cas"?: "2h 30m", "zaciatok"?: "2026-11-01T10:00:00+01:00" }] }].
   Epik aj úloha s rovnakým názvom sa druhýkrát nezaloží (dávka sa dá pustiť znova).
+  POZOR: úloha bez "stav" skončí v stave Hotovo – otvorené body vždy "stav": "Úlohy".
+  Čas sa nezdvojí: rovnaká dĺžka s rovnakým začiatkom (bez začiatku rovnaká dĺžka) sa preskočí.
 
   Prihlásenie: JIRA_EMAIL a JIRA_API_TOKEN v ecosystem.config.cjs
   (~/vloz-tajomstvo.sh JIRA_EMAIL, ~/vloz-tajomstvo.sh JIRA_API_TOKEN).
@@ -68,6 +72,41 @@ function adf(text) {
   };
 }
 
+/** „1d 2h 30m“ → sekundy (deň = 8 h, týždeň = 5 dní ako v Jire). */
+function sekundy(cas) {
+  const jednotky = { w: 5 * 8 * 3600, d: 8 * 3600, h: 3600, m: 60 };
+  let spolu = 0;
+  for (const [, n, j] of String(cas).matchAll(/(\d+(?:[.,]\d+)?)\s*([wdhm])/gi))
+    spolu += Number(n.replace(",", ".")) * jednotky[j.toLowerCase()];
+  if (!spolu) throw new Error(`Neplatný čas „${cas}“ (napr. "2h 30m").`);
+  return Math.round(spolu);
+}
+
+/** ISO dátum → formát Jiry 2026-11-01T10:00:00.000+0000. */
+function zaciatokJiry(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) throw new Error(`Neplatný začiatok „${iso}“.`);
+  return d.toISOString().replace("Z", "+0000");
+}
+
+/** Zapíše odpracovaný čas; rovnaký záznam (dĺžka + začiatok) druhýkrát nepridá. */
+async function zapisCas(kluc, cas, popis, zaciatok) {
+  const dlzka = sekundy(cas);
+  const { worklogs = [] } = await api("GET", `/issue/${kluc}/worklog?maxResults=1000`);
+  const uz = worklogs.find(
+    (w) =>
+      w.timeSpentSeconds === dlzka &&
+      (!zaciatok || new Date(w.started).getTime() === new Date(zaciatok).getTime()),
+  );
+  if (uz) return false;
+  await api("POST", `/issue/${kluc}/worklog?notifyUsers=false`, {
+    timeSpentSeconds: dlzka,
+    started: zaciatokJiry(zaciatok),
+    ...(popis ? { comment: adf(popis) } : {}),
+  });
+  return true;
+}
+
 const [prikaz, ...a] = process.argv.slice(2);
 if (prikaz === "over") {
   const ja = await api("GET", "/myself");
@@ -103,6 +142,11 @@ if (prikaz === "over") {
     );
   await api("POST", `/issue/${kluc}/transitions`, { transition: { id: t.id } });
   console.log("ok", kluc, "→", t.to?.name ?? t.name);
+} else if (prikaz === "cas") {
+  const [kluc, cas, popis, zaciatok] = a;
+  if (!kluc || !cas) throw new Error('Použitie: cas FAK-12 "2h 30m" ["popis"] [začiatok ISO]');
+  const novy = await zapisCas(kluc, cas, popis, zaciatok);
+  console.log(novy ? "ok" : "už zapísané", kluc, cas);
 } else if (prikaz === "hladaj") {
   const jql = `project = ${PROJEKT} AND text ~ "${String(a[0] ?? "").replace(/"/g, "")}" ORDER BY updated DESC`;
   const r = await api("POST", "/search/jql", {
@@ -153,6 +197,7 @@ if (prikaz === "over") {
         issuetype: { name: u.typ ?? "Úloha" },
         parent: { key: epik },
       });
+      if (u.cas) await zapisCas(k, u.cas, u.casPopis, u.zaciatok);
       await prejdi(k, u.stav ?? "Hotovo");
       if ((u.stav ?? "Hotovo") === "Hotovo") hotove++;
     }
@@ -160,5 +205,5 @@ if (prikaz === "over") {
     console.log(epik, e.epik, `(${e.ulohy?.length ?? 0} úloh)`);
   }
 } else {
-  console.log("Použitie: over | zaloz | komentar | stav | hladaj | davka");
+  console.log("Použitie: over | zaloz | komentar | stav | cas | hladaj | davka");
 }
