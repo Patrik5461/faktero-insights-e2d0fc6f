@@ -7,6 +7,7 @@ import { KonektorPohody } from "@/components/faktero/KonektorPohody";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 /**
  * Nastavenie účtovania v Pohode a vydanie konektora.
@@ -59,7 +60,7 @@ function Stranka() {
       <>
         <PageHeader title={t("Prepojenie s Pohodou")} />
         <PageBody>
-          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+          <NacitavanieStav text="Načítavam…" />
         </PageBody>
       </>
     );
@@ -99,9 +100,9 @@ function Stranka() {
       <PageBody>
         <form
           onSubmit={save}
-          className="grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2"
+          className="mx-auto grid max-w-5xl gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-5"
         >
-          <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+          <div className="sm:col-span-2 rounded-md border border-primary/25 bg-primary/5 p-3 text-sm text-muted-foreground">
             {t("Do Pohody sa dá dostať tromi cestami — mesačným balíkom mailom, XML z")}{" "}
             <Link to="/exporty" className="text-primary underline">
               {t("účtovných exportov")}
@@ -114,7 +115,7 @@ function Stranka() {
           </div>
 
           <div className="sm:col-span-2">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="mb-1 text-base font-semibold text-foreground">
               {t("Účtovníčka")}
             </h3>
           </div>
@@ -124,16 +125,16 @@ function Stranka() {
             onChange={f("uctovnik_email")}
             placeholder={t("kam chodí mesačné odovzdanie")}
           />
-          <label className="flex items-start gap-3 rounded-md border border-border p-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40">
             <input
               type="checkbox"
               checked={!!c.odovzdanie_automaticky}
               onChange={(e) => setC({ ...c, odovzdanie_automaticky: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Posielať automaticky")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t(
                   "Podklady za minulý mesiac odídu 5. v mesiaci samy. Posiela sa len to, čo ešte neodišlo.",
                 )}
@@ -142,7 +143,7 @@ function Stranka() {
           </label>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="mb-1 text-base font-semibold text-foreground">
               {t("Účtovanie")}
             </h3>
             <p className="mb-3 text-xs text-muted-foreground">
@@ -185,7 +186,7 @@ function Stranka() {
 
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="mb-1 text-base font-semibold text-foreground">
               {t("Čo sa do Pohody posiela")}
             </h3>
             <p className="mb-3 text-xs text-muted-foreground">
@@ -194,16 +195,16 @@ function Stranka() {
               )}
             </p>
           </div>
-          <label className="flex items-start gap-3 rounded-md border border-border p-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40">
             <input
               type="checkbox"
               checked={!!c.pohoda_posielat_adresar}
               onChange={(e) => setC({ ...c, pohoda_posielat_adresar: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Posielať adresár")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t(
                   "Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme. Zmenený kontakt sa prepíše, nezaloží sa druhý.",
                 )}{" "}
@@ -215,16 +216,16 @@ function Stranka() {
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 rounded-md border border-border p-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40">
             <input
               type="checkbox"
               checked={!!c.pohoda_posielat_sklad}
               onChange={(e) => setC({ ...c, pohoda_posielat_sklad: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Posielať skladové karty")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t("Posiela sa")} <strong>{t("číselník zásob")}</strong>
                 {t(
                   ", nie stav skladu — ten v Pohode vzniká príjemkami a výdajkami. Potrebuje vyplnené členenie skladu.",
@@ -232,16 +233,16 @@ function Stranka() {
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
             <input
               type="checkbox"
               checked={!!c.pohoda_posielat_pohyby}
               onChange={(e) => setC({ ...c, pohoda_posielat_pohyby: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Posielať skladové pohyby")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t("Príjemky a výdajky, aby v Pohode sedeli")} <strong>{t("stavy")}</strong>{" "}
                 {t(
                   "skladu, nielen karty. Príjemka ide s príznakom „neúčtovať“, aby sa náklad nezdvojil s prijatým dokladom. Potrebuje zapnuté skladové karty.",
@@ -249,16 +250,16 @@ function Stranka() {
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
             <input
               type="checkbox"
               checked={!!c.pohoda_posielat_zakazky}
               onChange={(e) => setC({ ...c, pohoda_posielat_zakazky: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Posielať zákazky")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t(
                   "Faktúra potom v Pohode nesie zákazku, takže je z nej vidieť výnos po zákazkách. Zákazka odchádza",
                 )}{" "}
@@ -269,16 +270,16 @@ function Stranka() {
               </span>
             </span>
           </label>
-          <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
             <input
               type="checkbox"
               checked={c.pohoda_odkaz_na_pdf !== false}
               onChange={(e) => setC({ ...c, pohoda_odkaz_na_pdf: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Prikladať odkaz na PDF faktúry")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t(
                   "Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí PDF. Odkaz je dlhý náhodný reťazec a otvorí ho každý, kto ho má — rovnako ako faktúra poslaná mailom.",
                 )}
@@ -286,16 +287,16 @@ function Stranka() {
             </span>
           </label>
 
-          <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
             <input
               type="checkbox"
               checked={!!c.pohoda_ico_z_mena}
               onChange={(e) => setC({ ...c, pohoda_ico_z_mena: e.target.checked })}
               className="mt-0.5 h-4 w-4"
             />
-            <span className="text-sm">
+            <span className="min-w-0 text-sm font-medium">
               {t("Generovať IČO z mena pre partnerov bez IČO")}
-              <span className="mt-0.5 block text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 {t(
                   "Zahraničná firma alebo fyzická osoba dostane v Pohode stabilný náhradný identifikátor (napr. FK3A9F12C0) odvodený z mena a krajiny, takže sa v adresári vždy spáruje s tou istou kartou a nezakladá nové. Partnera so skutočným IČO sa to netýka.",
                 )}
@@ -307,14 +308,14 @@ function Stranka() {
             <button
               type="submit"
               disabled={uklada}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {uklada ? t("Ukladám…") : t("Uložiť")}
             </button>
           </div>
         </form>
 
-        <div className="mt-4 rounded-xl border border-border bg-card p-6">
+        <div className="mx-auto max-w-5xl rounded-xl border border-border bg-card p-4 sm:p-5">
           <KonektorPohody companyId={c.id} />
         </div>
       </PageBody>

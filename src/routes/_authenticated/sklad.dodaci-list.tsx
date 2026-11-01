@@ -474,7 +474,7 @@ function DeliveryNoteScanPage() {
         action={
           <Link
             to="/sklad/dodacie-listy"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-muted"
           >
             <History className="h-4 w-4" /> {t("História")}
           </Link>
@@ -504,23 +504,25 @@ function DeliveryNoteScanPage() {
               const f = e.dataTransfer.files?.[0];
               if (f) handleFile(f);
             }}
-            className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors"
+            className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-xl border-2 border-dashed border-input bg-card px-4 py-10 text-center transition-colors sm:px-8"
           >
-            <FileText className="h-10 w-10 text-muted-foreground" />
+            <div className="grid h-14 w-14 place-items-center rounded-xl border border-border bg-card text-primary shadow-sm">
+              <FileText className="h-6 w-6" />
+            </div>
             <div>
-              <div className="text-base font-medium">{t("Nahrajte alebo odfoťte dodací list")}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="text-base font-semibold">{t("Nahrajte alebo odfoťte dodací list")}</div>
+              <div className="mt-1 text-sm text-muted-foreground">
                 {t("JPG, PNG, WebP alebo PDF (max 15 MB)")}
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button
                 onClick={shootPhoto}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 <Camera className="h-4 w-4" /> {t("Odfotiť")}
               </button>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-secondary">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted">
                 <Upload className="h-4 w-4" /> {t("Vybrať súbor")}
                 <input
                   type="file"
@@ -540,7 +542,7 @@ function DeliveryNoteScanPage() {
         )}
 
         {fileMeta && (
-          <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+          <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
             <div className="space-y-3">
               <div className="overflow-hidden rounded-xl border border-border bg-card p-2">
                 {fileMeta.mime.startsWith("image/") ? (
@@ -552,7 +554,7 @@ function DeliveryNoteScanPage() {
                 ) : (
                   <div className="flex h-40 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
                     <FileText className="h-8 w-8" />
-                    <span>{fileMeta.name}</span>
+                    <span className="max-w-full break-all px-2">{fileMeta.name}</span>
                   </div>
                 )}
               </div>
@@ -562,38 +564,38 @@ function DeliveryNoteScanPage() {
                   setRows([]);
                   setStoragePath(null);
                 }}
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-secondary"
+                className="w-full rounded-md border border-input bg-card px-3 py-2 text-xs font-semibold hover:bg-muted"
               >
                 {t("Nahrať iný súbor")}
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="min-w-0 space-y-4">
               {scanError && !parsing && (
-                <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                <div role="alert" className="flex flex-wrap items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm">
                   <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <div className="font-semibold text-destructive">{t("Skenovanie zlyhalo")}</div>
-                    <div className="mt-0.5 text-muted-foreground">{scanError}</div>
+                    <div className="mt-0.5 break-words text-foreground/80">{scanError}</div>
                   </div>
                   <button
                     onClick={() => {
                       if (lastFileRef.current) handleFile(lastFileRef.current);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:opacity-90"
                   >
                     <RefreshCw className="h-3.5 w-3.5" /> {t("Skúsiť znova")}
                   </button>
                 </div>
               )}
 
-              <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
+              <div className="grid gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 sm:p-5">
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">{t("Sklad")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Sklad")}</span>
                   <select
                     value={warehouseId}
                     onChange={(e) => setWarehouseId(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     {warehouses.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -602,12 +604,12 @@ function DeliveryNoteScanPage() {
                     ))}
                   </select>
                   {warehouses.length === 0 && (
-                    <span className="mt-2 block rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
+                    <span className="mt-2 block rounded-md border border-warning/30 bg-warning/10 p-2 text-xs text-warning">
                       {t("Firma zatiaľ nemá sklad, tovar by nemal kam prísť.")}
                       <button
                         type="button"
                         onClick={zalozSkladFirme}
-                        className="ml-1 font-medium underline"
+                        className="ml-1 font-semibold underline"
                       >
                         {t("Založiť Hlavný sklad")}
                       </button>
@@ -615,41 +617,41 @@ function DeliveryNoteScanPage() {
                   )}
                 </label>
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">
+                  <span className="text-xs font-semibold text-muted-foreground">
                     {t("Dodávateľ")}
                   </span>
                   <input
                     value={supplier}
                     onChange={(e) => setSupplier(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     placeholder="—"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">{t("Číslo DL")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Číslo DL")}</span>
                   <input
                     value={deliveryNumber}
                     onChange={(e) => setDeliveryNumber(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     placeholder="—"
                   />
                 </label>
               </div>
 
               <div className="rounded-xl border border-border bg-card">
-                <div className="flex items-center justify-between border-b border-border p-3">
-                  <div className="text-sm font-semibold">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+                  <div className="text-base font-semibold">
                     {t("Položky ({n})", { n: rows.length })}
                   </div>
                   <button
                     onClick={addRow}
-                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                    className="inline-flex items-center gap-1 rounded-md border border-input bg-card px-2.5 py-1.5 text-xs font-semibold hover:bg-muted"
                   >
                     <Plus className="h-3.5 w-3.5" /> {t("Pridať riadok")}
                   </button>
                 </div>
                 {rows.length === 0 ? (
-                  <div className="p-6 text-center text-sm text-muted-foreground">
+                  <div className="px-6 py-10 text-center text-sm text-muted-foreground">
                     {parsing
                       ? t("Čakám na AI…")
                       : t("Žiadne položky. Pridajte manuálne alebo nahrajte iný súbor.")}
@@ -657,14 +659,14 @@ function DeliveryNoteScanPage() {
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted/50 text-xs text-muted-foreground">
+                      <thead className="bg-muted/40 text-xs text-muted-foreground">
                         <tr>
-                          <th className="p-2 text-left">{t("Názov / produkt v sklade")}</th>
-                          <th className="p-2 text-left">{t("Kód")}</th>
-                          <th className="p-2 text-right">{t("Množstvo")}</th>
-                          <th className="p-2 text-left">{t("MJ")}</th>
-                          <th className="p-2 text-right">{t("Cena/ks")}</th>
-                          <th className="p-2">
+                          <th className="px-2 py-2.5 text-left">{t("Názov / produkt v sklade")}</th>
+                          <th className="px-2 py-2.5 text-left">{t("Kód")}</th>
+                          <th className="px-2 py-2.5 text-right">{t("Množstvo")}</th>
+                          <th className="px-2 py-2.5 text-left">{t("MJ")}</th>
+                          <th className="px-2 py-2.5 text-right">{t("Cena/ks")}</th>
+                          <th className="px-2 py-2.5">
                             <span className="sr-only">{t("Akcie")}</span>
                           </th>
                         </tr>
@@ -672,7 +674,7 @@ function DeliveryNoteScanPage() {
                       <tbody className="divide-y divide-border">
                         {rows.map((r, i) => (
                           <tr key={i}>
-                            <td className="p-1.5">
+                            <td className="min-w-[14rem] p-1.5">
                               <input
                                 value={r.name}
                                 onChange={(e) => updateRow(i, { name: e.target.value })}
@@ -707,7 +709,7 @@ function DeliveryNoteScanPage() {
                                 step="0.001"
                                 value={r.quantity}
                                 onChange={(e) => updateRow(i, { quantity: Number(e.target.value) })}
-                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm"
+                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm tabular-nums"
                               />
                             </td>
                             <td className="p-1.5">
@@ -725,7 +727,7 @@ function DeliveryNoteScanPage() {
                                 onChange={(e) =>
                                   updateRow(i, { unit_price: Number(e.target.value) })
                                 }
-                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm"
+                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm tabular-nums"
                               />
                             </td>
                             <td className="p-1.5 text-right">
@@ -733,7 +735,7 @@ function DeliveryNoteScanPage() {
                                 onClick={() => removeRow(i)}
                                 aria-label={t("Odstrániť riadok")}
                                 title={t("Odstrániť riadok")}
-                                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                                className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -750,7 +752,7 @@ function DeliveryNoteScanPage() {
                 <button
                   disabled={importing || rows.length === 0 || parsing}
                   onClick={() => doImport()}
-                  className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                  className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                 >
                   {importing
                     ? t("Importujem…")
@@ -819,12 +821,14 @@ function AiScanOverlay({
 
   return (
     <div
+      data-slot="dialog-overlay"
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
+        data-slot="dialog-content"
         className="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -880,7 +884,7 @@ function AiScanOverlay({
                   ? t("Hotovo!")
                   : t("Skenujem dodací list")}
             </div>
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="mt-1 text-sm text-muted-foreground">
               {showError
                 ? errorMessage
                 : allDone
@@ -936,7 +940,7 @@ function AiScanOverlay({
           <div className="flex justify-end gap-2 px-6 pb-6 pt-4">
             <button
               onClick={onClose}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
             >
               {t("Zavrieť")}
             </button>
@@ -945,7 +949,7 @@ function AiScanOverlay({
                 onClose();
                 onRetry();
               }}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <RefreshCw className="h-3.5 w-3.5" /> {t("Skúsiť znova")}
             </button>

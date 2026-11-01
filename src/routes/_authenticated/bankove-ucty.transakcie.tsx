@@ -24,6 +24,14 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailPohybu } from "@/components/faktero/DetailPohybu";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { nazovVybavenia, stavPohybu } from "@/lib/faktero/pohyb-vybavenie";
+import { triedaStavu, type TonStavu } from "@/components/faktero/web/Stav";
+import { cn } from "@/lib/utils";
+
+/** Tón stavu pohybu (text ostáva z `stavPohybu`/`nazovVybavenia`); vybavené bez dokladu = informácia. */
+const TON_POHYBU: Record<string, TonStavu> = {
+  sparovany: "uspech",
+  nesparovany: "neutralny",
+};
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
   head: ({ match }) => ({
@@ -288,14 +296,14 @@ function TxPage() {
             <div className="flex flex-wrap gap-2">
               <Link
                 to="/faktury/parovanie"
-                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent"
               >
                 <Link2 className="h-4 w-4" /> {t("Spárovať s faktúrami")}
               </Link>
               <button
                 onClick={onSync}
                 disabled={accounts.length === 0 || busy}
-                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-emerald-700 px-3 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> {t("Synchronizovať")}
               </button>
@@ -306,19 +314,19 @@ function TxPage() {
         {sumy.length > 0 && (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sumy.map((s) => (
-              <div key={s.currency} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              <div key={s.currency} className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 text-sm text-muted-foreground">
                     {obdobiePopis(dateFrom, dateTo, t)}
                   </span>
-                  <span className="font-mono text-xs text-muted-foreground">{s.currency}</span>
+                  <span className="font-mono text-xs font-semibold text-muted-foreground">{s.currency}</span>
                 </div>
                 <dl className="mt-3 space-y-1.5 text-sm">
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="text-muted-foreground">
                       {t("smer::Prijaté")} <span className="text-xs">({s.pocetPrijatych})</span>
                     </dt>
-                    <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
+                    <dd className="suma text-primary-hover">
                       {fmtMoney(s.prijate, s.currency)}
                     </dd>
                   </div>
@@ -326,14 +334,14 @@ function TxPage() {
                     <dt className="text-muted-foreground">
                       {t("smer::Odoslané")} <span className="text-xs">({s.pocetOdoslanych})</span>
                     </dt>
-                    <dd className="tabular-nums font-medium text-destructive">
+                    <dd className="suma text-destructive">
                       {fmtMoney(s.odoslane, s.currency)}
                     </dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-3 border-t border-border pt-1.5">
-                    <dt className="font-medium">{t("Rozdiel")}</dt>
+                    <dt className="font-semibold">{t("Rozdiel")}</dt>
                     <dd
-                      className={`tabular-nums font-semibold ${s.rozdiel < 0 ? "text-destructive" : ""}`}
+                      className={`suma font-bold ${s.rozdiel < 0 ? "text-destructive" : ""}`}
                     >
                       {fmtMoney(s.rozdiel, s.currency)}
                     </dd>
@@ -353,23 +361,23 @@ function TxPage() {
           {(() => {
             const tabulka = (
               <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2">{t("Dátum")}</th>
-                    {!selected && <th className="px-3 py-2">{t("Účet")}</th>}
-                    <th className="px-3 py-2">{t("Protistrana")}</th>
-                    <th className="px-3 py-2">{t("VS")}</th>
-                    <th className="px-3 py-2">{t("Popis")}</th>
-                    <th className="px-3 py-2">{t("Párovanie")}</th>
-                    <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                    <th className="whitespace-nowrap px-3 py-2">{t("Dátum")}</th>
+                    {!selected && <th className="whitespace-nowrap px-3 py-2">{t("Účet")}</th>}
+                    <th className="whitespace-nowrap px-3 py-2">{t("Protistrana")}</th>
+                    <th className="whitespace-nowrap px-3 py-2">{t("VS")}</th>
+                    <th className="whitespace-nowrap px-3 py-2">{t("Popis")}</th>
+                    <th className="whitespace-nowrap px-3 py-2">{t("Párovanie")}</th>
+                    <th className="whitespace-nowrap px-3 py-2 text-right">{t("Suma")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {txs.map((tx) => (
                     <tr key={tx.id} className="border-t border-border">
-                      <td className="px-3 py-2 tabular-nums">{datumNaDoklade(tx.booking_date)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{datumNaDoklade(tx.booking_date)}</td>
                       {!selected && (
-                        <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                        <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-muted-foreground">
                           {(() => {
                             const a = accounts.find((x) => x.id === tx.bank_account_id);
                             const iban = a?.iban as string | undefined;
@@ -377,13 +385,13 @@ function TxPage() {
                           })()}
                         </td>
                       )}
-                      <td className="px-3 py-2">{tx.counterparty ?? "—"}</td>
-                      <td className="px-3 py-2 font-mono text-xs">{tx.variable_symbol ?? "—"}</td>
+                      <td className="px-3 py-2 font-medium">{tx.counterparty ?? "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{tx.variable_symbol ?? "—"}</td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {/* Pohyb z e-mailovej notifikácie banky — nie z banky samotnej. */}
                         {tx.zdroj === "email" && (
                           <span
-                            className="mr-1.5 inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
+                            className={cn(triedaStavu("informacia", true), "mr-1.5")}
                             title={t("Pohyb vznikol z e-mailovej notifikácie banky.")}
                           >
                             {t("z e-mailu")}
@@ -393,11 +401,11 @@ function TxPage() {
                       </td>
                       <td className="px-3 py-2">
                         {tx.matched_invoice_id ? (
-                          <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                             <Link
                               to="/faktury/$id"
                               params={{ id: tx.matched_invoice_id }}
-                              className="font-medium text-primary hover:underline"
+                              className="cislo-dokladu text-primary hover:underline"
                             >
                               {faktury[tx.matched_invoice_id] ?? t("faktúra")}
                             </Link>
@@ -418,17 +426,12 @@ function TxPage() {
                                 : stav === "nesparovany"
                                   ? t("nespárované")
                                   : t(nazovVybavenia(stav) ?? "");
-                            const farba =
-                              stav === "nesparovany"
-                                ? "text-muted-foreground"
-                                : stav === "sparovany"
-                                  ? "text-emerald-700 dark:text-emerald-300"
-                                  : "rounded-full bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300";
+                            const farba = triedaStavu(TON_POHYBU[stav] ?? "informacia", true);
                             return (
                               <button
                                 onClick={() => setDetail(tx.id)}
                                 title={tx.vybavenie_poznamka ?? t("Detail pohybu")}
-                                className={`text-xs hover:underline ${farba}`}
+                                className={`${farba} cursor-pointer hover:underline`}
                               >
                                 {popis}
                               </button>
@@ -445,7 +448,7 @@ function TxPage() {
                         )}
                       </td>
                       <td
-                        className={`px-3 py-2 text-right tabular-nums font-medium ${Number(tx.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
+                        className={`suma px-3 py-2 text-right ${Number(tx.amount) < 0 ? "text-destructive" : "text-primary-hover"}`}
                       >
                         {fmtMoney(Number(tx.amount), tx.currency)}
                       </td>
@@ -477,7 +480,7 @@ function TxPage() {
                         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                           {tx.counterparty ?? "—"}
                           {tx.zdroj === "email" && (
-                            <span className="inline-flex rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                            <span className={triedaStavu("informacia", true)}>
                               {t("z e-mailu")}
                             </span>
                           )}
@@ -493,25 +496,19 @@ function TxPage() {
                         .join(" · ")}
                       amount={
                         <span
-                          className={`tabular-nums ${Number(tx.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
+                          className={`suma ${Number(tx.amount) < 0 ? "text-destructive" : "text-primary-hover"}`}
                         >
                           {fmtMoney(Number(tx.amount), tx.currency)}
                         </span>
                       }
                       status={
                         tx.matched_invoice_id ? (
-                          <span className="inline-flex rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                          <span className={cn(triedaStavu("uspech", true), "cislo-dokladu")}>
                             {faktury[tx.matched_invoice_id] ?? t("faktúra")}
                           </span>
                         ) : (
                           <span
-                            className={
-                              stav === "nesparovany"
-                                ? "text-xs text-muted-foreground"
-                                : stav === "sparovany"
-                                  ? "text-xs text-emerald-700 dark:text-emerald-300"
-                                  : "rounded-full bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-                            }
+                            className={triedaStavu(TON_POHYBU[stav] ?? "informacia", true)}
                           >
                             {popis}
                           </span>

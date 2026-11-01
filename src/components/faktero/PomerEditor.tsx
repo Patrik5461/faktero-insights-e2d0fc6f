@@ -40,9 +40,9 @@ export function PomerEditor({
   const spolu =
     value?.typ === "pomer" ? value.casti.reduce((a, c) => a + (Number(c.podiel) || 0), 0) : 100;
   return (
-    <div className="rounded-md border border-border p-3">
+    <div className="rounded-lg border border-border bg-card p-3">
       <label className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-medium">{t("Účtovať pomerom")}</span>
+        <span className="font-semibold">{t("Účtovať pomerom")}</span>
         <select
           value={typ}
           onChange={(e) => {
@@ -65,7 +65,7 @@ export function PomerEditor({
                 nezdanitelna: "",
               });
           }}
-          className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+          className="min-w-0 max-w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
         >
           <option value="">{t("nie")}</option>
           <option value="pomer">{t("podľa pomeru (rovnaký pre základ aj DPH)")}</option>
@@ -76,7 +76,7 @@ export function PomerEditor({
       {value?.typ === "pomer" && (
         <div className="mt-2 space-y-2">
           {value.casti.map((c, i) => (
-            <div key={i} className="grid grid-cols-[5rem_1fr_auto_auto] items-center gap-2">
+            <div key={i} className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto_auto] items-center gap-2">
               <input
                 type="number"
                 min={0}
@@ -91,7 +91,7 @@ export function PomerEditor({
                     ),
                   })
                 }
-                className={vstup}
+                className={`${vstup} text-right tabular-nums`}
               />
               <KodPohody
                 ariaLabel={t("Predkontácia časti {n}", { n: i + 1 })}
@@ -108,7 +108,7 @@ export function PomerEditor({
                 bezPopisu
                 vyber
               />
-              <label className="flex items-center gap-1 text-xs">
+              <label className="flex items-center gap-1 whitespace-nowrap text-xs">
                 <input
                   type="checkbox"
                   checked={c.odpocet}
@@ -126,7 +126,7 @@ export function PomerEditor({
               <button
                 type="button"
                 onClick={() => onChange({ ...value, casti: value.casti.filter((_, j) => j !== i) })}
-                className="rounded p-1 text-muted-foreground hover:bg-secondary"
+                className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 aria-label={t("Zmazať časť {n}", { n: i + 1 })}
               >
                 <Trash2 className="h-4 w-4" />
@@ -145,11 +145,11 @@ export function PomerEditor({
                   ],
                 })
               }
-              className="inline-flex items-center gap-1 text-primary hover:underline"
+              className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
             >
               <Plus className="h-3.5 w-3.5" /> {t("Pridať časť")}
             </button>
-            <span className={spolu === 100 ? "text-emerald-700" : "text-amber-700"}>
+            <span className={`font-semibold tabular-nums ${spolu === 100 ? "text-primary" : "text-warning"}`}>
               {t("Spolu {n} %", { n: spolu })}
             </span>
           </div>
@@ -159,7 +159,7 @@ export function PomerEditor({
       {value?.typ === "dph5050" && (
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           <label className="block text-xs">
-            <span className="text-muted-foreground">{t("Podiel nákladu na podnikanie (%)")}</span>
+            <span className="font-medium text-muted-foreground">{t("Podiel nákladu na podnikanie (%)")}</span>
             <input
               type="number"
               min={0}
@@ -182,7 +182,7 @@ export function PomerEditor({
             ] as const
           ).map(([k, n]) => (
             <label key={k} className="block text-xs">
-              <span className="text-muted-foreground">{t(n)}</span>
+              <span className="font-medium text-muted-foreground">{t(n)}</span>
               <KodPohody
                 ariaLabel={`${t("Predkontácia")} — ${t(n)}`}
                 value={value[k]}
@@ -200,7 +200,7 @@ export function PomerEditor({
 
       {value && (
         <label className="mt-2 block max-w-xs text-xs">
-          <span className="text-muted-foreground">{t("Členenie DPH pre časti bez odpočtu")}</span>
+          <span className="font-medium text-muted-foreground">{t("Členenie DPH pre časti bez odpočtu")}</span>
           <KodPohody
             ariaLabel="Členenie DPH pre časti bez odpočtu"
             value={value.clenenieBezOdpoctu ?? ""}

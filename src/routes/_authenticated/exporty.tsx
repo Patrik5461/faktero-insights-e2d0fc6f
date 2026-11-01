@@ -27,6 +27,7 @@ import { formatujMenu } from "@/lib/faktero/mena";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { prveOdoslanie } from "@/lib/faktero/efaktura-odoslana";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
@@ -279,7 +280,7 @@ function ExportsPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           {/* LEFT: selector */}
           <div className="min-w-0 space-y-4">
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
               <div className="mb-4 flex flex-wrap items-end gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">{t("Od")}</label>
@@ -326,13 +327,13 @@ function ExportsPage() {
                 <div className="ml-auto flex gap-2">
                   <button
                     onClick={() => setPicked(Object.fromEntries(invoices.map((i) => [i.id, true])))}
-                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
                   >
                     {t("Vybrať všetko")}
                   </button>
                   <button
                     onClick={() => setPicked({})}
-                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
                   >
                     {t("Zrušiť výber")}
                   </button>
@@ -341,7 +342,7 @@ function ExportsPage() {
 
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                     <tr>
                       <th className="w-10 p-3">
                         <span className="sr-only">{t("Výber")}</span>
@@ -372,34 +373,36 @@ function ExportsPage() {
                           />
                         </td>
                         <td className="p-3 font-medium">
-                          <span className="whitespace-nowrap">{i.invoice_number}</span>
+                          <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
                           {efOdoslane[i.id] ? (
-                            <span
-                              className="ml-2 rounded-full bg-sky-100 px-1.5 py-0.5 align-middle text-xs font-normal text-sky-800 dark:bg-sky-950/50 dark:text-sky-200"
+                            <StavOdznak
+                              ton="priebeh"
+                              maly
+                              className="ml-2 align-middle"
                               title={t(
                                 "Odišla ako eFaktúra — v Pohode ju cez Peppol znova neposielajte.",
                               )}
                             >
                               {t("eFaktúra")}
-                            </span>
+                            </StavOdznak>
                           ) : null}
                           {i.exported_at ? (
                             <span className="ml-2 inline-flex flex-wrap items-center gap-1 align-middle text-xs font-normal">
-                              <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-emerald-800">
+                              <StavOdznak ton="uspech" maly>
                                 {/* Faktúra poslaná do Money nie je „v Pohode“ — povie sa, kam odišla. */}
                                 {nazovProgramuExportu(formatOdovzdania[i.id])
                                   ? t("Odovzdaná ({program})", {
                                       program: t(nazovProgramuExportu(formatOdovzdania[i.id])!),
                                     })
                                   : t("V Pohode")}
-                              </span>
+                              </StavOdznak>
                               {/* Odovzdaná faktúra je zamknutá; „Vrátiť“ ju pustí na opravu. */}
                               <button
                                 type="button"
                                 onClick={async () => {
                                   if (await poslatOpravu("faktura", i.company_id, i.id)) load();
                                 }}
-                                className="rounded-md border border-border px-1.5 py-0.5 hover:bg-secondary"
+                                className="rounded-md border border-input px-1.5 py-0.5 font-medium hover:bg-secondary"
                               >
                                 {nazovProgramuExportu(formatOdovzdania[i.id])
                                   ? t("Vrátiť")
@@ -412,10 +415,10 @@ function ExportsPage() {
                             {i.delivery_date && i.delivery_date !== i.issue_date
                               ? ` · ${t("dodaná")} ${datumNaDoklade(i.delivery_date)}`
                               : ""}{" "}
-                            · {formatujMenu(i.total, i.currency)}
+                            · <span className="suma">{formatujMenu(i.total, i.currency)}</span>
                           </span>
                         </td>
-                        <td className="p-3">{i.customer_name ?? "—"}</td>
+                        <td className="min-w-[10rem] p-3 break-words">{i.customer_name ?? "—"}</td>
                         <td className="hidden whitespace-nowrap p-3 md:table-cell">
                           {datumNaDoklade(i.issue_date)}
                         </td>
@@ -424,7 +427,7 @@ function ExportsPage() {
                         >
                           {datumNaDoklade(datumDodania(i))}
                         </td>
-                        <td className="hidden whitespace-nowrap p-3 text-right tabular-nums md:table-cell">
+                        <td className="suma hidden whitespace-nowrap p-3 text-right md:table-cell">
                           {formatujMenu(i.total, i.currency)}
                         </td>
                       </tr>
@@ -436,7 +439,7 @@ function ExportsPage() {
               {vybraneEfaktury > 0 && (format === "pohoda_xml" || format === "bis_zip") && (
                 <p
                   role="status"
-                  className="mt-4 rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-sm text-sky-900 dark:text-sky-200"
+                  className="mt-4 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground"
                 >
                   {t(
                     "Vybrané faktúry, ktoré už odišli ako eFaktúra: {n}. V Pohode ich cez Peppol znova neposielajte — odberateľ by ich dostal dvakrát. V internej poznámke dokladu to v Pohode uvidíte.",
@@ -447,14 +450,14 @@ function ExportsPage() {
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm text-muted-foreground">
                   {t("Vybraných:")}{" "}
-                  <span className="font-semibold text-foreground">{selectedIds.length}</span>
+                  <span className="font-semibold tabular-nums text-foreground">{selectedIds.length}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     aria-label={t("Formát exportu")}
                     value={format}
                     onChange={(e) => setFormat(e.target.value as ExportFormat)}
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="min-w-0 max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     {FORMATY.map((f) => (
                       <option key={f.format} value={f.format}>
@@ -465,7 +468,7 @@ function ExportsPage() {
                   <button
                     onClick={runExport}
                     disabled={busy || !selectedIds.length}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                   >
                     {busy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -497,8 +500,8 @@ function ExportsPage() {
             </div>
 
             {/* History */}
-            <div id="historia-exportov" className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+            <div id="historia-exportov" className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h3 className="mb-3 text-base font-semibold">
                 {t("História exportov")}
               </h3>
               {jobs.length === 0 ? (
@@ -508,11 +511,13 @@ function ExportsPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {jobs.map((j) => (
-                    <li key={j.id} className="flex items-center justify-between py-3">
+                    <li key={j.id} className="flex items-center justify-between gap-3 py-3">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <FileSpreadsheet className="h-4 w-4 text-primary" />
-                          {j.file_name ?? `${j.target_system} — ${j.format}`}
+                        <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
+                          <FileSpreadsheet className="h-4 w-4 shrink-0 text-primary" />
+                          <span className="min-w-0 break-all">
+                            {j.file_name ?? `${j.target_system} — ${j.format}`}
+                          </span>
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           {/^pohoda-prijate/.test(String(j.file_name ?? ""))
@@ -525,7 +530,10 @@ function ExportsPage() {
                             : t(tvar(j.invoice_count, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
                                 n: j.invoice_count,
                               })}{" "}
-                          · {new Date(j.created_at).toLocaleString("sk-SK")}
+                          ·{" "}
+                          <span className="whitespace-nowrap tabular-nums">
+                            {new Date(j.created_at).toLocaleString("sk-SK")}
+                          </span>
                           {j.date_from && j.date_to
                             ? ` · ${datumNaDoklade(j.date_from)} → ${datumNaDoklade(j.date_to)}`
                             : ""}
@@ -533,7 +541,7 @@ function ExportsPage() {
                       </div>
                       <button
                         onClick={() => downloadJob(j)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
                       >
                         <Download className="h-3.5 w-3.5" /> {t("Stiahnuť")}
                       </button>
@@ -546,8 +554,8 @@ function ExportsPage() {
 
           {/* RIGHT: formats sidebar */}
           <aside aria-label={t("Podporované formáty")} className="min-w-0 space-y-3">
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h3 className="text-base font-semibold">
                 {t("Podporované formáty")}
               </h3>
               <ul className="mt-3 space-y-2 text-sm">
@@ -558,10 +566,10 @@ function ExportsPage() {
                       format === f.format ? "border-primary/40 bg-primary/5" : "border-border"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{t(f.label)}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 font-medium">{t(f.label)}</span>
                       {format === f.format && (
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary-hover">
+                        <span className="shrink-0 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary-hover">
                           {t("Vybrané")}
                         </span>
                       )}
@@ -571,7 +579,7 @@ function ExportsPage() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 text-sm text-muted-foreground">
               <p className="flex items-start gap-2">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 {t(
@@ -773,10 +781,10 @@ function OdovzdanieZaMesiac() {
   const pracuje = busy !== null;
 
   return (
-    <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-end gap-4">
         <div>
-          <label className="text-xs font-medium text-muted-foreground">
+          <label className="text-sm font-semibold text-foreground">
             {t("Odovzdať za mesiac")}
           </label>
           <input
@@ -787,7 +795,7 @@ function OdovzdanieZaMesiac() {
             className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
-        <div className="text-sm">
+        <div className="min-w-0 text-sm">
           {prehlad === null ? (
             <span className="text-muted-foreground">{t("Zisťujem…")}</span>
           ) : !jeCo ? (
@@ -809,7 +817,10 @@ function OdovzdanieZaMesiac() {
                 {t(tvar(prehlad.spolu, "{n} faktúra", "{n} faktúry", "{n} faktúr"), {
                   n: prehlad.spolu,
                 })}{" "}
-                · {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
+                ·{" "}
+                <span className="suma whitespace-nowrap">
+                  {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
+                </span>
                 {prehlad.prijatych
                   ? ` · ${t(
                       tvar(
@@ -836,7 +847,7 @@ function OdovzdanieZaMesiac() {
                   ? ` · ${t("pokladňa {n}", { n: prehlad.pokladnicnych })}`
                   : ""}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 {zostava === 0
                   ? t("Všetko už bolo odovzdané.")
                   : t("Ešte neodovzdaných: {n}", { n: zostava })}
@@ -851,7 +862,7 @@ function OdovzdanieZaMesiac() {
           <button
             onClick={() => stiahni(false)}
             disabled={pracuje || !jeCo}
-            className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
           >
             {busy === "stiahnut" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -863,7 +874,7 @@ function OdovzdanieZaMesiac() {
           <button
             onClick={() => stiahni(true)}
             disabled={pracuje || !zostava}
-            className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
           >
             {busy === "odovzdat" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -875,7 +886,7 @@ function OdovzdanieZaMesiac() {
           <button
             onClick={posli}
             disabled={pracuje || !zostava}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {busy === "mail" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1057,7 +1068,7 @@ function ZauctovaneDoProgramu() {
   }
 
   return (
-    <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold">{t("Zaúčtované doklady do vášho programu")}</h2>
@@ -1068,12 +1079,12 @@ function ZauctovaneDoProgramu() {
           </p>
         </div>
         <label className="min-w-0 max-w-full text-sm">
-          <span className="block text-xs text-muted-foreground">{t("Účtovný program")}</span>
+          <span className="block text-sm font-semibold">{t("Účtovný program")}</span>
           <select
             aria-label={t("Účtovný program")}
             value={program}
             onChange={(e) => void zmenProgram(e.target.value)}
-            className="mt-1 w-full max-w-full rounded-md border border-border bg-background px-3 py-2 text-sm sm:w-auto"
+            className="mt-1 w-full max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-auto"
           >
             {PROGRAMY_UCTOVANIA.map((p) => (
               <option key={p.program} value={p.program}>
@@ -1085,7 +1096,7 @@ function ZauctovaneDoProgramu() {
       </div>
 
       {program === "pohoda" ? (
-        <p className="mt-4 rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
+        <p className="mt-4 rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
           {t(
             "Do Pohody idú zaúčtované doklady konektorom alebo mesačným balíkom nižšie; jednotlivo tlačidlom",
           )}{" "}
@@ -1095,7 +1106,7 @@ function ZauctovaneDoProgramu() {
       ) : (
         <>
           <div className="mt-4 flex flex-wrap items-end gap-3">
-            <div className="flex rounded-md border border-border p-0.5 text-sm">
+            <div className="flex max-w-full flex-wrap rounded-md border border-input bg-background p-0.5 text-sm">
               {(
                 [
                   ["vystavena", "Vystavené faktúry"],
@@ -1107,7 +1118,8 @@ function ZauctovaneDoProgramu() {
                   key={k}
                   type="button"
                   onClick={() => setAgenda(k)}
-                  className={`rounded px-3 py-1.5 ${agenda === k ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
+                  aria-pressed={agenda === k}
+                  className={`rounded px-3 py-1.5 font-medium ${agenda === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
                 >
                   {t(n)}
                 </button>
@@ -1157,14 +1169,14 @@ function ZauctovaneDoProgramu() {
             <button
               type="button"
               onClick={() => setOtvoreneNastavenia((o) => !o)}
-              className="ml-auto rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              className="ml-auto rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
               {t("Nastavenia pre {program}", { program: kratkyNazov })}
             </button>
           </div>
 
           {program === "datev" && (
-            <p className="mt-3 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+            <p className="mt-3 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
               {t(
                 "Súbor EXTF_Buchungsstapel… (Windows-1252) načíta DATEV Rechnungswesen cez Bestand → Importieren → ASCII-Daten / DATEV-Format, prípadne ho pošlite poradcovi do DATEV Unternehmen online. Jeden súbor smie obsahovať len doklady z jedného hospodárskeho roka. Pred prvým exportom vyplňte v nastaveniach Beraternummer a Mandantennummer.",
               )}
@@ -1187,7 +1199,7 @@ function ZauctovaneDoProgramu() {
 
           <div className="mt-4 max-h-96 overflow-auto rounded-lg border border-border">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="sticky top-0 z-[1] bg-muted text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="w-10 p-2">
                     <input
@@ -1231,12 +1243,13 @@ function ZauctovaneDoProgramu() {
                       />
                     </td>
                     <td className="p-2 font-medium">
-                      <span className="whitespace-nowrap">{r.cislo}</span>
+                      <span className="cislo-dokladu whitespace-nowrap">{r.cislo}</span>
                       <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
-                        {datumNaDoklade(r.datum)} · {formatujMenu(r.suma ?? 0, r.mena)}
+                        {datumNaDoklade(r.datum)} ·{" "}
+                        <span className="suma">{formatujMenu(r.suma ?? 0, r.mena)}</span>
                       </span>
                     </td>
-                    <td className="p-2">{r.partner ?? "—"}</td>
+                    <td className="min-w-[10rem] p-2 break-words">{r.partner ?? "—"}</td>
                     <td className="hidden whitespace-nowrap p-2 md:table-cell">
                       {datumNaDoklade(r.datum)}
                       {r.dodanie && r.dodanie !== r.datum ? (
@@ -1245,16 +1258,22 @@ function ZauctovaneDoProgramu() {
                         </span>
                       ) : null}
                     </td>
-                    <td className="hidden whitespace-nowrap p-2 text-right tabular-nums md:table-cell">
+                    <td className="suma hidden whitespace-nowrap p-2 text-right md:table-cell">
                       {formatujMenu(r.suma ?? 0, r.mena)}
                     </td>
-                    <td className="p-2 text-xs">
+                    <td className="whitespace-nowrap p-2 text-xs">
                       {r.odovzdany ? (
-                        <span className="text-emerald-700">{t("odovzdaný")}</span>
+                        <StavOdznak ton="uspech" maly>
+                          {t("odovzdaný")}
+                        </StavOdznak>
                       ) : r.zauctovany ? (
-                        <span className="text-sky-700">{t("zaúčtovaný")}</span>
+                        <StavOdznak ton="informacia" maly>
+                          {t("zaúčtovaný")}
+                        </StavOdznak>
                       ) : (
-                        <span className="text-muted-foreground">{t("predvolené kódy")}</span>
+                        <StavOdznak ton="neutralny" maly>
+                          {t("predvolené kódy")}
+                        </StavOdznak>
                       )}
                     </td>
                   </tr>
@@ -1276,7 +1295,7 @@ function ZauctovaneDoProgramu() {
               type="button"
               onClick={spusti}
               disabled={busy || !ids.length}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

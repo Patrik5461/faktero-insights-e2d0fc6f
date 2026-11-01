@@ -6,6 +6,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createCashEntry, deleteCashEntry, getCashBook } from "@/lib/faktero/pokladna.functions";
 import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
@@ -29,6 +31,9 @@ function sumaSoZnamienkom(r: { typ: string; suma: number }) {
   const n = Math.abs(Number(r.suma) || 0);
   return r.typ === "prijem" ? `+${suma(n)}` : suma(-n);
 }
+
+/** Kladný pohyb (príjem) — zelený text stavového tónu „úspech“ (svetlý aj tmavý motív). */
+const TEXT_PRIJMU = "text-[color:var(--stav-uspech-text)]";
 
 function tentoMesiac() {
   return new Date().toISOString().slice(0, 7);
@@ -128,7 +133,7 @@ function PokladnaPage() {
             <button
               type="button"
               onClick={() => setOtvoreny((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nový pokladničný doklad")}
             </button>
@@ -137,18 +142,18 @@ function PokladnaPage() {
       />
       <PageBody>
         {chyba && (
-          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {chyba}
           </div>
         )}
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Wallet className="h-4 w-4" /> {t("Stav pokladne")}
             </div>
             <div
-              className={`mt-1 text-2xl font-semibold tabular-nums ${
+              className={`suma mt-1 text-2xl ${
                 stav?.zaporny ? "text-destructive" : ""
               }`}
             >
@@ -161,18 +166,18 @@ function PokladnaPage() {
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               {t("Príjmy spolu")}
             </div>
-            <div className="mt-1 text-xl font-semibold tabular-nums text-emerald-700">
+            <div className={`suma mt-1 text-xl ${TEXT_PRIJMU}`}>
               {suma(stav?.prijmy ?? 0)}
             </div>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               {t("Výdavky spolu")}
             </div>
-            <div className="mt-1 text-xl font-semibold tabular-nums">
+            <div className="suma mt-1 text-xl">
               {suma(stav?.vydavky ?? 0)}
             </div>
           </div>
@@ -181,7 +186,7 @@ function PokladnaPage() {
         {otvoreny && (
           <form
             onSubmit={uloz}
-            className="mt-4 grid max-w-3xl gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2"
+            className="grid max-w-3xl gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-5"
           >
             <label className="block">
               <span className="mb-1 block text-xs text-muted-foreground">{t("Druh")}</span>
@@ -246,7 +251,7 @@ function PokladnaPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {busy ? t("Ukladám…") : t("Uložiť doklad")}
               </button>
@@ -254,7 +259,7 @@ function PokladnaPage() {
           </form>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">{t("Obdobie")}</span>
             <input
@@ -264,7 +269,7 @@ function PokladnaPage() {
               className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
             />
           </label>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground tabular-nums">
             {t("Zostatok na začiatku obdobia: {suma}", {
               suma: suma(data?.pociatocny_stav_obdobia ?? 0),
             })}
@@ -272,52 +277,58 @@ function PokladnaPage() {
         </div>
 
         {loading ? (
-          <div className="mt-4 text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <div className="rounded-xl border border-border bg-card">
+            <NacitavanieStav />
+          </div>
         ) : (data?.riadky ?? []).length === 0 ? (
-          <div className="mt-4 rounded-xl border border-border bg-card p-8 text-center">
-            <Wallet className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <div className="text-sm text-muted-foreground">
-              {t("V tomto období nie je v pokladni žiadny pohyb.")}
-            </div>
-            <p className="mx-auto mt-2 max-w-lg text-xs text-muted-foreground">
-              {t("Do pokladne vstupujú pokladničné doklady a")}{" "}
-              <Link to="/doklady" className="text-primary hover:underline">
-                {t("doklady zaplatené v hotovosti")}
-              </Link>
-              {t(". Doklad zaplatený kartou alebo prevodom hotovosť neuberá.")}
-            </p>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={Wallet}
+              title="V tomto období nie je v pokladni žiadny pohyb."
+              action={
+                <p className="mx-auto -mt-3 max-w-lg text-sm text-muted-foreground">
+                  {t("Do pokladne vstupujú pokladničné doklady a")}{" "}
+                  <Link to="/doklady" className="text-primary hover:underline">
+                    {t("doklady zaplatené v hotovosti")}
+                  </Link>
+                  {t(". Doklad zaplatený kartou alebo prevodom hotovosť neuberá.")}
+                </p>
+              }
+            />
           </div>
         ) : (
           <>
-            <div className="mt-4 hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
               <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
-                    <th className="p-3">{t("Dátum")}</th>
-                    <th className="p-3">{t("Číslo")}</th>
-                    <th className="p-3">{t("Popis")}</th>
-                    <th className="p-3">{t("Zdroj")}</th>
-                    <th className="p-3 text-right">{t("Suma")}</th>
-                    <th className="p-3 text-right">{t("Zostatok")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Dátum")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Číslo")}</th>
+                    <th className="px-3 py-2.5">{t("Popis")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5">{t("Zdroj")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right">{t("Suma")}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right">{t("Zostatok")}</th>
                     <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {(data?.riadky ?? []).map((r: any) => (
                     <tr key={`${r.zdroj}-${r.id}`} className="hover:bg-muted/30">
-                      <td className="p-3 text-muted-foreground">{formatujDatum(r.datum)}</td>
-                      <td className="p-3">{r.cislo || "—"}</td>
+                      <td className="whitespace-nowrap p-3 text-muted-foreground">{formatujDatum(r.datum)}</td>
+                      <td className="whitespace-nowrap p-3">
+                        {r.cislo ? <span className="cislo-dokladu">{r.cislo}</span> : "—"}
+                      </td>
                       <td className="p-3">
                         <span className="inline-flex items-center gap-1.5">
                           {r.typ === "prijem" ? (
-                            <ArrowDownCircle className="h-4 w-4 text-emerald-700" />
+                            <ArrowDownCircle className={`h-4 w-4 shrink-0 ${TEXT_PRIJMU}`} />
                           ) : (
-                            <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+                            <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                           )}
                           {r.popis}
                         </span>
                       </td>
-                      <td className="p-3 text-xs text-muted-foreground">
+                      <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
                         {r.zdroj === "doklad" ? (
                           <Link to="/doklady" className="hover:underline">
                             {t("Doklad v hotovosti")}
@@ -327,13 +338,13 @@ function PokladnaPage() {
                         )}
                       </td>
                       <td
-                        className={`p-3 text-right tabular-nums ${
-                          r.typ === "prijem" ? "text-emerald-700" : ""
+                        className={`suma p-3 text-right ${
+                          r.typ === "prijem" ? TEXT_PRIJMU : ""
                         }`}
                       >
                         {sumaSoZnamienkom(r)}
                       </td>
-                      <td className="p-3 text-right font-medium tabular-nums">
+                      <td className="suma p-3 text-right">
                         {suma(r.zostatok)}
                       </td>
                       <td className="p-3 text-right">
@@ -342,7 +353,8 @@ function PokladnaPage() {
                             type="button"
                             disabled={busy}
                             onClick={() => zmaz(r.id)}
-                            className="text-destructive hover:underline disabled:opacity-50"
+                            className="rounded-md p-1 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                            aria-label={t("Zmazať doklad")}
                             title={t("Zmazať doklad")}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -356,7 +368,7 @@ function PokladnaPage() {
             </div>
 
             {/* Na mobile karty — tabuľka by Zdroj, Sumu a Zostatok orezala. */}
-            <div className="mt-4 space-y-2 md:hidden">
+            <div className="space-y-2 md:hidden">
               {(data?.riadky ?? []).map((r: any) => (
                 <div
                   key={`${r.zdroj}-${r.id}`}
@@ -365,28 +377,26 @@ function PokladnaPage() {
                   <div className="flex items-start justify-between gap-2">
                     <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
                       {r.typ === "prijem" ? (
-                        <ArrowDownCircle className="h-4 w-4 shrink-0 text-emerald-700" />
+                        <ArrowDownCircle className={`h-4 w-4 shrink-0 ${TEXT_PRIJMU}`} />
                       ) : (
                         <ArrowUpCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
                       <span className="min-w-0 break-words">{r.popis}</span>
                     </span>
                     <span
-                      className={`shrink-0 whitespace-nowrap font-semibold tabular-nums ${
-                        r.typ === "prijem" ? "text-emerald-700" : ""
-                      }`}
+                      className={`suma shrink-0 ${r.typ === "prijem" ? TEXT_PRIJMU : ""}`}
                     >
                       {sumaSoZnamienkom(r)}
                     </span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span>
+                    <span className="whitespace-nowrap">
                       {formatujDatum(r.datum)}
-                      {r.cislo ? ` · ${r.cislo}` : ""}
+                      {r.cislo ? <span className="cislo-dokladu">{` · ${r.cislo}`}</span> : ""}
                     </span>
                     <span className="whitespace-nowrap">
                       {t("Zostatok:")}{" "}
-                      <strong className="text-foreground tabular-nums">{suma(r.zostatok)}</strong>
+                      <strong className="suma text-foreground">{suma(r.zostatok)}</strong>
                     </span>
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -417,7 +427,7 @@ function PokladnaPage() {
         )}
 
         {data?.locked_until && (
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {t(
               "Obdobie je uzamknuté do {datum} — doklady s tým a starším dátumom sa už nedajú pridať ani zmazať.",
               { datum: formatujDatum(data.locked_until) },

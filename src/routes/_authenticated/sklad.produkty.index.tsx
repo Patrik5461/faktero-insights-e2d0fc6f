@@ -28,6 +28,7 @@ import {
   X,
   Check,
   Settings,
+  Package,
 } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
@@ -36,6 +37,8 @@ import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
   head: ({ match }) => ({
@@ -623,7 +626,7 @@ function StockItemsPage() {
                 onClick={() => setExportOpen((o) => !o)}
                 aria-haspopup="menu"
                 aria-expanded={exportOpen}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
               >
                 <Download className="h-4 w-4" /> {t("Export skladu")}{" "}
                 <ChevronDown className="h-3 w-3" />
@@ -631,17 +634,17 @@ function StockItemsPage() {
               {exportOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md"
+                  className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-popover p-1 shadow-lg"
                 >
                   <button
                     onClick={() => exportStock("csv")}
-                    className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
                   >
                     CSV (.csv)
                   </button>
                   <button
                     onClick={() => exportStock("xlsx")}
-                    className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                    className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
                   >
                     Excel (.xlsx)
                   </button>
@@ -650,19 +653,19 @@ function StockItemsPage() {
             </div>
             <Link
               to="/sklad/import"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
             >
               <Upload className="h-4 w-4" /> {t("Import skladu")}
             </Link>
             <button
               onClick={openCreate}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Pridať tovar")}
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-card p-2 hover:bg-secondary"
+              className="inline-flex items-center justify-center rounded-md border border-input bg-card p-2 hover:bg-accent"
               title={t("Nastavenia skladu (kategórie, sklady)")}
               aria-label={t("Nastavenia skladu")}
             >
@@ -673,7 +676,7 @@ function StockItemsPage() {
       />
       <PageBody>
         {SHOW_STOCK_DEBUG && (
-          <div className="mb-4 rounded-lg border border-amber-300/50 bg-amber-50 p-3 text-xs text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
+          <div className="mb-4 rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-foreground">
             <div className="mb-2 font-semibold">Sklad diagnostika</div>
             <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-4">
               <DebugLine
@@ -725,7 +728,7 @@ function StockItemsPage() {
           </div>
         )}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -735,7 +738,7 @@ function StockItemsPage() {
             <select
               value={warehouseFilter}
               onChange={(e) => setWarehouseFilter(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">{t("Všetky sklady")}</option>
               {warehouses.map((w) => (
@@ -747,7 +750,7 @@ function StockItemsPage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">{t("Všetky kategórie")}</option>
               <option value="__none__">{t("Bez kategórie")}</option>
@@ -758,16 +761,17 @@ function StockItemsPage() {
               ))}
             </select>
             {urlFilter === "low_stock" && (
-              <div className="inline-flex items-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-300">
-                <AlertTriangle className="h-3.5 w-3.5" /> {t("Filter: pod minimom")}
+              <div className="inline-flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-medium text-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 text-warning" /> {t("Filter: pod minimom")}
                 <Link to="/sklad/produkty" className="text-primary hover:underline">
                   × {t("zrušiť")}
                 </Link>
               </div>
             )}
-            <label className="inline-flex items-center gap-2 text-sm">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
               <input
                 type="checkbox"
+                className="accent-primary"
                 checked={showArchived}
                 onChange={(e) => {
                   setShowArchived(e.target.checked);
@@ -777,15 +781,15 @@ function StockItemsPage() {
               {t("Archivované")}
             </label>
           </div>
-          <Link to="/produkty" className="text-sm text-primary hover:underline">
+          <Link to="/produkty" className="text-sm font-medium text-primary hover:underline">
             {t("Spravovať produkty →")}
           </Link>
         </div>
 
         {selectedIds.length > 0 && (
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
             <div className="text-sm">
-              <span className="font-medium">{selectedIds.length}</span> {t("vybraných")}
+              <span className="font-semibold tabular-nums">{selectedIds.length}</span> {t("vybraných")}
               <button
                 onClick={clearSelection}
                 className="ml-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -797,7 +801,7 @@ function StockItemsPage() {
               <button
                 disabled={bulkBusy}
                 onClick={bulkExportCsv}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-60"
               >
                 <Download className="h-3.5 w-3.5" /> {t("Export CSV")}
               </button>
@@ -805,7 +809,7 @@ function StockItemsPage() {
                 <button
                   disabled={bulkBusy}
                   onClick={bulkRestore}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-60"
                 >
                   <ArchiveRestore className="h-3.5 w-3.5" /> {t("Obnoviť z archívu")}
                 </button>
@@ -813,7 +817,7 @@ function StockItemsPage() {
                 <button
                   disabled={bulkBusy}
                   onClick={bulkArchive}
-                  className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/20 disabled:opacity-60"
                 >
                   <Archive className="h-3.5 w-3.5" /> {t("Archivovať vybrané")}
                 </button>
@@ -825,13 +829,14 @@ function StockItemsPage() {
         <p className="mb-2 text-xs text-muted-foreground md:hidden">
           {t("Tabuľka má viac stĺpcov — posuňte ju prstom do strany.")}
         </p>
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
               <tr className="whitespace-nowrap">
                 <th className="p-3 w-10">
                   <input
                     type="checkbox"
+                    className="accent-primary"
                     checked={allOnPageSelected}
                     onChange={(e) => toggleSelectAll(e.target.checked)}
                     aria-label={t("Vybrať všetky")}
@@ -855,15 +860,18 @@ function StockItemsPage() {
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-muted-foreground">
-                    {t("Načítavam…")}
+                  <td colSpan={10} className="p-0">
+                    <NacitavanieStav />
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-muted-foreground">
-                    {showArchived ? t("Žiadne archivované karty.") : t("Žiadne skladové karty.")}
+                  <td colSpan={10} className="p-0">
+                    <EmptyState
+                      icon={showArchived ? Archive : Package}
+                      title={showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}
+                    />
                   </td>
                 </tr>
               )}
@@ -885,14 +893,15 @@ function StockItemsPage() {
                     <td className="p-3">
                       <input
                         type="checkbox"
+                        className="accent-primary"
                         checked={!!selected[s.id]}
                         onChange={() => toggleSelect(s.id)}
                         aria-label={t("Vybrať {kod}", { kod: s.sku ?? "" })}
                       />
                     </td>
-                    <td className="p-3 whitespace-nowrap font-medium">{s.sku ?? "—"}</td>
+                    <td className="p-3 whitespace-nowrap font-medium tabular-nums">{s.sku ?? "—"}</td>
                     <td
-                      className="min-w-[10rem] p-3 text-muted-foreground"
+                      className="min-w-[10rem] max-w-[22rem] break-words p-3 text-foreground"
                       onDoubleClick={() => {
                         if (isArchived) return;
                         setEditingNameId(s.id);
@@ -911,13 +920,13 @@ function StockItemsPage() {
                               if (e.key === "Escape") setEditingNameId(null);
                             }}
                             onBlur={() => commitInlineName(s)}
-                            className="w-full rounded border border-input bg-background px-2 py-1 text-sm"
+                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
                           />
                           <button
                             aria-label={t("Uložiť")}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => commitInlineName(s)}
-                            className="rounded p-1 hover:bg-muted"
+                            className="rounded-md p-1 hover:bg-accent"
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
@@ -933,27 +942,27 @@ function StockItemsPage() {
                       {reserved > 0 ? formatujCislo(reserved, 0, 2) : "—"}
                     </td>
                     <td
-                      className={`p-3 text-right tabular-nums whitespace-nowrap ${belowAvail ? "font-semibold text-amber-700" : ""}`}
+                      className={`p-3 text-right tabular-nums whitespace-nowrap ${belowAvail ? "font-semibold text-warning" : ""}`}
                     >
-                      {belowAvail && <AlertTriangle className="mr-1 inline h-3 w-3" />}
+                      {belowAvail && <AlertTriangle className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />}
                       {formatujCislo(available, 0, 2)}
                     </td>
                     <td className="p-3 text-right tabular-nums whitespace-nowrap">
                       {formatujCislo(s.min_stock, 0, 2)}
                     </td>
-                    <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                    <td className="suma p-3 text-right whitespace-nowrap">
                       {formatujJednotkovuCenu(s.purchase_price, mena.kod)}
                     </td>
-                    <td className="p-3 text-right tabular-nums whitespace-nowrap text-muted-foreground">
+                    <td className="suma p-3 text-right font-normal whitespace-nowrap text-muted-foreground">
                       {s.avg_purchase_price != null
                         ? formatujJednotkovuCenu(s.avg_purchase_price, mena.kod)
                         : "—"}
                     </td>
-                    <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                    <td className="suma p-3 text-right whitespace-nowrap">
                       {formatujJednotkovuCenu(s.sale_price, mena.kod)}
                     </td>
-                    <td className="p-3 text-right">
-                      <div className="inline-flex items-center gap-1">
+                    <td className="p-2 text-right">
+                      <div className="inline-flex items-center gap-0.5">
                         {isArchived ? (
                           <>
                             <button
@@ -969,14 +978,14 @@ function StockItemsPage() {
                                 toast.success(t("Obnovené"));
                                 load();
                               }}
-                              className="rounded p-1.5 hover:bg-muted"
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               title={t("Obnoviť z archívu")}
                             >
                               <ArchiveRestore className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => zmazKartu(s)}
-                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                              className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                               title={t("Zmazať natrvalo")}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -992,7 +1001,7 @@ function StockItemsPage() {
                               <Link
                                 to="/sklad/produkty/$id"
                                 params={{ id: s.product_id }}
-                                className="rounded p-1.5 hover:bg-muted"
+                                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                                 title={t("Skladová karta")}
                               >
                                 <FileText className="h-4 w-4" />
@@ -1001,14 +1010,14 @@ function StockItemsPage() {
                             <Link
                               to="/sklad/prijem"
                               search={{ polozka: s.id }}
-                              className="rounded p-1.5 hover:bg-muted"
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               title={t("Naskladniť")}
                             >
                               <Plus className="h-4 w-4" />
                             </Link>
                             <button
                               onClick={() => setEditing(s)}
-                              className="rounded p-1.5 hover:bg-muted"
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               title={t("Upraviť")}
                             >
                               <Pencil className="h-4 w-4" />
@@ -1027,7 +1036,7 @@ function StockItemsPage() {
                                 toast.success(t("Archivované"));
                                 load();
                               }}
-                              className="rounded p-1.5 hover:bg-muted text-destructive"
+                              className="rounded-md p-1.5 text-destructive hover:bg-destructive/10"
                               title={t("Archivovať")}
                             >
                               <Archive className="h-4 w-4" />
@@ -1046,14 +1055,14 @@ function StockItemsPage() {
 
       {editing && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+          className={`fixed inset-0 z-50 grid place-items-center p-4 bg-[var(--w-prekrytie,rgb(0_0_0/0.4))] backdrop-blur-[2px]`}
           onClick={() => setEditing(null)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label={t("Skladová karta")}
-            className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            className="w-full max-w-2xl rounded-2xl border border-border bg-popover p-5 shadow-2xl sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
@@ -1067,7 +1076,7 @@ function StockItemsPage() {
               className="mt-4 grid gap-3 sm:grid-cols-2"
             >
               <label className="block sm:col-span-2">
-                <span className="text-sm font-medium">{t("Produkt")}</span>
+                <span className="text-sm font-semibold">{t("Produkt")}</span>
                 <select
                   value={editing.product_id ?? ""}
                   onChange={(e) => setEditing({ ...editing, product_id: e.target.value || null })}
@@ -1129,10 +1138,10 @@ function StockItemsPage() {
                   riadok, ktorý ho zmenil. Doteraz to ale nikde nebolo povedané
                   a z tohto okna neviedla na naskladnenie žiadna cesta.
                 */
-                <div className="sm:col-span-2 rounded-lg border border-border bg-muted/20 p-3">
+                <div className="sm:col-span-2 rounded-xl border border-border bg-muted/40 p-3 sm:p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      <div className="text-sm text-muted-foreground">
                         {t("Stav na sklade")}
                       </div>
                       <div className="text-lg font-semibold tabular-nums">
@@ -1143,14 +1152,14 @@ function StockItemsPage() {
                       <Link
                         to="/sklad/prijem"
                         search={{ polozka: editing.id }}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                       >
                         <Plus className="h-4 w-4" /> {t("Naskladniť")}
                       </Link>
                       <Link
                         to="/sklad/vydaj"
                         search={{ polozka: editing.id }}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                       >
                         {t("Vydať")}
                       </Link>
@@ -1167,9 +1176,10 @@ function StockItemsPage() {
                   </p>
                 </div>
               )}
-              <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm">
+              <label className="sm:col-span-2 inline-flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  className="accent-primary"
                   checked={editing.track_stock}
                   onChange={(e) => setEditing({ ...editing, track_stock: e.target.checked })}
                 />
@@ -1179,22 +1189,22 @@ function StockItemsPage() {
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+                  className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
                 >
                   {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   {t("Uložiť")}
                 </button>
               </div>
             </form>
             {editing.id && (
-              <div className="mt-5 rounded-lg border border-border bg-muted/20 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <div className="inline-flex items-center gap-2 text-sm font-medium">
+              <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="inline-flex items-center gap-2 text-sm font-semibold">
                     <History className="h-4 w-4" /> {t("Posledné pohyby")}
                   </div>
                   <Link
@@ -1210,16 +1220,16 @@ function StockItemsPage() {
                 ) : (
                   <ul className="space-y-1 text-xs">
                     {recentMovements.map((m) => (
-                      <li key={m.id} className="flex items-center justify-between">
-                        <span className="text-muted-foreground">
+                      <li key={m.id} className="flex items-center justify-between gap-3">
+                        <span className="whitespace-nowrap tabular-nums text-muted-foreground">
                           {new Date(m.created_at).toLocaleString("sk-SK")}
                         </span>
                         <span className="font-medium">{m.type}</span>
                         <span
                           className={
                             pohybDelta(m.type, m.quantity) >= 0
-                              ? "text-emerald-700 tabular-nums"
-                              : "text-destructive tabular-nums"
+                              ? "font-medium text-primary tabular-nums"
+                              : "font-medium text-destructive tabular-nums"
                           }
                         >
                           {pohybText(m.type, m.quantity)}
@@ -1236,14 +1246,14 @@ function StockItemsPage() {
 
       {creating && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 overflow-y-auto"
+          className={`fixed inset-0 z-50 grid place-items-center p-4 overflow-y-auto bg-[var(--w-prekrytie,rgb(0_0_0/0.4))] backdrop-blur-[2px]`}
           onClick={() => !saving && setCreating(null)}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label={t("Nová položka na sklad")}
-            className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 my-8 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            className="w-full max-w-2xl rounded-2xl border border-border bg-popover p-5 shadow-2xl sm:p-6 my-8 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">{t("Pridať tovar")}</h2>
@@ -1260,7 +1270,7 @@ function StockItemsPage() {
               className="mt-4 grid gap-3 sm:grid-cols-2"
             >
               <label className="block sm:col-span-2">
-                <span className="text-sm font-medium">{t("Názov *")}</span>
+                <span className="text-sm font-semibold">{t("Názov *")}</span>
                 <input
                   required
                   autoFocus
@@ -1310,21 +1320,22 @@ function StockItemsPage() {
                 value={String(creating.min_stock)}
                 onChange={(v) => setCreating({ ...creating, min_stock: Number(v) || 0 })}
               />
-              <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm">
+              <label className="sm:col-span-2 inline-flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
+                  className="accent-primary"
                   checked={creating.track_stock}
                   onChange={(e) => setCreating({ ...creating, track_stock: e.target.checked })}
                 />
                 {t("Sledovať sklad")}
               </label>
-              <div className="sm:col-span-2 mt-2 rounded-lg border border-border bg-muted/20 p-3">
-                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="sm:col-span-2 mt-2 rounded-xl border border-border bg-muted/40 p-3 sm:p-4">
+                <div className="mb-2 text-sm font-semibold">
                   {t("Počiatočný stav (voliteľné)")}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-sm font-medium">{t("Sklad")}</span>
+                    <span className="text-sm font-semibold">{t("Sklad")}</span>
                     <select
                       value={creating.warehouse_id}
                       onChange={(e) => setCreating({ ...creating, warehouse_id: e.target.value })}
@@ -1350,14 +1361,14 @@ function StockItemsPage() {
                   type="button"
                   disabled={saving}
                   onClick={() => setCreating(null)}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+                  className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-60"
                 >
                   {t("Zrušiť")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                 >
                   {saving ? t("Ukladám…") : t("Pridať tovar")}
                 </button>
@@ -1388,7 +1399,7 @@ function In({
   const { t } = useT();
   return (
     <label className="block">
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <input
         type={type}
         step={step}

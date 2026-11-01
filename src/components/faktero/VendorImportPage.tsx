@@ -120,7 +120,7 @@ export function VendorImportPage(props: {
         action={
           <Link
             to="/importy"
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
           >
             <History className="h-4 w-4" /> {t("História importov")}
           </Link>
@@ -131,15 +131,15 @@ export function VendorImportPage(props: {
           {step === 1 && (
             <>
               {props.selector}
-              <section className="rounded-2xl border border-border bg-card p-6">
+              <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
                 <h2 className="text-base font-semibold">{t("Návod na export")}</h2>
                 <div className="mt-3 space-y-2 text-sm text-muted-foreground">{props.guide}</div>
               </section>
-              <section className="rounded-2xl border border-border bg-card p-6">
+              <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
                 <h2 className="text-base font-semibold">{t("Nahrajte súbor")}</h2>
-                <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-10 text-sm hover:border-primary/50">
+                <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-input bg-muted/40 px-6 py-10 text-center text-sm transition-colors hover:border-primary/60 hover:bg-primary/5">
                   <Upload className="h-8 w-8 text-primary" />
-                  <span className="font-medium">
+                  <span className="max-w-full break-all font-medium">
                     {file ? file.name : t("Vyberte alebo presuňte súbor")}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -156,7 +156,7 @@ export function VendorImportPage(props: {
                   <button
                     onClick={handleUpload}
                     disabled={!file || busy}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -171,7 +171,7 @@ export function VendorImportPage(props: {
           )}
 
           {step === 2 && preview && (
-            <section className="rounded-2xl border border-border bg-card p-6">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
               <h2 className="text-base font-semibold">{t("Náhľad")}</h2>
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Stat label="Faktúry" value={preview.invoicesCount} />
@@ -180,8 +180,8 @@ export function VendorImportPage(props: {
                 <Stat label="Hodnota" value={formatujMenu(preview.totalValue, preview.currency)} />
               </div>
               {(preview.storna > 0 || preview.stornujuce > 0) && (
-                <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <p className="mt-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                   <span className="min-w-0">
                     {t(
                       "Súbor obsahuje storná ({n}). Stornovaný doklad sa vo Fakteri označí ako stornovaný, stornujúci doklad sa neimportuje.",
@@ -193,23 +193,23 @@ export function VendorImportPage(props: {
               {preview.sampleInvoices?.length > 0 && (
                 <div className="mt-5 overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-sm">
-                    <thead className="bg-secondary/40 text-xs text-muted-foreground">
+                    <thead className="bg-muted/40 text-xs text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 text-left">{t("Číslo")}</th>
                         <th className="px-3 py-2 text-left">{t("Odberateľ")}</th>
                         <th className="px-3 py-2 text-left">{t("Dátum")}</th>
-                        <th className="px-3 py-2 text-right">{t("Suma")}</th>
+                        <th className="whitespace-nowrap px-3 py-2 text-right">{t("Suma")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {preview.sampleInvoices.map((s: any, i: number) => (
                         <tr key={i} className="border-t border-border">
-                          <td className="px-3 py-2">{s.invoice_number}</td>
-                          <td className="px-3 py-2">{s.customer_name || "—"}</td>
+                          <td className="cislo-dokladu whitespace-nowrap px-3 py-2">{s.invoice_number}</td>
+                          <td className="min-w-[10rem] px-3 py-2 break-words">{s.customer_name || "—"}</td>
                           <td className="whitespace-nowrap px-3 py-2">
                             {s.issue_date ? datumNaDoklade(s.issue_date) : "—"}
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums">
+                          <td className="suma whitespace-nowrap px-3 py-2 text-right">
                             {formatujMenu(s.total, preview.currency)}
                           </td>
                         </tr>
@@ -218,16 +218,16 @@ export function VendorImportPage(props: {
                   </table>
                 </div>
               )}
-              <div className="mt-5 flex justify-between">
+              <div className="mt-5 flex flex-wrap justify-between gap-2">
                 <button
                   onClick={() => setStep(1)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
                 >
                   <ArrowLeft className="h-4 w-4" /> {t("Späť")}
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   {t("Pokračovať")} <ArrowRight className="h-4 w-4" />
                 </button>
@@ -236,11 +236,11 @@ export function VendorImportPage(props: {
           )}
 
           {step === 3 && preview && (
-            <section className="rounded-2xl border border-border bg-card p-6 space-y-5">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-5">
               <h2 className="text-base font-semibold">{t("Potvrdenie a možnosti")}</h2>
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+              <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-800" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                   <div>
                     <p className="font-medium">{t("Upozornenie")}</p>
                     <p className="text-muted-foreground">
@@ -250,17 +250,17 @@ export function VendorImportPage(props: {
                 </div>
               </div>
               <ImportOptions options={options} setOptions={setOptions} />
-              <div className="flex justify-between">
+              <div className="flex flex-wrap justify-between gap-2">
                 <button
                   onClick={() => setStep(2)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
                 >
                   <ArrowLeft className="h-4 w-4" /> {t("Späť")}
                 </button>
                 <button
                   onClick={handleRun}
                   disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -274,7 +274,7 @@ export function VendorImportPage(props: {
           )}
 
           {step === 4 && result && (
-            <section className="rounded-2xl border border-border bg-card p-6 text-center">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-5 text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
               <h2 className="mt-3 text-lg font-semibold">{t("Import dokončený")}</h2>
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -289,9 +289,9 @@ export function VendorImportPage(props: {
                 </p>
               )}
               {result.upozornenia?.length > 0 && (
-                <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-left text-sm">
+                <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-left text-sm">
                   <p className="flex items-center gap-2 font-medium">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                     {t("Na čo dať pozor")}
                   </p>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -304,16 +304,16 @@ export function VendorImportPage(props: {
                 </div>
               )}
               <CislovaniePoImporte rady={(result as any).ciselneRady} />
-              <div className="mt-6 flex justify-center gap-2">
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <Link
                   to="/faktury"
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
                 >
                   {t("Prejsť na faktúry")}
                 </Link>
                 <Link
                   to="/importy"
-                  className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+                  className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
                 >
                   {t("História importov")}
                 </Link>
@@ -329,9 +329,9 @@ export function VendorImportPage(props: {
 function Stat({ label, value }: { label: string; value: any }) {
   const { t } = useT();
   return (
-    <div className="rounded-lg border border-border bg-background p-3">
-      <div className="text-xs text-muted-foreground">{t(label)}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
+    <div className="min-w-0 rounded-lg border border-border bg-background p-3 text-left">
+      <div className="text-sm text-muted-foreground">{t(label)}</div>
+      <div className="suma mt-1 break-words text-xl font-semibold">{value}</div>
     </div>
   );
 }

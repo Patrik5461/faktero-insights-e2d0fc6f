@@ -7,12 +7,14 @@ import {
   listDeliveryNoteImportsFn,
   getDeliveryNoteSignedUrlFn,
 } from "@/lib/faktero/ai-delivery-note.functions";
-import { FileText, ExternalLink, ScanLine } from "lucide-react";
+import { FileText, ExternalLink, ScanLine, SearchX } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodacie-listy")({
   head: ({ match }) => ({
@@ -85,7 +87,7 @@ function DeliveryNoteHistoryPage() {
         action={
           <Link
             to="/sklad/dodaci-list"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
           >
             <ScanLine className="h-4 w-4" /> {t("Nový sken")}
           </Link>
@@ -98,14 +100,14 @@ function DeliveryNoteHistoryPage() {
           filters={[{ key: "obdobie", label: "Obdobie", type: "dateRange" }]}
         />
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav />
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {t("Zatiaľ žiadne AI importy dodacích listov.")}
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState icon={ScanLine} title="Zatiaľ žiadne AI importy dodacích listov." />
           </div>
         ) : zobrazene.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {t("Nič nevyhovuje filtru.")}
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState icon={SearchX} title="Nič nevyhovuje filtru." />
           </div>
         ) : (
           <>
@@ -116,15 +118,15 @@ function DeliveryNoteHistoryPage() {
                 const c = m.counts ?? {};
                 const items = Array.isArray(m.items) ? m.items.length : 0;
                 return (
-                  <div key={r.id} className="rounded-xl border border-border bg-card p-3 text-sm">
+                  <div key={r.id} className="rounded-xl border border-border bg-card p-4 text-sm">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-medium break-words">{m.supplier ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="break-words font-semibold">{m.supplier ?? "—"}</div>
+                        <div className="text-xs tabular-nums text-muted-foreground">
                           {new Date(r.created_at).toLocaleString("sk-SK")}
                         </div>
                       </div>
-                      <span className="whitespace-nowrap text-xs font-medium">
+                      <span className="cislo-dokladu whitespace-nowrap text-xs">
                         {m.delivery_number ?? "—"}
                       </span>
                     </div>
@@ -135,7 +137,7 @@ function DeliveryNoteHistoryPage() {
                       {m.storage_path && (
                         <button
                           onClick={() => openDoc(m.storage_path)}
-                          className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline"
+                          className="inline-flex min-w-0 items-center gap-1 font-semibold text-primary hover:underline"
                         >
                           <FileText className="h-3.5 w-3.5 shrink-0" />
                           <span className="truncate">{m.source_filename ?? t("otvoriť")}</span>
@@ -149,14 +151,14 @@ function DeliveryNoteHistoryPage() {
             </div>
             <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr>
-                    <th className="p-2 text-left">{t("Dátum")}</th>
-                    <th className="p-2 text-left">{t("Dodávateľ")}</th>
-                    <th className="p-2 text-left">{t("Číslo DL")}</th>
-                    <th className="p-2 text-right">{t("Položiek")}</th>
-                    <th className="p-2 text-right">{t("sklad::Pohybov")}</th>
-                    <th className="p-2 text-left">{t("Dokument")}</th>
+                    <th className="p-3 text-left">{t("Dátum")}</th>
+                    <th className="p-3 text-left">{t("Dodávateľ")}</th>
+                    <th className="p-3 text-left">{t("Číslo DL")}</th>
+                    <th className="p-3 text-right">{t("Položiek")}</th>
+                    <th className="p-3 text-right">{t("sklad::Pohybov")}</th>
+                    <th className="p-3 text-left">{t("Dokument")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -166,22 +168,23 @@ function DeliveryNoteHistoryPage() {
                     const items = Array.isArray(m.items) ? m.items.length : 0;
                     return (
                       <tr key={r.id}>
-                        <td className="p-2 whitespace-nowrap">
+                        <td className="whitespace-nowrap p-3 tabular-nums text-muted-foreground">
                           {new Date(r.created_at).toLocaleString("sk-SK")}
                         </td>
-                        <td className="p-2">{m.supplier ?? "—"}</td>
-                        <td className="p-2 whitespace-nowrap">{m.delivery_number ?? "—"}</td>
-                        <td className="p-2 text-right">{items}</td>
-                        <td className="p-2 text-right">{c.movements ?? "—"}</td>
-                        <td className="p-2">
+                        <td className="max-w-[18rem] break-words p-3 font-medium">{m.supplier ?? "—"}</td>
+                        <td className="cislo-dokladu whitespace-nowrap p-3">{m.delivery_number ?? "—"}</td>
+                        <td className="p-3 text-right tabular-nums">{items}</td>
+                        <td className="p-3 text-right tabular-nums">{c.movements ?? "—"}</td>
+                        <td className="max-w-[16rem] p-3">
                           {m.storage_path ? (
                             <button
                               onClick={() => openDoc(m.storage_path)}
-                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              className="inline-flex max-w-full items-center gap-1 text-primary hover:underline"
+                              title={m.source_filename ?? undefined}
                             >
-                              <FileText className="h-3.5 w-3.5" />{" "}
-                              {m.source_filename ?? t("otvoriť")}{" "}
-                              <ExternalLink className="h-3 w-3" />
+                              <FileText className="h-3.5 w-3.5 shrink-0" />{" "}
+                              <span className="truncate">{m.source_filename ?? t("otvoriť")}</span>{" "}
+                              <ExternalLink className="h-3 w-3 shrink-0" />
                             </button>
                           ) : (
                             <span className="text-muted-foreground">—</span>

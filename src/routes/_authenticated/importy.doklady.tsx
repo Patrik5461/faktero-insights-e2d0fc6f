@@ -176,8 +176,8 @@ function ImportDokladovPage() {
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
           <div className="min-w-0 space-y-6">
             {/* 1. Súbory */}
-            <section className="rounded-xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold">{t("1. Nahrajte export")}</h2>
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="text-base font-semibold">{t("1. Nahrajte export")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t(
                   "XML pre Pohodu, CSV/XLSX alebo ZIP so skenmi (PDF, fotky) — aj viac súborov naraz. Najlepšie je nahrať XML a k nemu ZIP s PDF: údaje sa vezmú presne z XML a skeny sa priradia k dokladom.",
@@ -189,7 +189,7 @@ function ImportDokladovPage() {
                   e.preventDefault();
                   pridaj(e.dataTransfer.files);
                 }}
-                className="mt-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center text-sm"
+                className="mt-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-input bg-muted/40 p-8 text-center text-sm"
               >
                 <FileArchive className="mb-2 h-7 w-7 text-muted-foreground" />
                 {t("Pretiahnite súbory sem alebo")}
@@ -218,7 +218,7 @@ function ImportDokladovPage() {
                   {subory.map((f, i) => (
                     <li key={`${f.name}-${i}`} className="flex items-center gap-2">
                       <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                         {formatujCislo(f.size / 1024 / 1024, 1)} MB
                       </span>
                       {!nahrate.length && (
@@ -252,8 +252,8 @@ function ImportDokladovPage() {
 
             {/* 2. Náhľad a voľby */}
             {nahlad && (
-              <section className="rounded-xl border border-border bg-card p-5">
-                <h2 className="text-sm font-semibold">{t("2. Čo sa naimportuje")}</h2>
+              <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                <h2 className="text-base font-semibold">{t("2. Čo sa naimportuje")}</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Cislo popis={t("Prijaté faktúry")} hodnota={nahlad.faktury} />
                   <Cislo popis={t("Bločky")} hodnota={nahlad.blocky} />
@@ -298,10 +298,10 @@ function ImportDokladovPage() {
                               {r.typ === "faktura" ? t("Faktúra") : t("Bloček")}
                               {r.duplicita && ` ${t("(už je)")}`}
                             </td>
-                            <td className="px-3 py-1.5">{r.cislo ?? "—"}</td>
-                            <td className="px-3 py-1.5">{r.dodavatel ?? "—"}</td>
+                            <td className="cislo-dokladu whitespace-nowrap px-3 py-1.5">{r.cislo ?? "—"}</td>
+                            <td className="min-w-[10rem] px-3 py-1.5 break-words">{r.dodavatel ?? "—"}</td>
                             <td className="px-3 py-1.5 whitespace-nowrap">{r.vystavenie ?? "—"}</td>
-                            <td className="suma px-3 py-1.5 text-right">
+                            <td className="suma px-3 py-1.5 text-right whitespace-nowrap">
                               {r.spolu != null ? formatujMenu(r.spolu, r.mena) : "—"}
                             </td>
                             <td className="max-w-[10rem] truncate px-3 py-1.5 text-xs text-muted-foreground">
@@ -323,7 +323,7 @@ function ImportDokladovPage() {
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">
                       {t("Odkiaľ doklady sú")}
                     </span>
                     <select
@@ -339,7 +339,7 @@ function ImportDokladovPage() {
                     </select>
                   </label>
                   <label className="block text-sm">
-                    <span className="mb-1 block text-xs text-muted-foreground">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">
                       {t("Stav po importe")}
                     </span>
                     <select
@@ -404,8 +404,8 @@ function ImportDokladovPage() {
 
             {/* 3. Priebeh a výsledok */}
             {priebeh && (
-              <section className="rounded-xl border border-border bg-card p-5" role="status">
-                <h2 className="text-sm font-semibold">
+              <section className="rounded-xl border border-border bg-card p-4 sm:p-5" role="status">
+                <h2 className="text-base font-semibold">
                   3. {bezi ? t("Importujem…") : t("Hotovo")}
                 </h2>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
@@ -493,8 +493,8 @@ function ImportDokladovPage() {
             )}
           </div>
 
-          <aside className="min-w-0 rounded-xl border border-border bg-card p-5 text-sm">
-            <h2 className="text-sm font-semibold">{t("Ako vyviezť doklady z Doklado")}</h2>
+          <aside className="min-w-0 self-start rounded-xl border border-border bg-card p-4 sm:p-5 text-sm">
+            <h2 className="text-base font-semibold">{t("Ako vyviezť doklady z Doklado")}</h2>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
               <li>
                 {t("V Doklado označte doklady (prijaté faktúry, bločky) a zvoľte")}{" "}

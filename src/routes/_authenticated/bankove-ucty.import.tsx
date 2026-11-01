@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { Upload, FileText } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -104,10 +105,10 @@ function ImportVypisuPage() {
       />
       <PageBody>
         <div className="mx-auto max-w-2xl space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4">
-            <span className="block text-sm font-medium">{t("Súbor s výpisom")}</span>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <span className="block text-base font-semibold">{t("Súbor s výpisom")}</span>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-within:ring-2 focus-within:ring-ring">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover focus-within:ring-2 focus-within:ring-ring">
                 <Upload className="h-4 w-4" /> {t("Vybrať súbor")}
                 <input
                   type="file"
@@ -126,47 +127,47 @@ function ImportVypisuPage() {
               {t("Funguje aj")} <strong>{t("CSV export platobnej brány")}</strong>{" "}
               {t("(Stripe, PayPal, GoPay, Comgate, Barion): brána sa založí ako ďalší účet, platby sa spárujú s faktúrami a poplatky aj výbery na bankový účet budú vo výpise zvlášť.")}
             </p>
-            {citam && <p className="mt-2 text-sm text-muted-foreground">{t("Čítam výpis…")}</p>}
+            {citam && <NacitavanieStav text="Čítam výpis…" className="justify-start px-0 py-3" />}
           </div>
 
           {nahlad && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4 text-muted-foreground" />
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <div className="flex min-w-0 items-center gap-2 break-all text-sm font-semibold">
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 {nazovSuboru} · {nahlad.format}
               </div>
 
               <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-xs text-muted-foreground">{t("Účet vo výpise")}</dt>
-                  <dd className="font-mono text-xs">{nahlad.ucetVoVypise ?? t("neuvedený")}</dd>
+                  <dd className="break-all font-mono text-xs">{nahlad.ucetVoVypise ?? t("neuvedený")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">{t("Obdobie")}</dt>
-                  <dd>
+                  <dd className="tabular-nums">
                     {nahlad.odDna} – {nahlad.doDna}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">{t("Pohybov")}</dt>
-                  <dd className="font-medium">{nahlad.pocet}</dd>
+                  <dd className="suma">{nahlad.pocet}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">{t("Príjem / výdaj")}</dt>
-                  <dd className="tabular-nums">
+                  <dd className="suma whitespace-normal">
                     {formatujMenu(nahlad.prijem, mena)} / {formatujMenu(nahlad.vydaj, mena)}
                   </dd>
                 </div>
               </dl>
 
               {nahlad.varovanie && (
-                <p className="mt-3 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+                <p className="mt-3 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs font-medium text-warning">
                   {nahlad.varovanie}
                 </p>
               )}
 
               <label className="mt-4 block">
-                <span className="text-sm font-medium">{t("Nahrať do účtu")}</span>
+                <span className="text-sm font-semibold">{t("Nahrať do účtu")}</span>
                 <select
                   value={cielovyUcet}
                   onChange={(e) => setCielovyUcet(e.target.value)}
@@ -204,7 +205,7 @@ function ImportVypisuPage() {
               <button
                 onClick={nahraj}
                 disabled={zapisujem}
-                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
               >
                 <Upload className="h-4 w-4" />
                 {zapisujem ? t("Nahrávam…") : t("Nahrať {n} pohybov", { n: nahlad.pocet })}

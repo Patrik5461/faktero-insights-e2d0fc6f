@@ -6,6 +6,7 @@ import { spustiCitanieZmluvyFn, stavCitaniaZmluvyFn } from "@/lib/faktero/financ
 import { spojPrecitane, type PrecitanaZmluva } from "@/lib/faktero/financovanie-citanie";
 import type { SplatkaZoZmluvy, ZmluvaNaUpravu } from "./FormularZmluvy";
 import { useT } from "@/lib/i18n/useT";
+import { Button } from "@/components/ui/button";
 
 /**
  * Nahratie zmluvy alebo splátkového kalendára a jeho vyčítanie.
@@ -178,24 +179,25 @@ export function NahratieZmluvy({
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-dashed bg-card p-5">
+    <div className="mb-6 max-w-6xl rounded-xl border border-dashed border-input bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-medium">{t("Máte zmluvu v PDF?")}</h2>
+        <div className="min-w-0 flex-1 basis-80">
+          <h2 className="text-base font-semibold">{t("Máte zmluvu v PDF?")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t(
               "Nahrajte zmluvu aj splátkový kalendár — pokojne naraz, aj keď sú to dva súbory. Faktero z nich vyčíta údaje a kalendár prevezme riadok po riadku, presne tak, ako ho predpísala banka. Zmluvu o kontokorente spozná samo — tá kalendár nemá.",
             )}
           </p>
         </div>
-        <button
+        <Button
+          type="button"
           onClick={() => vstup.current?.click()}
           disabled={pracujem}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          className="shrink-0"
         >
           {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
           {pracujem ? t("Čítam dokument…") : t("Nahrať zmluvu")}
-        </button>
+        </Button>
         <input
           ref={vstup}
           type="file"
@@ -206,7 +208,7 @@ export function NahratieZmluvy({
         />
       </div>
       {pracujem && (
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p role="status" className="mt-3 text-xs text-muted-foreground">
           {kolko.spolu > 1
             ? `${t("Dokument {n} z {spolu}.", { n: kolko.hotovych + 1, spolu: kolko.spolu })} `
             : ""}

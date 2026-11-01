@@ -113,11 +113,11 @@ export function StavyAStitkyNastavenia({ companyId }: { companyId: string }) {
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <h2 className="text-base font-semibold">
         {t("Stavy dokladov a štítky")}
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-1 max-w-prose text-sm text-muted-foreground">
         {t(
           "Vlastný stav dokladu (napr. „Čaká na doklad od klienta“) a štítky sa nastavujú v detaile dokladu alebo hromadne v zozname a dá sa podľa nich filtrovať. Do účtovníctva sa neprenášajú a dajú sa meniť aj na odovzdanom doklade.",
         )}
@@ -125,7 +125,7 @@ export function StavyAStitkyNastavenia({ companyId }: { companyId: string }) {
 
       <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div>
-          <h3 className="text-sm font-medium">{t("Stavy dokladov")}</h3>
+          <h3 className="text-sm font-semibold">{t("Stavy dokladov")}</h3>
           {stavy === null ? (
             <p className="mt-2 text-sm text-muted-foreground">{t("Načítavam…")}</p>
           ) : (
@@ -204,7 +204,7 @@ export function StavyAStitkyNastavenia({ companyId }: { companyId: string }) {
             <button
               type="submit"
               disabled={!novyStav.trim()}
-              className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <Plus className="h-4 w-4" /> {t("Pridať")}
             </button>
@@ -227,7 +227,7 @@ export function StavyAStitkyNastavenia({ companyId }: { companyId: string }) {
         </div>
 
         <div>
-          <h3 className="text-sm font-medium">{t("Štítky")}</h3>
+          <h3 className="text-sm font-semibold">{t("Štítky")}</h3>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
               "Ponúkajú sa pri dokladoch, faktúrach aj iných dokladoch. Štítok napísaný pri doklade sa sem pridá sám.",
@@ -237,14 +237,14 @@ export function StavyAStitkyNastavenia({ companyId }: { companyId: string }) {
             {stitky.map((s) => (
               <span
                 key={s.id}
-                className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs"
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
               >
-                {s.nazov}
+                <span className="min-w-0 truncate">{s.nazov}</span>
                 <button
                   type="button"
                   onClick={() => void zmazStitok(s)}
                   aria-label={t("Odstrániť štítok {stitok}", { stitok: s.nazov })}
-                  className="hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive"
                 >
                   ×
                 </button>
@@ -272,7 +272,7 @@ export function StavyAStitkyNastavenia({ companyId }: { companyId: string }) {
             <button
               type="submit"
               disabled={!novyStitok.trim()}
-              className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <Plus className="h-4 w-4" /> {t("Pridať")}
             </button>

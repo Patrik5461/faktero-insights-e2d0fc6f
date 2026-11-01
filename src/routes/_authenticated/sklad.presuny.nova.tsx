@@ -180,29 +180,29 @@ function NewTransferPage() {
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-6">
           {/* Mode selector */}
-          <div className="flex gap-2 rounded-md border p-1 bg-muted/30 w-fit">
+          <div className="flex w-fit max-w-full gap-1 rounded-lg border border-border bg-muted/60 p-1">
             <button
               type="button"
               onClick={() => setMode("warehouse")}
-              className={`px-4 py-2 rounded text-sm ${mode === "warehouse" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              className={`rounded-md px-4 py-2 text-sm ${mode === "warehouse" ? "bg-card font-semibold text-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
             >
               {t("Medzi skladmi")}
             </button>
             <button
               type="button"
               onClick={() => setMode("company")}
-              className={`px-4 py-2 rounded text-sm ${mode === "company" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+              className={`rounded-md px-4 py-2 text-sm ${mode === "company" ? "bg-card font-semibold text-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
             >
               {t("Medzi firmami")}
             </button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] items-end">
+          <div className="grid items-end gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-[1fr_auto_1fr] sm:p-5">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t("Zo skladu")}</label>
+              <label className="text-xs font-semibold text-muted-foreground">{t("Zo skladu")}</label>
               <select
                 aria-label={t("Zo skladu")}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={warehouseFrom}
                 onChange={(e) => setWarehouseFrom(e.target.value)}
               >
@@ -218,11 +218,11 @@ function NewTransferPage() {
             </div>
             {mode === "warehouse" ? (
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-xs font-semibold text-muted-foreground">
                   {t("Do skladu")}
                 </label>
                 <select
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={warehouseTo}
                   onChange={(e) => setWarehouseTo(e.target.value)}
                 >
@@ -239,11 +239,11 @@ function NewTransferPage() {
             ) : (
               <div className="space-y-2">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label className="text-xs font-semibold text-muted-foreground">
                     {t("Cieľová firma")}
                   </label>
                   <select
-                    className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={targetCompany}
                     onChange={(e) => setTargetCompany(e.target.value)}
                   >
@@ -257,11 +257,11 @@ function NewTransferPage() {
                 </div>
                 {targetCompany && (
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label className="text-xs font-semibold text-muted-foreground">
                       {t("Cieľový sklad")}
                     </label>
                     <select
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       value={warehouseTo}
                       onChange={(e) => setWarehouseTo(e.target.value)}
                     >
@@ -273,7 +273,7 @@ function NewTransferPage() {
                       ))}
                     </select>
                     {targetWarehouses.length === 0 && (
-                      <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
+                      <div className="mt-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
                         {t("Cieľová firma zatiaľ nemá žiadny sklad — presun by nemal kam prísť.")}
                         <button
                           type="button"
@@ -296,7 +296,7 @@ function NewTransferPage() {
                               setBusy(false);
                             }
                           }}
-                          className="ml-1 font-medium underline disabled:opacity-50"
+                          className="ml-1 font-semibold underline disabled:opacity-50"
                         >
                           {t("Založiť jej Hlavný sklad")}
                         </button>
@@ -309,7 +309,7 @@ function NewTransferPage() {
           </div>
 
           {companies.length === 0 && mode === "company" && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
+            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
               {t(
                 "Nemáte prístup k žiadnej ďalšej firme. Pridajte sa do inej firmy pre presuny medzi firmami.",
               )}
@@ -317,9 +317,9 @@ function NewTransferPage() {
           )}
 
           {/* Items */}
-          <div className="rounded-md border">
-            <div className="flex items-center justify-between border-b px-3 py-2 bg-muted/30">
-              <div className="text-sm font-medium">{t("Položky")}</div>
+          <div className="rounded-xl border border-border bg-card">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+              <h2 className="text-base font-semibold">{t("Položky")}</h2>
               <button
                 type="button"
                 onClick={() =>
@@ -328,28 +328,28 @@ function NewTransferPage() {
                     { source_stock_item_id: "", quantity: "1", unit_price: "0" },
                   ])
                 }
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               >
                 <Plus className="h-4 w-4" /> {t("Pridať položku")}
               </button>
             </div>
-            <div className="hidden gap-2 border-b px-3 py-1.5 text-xs text-muted-foreground sm:grid sm:grid-cols-[1fr_120px_120px_32px]">
+            <div className="hidden gap-2 border-b border-border bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground sm:grid sm:grid-cols-[1fr_120px_120px_32px] sm:px-5">
               <span>{t("Položka")}</span>
-              <span>{t("Množstvo")}</span>
-              <span>{t("Cena/MJ")}</span>
+              <span className="text-right">{t("Množstvo")}</span>
+              <span className="text-right">{t("Cena/MJ")}</span>
               <span />
             </div>
-            <div className="divide-y">
+            <div className="divide-y divide-border">
               {items.map((it, idx) => {
                 const m = matches[it.source_stock_item_id];
                 return (
                   <div
                     key={idx}
-                    className="grid grid-cols-[1fr_1fr_auto] items-end gap-2 p-3 sm:grid-cols-[1fr_120px_120px_32px] sm:items-center"
+                    className="grid grid-cols-[1fr_1fr_auto] items-end gap-2 px-4 py-3 sm:grid-cols-[1fr_120px_120px_32px] sm:items-center sm:px-5"
                   >
                     <div className="col-span-3 min-w-0 sm:col-span-1">
                       <select
-                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                         value={it.source_stock_item_id}
                         onChange={(e) => {
                           // Cena presunu je nákladová — bez predvyplnenia
@@ -375,14 +375,14 @@ function NewTransferPage() {
                       {mode === "company" && it.source_stock_item_id && m && (
                         <div className="mt-1 text-xs">
                           {m.matched_target_id ? (
-                            <span className="text-emerald-700 dark:text-emerald-300">
+                            <span className="text-primary-hover">
                               ✓{" "}
                               {m.matched_by === "sku"
                                 ? t("Nájdená v cieľovej firme (podľa kódu)")
                                 : t("Nájdená v cieľovej firme (podľa čiarového kódu)")}
                             </span>
                           ) : (
-                            <span className="text-amber-700 dark:text-amber-300">
+                            <span className="text-warning">
                               {t("Nie je v cieľovej firme — pri dokončení sa vytvorí nová.")}
                             </span>
                           )}
@@ -390,7 +390,7 @@ function NewTransferPage() {
                       )}
                     </div>
                     <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                      <span className="mb-1 block text-xs font-semibold text-muted-foreground sm:hidden">
                         {t("Množstvo")}
                       </span>
                       <input
@@ -399,13 +399,13 @@ function NewTransferPage() {
                         min="0"
                         placeholder={t("Množstvo")}
                         aria-label={t("Množstvo")}
-                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
                         value={it.quantity}
                         onChange={(e) => updateItem(idx, { quantity: e.target.value })}
                       />
                     </label>
                     <label className="block min-w-0">
-                      <span className="mb-1 block text-xs text-muted-foreground sm:hidden">
+                      <span className="mb-1 block text-xs font-semibold text-muted-foreground sm:hidden">
                         {t("Cena/MJ")}
                       </span>
                       <input
@@ -414,7 +414,7 @@ function NewTransferPage() {
                         min="0"
                         placeholder={t("Cena")}
                         aria-label={t("Cena za MJ")}
-                        className="w-full rounded-md border px-2 py-1.5 text-sm"
+                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
                         value={it.unit_price}
                         onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
                       />
@@ -425,7 +425,7 @@ function NewTransferPage() {
                       disabled={items.length === 1}
                       aria-label={t("Odstrániť položku")}
                       title={t("Odstrániť položku")}
-                      className="rounded p-1.5 text-muted-foreground hover:text-destructive disabled:opacity-40"
+                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -436,10 +436,10 @@ function NewTransferPage() {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground">{t("Poznámka")}</label>
+            <label className="text-xs font-semibold text-muted-foreground">{t("Poznámka")}</label>
             <textarea
               aria-label={t("Poznámka")}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -461,14 +461,14 @@ function NewTransferPage() {
           )}
 
           <div className="flex justify-end gap-2">
-            <Link to="/sklad/presuny" className="rounded-md border px-4 py-2 text-sm">
+            <Link to="/sklad/presuny" className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-muted">
               {t("Zrušiť")}
             </Link>
             <button
               type="button"
               disabled={!canSubmit || busy}
               onClick={submit}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy ? t("Vytváram…") : t("Vytvoriť presun")}
             </button>

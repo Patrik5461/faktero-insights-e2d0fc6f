@@ -9,7 +9,6 @@ import {
   MetaRiadok,
   PoTermine,
   PrimarnaAkcia,
-  StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listWarehousesForCompany } from "@/lib/faktero/stock.functions";
@@ -21,24 +20,28 @@ import {
   sendPurchaseOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
-import { PackageCheck, Send, Trash2, X } from "lucide-react";
+import { PackageCheck, Send, Trash2, Truck, X } from "lucide-react";
 import { formatovacMeny, formatujCislo } from "@/lib/faktero/mena";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { StavOdznak as StavWeb, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Objednávka — Faktero") }] }),
   component: PurchaseOrderDetail,
 });
 
-const FARBA_STAVU: Record<StavObjednavky, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-blue-500/10 text-blue-600",
-  partially_received: "bg-amber-500/10 text-amber-800",
-  received: "bg-emerald-500/10 text-emerald-700",
-  cancelled: "bg-muted text-muted-foreground line-through",
+/** Tón stavu objednávky (texty ostávajú zo `STAV_POPIS`). */
+const TON_OBJEDNAVKY: Record<StavObjednavky, TonStavu> = {
+  draft: "neutralny",
+  sent: "priebeh",
+  partially_received: "pozor",
+  received: "uspech",
+  cancelled: "zruseny",
 };
 
 function suma(n: number, mena = "EUR") {
@@ -117,14 +120,16 @@ function PurchaseOrderDetail() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav />
       </PageBody>
     );
   }
   if (!data) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Objednávka sa nenašla.")}</div>
+        <div className="rounded-xl border border-border bg-card">
+          <EmptyState icon={Truck} title="Objednávka sa nenašla." />
+        </div>
       </PageBody>
     );
   }
@@ -144,7 +149,7 @@ function PurchaseOrderDetail() {
         title={t("Objednávka")}
         number={o.order_number}
         status={
-          <StavOdznak className={FARBA_STAVU[stav]}>{t(STAV_POPIS[stav] ?? stav)}</StavOdznak>
+          <StavWeb ton={tonStavu(TON_OBJEDNAVKY, stav)}>{t(STAV_POPIS[stav] ?? stav)}</StavWeb>
         }
         meta={
           <MetaRiadok
@@ -212,38 +217,38 @@ function PurchaseOrderDetail() {
         }
       />
       <PageBody>
-        <div className="space-y-4">
+        <div className="space-y-6">
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
           {sprava && (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
+            <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-primary-hover">
               {sprava}
             </div>
           )}
 
-          <div className="grid gap-3 rounded-xl border border-border bg-card p-4 text-sm sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-card p-4 text-sm sm:grid-cols-4 sm:p-5">
             <div>
-              <div className="text-xs text-muted-foreground">{t("Vystavená")}</div>
-              <div>{datumNaDoklade(o.order_date)}</div>
+              <div className="text-xs font-semibold text-muted-foreground">{t("Vystavená")}</div>
+              <div className="mt-0.5 whitespace-nowrap">{datumNaDoklade(o.order_date)}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">{t("Očakávané dodanie")}</div>
-              <div>{o.expected_date ?? "—"}</div>
+              <div className="text-xs font-semibold text-muted-foreground">{t("Očakávané dodanie")}</div>
+              <div className="mt-0.5 whitespace-nowrap">{o.expected_date ?? "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">{t("Sklad")}</div>
-              <div>{data.warehouse?.name ?? "—"}</div>
+              <div className="text-xs font-semibold text-muted-foreground">{t("Sklad")}</div>
+              <div className="mt-0.5 break-words">{data.warehouse?.name ?? "—"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">{t("Spolu")}</div>
-              <div className="font-semibold">{suma(data.total, o.currency)}</div>
+              <div className="text-xs font-semibold text-muted-foreground">{t("Spolu")}</div>
+              <div className="suma mt-0.5 text-base">{suma(data.total, o.currency)}</div>
             </div>
             {data.job && (
-              <div className="sm:col-span-4">
-                <div className="text-xs text-muted-foreground">{t("Zákazka")}</div>
+              <div className="col-span-2 sm:col-span-4">
+                <div className="text-xs font-semibold text-muted-foreground">{t("Zákazka")}</div>
                 <Link
                   to="/zakazky/$id"
                   params={{ id: data.job.id }}
@@ -254,16 +259,16 @@ function PurchaseOrderDetail() {
               </div>
             )}
             {o.note && (
-              <div className="sm:col-span-4">
-                <div className="text-xs text-muted-foreground">{t("Poznámka")}</div>
-                <div>{o.note}</div>
+              <div className="col-span-2 sm:col-span-4">
+                <div className="text-xs font-semibold text-muted-foreground">{t("Poznámka")}</div>
+                <div className="mt-0.5 break-words">{o.note}</div>
               </div>
             )}
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full min-w-[680px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="p-3">{t("Položka")}</th>
                   <th className="p-3 text-right">{t("Objednané")}</th>
@@ -276,24 +281,24 @@ function PurchaseOrderDetail() {
               <tbody className="divide-y divide-border">
                 {(data.items ?? []).map((it: any) => (
                   <tr key={it.id}>
-                    <td className="p-3">
+                    <td className="p-3 font-medium">
                       {it.name}
                       {!it.stock_item_id && (
-                        <span className="ml-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-800">
+                        <StavWeb ton="pozor" maly className="ml-2 align-middle">
                           {t("bez skladovej karty")}
-                        </span>
+                        </StavWeb>
                       )}
                     </td>
-                    <td className="p-3 text-right tabular-nums">
+                    <td className="whitespace-nowrap p-3 text-right tabular-nums">
                       {formatujCislo(it.quantity, 0, 2)} {it.unit ?? ""}
                     </td>
                     <td className="p-3 text-right tabular-nums">
                       {formatujCislo(it.received_quantity, 0, 2)}
                     </td>
-                    <td className="p-3 text-right tabular-nums font-medium">
+                    <td className="p-3 text-right font-semibold tabular-nums">
                       {formatujCislo(it.zostava, 0, 2)}
                     </td>
-                    <td className="p-3 text-right tabular-nums">
+                    <td className="suma p-3 text-right font-normal">
                       {suma(Number(it.unit_price), o.currency)}
                     </td>
                     {otvorena && (
@@ -322,16 +327,16 @@ function PurchaseOrderDetail() {
           </div>
 
           {otvorena && riadkyNaPrijem.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">{t("Príjem na sklad")}</div>
-              <p className="mb-3 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="mb-1 text-base font-semibold">{t("Príjem na sklad")}</h2>
+              <p className="mb-4 max-w-prose text-sm text-muted-foreground">
                 {t(
                   "Príjem vytvorí skladový pohyb s cenou z objednávky, takže sa premietne do váženej nákupnej ceny zásoby. Prijať sa dá najviac to, čo zostáva.",
                 )}
               </p>
               <div className="flex flex-wrap items-end gap-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Sklad")}</span>
+                  <span className="mb-1 block text-xs font-semibold text-muted-foreground">{t("Sklad")}</span>
                   <select
                     value={prijemSklad}
                     onChange={(e) => setPrijemSklad(e.target.value)}
@@ -364,7 +369,7 @@ function PurchaseOrderDetail() {
                       t("Tovar je naskladnený."),
                     );
                   }}
-                  className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   <PackageCheck className="h-4 w-4" /> {t("Prijať na sklad")}
                 </button>

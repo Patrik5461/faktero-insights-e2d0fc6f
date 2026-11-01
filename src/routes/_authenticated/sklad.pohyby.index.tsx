@@ -18,6 +18,9 @@ import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/")({
@@ -227,7 +230,7 @@ function MovementsPage() {
                 onClick={() => setExportOpen((o) => !o)}
                 aria-haspopup="menu"
                 aria-expanded={exportOpen}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-secondary"
               >
                 <Download className="h-4 w-4" /> {t("Export pohybov")}{" "}
                 <ChevronDown className="h-3 w-3" />
@@ -235,7 +238,7 @@ function MovementsPage() {
               {exportOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md"
+                  className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-popover p-1 shadow-lg"
                 >
                   <button
                     onClick={() => exportMovements("csv")}
@@ -257,21 +260,22 @@ function MovementsPage() {
                 onClick={() => setNewOpen((o) => !o)}
                 aria-haspopup="menu"
                 aria-expanded={newOpen}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
                 <Plus className="h-4 w-4" /> {t("Nový pohyb")} <ChevronDown className="h-3 w-3" />
               </button>
               {newOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-border bg-popover p-1 shadow-md"
+                  className="absolute right-0 z-20 mt-1 w-48 rounded-lg border border-border bg-popover p-1 shadow-lg"
                 >
                   <Link
                     to="/sklad/prijem"
                     onClick={() => setNewOpen(false)}
                     className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
                   >
-                    <ArrowDownToLine className="h-4 w-4 text-emerald-700" /> {t("Príjem")}
+                    <ArrowDownToLine className="h-4 w-4 text-[var(--stav-uspech-text)]" />{" "}
+                    {t("Príjem")}
                   </Link>
                   <Link
                     to="/sklad/vydaj"
@@ -294,7 +298,7 @@ function MovementsPage() {
         }
       />
       <PageBody>
-        <div className="mb-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <select
             aria-label={t("Typ pohybu")}
             value={filter}
@@ -321,22 +325,22 @@ function MovementsPage() {
               </option>
             ))}
           </select>
-          <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground">
             {t("Od")}{" "}
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:flex-none"
+              className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-2 text-sm sm:flex-none"
             />
           </label>
-          <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground">
             {t("Do")}{" "}
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm sm:flex-none"
+              className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-2 text-sm sm:flex-none"
             />
           </label>
           <input
@@ -346,10 +350,10 @@ function MovementsPage() {
             className="col-span-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-56"
           />
           {stock_item_id && (
-            <div className="col-span-2 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs">
+            <div className="col-span-2 inline-flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium">
               {t("Filter: skladová karta")}{" "}
               {nazovPolozky(stock_item_id) ?? `${stock_item_id.slice(0, 8)}…`}
-              <Link to="/sklad/pohyby" className="text-primary hover:underline">
+              <Link to="/sklad/pohyby" className="font-semibold text-primary hover:underline">
                 × {t("zrušiť")}
               </Link>
             </div>
@@ -358,7 +362,7 @@ function MovementsPage() {
         {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
               <tr>
                 <th className="p-3">{t("Dátum")}</th>
                 <th className="p-3">{t("Typ")}</th>
@@ -373,15 +377,15 @@ function MovementsPage() {
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {t("Načítavam…")}
+                  <td colSpan={8} className="p-0">
+                    <NacitavanieStav />
                   </td>
                 </tr>
               )}
               {!loading && visibleRows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    {t("Žiadne pohyby.")}
+                  <td colSpan={8} className="p-0">
+                    <EmptyState title="Žiadne pohyby." />
                   </td>
                 </tr>
               )}
@@ -391,12 +395,14 @@ function MovementsPage() {
                   className="cursor-pointer hover:bg-muted/30"
                   onClick={() => navigate({ to: "/sklad/pohyby/$id", params: { id: m.id } })}
                 >
-                  <td className="p-3 text-muted-foreground">
+                  <td className="p-3 whitespace-nowrap tabular-nums text-muted-foreground">
                     {new Date(m.created_at).toLocaleString("sk-SK")}
                   </td>
-                  <td className="p-3 font-medium">{t(TYPE_LABEL[m.type] ?? m.type)}</td>
-                  <td className="p-3">
-                    <div className="font-medium">
+                  <td className="p-3 whitespace-nowrap font-medium">
+                    {t(TYPE_LABEL[m.type] ?? m.type)}
+                  </td>
+                  <td className="p-3 min-w-0 max-w-[22rem]">
+                    <div className="truncate font-medium">
                       {nazovPolozky(m.stock_item_id) ?? m.stock_item_id.slice(0, 8)}
                     </div>
                     {items[m.stock_item_id]?.sku &&
@@ -408,24 +414,24 @@ function MovementsPage() {
                   </td>
                   <td className="p-3 text-muted-foreground">{warehouses[m.warehouse_id] ?? "—"}</td>
                   <td
-                    className={`p-3 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-700" : "text-destructive"}`}
+                    className={`p-3 text-right suma ${pohybDelta(m.type, m.quantity) >= 0 ? "text-[var(--stav-uspech-text)]" : "text-destructive"}`}
                   >
                     {pohybText(m.type, m.quantity)}
                   </td>
                   <td className="p-3 text-right tabular-nums whitespace-nowrap">
                     {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost, mena.kod) : "—"}
                   </td>
-                  <td className="p-3 text-right tabular-nums whitespace-nowrap">
+                  <td className="p-3 text-right suma">
                     {formatujMenu(hodnotaPohybu(m), mena.kod)}
                   </td>
-                  <td className="p-3 text-xs" onClick={(e) => e.stopPropagation()}>
+                  <td className="p-3 max-w-[16rem] text-xs" onClick={(e) => e.stopPropagation()}>
                     {(m.source_document_type === "invoice" || m.reference_type === "invoice") &&
                     (m.source_document_id || m.reference_id) &&
                     invoices[m.source_document_id ?? m.reference_id] ? (
                       <Link
                         to="/faktury/$id"
                         params={{ id: invoices[m.source_document_id ?? m.reference_id].id }}
-                        className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:underline"
+                        className="stav stav-maly hover:underline"
                       >
                         {t("Faktúra {cislo}", {
                           cislo: invoices[m.source_document_id ?? m.reference_id].number,
@@ -435,12 +441,12 @@ function MovementsPage() {
                       <Link
                         to="/prijate-faktury/$id"
                         params={{ id: m.source_document_id }}
-                        className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground hover:underline"
+                        className="stav stav-maly hover:underline"
                       >
                         {t("Samofaktúra")}
                       </Link>
                     ) : m.source_document_type ? (
-                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                      <span className="stav stav-maly">
                         {t(
                           (
                             {
@@ -455,7 +461,7 @@ function MovementsPage() {
                     ) : m.note ? null : (
                       <span className="text-muted-foreground">—</span>
                     )}
-                    {m.note && <div className="text-muted-foreground truncate">{m.note}</div>}
+                    {m.note && <div className="mt-1 truncate text-muted-foreground">{m.note}</div>}
                   </td>
                 </tr>
               ))}
@@ -466,13 +472,13 @@ function MovementsPage() {
         {/* Mobile cards */}
         <div className="md:hidden space-y-2">
           {loading && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
-              {t("Načítavam…")}
+            <div className="rounded-xl border border-border bg-card">
+              <NacitavanieStav />
             </div>
           )}
           {!loading && visibleRows.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
-              {t("Žiadne pohyby.")}
+            <div className="rounded-xl border border-border bg-card">
+              <EmptyState title="Žiadne pohyby." />
             </div>
           )}
           {visibleRows.map((m) => (
@@ -480,16 +486,18 @@ function MovementsPage() {
               key={m.id}
               to="/sklad/pohyby/$id"
               params={{ id: m.id }}
-              className="block rounded-xl border border-border bg-card p-3 hover:bg-muted/30"
+              className="block rounded-xl border border-border bg-card p-4 hover:bg-muted/30"
             >
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{new Date(m.created_at).toLocaleString("sk-SK")}</span>
-                <span className="rounded bg-muted px-2 py-0.5 font-medium text-foreground">
-                  {t(TYPE_LABEL[m.type] ?? m.type)}
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="whitespace-nowrap tabular-nums">
+                  {new Date(m.created_at).toLocaleString("sk-SK")}
                 </span>
+                <StavOdznak ton="neutralny" maly>
+                  {t(TYPE_LABEL[m.type] ?? m.type)}
+                </StavOdznak>
               </div>
-              <div className="mt-2 flex items-center justify-between">
-                <div className="min-w-0 font-medium">
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <div className="min-w-0 break-words font-medium">
                   {nazovPolozky(m.stock_item_id) ?? m.stock_item_id.slice(0, 8)}
                   {items[m.stock_item_id]?.sku &&
                     nazovPolozky(m.stock_item_id) !== items[m.stock_item_id]?.sku && (
@@ -501,20 +509,22 @@ function MovementsPage() {
                 <div
                   className={
                     pohybDelta(m.type, m.quantity) >= 0
-                      ? "text-emerald-700 font-semibold"
-                      : "text-destructive font-semibold"
+                      ? "suma shrink-0 text-[var(--stav-uspech-text)]"
+                      : "suma shrink-0 text-destructive"
                   }
                 >
                   {pohybText(m.type, m.quantity)}
                 </div>
               </div>
-              <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                <span>{warehouses[m.warehouse_id] ?? "—"}</span>
-                <span className="whitespace-nowrap">
+              <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                <span className="min-w-0 truncate">{warehouses[m.warehouse_id] ?? "—"}</span>
+                <span className="suma text-foreground">
                   {formatujMenu(hodnotaPohybu(m), mena.kod)}
                 </span>
               </div>
-              {m.note && <div className="mt-1 text-xs text-muted-foreground">{m.note}</div>}
+              {m.note && (
+                <div className="mt-1 break-words text-xs text-muted-foreground">{m.note}</div>
+              )}
             </Link>
           ))}
         </div>

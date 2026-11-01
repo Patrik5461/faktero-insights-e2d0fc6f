@@ -92,7 +92,7 @@ export function NastaveniaExportu({
 
   const vyber = (kluc: keyof Nastavenia, nazov: string, moznosti: Moznost[], napoveda?: string) => (
     <label className="block min-w-0">
-      <span className="text-xs text-muted-foreground">{t(nazov)}</span>
+      <span className="text-xs font-medium text-muted-foreground">{t(nazov)}</span>
       <select
         value={String(n[kluc])}
         onChange={(e) => setN({ ...n, [kluc]: e.target.value } as Nastavenia)}
@@ -111,24 +111,24 @@ export function NastaveniaExportu({
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <h2 className="text-base font-semibold">
         {t("Export do účtovného programu")}
       </h2>
-      <p className="mt-1 max-w-prose text-xs text-muted-foreground">
+      <p className="mt-1 max-w-prose text-sm text-muted-foreground">
         {t(
           "Platí pre export do Pohody — súbor z účtovných exportov, mesačný balík aj konektor. Názov položiek odpočtu zálohy aj pre Omegu a Money S3. Predvolené voľby posielajú doklady tak ako doteraz.",
         )}
       </p>
 
-      <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">{t("Prijaté faktúry a bločky")}</legend>
+      <fieldset className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold">{t("Prijaté faktúry a bločky")}</legend>
         <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
           {vyber("datumZapisu", "Dátum zápisu do účtovníctva", ZAPIS)}
           <div className="min-w-0">
             {vyber("datumOdpoctu", "Dátum odpočtu DPH", ODPOCET)}
             {upozornenie ? (
-              <span className="mt-1 block text-xs text-amber-700 dark:text-amber-400">
+              <span className="mt-1 block text-xs text-warning">
                 {t(upozornenie)}
               </span>
             ) : (
@@ -164,8 +164,8 @@ export function NastaveniaExportu({
         </label>
       </fieldset>
 
-      <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">{t("Vystavené faktúry")}</legend>
+      <fieldset className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold">{t("Vystavené faktúry")}</legend>
         <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
           {vyber("textVystavene", "Text faktúry", TEXT_VYSTAVENE)}
           {vyber(
@@ -178,8 +178,8 @@ export function NastaveniaExportu({
         </div>
       </fieldset>
 
-      <fieldset className="mt-4 rounded-md border border-border p-3">
-        <legend className="px-1 text-sm font-medium">{t("Dodávatelia a odberatelia")}</legend>
+      <fieldset className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+        <legend className="px-1 text-sm font-semibold">{t("Dodávatelia a odberatelia")}</legend>
         {vyber(
           "partneri",
           "Export partnera do adresára Pohody",
@@ -192,7 +192,7 @@ export function NastaveniaExportu({
         <button
           onClick={ulozit}
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("Uložiť nastavenia exportu")}

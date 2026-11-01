@@ -19,6 +19,7 @@ import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { moznostiSadziebRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav, ZamknutyStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: ({ match }) => ({
@@ -206,13 +207,13 @@ function EditStockProduct() {
   if (loading)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav className="rounded-xl border border-border bg-card" />
       </PageBody>
     );
   if (nenajdene)
     return (
       <PageBody>
-        <div className="rounded-md border border-border p-6 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
           {t("Skladová karta sa nenašla. Možno bola zmazaná alebo patrí inej firme.")}{" "}
           <Link to="/sklad/produkty" className="text-primary hover:underline">
             {t("Späť na produkty")}
@@ -223,9 +224,7 @@ function EditStockProduct() {
   if (!canManage)
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">
-          {t("Nemáte oprávnenie upravovať skladové karty.")}
-        </div>
+        <ZamknutyStav nadpis="Nemáte oprávnenie upravovať skladové karty." />
       </PageBody>
     );
 
@@ -240,17 +239,17 @@ function EditStockProduct() {
         }
       />
       <PageBody>
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} className="max-w-6xl space-y-4">
           {error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
           <div className="grid gap-4 md:grid-cols-[220px_1fr]">
             {/* Photo */}
-            <div className="rounded-xl border border-border bg-card p-3">
-              <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div className="mb-3 text-base font-semibold">
                 {t("Fotografia")}
               </div>
               {photoPreview ? (
@@ -258,7 +257,7 @@ function EditStockProduct() {
                   <img
                     src={photoPreview}
                     alt={t("produkt")}
-                    className="aspect-square w-full rounded-md object-cover"
+                    className="aspect-square w-full rounded-lg object-cover"
                   />
                   <button
                     type="button"
@@ -267,17 +266,17 @@ function EditStockProduct() {
                       set("photo_url", "");
                       setPhotoPreview(null);
                     }}
-                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                    className="absolute right-2 top-2 rounded-full border border-border bg-popover p-1 text-foreground shadow-md hover:bg-accent"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ) : (
-                <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+                <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 text-xs text-muted-foreground">
                   {t("Bez fotografie")}
                 </div>
               )}
-              <label className="mt-2 inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-md border border-border bg-secondary px-3 py-2 text-sm hover:bg-secondary/70">
+              <label className="mt-3 inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent">
                 <Upload className="h-4 w-4" /> {uploading ? t("Nahrávam…") : t("Nahrať fotku")}
                 <input
                   type="file"
@@ -287,12 +286,12 @@ function EditStockProduct() {
                   disabled={uploading}
                 />
               </label>
-              <p className="mt-1 text-[11px] text-muted-foreground">{t("JPG/PNG do 5 MB.")}</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">{t("JPG/PNG do 5 MB.")}</p>
             </div>
 
             {/* Basics */}
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="mb-3 text-sm font-semibold">{t("Základné údaje")}</div>
+            <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <div className="mb-3 text-base font-semibold">{t("Základné údaje")}</div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Názov (SK)" required>
                   <input
@@ -357,8 +356,8 @@ function EditStockProduct() {
           </div>
 
           {/* Prices & VAT */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">{t("Ceny a DPH (2025)")}</div>
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 text-base font-semibold">{t("Ceny a DPH (2025)")}</div>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label={t("Nákupná cena ({mena})", { mena: mena.symbol })}>
                 <input
@@ -408,8 +407,8 @@ function EditStockProduct() {
           </div>
 
           {/* Category & supplier */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">{t("Zaradenie")}</div>
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 text-base font-semibold">{t("Zaradenie")}</div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Kategória">
                 <div className="flex gap-2">
@@ -436,7 +435,7 @@ function EditStockProduct() {
                   <button
                     type="button"
                     onClick={handleAddCategory}
-                    className="rounded-md border border-border bg-secondary px-3 py-2 text-xs hover:bg-secondary/70"
+                    className="shrink-0 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     {t("Pridať")}
                   </button>
@@ -456,7 +455,7 @@ function EditStockProduct() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {t("Dodávatelia sa spravujú v Zákazníci.")}
                 </p>
               </Field>
@@ -464,8 +463,8 @@ function EditStockProduct() {
           </div>
 
           {/* Stock */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">{t("Sklad")}</div>
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 text-base font-semibold">{t("Sklad")}</div>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Minimálna zásoba">
                 <input
@@ -531,9 +530,10 @@ function EditStockProduct() {
                 />
               </Field>
               <Field label="Sledovať zásoby">
-                <label className="flex h-10 items-center gap-2">
+                <label className="flex h-10 cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
+                    className="accent-primary"
                     checked={form.track_stock}
                     onChange={(e) => set("track_stock", e.target.checked)}
                   />
@@ -541,9 +541,10 @@ function EditStockProduct() {
                 </label>
               </Field>
               <Field label="Stav produktu">
-                <label className="flex h-10 items-center gap-2">
+                <label className="flex h-10 cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
+                    className="accent-primary"
                     checked={form.active}
                     onChange={(e) => set("active", e.target.checked)}
                   />
@@ -572,25 +573,25 @@ function EditStockProduct() {
             </p>
           </div>
 
-          <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background/95 py-3 backdrop-blur">
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-page/95 py-3 backdrop-blur">
             <Link
               to="/sklad/produkty/$id"
               params={{ id }}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent"
             >
               {t("Zrušiť")}
             </Link>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               <Save className="h-4 w-4" /> {saving ? t("Ukladám…") : t("Uložiť zmeny")}
             </button>
           </div>
         </form>
 
-        <style>{`.input { width: 100%; border-radius: 0.375rem; border: 1px solid var(--border); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; } .input:focus { outline: 2px solid var(--ring); outline-offset: 1px; }`}</style>
+        <style>{`.input { width: 100%; border-radius: 0.375rem; border: 1px solid var(--input); background: var(--background); padding: 0.5rem 0.75rem; font-size: 0.875rem; } .input:focus { outline: 2px solid var(--ring); outline-offset: 1px; }`}</style>
       </PageBody>
     </>
   );
@@ -610,7 +611,7 @@ function Field({
   const { t } = useT();
   return (
     <div className={full ? "sm:col-span-2" : ""}>
-      <label className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
+      <label className="mb-1 block text-sm font-semibold text-foreground">
         {t(label)}
         {required && <span className="text-destructive"> *</span>}
       </label>
