@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setActiveProduct } from "@/lib/faktero/active-product";
 import { useT } from "@/lib/i18n/useT";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 
 type Mode = "invoicing" | "logbook" | "both";
 
@@ -29,6 +30,8 @@ const OPTIONS: { value: Mode; title: string; desc: string; icon: any }[] = [
 ];
 
 export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void }) {
+  // Kreslí sa mimo AppShell — vzhľad webu (redizajn) si zapne sám; appka tento výber nemá.
+  useWebRedizajn();
   const { t } = useT();
   const [saving, setSaving] = useState<Mode | null>(null);
 
@@ -52,7 +55,8 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16">
+    <div className="min-h-screen bg-page">
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
           {t("Čo chcete používať?")}
@@ -73,20 +77,21 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
               type="button"
               disabled={!!saving}
               onClick={() => pick(opt.value)}
-              className="group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-6 text-left transition hover:border-primary hover:bg-primary/5 disabled:opacity-60"
+              className="group flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-6 text-left shadow-sm transition-colors hover:border-primary hover:bg-primary/5 focus-visible:border-primary disabled:opacity-60"
             >
               <span className="grid h-11 w-11 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
               <span className="text-lg font-semibold">{t(opt.title)}</span>
               <span className="text-sm text-muted-foreground">{t(opt.desc)}</span>
-              <span className="mt-auto text-sm font-medium text-primary">
+              <span className="mt-auto text-sm font-semibold text-primary">
                 {isSaving ? t("Ukladám…") : t("Vybrať →")}
               </span>
             </button>
           );
         })}
       </div>
+    </div>
     </div>
   );
 }

@@ -126,7 +126,7 @@ export function EmailSablonyDokladov() {
           {zoznam.map((s) => (
             <li key={s.id} className="flex min-w-0 flex-wrap items-center gap-2 p-3">
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium">{s.nazov}</div>
+                <div className="text-sm font-semibold">{s.nazov}</div>
                 <div className="text-xs text-muted-foreground">
                   {t(NAZVY_TYPOV_SABLON[s.typ_dokladu as TypSablony] ?? s.typ_dokladu)} ·{" "}
                   {t(NAZVY_JAZYKOV_SABLON[s.jazyk as JazykSablony] ?? s.jazyk)} ·{" "}
@@ -137,7 +137,7 @@ export function EmailSablonyDokladov() {
                 type="button"
                 aria-label={t("Upraviť")}
                 onClick={() => setUprava({ ...s })}
-                className="rounded p-1 text-muted-foreground hover:bg-secondary"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -145,7 +145,7 @@ export function EmailSablonyDokladov() {
                 type="button"
                 aria-label={t("Zmazať")}
                 onClick={() => zmaz(s)}
-                className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -158,7 +158,7 @@ export function EmailSablonyDokladov() {
         <div className="mt-3 space-y-3 rounded-lg border border-border p-3">
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="block text-sm sm:col-span-3">
-              <span className="font-medium">{t("Názov")}</span>
+              <span className="font-semibold">{t("Názov")}</span>
               <input
                 value={uprava.nazov}
                 onChange={(e) => setUprava({ ...uprava, nazov: e.target.value })}
@@ -168,7 +168,7 @@ export function EmailSablonyDokladov() {
               />
             </label>
             <label className="block text-sm sm:col-span-2">
-              <span className="font-medium">{t("Typ dokladu")}</span>
+              <span className="font-semibold">{t("Typ dokladu")}</span>
               <select
                 value={uprava.typ_dokladu}
                 onChange={(e) => setUprava({ ...uprava, typ_dokladu: e.target.value })}
@@ -182,7 +182,7 @@ export function EmailSablonyDokladov() {
               </select>
             </label>
             <label className="block text-sm">
-              <span className="font-medium">{t("Jazyk")}</span>
+              <span className="font-semibold">{t("Jazyk")}</span>
               <select
                 value={uprava.jazyk}
                 onChange={(e) => setUprava({ ...uprava, jazyk: e.target.value })}
@@ -197,7 +197,7 @@ export function EmailSablonyDokladov() {
             </label>
           </div>
           <label className="block text-sm">
-            <span className="font-medium">{t("Predmet")}</span>
+            <span className="font-semibold">{t("Predmet")}</span>
             <input
               value={uprava.predmet}
               onChange={(e) => setUprava({ ...uprava, predmet: e.target.value })}
@@ -206,7 +206,7 @@ export function EmailSablonyDokladov() {
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">{t("Správa")}</span>
+            <span className="font-semibold">{t("Správa")}</span>
             <textarea
               rows={8}
               value={uprava.text}
@@ -221,15 +221,15 @@ export function EmailSablonyDokladov() {
                 type="button"
                 title={t(p.popis)}
                 onClick={() => setUprava({ ...uprava, text: `${uprava.text}${p.kod}` })}
-                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:bg-secondary"
+                className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-xs hover:bg-accent"
               >
                 {p.kod}
               </button>
             ))}
           </div>
           <div className="rounded-md bg-muted/50 p-3 text-xs">
-            <div className="mb-1 font-medium text-muted-foreground">{t("Ukážka")}</div>
-            <div className="font-medium">{doplnPremenne(uprava.predmet, ukazka)}</div>
+            <div className="mb-1 font-semibold text-muted-foreground">{t("Ukážka")}</div>
+            <div className="font-semibold">{doplnPremenne(uprava.predmet, ukazka)}</div>
             <div className="mt-1 whitespace-pre-wrap break-words">
               {doplnPremenne(uprava.text, ukazka)}
             </div>
@@ -238,7 +238,7 @@ export function EmailSablonyDokladov() {
             <button
               type="button"
               onClick={() => setUprava(null)}
-              className="h-9 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="h-9 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
             >
               {t("Zrušiť")}
             </button>
@@ -246,7 +246,7 @@ export function EmailSablonyDokladov() {
               type="button"
               disabled={busy}
               onClick={uloz}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("Uložiť šablónu")}
@@ -257,7 +257,7 @@ export function EmailSablonyDokladov() {
         <button
           type="button"
           onClick={() => setUprava({ ...NOVA })}
-          className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+          className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
         >
           <Plus className="h-4 w-4" />
           {t("Pridať šablónu")}

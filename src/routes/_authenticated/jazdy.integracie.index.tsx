@@ -35,14 +35,14 @@ function IntegrationsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Link
             to="/jazdy/integracie/commander"
-            className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
+            className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:bg-accent/40"
           >
             <div className="flex items-start gap-3">
               <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                 <Satellite className="h-5 w-5" />
               </div>
               <div>
-                <div className="font-medium">Commander GPS</div>
+                <div className="font-semibold">Commander GPS</div>
                 <div className="text-sm text-muted-foreground">
                   {t("Automatický import jázd z Commander GPS cez REST API v1.")}
                 </div>
@@ -52,14 +52,14 @@ function IntegrationsPage() {
           </Link>
           <Link
             to="/jazdy/integracie/tesla"
-            className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
+            className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:bg-accent/40"
           >
             <div className="flex items-start gap-3">
               <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                 <Car className="h-5 w-5" />
               </div>
               <div>
-                <div className="font-medium">Tesla Fleet API</div>
+                <div className="font-semibold">Tesla Fleet API</div>
                 <div className="text-sm text-muted-foreground">
                   {t(
                     "Synchronizácia Tesla vozidiel, tachometra a polohy cez oficiálne Tesla Fleet API (OAuth).",
@@ -74,14 +74,14 @@ function IntegrationsPage() {
               key={a.id}
               to="/jazdy/integracie/$poskytovatel"
               params={{ poskytovatel: a.id }}
-              className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
+              className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:bg-accent/40"
             >
               <div className="flex min-w-0 items-start gap-3">
                 <div className="rounded-lg bg-primary/10 p-2 text-primary-hover">
                   <Satellite className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium">{a.nazov}</div>
+                  <div className="font-semibold">{a.nazov}</div>
                   <div className="text-sm text-muted-foreground">
                     {a.vieTankovania
                       ? t("Automatický import jázd a tankovaní do knihy jázd.")

@@ -148,14 +148,14 @@ export function PlatitelDphRegister({
   };
 
   return (
-    <div className="sm:col-span-2 min-w-0 space-y-2 rounded-lg border border-border p-3">
+    <div className="sm:col-span-2 min-w-0 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium">{t("Overenie v registri DPH")}</span>
+        <span className="text-sm font-semibold">{t("Overenie v registri DPH")}</span>
         <button
           type="button"
           onClick={overTeraz}
           disabled={!!pracujem}
-          className="rounded-md border border-input px-2.5 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+          className="rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent disabled:opacity-50"
         >
           {pracujem === "over" ? t("Overujem…") : t("Overiť teraz")}
         </button>
@@ -183,7 +183,7 @@ export function PlatitelDphRegister({
       )}
 
       {stav?.chyba && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="text-xs text-warning">
           {t("Register sa naposledy nepodarilo overiť ({datum}) — skúsi sa to znova.", {
             datum: datumSk(stav.chyba.at),
           })}
@@ -193,7 +193,7 @@ export function PlatitelDphRegister({
       {nesulad && p && (
         <div
           role="alert"
-          className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+          className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground"
         >
           <span className="min-w-0 flex-1">
             {zdroj === "fs_sk"
@@ -222,7 +222,7 @@ export function PlatitelDphRegister({
             type="button"
             onClick={prevezmiZRegistra}
             disabled={!!pracujem}
-            className="rounded-md bg-primary px-2.5 py-1 font-medium text-primary-foreground disabled:opacity-50"
+            className="rounded-md bg-primary px-2.5 py-1 font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {pracujem === "prevezmi" ? t("Preberám…") : t("Prevziať z registra")}
           </button>
@@ -234,7 +234,7 @@ export function PlatitelDphRegister({
           type="checkbox"
           checked={firma.dph_auto_overenie !== false}
           onChange={(e) => onAuto(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-input"
+          className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
         />
         <span className="text-sm">
           {t("Automaticky overovať platiteľstvo DPH")}

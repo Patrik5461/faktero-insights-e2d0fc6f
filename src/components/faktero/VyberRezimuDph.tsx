@@ -55,13 +55,13 @@ export function VyberRezimuDph({
               schema: zosuladSchemu(vybrana, k, e.target.checked),
             })
           }
-          className="mt-0.5 h-4 w-4 rounded border-input"
+          className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
         />
-        <span className="text-sm font-medium">{t("Firma je platiteľ DPH")}</span>
+        <span className="text-sm font-semibold">{t("Firma je platiteľ DPH")}</span>
       </label>
 
       <label className="mt-3 block">
-        <span className="text-sm font-medium">
+        <span className="text-sm font-semibold">
           {platitel ? t("Typ registrácie") : t("Postavenie k DPH")}
         </span>
         <select
@@ -79,12 +79,12 @@ export function VyberRezimuDph({
       </label>
 
       {chybaIc && (
-        <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+        <p className="mt-2 text-xs text-warning">
           {t("K tejto registrácii patrí IČ DPH — doplňte ho vyššie, inak nebude na faktúrach.")}
         </p>
       )}
       {icNavyse && (
-        <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+        <p className="mt-2 text-xs text-warning">
           {t(
             "Máte vyplnené IČ DPH, ale firma je vedená bez registrácie. Skontrolujte, či nejde o registráciu podľa § 7 alebo § 7a.",
           )}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { FileText, Car, Check, Fingerprint } from "lucide-react";
@@ -38,6 +39,8 @@ export const Route = createFileRoute("/prihlasenie")({
 });
 
 function LoginPage() {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   const { t } = useT();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -145,19 +148,19 @@ function LoginPage() {
   }
 
   return (
-    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 py-10 outline-none">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Prihlásenie")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Prihlásenie")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t("Vitajte späť. Vyberte produkt a prihláste sa do svojho účtu.")}
         </p>
 
         {/* Product picker */}
         <div className="mt-5">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="mb-2 text-sm font-semibold text-foreground">
             {t("Prihlásiť sa do:")}
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -174,7 +177,7 @@ function LoginPage() {
               onClick={() => chooseProduct("logbook")}
             />
           </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             {t("Rovnaký účet, iný produkt. Prepnúť môžete kedykoľvek v hlavičke.")}
           </p>
         </div>
@@ -186,7 +189,7 @@ function LoginPage() {
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
           {/* Pole vnútri <label> a `autoComplete` — to isté ako pri registrácii. */}
           <label className="block">
-            <span className="text-sm font-medium">{t("Email")}</span>
+            <span className="text-sm font-semibold">{t("Email")}</span>
             <input
               type="email"
               autoComplete="username"
@@ -197,7 +200,7 @@ function LoginPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">{t("Heslo")}</span>
+            <span className="text-sm font-semibold">{t("Heslo")}</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -222,13 +225,13 @@ function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {loading ? t("Prihlasujem...") : t("Prihlásiť sa")}
           </button>
 
           {nepotvrdeny && (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
               <p className="text-muted-foreground">
                 {t("Účet ešte nie je potvrdený. Odkaz sme poslali na")}{" "}
                 <strong className="text-foreground">{email}</strong>.
@@ -306,7 +309,7 @@ function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
     <button
       type="button"
       onClick={go}
-      className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-secondary"
     >
       <Fingerprint className="h-4 w-4" /> {t("Prihlásiť sa biometriou")}
     </button>

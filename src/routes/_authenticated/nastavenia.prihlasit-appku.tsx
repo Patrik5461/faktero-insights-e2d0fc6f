@@ -90,14 +90,17 @@ function Stranka() {
         description={t("Naskenujte kód appkou Faktero a prihlási sa bez hesla.")}
       />
       <PageBody>
-        <div className="mx-auto grid max-w-2xl gap-6">
-          <section className="rounded-xl border border-border bg-card p-6">
+        <div className="grid max-w-3xl gap-6">
+          <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
             <div className="flex flex-wrap items-start gap-6">
-              <div className="grid h-[280px] w-[280px] max-w-full shrink-0 place-items-center rounded-lg border border-border bg-white">
+              <div className={`grid h-[280px] w-[280px] max-w-full shrink-0 place-items-center rounded-lg border border-border ${
+                  hotovo || busy || !kod ? "bg-muted/40" : "bg-white"
+                }`}
+              >
                 {hotovo ? (
-                  <div className="flex flex-col items-center gap-2 p-4 text-center text-emerald-700 dark:text-emerald-400">
+                  <div className="flex flex-col items-center gap-2 p-4 text-center text-primary">
                     <CheckCircle2 className="h-12 w-12" />
-                    <span className="text-sm font-medium">{t("Appka je prihlásená.")}</span>
+                    <span className="text-sm font-semibold text-foreground">{t("Appka je prihlásená.")}</span>
                   </div>
                 ) : busy || !kod ? (
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -110,7 +113,7 @@ function Stranka() {
                 )}
               </div>
               <div className="min-w-0 flex-1 space-y-3 text-sm">
-                <ol className="list-decimal space-y-1.5 pl-5">
+                <ol className="list-decimal space-y-2 pl-5 marker:font-semibold marker:text-primary">
                   <li>{t("Otvorte v telefóne appku Faktero.")}</li>
                   <li>
                     {t("Na prihlasovacej obrazovke ťuknite na Prihlásiť sa QR kódom z webu.")}
@@ -126,7 +129,7 @@ function Stranka() {
                 ) : vyprsal ? (
                   <p className="text-muted-foreground">{t("Platnosť kódu vypršala.")}</p>
                 ) : kod ? (
-                  <p className="text-muted-foreground">
+                  <p className="tabular-nums text-muted-foreground">
                     {t("Kód platí ešte {s} s a dá sa použiť len raz.", { s: zostava })}
                   </p>
                 ) : null}
@@ -134,7 +137,7 @@ function Stranka() {
                   <button
                     onClick={() => void novyKod()}
                     disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                   >
                     <RefreshCw className="h-4 w-4" /> {t("Zobraziť nový kód")}
                   </button>
@@ -142,7 +145,7 @@ function Stranka() {
               </div>
             </div>
           </section>
-          <section className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
+          <section className="flex gap-3 rounded-xl border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
             <Smartphone className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
               {t(

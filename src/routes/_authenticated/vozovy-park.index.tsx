@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { nazovVlastnictva, terminyNaRiesenie } from "@/lib/faktero/vozovy-park";
@@ -58,13 +59,13 @@ function VozovyPark() {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/vozovy-park/palivove-karty"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-muted"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
             >
               <CreditCard className="h-4 w-4" /> {t("Palivové karty")}
             </Link>
             <Link
               to="/vozovy-park/nove"
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> {t("Nové vozidlo")}
             </Link>
@@ -76,12 +77,12 @@ function VozovyPark() {
           <span className="text-muted-foreground">
             {t("Vozidiel: {n}", { n: zobrazene.length })}
             {naRiesenie > 0 && (
-              <span className="ml-3 font-medium text-amber-700 dark:text-amber-300">
+              <span className="ml-3 font-semibold text-warning">
                 {t("Termíny na riešenie: {n}", { n: naRiesenie })}
               </span>
             )}
           </span>
-          <label className="flex items-center gap-2">
+          <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               checked={ajVyradene}
@@ -92,11 +93,13 @@ function VozovyPark() {
         </div>
 
         {vozidla === null ? (
-          <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : zobrazene.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
-            <Car className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
+            <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-border bg-card text-primary shadow-sm">
+              <Car className="h-5 w-5" />
+            </div>
+            <p className="max-w-md text-sm text-muted-foreground">
               {t(
                 "Zatiaľ žiadne vozidlo. Pridajte prvé a nahrajte k nemu technický preukaz — údaje sa z neho vyčítajú.",
               )}
@@ -105,14 +108,14 @@ function VozovyPark() {
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
                 <tr>
-                  <th className="p-3">{t("Vozidlo")}</th>
-                  <th className="p-3">{t("ŠPZ")}</th>
-                  <th className="hidden p-3 md:table-cell">{t("Vlastníctvo")}</th>
-                  <th className="hidden p-3 lg:table-cell">{t("Vodič")}</th>
-                  <th className="p-3">{t("Termíny")}</th>
-                  <th className="hidden p-3 text-right md:table-cell">{t("Dokumenty")}</th>
+                  <th className="whitespace-nowrap px-4 py-2.5">{t("Vozidlo")}</th>
+                  <th className="whitespace-nowrap px-4 py-2.5">{t("ŠPZ")}</th>
+                  <th className="hidden whitespace-nowrap px-4 py-2.5 md:table-cell">{t("Vlastníctvo")}</th>
+                  <th className="hidden whitespace-nowrap px-4 py-2.5 lg:table-cell">{t("Vodič")}</th>
+                  <th className="whitespace-nowrap px-4 py-2.5">{t("Termíny")}</th>
+                  <th className="hidden whitespace-nowrap px-4 py-2.5 text-right md:table-cell">{t("Dokumenty")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -121,11 +124,11 @@ function VozovyPark() {
                   return (
                     <tr
                       key={v.id}
-                      className={`cursor-pointer hover:bg-muted/30 ${v.active === false ? "opacity-60" : ""}`}
+                      className={`cursor-pointer transition-colors hover:bg-muted/40 ${v.active === false ? "opacity-60" : ""}`}
                       onClick={() => navigate({ to: "/vozovy-park/$id", params: { id: v.id } })}
                     >
-                      <td className="p-3">
-                        <div className="font-medium">{v.name}</div>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold">{v.name}</div>
                         {(v.znacka || v.model) && (
                           <div className="text-xs text-muted-foreground">
                             {[v.znacka, v.model, v.rok_vyroby].filter(Boolean).join(" · ")}
@@ -135,14 +138,14 @@ function VozovyPark() {
                           <div className="text-xs text-muted-foreground">{t("vyradené")}</div>
                         )}
                       </td>
-                      <td className="p-3 font-mono text-xs">{v.license_plate ?? "—"}</td>
-                      <td className="hidden p-3 md:table-cell">
+                      <td className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">{v.license_plate ?? "—"}</td>
+                      <td className="hidden px-4 py-3 md:table-cell">
                         {nazovVlastnictva(v.vlastnictvo)
                           ? t(nazovVlastnictva(v.vlastnictvo)!)
                           : "—"}
                       </td>
-                      <td className="hidden p-3 lg:table-cell">{v.vodic ?? "—"}</td>
-                      <td className="p-3">
+                      <td className="hidden px-4 py-3 lg:table-cell">{v.vodic ?? "—"}</td>
+                      <td className="px-4 py-3">
                         {terminy.length ? (
                           <div className="flex flex-wrap gap-1">
                             {terminy.map((x) => (
@@ -157,7 +160,7 @@ function VozovyPark() {
                           </span>
                         )}
                       </td>
-                      <td className="hidden p-3 text-right md:table-cell">
+                      <td className="hidden px-4 py-3 text-right md:table-cell">
                         {dokumenty[v.id] ? (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
                             <FileText className="h-3.5 w-3.5" /> {dokumenty[v.id]}

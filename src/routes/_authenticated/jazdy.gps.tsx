@@ -119,13 +119,13 @@ function GpsTripPage() {
       <PageBody>
         <div className="mx-auto max-w-md space-y-4">
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            <label className="block text-sm">
+            <label className="block text-sm font-semibold">
               {t("Vozidlo")}
               <select
                 disabled={tracking}
                 value={vehicleId}
                 onChange={(e) => setVehicleId(e.target.value)}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal disabled:opacity-60"
               >
                 <option value="">
                   {vozidlaNacitane && vehicles.length === 0
@@ -142,18 +142,18 @@ function GpsTripPage() {
             {vozidlaNacitane && vehicles.length === 0 && (
               <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
                 {t("Zatiaľ nemáte žiadne aktívne vozidlo.")}{" "}
-                <Link to="/jazdy/vozidla" className="font-medium text-primary hover:underline">
+                <Link to="/jazdy/vozidla" className="font-semibold text-primary underline-offset-2 hover:text-primary-hover hover:underline">
                   {t("Pridajte vozidlo")}
                 </Link>{" "}
                 {t("a potom môžete spustiť GPS jazdu.")}
               </div>
             )}
-            <label className="block text-sm">
+            <label className="block text-sm font-semibold">
               {t("Účel cesty")}
               <input
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
               />
             </label>
             <JobPicker value={jobId} onChange={setJobId} disabled={tracking} />
@@ -167,9 +167,9 @@ function GpsTripPage() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 text-center">
-            <div className="text-5xl font-bold tabular-nums">
+            <div className="text-5xl font-bold tabular-nums tracking-tight">
               {formatujCislo(distance, 2)}{" "}
-              <span className="text-2xl text-muted-foreground">km</span>
+              <span className="text-2xl font-semibold text-muted-foreground">km</span>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
               {tracking ? t("zaznam::Nahrávam…") : t("Pripravené")}
@@ -179,14 +179,14 @@ function GpsTripPage() {
           {!tracking ? (
             <button
               onClick={start}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-base font-medium text-primary-foreground hover:opacity-90"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-base font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               <Play className="h-5 w-5" /> {t("Spustiť sledovanie")}
             </button>
           ) : (
             <button
               onClick={stop}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-4 text-base font-medium text-destructive-foreground hover:opacity-90"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-4 text-base font-semibold text-destructive-foreground hover:bg-destructive/90"
             >
               <Square className="h-5 w-5" /> {t("Ukončiť a uložiť")}
             </button>

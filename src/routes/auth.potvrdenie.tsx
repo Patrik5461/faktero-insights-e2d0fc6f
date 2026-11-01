@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/auth/potvrdenie")({
  * kód, prihlási a pošle ďalej tam, kam registrácia pôvodne smerovala.
  */
 function PotvrdeniePage() {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   const { t } = useT();
   const { token_hash, type, next } = Route.useSearch();
   const [chyba, setChyba] = useState<string | null>(null);
@@ -58,15 +61,15 @@ function PotvrdeniePage() {
   }, [token_hash, type, next]);
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+    <div className="grid min-h-screen place-items-center bg-page px-4 py-10">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-center shadow-sm sm:p-8">
         {chyba ? (
           <>
             <h1 className="text-lg font-semibold">{t("Odkaz nefunguje")}</h1>
             <p className="mt-2 text-sm text-muted-foreground">{chyba}</p>
             <Link
               to="/prihlasenie"
-              className="mt-5 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              className="mt-5 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               {t("Prihlásiť sa")}
             </Link>

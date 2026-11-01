@@ -22,7 +22,7 @@ function PoznamkyStranka() {
         )}
       />
       <PageBody>
-        <div className="max-w-3xl rounded-xl border border-border bg-card p-6">
+        <div className="max-w-3xl rounded-xl border border-border bg-card p-5 sm:p-6">
           <PreddefinovanePoznamkySprava />
         </div>
       </PageBody>

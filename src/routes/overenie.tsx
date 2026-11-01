@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,8 @@ export const Route = createFileRoute("/overenie")({
  * zariadení až do odhlásenia.
  */
 function OvereniePage() {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   const { next } = Route.useSearch();
   const navigate = useNavigate();
   const [kod, setKod] = useState("");
@@ -49,12 +52,12 @@ function OvereniePage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+    <div className="grid min-h-screen place-items-center bg-page px-4 py-10">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Logo variant="header" className="mb-6 h-8" />
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold tracking-tight">Dvojfaktorové overenie</h1>
+          <h1 className="text-xl font-bold tracking-tight">Dvojfaktorové overenie</h1>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           Zadajte 6-miestny kód z overovacej appky (Google Authenticator, Microsoft Authenticator…).
@@ -75,7 +78,7 @@ function OvereniePage() {
           <button
             type="submit"
             disabled={overujem}
-            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {overujem ? "Overujem…" : "Overiť"}
           </button>

@@ -27,7 +27,7 @@ export function VyberKrajiny({
 
   return (
     <label className="block">
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <select value={vybrana} onChange={(e) => onZmena(e.target.value)} className="input mt-1">
         {KRAJINY_DANE.map((k) => (
           <option key={k.kod} value={k.kod}>

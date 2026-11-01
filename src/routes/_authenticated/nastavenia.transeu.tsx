@@ -1,3 +1,5 @@
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -87,16 +89,14 @@ function Stranka() {
       />
       <PageBody>
         {stav === null ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
-          </div>
+          <NacitavanieStav />
         ) : (
           <div className="space-y-6">
             <Pripojenie companyId={cid} stav={stav} onZmena={obnov} />
             {stav.napojenie?.prihlaseny ? <Objednavky companyId={cid} /> : null}
             <p className="text-sm text-muted-foreground">
               {t("Ako to funguje, nájdete v")}{" "}
-              <Link to="/pomoc/prepojenia" hash="transeu" className="text-primary hover:underline">
+              <Link to="/pomoc/prepojenia" hash="transeu" className="font-medium text-primary hover:text-primary-hover hover:underline">
                 {t("manuáli k Trans.eu")}
               </Link>
               .
@@ -158,7 +158,7 @@ function Pripojenie({
     : maVlastnuUlozenu || (vlastna ? vyplnene : stav.aplikaciaFaktera);
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <div className="flex items-start gap-3">
         <Truck className="mt-0.5 hidden h-5 w-5 shrink-0 text-primary sm:block" />
         <div className="min-w-0 flex-1">
@@ -166,15 +166,9 @@ function Pripojenie({
             <Truck className="h-5 w-5 text-primary sm:hidden" />
             {t("Účet Trans.eu")}
             {n?.prihlaseny ? (
-              <span
-                className={
-                  n.stav === "chyba"
-                    ? "rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-300"
-                    : "rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300"
-                }
-              >
+              <StavOdznak ton={n.stav === "chyba" ? "chyba" : "uspech"}>
                 {n.stav === "chyba" ? t("treba sa prihlásiť znova") : t("pripojené")}
-              </span>
+              </StavOdznak>
             ) : null}
           </h2>
           {n?.prihlaseny ? (
@@ -195,7 +189,7 @@ function Pripojenie({
                   <button
                     onClick={() => void prihlasit()}
                     disabled={busy}
-                    className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                    className="rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"
                   >
                     {t("Prihlásiť znova")}
                   </button>
@@ -212,14 +206,14 @@ function Pripojenie({
                       await odpoj({ data: { company_id: companyId } });
                       onZmena();
                     }}
-                    className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                    className="rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"
                   >
                     {t("Odpojiť")}
                   </button>
                 </div>
               </div>
               {n.posledna_chyba ? (
-                <p className="text-xs text-red-700 dark:text-red-300">{n.posledna_chyba}</p>
+                <p className="text-xs text-destructive">{n.posledna_chyba}</p>
               ) : null}
               <label className="flex items-start gap-2">
                 <input
@@ -268,14 +262,14 @@ function Pripojenie({
                   {t("Mám vlastné prístupové údaje k API Trans.eu")}
                 </label>
               ) : (
-                <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-200">
+                <p className="rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-foreground">
                   {t(
                     "Na pripojenie potrebujete prístup k API Trans.eu: Client ID, Client Secret a Api-key. Vyžiadate si ich v Trans.eu formulárom „API Keys Request“.",
                   )}
                 </p>
               )}
               {n?.posledna_chyba ? (
-                <p className="text-xs text-red-700 dark:text-red-300">{n.posledna_chyba}</p>
+                <p className="text-xs text-destructive">{n.posledna_chyba}</p>
               ) : null}
               {maVlastnuUlozenu && !zmenitUdaje ? (
                 <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -288,7 +282,7 @@ function Pripojenie({
                       setVlastna(true);
                       setZmenitUdaje(true);
                     }}
-                    className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+                    className="rounded-md border border-input px-2 py-1 hover:bg-accent"
                   >
                     {t("Zmeniť prístupové údaje")}
                   </button>
@@ -304,7 +298,7 @@ function Pripojenie({
                         toast.error(e?.message ?? t("Chyba"));
                       }
                     }}
-                    className="rounded-md border border-border px-2 py-1 hover:bg-secondary"
+                    className="rounded-md border border-input px-2 py-1 hover:bg-accent"
                   >
                     {t("Odstrániť")}
                   </button>
@@ -313,7 +307,7 @@ function Pripojenie({
               {vlastna && (!maVlastnuUlozenu || zmenitUdaje) ? (
                 <div className="grid gap-2 sm:grid-cols-3">
                   <label className="block min-w-0">
-                    <span className="text-xs text-muted-foreground">Client ID</span>
+                    <span className="text-xs font-semibold text-muted-foreground">Client ID</span>
                     <input
                       value={clientId}
                       onChange={(e) => setClientId(e.target.value.trim())}
@@ -322,7 +316,7 @@ function Pripojenie({
                     />
                   </label>
                   <label className="block min-w-0">
-                    <span className="text-xs text-muted-foreground">Client Secret</span>
+                    <span className="text-xs font-semibold text-muted-foreground">Client Secret</span>
                     <input
                       type="password"
                       value={secret}
@@ -332,7 +326,7 @@ function Pripojenie({
                     />
                   </label>
                   <label className="block min-w-0">
-                    <span className="text-xs text-muted-foreground">Api-key</span>
+                    <span className="text-xs font-semibold text-muted-foreground">Api-key</span>
                     <input
                       type="password"
                       value={apiKluc}
@@ -350,7 +344,7 @@ function Pripojenie({
               <button
                 onClick={() => void prihlasit()}
                 disabled={busy || !daSaPrihlasit}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Pripojiť Trans.eu")}
               </button>
@@ -401,11 +395,11 @@ function Objednavky({ companyId }: { companyId: string }) {
   const datum = (s: string | null) => (s ? new Date(s).toLocaleDateString(loc) : "—");
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <h2 className="text-lg font-semibold">{t("Prijaté prepravné objednávky")}</h2>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="text-sm">
-          <span className="text-xs text-muted-foreground">{t("Objednávky za posledných")}</span>
+          <span className="text-xs font-semibold text-muted-foreground">{t("Objednávky za posledných")}</span>
           <select value={dni} onChange={(e) => setDni(Number(e.target.value))} className={vstup}>
             {[14, 60, 180, 365].map((d) => (
               <option key={d} value={d}>
@@ -423,7 +417,7 @@ function Objednavky({ companyId }: { companyId: string }) {
             )
           }
           disabled={busy !== null}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
         >
           {busy === "stiahni" && <Loader2 className="h-4 w-4 animate-spin" />}
           {t("Stiahnuť z Trans.eu")}
@@ -434,17 +428,17 @@ function Objednavky({ companyId }: { companyId: string }) {
           {t("Zatiaľ žiadne objednávky. Stiahnite ich tlačidlom vyššie.")}
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-border rounded-lg border border-border">
+        <ul className="mt-4 divide-y divide-border rounded-lg border border-border bg-card">
           {rows.map((r) => {
             const fakturovat = daSaFakturovat(r.stav);
             return (
               <li key={r.id} className="flex flex-wrap items-start gap-3 p-3 text-sm">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <strong>{r.cislo ?? r.transeu_id.slice(0, 8)}</strong>
-                    <span className="rounded bg-secondary px-1.5 py-0.5 text-xs">
+                    <strong className="cislo-dokladu">{r.cislo ?? r.transeu_id.slice(0, 8)}</strong>
+                    <StavOdznak ton="neutralny" maly>
                       {t(STAV_TRANSEU[r.stav ?? ""] ?? r.stav ?? "—")}
-                    </span>
+                    </StavOdznak>
                     <span className="min-w-0 break-words">{r.zakaznik_nazov ?? "—"}</span>
                     {r.zakaznik_vat_id ? (
                       <span className="text-xs text-muted-foreground">{r.zakaznik_vat_id}</span>
@@ -455,11 +449,12 @@ function Objednavky({ companyId }: { companyId: string }) {
                     {datum(r.vykladka_do)}){r.vzdialenost_km ? ` · ${r.vzdialenost_km} km` : ""}
                   </div>
                   {r.chyba ? (
-                    <div className="mt-1 text-xs text-red-700 dark:text-red-300">{r.chyba}</div>
+                    <div className="mt-1 text-xs text-destructive">{r.chyba}</div>
                   ) : null}
                 </div>
-                <div className="text-right tabular-nums">
-                  {Number(r.cena ?? 0).toFixed(2)} {r.mena}
+                <div className="whitespace-nowrap text-right">
+                  <span className="suma">{Number(r.cena ?? 0).toFixed(2)}</span>{" "}
+                  <span className="suma-mena">{r.mena}</span>
                   {r.typ_ceny === "km" ? (
                     <div className="text-xs text-muted-foreground">{t("cena za km")}</div>
                   ) : null}
@@ -469,7 +464,7 @@ function Objednavky({ companyId }: { companyId: string }) {
                     <Link
                       to="/objednavky/$id"
                       params={{ id: r.objednavka.id }}
-                      className="text-xs text-primary hover:underline"
+                      className="text-xs font-medium text-primary hover:text-primary-hover hover:underline"
                     >
                       {t("Objednávka {cislo}", { cislo: r.objednavka.cislo })}
                     </Link>
@@ -483,7 +478,7 @@ function Objednavky({ companyId }: { companyId: string }) {
                         )
                       }
                       disabled={busy !== null}
-                      className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                      className="rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                     >
                       {t("Založiť objednávku")}
                     </button>
@@ -493,12 +488,12 @@ function Objednavky({ companyId }: { companyId: string }) {
                       <Link
                         to="/faktury/$id"
                         params={{ id: r.faktura.id }}
-                        className="text-xs text-primary hover:underline"
+                        className="text-xs font-medium text-primary hover:text-primary-hover hover:underline"
                       >
                         {t("Faktúra {cislo}", { cislo: r.faktura.cislo })}
                       </Link>
                       {r.faktura_odoslana_at ? (
-                        <span className="text-xs text-emerald-700 dark:text-emerald-300">
+                        <span className="text-xs font-semibold text-primary-hover">
                           {t("v Trans.eu od {kedy}", { kedy: datum(r.faktura_odoslana_at) })}
                         </span>
                       ) : (
@@ -518,7 +513,7 @@ function Objednavky({ companyId }: { companyId: string }) {
                             );
                           }}
                           disabled={busy !== null}
-                          className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                          className="rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                         >
                           {t("Poslať faktúru do Trans.eu")}
                         </button>
@@ -545,7 +540,7 @@ function Objednavky({ companyId }: { companyId: string }) {
                           );
                         }}
                         disabled={busy !== null}
-                        className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                       >
                         {busy === `fakt-${r.id}` && <Loader2 className="h-3 w-3 animate-spin" />}
                         {t("Vystaviť faktúru")}

@@ -88,8 +88,10 @@ function SablonyPage() {
                     type="button"
                     aria-pressed={vybrana === s.key}
                     onClick={() => vyber(s.key)}
-                    className={`rounded-md border px-3 py-1.5 text-sm ${
-                      vybrana === s.key ? "border-primary bg-primary/10 font-medium" : "border-border text-muted-foreground"
+                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                      vybrana === s.key
+                        ? "border-primary bg-primary/10 text-primary-hover"
+                        : "border-input bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                   >
                     {s.title}
