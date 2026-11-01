@@ -33,6 +33,7 @@ import { clenenieDphPrijateho, odberatelPodnikatel } from "./kv-urcenie";
 import { jeNezahrnovat } from "./uctovanie-agenda";
 import { jeTuzemskePdp } from "./pohoda-kontrola";
 import { krajinaDane } from "./vat-rates";
+import { denDaneVystavenej, denOdpoctuPrijatej } from "./dph-prehlad";
 
 /**
  * Riadky dokladu bez riadkov rozúčtovania s členením „nezahrnovať do
@@ -293,7 +294,8 @@ export async function nacitajVstup(
       pôvodné plnenie z už podaného obdobia.
     */
     const opravna = f.type === "credit_note" || f.type === "debit_note" || Boolean(f.opravuje_fakturu_id);
-    const den = opravna ? f.issue_date || f.delivery_date : f.delivery_date || f.issue_date;
+    // Rovnaké pravidlo používa DPH prehľad (`dph-prehlad.ts`) — sumy musia sedieť.
+    const den = denDaneVystavenej(f) ?? "";
     if (NEPLATNE_STAVY.includes(String(f.status))) continue;
     /*
       Mindest-Ist-Versteuerung (§ 13 Abs. 1 Nr. 1 Buchst. a S. 4 UStG): daň
@@ -537,9 +539,7 @@ export async function nacitajVstup(
       (§ 53 ods. 2) — dátum prijatia, inak vyhotovenia.
     */
     const dobropisP = Boolean(p.opravuje_cislo) || Number(p.amount_total ?? 0) < 0;
-    const den = dobropisP
-      ? p.received_date || p.issue_date || p.delivery_date
-      : p.delivery_date || p.issue_date;
+    const den = denOdpoctuPrijatej(p) ?? "";
     if (!vDobe(den)) continue;
     /*
       Samofaktúra je daňový doklad až po odsúhlasení dodávateľom. Dovtedy sa

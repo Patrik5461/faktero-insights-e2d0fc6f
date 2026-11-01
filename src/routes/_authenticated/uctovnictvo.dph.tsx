@@ -13,6 +13,10 @@ import {
   vstupPrehladu,
   vystupPrehladu,
   type RiadokPrehladu,
+  denDaneVystavenej,
+  denOdpoctuPrijatej,
+  filterDatumovObdobia,
+  vObdobi,
 } from "@/lib/faktero/dph-prehlad";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +38,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { vatBucketLabel, vatBucketOrder } from "@/lib/faktero/vat-rates";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -162,11 +167,12 @@ function DphPage() {
           supabase
             .from("invoices")
             .select(
-              "id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, exchange_rate, status, reverse_charge, type",
+              "id, invoice_number, issue_date, delivery_date, opravuje_fakturu_id, customer_name, subtotal, vat_total, total, currency, exchange_rate, status, reverse_charge, type",
             )
             .eq("company_id", cid)
-            .gte("issue_date", period.from)
-            .lte("issue_date", period.to)
+            // Hrubý výber podľa oboch dátumov; do obdobia ho presne zaradí
+            // `denDaneVystavenej` — rovnako ako priznanie (dátum dodania).
+            .or(filterDatumovObdobia(["issue_date", "delivery_date"], period.from, period.to))
             .is("deleted_at", null)
             .neq("status", "draft")
             .neq("status", "cancelled")
@@ -182,20 +188,29 @@ function DphPage() {
           supabase
             .from("purchase_invoices")
             .select(
-              "id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur",
+              "id, invoice_number, issue_date, delivery_date, received_date, opravuje_cislo, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur, samofakturacia, samofakturacia_stav",
             )
             .eq("company_id", cid)
-            .gte("issue_date", period.from)
-            .lte("issue_date", period.to)
+            .or(
+              filterDatumovObdobia(
+                ["issue_date", "delivery_date", "received_date"],
+                period.from,
+                period.to,
+              ),
+            )
             .is("deleted_at", null)
-            // Samofaktúra sa odpočíta až po odsúhlasení dodávateľom.
-            .or("samofakturacia.eq.false,samofakturacia_stav.eq.odsuhlasena")
+            // Ako výkaz: prijatá zálohová nie je daňový doklad a faktúra iného
+            // odberateľa (nepotvrdená) do odpočtu nejde.
+            .eq("type", "regular")
+            .is("odberatel_nesedi", null)
             .order("issue_date", { ascending: true })
             .order("id")
             .range(zac, kon),
         ),
       ]);
-      const invIds = (invs ?? []).map((i: any) => i.id);
+      const invIds = (invs ?? [])
+        .filter((i: any) => vObdobi(denDaneVystavenej(i), period.from, period.to))
+        .map((i: any) => i.id);
       const itms = await riadkyPreIds<any>(invIds, (kus, zac, kon) =>
         supabase
           .from("invoice_items")
@@ -204,9 +219,18 @@ function DphPage() {
           .order("id")
           .range(zac, kon),
       );
-      setInvoices(invs ?? []);
-      setItems(itms);
-      setPurchases(purch ?? []);
+      const vystaveneVObdobi = (invs ?? []).filter((i: any) =>
+        vObdobi(denDaneVystavenej(i), period.from, period.to),
+      );
+      const idVObdobi = new Set(vystaveneVObdobi.map((i: any) => i.id));
+      setInvoices(vystaveneVObdobi);
+      setItems(itms.filter((it: any) => idVObdobi.has(it.invoice_id)));
+      setPurchases(
+        (purch ?? []).filter(
+          // Samofaktúra sa odpočíta až po odsúhlasení dodávateľom (ako výkaz).
+          (p: any) => zapocitatelna(p) && vObdobi(denOdpoctuPrijatej(p), period.from, period.to),
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -290,7 +314,7 @@ function DphPage() {
     for (const i of invoices) {
       const s = sumyVystavenej(i);
       lines.push(
-        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${s.zaklad.toFixed(2)};${s.dph.toFixed(2)};${s.spolu.toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")};${i.currency || domaca}`,
+        `${bezVzorca(i.invoice_number)};${denDaneVystavenej(i) ?? ""};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${s.zaklad.toFixed(2)};${s.dph.toFixed(2)};${s.spolu.toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")};${i.currency || domaca}`,
       );
     }
     lines.push("");
@@ -298,7 +322,7 @@ function DphPage() {
     lines.push(t("Číslo;Dátum;Dodávateľ;Základ;DPH;Spolu;Mena"));
     for (const p of purchases) {
       lines.push(
-        `${bezVzorca(p.invoice_number)};${p.issue_date};${bezVzorca((p.supplier_name || "").replace(/;/g, ","))};${Number(p.amount_without_vat || 0).toFixed(2)};${Number(p.vat_amount || 0).toFixed(2)};${Number(p.amount_total || 0).toFixed(2)};${p.currency || domaca}`,
+        `${bezVzorca(p.invoice_number)};${denOdpoctuPrijatej(p) ?? ""};${bezVzorca((p.supplier_name || "").replace(/;/g, ","))};${Number(p.amount_without_vat || 0).toFixed(2)};${Number(p.vat_amount || 0).toFixed(2)};${Number(p.amount_total || 0).toFixed(2)};${p.currency || domaca}`,
       );
     }
     const csv = "\uFEFF" + lines.join("\n");
@@ -341,10 +365,10 @@ function DphPage() {
 <table><tr class="tot"><td>${rozdiel >= 0 ? t("Odvod DPH") : t("Nadmerný odpočet")}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>${t("Vystavené faktúry ({n})", { n: invoices.length })}</h2>
 <table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Odberateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).zaklad, i.currency || domaca)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).dph, i.currency || domaca)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).spolu, i.currency || domaca)}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(denDaneVystavenej(i)))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).zaklad, i.currency || domaca)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).dph, i.currency || domaca)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).spolu, i.currency || domaca)}</td></tr>`).join("")}</tbody></table>
 <h2>${t("Prijaté faktúry ({n})", { n: purchases.length })}</h2>
 <table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Dodávateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
-<tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(p.issue_date))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || domaca)}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || domaca)}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || domaca)}</td></tr>`).join("")}</tbody></table>
+<tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(denOdpoctuPrijatej(p)))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || domaca)}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || domaca)}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || domaca)}</td></tr>`).join("")}</tbody></table>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
     win.document.open();
@@ -361,6 +385,7 @@ function DphPage() {
       <PageBody>
         <p className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           {t("Tento prehľad je informatívny.")}{" "}
+          {t("Doklady sú v období podľa dátumu dodania, rovnako ako v priznaní.")}{" "}
           <Link to="/uctovnictvo/vykazy" className="underline">
             {t("Výkazy k DPH")}
           </Link>{" "}
@@ -601,7 +626,7 @@ function DphPage() {
               riadky={invoices.map((i) => ({
                 id: i.id,
                 cislo: i.invoice_number,
-                datum: datumNaDoklade(i.issue_date),
+                datum: datumNaDoklade(denDaneVystavenej(i)),
                 meno: `${i.customer_name ?? ""}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}`,
                 zaklad: fmt(sumyVystavenej(i).zaklad, i.currency || domaca),
                 dph: fmt(sumyVystavenej(i).dph, i.currency || domaca),
@@ -623,7 +648,7 @@ function DphPage() {
                 {invoices.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.invoice_number}</TableCell>
-                    <TableCell className="whitespace-nowrap">{datumNaDoklade(i.issue_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{datumNaDoklade(denDaneVystavenej(i))}</TableCell>
                     <TableCell>
                       {i.customer_name}
                       {i.reverse_charge ? ` (${t("PDP")})` : ""}
@@ -662,7 +687,7 @@ function DphPage() {
               riadky={purchases.map((p) => ({
                 id: p.id,
                 cislo: p.invoice_number,
-                datum: datumNaDoklade(p.issue_date),
+                datum: datumNaDoklade(denOdpoctuPrijatej(p)),
                 meno: p.supplier_name ?? "",
                 zaklad: fmt(Number(p.amount_without_vat || 0), p.currency || domaca),
                 dph: fmt(Number(p.vat_amount || 0), p.currency || domaca),
@@ -684,7 +709,7 @@ function DphPage() {
                 {purchases.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.invoice_number}</TableCell>
-                    <TableCell className="whitespace-nowrap">{datumNaDoklade(p.issue_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{datumNaDoklade(denOdpoctuPrijatej(p))}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
                     <TableCell className="text-right">
                       {fmt(Number(p.amount_without_vat || 0), p.currency || domaca)}

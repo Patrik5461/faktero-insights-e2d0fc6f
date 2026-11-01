@@ -23,7 +23,16 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { ossPrehlad, stavPrahu, eurZaJednotkuOss, VYTKA_BEZ_KURZU_OSS } = await import("./oss");
+    const {
+      ossPrehlad,
+      stavPrahu,
+      eurZaJednotkuOss,
+      potrebneKurzyOss,
+      klucKurzuOss,
+      denDokladuOss,
+      VYTKA_BEZ_KURZU_OSS,
+    } = await import("./oss");
+    const { kurzEcbOss } = await import("./kurzy.server");
     const { data: firma } = await context.supabase
       .from("companies")
       .select("country")
@@ -54,15 +63,25 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
         !["draft", "cancelled"].includes(String(f.status)) && String(f.type) !== "proforma",
     );
     const vObdobi = vsetky.filter((f: any) => {
-      const d = String(f.delivery_date || f.issue_date);
+      const d = denDokladuOss(f);
       return d >= od && d <= doDna;
     });
 
-    // OSS aj hranica sú v eurách — doklad v cudzej mene sa prepočíta kurzom z dokladu.
-    const kurzEur = (f: any) => eurZaJednotkuOss(f, country);
-    const bezKurzu = vsetky.filter((f: any) => kurzEur(f) === null);
+    /*
+      OSS aj hranica sú v eurách — doklad v cudzej mene sa prepočíta kurzom ECB
+      k poslednému dňu štvrťroka, do ktorého patrí (čl. 366 smernice
+      2006/112/ES), nie kurzom z dokladu. Do hranice idú len doklady roka.
+    */
+    const zaRokDoklady = vsetky.filter((f: any) => denDokladuOss(f).startsWith(String(data.rok)));
+    const kurzy = new Map<string, { kurz: number; den: string; predbezne: boolean }>();
+    for (const { mena, den } of potrebneKurzyOss(zaRokDoklady, country)) {
+      const k = await kurzEcbOss(mena, den);
+      if (k) kurzy.set(klucKurzuOss(mena, den), k);
+    }
+    const kurzEur = (f: any) => eurZaJednotkuOss(f, country, kurzy);
+    const bezKurzu = zaRokDoklady.filter((f: any) => kurzEur(f) === null);
     const sKurzom = (fs: any[]) => fs.filter((f: any) => kurzEur(f) !== null);
-    const prepocitane = vsetky.some((f: any) => {
+    const prepocitane = zaRokDoklady.some((f: any) => {
       const k = kurzEur(f);
       return k !== null && k !== 1;
     });
@@ -83,7 +102,7 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
       }
       return {
         cislo: String(f.invoice_number),
-        datum: String(f.delivery_date || f.issue_date),
+        datum: denDokladuOss(f),
         stat: String(f.oss_country ?? ""),
         opravny: f.type === "credit_note",
         riadky: [...mapa.values()].map((r) => ({
@@ -99,8 +118,7 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
       prehlad.vytky.push({ doklad: String(f.invoice_number), text: VYTKA_BEZ_KURZU_OSS });
 
     // Ročný objem kvôli hranici 10 000 € — počíta sa za všetky štáty spolu.
-    const zaRok = sKurzom(vsetky)
-      .filter((f: any) => String(f.delivery_date || f.issue_date).startsWith(String(data.rok)))
+    const zaRok = sKurzom(zaRokDoklady)
       // Dobropis znižuje — otáča sa len kladne uložený (`znamienkoDokladu`).
       .reduce(
         (a: number, f: any) =>
@@ -113,6 +131,13 @@ export const ossPrehladFn = createServerFn({ method: "POST" })
       prehlad,
       pocet: vObdobi.length,
       prepocitane,
+      // Kurzy ECB použité na prepočet (mena, deň kurzu) a či je niektorý predbežný.
+      kurzy: [...kurzy.entries()].map(([kluc, k]) => ({
+        mena: kluc.split("|")[0],
+        koniecStvrtroka: kluc.split("|")[1],
+        ...k,
+      })),
+      predbezne: [...kurzy.values()].some((k) => k.predbezne),
       prah: stavPrahu(zaRok),
       zaRok: Math.round(zaRok * 100) / 100,
     };

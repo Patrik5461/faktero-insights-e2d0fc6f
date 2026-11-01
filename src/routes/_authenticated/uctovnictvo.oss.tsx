@@ -34,7 +34,7 @@ function eur(n: number): string {
 }
 
 function OssPage() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const nacitajPrehlad = useServerFn(ossPrehladFn);
   const dnes = new Date();
   const [rok, setRok] = useState(dnes.getFullYear());
@@ -134,7 +134,25 @@ function OssPage() {
               </p>
               {data.prepocitane && (
                 <p className="mt-1 text-xs text-muted-foreground" data-testid="oss-prepocitane">
-                  {t("Doklady v cudzej mene sú prepočítané do eur kurzom ECB z dokladu.")}
+                  {t(
+                    "Prepočítané: doklady v cudzej mene sú v eurách kurzom ECB k poslednému dňu štvrťroka (čl. 366 smernice 2006/112/ES).",
+                  )}{" "}
+                  {data.kurzy
+                    .map(
+                      (k) =>
+                        `${k.mena} ${datumNaDoklade(k.den)}: ${k.kurz.toLocaleString(jazyk === "de" ? "de-DE" : jazyk === "cs" ? "cs-CZ" : "sk-SK", { maximumFractionDigits: 4 })}`,
+                    )
+                    .join(" · ")}
+                </p>
+              )}
+              {data.predbezne && (
+                <p
+                  className="mt-1 text-xs text-amber-700 dark:text-amber-400"
+                  data-testid="oss-predbezne"
+                >
+                  {t(
+                    "Kurz ECB k poslednému dňu štvrťroka ešte nie je zverejnený — prepočet je predbežný (posledný zverejnený kurz).",
+                  )}
                 </p>
               )}
             </div>
@@ -193,7 +211,13 @@ function OssPage() {
                   </thead>
                   <tbody>
                     {data.prehlad.riadky.map((r) => (
-                      <tr key={`${r.stat}-${r.sadzba}`} className="border-t border-border">
+                      <tr
+                        key={`${r.stat}-${r.sadzba}`}
+                        className="border-t border-border"
+                        data-testid={`oss-riadok-${r.stat}-${r.sadzba}`}
+                        data-zaklad={r.zaklad}
+                        data-dan={r.dan}
+                      >
                         <td className="px-4 py-2">
                           {r.nazovStatu} <span className="text-muted-foreground">({r.stat})</span>
                         </td>

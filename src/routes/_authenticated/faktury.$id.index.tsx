@@ -5,6 +5,7 @@ import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
 import { riadkySoZlavou } from "@/lib/faktero/zlavy";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { importDphNeplatitela } from "@/lib/faktero/dph-neplatitel-import";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
 import { UdajePreUctovnika, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
@@ -1806,6 +1807,22 @@ function InvoiceDetail() {
             <Link to="/firma" className="font-medium text-primary hover:underline">
               {t("Doplniť v nastaveniach firmy")}
             </Link>
+          </div>
+        </div>
+      )}
+      {/* Import histórie smie zapísať DPH aj neplatiteľovi (poistka v DB) — treba ho skontrolovať. */}
+      {importDphNeplatitela(inv as any, company) && (
+        <div
+          className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm"
+          data-testid="import-dph-neplatitel"
+        >
+          <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+            <AlertTriangle className="h-4 w-4" /> {t("Importovaný doklad s DPH, hoci firma nie je platiteľ")}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {t("Doklad prišiel z importu ({zdroj}) s DPH. Firma nie je platiteľ DPH — skontrolujte ho.", {
+              zdroj: String((inv as any).import_source),
+            })}
           </div>
         </div>
       )}

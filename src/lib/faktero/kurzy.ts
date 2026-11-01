@@ -51,6 +51,19 @@ export function kurzKDatumu(kurzy: Kurz[], mena: string, den: string): Kurz | nu
 }
 
 /**
+ * Prvý kurz zverejnený v deň `den` alebo po ňom — OSS (čl. 366 smernice
+ * 2006/112/ES: kurz ECB k poslednému dňu obdobia, a keď v ten deň nebol
+ * zverejnený, kurz z najbližšieho nasledujúceho dňa zverejnenia).
+ */
+export function kurzOdDatumu(kurzy: Kurz[], mena: string, den: string): Kurz | null {
+  const m = mena.toUpperCase();
+  const vhodne = kurzy
+    .filter((k) => k.mena.toUpperCase() === m && k.den >= den)
+    .sort((a, b) => (a.den < b.den ? -1 : 1));
+  return vhodne[0] ?? null;
+}
+
+/**
  * Suma v cudzej mene na eurá. Kurz je „koľko meny za jedno euro", takže sa
  * delí — pri 25,4 CZK za euro je 254 CZK rovných 10 eur.
  */

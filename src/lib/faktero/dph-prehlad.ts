@@ -17,6 +17,11 @@
   prijaté berú uložené `*_eur` (nesú domácu menu aj pri CZ). Doklad v cudzej
   mene bez kurzu sa do súčtov nepridá (kurz 1 sa nehádá) — vráti ho
   `dokladyBezPrepoctu` a stránka ho vypíše ako „bez prepočtu“.
+
+  Obdobie (rozhodnutie 1. 11. 2026): doklad patrí do mesiaca podľa toho
+  istého dňa ako vo výkazoch — `denDaneVystavenej` / `denOdpoctuPrijatej`
+  používa aj `dph-vykazy.server.ts`, aby prehľad a priznanie za rovnaký
+  mesiac dali rovnaké sumy. Dovtedy prehľad bral dátum vystavenia.
 */
 import { znamienkoDokladu } from "./faktury-sumy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
@@ -49,6 +54,59 @@ export type PrijataPrehladu = {
   amount_without_vat_eur?: number | string | null;
   vat_amount_eur?: number | string | null;
 };
+
+/**
+ * Deň, ktorým vystavený doklad vstupuje do obdobia DPH: dátum dodania, bez
+ * neho vystavenia. Opravná faktúra (dobropis, ťarchopis, oprava) patrí do
+ * obdobia, v ktorom bola vyhotovená (§ 25 ods. 1) — dátum dodania nesie
+ * pôvodné plnenie z už podaného obdobia.
+ */
+export function denDaneVystavenej(f: {
+  type?: string | null;
+  issue_date?: string | null;
+  delivery_date?: string | null;
+  opravuje_fakturu_id?: string | null;
+}): string | null {
+  const opravna =
+    f.type === "credit_note" || f.type === "debit_note" || Boolean(f.opravuje_fakturu_id);
+  return (opravna ? f.issue_date || f.delivery_date : f.delivery_date || f.issue_date) || null;
+}
+
+/**
+ * Deň, ktorým prijatá faktúra vstupuje do odpočtu: dátum dodania, bez neho
+ * vystavenia. Prijatý dobropis opraví odpočet v období, keď ho firma dostala
+ * (§ 53 ods. 2) — dátum prijatia, inak vyhotovenia.
+ */
+export function denOdpoctuPrijatej(p: {
+  issue_date?: string | null;
+  delivery_date?: string | null;
+  received_date?: string | null;
+  opravuje_cislo?: string | null;
+  amount_total?: number | string | null;
+}): string | null {
+  const dobropis = Boolean(p.opravuje_cislo) || Number(p.amount_total ?? 0) < 0;
+  return (
+    (dobropis
+      ? p.received_date || p.issue_date || p.delivery_date
+      : p.delivery_date || p.issue_date) || null
+  );
+}
+
+/** Je deň v období `od`–`do` (ISO dátumy, vrátane hraníc)? */
+export function vObdobi(den: string | null | undefined, od: string, doDna: string): boolean {
+  const s = String(den ?? "").slice(0, 10);
+  return s !== "" && s >= od && s <= doDna;
+}
+
+/**
+ * Filter PostgREST (`.or(...)`) na doklady, ktorých niektorý z dátumov padne
+ * do obdobia — presné zaradenie potom urobí `denDaneVystavenej` /
+ * `denOdpoctuPrijatej`. Len podľa `issue_date` by vypadol doklad dodaný v
+ * období, ale vystavený o mesiac neskôr.
+ */
+export function filterDatumovObdobia(stlpce: string[], od: string, doDna: string): string {
+  return stlpce.map((c) => `and(${c}.gte.${od},${c}.lte.${doDna})`).join(",");
+}
 
 const n = (v: unknown) => {
   const x = Number(v ?? 0);

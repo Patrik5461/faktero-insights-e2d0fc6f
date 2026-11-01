@@ -88,19 +88,87 @@ describe("zaradenie do štvrťroka", () => {
   });
 });
 
-describe("OSS — prepočet do eur (B-14)", () => {
-  it("euro je 1, SK/DE firma prepočíta kurzom ECB z dokladu", async () => {
-    const { eurZaJednotkuOss } = await import("./oss");
-    expect(eurZaJednotkuOss({ currency: "EUR" }, "SK")).toBe(1);
-    expect(eurZaJednotkuOss({ currency: null }, "SK")).toBe(1);
-    expect(eurZaJednotkuOss({ currency: "CZK", exchange_rate: 25 }, "SK")).toBeCloseTo(0.04, 6);
-    expect(eurZaJednotkuOss({ currency: "PLN", exchange_rate: 4 }, "DE")).toBeCloseTo(0.25, 6);
+describe("OSS — prepočet kurzom ECB k poslednému dňu štvrťroka (čl. 366 smernice 2006/112/ES)", () => {
+  const kurzy = new Map([
+    ["CZK|2026-09-30", { kurz: 25, den: "2026-09-30", predbezne: false }],
+    ["PLN|2026-09-30", { kurz: 4, den: "2026-09-30", predbezne: false }],
+    ["CZK|2026-06-30", { kurz: 24, den: "2026-06-30", predbezne: false }],
+  ]);
+
+  it("koniec štvrťroka podľa dátumu dokladu", async () => {
+    const { koniecStvrtroka } = await import("./oss");
+    expect(koniecStvrtroka("2026-01-15")).toBe("2026-03-31");
+    expect(koniecStvrtroka("2026-05-31")).toBe("2026-06-30");
+    expect(koniecStvrtroka("2026-09-01")).toBe("2026-09-30");
+    expect(koniecStvrtroka("2024-12-31")).toBe("2024-12-31");
   });
-  it("bez kurzu alebo pri CZ firme v CZK nevymýšľa kurz 1", async () => {
+
+  it("euro je 1, cudzia mena kurzom ku koncu štvrťroka — nie kurzom z dokladu", async () => {
     const { eurZaJednotkuOss } = await import("./oss");
-    expect(eurZaJednotkuOss({ currency: "USD", exchange_rate: null }, "SK")).toBeNull();
-    expect(eurZaJednotkuOss({ currency: "CZK", exchange_rate: 1 }, "CZ")).toBeNull();
-    expect(eurZaJednotkuOss({ currency: null }, "CZ")).toBeNull();
-    expect(eurZaJednotkuOss({ currency: "EUR", exchange_rate: 25 }, "CZ")).toBe(1);
+    expect(eurZaJednotkuOss({ currency: "EUR" }, "SK", kurzy)).toBe(1);
+    expect(eurZaJednotkuOss({ currency: null }, "SK", kurzy)).toBe(1);
+    // Doklad z 2. 7. má na sebe kurz ECB z 1. 7.; OSS berie 30. 9.
+    expect(
+      eurZaJednotkuOss({ currency: "CZK", delivery_date: "2026-07-02" }, "SK", kurzy),
+    ).toBeCloseTo(0.04, 6);
+    expect(
+      eurZaJednotkuOss({ currency: "PLN", issue_date: "2026-08-15" }, "DE", kurzy),
+    ).toBeCloseTo(0.25, 6);
+    // Iný štvrťrok — iný kurz.
+    expect(
+      eurZaJednotkuOss({ currency: "CZK", delivery_date: "2026-04-10" }, "SK", kurzy),
+    ).toBeCloseTo(1 / 24, 6);
+  });
+
+  it("česká firma v korunách sa prepočíta kurzom ECB pre CZK", async () => {
+    const { eurZaJednotkuOss } = await import("./oss");
+    expect(
+      eurZaJednotkuOss({ currency: null, delivery_date: "2026-09-10" }, "CZ", kurzy),
+    ).toBeCloseTo(0.04, 6);
+    expect(eurZaJednotkuOss({ currency: "EUR" }, "CZ", kurzy)).toBe(1);
+  });
+
+  it("bez kurzu nevymýšľa kurz 1", async () => {
+    const { eurZaJednotkuOss } = await import("./oss");
+    expect(
+      eurZaJednotkuOss({ currency: "USD", delivery_date: "2026-09-10" }, "SK", kurzy),
+    ).toBeNull();
+    expect(eurZaJednotkuOss({ currency: "CZK" }, "SK", kurzy)).toBeNull();
+  });
+
+  it("zoznam potrebných kurzov — mena × koniec štvrťroka, bez eura", async () => {
+    const { potrebneKurzyOss } = await import("./oss");
+    expect(
+      potrebneKurzyOss(
+        [
+          { currency: "CZK", delivery_date: "2026-07-02" },
+          { currency: "CZK", issue_date: "2026-09-29" },
+          { currency: "EUR", delivery_date: "2026-07-02" },
+          { currency: "PLN", delivery_date: "2026-02-02" },
+        ],
+        "SK",
+      ),
+    ).toEqual([
+      { mena: "CZK", den: "2026-09-30" },
+      { mena: "PLN", den: "2026-03-31" },
+    ]);
+  });
+
+  it("deň bez kurzu ECB (víkend, sviatok) → najbližší nasledujúci zverejnený", async () => {
+    const { kurzOdDatumu } = await import("./kurzy");
+    const zverejnene = [
+      { den: "2024-03-27", mena: "CZK", kurz: 25.3 },
+      { den: "2024-03-28", mena: "CZK", kurz: 25.31 },
+      // 29. 3. Veľký piatok, 31. 3. nedeľa, 1. 4. Veľkonočný pondelok — ECB nepublikuje.
+      { den: "2024-04-02", mena: "CZK", kurz: 25.4 },
+      { den: "2024-04-03", mena: "CZK", kurz: 25.41 },
+    ];
+    expect(kurzOdDatumu(zverejnene, "czk", "2024-03-31")).toEqual({
+      den: "2024-04-02",
+      mena: "CZK",
+      kurz: 25.4,
+    });
+    expect(kurzOdDatumu(zverejnene, "CZK", "2024-03-28")?.kurz).toBe(25.31);
+    expect(kurzOdDatumu(zverejnene, "CZK", "2024-04-04")).toBeNull();
   });
 });

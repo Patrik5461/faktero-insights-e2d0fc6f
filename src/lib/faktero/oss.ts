@@ -8,31 +8,85 @@
  */
 
 import { statEu, stavPrahu } from "./sadzby-eu";
-import { domacaMena, domacejZaJednotku } from "./kurzy";
+import { domacaMena } from "./kurzy";
 
 /** Výtka pre doklad, ktorý sa nedá vyjadriť v eurách. */
 export const VYTKA_BEZ_KURZU_OSS =
-  "Doklad je v cudzej mene a nemá kurz na prepočet do eur — v priznaní ani v ročnej hranici nie je. Otvorte ho a uložte znova.";
+  "Doklad je v cudzej mene a kurz ECB k poslednému dňu štvrťroka sa nepodarilo zistiť — v priznaní ani v ročnej hranici nie je.";
+
+/** Posledný deň kalendárneho štvrťroka, do ktorého patrí dátum (RRRR-MM-DD). */
+export function koniecStvrtroka(datum: string): string {
+  const { rok, stvrtrok } = stvrtrokDna(datum);
+  return new Date(Date.UTC(rok, stvrtrok * 3, 0)).toISOString().slice(0, 10);
+}
+
+/** Deň, podľa ktorého doklad patrí do štvrťroka OSS — dodanie, inak vystavenie. */
+export function denDokladuOss(f: {
+  delivery_date?: string | null;
+  issue_date?: string | null;
+}): string {
+  return String(f.delivery_date || f.issue_date || "").slice(0, 10);
+}
+
+/** Mena dokladu; prázdna = domáca mena firmy. */
+export function menaDokladuOss(
+  f: { currency?: string | null },
+  country: string | null | undefined,
+): string {
+  return (
+    String(f.currency ?? "")
+      .trim()
+      .toUpperCase() || domacaMena(country)
+  );
+}
+
+/** Kurz ECB („mena za 1 EUR“) ku koncu štvrťroka; kľúč `klucKurzuOss(mena, koniec)`. */
+export type KurzyOss = Map<string, { kurz: number; den: string; predbezne: boolean }>;
+
+export function klucKurzuOss(mena: string, koniecStvrtrokuDen: string): string {
+  return `${mena.toUpperCase()}|${koniecStvrtrokuDen}`;
+}
+
+/** Ktoré kurzy treba na prepočet dokladov (mena × koniec štvrťroka), bez eura. */
+export function potrebneKurzyOss(
+  doklady: {
+    currency?: string | null;
+    delivery_date?: string | null;
+    issue_date?: string | null;
+  }[],
+  country: string | null | undefined,
+): { mena: string; den: string }[] {
+  const von = new Map<string, { mena: string; den: string }>();
+  for (const f of doklady) {
+    const mena = menaDokladuOss(f, country);
+    const datum = denDokladuOss(f);
+    if (mena === "EUR" || !datum) continue;
+    const den = koniecStvrtroka(datum);
+    von.set(klucKurzuOss(mena, den), { mena, den });
+  }
+  return [...von.values()];
+}
 
 /**
  * Koľko eur za 1 jednotku meny faktúry — OSS a hranica 10 000 € sú vždy v
- * eurách. Euro = 1; SK/DE firma prepočíta kurzom ECB z dokladu
- * (`exchange_rate` = mena za 1 EUR). CZ firma má na doklade kurz ČNB
- * (CZK za jednotku), z ktorého sa eurá nedajú vyčítať → `null`, rovnako
- * cudzia mena bez kurzu. Nikdy sa nehádá kurz 1.
+ * eurách. Euro = 1; iná mena (aj koruna českej firmy) sa prepočíta kurzom
+ * ECB k poslednému dňu štvrťroka, do ktorého doklad patrí — čl. 366 ods. 1
+ * smernice 2006/112/ES („kurz platný v posledný deň obdobia, zverejnený ECB
+ * pre ten deň, a ak v ten deň zverejnený nebol, v najbližší nasledujúci deň
+ * zverejnenia“). Kurz z dokladu (deň pred dodaním) sa na OSS nepoužije.
+ * Bez kurzu → `null`; nikdy sa nehádá kurz 1.
  */
 export function eurZaJednotkuOss(
-  f: { currency?: string | null; exchange_rate?: unknown },
+  f: { currency?: string | null; delivery_date?: string | null; issue_date?: string | null },
   country: string | null | undefined,
+  kurzy: KurzyOss,
 ): number | null {
-  const mena =
-    String(f.currency ?? "")
-      .trim()
-      .toUpperCase() || domacaMena(country);
+  const mena = menaDokladuOss(f, country);
   if (mena === "EUR") return 1;
-  if (domacaMena(country) !== "EUR") return null;
-  const k = domacejZaJednotku(f.exchange_rate, country);
-  return k > 0 ? k : null;
+  const datum = denDokladuOss(f);
+  if (!datum) return null;
+  const k = kurzy.get(klucKurzuOss(mena, koniecStvrtroka(datum)));
+  return k && k.kurz > 0 ? 1 / k.kurz : null;
 }
 
 export type OssDoklad = {

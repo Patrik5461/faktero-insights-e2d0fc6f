@@ -10,6 +10,7 @@ import { XMLParser } from "fast-xml-parser";
 import {
   denKurzu,
   kurzKDatumu,
+  kurzOdDatumu,
   kurzyZBmfCsv,
   mesiacBmf,
   naDomacu,
@@ -130,6 +131,53 @@ async function kurzEcb(
     }
   }
   return najdene;
+}
+
+/**
+ * Kurz ECB pre OSS: zverejnený v deň `den` (posledný deň štvrťroka), inak v
+ * najbližší nasledujúci deň zverejnenia (čl. 366 ods. 1 smernice 2006/112/ES).
+ * Keď ešte nie je zverejnený (štvrťrok neskončil alebo ECB ešte nepublikovala),
+ * vráti posledný známy kurz s príznakom `predbezne` — prehľad to povie.
+ */
+export async function kurzEcbOss(
+  mena: string,
+  den: string,
+): Promise<{ kurz: number; den: string; predbezne: boolean } | null> {
+  const m = String(mena).toUpperCase();
+  if (!m || m === "EUR") return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const zDb = async () => {
+    const { data } = await supabaseAdmin
+      .from("exchange_rates")
+      .select("den, mena, kurz")
+      .eq("mena", m)
+      .gte("den", den)
+      .order("den", { ascending: true })
+      .limit(1);
+    const r = (data ?? [])[0];
+    return r ? { kurz: Number(r.kurz), den: String(r.den) } : null;
+  };
+  // Najdlhšia medzera ECB je Veľká noc (štvrtok → utorok) — ďalší dátum je bližšie.
+  const najdene = await zDb();
+  if (najdene && rozdielDni(den, najdene.den) <= 7) return { ...najdene, predbezne: false };
+
+  const dnes = dnesBratislava();
+  if (den < dnes) {
+    for (const url of [POSLEDNYCH_90, CELA_HISTORIA]) {
+      try {
+        const stiahnute = await stiahni(url);
+        await uloz(stiahnute);
+        const zo = kurzOdDatumu(stiahnute, m, den);
+        if (zo && rozdielDni(den, zo.den) <= 7)
+          return { kurz: zo.kurz, den: zo.den, predbezne: false };
+      } catch (e) {
+        console.warn("[kurzy] ECB nedostupná:", String((e as Error)?.message ?? e));
+      }
+    }
+  }
+  // Kurz k poslednému dňu ešte nevyšiel — predbežne posledný zverejnený.
+  const posledny = await kurzEcb(m, den < dnes ? den : dnes);
+  return posledny ? { ...posledny, predbezne: true } : null;
 }
 
 function rozdielDni(a: string, b: string): number {

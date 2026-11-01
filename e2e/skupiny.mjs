@@ -44,6 +44,7 @@ export const SKUPINY = [
       "banka",
       "prikaz",
       "vykazy",
+      "dph-obdobie-oss-kurz",
       "doklady",
       "sklad-zakazka",
       "sklad-import",
