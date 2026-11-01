@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Search, Eye, PauseCircle, PlayCircle } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { ResponsiveDialog } from "@/components/faktero/ResponsiveDialog";
 import {
   listAdminCompanies,
@@ -197,7 +198,7 @@ function AdminCompaniesPage() {
                     </tr>
                   ) : (
                     rows.map((r) => (
-                      <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                      <KlikatelnyRiadok key={r.id} ciel={{ to: "/admin/companies/$id", params: { id: r.id } }} className="border-t border-border">
                         <td className="px-3 py-2 font-medium">
                           <Link
                             to="/admin/companies/$id"
@@ -247,7 +248,7 @@ function AdminCompaniesPage() {
                             )}
                           </div>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
@@ -256,6 +257,7 @@ function AdminCompaniesPage() {
           }
           mobileCard={(r) => (
             <MobileListCard
+              ciel={{ to: "/admin/companies/$id", params: { id: r.id } }}
               title={r.name}
               subtitle={`IČO ${r.ico ?? "—"} · ${r.owner_email ?? "bez vlastníka"}`}
               status={<StatusBadge row={r} />}

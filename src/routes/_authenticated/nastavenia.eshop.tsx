@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Package, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
@@ -283,7 +284,11 @@ function ShoptetPanel({
                         </tr>
                       ) : (
                         rows.map((r) => (
-                          <tr key={r.kod} className="border-b border-border last:border-0">
+                          <KlikatelnyRiadok
+                            key={r.kod}
+                            ciel={r.faktura ? { to: "/faktury/$id", params: { id: r.faktura.id } } : null}
+                            className="border-b border-border last:border-0"
+                          >
                             <td className="p-2">
                               <input
                                 type="checkbox"
@@ -332,7 +337,7 @@ function ShoptetPanel({
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </td>
-                          </tr>
+                          </KlikatelnyRiadok>
                         ))
                       )}
                     </tbody>

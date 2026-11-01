@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { listAuditLogs } from "@/lib/faktero/admin.functions";
 
 export const Route = createFileRoute("/admin/audit-log")({
@@ -98,7 +99,7 @@ function AdminAuditLogPage() {
                     </tr>
                   ) : (
                     rows.map((r: any) => (
-                      <tr key={r.id} className="border-t border-border align-top hover:bg-muted/30">
+                      <KlikatelnyRiadok key={r.id} ciel={cielZaznamu(r)} className="border-t border-border align-top">
                         <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
                           {fmtDateTime(r.created_at)}
                         </td>
@@ -122,7 +123,7 @@ function AdminAuditLogPage() {
                             {JSON.stringify(r.metadata ?? {}, null, 0)}
                           </pre>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
@@ -131,6 +132,7 @@ function AdminAuditLogPage() {
           }
           mobileCard={(r: any) => (
             <MobileListCard
+              ciel={cielZaznamu(r)}
               title={r.action}
               subtitle={`${r.admin_email ?? "—"} · ${r.entity_type ?? "—"}`}
               meta={fmtDateTime(r.created_at)}
@@ -164,4 +166,12 @@ function AdminAuditLogPage() {
       </AdminPageBody>
     </>
   );
+}
+
+/** Záznam o firme alebo používateľovi vedie na ich detail v admine; ostatné záznamy detail nemajú. */
+function cielZaznamu(r: { entity_type?: string | null; entity_id?: string | null }) {
+  if (!r.entity_id) return null;
+  if (r.entity_type === "company") return { to: "/admin/companies/$id" as const, params: { id: r.entity_id } };
+  if (r.entity_type === "user") return { to: "/admin/users/$id" as const, params: { id: r.entity_id } };
+  return null;
 }

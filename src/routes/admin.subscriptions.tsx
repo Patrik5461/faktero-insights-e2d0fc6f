@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import {
   listAdminSubscriptions,
   adminSetCompanyPlan,
@@ -247,8 +248,12 @@ function AdminSubscriptionsPage() {
                     </tr>
                   ) : (
                     rows.map((r) => (
-                      <tr key={r.id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-3 py-2 font-medium">{r.companies?.name ?? "—"}</td>
+                      <KlikatelnyRiadok key={r.id} ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }} className="border-t border-border">
+                        <td className="px-3 py-2 font-medium">
+                          <Link to="/admin/companies/$id" params={{ id: r.company_id }} className="hover:underline">
+                            {r.companies?.name ?? "—"}
+                          </Link>
+                        </td>
                         <td className="px-3 py-2 uppercase">{r.plan ?? "free"}</td>
                         <td className="px-3 py-2">{r.status ?? "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">
@@ -318,7 +323,7 @@ function AdminSubscriptionsPage() {
                             )}
                           </div>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
@@ -327,6 +332,7 @@ function AdminSubscriptionsPage() {
           }
           mobileCard={(r: any) => (
             <MobileListCard
+              ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }}
               title={r.companies?.name ?? "—"}
               subtitle={`${(r.plan ?? "free").toUpperCase()} · ${r.status ?? "—"}`}
               meta={`Trial: ${fmtDate(r.trial_ends_at)} · Ďalšia: ${fmtDate(r.next_billing_at)}`}

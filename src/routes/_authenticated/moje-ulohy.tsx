@@ -16,6 +16,8 @@ import {
   PartyPopper,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import {
   fetchMyCompanies,
   getActiveCompanyId,
@@ -65,6 +67,7 @@ function Stranka() {
   const { t, jazyk } = useT();
   const { firma, dalej } = Route.useSearch();
   const navigate = useNavigate();
+  const klik = useKlikNaRiadok();
   const prepnut = Boolean(firma && firma !== getActiveCompanyId());
   const [prepinam, setPrepinam] = useState(prepnut);
   const companyId = prepinam ? null : getActiveCompanyId();
@@ -263,8 +266,13 @@ function Stranka() {
                 <Prazdne>{t("Žiadny nevyriešený komentár, v ktorom by vás kolega označil.")}</Prazdne>
               ) : (
                 <ul className="space-y-2">
-                  {ulohy.komentare.map((k) => (
-                    <li key={k.id} className="rounded-lg border border-border bg-card p-3">
+                  {ulohy.komentare.map((k) => {
+                    // Celá karta otvorí doklad (ak je ešte dostupný); tlačidlo Vyriešiť si klik nechá.
+                    const p = klik(k.dokladDostupny ? (odkazNaDoklad(k.agenda, k.dokladId) as any) : null, {
+                      klavesnica: false,
+                    });
+                    return (
+                    <li key={k.id} {...p} className={cn("rounded-lg border border-border bg-card p-3", p.className)}>
                       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="min-w-0 break-words">
                           <span className="font-medium text-foreground">{k.autor}</span> ·{" "}
@@ -302,7 +310,8 @@ function Stranka() {
                         </button>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </Sekcia>

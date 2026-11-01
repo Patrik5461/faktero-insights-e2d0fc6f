@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -66,6 +68,8 @@ function Stranka() {
   });
   const [form, setForm] = useState<CestaForm | null>(null);
   const [busy, setBusy] = useState(false);
+  const klik = useKlikNaRiadok();
+  const formularRef = useRef<HTMLDivElement>(null);
 
   const obnov = async () => {
     if (!companyId) return;
@@ -94,6 +98,21 @@ function Stranka() {
     );
 
   const spravca = ["owner", "admin"].includes(d.mojaRola);
+  /** Otvorí formulár cesty nad zoznamom a presunie naň fokus (ceruzka aj klik na riadok). */
+  const upravCestu = (c: any) => {
+    setForm({
+      id: c.id,
+      nazov: c.nazov,
+      urovne: c.urovne?.length ? c.urovne : [[]],
+      podmienky: c.podmienky ?? {},
+      predvolena: c.predvolena,
+      poradie: c.poradie ?? 0,
+    });
+    requestAnimationFrame(() => {
+      formularRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      formularRef.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    });
+  };
   const ludia: Clovek[] = d.ludia;
   const meno = (id: string) =>
     id === "manazer" ? t("manažér zákazky") : (ludia.find((l) => l.id === id)?.meno ?? t("používateľ"));
@@ -285,7 +304,7 @@ function Stranka() {
           </div>
 
           {form && (
-            <div className="mt-4 space-y-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+            <div ref={formularRef} className="mt-4 space-y-3 rounded-md border border-primary/30 bg-primary/5 p-3">
               <label className="block">
                 <span className="text-xs font-semibold text-muted-foreground">{t("Názov")}</span>
                 <input value={form.nazov} onChange={(e) => setForm({ ...form, nazov: e.target.value })} className={vstup} />
@@ -410,7 +429,14 @@ function Stranka() {
           ) : (
             <ul className="mt-4 divide-y divide-border">
               {d.cesty.map((c: any) => (
-                <li key={c.id} className="flex flex-wrap items-start gap-2 py-3 text-sm">
+                <li
+                  key={c.id}
+                  {...klik(null, { naKlik: () => upravCestu(c), vypnute: !spravca })}
+                  className={cn(
+                    "flex flex-wrap items-start gap-2 py-3 text-sm",
+                    spravca && TRIEDA_KLIK_RIADKU,
+                  )}
+                >
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">
                       {c.nazov}
@@ -441,16 +467,7 @@ function Stranka() {
                   {spravca && (
                     <>
                       <button
-                        onClick={() =>
-                          setForm({
-                            id: c.id,
-                            nazov: c.nazov,
-                            urovne: c.urovne?.length ? c.urovne : [[]],
-                            podmienky: c.podmienky ?? {},
-                            predvolena: c.predvolena,
-                            poradie: c.poradie ?? 0,
-                          })
-                        }
+                        onClick={() => upravCestu(c)}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
                         aria-label={t("Upraviť {nazov}", { nazov: c.nazov })}
                       >

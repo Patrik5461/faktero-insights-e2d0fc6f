@@ -75,6 +75,11 @@ export const SKUPINY = [
       "ine-doklady-vyber",
       // Len číta (výber súborov bez nahratia, filter histórie importov).
       "importy-zdroj",
+      // Klik na riadok B1–B4: len čítajú zoznamy firmy Test.
+      "klik-b1",
+      "klik-b2",
+      "klik-b3",
+      "klik-b4",
     ],
   },
   {
@@ -115,6 +120,10 @@ export const SKUPINY = [
       // B2: test2 sa počas toku prepne na neplatiteľa — preto za sebou v tejto skupine.
       "b2-neplatitel-dph",
       "b2-cz-formulare",
+      // Appka: eFaktúra prijatá (zakladá doručenú eFaktúru so značkou behu v test2).
+      "apka-efaktura-prijata",
+      // Klik B5: zakladá a maže vlastnú jazdu, vozidlo a zamestnanca v test2.
+      "klik-b5",
     ],
   },
   {
@@ -149,6 +158,8 @@ export const SKUPINY = [
       "stare-vydanie-chyby",
       "zmiznuta-firma",
       "audit-verejne-endpointy",
+      // Klik B6: len číta, prepína firmu len v kontexte svojho prehliadača.
+      "klik-b6",
     ],
   },
   {

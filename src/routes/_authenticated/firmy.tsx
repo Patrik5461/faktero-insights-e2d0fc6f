@@ -75,7 +75,6 @@ function CompanyManagementPage() {
   const [activeId, setAid] = useState<string | null>(getActiveCompanyId());
   const [open, setOpen] = useState(false);
   const [mazem, setMazem] = useState<Row | null>(null);
-  const klik = useKlikNaRiadok();
   const zmazFirmu = useServerFn(zmazFirmuFn);
   const [hladanie, setHladanie] = useState("");
   const [rola, setRola] = useState("");
@@ -167,6 +166,9 @@ function CompanyManagementPage() {
     }
     await load();
   }
+
+  // Klik na riadok inej ako aktívnej firmy ju prepne (ako klik na názov); aktívna firma riadkom nič nerobí.
+  const klik = useKlikNaRiadok();
 
   function switchTo(id: string, kam = "/dashboard") {
     setActiveCompanyId(id);
@@ -452,17 +454,16 @@ function CompanyManagementPage() {
             </div>
           )}
           {zobrazene.map((r) => {
-            // Klik na kartu prepne firmu — to isté, čo klik na názov.
-            const p = klik(null, {
+            const karta = klik(null, {
               naKlik: () => switchTo(r.id),
-              klavesnica: false,
               vypnute: r.id === activeId,
+              klavesnica: false,
             });
             return (
             <div
               key={r.id}
-              {...p}
-              className={cn(p.className, "rounded-xl border border-border bg-card p-4 text-sm shadow-sm")}
+              {...karta}
+              className={cn("rounded-xl border border-border bg-card p-4 text-sm shadow-sm", karta.className)}
             >
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <AvatarFirmy nazov={r.name} />

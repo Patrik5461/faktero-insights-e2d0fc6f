@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Search, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { TelegramAdminKarta } from "@/components/faktero/TelegramAdminKarta";
 import { WhatsAppAdminKarta } from "@/components/faktero/WhatsAppAdminKarta";
 import { WhatsAppIkona } from "@/components/faktero/WhatsAppIkona";
@@ -121,8 +122,9 @@ function AdminPodporaPage() {
                 {data.rows.map((r: any) => {
                   const nove = neprecitanaPrePodporu(r);
                   return (
-                    <tr
+                    <KlikatelnyRiadok
                       key={r.id}
+                      ciel={{ to: "/admin/podpora/$id", params: { id: r.id } }}
                       className="border-b border-border last:border-0 hover:bg-secondary/40"
                     >
                       <td className="p-3 tabular-nums">
@@ -186,7 +188,7 @@ function AdminPodporaPage() {
                           {r.posledna_od === "podpora" ? "odpovedala podpora" : "napísal zákazník"}
                         </div>
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   );
                 })}
               </tbody>

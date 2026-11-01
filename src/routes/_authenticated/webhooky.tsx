@@ -4,6 +4,7 @@ import { retryWebhookDelivery } from "@/lib/faktero/webhook-delivery.functions";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { StavDoruceniaWebhooku, mozeSaPoslatZnova } from "@/components/faktero/StavDoruceniaWebhooku";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -151,7 +152,7 @@ function WebhooksPage() {
                   </tr>
                 )}
                 {hooks.map((w) => (
-                  <tr key={w.id}>
+                  <KlikatelnyRiadok key={w.id} naKlik={() => setEditing(w)}>
                     <td className="max-w-[360px] break-all p-3 font-mono text-xs">{w.url}</td>
                     <td className="p-3 text-xs">{(w.events ?? []).join(", ")}</td>
                     <td className="p-3">
@@ -174,7 +175,7 @@ function WebhooksPage() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>

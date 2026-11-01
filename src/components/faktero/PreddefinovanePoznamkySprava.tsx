@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,8 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useT } from "@/lib/i18n/useT";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 
 /** Načíta celý číselník firmy (je malý — strop 1 000 riadkov tu nehrozí). */
 export async function nacitajPoznamky(companyId: string): Promise<PreddefinovanaPoznamka[]> {
@@ -49,6 +51,22 @@ export function PreddefinovanePoznamkySprava({
   const [zoznam, setZoznam] = useState<PreddefinovanaPoznamka[] | null>(null);
   const [uprava, setUprava] = useState<Uprava | null>(null);
   const [busy, setBusy] = useState(false);
+  const klik = useKlikNaRiadok();
+  const formularRef = useRef<HTMLDivElement>(null);
+
+  /** Otvorí úpravu poznámky pod zoznamom a presunie naň fokus (ceruzka aj klik na riadok). */
+  function upravit(p: PreddefinovanaPoznamka) {
+    setUprava({
+      id: p.id,
+      nazov: p.nazov,
+      text: p.text,
+      agendy: p.agendy as AgendaPoznamky[],
+    });
+    requestAnimationFrame(() => {
+      formularRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      formularRef.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    });
+  }
 
   async function obnov() {
     if (!companyId) return;
@@ -124,8 +142,10 @@ export function PreddefinovanePoznamkySprava({
         </p>
       ) : (
         <ul className="divide-y divide-border rounded-lg border border-border">
-          {zobrazene.map((p) => (
-            <li key={p.id} className="flex min-w-0 flex-wrap items-start gap-2 p-3">
+          {zobrazene.map((p) => {
+            const r = klik(null, { naKlik: () => upravit(p) });
+            return (
+            <li key={p.id} {...r} className={cn("flex min-w-0 flex-wrap items-start gap-2 p-3", r.className)}>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold">{p.nazov || t("(bez názvu)")}</div>
                 <div className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
@@ -142,14 +162,7 @@ export function PreddefinovanePoznamkySprava({
               <button
                 type="button"
                 aria-label={t("Upraviť")}
-                onClick={() =>
-                  setUprava({
-                    id: p.id,
-                    nazov: p.nazov,
-                    text: p.text,
-                    agendy: p.agendy as AgendaPoznamky[],
-                  })
-                }
+                onClick={() => upravit(p)}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
               >
                 <Pencil className="h-4 w-4" />
@@ -163,12 +176,13 @@ export function PreddefinovanePoznamkySprava({
                 <Trash2 className="h-4 w-4" />
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 
       {uprava ? (
-        <div className="space-y-2 rounded-lg border border-border p-3">
+        <div ref={formularRef} className="space-y-2 rounded-lg border border-border p-3">
           <input
             value={uprava.nazov}
             onChange={(e) => setUprava({ ...uprava, nazov: e.target.value })}

@@ -22,6 +22,8 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { UpozornenieKleinunternehmer } from "@/components/faktero/UpozornenieKleinunternehmer";
 import { PrenosFakturyZadarmo } from "@/components/faktero/PrenosFakturyZadarmo";
 import { BankWidget } from "@/components/faktero/BankWidget";
@@ -174,6 +176,7 @@ function useCountdown(target: Date) {
 
 function Dashboard() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
   /* Slovenské povinnosti sa českej firme neponúkajú. */
   const krajina = useKrajinaDane();
   menaPrehladu = krajina === "CZ" ? "CZK" : "EUR";
@@ -726,7 +729,14 @@ function Dashboard() {
               ) : (
                 <ul className="divide-y divide-border">
                   {activeRecurring.map((r) => (
-                    <li key={r.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                    <li
+                      key={r.id}
+                      {...klik({ to: "/opakovane/$id", params: { id: r.id } }, { klavesnica: false })}
+                      className={cn(
+                        "flex items-center justify-between gap-3 py-2.5 text-sm",
+                        TRIEDA_KLIK_RIADKU,
+                      )}
+                    >
                       <div className="min-w-0 flex-1">
                         <Link
                           to="/opakovane/$id"
@@ -768,7 +778,14 @@ function Dashboard() {
               ) : (
                 <ul className="divide-y divide-border">
                   {pendingQuotes.map((q) => (
-                    <li key={q.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                    <li
+                      key={q.id}
+                      {...klik({ to: "/ponuky/$id", params: { id: q.id } }, { klavesnica: false })}
+                      className={cn(
+                        "flex items-center justify-between gap-3 py-2.5 text-sm",
+                        TRIEDA_KLIK_RIADKU,
+                      )}
+                    >
                       <div className="min-w-0 flex-1">
                         <Link
                           to="/ponuky/$id"

@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Search } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { listAdminUsers } from "@/lib/faktero/admin.functions";
 
 export const Route = createFileRoute("/admin/users/")({
@@ -129,7 +130,7 @@ function AdminUsersPage() {
                     </tr>
                   ) : (
                     rows.map((r: any) => (
-                      <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                      <KlikatelnyRiadok key={r.id} ciel={{ to: "/admin/users/$id", params: { id: r.id } }} className="border-t border-border">
                         <td className="px-3 py-2 font-medium">{r.email ?? "—"}</td>
                         <td className="px-3 py-2">{r.full_name ?? "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">
@@ -158,7 +159,7 @@ function AdminUsersPage() {
                             Spravovať
                           </Link>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))
                   )}
                 </tbody>
@@ -166,16 +167,15 @@ function AdminUsersPage() {
             </div>
           }
           mobileCard={(r: any) => (
-            <Link to="/admin/users/$id" params={{ id: r.id }} className="block">
-              <MobileListCard
-                title={r.email ?? "—"}
-                subtitle={r.full_name ?? "—"}
-                meta={`${r.companies?.length ?? 0} firiem · naposledy dnu ${fmtDate(
-                  r.posledne_prihlasenie,
-                )}`}
-                status={<StavUctu row={r} />}
-              />
-            </Link>
+            <MobileListCard
+              ciel={{ to: "/admin/users/$id", params: { id: r.id } }}
+              title={r.email ?? "—"}
+              subtitle={r.full_name ?? "—"}
+              meta={`${r.companies?.length ?? 0} firiem · naposledy dnu ${fmtDate(
+                r.posledne_prihlasenie,
+              )}`}
+              status={<StavUctu row={r} />}
+            />
           )}
         />
 
