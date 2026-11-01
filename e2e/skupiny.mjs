@@ -86,6 +86,9 @@ export const SKUPINY = [
       "pohoda-storno-25a",
       "pohoda-pokladna-prijem",
       "dobropis-dph",
+      // B1 opravy: zapisujú len do QA Českej.
+      "meny-zoznamov",
+      "objednavky-zakazky",
       "vstupy-xss",
       "cz-fakturacia",
       "cz-vykazy",
