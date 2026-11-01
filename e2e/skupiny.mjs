@@ -64,6 +64,9 @@ export const SKUPINY = [
       "banka-tb-suhlas",
       "apka-efaktura-stav",
       "web-efaktura-stav",
+      // B3: zoznam a detail vystavených faktúr (faktúry so značkou behu v Test).
+      "faktury-zoznam-filtre",
+      "faktura-detail-stavy",
     ],
   },
   {

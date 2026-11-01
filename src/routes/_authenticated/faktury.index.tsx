@@ -7,7 +7,11 @@ import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
-import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
+import {
+  filtrujNeuhradenePoSplatnosti,
+  jeFakturaPoSplatnosti,
+  STLPEC_UPOMIENOK,
+} from "@/lib/faktero/akcie-faktury";
 import { sumaNaZobrazenie } from "@/lib/faktero/dobropis-zobrazenie";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
 import { polozkaVystavenej } from "@/lib/faktero/suhrn-vyberu";
@@ -25,7 +29,6 @@ import {
   RotateCcw,
   Copy,
   Bell,
-  CheckCircle2,
   Mail,
   CalendarPlus,
   Archive,
@@ -40,7 +43,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
-import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import {
   kontrolaDatumuVystaveniaFn,
@@ -89,7 +91,7 @@ import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
-type BulkAction = null | "paid" | "email" | "efaktura" | "clone" | "reminder" | "zip";
+type BulkAction = null | "email" | "efaktura" | "clone" | "reminder" | "zip";
 
 /** Ponuka zoradenia. Prvá možnosť je predvolená — od najnovšej faktúry. */
 const ZORADENIE_FAKTUR: MoznostZoradenia[] = [
@@ -126,27 +128,6 @@ type InvoiceSearch = {
   neuhradene?: true;
   q?: string;
 };
-
-type Splatnost = {
-  id?: string;
-  status?: string | null;
-  due_date?: string | null;
-  paid_at?: string | null;
-};
-
-/**
- * „Po splatnosti" nie je stav v databáze — nikto ho tam nezapisuje. Je to
- * výpočet z dátumu splatnosti a úhrady, takže sa filtruje až nad načítanými
- * riadkami a nie cez `equals`.
- */
-function jePoSplatnosti(r: Splatnost, dnes: string): boolean {
-  return (
-    (r.status === "issued" || r.status === "sent") &&
-    !!r.due_date &&
-    r.due_date < dnes &&
-    !r.paid_at
-  );
-}
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Faktúry — Faktero") }] }),
@@ -190,6 +171,8 @@ function InvoicesPage() {
   // Obdobie a „len neexportované“ filtruje databáza, nie načítaná stránka —
   // inak by na druhej strane chýbali faktúry, ktoré na prvú nevošli.
   const stavFiltra = lf.filter("stavDokladu");
+  // Dnešok v Bratislave — rovnaký ako v súčte za filter (`suhrn_vystavenych_faktur`).
+  const today = dnesBratislava();
   const stitokFiltra = lf.filter("stitok");
   const upravDotaz = useCallback(
     (dotaz: any) => {
@@ -200,14 +183,24 @@ function InvoicesPage() {
       // Koncept ani stornovaná sa do účtovníctva neexportujú, tak tu nepatria.
       if (exportovane === "ano") d = d.not("exported_at", "is", null);
       if (exportovane === "nie") d = d.is("exported_at", null).not("status", "in", "(draft,cancelled)");
-      return d;
+      /*
+        Neuhradené, po splatnosti a bez upomienky filtrovali kedysi len
+        načítanú stránku — stránkovanie, počet aj „Vybrať všetko“ pracovali
+        s celým dotazom a hromadná akcia zasiahla aj skryté faktúry.
+      */
+      return filtrujNeuhradenePoSplatnosti(d, {
+        neuhradene: !!neuhradene,
+        poSplatnosti: !!poSplatnosti,
+        bezUpomienky: overdueNoReminder,
+        dnes: today,
+      });
     },
-    [podla, obdobieOd, obdobieDo, exportovane, stavFiltra, stitokFiltra],
+    [podla, obdobieOd, obdobieDo, exportovane, stavFiltra, stitokFiltra, neuhradene, poSplatnosti, overdueNoReminder, today],
   );
   const list = usePagedList({
     resource: "invoices",
     // Bez `select *` — stránka 100 faktúr COPY PRINTU 276 kB → 183 kB.
-    stlpce: SELECT_VYSTAVENYCH,
+    stlpce: overdueNoReminder ? `${SELECT_VYSTAVENYCH},${STLPEC_UPOMIENOK}` : SELECT_VYSTAVENYCH,
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
     equals: Object.keys(equals).length ? equals : undefined,
     // Od najnovšej. Predtým sa radilo podľa `created_at`, čo je pri
@@ -216,7 +209,7 @@ function InvoicesPage() {
     orderBy: { column: "issue_date", ascending: false },
     upravDotaz,
     riadenie: lf,
-    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}|${stavFiltra}|${stitokFiltra}`,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}|${stavFiltra}|${stitokFiltra}|${neuhradene ? 1 : 0}|${poSplatnosti ? 1 : 0}|${overdueNoReminder ? 1 : 0}|${today}`,
   });
   // Predkontácie, vlastné stavy, štítky a uzávierka — raz za firmu, nie za riadok.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "vystavena");
@@ -290,7 +283,6 @@ function InvoicesPage() {
   }
   // Náhľad vedľa zoznamu — pri účtovaní netreba otvárať každú faktúru zvlášť.
   const bocny = useBocnyNahlad("faktury");
-  const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
   const kontrolaDatumuFn = useServerFn(kontrolaDatumuVystaveniaFn);
   const posliEfakturu = useServerFn(posliEfakturuFn);
@@ -388,20 +380,8 @@ function InvoicesPage() {
     };
   }, [list.rows]);
 
-  const today = dnesBratislava();
-  const visibleRows = useMemo(() => {
-    let riadky = list.rows;
-    if (poSplatnosti) riadky = riadky.filter((r: Splatnost) => jePoSplatnosti(r, today));
-    // Rovnaká definícia ako v prehľade, inak by dlaždica a zoznam ukazovali
-    // dve rôzne čísla a človek by nevedel, ktorému veriť.
-    if (neuhradene) riadky = riadky.filter((r: any) => jeOtvorena(r));
-    if (overdueNoReminder) {
-      riadky = riadky.filter(
-        (r: Splatnost) => jePoSplatnosti(r, today) && !reminderMap[r.id as string],
-      );
-    }
-    return riadky;
-  }, [list.rows, poSplatnosti, neuhradene, overdueNoReminder, reminderMap, today]);
+  // Všetky filtre sú v dotaze — zobrazené je presne to, čo prišlo z databázy.
+  const visibleRows = list.rows;
 
   useSipkyNahladu(
     bocny.zapnuty,
@@ -558,25 +538,6 @@ function InvoicesPage() {
       r.due_date < today &&
       !r.paid_at,
   ).length;
-
-  async function runBulkPaid() {
-    setBusy(true);
-    setBulkAction(null);
-    try {
-      const r = await markPaidFn({ data: { invoiceIds: list.selectedIds } });
-      toast.success(
-        r.skipped > 0
-          ? t("{n} faktúr označených ako zaplatené ({m} preskočených)", { n: r.updated, m: r.skipped })
-          : t("{n} faktúr označených ako zaplatené", { n: r.updated }),
-      );
-      list.clearSelection();
-      list.reload();
-    } catch (e: any) {
-      toast.error(e?.message ?? t("Označenie zlyhalo"));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   /*
     Spoločné pre hromadný e-mail aj eFaktúru: faktúry so starým dátumom
@@ -885,11 +846,6 @@ function InvoicesPage() {
     Exclude<BulkAction, null>,
     { title: string; message: string; confirmLabel: string }
   > = {
-    paid: {
-      title: t("Označiť {n} faktúr ako zaplatené?", { n: list.selectedIds.length }),
-      message: t("Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady."),
-      confirmLabel: t("Označiť ako zaplatené"),
-    },
     email: {
       title: t("Odoslať e-mailom {n} faktúr?", { n: emailableCount }),
       message: t("Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa."),
@@ -922,7 +878,6 @@ function InvoicesPage() {
     },
   };
   const runners: Record<Exclude<BulkAction, null>, () => Promise<void>> = {
-    paid: runBulkPaid,
     email: runBulkEmail,
     efaktura: runBulkEfaktura,
     clone: runBulkClone,
@@ -1118,6 +1073,8 @@ function InvoicesPage() {
             </button>
           </div>
         )}
+        {/* Mimo koša sú hromadné akcie v pruhu nižšie — mazanie je v „Hromadnej akcii“. */}
+        {list.showDeleted ? (
         <BulkBar
           onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
@@ -1126,19 +1083,11 @@ function InvoicesPage() {
           onRestore={bulkRestoreNow}
           onClear={list.clearSelection}
         />
+        ) : null}
         {list.selectedIds.length > 0 && !list.showDeleted && (
           <div className="sticky top-16 z-20 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
-            <span className="font-medium text-primary">
-              {t("Vybrané faktúry: {n}", { n: list.selectedIds.length })}
-            </span>
+            {/* Počet vybraných ukazuje súčtová lišta dole a tlačidlo „Hromadná akcia“. */}
             <div className="flex flex-wrap gap-2">
-              <button
-                disabled={busy}
-                onClick={() => setBulkAction("paid")}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" /> {t("Označiť ako zaplatené")}
-              </button>
               <button
                 disabled={busy || emailableCount === 0}
                 onClick={() => setBulkAction("email")}
@@ -1203,6 +1152,9 @@ function InvoicesPage() {
           mobileCard={(i: any) => (
             <MobileListCard
               onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
+              vybrane={!!list.selected[i.id]}
+              onVyber={(v) => list.toggleSelect(i.id, v)}
+              vyberPopis={t("Vybrať faktúru {cislo}", { cislo: i.invoice_number ?? "" })}
               title={
                 <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                   {i.invoice_number}
@@ -1218,10 +1170,21 @@ function InvoicesPage() {
                       <Bell className="h-3 w-3" /> {t("Upomienka #{n}", { n: reminderMap[i.id] })}
                     </span>
                   ) : null}
+                  {/* Štítky ako v stĺpci Stav na počítači — v nadpise sa zalomia, neorežú. */}
+                  {(i.stitky ?? []).map((stitok: string) => (
+                    <span key={stitok} className="rounded-full bg-secondary px-1.5 text-[11px] font-normal text-muted-foreground">
+                      {stitok}
+                    </span>
+                  ))}
                 </span>
               }
               subtitle={i.customer_name ?? "—"}
-              status={<StatusBadge status={i.status} />}
+              status={
+                <span className="flex flex-col items-end gap-1">
+                  <StatusBadge status={jeFakturaPoSplatnosti(i, today) ? "overdue" : i.status} />
+                  {i.stav_id ? <StavDokladuOdznak stav={stavPodlaId.get(i.stav_id)} /> : null}
+                </span>
+              }
               meta={`${datumNaDoklade(i.issue_date)}${i.delivery_date && i.delivery_date !== i.issue_date ? ` · ${t("dodaná")} ${datumNaDoklade(i.delivery_date)}` : ""} · ${t("splat.")} ${datumNaDoklade(i.due_date)}`}
               amount={formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}
               actions={
@@ -1281,7 +1244,12 @@ function InvoicesPage() {
                         type="checkbox"
                         aria-label={t("Vybrať všetko")}
                         checked={list.allOnPageSelected}
-                        onChange={(e) => list.toggleAllOnPage(e.target.checked)}
+                        onChange={(e) =>
+                          list.toggleAllOnPage(
+                            e.target.checked,
+                            visibleRows.map((r: any) => r.id),
+                          )
+                        }
                       />
                       <span className="sr-only">{t("Výber")}</span>
                     </th>
@@ -1396,7 +1364,7 @@ function InvoicesPage() {
                         })()}
                       </td>
                       <td className="p-3">
-                        <StatusBadge status={i.status} />
+                        <StatusBadge status={jeFakturaPoSplatnosti(i, today) ? "overdue" : i.status} />
                         {cis.stavy.length && !list.showDeleted ? (
                           <div className="mt-1" onClick={(e) => e.stopPropagation()}>
                             <VyberStavuDokladu

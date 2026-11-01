@@ -44,6 +44,21 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     if (zf.type !== "proforma") {
       throw new Error("Daňový doklad k platbe sa vystavuje k zálohovej faktúre.");
     }
+    /*
+      Doklad k prijatej platbe vystavuje len platiteľ DPH (§ 73 ods. 2) —
+      neplatiteľ by ním priznal daň, ktorú neodvádza. Rozhoduje príznak
+      `vat_payer`, nie vyplnené IČ DPH.
+    */
+    const { data: firmaZf } = await supabase
+      .from("companies")
+      .select("country, vat_payer")
+      .eq("id", zf.company_id)
+      .maybeSingle();
+    if (firmaZf?.vat_payer === false) {
+      throw new Error(
+        "Firma nie je platiteľ DPH — daňový doklad k prijatej platbe sa nevystavuje.",
+      );
+    }
 
     /*
       Jedna záloha, jeden doklad. Druhý by tú istú daň priznal dvakrát —
@@ -75,11 +90,6 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     // čiastočnej platbe sa suma rozdelí podľa položiek — súčet sedí na halier.
     const { rozpisDokladuKPlatbe, poznamkaDokladuKPlatbe } = await import("./doklad-k-platbe");
     // Záloha bez jazyka má jazyk podľa krajiny firmy (česká firma → čeština).
-    const { data: firmaZf } = await supabase
-      .from("companies")
-      .select("country")
-      .eq("id", zf.company_id)
-      .maybeSingle();
     const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
     const jazykDokladu = zf.language || predvolenyJazykFirmy(firmaZf?.country);
     const rozpis = rozpisDokladuKPlatbe(

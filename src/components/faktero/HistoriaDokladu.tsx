@@ -80,7 +80,18 @@ function hodnota(pole: string, v: unknown, t: (s: string) => string, loc: string
 }
 
 /** Kto, kedy a čo na doklade zmenil — zapisuje spúšťač v databáze. */
-export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; agenda: "prijata" | "doklad" | "faktura"; id: string }) {
+export function HistoriaDokladu({
+  companyId,
+  agenda,
+  id,
+  onPocet,
+}: {
+  companyId: string;
+  agenda: "prijata" | "doklad" | "faktura";
+  id: string;
+  /** Počet záznamov po načítaní — rodič podľa neho nekreslí prázdny rámček. */
+  onPocet?: (n: number) => void;
+}) {
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
   const nacitajMena = useServerFn(menaClenovFirmy);
@@ -96,7 +107,10 @@ export function HistoriaDokladu({ companyId, agenda, id }: { companyId: string; 
       .eq("doklad_id", id)
       .order("kedy", { ascending: false })
       .limit(200)
-      .then(({ data }) => setZaznamy((data ?? []) as any));
+      .then(({ data }) => {
+        setZaznamy((data ?? []) as any);
+        onPocet?.((data ?? []).length);
+      });
     nacitajMena({ data: { company_id: companyId } })
       .then((m) => setMena(m as Record<string, string>))
       .catch(() => {});

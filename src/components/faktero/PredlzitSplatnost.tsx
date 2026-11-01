@@ -99,7 +99,7 @@ export function PredlzitSplatnost({
                 datum: datumNaDoklade(faktura.due_date),
               })}
               {faktura.povodna_splatnost && faktura.povodna_splatnost !== faktura.due_date
-                ? ` ${t("(pôvodne {datum})", { datum: faktura.povodna_splatnost })}`
+                ? ` ${t("(pôvodne {datum})", { datum: datumNaDoklade(faktura.povodna_splatnost) })}`
                 : ""}
               .
             </p>

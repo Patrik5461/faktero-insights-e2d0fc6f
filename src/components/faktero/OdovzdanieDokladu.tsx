@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MAX_UCTOVNEJ_POZNAMKY } from "@/lib/faktero/uctovna-poznamka";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { History, Loader2, PencilLine } from "lucide-react";
@@ -409,7 +410,7 @@ export function OpravitZauctovanie({
                 <span className="text-xs text-muted-foreground">{t("Účtovná poznámka")}</span>
                 <textarea
                   rows={2}
-                  maxLength={200}
+                  maxLength={MAX_UCTOVNEJ_POZNAMKY}
                   value={h.int_poznamka}
                   onChange={(e) => setH({ ...h, int_poznamka: e.target.value })}
                   className="mt-1 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm"

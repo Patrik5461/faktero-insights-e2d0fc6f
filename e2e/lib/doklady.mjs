@@ -1,4 +1,6 @@
 /* Spoločné kroky tokov: odberateľ, vystavenie faktúry cez formulár, upratanie dokladov. */
+import path from "node:path";
+import { citajEnvSubor, FIRMY, HLAVNE_REPO, SUPABASE } from "./prostredie.mjs";
 
 /** Dočasný odberateľ v QA firme; po toku sa zmaže. */
 export async function zalozOdberatela(t, firma = "test") {
@@ -97,4 +99,36 @@ export async function zmazFakturuNatvrdo(t, id) {
 export async function akciaVMenu(page, nazov) {
   await page.getByRole("button", { name: "Ďalšie akcie" }).first().click();
   await page.getByRole("menuitem", { name: nazov, exact: true }).first().click();
+}
+
+/**
+ * Odoslaná upomienka bez posielania mailu — `invoice_reminders` QA účet
+ * zapisovať nesmie (zapisuje ich len server), preto servisným kľúčom
+ * z `.env` hlavného repa. Len pre QA firmy; zmaže sa kaskádou s faktúrou.
+ */
+export async function vlozOdoslanuUpomienku(t, { invoiceId, companyId, cislo }) {
+  if (!Object.values(FIRMY).includes(companyId))
+    throw new Error("upomienka servisne len do QA firmy");
+  const env = citajEnvSubor(path.join(HLAVNE_REPO, ".env"));
+  const servis = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!servis) throw new Error("chýba servisný kľúč (.env hlavného repa)");
+  const r = await fetch(`${SUPABASE.url}/rest/v1/invoice_reminders`, {
+    method: "POST",
+    headers: {
+      apikey: servis,
+      Authorization: `Bearer ${servis}`,
+      "content-type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      invoice_id: invoiceId,
+      company_id: companyId,
+      reminder_number: cislo,
+      email_to: "efaktura-qa@faktero.sk",
+      status: "sent",
+      triggered_by: "manual",
+      subject: `E2E ${t.znacka}`,
+    }),
+  });
+  if (r.status >= 300) throw new Error(`upomienka: ${r.status} ${(await r.text()).slice(0, 200)}`);
 }

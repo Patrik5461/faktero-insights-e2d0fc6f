@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useStoredPageSize } from "@/components/faktero/ListControls";
 import type { ListFilters } from "@/hooks/useListFilters";
+import { obnovZKosa } from "@/lib/faktero/obnova-z-kosa";
 
 type SoftDeletable = "invoices" | "quotes" | "recurring_invoices" | "customers" | "products";
 
@@ -49,6 +50,14 @@ function nacitajZoradenie(kluc: string | undefined, vychodzie: Zoradenie): Zorad
   } catch {
     return vychodzie;
   }
+}
+
+/** ID vybraných riadkov, ktoré sú v `rows` (v poradí zoznamu). */
+export function vybraneZRiadkov(
+  rows: { id: string }[],
+  selected: Record<string, boolean>,
+): string[] {
+  return rows.filter((r) => selected[r.id]).map((r) => r.id);
 }
 
 export function usePagedList({
@@ -180,22 +189,23 @@ export function usePagedList({
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
-  const selectedIds = useMemo(
-    () =>
-      Object.entries(selected)
-        .filter(([, v]) => v)
-        .map(([k]) => k),
-    [selected],
-  );
+  /*
+    Vybrané sú len riadky, ktoré sú práve v zozname. Hromadná akcia nesmie
+    zasiahnuť doklad, ktorý človek nevidí — po prenačítaní so zmeneným
+    filtrom by inak v `selected` ostali skryté ID.
+  */
+  const selectedIds = useMemo(() => vybraneZRiadkov(rows, selected), [rows, selected]);
   const allOnPageSelected = rows.length > 0 && rows.every((r) => selected[r.id]);
 
   function toggleSelect(id: string, on?: boolean) {
     setSelected((prev) => ({ ...prev, [id]: on ?? !prev[id] }));
   }
-  function toggleAllOnPage(on: boolean) {
-    if (on)
-      setSelected((prev) => ({ ...prev, ...Object.fromEntries(rows.map((r) => [r.id, true])) }));
-    else setSelected({});
+  /** „Vybrať všetko“ — zobrazené riadky stránky; `ids` obmedzí výber na tie, ktoré zoznam naozaj kreslí. */
+  function toggleAllOnPage(on: boolean, ids?: string[]) {
+    if (on) {
+      const viditelne = ids ?? rows.map((r) => r.id as string);
+      setSelected(Object.fromEntries(viditelne.map((id) => [id, true])));
+    } else setSelected({});
   }
   function clearSelection() {
     setSelected({});
@@ -237,19 +247,7 @@ export function usePagedList({
     if (!ids.length) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const { error } = await supabase
-      .from(resource as any)
-      .update({ deleted_at: null } as any)
-      .in("id", ids)
-      .eq("company_id", cid);
-    // Číslo zmazaného dokladu sa medzitým mohlo použiť pre nový — vtedy sa
-    // pôvodný obnoviť nedá a hlásenie z databázy by nikomu nič nepovedalo.
-    if (error?.code === "23505") {
-      throw new Error(
-        "Číslo tohto dokladu už medzitým dostal iný doklad, preto sa nedá obnoviť. Zmeňte najprv číslo na tom novom.",
-      );
-    }
-    if (error) throw error;
+    await obnovZKosa(resource, ids, cid);
     reload();
   }
 
