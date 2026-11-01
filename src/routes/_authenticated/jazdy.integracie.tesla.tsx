@@ -25,9 +25,14 @@ import {
 } from "@/lib/faktero/tesla.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia";
+import { popisSynchronizacie } from "@/lib/faktero/vozidla-vyber";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/tesla")({
-  head: () => ({ meta: [{ title: "Tesla Fleet API — Faktero" }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Tesla Fleet API — Faktero") }],
+  }),
   component: TeslaPage,
 });
 
@@ -53,6 +58,9 @@ function popisStavuSync(s?: string | null) {
 
 function TeslaPage() {
   const { t } = useT();
+  // J-13: integráciu mení len majiteľ/administrátor (server: assertAdmin).
+  const admin = useJeAdminFirmy();
+  const clenstvo = useClenstvoFirmy();
   const cid = getActiveCompanyId();
   const _get = useServerFn(getTeslaStatus);
   const _start = useServerFn(startTeslaOAuth);
@@ -180,6 +188,11 @@ function TeslaPage() {
         description={t("Synchronizácia Tesla vozidiel, polohy a stavu tachometra.")}
       />
       <PageBody>
+        {clenstvo.nacitane && !admin && (
+          <div className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {t("Integráciu spravuje majiteľ alebo administrátor firmy.")}
+          </div>
+        )}
         {(state.credentials_invalid || conn?.credentials_invalid) && (
           <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <div className="flex items-start gap-3">
@@ -195,7 +208,7 @@ function TeslaPage() {
                 </p>
                 <button
                   type="button"
-                  disabled={!!busy}
+                  disabled={!!busy || !admin}
                   onClick={onConnect}
                   className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                 >
@@ -233,7 +246,7 @@ function TeslaPage() {
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {!isConnected ? (
                   <button
-                    disabled={!!busy}
+                    disabled={!!busy || !admin}
                     onClick={onConnect}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   >
@@ -241,7 +254,7 @@ function TeslaPage() {
                   </button>
                 ) : (
                   <button
-                    disabled={!!busy}
+                    disabled={!!busy || !admin}
                     onClick={onDisconnect}
                     className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
@@ -299,7 +312,7 @@ function TeslaPage() {
                   </div>
                 </div>
                 <button
-                  disabled={!isConnected || !!busy}
+                  disabled={!isConnected || !!busy || !admin}
                   onClick={onSyncVehicles}
                   className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
@@ -329,6 +342,7 @@ function TeslaPage() {
                             <select
                               className="w-full max-w-xs rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                               value={l.faktero_vehicle_id ?? ""}
+                              disabled={!admin}
                               onChange={(e) => onLink(l.id, e.target.value || null)}
                             >
                               <option value="">{t("— neprepojené —")}</option>
@@ -353,11 +367,11 @@ function TeslaPage() {
               <div className="mb-3 flex items-center justify-between">
                 <div className="font-medium">{t("Tesla dáta")}</div>
                 <button
-                  disabled={!isConnected || !!busy || state.links.length === 0}
+                  disabled={!isConnected || !!busy || state.links.length === 0 || !admin}
                   onClick={onSyncSnap}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  <PlugZap className="h-4 w-4" /> {t("Synchronizovať jazdy")}
+                  <PlugZap className="h-4 w-4" /> {t("Načítať stav vozidiel")}
                 </button>
               </div>
               {state.links.length === 0 ? (
@@ -450,7 +464,7 @@ function TeslaPage() {
                   {state.logs.map((l: any) => (
                     <li key={l.id} className="rounded-md border border-border p-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{l.sync_type}</span>
+                        <span className="font-medium">{t(popisSynchronizacie(l.sync_type))}</span>
                         <span
                           className={l.status === "ok" ? "text-emerald-700" : "text-destructive"}
                         >

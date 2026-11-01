@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nastavCitliveUdaje, ulozZamestnanca } from "@/lib/faktero/zamestnanci.functions";
@@ -14,6 +15,7 @@ import {
   tlacidloObrys,
 } from "@/components/faktero/zamestnanci/ui";
 import { useT } from "@/lib/i18n/useT";
+import { zalozZamestnanca } from "@/lib/faktero/zamestnanci-citlive";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/novy")({
@@ -43,17 +45,16 @@ function NovyZamestnanec() {
     setUklada(true);
     setChyba(null);
     try {
-      const { id } = await uloz({ data: { company_id: cid, ...udaje } });
       // Citlivé údaje idú zvlášť — do databázy sa zapíšu už zašifrované.
-      if (rodneCislo.trim() || opCislo.trim()) {
-        await ulozCitlive({
-          data: {
-            company_id: cid,
-            id,
-            ...(rodneCislo.trim() ? { rodne_cislo: rodneCislo } : {}),
-            ...(opCislo.trim() ? { op_cislo: opCislo } : {}),
-          },
-        });
+      // Z-02: pri ich chybe je zamestnanec už uložený, takže sa ide na jeho kartu
+      // (ďalšie odoslanie formulára by založilo duplicitu).
+      const { id, citliveUlozene } = await zalozZamestnanca(
+        () => uloz({ data: { company_id: cid, ...udaje } }),
+        (id, zmeny) => ulozCitlive({ data: { company_id: cid, id, ...zmeny } }),
+        { rodne_cislo: rodneCislo, op_cislo: opCislo },
+      );
+      if (!citliveUlozene) {
+        toast.warning(t("Zamestnanec je uložený, citlivé údaje nie – doplňte ich v jeho karte."));
       }
       nav({ to: "/zamestnanci/$id", params: { id } });
     } catch (err: any) {

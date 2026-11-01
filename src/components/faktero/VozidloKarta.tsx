@@ -23,6 +23,10 @@ import {
 } from "@/lib/faktero/vozovy-park";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { useMozeUpravovat } from "@/lib/faktero/use-opravnenia";
+import { textChybyZapisu, zapisOverene } from "@/lib/faktero/over-zapis";
+import { neulozeneSuboryVozidla } from "@/lib/faktero/vozidla-vyber";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 /** Štítok termínu — prepadnutý červený, blížiaci sa oranžový, ostatné sivé. */
 export function StitokTerminu({ t: termin }: { t: Termin }) {
   const { t } = useT();
@@ -178,8 +182,18 @@ function Sekcia({
  * Karta vozidla vo vozovom parku — nové (`id` null) aj existujúce.
  * Ukladá do tej istej tabuľky `vehicles`, ktorú používa Kniha jázd.
  */
-export function VozidloKarta({ id }: { id: string | null }) {
+export function VozidloKarta({
+  id,
+  onNacitane,
+}: {
+  id: string | null;
+  /** Z-15: názov a ŠPZ pre hlavičku stránky. */
+  onNacitane?: (v: { name: string | null; license_plate: string | null }) => void;
+}) {
   const { t } = useT();
+  const mena = useMenaFirmy();
+  // J-14: rola s „Len čítať“ v oblasti jazdy nemá tlačidlá zápisu.
+  const smieUpravovat = useMozeUpravovat("jazdy");
   const navigate = useNavigate();
   const precitaj = useServerFn(precitajTechnickyPreukazFn);
   const cid = typeof window !== "undefined" ? getActiveCompanyId() : null;
@@ -194,6 +208,22 @@ export function VozidloKarta({ id }: { id: string | null }) {
   const [doplnene, setDoplnene] = useState<Set<string>>(new Set());
   const subor = useRef<HTMLInputElement>(null);
   const dnes = dnesBratislava();
+  /*
+    Z-12: dokument nového vozidla sa nahrá do úložiska hneď, riadok vznikne až
+    pri uložení. Kto odíde bez uloženia, nechal by v kbelíku sirotu – pri
+    odchode z karty sa preto neuložené súbory zmažú.
+  */
+  const dokumentyRef = useRef<Dokument[]>([]);
+  dokumentyRef.current = dokumenty;
+  const ulozeneRef = useRef(false);
+  useEffect(() => {
+    if (id) return;
+    return () => {
+      if (ulozeneRef.current) return;
+      const subory = neulozeneSuboryVozidla(dokumentyRef.current);
+      if (subory.length) void supabase.storage.from("vehicle-docs").remove(subory);
+    };
+  }, [id]);
 
   async function nacitaj() {
     if (!cid) return;
@@ -228,6 +258,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
         return;
       }
       setF(zRiadku(v.data));
+      onNacitane?.({ name: v.data.name ?? null, license_plate: v.data.license_plate ?? null });
       setDokumenty((d?.data ?? []) as Dokument[]);
     }
   }
@@ -345,11 +376,22 @@ export function VozidloKarta({ id }: { id: string | null }) {
     )
       return;
     if (d.id) {
-      const { error } = await supabase.from("vehicle_documents").delete().eq("id", d.id);
-      if (error) return toast.error(error.message);
+      // J-14: delete bez .select() pri odmietnutí RLS „uspeje“ s 0 riadkami.
+      try {
+        await zapisOverene(supabase.from("vehicle_documents").delete().eq("id", d.id).select("id"));
+      } catch (e) {
+        return toast.error(textChybyZapisu(e, t));
+      }
     }
-    await supabase.storage.from("vehicle-docs").remove([d.file_path]);
     setDokumenty((x) => x.filter((y) => y.file_path !== d.file_path));
+    // Z-13: chyba úložiska sa už neprehltne – záznam je preč, súbor ostal.
+    const { error: chybaSuboru } = await supabase.storage
+      .from("vehicle-docs")
+      .remove([d.file_path]);
+    if (chybaSuboru) {
+      console.warn("vehicle-docs remove", d.file_path, chybaSuboru.message);
+      toast.warning(t("Dokument je zmazaný, ale súbor sa z úložiska odstrániť nepodarilo."));
+    }
   }
 
   async function uloz() {
@@ -387,12 +429,17 @@ export function VozidloKarta({ id }: { id: string | null }) {
               : error.message,
           );
         }
+        ulozeneRef.current = true;
         if (dokumenty.length) {
           const { error: e2 } = await supabase
             .from("vehicle_documents")
             .insert(dokumenty.map((d) => ({ ...d, company_id: cid, vehicle_id: data.id })));
-          if (e2)
+          if (e2) {
             toast.error(t("Vozidlo je uložené, dokumenty nie: {chyba}", { chyba: e2.message }));
+            // Z-12: bez riadku by súbory ostali v úložisku ako siroty.
+            const subory = neulozeneSuboryVozidla(dokumenty);
+            if (subory.length) void supabase.storage.from("vehicle-docs").remove(subory);
+          }
         }
         toast.success(t("Vozidlo je pridané."));
         navigate({ to: "/vozovy-park/$id", params: { id: data.id } });
@@ -519,7 +566,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
             </Pole>
           )}
           <Pole label="Dátum obstarania">{input("datum_obstarania", "date")}</Pole>
-          <Pole label="Obstarávacia cena bez DPH">
+          <Pole label={t("Obstarávacia cena bez DPH ({mena})", { mena: mena.symbol })}>
             {input("obstaravacia_cena", "number", { step: "0.01" })}
           </Pole>
           <Pole label="Použitie">
@@ -627,7 +674,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
           <button
             type="button"
             onClick={() => void uloz()}
-            disabled={ukladam}
+            disabled={ukladam || !smieUpravovat}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {ukladam && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -684,7 +731,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
             <button
               type="button"
               onClick={() => subor.current?.click()}
-              disabled={nahravam}
+              disabled={nahravam || !smieUpravovat}
               className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-primary/50 px-3 py-3 text-sm font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
             >
               {nahravam ? (
@@ -738,14 +785,16 @@ export function VozidloKarta({ id }: { id: string | null }) {
                     )}
                   </button>
                 )}
-                <button
-                  type="button"
-                  aria-label={t("Zmazať dokument")}
-                  onClick={() => void zmazDokument(d)}
-                  className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {smieUpravovat && (
+                  <button
+                    type="button"
+                    aria-label={t("Zmazať dokument")}
+                    onClick={() => void zmazDokument(d)}
+                    className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </li>
             ))}
           </ul>

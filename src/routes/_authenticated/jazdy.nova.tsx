@@ -18,6 +18,9 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { textChybyZapisu, zapisOverene } from "@/lib/faktero/over-zapis";
+import { vozidlaNaVyber } from "@/lib/faktero/vozidla-vyber";
+import { useMozeUpravovat } from "@/lib/faktero/use-opravnenia";
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
  * tachometri alebo zle označená súkromná jazda sa musia dať opraviť — bez toho
@@ -33,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/jazdy/nova")({
 
 function NewTripPage() {
   const { t } = useT();
+  const smieUpravovat = useMozeUpravovat("jazdy");
   const mena = useMenaFirmy();
   const navigate = useNavigate();
   const { id } = Route.useSearch();
@@ -317,11 +321,21 @@ function NewTripPage() {
       // Trasa z mapy sa uloží, len keď si ju človek naozaj vyžiadal.
       ...(trasa ? { route: trasa.route } : {}),
     };
-    const { error } = id
-      ? await supabase.from("trips").update(riadok).eq("company_id", cid).eq("id", id)
-      : await supabase.from("trips").insert({ company_id: cid, ...riadok });
+    // J-14: úprava cez overZapis – odmietnutie RLS (napr. „Len čítať“) nevráti chybu, len 0 riadkov.
+    try {
+      await zapisOverene(
+        id
+          ? supabase.from("trips").update(riadok).eq("company_id", cid).eq("id", id).select("id")
+          : supabase
+              .from("trips")
+              .insert({ company_id: cid, ...riadok })
+              .select("id"),
+      );
+    } catch (e) {
+      setSaving(false);
+      return toast.error(textChybyZapisu(e, t));
+    }
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success(id ? t("Jazda upravená") : t("Jazda uložená"));
     navigate({ to: "/jazdy" });
   }
@@ -366,9 +380,10 @@ function NewTripPage() {
                   onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })}
                   className="input"
                 >
-                  {vehicles.map((v) => (
+                  {vozidlaNaVyber(vehicles, form.vehicle_id).map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.name} {v.license_plate ? `(${v.license_plate})` : ""}
+                      {v.active === false ? ` ${t("(vyradené)")}` : ""}
                     </option>
                   ))}
                 </select>
@@ -556,8 +571,13 @@ function NewTripPage() {
                 >
                   {t("Zrušiť")}
                 </button>
+                {!smieUpravovat && (
+                  <span className="self-center text-xs text-muted-foreground">
+                    {t("Kniha jázd je pre vás len na čítanie.")}
+                  </span>
+                )}
                 <button
-                  disabled={saving}
+                  disabled={saving || !smieUpravovat}
                   type="submit"
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                 >

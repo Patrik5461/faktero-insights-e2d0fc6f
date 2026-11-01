@@ -12,6 +12,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
+import { tachometerGpsJazdy } from "@/lib/faktero/tachometer-jazdy";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
@@ -90,6 +91,20 @@ function GpsTripPage() {
     const consumption = vehicle?.consumption_l_100km
       ? (result.distance_km * Number(vehicle.consumption_l_100km)) / 100
       : null;
+    // J-05: tachometer nadväzuje na poslednú jazdu vozidla, nie od nuly.
+    const { data: posledna } = await supabase
+      .from("trips")
+      .select("end_odometer")
+      .eq("company_id", cid)
+      .eq("vehicle_id", vehicleId)
+      .not("end_odometer", "is", null)
+      .order("end_odometer", { ascending: false })
+      .limit(1);
+    const tachometer = tachometerGpsJazdy(
+      posledna?.[0]?.end_odometer,
+      vehicle?.initial_odometer,
+      result.distance_km,
+    );
     const { data, error } = await supabase
       .from("trips")
       .insert({
@@ -97,8 +112,7 @@ function GpsTripPage() {
         vehicle_id: vehicleId,
         trip_date: dnesBratislava(),
         purpose: purpose || "GPS jazda",
-        start_odometer: 0,
-        end_odometer: result.distance_km,
+        ...tachometer,
         distance_km: result.distance_km,
         fuel_consumption: consumption,
         fuel_price: fuelPrice,

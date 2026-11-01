@@ -158,8 +158,15 @@ export type Pripomienka = {
   meno: string;
   termin: string;
   zavaznost: "info" | "warning" | "danger";
+  /** Slovenský text pre e-mail a zvonček; web skladá preložený text z polí nižšie (Z-09). */
   nadpis: string;
   text: string;
+  /** Dní do termínu (záporné = po termíne). */
+  zostava: number;
+  /** Dátum nástupu (prihlášky do poisťovní). */
+  nastup?: string;
+  /** Druh zmluvy (skúšobná doba, koniec zmluvy). */
+  zmluva?: DruhZmluvy;
 };
 
 /** Od koľkých dní pred termínom sa pripomienka ukazuje. */
@@ -197,6 +204,7 @@ export function pripomienkyZamestnancov(
     nadpis: string,
     text: string,
     kluc = `zam:${druh}:${z.id}:${termin}`,
+    extra: Pick<Pripomienka, "nastup" | "zmluva"> = {},
   ) => {
     const zostava = dniDo(dnes, termin);
     if (zostava > PREDSTIH_DNI[druh]) return;
@@ -207,6 +215,8 @@ export function pripomienkyZamestnancov(
       meno: celeMeno(z),
       termin,
       zavaznost: zostava < 0 ? "danger" : zostava <= 3 ? "warning" : "info",
+      zostava,
+      ...extra,
       nadpis,
       text: `${text} — ${zostava < 0 ? `termín ${datumSk(termin)} už uplynul` : zostava === 0 ? "termín je dnes" : `do ${datumSk(termin)}`}`,
     });
@@ -217,10 +227,10 @@ export function pripomienkyZamestnancov(
     const meno = celeMeno(z);
 
     if (z.start_date && !z.sp_registered_at) {
-      pridaj(z, "sp_prihlaska", pridajDni(z.start_date, -1), "Prihláška do Sociálnej poisťovne", `${meno}: prihlásiť pred nástupom ${datumSk(z.start_date)}`);
+      pridaj(z, "sp_prihlaska", pridajDni(z.start_date, -1), "Prihláška do Sociálnej poisťovne", `${meno}: prihlásiť pred nástupom ${datumSk(z.start_date)}`, undefined, { nastup: z.start_date });
     }
     if (z.start_date && !z.zp_registered_at) {
-      pridaj(z, "zp_prihlaska", pridajDni(z.start_date, 8), "Oznámenie zdravotnej poisťovni", `${meno}: oznámiť do 8 dní od nástupu`);
+      pridaj(z, "zp_prihlaska", pridajDni(z.start_date, 8), "Oznámenie zdravotnej poisťovni", `${meno}: oznámiť do 8 dní od nástupu`, undefined, { nastup: z.start_date });
     }
     if (z.medical_check_due) {
       pridaj(z, "lekarska_prehliadka", z.medical_check_due, "Lekárska prehliadka", `${meno}: preventívna prehliadka`);
@@ -232,10 +242,10 @@ export function pripomienkyZamestnancov(
     for (const k of zmluvy) {
       if (k.employee_id !== z.id || k.status !== "active") continue;
       if (k.probation_end && dniDo(dnes, k.probation_end) >= 0) {
-        pridaj(z, "skusobna_doba", k.probation_end, "Koniec skúšobnej doby", `${meno}: ${DRUH_ZMLUVY[k.kind]}`, `zam:skusobna_doba:${k.id}:${k.probation_end}`);
+        pridaj(z, "skusobna_doba", k.probation_end, "Koniec skúšobnej doby", `${meno}: ${DRUH_ZMLUVY[k.kind]}`, `zam:skusobna_doba:${k.id}:${k.probation_end}`, { zmluva: k.kind });
       }
       if (k.end_date && dniDo(dnes, k.end_date) >= 0) {
-        pridaj(z, "koniec_zmluvy", k.end_date, "Koniec zmluvy na dobu určitú", `${meno}: ${DRUH_ZMLUVY[k.kind]}`, `zam:koniec_zmluvy:${k.id}:${k.end_date}`);
+        pridaj(z, "koniec_zmluvy", k.end_date, "Koniec zmluvy na dobu určitú", `${meno}: ${DRUH_ZMLUVY[k.kind]}`, `zam:koniec_zmluvy:${k.id}:${k.end_date}`, { zmluva: k.kind });
       }
     }
   }
@@ -383,8 +393,8 @@ export const DOPLNKY_SABLONY: Partial<Record<KlucSablony, { token: string; popis
   ],
   potvrdenie_prijmu: [
     { token: "prijem.obdobie", popis: "Obdobie (napr. 1–6/2026)" },
-    { token: "prijem.hruba_mzda", popis: "Hrubý príjem (€)" },
-    { token: "prijem.cista_mzda", popis: "Čistý príjem (€)" },
+    { token: "prijem.hruba_mzda", popis: "Hrubý príjem ({mena})" },
+    { token: "prijem.cista_mzda", popis: "Čistý príjem ({mena})" },
   ],
 };
 

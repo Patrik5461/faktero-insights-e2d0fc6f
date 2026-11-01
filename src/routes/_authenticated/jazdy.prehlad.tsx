@@ -6,6 +6,8 @@ import { jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "lucide-react";
 import { vsetkoAkoData } from "@/lib/faktero/strankovanie";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { mesiacKarty } from "@/lib/faktero/jazdy-prehlad";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
@@ -40,15 +42,17 @@ function OverviewPage() {
       if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
       return q.order("id").range(zac, kon);
     });
-    let fQ = supabase
-      .from("fuel_records")
-      .select("*")
-      .eq("company_id", cid)
-      .gte("fuel_date", from)
-      .lt("fuel_date", to);
-    if (vehicle_id) {
-      fQ = fQ.eq("vehicle_id", vehicle_id);
-    }
+    // J-02: aj tankovania po stránkach (strop 1 000 riadkov).
+    const fQ = vsetkoAkoData((zac, kon) => {
+      let q = supabase
+        .from("fuel_records")
+        .select("*")
+        .eq("company_id", cid)
+        .gte("fuel_date", from)
+        .lt("fuel_date", to);
+      if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
+      return q.order("id").range(zac, kon);
+    });
     Promise.all([
       tQ,
       fQ,
@@ -72,9 +76,9 @@ function OverviewPage() {
     return m;
   }, [vehicles]);
 
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const thisMonth = trips.filter((t) => t.trip_date >= monthStart);
+  // J-04: mesiac v Bratislave; pri minulom roku posledný mesiac roka (nie vždy 0).
+  const mesiac = mesiacKarty(year, dnesBratislava());
+  const thisMonth = trips.filter((t) => t.trip_date.slice(0, 7) === mesiac.od.slice(0, 7));
   const kmMonth = thisMonth.reduce((a, t) => a + Number(t.distance_km), 0);
   const kmYear = trips.reduce((a, t) => a + Number(t.distance_km), 0);
   const fuelLiters = fuel.reduce((a, f) => a + Number(f.liters), 0);
@@ -193,7 +197,11 @@ function OverviewPage() {
             label={t("Priemerná rýchlosť")}
             value={avgSpeed > 0 ? `${formatujCislo(avgSpeed, 0)} km/h` : "—"}
           />
-          <Stat icon={RouteIcon} label={t("Km tento mesiac")} value={`${formatujCislo(kmMonth, 1)} km`} />
+          <Stat
+            icon={RouteIcon}
+            label={mesiac.aktualny ? t("Km tento mesiac") : t("Km v decembri {rok}", { rok: year })}
+            value={`${formatujCislo(kmMonth, 1)} km`}
+          />
           <Stat icon={Briefcase} label={t("Služobné km")} value={`${formatujCislo(bizKm, 1)} km`} />
           <Stat icon={User} label={t("Súkromné km")} value={`${formatujCislo(privKm, 1)} km`} />
           <Stat icon={Fuel} label={t("Spotreba {rok}", { rok: year })} value={`${formatujCislo(fuelLiters, 1)} l`} />

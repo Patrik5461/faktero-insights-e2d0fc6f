@@ -19,7 +19,7 @@ import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
-import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { dnesBratislava, posunMesiacBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
  * Koľko máp sa najviac priloží. Každá je pár desiatok dlaždíc z verejného
  * servera OpenStreetMap — celá ročná kniha jázd naraz by bola sťahovanie
@@ -55,9 +55,8 @@ function ExportPage() {
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/export" });
   const today = dnesBratislava();
-  const from0 = new Date();
-  from0.setMonth(from0.getMonth() - 1);
-  const [from, setFrom] = useState(from0.toISOString().slice(0, 10));
+  // J-16: „Od“ = dnes mínus mesiac v Bratislave (toISOString bol v UTC – po polnoci o deň skôr).
+  const [from, setFrom] = useState(() => posunMesiacBratislava(-1));
   const [to, setTo] = useState(today);
   const [busy, setBusy] = useState(false);
   const [sMapami, setSMapami] = useState(false);
