@@ -20,7 +20,8 @@ import {
 import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { MENY, formatovacMeny, formatujMenu, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
-import { JAZYKY_DOKLADU } from "@/lib/faktero/faktura-jazyk";
+import { JAZYKY_DOKLADU, uvodOpravnehoDokladu } from "@/lib/faktero/faktura-jazyk";
+import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
@@ -251,7 +252,15 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           specific_symbol: sf.specific_symbol ?? "",
           payment_method: sf.payment_method ?? "prevod",
           note: dobropis ? "" : (sf.note ?? ""),
-          intro_note: dobropis ? `Dobropis k faktúre ${sf.invoice_number}` : (sf.intro_note ?? ""),
+          // V jazyku dokladu — anglická samofaktúra nemá dostať „Dobropis k faktúre“.
+          intro_note: dobropis
+            ? uvodOpravnehoDokladu(
+                "credit_note",
+                String(sf.invoice_number ?? ""),
+                sf.language ?? "sk",
+                krajinaDane(sf.supplier_country),
+              )
+            : (sf.intro_note ?? ""),
           language: sf.language ?? "sk",
           job_id: sf.job_id ?? "",
           reverse_charge: Boolean(sf.reverse_charge),
@@ -329,7 +338,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
     (async () => {
       let q = supabase
         .from("purchase_invoices")
-        .select("id, invoice_number, amount_total, currency")
+        .select("id, invoice_number, amount_total, currency, payment_date, status")
         .eq("company_id", cid)
         .eq("type", "proforma")
         .is("deleted_at", null)
@@ -353,6 +362,11 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       setZalohy(
         (proformy ?? [])
           .filter((z: any) => !obsadene.has(z.id))
+          /* Zúčtovať sa dá len zaplatená záloha (ponuka hovorí „zaplatenú“); už
+             priradená ostáva v zozname, nech sa pri úprave ticho nestratí. */
+          .filter(
+            (z: any) => z.payment_date || z.status === "paid" || z.id === f.advance_invoice_id,
+          )
           .map((z: any) => ({
             id: z.id,
             invoice_number: z.invoice_number,
@@ -366,6 +380,8 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
     };
   }, [f.supplier_ico, f.supplier_name, opravujeCislo, id]);
   const mena = formatovacMeny(f.currency);
+  /* Domáca mena firmy — do nej sa daň prepočítava (server: `pravidloKurzuFirmy`). */
+  const menaFirmy = useMenaFirmy();
 
   async function vyberDodavatela(kid: string) {
     const k = kontakty.find((x) => x.id === kid);
@@ -720,11 +736,16 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                     </option>
                   ))}
                 </select>
-                {f.currency !== "EUR" && (
+                {/* Prepočet do domácej meny firmy: SK eurá (ECB), CZ koruny (ČNB) — ako na serveri. */}
+                {f.currency !== menaFirmy.kod && (
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    {t(
-                      "Daň sa prepočíta na eurá kurzom ECB zo dňa pred dodaním a vypíše sa na faktúre.",
-                    )}
+                    {menaFirmy.kod === "CZK"
+                      ? t(
+                          "Daň sa prepočíta na koruny kurzom ČNB platným v deň plnenia a vypíše sa na faktúre.",
+                        )
+                      : t(
+                          "Daň sa prepočíta na eurá kurzom ECB zo dňa pred dodaním a vypíše sa na faktúre.",
+                        )}
                   </span>
                 )}
               </label>

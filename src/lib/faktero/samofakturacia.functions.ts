@@ -136,7 +136,7 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
     if (data.advance_invoice_id) {
       const { data: z } = await supabase
         .from("purchase_invoices")
-        .select("id, type, amount_total, currency, supplier_ico, supplier_name, deleted_at")
+        .select("id, type, amount_total, currency, supplier_ico, supplier_name, deleted_at, payment_date, status")
         .eq("id", data.advance_invoice_id)
         .eq("company_id", data.company_id)
         .maybeSingle();
@@ -147,6 +147,21 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
         throw new Error("Záloha je od iného dodávateľa.");
       }
       if ((z.currency ?? "EUR") !== data.currency) throw new Error("Záloha je v inej mene.");
+      /*
+        Zúčtovať sa dá len zaplatená záloha. Väzba uložená skôr (pred touto
+        kontrolou) ostáva — úprava starej samofaktúry by inak padla.
+      */
+      if (!z.payment_date && z.status !== "paid") {
+        const { data: uz } = data.id
+          ? await supabase
+              .from("purchase_invoices")
+              .select("advance_invoice_id")
+              .eq("id", data.id)
+              .eq("company_id", data.company_id)
+              .maybeSingle()
+          : { data: null };
+        if (uz?.advance_invoice_id !== z.id) throw new Error("Záloha ešte nie je zaplatená — zúčtovať sa dá len zaplatená záloha.");
+      }
       const { count } = await supabase
         .from("purchase_invoices")
         .select("id", { count: "exact", head: true })

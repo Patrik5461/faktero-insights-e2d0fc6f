@@ -14,6 +14,7 @@ import {
   zakladRiadku,
   type TypZlavy,
 } from "./zlavy";
+import { zaokruhliHotovost } from "./hotovost";
 
 export type RiadokFormulara = {
   quantity: number;
@@ -28,6 +29,8 @@ export type NastaveniaSum = {
   reverse_charge: boolean;
   discount_type: "" | TypZlavy | null;
   discount_value: number;
+  /** Mena dokladu — hotovosť v korunách sa zaokrúhľuje na celé Kč, inak na 0,05. */
+  mena?: string | null;
   /** Odpočítané zálohy (sumy). */
   zalohy?: number[];
 };
@@ -74,7 +77,8 @@ export function sumyFormulara(riadky: RiadokFormulara[], n: NastaveniaSum) {
   if (mode === "retail") {
     sub = r2(sub);
     vat = r2(vat);
-    total = Math.round((sub + vat) * 20) / 20;
+    // Rozdiel zo zaokrúhlenia nie je v základe ani v dani (SK zákon o cenách, CZ § 36 ZDPH).
+    total = zaokruhliHotovost(sub + vat, n.mena);
   }
   const advance = Math.round((n.zalohy ?? []).reduce((a, z) => a + z, 0) * 100) / 100;
   const payable = r2(total - advance);

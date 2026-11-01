@@ -85,11 +85,22 @@ import {
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
-import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
+import {
+  jeHotovost,
+  prekrocenyStropHotovosti,
+  zaokruhlenieDokladu,
+  zaokruhlujeHotovost,
+} from "@/lib/faktero/hotovost";
 import { skontrolujDatumy, upravyNaVyber } from "@/lib/faktero/faktura-nalezitosti";
 import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzby-eu";
-import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import {
+  chybaIcDphPreDodanieDoEu,
+  riadkySDphNeplatitela,
+  sadzbaNovehoRiadku,
+  sadzbyRezimu,
+  zakladnaSadzbaRezimu,
+} from "@/lib/faktero/dph-rezim";
 import {
   druhPlneniaZPoloziek,
   klucNavrhu,
@@ -389,6 +400,13 @@ function NewInvoice() {
   /* Skratka ⌘I visí na listeneri bez závislostí, tak jej sadzbu podávam cez ref. */
   const sadzbaRef = useRef(zakladnaSadzba);
   sadzbaRef.current = zakladnaSadzba;
+  /** Sadzba riadku z cenníka, AI alebo kópie — neplatiteľ vždy 0 %, pri OSS sadzba štátu. */
+  const sadzbaVlozenehoRiadku = (sadzbaProduktu: unknown) =>
+    sadzbaNovehoRiadku(rezim, {
+      ossKrajina: form.oss && form.oss_country ? form.oss_country : null,
+      sadzbaProduktu: sadzbaProduktu == null || sadzbaProduktu === "" ? null : Number(sadzbaProduktu),
+      den: form.delivery_date || form.issue_date,
+    });
   useEffect(() => {
     setItems((rs) =>
       rs.some((r) => !r._dph_rucne && r.vat_rate !== zakladnaSadzba)
@@ -439,7 +457,8 @@ function NewInvoice() {
             quantity: Number(p.quantity),
             unit: p.unit ?? "ks",
             unit_price: Number(p.unit_price),
-            vat_rate: Number(p.vat_rate),
+            // Neplatiteľ DPH nevyčísľuje, aj keď ju objednávka nesie.
+            vat_rate: rezim.platitel ? Number(p.vat_rate) : 0,
             product_id: p.product_id ?? null,
             stock_item_id: p.stock_item_id ?? null,
             // Ceny dohodnuté v objednávke sa cenníkom neprepisujú.
@@ -524,7 +543,24 @@ function NewInvoice() {
           toast.success(t("Ťarchopis k faktúre {cislo} — zadajte, o koľko sa cena zvyšuje", { cislo: fh.invoice_number }));
           return;
         }
-        setForm((x) => ({ ...x, opravuje_fakturu_id: (f as any).id }));
+        /* Dobropis bez položiek: hlavičku (odberateľ, mena, jazyk, režim) prevezme
+           vždy — inak by sa dal priradiť faktúre iného odberateľa v inej mene. */
+        const fh = f as any;
+        if (fh.language) jazykPevnyRef.current = true;
+        setForm((x) => ({
+          ...x,
+          customer_id: fh.customer_id ?? x.customer_id,
+          currency: fh.currency ?? x.currency,
+          language: fh.language ?? x.language,
+          reverse_charge: !!fh.reverse_charge,
+          reverse_charge_type: fh.reverse_charge_type ?? "",
+          eu_plnenie: fh.eu_plnenie ?? x.eu_plnenie,
+          oss: !!fh.oss,
+          oss_country: fh.oss_country ?? "",
+          osobitna_uprava: fh.osobitna_uprava ?? "",
+          rounding_mode: fh.rounding_mode ?? x.rounding_mode,
+          opravuje_fakturu_id: fh.id,
+        }));
         return;
       }
       const { data: polozky } = await supabase
@@ -626,7 +662,7 @@ function NewInvoice() {
     Zálohy odpočítané na tejto faktúre. Pri etapovej dodávke ich býva viac —
     doteraz sa dala pripojiť len jedna a zvyšok dopočítaval človek ručne.
   */
-  const [odpocty, setOdpocty] = useState<{ id: string; cislo: string; suma: number }[]>([]);
+  const [odpocty, setOdpocty] = useState<{ id: string; cislo: string; suma: number; mena?: string | null }[]>([]);
   // Pri prvom načítaní sa ceny už zadaných riadkov neprepisujú — mohli prísť
   // z kópie faktúry alebo zo skenera a prepísať ich by bola tichá zmena sumy.
   const cennikPrvyRaz = useRef(true);
@@ -944,9 +980,18 @@ function NewInvoice() {
         reverse_charge: form.reverse_charge,
         discount_type: form.discount_type,
         discount_value: Number(form.discount_value),
+        mena: form.currency,
         zalohy: odpocty.map((z) => z.suma),
       }),
-    [riadkyZapis, form.rounding_mode, odpocty, form.reverse_charge, form.discount_type, form.discount_value],
+    [
+      riadkyZapis,
+      form.rounding_mode,
+      odpocty,
+      form.reverse_charge,
+      form.discount_type,
+      form.discount_value,
+      form.currency,
+    ],
   );
   /** Súčty, ako ich vidí človek — dobropis bez mínusu. */
   // Rozpis podľa sadzieb pod súčtami — rovnaké zaokrúhlenie a zľava ako `sumyFormulara`.
@@ -966,6 +1011,15 @@ function NewInvoice() {
       { subtotal: totals.subtotal, vat_total: totals.vat_total },
     );
   }, [riadkyZapis, totals, form.reverse_charge]);
+
+  /* Nezúčtované zálohy, ktoré ešte nie sú odpočítané na tejto faktúre — veta aj zoznam z jedného zdroja. */
+  const zostavajuceZalohy = nezuctovane.filter((z) => !odpocty.some((o) => o.id === z.id));
+
+  /* Strop hotovosti podľa krajiny firmy a meny dokladu (SK 5 000 €, CZ 270 000 Kč, DE žiadny). */
+  const stropHotovosti = prekrocenyStropHotovosti(totals.payable, form.payment_method, {
+    krajina,
+    mena: form.currency,
+  });
 
   const zobrazene = {
     medzisucet: sumaFormulara(totals.medzisucet, znForm),
@@ -1063,7 +1117,13 @@ function NewInvoice() {
     try {
       const r = await aiParse({ data: { prompt: aiPrompt } });
       if (r.items.length) {
-        setItems(r.items.map((it) => ({ ...EMPTY_ITEM, ...it })));
+        setItems(
+          r.items.map((it) => ({
+            ...EMPTY_ITEM,
+            ...it,
+            vat_rate: sadzbaVlozenehoRiadku((it as Partial<Item>).vat_rate),
+          })),
+        );
       }
       if (r.notes) setForm((f) => ({ ...f, notes: r.notes! }));
       if (r.currency) setForm((f) => ({ ...f, currency: r.currency! }));
@@ -1128,11 +1188,34 @@ function NewInvoice() {
       if (!/^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat)) {
         return toast.error(t("IČ DPH odberateľa musí byť v platnom EU formáte (napr. CZ12345678)."));
       }
-      if (/^SK/i.test(vat)) {
+      // Tuzemské je IČ DPH krajiny firmy — pre českú firmu CZ, nie SK.
+      if (chybaIcDphPreDodanieDoEu(vat, krajina) === "tuzemske") {
         return toast.error(
-          t("Pri intrakomunitárnom dodaní musí byť odberateľ z iného členského štátu EÚ (nie SK)."),
+          t("Pri intrakomunitárnom dodaní musí byť odberateľ z iného členského štátu EÚ (nie {krajina}).", {
+            krajina,
+          }),
         );
       }
+    }
+    // Neplatiteľ DPH nevyčísľuje — riadok s 23 % z cenníka by zastavila až databáza.
+    const sDphNeplatitela = riadkySDphNeplatitela(rezim, riadkyDokladu, form.reverse_charge);
+    if (sDphNeplatitela.length) {
+      return toast.error(
+        t("Firma nie je platiteľ DPH — položka „{nazov}“ nesmie mať DPH. Nastavte sadzbu 0 %.", {
+          nazov: sDphNeplatitela[0].name,
+        }),
+      );
+    }
+    // Záloha v inej mene sa od faktúry odpočítať nedá — suma by sa odpočítala ako v mene faktúry.
+    const inaMena = odpocty.find((z) => z.mena && z.mena.toUpperCase() !== String(form.currency).toUpperCase());
+    if (inaMena) {
+      return toast.error(
+        t("Záloha {cislo} je v mene {mena}, faktúra v {menaFaktury}. Odpočítať sa dá len záloha v mene faktúry.", {
+          cislo: inaMena.cislo,
+          mena: inaMena.mena ?? "",
+          menaFaktury: form.currency,
+        }),
+      );
     }
     // Block submit if any stock-tracked line exceeds available
     const offending = items.find(
@@ -1692,13 +1775,9 @@ function NewInvoice() {
                     setForm((f) => ({
                       ...f,
                       payment_method: sposob,
-                      /* Hotovosť sa platí na päť centov — jedno- a dvojcentovky
-                         sa už nevydávajú (zákon o cenách od 1. 7. 2022). */
-                      rounding_mode: jeHotovost(sposob)
-                        ? "retail"
-                        : f.rounding_mode === "retail"
-                          ? "per_document"
-                          : f.rounding_mode,
+                      /* Hotovosť: SK eurá na päť centov (zákon o cenách), CZ koruny
+                         na celé; Nemecko ani cudzia mena sa nezaokrúhľujú. */
+                      rounding_mode: zaokruhlenieDokladu(f.rounding_mode, sposob, krajina, f.currency),
                     }));
                   }}
                   className={VSTUP_DOKLADU}
@@ -1714,7 +1793,16 @@ function NewInvoice() {
                 <select
                   id="mena-dokladu"
                   value={form.currency}
-                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                  onChange={(e) => {
+                    const currency = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      currency,
+                      rounding_mode: jeHotovost(f.payment_method)
+                        ? zaokruhlenieDokladu(f.rounding_mode, f.payment_method, krajina, currency)
+                        : f.rounding_mode,
+                    }));
+                  }}
                   className={VSTUP_DOKLADU}
                 >
                   {MENY.map((c) => (
@@ -1724,14 +1812,18 @@ function NewInvoice() {
                   ))}
                 </select>
               </PoleDokladu>
-              {jeHotovost(form.payment_method) && (
-                <p className="col-span-full -mt-2 text-xs text-muted-foreground">
-                  {t("Suma sa zaokrúhli na päť centov, ako to pri platbe v hotovosti ukladá zákon o cenách.")}
-                </p>
-              )}
-              {prekrocenyStrop(totals.payable, form.payment_method) && (
+              {jeHotovost(form.payment_method) &&
+                form.rounding_mode === "retail" &&
+                zaokruhlujeHotovost(krajina, form.currency) && (
+                  <p className="col-span-full -mt-2 text-xs text-muted-foreground">
+                    {String(form.currency).toUpperCase() === "CZK"
+                      ? t("Suma sa zaokrúhli na celé koruny, ako to pri platbe v hotovosti vyžaduje zákon; rozdiel nie je súčasťou základu DPH.")
+                      : t("Suma sa zaokrúhli na päť centov, ako to pri platbe v hotovosti ukladá zákon o cenách.")}
+                  </p>
+                )}
+              {stropHotovosti && (
                 <p className="col-span-full rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                  {prekrocenyStrop(totals.payable, form.payment_method)}
+                  {t(stropHotovosti.kluc, stropHotovosti.parametre)}
                 </p>
               )}
               {form.payment_method === "bank_transfer" && (
@@ -1767,14 +1859,18 @@ function NewInvoice() {
               {form.type === "regular" && (
                 <button
                   type="button"
-                  onClick={() => setPickerOpen("advance")}
+                  onClick={() => {
+                    // Bez odberateľa by výber ponúkol zálohy všetkých odberateľov.
+                    if (!form.customer_id) return toast.error(t("Najprv vyberte odberateľa — ponúknu sa jeho zálohové faktúry."));
+                    setPickerOpen("advance");
+                  }}
                   className="inline-flex items-center gap-1.5 text-primary hover:underline"
                 >
                   <Link2 className="h-4 w-4" />{" "}
                   {odpocty.length ? t("Pridať ďalšiu zálohu") : t("Pridať zálohovú faktúru")}
                 </button>
               )}
-              {form.type === "regular" && nezuctovane.filter((z) => !odpocty.some((o) => o.id === z.id)).length > 0 && (
+              {form.type === "regular" && zostavajuceZalohy.length > 0 && (
                 /*
                   Upozornenie, nie zákaz: sú prípady, keď sa záloha zámerne
                   vyúčtuje inou faktúrou. Odpočet je preto na jedno kliknutie,
@@ -1782,14 +1878,12 @@ function NewInvoice() {
                 */
                 <div className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
                   <div className="font-medium">
-                    {nezuctovane.length === 1
+                    {zostavajuceZalohy.length === 1
                       ? t("Odberateľ má zaplatenú zálohu, ktorá ešte nie je zúčtovaná.")
-                      : t("Odberateľ má {n} zaplatené zálohy, ktoré ešte nie sú zúčtované.", { n: nezuctovane.length })}
+                      : t("Odberateľ má {n} zaplatené zálohy, ktoré ešte nie sú zúčtované.", { n: zostavajuceZalohy.length })}
                   </div>
                   <ul className="mt-2 space-y-1">
-                    {nezuctovane
-                      .filter((z) => !odpocty.some((o) => o.id === z.id))
-                      .map((z) => (
+                    {zostavajuceZalohy.map((z) => (
                       <li key={z.id} className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums">
                           <strong>{z.invoice_number}</strong> · {datumNaDoklade(z.issue_date)} ·{" "}
@@ -1803,10 +1897,19 @@ function NewInvoice() {
                         <button
                           type="button"
                           onClick={() => {
+                            // Zálohu v inej mene nemožno odpočítať — suma by sa vzala ako v mene faktúry.
+                            if (String(z.currency || "").toUpperCase() !== String(form.currency).toUpperCase())
+                              return toast.error(
+                                t("Záloha {cislo} je v mene {mena}, faktúra v {menaFaktury}. Odpočítať sa dá len záloha v mene faktúry.", {
+                                  cislo: z.invoice_number,
+                                  mena: z.currency,
+                                  menaFaktury: form.currency,
+                                }),
+                              );
                             setOdpocty((zoz) =>
                               zoz.some((o) => o.id === z.id)
                                 ? zoz
-                                : [...zoz, { id: z.id, cislo: z.invoice_number, suma: z.total }],
+                                : [...zoz, { id: z.id, cislo: z.invoice_number, suma: z.total, mena: z.currency }],
                             );
                             toast.success(t("Záloha {cislo} pripojená", { cislo: z.invoice_number }));
                           }}
@@ -1916,9 +2019,13 @@ function NewInvoice() {
                 >
                   <option value="per_item">{t("Po položkách (zaokrúhli každú položku zvlášť)")}</option>
                   <option value="per_document">{t("Za celý doklad (zaokrúhli až finálny súčet)")}</option>
-                  {/* Zaokrúhlenie hotovosti na 0,05 € je slovenské pravidlo — Nemecko ho nepozná. */}
+                  {/* Zaokrúhlenie hotovosti: SK na 0,05 €, CZ na celé Kč — Nemecko ho nepozná. */}
                   {krajina !== "DE" || form.rounding_mode === "retail" ? (
-                    <option value="retail">{t("Maloobchod (na 0,05 €, SK pravidlá)")}</option>
+                    <option value="retail">
+                      {String(form.currency).toUpperCase() === "CZK"
+                        ? t("Hotovosť (na celé Kč, CZ pravidlá)")
+                        : t("Maloobchod (na 0,05 €, SK pravidlá)")}
+                    </option>
                   ) : null}
                 </select>
               </PoleDokladu>
@@ -2125,16 +2232,16 @@ function NewInvoice() {
                   (() => {
                     const cust = customers.find((c) => c.id === form.customer_id);
                     const vat = (cust?.ic_dph || "").trim();
-                    const ok = vat && /^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat) && !/^SK/i.test(vat);
-                    if (ok) return null;
+                    const chybaIc = chybaIcDphPreDodanieDoEu(vat, krajina);
+                    if (!chybaIc) return null;
                     return (
                       <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive md:col-span-2">
                         {!cust
                           ? t("Vyberte odberateľa s platným IČ DPH z iného členského štátu EÚ.")
                           : !vat
                             ? t("Odberateľ nemá vyplnené IČ DPH. Pri intrakomunitárnom dodaní je povinné — doplňte ho v karte odberateľa.")
-                            : /^SK/i.test(vat)
-                              ? t("Odberateľ má slovenské IČ DPH. Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ.")
+                            : chybaIc === "tuzemske"
+                              ? t("Odberateľ má IČ DPH z krajiny firmy ({krajina}). Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ.", { krajina })
                               : t("IČ DPH odberateľa nie je v platnom EU formáte (napr. CZ12345678).")}
                       </p>
                     );
@@ -2262,7 +2369,7 @@ function NewInvoice() {
                         zCennika && zCennika.zdroj !== "zakladna" ? zCennika.dovod : undefined,
                       _zakladna:
                         zCennika && zCennika.zdroj !== "zakladna" ? zCennika.zakladna : undefined,
-                      vat_rate: Number(p.vat_rate ?? DEFAULT_VAT_RATE),
+                      vat_rate: sadzbaVlozenehoRiadku(p.vat_rate),
                       product_id: p.id,
                       stock_item_id: meta?.stock_item_id ?? null,
                       // Colné údaje sa dedia z cenníka (pri skladovej karte z nej).
@@ -2748,11 +2855,7 @@ function NewInvoice() {
               setForm((f) => ({
                 ...f,
                 payment_method: sposob,
-                rounding_mode: jeHotovost(sposob)
-                  ? "retail"
-                  : f.rounding_mode === "retail"
-                    ? "per_document"
-                    : f.rounding_mode,
+                rounding_mode: zaokruhlenieDokladu(f.rounding_mode, sposob, krajina, f.currency),
               }))
             }
           />
@@ -2837,9 +2940,13 @@ function NewInvoice() {
           <InvoicePickerModal
             mode={pickerOpen}
             customerId={form.customer_id || null}
+            mena={form.currency}
+            druhOpravy={form.type === "debit_note" ? "debit_note" : "credit_note"}
             onClose={() => setPickerOpen(null)}
             onPickCopy={(loaded) => {
-              setItems(loaded.map((it) => ({ ...EMPTY_ITEM, ...it })));
+              setItems(
+                loaded.map((it) => ({ ...EMPTY_ITEM, ...it, vat_rate: sadzbaVlozenehoRiadku(it.vat_rate) })),
+              );
               toast.success(t("Načítané položky: {n}", { n: loaded.length }));
               setPickerOpen(null);
             }}
@@ -2847,14 +2954,25 @@ function NewInvoice() {
               if (pickerOpen === "opravuje") {
                 setForm((f) => ({ ...f, opravuje_fakturu_id: inv.id }));
                 setOpravujeCislo(inv.invoice_number);
-                toast.success(t("Dobropis opravuje faktúru {cislo}", { cislo: inv.invoice_number }));
+                /* Prevezme odberateľa, menu, jazyk a režim opravovanej faktúry ako
+                   pri vyhľadaní podľa čísla; prázdny dobropis aj jej položky. */
+                const druh = form.type === "debit_note" ? "debit_note" : "credit_note";
+                const prazdny = items.every((i) => !i.name.trim() && !Number(i.unit_price));
+                void predvyplnDobropis(inv.id, prazdny, druh).then(() => {
+                  if (!prazdny)
+                    toast.success(
+                      druh === "debit_note"
+                        ? t("Ťarchopis opravuje faktúru {cislo}", { cislo: inv.invoice_number })
+                        : t("Dobropis opravuje faktúru {cislo}", { cislo: inv.invoice_number }),
+                    );
+                });
               } else {
                 setOdpocty((zoz) =>
                   zoz.some((o) => o.id === inv.id)
                     ? zoz
                     : [
                         ...zoz,
-                        { id: inv.id, cislo: inv.invoice_number, suma: Number(inv.total) },
+                        { id: inv.id, cislo: inv.invoice_number, suma: Number(inv.total), mena: inv.currency },
                       ],
                 );
                 toast.success(t("Záloha pripojená: {cislo}", { cislo: inv.invoice_number }));
@@ -3191,6 +3309,8 @@ function AiModal({
 function InvoicePickerModal({
   mode,
   customerId,
+  mena,
+  druhOpravy = "credit_note",
   onClose,
   onPickCopy,
   onPickAdvance,
@@ -3198,9 +3318,13 @@ function InvoicePickerModal({
   mode: "copy" | "advance" | "opravuje";
   /** Zálohy sa ponúkajú len vybraného odberateľa. */
   customerId?: string | null;
+  /** Mena faktúry — záloha v inej mene sa odpočítať nedá. */
+  mena?: string | null;
+  /** Dobropis alebo ťarchopis — podľa toho titulok výberu. */
+  druhOpravy?: "credit_note" | "debit_note";
   onClose: () => void;
   onPickCopy: (items: Partial<Item>[]) => void;
-  onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
+  onPickAdvance: (inv: { id: string; invoice_number: string; total: number; currency?: string | null }) => void;
 }) {
   const { t } = useT();
   useZatvorNaEscape(onClose);
@@ -3219,16 +3343,26 @@ function InvoicePickerModal({
       .order("issue_date", { ascending: false })
       .limit(50);
     if (mode === "advance") {
-      query = query.eq("type", "proforma");
-      if (customerId) query = query.eq("customer_id", customerId);
+      /*
+        Odpočítava sa uhradená záloha toho istého odberateľa v mene faktúry.
+        Bez odberateľa sa nenačíta nič — inak by sa ponúkli zálohy všetkých.
+      */
+      if (!customerId) {
+        setList([]);
+        setLoading(false);
+        return;
+      }
+      query = query.eq("type", "proforma").eq("status", "paid").eq("customer_id", customerId);
+      if (mena) query = query.eq("currency", mena);
     }
-    // Dobropis opravuje bežnú faktúru, nie zálohovú ani iný dobropis.
-    if (mode === "opravuje") query = query.eq("type", "regular");
+    // Opravný doklad opravuje vystavenú bežnú faktúru — nie koncept, storno, zálohovú ani iný dobropis.
+    if (mode === "opravuje")
+      query = query.eq("type", "regular").not("status", "in", "(draft,cancelled)");
     query.then(({ data }) => {
       setList(data ?? []);
       setLoading(false);
     });
-  }, [mode, customerId]);
+  }, [mode, customerId, mena]);
 
   const filtered = q
     ? list.filter((i) =>
@@ -3240,7 +3374,12 @@ function InvoicePickerModal({
 
   async function handlePick(inv: any) {
     if (mode === "advance" || mode === "opravuje") {
-      onPickAdvance({ id: inv.id, invoice_number: inv.invoice_number, total: Number(inv.total) });
+      onPickAdvance({
+        id: inv.id,
+        invoice_number: inv.invoice_number,
+        total: Number(inv.total),
+        currency: inv.currency,
+      });
       return;
     }
     const { data } = await supabase
@@ -3272,7 +3411,9 @@ function InvoicePickerModal({
             {mode === "copy"
               ? t("Načítať položky z dokladu")
               : mode === "opravuje"
-                ? t("Ktorú faktúru dobropis opravuje")
+                ? druhOpravy === "debit_note"
+                  ? t("Ktorú faktúru ťarchopis opravuje")
+                  : t("Ktorú faktúru dobropis opravuje")
                 : t("Vybrať zálohovú faktúru")}
           </h3>
           <button aria-label={t("Zavrieť")} type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted">
@@ -3295,7 +3436,9 @@ function InvoicePickerModal({
           {loading && <li className="p-4 text-sm text-muted-foreground">{t("Načítavam…")}</li>}
           {!loading && filtered.length === 0 && (
             <li className="p-4 text-sm text-muted-foreground">
-              {mode === "advance" ? t("Žiadne zálohové faktúry.") : t("Žiadne faktúry.")}
+              {mode === "advance"
+                ? t("Žiadne uhradené zálohové faktúry odberateľa v mene {mena}.", { mena: mena ?? "" })
+                : t("Žiadne faktúry.")}
             </li>
           )}
           {filtered.map((inv) => (

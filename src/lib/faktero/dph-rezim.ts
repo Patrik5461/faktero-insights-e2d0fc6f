@@ -19,6 +19,7 @@ import {
   vatRateOptions,
   type KrajinaDane,
 } from "./vat-rates";
+import { sadzbyStatu, zakladnaSadzbaStatu } from "./sadzby-eu";
 
 export type SchemaDph =
   | "sk_neplatitel"
@@ -298,4 +299,77 @@ export function sadzbyDoVyberu(
   if (!rezim.platitel) return { platne, historicke: [] };
   const historicke = historickeSadzby(rezim.krajina, den).filter((h) => !platne.includes(h.sadzba));
   return { platne, historicke };
+}
+
+/**
+ * Sadzba riadku, ktorý do dokladu práve pribudol — prázdny riadok, produkt
+ * z cenníka, riadok od AI či z kópie iného dokladu.
+ *
+ * Neplatiteľ dostane vždy 0 % — sadzba produktu (u platiteľa 23 %) by mu
+ * inak prešla do faktúry. Pri OSS rozhoduje štát spotreby: sadzba produktu
+ * ostane, len ak v tom štáte existuje, inak základná sadzba štátu. Platiteľ
+ * si nechá sadzbu produktu, ak v jeho krajine k danému dňu platí, inak
+ * dostane základnú.
+ */
+export function sadzbaNovehoRiadku(
+  rezim: RezimDph,
+  moznosti: {
+    ossKrajina?: string | null;
+    sadzbaProduktu?: number | string | null;
+    den?: string | null;
+    /** Prenesenie daňovej povinnosti na celom doklade — daň sa nevyčísľuje. */
+    reverseCharge?: boolean;
+  } = {},
+): number {
+  if (!rezim.platitel || moznosti.reverseCharge) return 0;
+  const p =
+    moznosti.sadzbaProduktu === null ||
+    moznosti.sadzbaProduktu === undefined ||
+    moznosti.sadzbaProduktu === ""
+      ? null
+      : Number(moznosti.sadzbaProduktu);
+  const platna = (zoznam: number[]) =>
+    p !== null && Number.isFinite(p) && zoznam.some((x) => Math.abs(x - p) < 0.001);
+  if (moznosti.ossKrajina) {
+    const zoznam = sadzbyStatu(moznosti.ossKrajina);
+    return platna(zoznam) ? (p as number) : zakladnaSadzbaStatu(moznosti.ossKrajina);
+  }
+  const zoznam = sadzbyRezimu(rezim, moznosti.den);
+  return platna(zoznam) ? (p as number) : zoznam[0];
+}
+
+/**
+ * Riadky s DPH na doklade neplatiteľa — odoslanie ich musí zastaviť skôr,
+ * než narazia na poistku v databáze. Prenesenie (riadok aj doklad) daň
+ * nevyčísľuje, tam sa sadzba neráta.
+ */
+export function riadkySDphNeplatitela<
+  T extends { vat_rate?: number | string | null; prenesenie?: boolean },
+>(rezim: RezimDph, riadky: T[], reverseCharge = false): T[] {
+  if (rezim.platitel || reverseCharge) return [];
+  return riadky.filter((r) => !r.prenesenie && Number(r.vat_rate ?? 0) !== 0);
+}
+
+/** Predpona IČ DPH krajiny (Grécko má v IČ DPH „EL“, nie „GR“). */
+export function predponaIcDph(krajina: string): string {
+  const k = String(krajina ?? "").toUpperCase();
+  return k === "GR" ? "EL" : k;
+}
+
+/**
+ * Prečo IČ DPH odberateľa nestačí na dodanie do iného štátu EÚ (eu_b2b),
+ * alebo `null`, keď je v poriadku. Tuzemské je IČ DPH krajiny firmy — pre
+ * českú firmu teda CZ, nie SK (slovenský odberateľ je pre ňu iný štát EÚ).
+ */
+export function chybaIcDphPreDodanieDoEu(
+  icDph: string | null | undefined,
+  krajinaFirmy: string,
+): null | "chyba" | "format" | "tuzemske" {
+  const v = String(icDph ?? "")
+    .trim()
+    .replace(/\s+/g, "");
+  if (!v) return "chyba";
+  if (!/^[A-Z]{2}[A-Z0-9]{2,}$/i.test(v)) return "format";
+  if (v.slice(0, 2).toUpperCase() === predponaIcDph(krajinaFirmy)) return "tuzemske";
+  return null;
 }

@@ -16,6 +16,8 @@ import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
+import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Rýchla faktúra — Faktero") }] }),
   component: QuickInvoicePage,
@@ -52,19 +54,25 @@ function QuickInvoicePage() {
   useEffect(() => {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    supabase
-      .from("customers")
-      .select("id,name")
-      .eq("company_id", cid)
-      .eq("odberatel", true)
-      // Zmazaného odberateľa fakturovať nejde — server ho neprijme.
-      .is("deleted_at", null)
-      .order("name")
-      .limit(100)
-      .then(({ data }) => {
-        setCustomers(data ?? []);
-        setOdberateliaNacitani(true);
-      });
+    /*
+      Všetci odberatelia po stránkach — predtým len prvých 100 bez hľadania,
+      takže 101. odberateľ sa rýchlou faktúrou vyfakturovať nedal.
+    */
+    vsetkyRiadky((od, po) =>
+      supabase
+        .from("customers")
+        .select("id, name, ico, ic_dph, city")
+        .eq("company_id", cid)
+        .eq("odberatel", true)
+        // Zmazaného odberateľa fakturovať nejde — server ho neprijme.
+        .is("deleted_at", null)
+        .order("name")
+        .order("id")
+        .range(od, po),
+    )
+      .then((data) => setCustomers(data))
+      .catch(() => setCustomers([]))
+      .finally(() => setOdberateliaNacitani(true));
   }, []);
 
   async function save() {
@@ -94,7 +102,8 @@ function QuickInvoicePage() {
           issue_date: today,
           due_date: due,
           payment_method: "bank_transfer" as const,
-          currency: "EUR",
+          // Domáca mena firmy — tá istá, ktorú ukazuje súhrn (CZ firma koruny).
+          currency: mena.kod,
           status: "draft" as const,
           intro_note: description.trim(),
           items: [
@@ -135,19 +144,17 @@ function QuickInvoicePage() {
           {step === 1 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">{t("Odberateľ")}</h2>
-              <select
-                aria-label={t("Odberateľ")}
+              <CustomerSearch
+                ako="pole"
+                id="odberatel-rychla"
+                customers={customers}
                 value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                className={VSTUP_DOKLADU}
-              >
-                <option value="">{t("— vyberte —")}</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setCustomerId}
+                onCreated={(c) => {
+                  setCustomers((prev) => [c, ...prev]);
+                  setCustomerId(c.id);
+                }}
+              />
               {odberateliaNacitani && customers.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   {t("Zatiaľ nemáte žiadneho odberateľa.")}{" "}

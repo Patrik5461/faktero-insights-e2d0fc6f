@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka as bunkaDokladu } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -50,7 +51,8 @@ function NewRecurring() {
     name: "",
     customer_id: "",
     frequency: "monthly" as "weekly" | "monthly" | "quarterly" | "yearly",
-    next_run: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+    // Zajtra v Bratislave — UTC dátum bol po polnoci SEČ o deň skôr.
+    next_run: posunDni(dnesBratislava(), 1),
     currency: "EUR",
     due_days: 14,
     payment_method: "bank_transfer",
