@@ -1,6 +1,6 @@
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, GripVertical, Loader2, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
 import { AutopilotKarta } from "@/components/faktero/AutopilotKarta";
@@ -48,6 +48,7 @@ import {
 } from "@/lib/faktero/pravidla-zobrazenie";
 import { triedaStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -327,6 +328,11 @@ function PravidlaPage() {
     pravidlá záložky sa prečíslujú po desiatkach, uložia sa len zmenené.
   */
   const [tahane, setTahane] = useState<string | null>(null);
+  /**
+   * Kedy naposledy skončilo ťahanie riadku. Prehliadač po ťahaní `click`
+   * nevyšle, no niektoré (a dotykové) áno — klik tesne po ťahaní detail neotvorí.
+   */
+  const koniecTahania = useRef(0);
   async function presun(id: string, ciel: string | null, smer?: -1 | 1) {
     if (!pravidla) return;
     const viditelne = pravidla.filter((r) => vZalozke(r, zalozka));
@@ -518,8 +524,12 @@ function PravidlaPage() {
                           ? null
                           : doklady.filter((d) => pravidloSedi({ ...r, aktivne: true }, d)).length;
                       return (
-                        <tr
+                        <KlikatelnyRiadok
                           key={r.id}
+                          naKlik={() => setUprava({ ...r })}
+                          onClick={(e) => {
+                            if (tahane || Date.now() - koniecTahania.current < 400) e.preventDefault();
+                          }}
                           draggable
                           onDragStart={(e) => {
                             setTahane(r.id);
@@ -533,8 +543,11 @@ function PravidlaPage() {
                             if (tahane && tahane !== r.id) void presun(tahane, r.id);
                             setTahane(null);
                           }}
-                          onDragEnd={() => setTahane(null)}
-                          className={`border-b border-border align-top last:border-0 hover:bg-muted/30 ${r.aktivne ? "" : "opacity-50"} ${tahane === r.id ? "bg-secondary" : ""}`}
+                          onDragEnd={() => {
+                            koniecTahania.current = Date.now();
+                            setTahane(null);
+                          }}
+                          className={`border-b border-border align-top last:border-0 ${r.aktivne ? "" : "opacity-50"} ${tahane === r.id ? "bg-secondary" : ""}`}
                         >
                           <td className="p-3 tabular-nums">
                             <div className="flex items-center gap-1">
@@ -625,7 +638,7 @@ function PravidlaPage() {
                               </button>
                             </div>
                           </td>
-                        </tr>
+                        </KlikatelnyRiadok>
                       );
                     })}
                 </tbody>

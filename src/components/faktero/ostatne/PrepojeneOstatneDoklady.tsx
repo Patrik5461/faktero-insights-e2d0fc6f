@@ -1,4 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus } from "lucide-react";
@@ -32,7 +33,6 @@ export function PrepojeneOstatneDoklady({
   tlacidlo: string;
 }) {
   const { t } = useT();
-  const navigate = useNavigate();
   const zoznamFn = useServerFn(zoznamOstatnychFn);
   const [rows, setRows] = useState<any[] | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
@@ -93,10 +93,10 @@ export function PrepojeneOstatneDoklady({
               {rows.map((r) => {
                 const lehota = r.status === "exported" ? null : stavLehoty(r.due_date, dnes);
                 return (
-                  <tr
+                  <KlikatelnyRiadok
                     key={r.id}
-                    onClick={() => navigate({ to: "/ostatne-doklady/novy", search: { id: r.id } })}
-                    className="cursor-pointer border-t border-border hover:bg-secondary/30"
+                    ciel={{ to: "/ostatne-doklady/novy", search: { id: r.id } as any }}
+                    className="border-t border-border hover:bg-secondary/30"
                   >
                     <td className="px-3 py-2 whitespace-nowrap">
                       {datumNaDoklade(r.received_date)}
@@ -127,7 +127,7 @@ export function PrepojeneOstatneDoklady({
                         STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ?? r.status,
                       )}
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 );
               })}
             </tbody>

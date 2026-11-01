@@ -20,6 +20,7 @@ import {
   type KlucZdroja,
 } from "@/lib/faktero/import-zdroj";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 export const Route = createFileRoute("/_authenticated/importy/")({
   head: ({ match }) => ({
@@ -192,7 +193,10 @@ function ImportHistoryPage() {
                 <tbody>
                   {jobs.map((j) => (
                     <React.Fragment key={j.id}>
-                      <tr className="border-t border-border">
+                      <KlikatelnyRiadok
+                        naKlik={() => void toggleLogs(j.id)}
+                        className="border-t border-border"
+                      >
                         <td className="px-4 py-2 whitespace-nowrap tabular-nums">
                           {new Date(j.created_at).toLocaleString(lokalJazyka(jazyk))}
                         </td>
@@ -224,7 +228,7 @@ function ImportHistoryPage() {
                             <FileText className="h-4 w-4" />
                           </button>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                       {openId === j.id && (
                         <tr className="border-t border-border bg-muted/30">
                           <td colSpan={8} className="p-4">

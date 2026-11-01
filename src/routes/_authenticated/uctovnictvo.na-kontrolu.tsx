@@ -28,6 +28,8 @@ import {
 } from "@/lib/faktero/vyber-zobrazenych";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import type { CielDetailu } from "@/hooks/useKlikNaRiadok";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/na-kontrolu")({
   head: ({ match }) => ({
@@ -156,6 +158,14 @@ function NaKontroluPage() {
       setNavrhujem(null);
     }
   }
+
+  /** Kam vedie klik na riadok — ten istý detail ako odkaz na čísle. */
+  const cielRiadku = (r: RiadokNaKontrolu): CielDetailu =>
+    r.typ === "prijata"
+      ? { to: "/prijate-faktury/$id", params: { id: r.id } }
+      : r.typ === "vystavena"
+        ? { to: "/faktury/$id", params: { id: r.id } }
+        : { to: "/doklady/novy", search: { id: r.id } as any };
 
   const odkaz = (r: RiadokNaKontrolu) =>
     r.typ === "prijata" ? (
@@ -343,7 +353,11 @@ function NaKontroluPage() {
                     .filter(Boolean)
                     .join(" · ");
                   return (
-                    <tr key={kluc(r)} className="border-b border-border align-top last:border-0 hover:bg-muted/30">
+                    <KlikatelnyRiadok
+                      key={kluc(r)}
+                      ciel={cielRiadku(r)}
+                      className="border-b border-border align-top last:border-0"
+                    >
                       <td className="p-3">
                         <input
                           type="checkbox"
@@ -414,7 +428,7 @@ function NaKontroluPage() {
                           </span>
                         )}
                       </td>
-                    </tr>
+                    </KlikatelnyRiadok>
                   );
                 })}
               </tbody>

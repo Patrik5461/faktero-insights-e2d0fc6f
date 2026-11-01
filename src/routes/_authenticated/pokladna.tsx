@@ -14,6 +14,8 @@ import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
@@ -31,6 +33,10 @@ function tentoMesiac() {
 
 function PokladnaPage() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
+  /** Doklad v hotovosti vedie do svojho detailu; pokladničný doklad detail nemá. */
+  const cielRiadku = (r: any) =>
+    r.zdroj === "doklad" && r.id ? { to: "/doklady/novy" as const, search: { id: r.id } as any } : null;
   const mena = useMenaFirmy();
   // Sumy v mene firmy (CZ → Kč) a jazyku rozhrania, nie napevno v eurách.
   const formatMeny = useFormatMenyFirmy();
@@ -310,8 +316,10 @@ function PokladnaPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {(data?.riadky ?? []).map((r: any) => (
-                    <tr key={`${r.zdroj}-${r.id}`} className="hover:bg-muted/30">
+                  {(data?.riadky ?? []).map((r: any) => {
+                    const pr = klik(cielRiadku(r));
+                    return (
+                    <tr key={`${r.zdroj}-${r.id}`} {...pr} className={cn(pr.className, "hover:bg-muted/30")}>
                       <td className="whitespace-nowrap p-3 text-muted-foreground">{formatujDatum(r.datum)}</td>
                       <td className="whitespace-nowrap p-3">
                         {r.cislo ? <span className="cislo-dokladu">{r.cislo}</span> : "—"}
@@ -328,7 +336,7 @@ function PokladnaPage() {
                       </td>
                       <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
                         {r.zdroj === "doklad" ? (
-                          <Link to="/doklady" className="hover:underline">
+                          <Link to="/doklady/novy" search={{ id: r.id } as any} className="hover:underline">
                             {t("Doklad v hotovosti")}
                           </Link>
                         ) : (
@@ -360,17 +368,21 @@ function PokladnaPage() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Na mobile karty — tabuľka by Zdroj, Sumu a Zostatok orezala. */}
             <div className="space-y-2 md:hidden">
-              {(data?.riadky ?? []).map((r: any) => (
+              {(data?.riadky ?? []).map((r: any) => {
+                const pk = klik(cielRiadku(r), { klavesnica: false });
+                return (
                 <div
                   key={`${r.zdroj}-${r.id}`}
-                  className="rounded-xl border border-border bg-card p-3"
+                  {...pk}
+                  className={cn(pk.className, "rounded-xl border border-border bg-card p-3")}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
@@ -399,7 +411,7 @@ function PokladnaPage() {
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     {r.zdroj === "doklad" ? (
-                      <Link to="/doklady" className="hover:underline">
+                      <Link to="/doklady/novy" search={{ id: r.id } as any} className="hover:underline">
                         {t("Doklad v hotovosti")}
                       </Link>
                     ) : (
@@ -419,7 +431,8 @@ function PokladnaPage() {
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
