@@ -196,6 +196,7 @@ export function SekcieNavigacie({
                         to={p.to as any}
                         search={p.search as any}
                         onClick={onPrejdi}
+                        aria-current={je ? "page" : undefined}
                         className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
                           je
                             ? "bg-primary/10 font-medium text-primary-hover"

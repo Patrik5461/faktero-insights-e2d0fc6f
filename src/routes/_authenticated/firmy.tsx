@@ -1,5 +1,6 @@
 import { popisRoly } from "@/lib/faktero/rola-popis";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { akciaUpravyFirmy } from "@/lib/faktero/firmy-akcie";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -331,20 +332,32 @@ function CompanyManagementPage() {
           {t("Prepnúť")}
         </button>
       )}
-      <a
-        href="/firma"
-        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
-      >
-        {t("Upraviť")}
-      </a>
-      {/* Pozvánky žijú v nastaveniach firmy — tu bolo roky
-          zašednuté tlačidlo s poznámkou „Onedlho". */}
-      <Link
-        to="/firma"
-        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
-      >
-        {t("Pozvať")}
-      </Link>
+      {/* Upraviť aj Pozvať (pozvánky žijú v nastaveniach firmy) otvoria firmu
+          z riadku — inú ako aktívnu najprv prepnú (S-17). Len majiteľ a admin. */}
+      {(() => {
+        const akcia = akciaUpravyFirmy(r, activeId);
+        if (!akcia) return null;
+        const otvor = () =>
+          akcia.prepnut ? switchTo(r.id, akcia.kam) : window.location.assign(akcia.kam);
+        return (
+          <>
+            <button
+              type="button"
+              onClick={otvor}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+            >
+              {t("Upraviť")}
+            </button>
+            <button
+              type="button"
+              onClick={otvor}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+            >
+              {t("Pozvať")}
+            </button>
+          </>
+        );
+      })()}
       {/* Skúšobná firma sa dala doteraz len založiť. Mazať smie
           majiteľ a len keď mu ostane iná — poslednú firmu rieši
           zrušenie účtu, ktoré má odklad. */}

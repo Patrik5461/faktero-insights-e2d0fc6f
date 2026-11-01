@@ -24,8 +24,12 @@ import { TechnickaPodpora, UdajeClena } from "@/components/faktero/pristupy/Clen
 import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
 import { potvrd } from "@/lib/potvrdenie";
 import { domacaMena } from "@/lib/faktero/kurzy";
+import { ukazkaCisla } from "@/lib/faktero/ciselne-rady";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { useClenstvoFirmy } from "@/lib/faktero/use-opravnenia";
+import { jeAdminRola } from "@/lib/faktero/opravnenia";
+import { overZapis, textChybyZapisu } from "@/lib/faktero/over-zapis";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Firma — Faktero") }],
@@ -36,6 +40,10 @@ export const Route = createFileRoute("/_authenticated/firma")({
 function CompanyPage() {
   const { t } = useT();
   const [c, setC] = useState<any>(null);
+  /* Firmu, bankové účty a používateľov mení len majiteľ alebo admin
+     (`is_company_admin`). Ostatní vidia stránku len na čítanie (S-13). */
+  const clen = useClenstvoFirmy();
+  const spravca = clen.nacitane && jeAdminRola(clen.rola);
   useEffect(() => {
     const id = getActiveCompanyId();
     if (!id) return;
@@ -50,6 +58,9 @@ function CompanyPage() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!spravca) return toast.error(t("Údaje firmy môže meniť len majiteľ alebo administrátor."));
+    // `companies.name` je NOT NULL, ale prázdny text by prešiel (S-15).
+    if (!String(c.name ?? "").trim()) return toast.error(t("Vyplňte názov firmy."));
     // IBAN a SWIFT spravujú Bankové účty nižšie — uloženie firmy ich nesmie
     // prepísať hodnotou z času, keď sa stránka otvorila.
     // Stav overenia v registri DPH zapisuje len server — staré hodnoty z načítania sa neposielajú.
@@ -64,8 +75,13 @@ function CompanyPage() {
       dph_overene_at: _overene,
       ...patch
     } = c;
-    const { error } = await supabase.from("companies").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    /* RLS pri odmietnutí nevráti chybu, len nula riadkov — bez `.select`
+       by sa ukázalo „Uložené“, hoci sa nič neuložilo (S-13). */
+    try {
+      overZapis(await supabase.from("companies").update(patch).eq("id", id).select("id"));
+    } catch (chyba) {
+      return toast.error(textChybyZapisu(chyba, t));
+    }
     // Krajina určuje sadzby DPH a formuláre si ju pamätajú — po zmene sa musí
     // zabudnúť, inak by faktúra ďalej ponúkala sadzby predchádzajúcej krajiny.
     zabudniKrajinuDane(id);
@@ -87,6 +103,18 @@ function CompanyPage() {
     <>
       <PageHeader title={t("Firma")} description={t("Údaje, ktoré sa zobrazia na faktúrach.")} />
       <PageBody>
+        {clen.nacitane && !spravca && (
+          <div
+            role="status"
+            className="mb-4 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+          >
+            {t(
+              "Údaje firmy, bankové účty a používateľov môže meniť len majiteľ alebo administrátor. Vidíte ich len na čítanie.",
+            )}
+          </div>
+        )}
+        {/* `fieldset disabled` vypne všetky polia aj tlačidlá vnútri naraz. */}
+        <fieldset disabled={!spravca} className="min-w-0">
         <form
           onSubmit={save}
           className="grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2"
@@ -547,14 +575,16 @@ function CompanyPage() {
             </div>
           ))}
 
-          <div className="sm:col-span-2 flex justify-end">
-            <button
-              type="submit"
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              {t("Uložiť zmeny")}
-            </button>
-          </div>
+          {spravca && (
+            <div className="sm:col-span-2 flex justify-end">
+              <button
+                type="submit"
+                className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                {t("Uložiť zmeny")}
+              </button>
+            </div>
+          )}
         </form>
 
         <div className="mt-6">
@@ -563,7 +593,8 @@ function CompanyPage() {
 
         <VlastnySmtp companyId={c.id} />
 
-        <TeamSection companyId={c.id} />
+        <TeamSection companyId={c.id} spravca={spravca} />
+        </fieldset>
       </PageBody>
     </>
   );
@@ -577,7 +608,7 @@ const ROLA_POPIS: Record<string, string> = {
   custom: "Vlastný prístup",
 };
 
-function TeamSection({ companyId }: { companyId: string }) {
+function TeamSection({ companyId, spravca }: { companyId: string; spravca: boolean }) {
   const { t, jazyk } = useT();
   const datum = (d: string) => new Date(d).toLocaleDateString(lokalJazyka(jazyk));
   const [email, setEmail] = useState("");
@@ -806,13 +837,15 @@ function TeamSection({ companyId }: { companyId: string }) {
                   </td>
                   <td className="p-3 text-muted-foreground">{datum(m.created_at)}</td>
                   <td className="p-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => odober(m.user_id, m.email ?? t("tento účet"))}
-                      className="text-xs text-rose-600 hover:underline"
-                    >
-                      {t("Odobrať prístup")}
-                    </button>
+                    {spravca && (
+                      <button
+                        type="button"
+                        onClick={() => odober(m.user_id, m.email ?? t("tento účet"))}
+                        className="text-xs text-rose-600 hover:underline"
+                      >
+                        {t("Odobrať prístup")}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -823,6 +856,7 @@ function TeamSection({ companyId }: { companyId: string }) {
 
       {clenovia && clenovia.length > 0 && <TechnickaPodpora companyId={companyId} onZmena={load} />}
 
+      {spravca && (
       <form onSubmit={invite} className="mt-4 flex flex-wrap items-end gap-3">
         <label className="block">
           <span className="text-sm font-medium">{t("Email")}</span>
@@ -856,7 +890,8 @@ function TeamSection({ companyId }: { companyId: string }) {
           {busy ? t("Odosielam…") : t("Pozvať používateľa")}
         </button>
       </form>
-      {role === "custom" && (
+      )}
+      {spravca && role === "custom" && (
         <div className="mt-3">
           <p className="text-sm text-muted-foreground">
             {t("Vyberte, ku ktorým oblastiam bude mať pozvaný prístup:")}
@@ -963,61 +998,49 @@ function In({
   );
 }
 
-/** Živý náhľad ďalšieho čísla faktúry — rovnaká logika ako DB funkcia. */
+/**
+ * Náhľad ďalšieho čísla faktúry (S-12). Čísla dáva číselný rad
+ * (`number_series`) — keď ho firma má, náhľad pýta to isté, čo generátor pri
+ * uložení (`faktero_next_invoice_number`, nič nerezervuje), a formát tu je len
+ * šablóna pre nový rad. Bez radu (ešte žiadna faktúra) sa ukáže prvé číslo
+ * zo šablóny.
+ */
 function NumberingPreview({ companyId, format }: { companyId: string; format: string }) {
   const { t } = useT();
   const [preview, setPreview] = useState<string | null>(null);
+  const [rad, setRad] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const fmt = (format || "").trim() || "{YYYY}{NNNN}";
-    const d = new Date();
-    const yyyy = String(d.getFullYear());
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const monthly = fmt.includes("{MM}");
-    const start = monthly ? `${yyyy}-${mm}-01` : `${yyyy}-01-01`;
-    const end = monthly
-      ? new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().slice(0, 10)
-      : `${d.getFullYear() + 1}-01-01`;
-    const padToken = (fmt.match(/\{(N{2,4})\}/g) ?? [])
-      .map((t) => t.replace(/[{}]/g, "").length)
-      .sort((a, b) => b - a)[0];
-    const pad = padToken ?? 4;
-
-    (async () => {
-      const [periodRes, allRes] = await Promise.all([
-        supabase
-          // aj-zmazane: číslovanie — poradie zmazanej faktúry je obsadené
-          .from("invoices")
-          .select("sequence_number")
-          .eq("company_id", companyId)
-          .gte("issue_date", start)
-          .lt("issue_date", end),
-        // aj-zmazane: číslovanie — číslo zmazanej faktúry je obsadené
-        supabase.from("invoices").select("invoice_number").eq("company_id", companyId),
-      ]);
-      if (cancelled) return;
-      const maxSeq = (periodRes.data ?? []).reduce(
-        (m: number, r: any) => Math.max(m, Number(r.sequence_number ?? 0)),
-        0,
-      );
-      const taken = new Set((allRes.data ?? []).map((r: any) => r.invoice_number));
-      let seq = maxSeq + 1;
-      let num = "";
-      for (let i = 0; i <= 1000; i++) {
-        num = fmt
-          .replace(/\{YYYY\}/g, yyyy)
-          .replace(/\{YY\}/g, yyyy.slice(2))
-          .replace(/\{MM\}/g, mm)
-          .replace(/\{N{2,4}\}/g, String(seq).padStart(pad, "0"));
-        if (!taken.has(num)) break;
-        seq += 1;
+    const casovac = setTimeout(async () => {
+      const { data: rady } = await supabase
+        .from("number_series")
+        .select("id, name, is_default")
+        .eq("company_id", companyId)
+        .eq("kind", "invoice")
+        .eq("active", true)
+        .order("is_default", { ascending: false })
+        .limit(1);
+      const r = rady?.[0] as { id: string; name: string } | undefined;
+      if (r) {
+        const { data, error } = await supabase.rpc("faktero_next_invoice_number", {
+          _company_id: companyId,
+          _issue_date: null,
+          _type: "regular",
+          _series_id: r.id,
+        } as never);
+        if (cancelled) return;
+        setRad(r.name);
+        setPreview(error ? null : ((data as { invoice_number?: string } | null)?.invoice_number ?? null));
+        return;
       }
-      setPreview(num);
-    })();
-
+      if (cancelled) return;
+      setRad(null);
+      setPreview(ukazkaCisla((format || "").trim() || "{YYYY}{NNNN}", 1));
+    }, 250);
     return () => {
       cancelled = true;
+      clearTimeout(casovac);
     };
   }, [companyId, format]);
 
@@ -1025,6 +1048,15 @@ function NumberingPreview({ companyId, format }: { companyId: string; format: st
     <p className="mt-2 text-xs text-muted-foreground">
       {t("Ďalšie číslo:")}{" "}
       <span className="font-mono font-semibold tabular-nums text-foreground">{preview ?? "…"}</span>
+      {rad && (
+        <>
+          {" · "}
+          {t("podľa číselného radu „{rad}“ —", { rad })}{" "}
+          <Link to={"/ciselne-rady" as any} className="font-medium text-primary hover:underline">
+            {t("upraviť v Číselných radoch")}
+          </Link>
+        </>
+      )}
     </p>
   );
 }

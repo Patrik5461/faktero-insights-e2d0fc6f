@@ -249,7 +249,7 @@ export const NAV: NavGroup[] = [
         search: { zdroj: "brana" },
         label: "Výpis z platobnej brány",
       },
-      { to: "/uctovnictvo/konvertor", label: "Konvertor Excel → Pohoda" },
+      { to: "/uctovnictvo/konvertor", label: "Konvertor Excel → Pohoda" }, // rovnaký nadpis má stránka (E-19)
       { to: "/uctovnictvo/predkontacie", label: "Predkontácie a členenie DPH" },
       { to: "/uctovnictvo/na-kontrolu", label: "Zaúčtovanie na kontrolu" },
       { to: "/uctovnictvo/pravidla", label: "Pravidlá účtovania" },
@@ -316,11 +316,13 @@ export const NAV: NavGroup[] = [
 
 /** API a Nastavenia sa presunuli z hlavnej lišty do menu pod avatarom. */
 export const ACCOUNT_API_LINKS: NavChild[] = [
-  { to: "/api-kluce", label: "API kľúče" },
+  /* Kľúče, webhooky a ich logy vydá databáza len majiteľovi a adminovi
+     (`is_company_admin`) — ostatným by stránka ostala prázdna (S-14). */
+  { to: "/api-kluce", label: "API kľúče", companyAdminOnly: true },
   { to: "/api-dokumentacia", label: "API dokumentácia" },
-  { to: "/api-playground", label: "API playground" },
-  { to: "/webhooky", label: "Webhooky" },
-  { to: "/webhooky-logy", label: "Webhook delivery logy" },
+  { to: "/api-playground", label: "API playground", companyAdminOnly: true },
+  { to: "/webhooky", label: "Webhooky", companyAdminOnly: true },
+  { to: "/webhooky-logy", label: "Webhook delivery logy", companyAdminOnly: true },
   { to: "/pomoc/woocommerce", label: "Doplnok pre WooCommerce" },
 ];
 
@@ -328,10 +330,12 @@ export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/firma", label: "Firma" },
   { to: "/ciselne-rady", label: "Číselné rady" },
   { to: "/nastavenia/schvalovanie", label: "Schvaľovanie dokladov" },
-  { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
+  // Ukladá sa do `companies` — upraviť ju smie len majiteľ alebo admin.
+  { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry", companyAdminOnly: true },
   { to: "/nastavenia/email-sablony", label: "E-mailové šablóny" },
   { to: "/nastavenia/poznamky", label: "Preddefinované poznámky" },
-  { to: "/nastavenia/zalohy", label: "Zálohy dokladov" },
+  // Zálohy celej firmy (server: `spravca`).
+  { to: "/nastavenia/zalohy", label: "Zálohy dokladov", companyAdminOnly: true },
   { to: "/nastavenia/eshop", label: "E-shop a doprava" },
   { to: "/nastavenia/transeu", label: "Trans.eu" },
   { to: "/nastavenia/zabezpecenie", label: "Zabezpečenie účtu" },
@@ -404,6 +408,80 @@ const LEN_SK = ["/pokladna", "/efaktura"];
 // Agendy, ktoré nemecká firma nedostane — zdieľané s nástenkou, zvončekom a e-mailom.
 export { NIE_PRE_DE, nedostupneAgendy, agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
 
+/** Názov položky Výkazy k DPH podľa krajiny firmy. */
+export function nazovVykazov(krajina: KrajinaDane): string {
+  if (krajina === "CZ") return "Výkazy k DPH (přiznání, kontrolní hlášení)";
+  if (krajina === "DE") return "Výkazy k DPH (UStVA, ZM)";
+  return "Výkazy k DPH (priznanie, KV, SV)";
+}
+
+/** Vidí človek stránku podľa oblasti jej cesty? Stránky mimo oblastí vidí každý. */
+function vidiOblastCesty(to: string, rola: string | null, opravnenia: unknown): boolean {
+  const o = oblastPodlaCesty(String(to).split("?")[0]!);
+  return !o || vidiOblast(rola, opravnenia, o);
+}
+
+/** Je cesta pre firmu v danej krajine? (slovenské agendy, nemecké výnimky) */
+function cestaPreKrajinu(to: string, krajina: KrajinaDane): boolean {
+  if (krajina !== "SK" && LEN_SK.some((x) => String(to).startsWith(x))) return false;
+  return !nedostupneAgendy(String(to), krajina);
+}
+
+/** Kto je prihlásený v aktívnej firme — jedno pravidlo pre lištu, „Vytvoriť“ aj avatar. */
+export type KontextMenu = {
+  isCompanyAdmin: boolean;
+  krajina?: KrajinaDane;
+  rola?: string | null;
+  opravnenia?: unknown;
+};
+
+/**
+ * Jedna položka mimo bočnej lišty (rýchle „Vytvoriť“, ponuka pod avatarom)
+ * podľa toho istého pravidla ako `filterNav`: správcovské len majiteľovi
+ * a adminovi, oblasti podľa vlastného prístupu, agendy podľa krajiny (S-14, S-19).
+ */
+export function vidiPolozku(
+  c: { to: string; companyAdminOnly?: boolean },
+  k: KontextMenu,
+): boolean {
+  if (c.companyAdminOnly && !k.isCompanyAdmin) return false;
+  if (!cestaPreKrajinu(c.to, k.krajina ?? "SK")) return false;
+  return vidiOblastCesty(c.to, k.rola ?? null, k.opravnenia ?? null);
+}
+
+export function filtrujPolozky<T extends { to: string; companyAdminOnly?: boolean }>(
+  polozky: readonly T[],
+  k: KontextMenu,
+): T[] {
+  return polozky.filter((c) => vidiPolozku(c, k));
+}
+
+/**
+ * Ktorá skupina a položka lišty svieti. Skupina s presnou zhodou položky má
+ * prednosť pred skupinou, ktorej len patrí predpona — `/faktury` z Dokladov
+ * („Vystavené faktúry“) tak svieti v Dokladoch, nie vo Fakturácii, kde
+ * `/faktury` bez parametrov položku nemá (AB-08).
+ */
+export function aktivnaVListe(
+  nav: NavGroup[],
+  pathname: string,
+  search: Record<string, unknown>,
+): { skupina: NavGroup | null; polozka: string | null } {
+  const podlaPredpony = nav.filter((g) =>
+    g.match.some((m) => pathname === m || (!g.exact && pathname.startsWith(m + "/"))),
+  );
+  for (const g of podlaPredpony) {
+    const k = activeChildKey(g.children, pathname, search);
+    if (k) return { skupina: g, polozka: k };
+  }
+  for (const g of nav) {
+    if (podlaPredpony.includes(g)) continue;
+    const k = activeChildKey(g.children, pathname, search);
+    if (k) return { skupina: g, polozka: k };
+  }
+  return { skupina: podlaPredpony[0] ?? null, polozka: null };
+}
+
 export function filterNav(
   view: ActiveProduct,
   isCompanyAdmin: boolean,
@@ -428,11 +506,9 @@ export function filterNav(
               ...g,
               children: g.children
                 .filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x)))
-                // Česká firma podáva přiznání a kontrolní hlášení, nie KV a SV.
+                // Česká firma podáva přiznání a kontrolní hlášení, nemecká UStVA a ZM — nie KV a SV (B-15).
                 .map((c) =>
-                  c.to === "/uctovnictvo/vykazy"
-                    ? { ...c, label: "Výkazy k DPH (přiznání, kontrolní hlášení)" }
-                    : c,
+                  c.to === "/uctovnictvo/vykazy" ? { ...c, label: nazovVykazov(krajina) } : c,
                 ),
             },
       )
@@ -446,17 +522,10 @@ export function filterNav(
           : g,
       )
       // Vlastný prístup: položky oblastí bez práva sa skryjú (databáza by aj tak nevydala nič).
-      .map((g) =>
-        rola === "custom"
-          ? {
-              ...g,
-              children: g.children.filter((c) => {
-                const o = oblastPodlaCesty(String(c.to));
-                return !o || vidiOblast(rola, opravnenia, o);
-              }),
-            }
-          : g,
-      )
+      .map((g) => ({
+        ...g,
+        children: g.children.filter((c) => vidiOblastCesty(c.to, rola, opravnenia)),
+      }))
       // Skupina bez položiek zmizne — okrem Moje úlohy, ktoré sú samy odkazom.
       .filter((g) => g.children.length > 0 || g.key === "moje-ulohy")
   );

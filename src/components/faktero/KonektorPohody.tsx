@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { vyberKonektora } from "@/lib/faktero/konektor-pohody-vyber";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -54,6 +55,8 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
   */
   const [firmy, setFirmy] = useState<MojaFirma[]>([]);
   const [vybrane, setVybrane] = useState<string[]>([companyId]);
+  /* `null` = ešte sa načítava; pravidlá výberu v `vyberKonektora` (E-08, E-09). */
+  const [vyber, setVyber] = useState<ReturnType<typeof vyberKonektora> | null>(null);
   const fnPriprav = useServerFn(pripravKonektorFn);
   const fnStav = useServerFn(stavKonektoraFn);
   const fnOdpoved = useServerFn(nahrajOdpovedPohodyFn);
@@ -97,9 +100,11 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
       .catch(() => setStav(null));
     void fetchMyCompanies()
       .then((z) => {
-        const moje = (z as MojaFirma[]).filter((f) => f.role === "owner" || f.role === "admin");
+        const v = vyberKonektora(z as MojaFirma[], companyId);
+        const moje = v.firmy as MojaFirma[];
+        setVyber(v);
         setFirmy(moje);
-        setVybrane(moje.map((f) => f.id));
+        setVybrane(v.vybrane);
         // Druhý dotaz už pozná všetky firmy, takže stav ukáže za každú z nich.
         if (moje.length > 1) {
           fnStav({ data: { companyId, companyIds: moje.map((f) => f.id) } })
@@ -107,7 +112,10 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
             .catch(() => {});
         }
       })
-      .catch(() => setFirmy([]));
+      .catch(() => {
+        setFirmy([]);
+        setVyber(vyberKonektora([], companyId));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
@@ -150,7 +158,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         <code className="rounded bg-secondary px-1">firmy.txt</code> —{" "}
         {t("priečinok ani úlohu už nezakladá znova.")}
       </p>
-      {firmy.length > 1 && (
+      {vyber?.ukazZoznam && (
         <div className="mt-3 rounded-md border border-border bg-secondary/40 p-3">
           <div className="mb-2 text-xs font-medium">{t("Do balíčka zahrnúť")}</div>
           <div className="space-y-1.5">
@@ -174,18 +182,24 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         </div>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={stiahni}
-          disabled={pracuje || vybrane.length === 0}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {pracuje
-            ? t("Pripravujem…")
-            : vybrane.length > 1
-              ? t("Stiahnuť balíček pre {n} firmy", { n: vybrane.length })
-              : t("Stiahnuť balíček pre účtovníčku")}
-        </button>
+        {vyber?.nesmie ? (
+          <p className="text-xs text-muted-foreground">
+            {t("Balíček konektora môže stiahnuť len majiteľ alebo správca firmy.")}
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={stiahni}
+            disabled={pracuje || vybrane.length === 0}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {pracuje
+              ? t("Pripravujem…")
+              : vybrane.length > 1
+                ? t("Stiahnuť balíček pre {n} firmy", { n: vybrane.length })
+                : t("Stiahnuť balíček pre účtovníčku")}
+          </button>
+        )}
         {stav?.naposledy ? (
           <span className="text-xs text-muted-foreground">
             {t("Naposledy sa ozval {kedy}", { kedy: new Date(stav.naposledy).toLocaleString(loc) })}

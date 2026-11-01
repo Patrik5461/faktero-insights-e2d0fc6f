@@ -9,6 +9,9 @@ import {
   miestnyDatum,
   normalizujPrehlad,
   PRAZDNY_PREHLAD,
+  pocetBezPrepoctu,
+  sucetPrehladu,
+  udalostiFaktury,
   type KosVeku,
   type PrehladSuhrn,
 } from "@/lib/faktero/prehlad-suhrn";
@@ -23,6 +26,7 @@ import { PrenosFakturyZadarmo } from "@/components/faktero/PrenosFakturyZadarmo"
 import { BankWidget } from "@/components/faktero/BankWidget";
 import { AutoUctovanieWidget } from "@/components/faktero/AutoUctovanieWidget";
 import { VynosyNakladyPanel } from "@/components/faktero/VynosyNakladyPanel";
+import { SumaVDomacejMene } from "@/components/faktero/SuctyPoMenach";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
@@ -76,6 +80,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   len čítajú.
 */
 let menaPrehladu = "EUR";
+const domacaPrehladu = (): "EUR" | "CZK" => (menaPrehladu === "CZK" ? "CZK" : "EUR");
 
 function fmt(n: number, currency: string | null | undefined = menaPrehladu) {
   return formatujMenu(n, currency || menaPrehladu);
@@ -166,7 +171,9 @@ function Dashboard() {
           // Len posledné faktúry do aktivity — súčty sú v `prehlad_suhrn`.
           supabase
             .from("invoices")
-            .select("id, invoice_number, customer_name, total, currency, status, paid_at, created_at")
+            .select(
+              "id, invoice_number, customer_name, total, currency, status, paid_at, created_at, sent_at, cancelled_at",
+            )
             .eq("company_id", companyId)
             .is("deleted_at", null)
             .gte("issue_date", yearAgoISO)
@@ -308,6 +315,15 @@ function Dashboard() {
           <>
             {/* Overview stat strip */}
             <StatStrip metrics={metrics} loading={loading} />
+            {/* S-02: doklady v cudzej mene bez kurzu sa do súčtov nepripočítajú „koruna za euro“. */}
+            {!loading && pocetBezPrepoctu(suhrn) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "Doklady v cudzej mene bez kurzu ({n}) nie sú v súčtoch — doplňte im kurz v detaile dokladu.",
+                  { n: pocetBezPrepoctu(suhrn) },
+                )}
+              </p>
+            )}
 
             {/* CRM: Aging + DSO + Forecast */}
             <div className="grid gap-6 lg:grid-cols-2">
@@ -349,7 +365,15 @@ function Dashboard() {
         {/* SECOND ROW */}
         <div className="grid gap-6 lg:grid-cols-4">
           <Panel title="Pohľadávky" icon={HandCoins}>
-            <Row label="Celkové pohľadávky" value={fmt(metrics.receivables)} strong />
+            <Row
+              label="Celkové pohľadávky"
+              value={
+                <SumaVDomacejMene
+                  sucet={sucetPrehladu(metrics.receivables, suhrn, domacaPrehladu(), "pohladavky")}
+                />
+              }
+              strong
+            />
             <Row label="Po splatnosti" value={fmt(metrics.overdueAmount)} tone="destructive" />
             <Row
               label="Priemerná doba úhrady"
@@ -378,7 +402,7 @@ function Dashboard() {
 
           <Panel title="DPH prehľad" icon={Receipt}>
             <Row label="DPH na odvod" value={fmt(metrics.vatOut)} />
-            <Row label="DPH na odpočet (prijaté faktúry)" value={fmt(metrics.vatIn)} />
+            <Row label="DPH na odpočet (prijaté faktúry a bločky)" value={fmt(metrics.vatIn)} />
             <Row
               label="Rozdiel"
               value={fmt(metrics.vatOut - metrics.vatIn)}
@@ -393,7 +417,7 @@ function Dashboard() {
 
           <Panel title="Daňový odhad" icon={Calculator}>
             <Row label="Príjmy (rok)" value={fmt(metrics.yearIncome)} />
-            <Row label="Výdavky (prijaté faktúry)" value={fmt(metrics.yearExpenses)} />
+            <Row label="Výdavky (prijaté faktúry a bločky)" value={fmt(metrics.yearExpenses)} />
             <Row
               label="Odhad základu dane"
               value={fmt(Math.max(0, metrics.yearIncome - metrics.yearExpenses))}
@@ -405,7 +429,15 @@ function Dashboard() {
           </Panel>
 
           <Panel title="Záväzky" icon={TrendingDown}>
-            <Row label="Neuhradené prijaté faktúry" value={fmt(payables?.unpaid ?? 0)} strong />
+            <Row
+              label="Neuhradené prijaté faktúry"
+              value={
+                <SumaVDomacejMene
+                  sucet={sucetPrehladu(payables?.unpaid ?? 0, suhrn, domacaPrehladu(), "zavazky")}
+                />
+              }
+              strong
+            />
             <Row
               label="Po splatnosti"
               value={String(payables?.overdueCount ?? 0)}
@@ -439,9 +471,6 @@ function Dashboard() {
                     <Sparkles className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-semibold">{t("eFaktúra 2027")}</h3>
                   </div>
-                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-400">
-                    {t("Pripravujeme")}
-                  </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{t("Povinná eFaktúra od 1.1.2027")}</p>
                 <div className="mt-5 grid grid-cols-4 gap-2">
@@ -879,7 +908,7 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
         value={fmt(metrics.overdueAmount)}
         icon={AlertTriangle}
         stav={jePoSplatnosti ? "zle" : "pokoj"}
-        meta={`${faktur(metrics.overdueCount)} · ${odberatelov(metrics.debtorCount)}`}
+        meta={`${faktur(metrics.overdueCount)} · ${odberatelov(metrics.overdueDebtorCount)}`}
       />
       <KpiKarta
         label="Dlžia mi zákazníci"
@@ -988,7 +1017,7 @@ function Row({
   tone,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   strong?: boolean;
   tone?: "destructive";
 }) {
@@ -1087,53 +1116,33 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
     return d.toLocaleDateString("sk-SK");
   };
 
+  /* Každá udalosť so svojím časom (S-07) — odoslanie a storno bez času sa neukážu. */
+  const VZHLAD = {
+    vytvorena: { icon: FilePlus2, tone: "bg-primary/15 text-primary-hover", title: "Faktúra {cislo} vytvorená" },
+    odoslana: { icon: Send, tone: "bg-primary/15 text-primary-hover", title: "Faktúra {cislo} odoslaná" },
+    zaplatena: { icon: CheckCircle2, tone: "bg-emerald-500/15 text-emerald-500", title: "Faktúra {cislo} zaplatená" },
+    stornovana: { icon: Ban, tone: "bg-muted text-muted-foreground", title: "Faktúra {cislo} stornovaná" },
+  } as const;
   invoices.slice(0, 30).forEach((i) => {
-    items.push({
-      icon: FilePlus2,
-      tone: "bg-primary/15 text-primary-hover",
-      title: "Faktúra {cislo} vytvorená",
-      titleP: { cislo: i.invoice_number },
-      subtitle: "{v}",
-      subtitleP: {
-        v: `${i.customer_name ?? "—"} · ${fmt(Number(i.total), i.currency || menaPrehladu)}`,
-      },
-      time: fmtTime(i.created_at),
-      at: new Date(i.created_at).getTime(),
-    });
-    if (i.status === "sent" || i.status === "paid") {
+    for (const u of udalostiFaktury(i)) {
+      const v = VZHLAD[u.druh];
+      const suma = fmt(Number(i.total), i.currency || menaPrehladu);
       items.push({
-        icon: Send,
-        tone: "bg-primary/15 text-primary-hover",
-        title: "Faktúra {cislo} odoslaná",
+        icon: v.icon,
+        tone: v.tone,
+        title: v.title,
         titleP: { cislo: i.invoice_number },
         subtitle: "{v}",
-        subtitleP: { v: i.customer_name ?? "—" },
-        time: fmtTime(i.created_at),
-        at: new Date(i.created_at).getTime() + 1,
-      });
-    }
-    if (i.status === "paid" && i.paid_at) {
-      items.push({
-        icon: CheckCircle2,
-        tone: "bg-emerald-500/15 text-emerald-500",
-        title: "Faktúra {cislo} zaplatená",
-        titleP: { cislo: i.invoice_number },
-        subtitle: "{v}",
-        subtitleP: { v: fmt(Number(i.total), i.currency || menaPrehladu) },
-        time: fmtTime(i.paid_at),
-        at: new Date(i.paid_at).getTime(),
-      });
-    }
-    if (i.status === "cancelled") {
-      items.push({
-        icon: Ban,
-        tone: "bg-muted text-muted-foreground",
-        title: "Faktúra {cislo} stornovaná",
-        titleP: { cislo: i.invoice_number },
-        subtitle: "{v}",
-        subtitleP: { v: i.customer_name ?? "—" },
-        time: fmtTime(i.created_at),
-        at: new Date(i.created_at).getTime(),
+        subtitleP: {
+          v:
+            u.druh === "vytvorena"
+              ? `${i.customer_name ?? "—"} · ${suma}`
+              : u.druh === "zaplatena"
+                ? suma
+                : (i.customer_name ?? "—"),
+        },
+        time: fmtTime(u.cas),
+        at: new Date(u.cas).getTime(),
       });
     }
   });

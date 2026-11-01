@@ -343,12 +343,13 @@ function PredplatnePage() {
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <div>
             <CardTitle className="text-base">{t("Aktuálny plán")}</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">
+            {/* `div`, nie `p` — Badge je `div` a v odseku rozbije hydratáciu (S-23). */}
+            <div className="mt-1 text-sm text-muted-foreground">
               {plan?.plan_name ?? "—"} ·{" "}
               <Badge variant={plan?.is_active ? "default" : "destructive"} className="ml-1">
                 {t(STATUS_LABEL[plan?.status ?? ""] ?? plan?.status ?? "—")}
               </Badge>
-            </p>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-semibold">
