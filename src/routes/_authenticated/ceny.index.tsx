@@ -24,6 +24,7 @@ import { textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenník — Faktero") }] }),
@@ -222,7 +223,11 @@ function CennikPage() {
                   </thead>
                   <tbody>
                     {skupiny.map((s) => (
-                      <tr key={s.id} className="border-b border-border last:border-0">
+                      <KlikatelnyRiadok
+                        key={s.id}
+                        naKlik={() => setSkupinaForm({ ...s })}
+                        className="border-b border-border last:border-0"
+                      >
                         <td className="min-w-[10rem] break-words px-4 py-2 font-medium">{s.name}</td>
                         <td className="px-4 py-2 text-right tabular-nums">
                           {cislo(s.discount_percent) > 0 ? `${cislo(s.discount_percent)} %` : "—"}
@@ -261,7 +266,7 @@ function CennikPage() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))}
                   </tbody>
                 </table>
@@ -300,7 +305,16 @@ function CennikPage() {
                         const dohodnuta = cislo(c.unit_price);
                         const rozdiel = zakladna - dohodnuta;
                         return (
-                          <tr key={c.id} className="border-b border-border last:border-0">
+                          <KlikatelnyRiadok
+                            key={c.id}
+                            naKlik={() =>
+                              setCenaForm({
+                                ...c,
+                                adresat: c.customer_id ? "odberatel" : "skupina",
+                              })
+                            }
+                            className="border-b border-border last:border-0"
+                          >
                             <td className="min-w-[10rem] break-words px-4 py-2 font-medium">{c.products?.name ?? "—"}</td>
                             <td className="min-w-[9rem] px-4 py-2">
                               {c.customers?.name ? (
@@ -363,7 +377,7 @@ function CennikPage() {
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </td>
-                          </tr>
+                          </KlikatelnyRiadok>
                         );
                       })}
                     </tbody>

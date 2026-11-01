@@ -29,6 +29,9 @@ import { HLADANIE_OD } from "@/lib/faktero/hladanie-firiem";
 import { citajPosledneFirmy, zoradFirmy } from "@/lib/faktero/poradie-firiem";
 import { riadkyPreIds } from "@/lib/faktero/strankovanie";
 import { AvatarFirmy } from "@/components/faktero/PrepinacFiriem";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { RozdelovacMailov } from "@/components/faktero/RozdelovacMailov";
 import {
   ODKAZY_PREHLADU,
@@ -72,6 +75,7 @@ function CompanyManagementPage() {
   const [activeId, setAid] = useState<string | null>(getActiveCompanyId());
   const [open, setOpen] = useState(false);
   const [mazem, setMazem] = useState<Row | null>(null);
+  const klik = useKlikNaRiadok();
   const zmazFirmu = useServerFn(zmazFirmuFn);
   const [hladanie, setHladanie] = useState("");
   const [rola, setRola] = useState("");
@@ -447,10 +451,18 @@ function CompanyManagementPage() {
               {t("Nič sa nenašlo.")}
             </div>
           )}
-          {zobrazene.map((r) => (
+          {zobrazene.map((r) => {
+            // Klik na kartu prepne firmu — to isté, čo klik na názov.
+            const p = klik(null, {
+              naKlik: () => switchTo(r.id),
+              klavesnica: false,
+              vypnute: r.id === activeId,
+            });
+            return (
             <div
               key={r.id}
-              className="rounded-xl border border-border bg-card p-4 text-sm shadow-sm"
+              {...p}
+              className={cn(p.className, "rounded-xl border border-border bg-card p-4 text-sm shadow-sm")}
             >
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <AvatarFirmy nazov={r.name} />
@@ -482,7 +494,8 @@ function CompanyManagementPage() {
               </dl>
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card shadow-sm md:block">
           <table className="w-full text-sm">
@@ -521,7 +534,12 @@ function CompanyManagementPage() {
                 </tr>
               )}
               {zobrazene.map((r) => (
-                <tr key={r.id} className="border-t border-border align-top">
+                <KlikatelnyRiadok
+                  key={r.id}
+                  naKlik={() => switchTo(r.id)}
+                  vypnute={r.id === activeId}
+                  className="border-t border-border align-top"
+                >
                   <td className="min-w-[220px] px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <AvatarFirmy nazov={r.name} />
@@ -547,7 +565,7 @@ function CompanyManagementPage() {
                   <td className="px-4 py-3">{poSplatnosti(r)}</td>
                   <td className="px-4 py-3">{banka(r)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

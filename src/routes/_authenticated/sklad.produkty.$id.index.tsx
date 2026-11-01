@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { StavOdznak, TON_DOKLADU } from "@/components/faktero/web/Stav";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -57,6 +60,7 @@ function ProductStockDetail() {
   const [loading, setLoading] = useState(true);
   const [recomputing, setRecomputing] = useState(false);
   const { canMutate, canManage } = useStockPermissions();
+  const klik = useKlikNaRiadok();
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -348,7 +352,7 @@ function ProductStockDetail() {
               </thead>
               <tbody className="divide-y divide-border">
                 {data.movements.map((m: any) => (
-                  <tr key={m.id}>
+                  <KlikatelnyRiadok key={m.id} ciel={{ to: "/sklad/pohyby/$id", params: { id: m.id } }}>
                     <td className="p-2 whitespace-nowrap text-muted-foreground">
                       {new Date(m.created_at).toLocaleString("sk-SK")}
                     </td>
@@ -376,7 +380,7 @@ function ProductStockDetail() {
                         {t("Detail")}
                       </Link>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>
@@ -389,7 +393,14 @@ function ProductStockDetail() {
             <div className="mb-3 text-base font-semibold">{t("Súvisiace faktúry")}</div>
             <ul className="divide-y divide-border text-sm">
               {data.invoiceRefs.map((inv: any) => (
-                <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <li
+                  key={inv.id}
+                  {...klik({ to: "/faktury/$id", params: { id: inv.id } })}
+                  className={cn(
+                    TRIEDA_KLIK_RIADKU,
+                    "flex flex-wrap items-center justify-between gap-2 py-2",
+                  )}
+                >
                   <Link
                     to="/faktury/$id"
                     params={{ id: inv.id }}

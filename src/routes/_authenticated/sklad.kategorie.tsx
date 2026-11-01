@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { friendlyError } from "@/lib/faktero/plan-error";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Tags, Ban } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -137,6 +138,17 @@ function CategoriesPage() {
     setNote(r.note ?? "");
   }
 
+  // Klik na riadok otvorí úpravu vo formulári vedľa — fokus ide rovno doň,
+  // na úzkej obrazovke je formulár pod tabuľkou, tak ho treba aj ukázať.
+  const nazovRef = useRef<HTMLInputElement>(null);
+  function upravRiadok(r: any) {
+    startEdit(r);
+    requestAnimationFrame(() => {
+      nazovRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      nazovRef.current?.focus({ preventScroll: true });
+    });
+  }
+
   return (
     <>
       <PageHeader
@@ -173,7 +185,7 @@ function CategoriesPage() {
                   </tr>
                 )}
                 {rows.map((r) => (
-                  <tr key={r.id}>
+                  <KlikatelnyRiadok key={r.id} naKlik={() => upravRiadok(r)}>
                     <td className="p-3">
                       <span className="inline-flex min-w-0 items-center gap-2">
                         <span
@@ -203,7 +215,7 @@ function CategoriesPage() {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>
@@ -215,6 +227,7 @@ function CategoriesPage() {
             </div>
             <label className="block text-sm font-semibold">{t("Názov")}</label>
             <input
+              ref={nazovRef}
               aria-label={t("Názov")}
               value={name}
               onChange={(e) => setName(e.target.value)}

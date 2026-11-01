@@ -10,6 +10,8 @@ import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { hodnotaPohybu, pohybNazov, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useT } from "@/lib/i18n/useT";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/sklad/")({
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/sklad/")({
 
 function SkladDashboard() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
   const mena = useMenaFirmy();
   const fetch = useServerFn(getStockDashboard);
   const [data, setData] = useState<any>(null);
@@ -85,8 +88,18 @@ function SkladDashboard() {
                   </p>
                 ) : (
                   <ul className="divide-y divide-border text-sm">
-                    {data.below_min_items.map((it: any) => (
-                      <li key={it.id} className="flex items-center justify-between gap-3 py-2">
+                    {data.below_min_items.map((it: any) => {
+                      const p = klik(
+                        it.product_id
+                          ? { to: "/sklad/produkty/$id", params: { id: it.product_id } }
+                          : null,
+                      );
+                      return (
+                      <li
+                        key={it.id}
+                        {...p}
+                        className={cn(p.className, "flex items-center justify-between gap-3 py-2")}
+                      >
                         {/* Detail chce id produktu; karta bez produktu detail nemá. */}
                         {it.product_id ? (
                           <Link
@@ -107,7 +120,8 @@ function SkladDashboard() {
                           {it.unit ?? ""}
                         </span>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
                 <Link
@@ -122,8 +136,14 @@ function SkladDashboard() {
                   <p className="text-sm text-muted-foreground">{t("Zatiaľ žiadne pohyby.")}</p>
                 ) : (
                   <ul className="divide-y divide-border text-sm">
-                    {data.recent_movements.map((m: any) => (
-                      <li key={m.id} className="flex items-center justify-between gap-3 py-2">
+                    {data.recent_movements.map((m: any) => {
+                      const p = klik({ to: "/sklad/pohyby/$id", params: { id: m.id } });
+                      return (
+                      <li
+                        key={m.id}
+                        {...p}
+                        className={cn(p.className, "flex items-center justify-between gap-3 py-2")}
+                      >
                         <Link
                           to="/sklad/pohyby/$id"
                           params={{ id: m.id }}
@@ -146,7 +166,8 @@ function SkladDashboard() {
                           </div>
                         </div>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
                 <Link

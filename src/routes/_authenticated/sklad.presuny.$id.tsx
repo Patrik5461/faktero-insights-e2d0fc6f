@@ -12,6 +12,7 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: ({ match }) => ({
@@ -223,7 +224,14 @@ function TransferDetailPage() {
                   const tgt = it.target_stock_item_id ? siMap[it.target_stock_item_id] : null;
                   const name = src?.product_id ? prodMap[src.product_id]?.name : null;
                   return (
-                    <tr key={it.id}>
+                    <KlikatelnyRiadok
+                      key={it.id}
+                      ciel={
+                        src?.product_id
+                          ? { to: "/sklad/produkty/$id", params: { id: src.product_id } }
+                          : null
+                      }
+                    >
                       <td className="p-3 font-medium">{name ?? "—"}</td>
                       <td className="whitespace-nowrap p-3 text-muted-foreground">{src?.sku ?? "—"}</td>
                       <td className="whitespace-nowrap p-3 text-right tabular-nums">
@@ -244,7 +252,7 @@ function TransferDetailPage() {
                               : "—"}
                         </td>
                       )}
-                    </tr>
+                    </KlikatelnyRiadok>
                   );
                 })}
               </tbody>

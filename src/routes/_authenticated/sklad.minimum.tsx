@@ -9,6 +9,7 @@ import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -86,7 +87,14 @@ function LowStockPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.map((r) => (
-                  <tr key={r.stock_item_id}>
+                  <KlikatelnyRiadok
+                    key={r.stock_item_id}
+                    ciel={
+                      r.product_id
+                        ? { to: "/sklad/produkty/$id", params: { id: r.product_id } }
+                        : null
+                    }
+                  >
                     <td className="p-3 min-w-[10rem] font-medium break-words">
                       {r.product_id ? (
                         <Link
@@ -135,7 +143,7 @@ function LowStockPage() {
                         <Plus className="h-3 w-3" /> {t("Vytvoriť príjem")}
                       </Link>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>

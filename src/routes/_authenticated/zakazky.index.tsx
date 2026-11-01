@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -12,6 +12,7 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/zakazky/")({
@@ -31,7 +32,6 @@ const KLADNE = "text-[color:var(--stav-uspech-text)]";
 
 function JobsPage() {
   const { t } = useT();
-  const navigate = useNavigate();
   const fetchJobs = useServerFn(listJobs);
   // Vyhodnotenie zákaziek je v domácej mene firmy (CZ firma Kč), nie natvrdo v EUR (K-01).
   const menyFirmy = useFormatMenyFirmy();
@@ -156,7 +156,7 @@ function JobsPage() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {rows.map((j) => (
-                        <tr key={j.id} className="hover:bg-muted/30">
+                        <KlikatelnyRiadok key={j.id} ciel={{ to: "/zakazky/$id", params: { id: j.id } }}>
                           <td className="whitespace-nowrap p-3">
                             <Link
                               to="/zakazky/$id"
@@ -200,7 +200,7 @@ function JobsPage() {
                               {t(STAV_ZAKAZKY_POPIS[j.status as StavZakazky] ?? j.status)}
                             </StavOdznak>
                           </td>
-                        </tr>
+                        </KlikatelnyRiadok>
                       ))}
                     </tbody>
                     <tfoot className="border-t-2 border-border bg-muted/30 font-bold">
@@ -225,7 +225,7 @@ function JobsPage() {
               }
               mobileCard={(j: any) => (
                 <MobileListCard
-                  onClick={() => navigate({ to: "/zakazky/$id", params: { id: j.id } })}
+                  ciel={{ to: "/zakazky/$id", params: { id: j.id } }}
                   title={j.job_number}
                   subtitle={j.customer_name ? `${j.name} · ${j.customer_name}` : j.name}
                   status={

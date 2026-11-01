@@ -19,6 +19,8 @@ import { potvrd } from "@/lib/potvrdenie";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové akcie — Faktero") }] }),
@@ -55,6 +57,7 @@ function AkciePage() {
   const zmazAkciu = useServerFn(deletePriceAction);
 
   const [akcie, setAkcie] = useState<any[]>([]);
+  const klik = useKlikNaRiadok();
   const [produkty, setProdukty] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<any | null>(null);
@@ -192,8 +195,13 @@ function AkciePage() {
                 dnesok,
               );
               const skoncila = !!a.valid_to && a.valid_to < dnesok;
+              const pk = klik(null, { naKlik: () => upravAkciu(a) });
               return (
-                <div key={a.id} className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                <div
+                  key={a.id}
+                  {...pk}
+                  className={cn(pk.className, "rounded-xl border border-border bg-card p-4 sm:p-5")}
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

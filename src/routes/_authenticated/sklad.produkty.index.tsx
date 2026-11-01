@@ -43,6 +43,7 @@ import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
@@ -907,8 +908,14 @@ function StockItemsPage() {
                 const displayName = prod?.name ?? s.sku ?? "—";
                 const isArchived = !!s.archived_at;
                 return (
-                  <tr
+                  <KlikatelnyRiadok
                     key={s.id}
+                    ciel={
+                      s.product_id
+                        ? { to: "/sklad/produkty/$id", params: { id: s.product_id } }
+                        : null
+                    }
+                    vypnute={isArchived}
                     className={`hover:bg-muted/30 ${isArchived ? "opacity-60" : ""} ${selected[s.id] ? "bg-primary/5" : ""}`}
                   >
                     <td className="p-3">
@@ -923,6 +930,8 @@ function StockItemsPage() {
                     <td className="p-3 whitespace-nowrap font-medium tabular-nums">{s.sku ?? "—"}</td>
                     <td
                       className="min-w-[10rem] max-w-[22rem] break-words p-3 text-foreground"
+                      // Dvojklik premenuje — prvý klik nesmie odísť na kartu.
+                      data-neotvarat={!isArchived && canMutate ? "" : undefined}
                       onDoubleClick={() => {
                         if (isArchived || !canMutate) return;
                         setEditingNameId(s.id);
@@ -1073,7 +1082,7 @@ function StockItemsPage() {
                         )}
                       </div>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 );
               })}
             </tbody>

@@ -16,6 +16,7 @@ import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 const SRC_LABEL: Record<string, string> = {
   quote: "Ponuka",
@@ -114,7 +115,15 @@ export function ReservationsPanel({
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((r) => (
-              <tr key={r.id} className={r.status !== "active" ? "opacity-60" : ""}>
+              <KlikatelnyRiadok
+                key={r.id}
+                ciel={
+                  r.source_document_type === "quote" && r.source_document_id
+                    ? { to: "/ponuky/$id", params: { id: r.source_document_id } }
+                    : null
+                }
+                className={r.status !== "active" ? "opacity-60" : ""}
+              >
                 <td className="p-2">
                   {r.source_document_type === "quote" && r.source_document_id ? (
                     <Link
@@ -153,7 +162,7 @@ export function ReservationsPanel({
                     </button>
                   )}
                 </td>
-              </tr>
+              </KlikatelnyRiadok>
             ))}
           </tbody>
         </table>

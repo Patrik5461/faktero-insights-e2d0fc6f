@@ -28,6 +28,9 @@ import {
   EmptyState,
 } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { cn } from "@/lib/utils";
 
 /** Fyzická osoba nemá IČO ani daňové čísla — formulár sa jej prispôsobí. */
 function jeFyzicka(c: { typ?: string | null }): boolean {
@@ -137,6 +140,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     equals: { [rola]: true },
   });
   const [editing, setEditing] = useState<Customer | null>(null);
+  const klik = useKlikNaRiadok();
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const [bulkHardDelete, setBulkHardDelete] = useState(false);
@@ -393,7 +397,11 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                   </tr>
                 )}
                 {list.rows.map((c) => (
-                  <tr key={c.id} className="hover:bg-muted/30">
+                  <KlikatelnyRiadok
+                    key={c.id}
+                    naKlik={() => setEditing(c)}
+                    vypnute={list.showDeleted}
+                  >
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -425,7 +433,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                     <td className="whitespace-nowrap p-3 tabular-nums">{c.dic ?? "—"}</td>
                     <td className="max-w-[18rem] break-all p-3 text-muted-foreground">{c.email ?? "—"}</td>
                     <td className="whitespace-nowrap p-3 text-right">{akcie(c)}</td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>
@@ -442,8 +450,14 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                 <EmptyState icon={Users} title={list.showDeleted ? T.ziadniVymazani : T.ziadni} />
               </li>
             )}
-            {list.rows.map((c) => (
-              <li key={c.id} className="flex items-start gap-3 p-3">
+            {list.rows.map((c) => {
+              const p = klik(null, {
+                naKlik: () => setEditing(c),
+                klavesnica: false,
+                vypnute: list.showDeleted,
+              });
+              return (
+              <li key={c.id} {...p} className={cn(p.className, "flex items-start gap-3 p-3")}>
                 <input
                   type="checkbox"
                   className="mt-1"
@@ -472,7 +486,8 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                 </div>
                 <div className="flex shrink-0 items-center">{akcie(c)}</div>
               </li>
-            ))}
+              );
+            })}
           </ul>
           <Pagination
             page={list.page}

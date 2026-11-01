@@ -15,6 +15,7 @@ import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
@@ -153,7 +154,7 @@ function PurchaseOrdersPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {zobrazene.map((o) => (
-                  <tr key={o.id} className="hover:bg-muted/30">
+                  <KlikatelnyRiadok key={o.id} ciel={{ to: "/sklad/objednavky/$id", params: { id: o.id } }}>
                     <td className="whitespace-nowrap p-3">
                       <Link
                         to="/sklad/objednavky/$id"
@@ -177,7 +178,7 @@ function PurchaseOrdersPage() {
                         {t(STAV_POPIS[o.status as StavObjednavky] ?? o.status)}
                       </StavOdznak>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>

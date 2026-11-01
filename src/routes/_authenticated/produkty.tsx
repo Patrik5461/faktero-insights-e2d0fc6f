@@ -17,6 +17,7 @@ import {
   EmptyState,
 } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stock.functions";
@@ -268,7 +269,11 @@ function ProductsPage() {
                 </tr>
               )}
               {list.rows.map((p) => (
-                <tr key={p.id} className="hover:bg-muted/30">
+                <KlikatelnyRiadok
+                  key={p.id}
+                  naKlik={() => setEditing(p)}
+                  vypnute={list.showDeleted}
+                >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -337,7 +342,7 @@ function ProductsPage() {
                       </button>
                     )}
                   </td>
-                </tr>
+                </KlikatelnyRiadok>
               ))}
             </tbody>
           </table>

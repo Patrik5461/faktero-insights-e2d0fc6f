@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/")({
@@ -109,7 +110,7 @@ function TransfersListPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {rows.map((r) => (
-                  <tr key={r.id}>
+                  <KlikatelnyRiadok key={r.id} ciel={{ to: "/sklad/presuny/$id", params: { id: r.id } }}>
                     <td className="whitespace-nowrap p-3 tabular-nums">{new Date(r.created_at).toLocaleString("sk-SK")}</td>
                     <td className="p-3 font-medium">{warehouses[r.warehouse_from_id] ?? "—"}</td>
                     <td className="p-3">
@@ -137,7 +138,7 @@ function TransfersListPage() {
                         {t("Detail")}
                       </Link>
                     </td>
-                  </tr>
+                  </KlikatelnyRiadok>
                 ))}
               </tbody>
             </table>
