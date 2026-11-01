@@ -1296,9 +1296,9 @@ function InvoicesPage() {
                     </th>
                     <th className="p-3">{t("Číslo")}</th>
                     <th className="p-3">{t("Odberateľ")}</th>
-                    <th className="p-3">{t("Vystavená")}</th>
-                    <th className="p-3">{t("Dodaná")}</th>
-                    <th className="p-3">{t("Splatnosť")}</th>
+                    <th className="px-2 py-3">{t("Vystavená")}</th>
+                    <th className="px-2 py-3">{t("Dodaná")}</th>
+                    <th className="px-2 py-3">{t("Splatnosť")}</th>
                     <th className="p-3 text-right">{t("Suma")}</th>
                     <th className="p-3">{t("Účtovná položka")}</th>
                     <th className="p-3">{t("Stav")}</th>
@@ -1346,7 +1346,8 @@ function InvoicesPage() {
                         />
                       </td>
                       <td className="p-3 font-medium">
-                        <span className="inline-flex items-center gap-2">
+                        {/* Odznaky (eFaktúra, upomienka…) sa zalomia pod číslo, aby tabuľka nevytlačila stĺpec Stav. */}
+                        <span className="inline-flex max-w-[12rem] flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
                           <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                           {i.type === "credit_note" || i.type === "debit_note" ? (
@@ -1371,19 +1372,19 @@ function InvoicesPage() {
                       <td className="p-3">
                         {/* Jeden riadok; plné meno v tooltipe. */}
                         <span
-                          className="block max-w-[12rem] truncate 2xl:max-w-[20rem]"
+                          className="block max-w-[10rem] truncate 2xl:max-w-[20rem]"
                           title={i.customer_name ?? undefined}
                         >
                           {i.customer_name ?? "—"}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap p-3">{datumNaDoklade(i.issue_date)}</td>
+                      <td className="whitespace-nowrap px-2 py-3">{datumNaDoklade(i.issue_date)}</td>
                       <td
-                        className={`whitespace-nowrap p-3 ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                        className={`whitespace-nowrap px-2 py-3 ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
                       >
                         {datumNaDoklade(datumDodania(i))}
                       </td>
-                      <td className="whitespace-nowrap p-3">
+                      <td className="whitespace-nowrap px-2 py-3">
                         {datumNaDoklade(i.due_date)}
                         {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (
                           <span className="block text-xs text-muted-foreground" title={t("Pôvodne {datum}", { datum: datumNaDoklade(i.povodna_splatnost) })}>
