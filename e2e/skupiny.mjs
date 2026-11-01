@@ -86,10 +86,13 @@ export const SKUPINY = [
       "pohoda-storno-25a",
       "pohoda-pokladna-prijem",
       "dobropis-dph",
+      // B6: porovnáva DPH prehľad s priznaním pred/po zápise — za dobropisom, rovnaký dôvod.
+      "dph-prehlad-meny",
       "vstupy-xss",
       "cz-fakturacia",
       "cz-vykazy",
       "cz-vykazy-jazyk",
+      "financie-mena-cz",
       "pohoda-cz-spatny-chod",
       "mobil-zoznamy",
       "banka-tb-notifikacie",

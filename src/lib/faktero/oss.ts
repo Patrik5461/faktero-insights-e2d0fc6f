@@ -8,6 +8,32 @@
  */
 
 import { statEu, stavPrahu } from "./sadzby-eu";
+import { domacaMena, domacejZaJednotku } from "./kurzy";
+
+/** Výtka pre doklad, ktorý sa nedá vyjadriť v eurách. */
+export const VYTKA_BEZ_KURZU_OSS =
+  "Doklad je v cudzej mene a nemá kurz na prepočet do eur — v priznaní ani v ročnej hranici nie je. Otvorte ho a uložte znova.";
+
+/**
+ * Koľko eur za 1 jednotku meny faktúry — OSS a hranica 10 000 € sú vždy v
+ * eurách. Euro = 1; SK/DE firma prepočíta kurzom ECB z dokladu
+ * (`exchange_rate` = mena za 1 EUR). CZ firma má na doklade kurz ČNB
+ * (CZK za jednotku), z ktorého sa eurá nedajú vyčítať → `null`, rovnako
+ * cudzia mena bez kurzu. Nikdy sa nehádá kurz 1.
+ */
+export function eurZaJednotkuOss(
+  f: { currency?: string | null; exchange_rate?: unknown },
+  country: string | null | undefined,
+): number | null {
+  const mena =
+    String(f.currency ?? "")
+      .trim()
+      .toUpperCase() || domacaMena(country);
+  if (mena === "EUR") return 1;
+  if (domacaMena(country) !== "EUR") return null;
+  const k = domacejZaJednotku(f.exchange_rate, country);
+  return k > 0 ? k : null;
+}
 
 export type OssDoklad = {
   cislo: string;

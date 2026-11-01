@@ -147,8 +147,24 @@ describe("stav a pokrytie pohybu", () => {
       z: 98.4,
       zostava: 0,
       uplne: true,
+      inaMena: 0,
     });
     expect(pokrytiePohybu(100, [{ suma: 40 }]).zostava).toBe(60);
+  });
+  it("doklady v inej mene sa nesčítajú s menou pohybu (B-04)", () => {
+    const p = pokrytiePohybu(
+      100,
+      [
+        { suma: 60, mena: "EUR" },
+        { suma: 40, mena: "CZK" },
+      ],
+      "EUR",
+    );
+    expect(p.spolu).toBe(60);
+    expect(p.zostava).toBe(40);
+    expect(p.inaMena).toBe(1);
+    expect(p.uplne).toBe(false);
+    expect(pokrytiePohybu(100, [{ suma: 100, mena: "eur" }], "EUR").uplne).toBe(true);
   });
   it("predvyplní pravidlo z pohybu", () => {
     expect(

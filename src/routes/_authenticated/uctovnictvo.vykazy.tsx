@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { ZoznamVytiek } from "@/components/faktero/ZoznamVytiek";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -8,7 +10,8 @@ import { zostavVykazyFn, ulozVykazFn } from "@/lib/faktero/dph-vykazy.functions"
 import { kvNaXml, priznanieNaXml, svNaXml, type TypVykazu } from "@/lib/faktero/dph-vykazy-xml";
 import { verziaPriznania } from "@/lib/faktero/dph-vykazy";
 import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { druhVykazov } from "@/lib/faktero/vykazy-rezim";
 import { CzVykazyDph } from "@/components/faktero/CzVykazyDph";
 import { DeUstva } from "@/components/faktero/DeUstva";
 import { DeZm } from "@/components/faktero/DeZm";
@@ -37,10 +40,74 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/vykazy")({
  * vlastnú obrazovku.
  */
 function VykazyStranka() {
-  const krajina = String(useKrajinaDane());
-  if (krajina === "CZ") return <CzVykazyDph />;
+  const rezim = useRezimDph();
+  const krajina = String(rezim.krajina);
+  const druh = druhVykazov(rezim.schema);
+  const [ajTak, setAjTak] = useState(false);
+  const uvod = druh === "registrovana" ? <PoznamkaRegistrovanejOsoby krajina={krajina} /> : null;
   if (krajina === "DE") return (<><DeUstva /><DeZm /></>);
-  return <VykazyPage />;
+  // Neplatiteľ výkazy nepodáva — tlačivá až na požiadanie (režim môže byť nastavený zle).
+  if (druh === "neplatitel" && !ajTak)
+    return <NeplatitelBezVykazov krajina={krajina} onZobraz={() => setAjTak(true)} />;
+  return (
+    <>
+      {krajina === "CZ" ? <CzVykazyDph uvod={uvod} /> : <VykazyPage uvod={uvod} />}
+    </>
+  );
+}
+
+function NeplatitelBezVykazov({ krajina, onZobraz }: { krajina: string; onZobraz: () => void }) {
+  const { t } = useT();
+  return (
+    <>
+      <PageHeader title={t("Výkazy k DPH")} />
+      <PageBody>
+        <div
+          className="rounded-xl border border-border bg-card p-5 text-sm space-y-3"
+          data-testid="vykazy-neplatitel"
+        >
+          <p className="font-medium">
+            {krajina === "CZ" ? t("Firma nie je plátcom DPH") : t("Firma nie je platiteľom DPH")}
+          </p>
+          <p className="text-muted-foreground">
+            {krajina === "CZ"
+              ? t(
+                  "Neplátce nepodáva přiznání k DPH, kontrolní hlášení ani souhrnné hlášení. Ak sa firma stala plátcom, zmeňte registráciu v Nastaveniach firmy.",
+                )
+              : t(
+                  "Neplatiteľ nepodáva priznanie k DPH, kontrolný výkaz ani súhrnný výkaz. Ak sa firma stala platiteľom alebo sa registrovala podľa § 7 či § 7a, zmeňte registráciu v Nastaveniach firmy.",
+                )}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/firma" className="text-primary underline underline-offset-2">
+              {t("Nastavenia firmy")}
+            </Link>
+            <button type="button" className="text-primary underline underline-offset-2" onClick={onZobraz}>
+              {t("Zobraziť výkazy aj tak")}
+            </button>
+          </div>
+        </div>
+      </PageBody>
+    </>
+  );
+}
+
+function PoznamkaRegistrovanejOsoby({ krajina }: { krajina: string }) {
+  const { t } = useT();
+  return (
+    <div
+      className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+      data-testid="vykazy-registrovana"
+    >
+      {krajina === "CZ"
+        ? t(
+            "Identifikovaná osoba podáva přiznání len za obdobie, v ktorom jej vznikla povinnosť priznať daň (tovar alebo služby z EÚ), a souhrnné hlášení pri službách do EÚ. Kontrolní hlášení podáva len plátce.",
+          )
+        : t(
+            "Registrovaná osoba podľa § 7 / § 7a podáva priznanie len za obdobie, v ktorom jej vznikla daňová povinnosť (tovar alebo služby z EÚ), a súhrnný výkaz pri službách do EÚ. Kontrolný výkaz podáva len platiteľ.",
+          )}
+    </div>
+  );
 }
 
 type Vysledok = Awaited<ReturnType<typeof zostavVykazyFn>>;
@@ -215,7 +282,7 @@ function stiahni(nazov: string, obsah: string) {
   URL.revokeObjectURL(a.href);
 }
 
-function VykazyPage() {
+function VykazyPage({ uvod }: { uvod?: ReactNode }) {
   const { t } = useT();
   const zostav = useServerFn(zostavVykazyFn);
   const uloz = useServerFn(ulozVykazFn);
@@ -338,6 +405,7 @@ function VykazyPage() {
         )}
       />
       <PageBody>
+        {uvod}
         <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 lg:grid-cols-6">
           <label className="block">
             <span className="text-xs font-medium text-muted-foreground">{t("Rok")}</span>
@@ -460,21 +528,10 @@ function VykazyPage() {
               })}
             </p>
 
-            {data.vytky.length > 0 && (
-              <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  {t("Pred podaním treba doplniť ({n})", { n: data.vytky.length })}
-                </div>
-                <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-400">
-                  {data.vytky.slice(0, 20).map((v, i) => (
-                    <li key={i}>
-                      <span className="font-medium">{v.doklad}</span>: {t(v.text)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <ZoznamVytiek
+                vytky={data.vytky}
+                nadpis={t("Pred podaním treba doplniť ({n})", { n: data.vytky.length })}
+              />
 
             {/* Priznanie */}
             <section className="mb-6 rounded-xl border border-border bg-card">

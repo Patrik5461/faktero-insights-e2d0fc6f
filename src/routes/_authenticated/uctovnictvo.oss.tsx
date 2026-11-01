@@ -132,6 +132,11 @@ function OssPage() {
                       { suma: eur(data.prah.zostava) },
                     )}
               </p>
+              {data.prepocitane && (
+                <p className="mt-1 text-xs text-muted-foreground" data-testid="oss-prepocitane">
+                  {t("Doklady v cudzej mene sú prepočítané do eur kurzom ECB z dokladu.")}
+                </p>
+              )}
             </div>
 
             {data.prehlad.vytky.length > 0 && (

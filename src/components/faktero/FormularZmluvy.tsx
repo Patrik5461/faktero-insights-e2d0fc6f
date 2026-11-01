@@ -18,6 +18,8 @@ import { formatujSumu } from "@/lib/faktero/zostatky";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { domacaMena } from "@/lib/faktero/kurzy";
+import { menaZmluvy as urciMenuZmluvy } from "@/lib/faktero/financovanie-zostava";
 import { poslednaHodnotaIndexuFn } from "@/lib/faktero/pohybliva-sadzba.functions";
 import {
   FREKVENCIE_ZMENY,
@@ -172,6 +174,19 @@ export function FormularZmluvy({
     zmluva?.interest_period === "stvrtrocne" ? "stvrtrocne" : "mesacne",
   );
   const [ucty, setUcty] = useState<UcetFirmy[] | null>(null);
+  /*
+    Mena zmluvy: leasing/úver drží uloženú menu, nová zmluva berie domácu menu
+    firmy (CZ → CZK), kým ju človek nezmení. Kontokorent má menu zvoleného účtu.
+  */
+  const [menaVolba, setMenaVolba] = useState<string | null>(zmluva?.currency ?? null);
+  const menaZmluvy = urciMenuZmluvy({
+    kontokorent,
+    volba: menaVolba,
+    menaUctu: ucty?.find((u) => u.id === ucetId)?.currency,
+    ulozena: zmluva?.currency,
+    domaca: domacaMena(krajina),
+  });
+  const menyNaVyber = [...new Set([domacaMena(krajina), "EUR", "CZK", menaZmluvy])];
 
   /* Pohyblivá sadzba */
   const nacitajIndex = useServerFn(poslednaHodnotaIndexuFn);
@@ -323,7 +338,7 @@ export function FormularZmluvy({
           provider_name: provider.trim() || null,
           contract_number: contractNumber.trim() || null,
           counterparty_hint: provider.trim() || null,
-          currency: ucty?.find((u) => u.id === ucetId)?.currency ?? zmluva?.currency ?? "EUR",
+          currency: menaZmluvy,
           interest_rate: Math.max(0, efektivnaSadzba),
           ...polaSadzby(),
           day_count: dayCount,
@@ -376,7 +391,7 @@ export function FormularZmluvy({
           contract_number: contractNumber.trim() || null,
           variable_symbol: vs.trim() || null,
           counterparty_hint: provider.trim() || null,
-          currency: "EUR",
+          currency: menaZmluvy,
           principal: cislo(principal),
           interest_rate: Math.max(0, efektivnaSadzba),
           ...polaSadzby(),
@@ -625,6 +640,21 @@ export function FormularZmluvy({
                   onChange={(e) => setPrincipal(e.target.value)}
                   placeholder="20000"
                 />
+              </div>
+              <div>
+                <label className={popis}>{t("Mena zmluvy")}</label>
+                <select
+                  aria-label={t("Mena zmluvy")}
+                  className={pole}
+                  value={menaZmluvy}
+                  onChange={(e) => setMenaVolba(e.target.value)}
+                >
+                  {menyNaVyber.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className={popis}>{t("Počet splátok")}</label>
@@ -916,14 +946,14 @@ export function FormularZmluvy({
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("Úverový rámec")}</dt>
-                <dd className="font-medium tabular-nums">{formatujSumu(cislo(limit), "EUR")}</dd>
+                <dd className="font-medium tabular-nums">{formatujSumu(cislo(limit), menaZmluvy)}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("Úrok pri plnom čerpaní za mesiac")}</dt>
                 <dd className="tabular-nums">
                   {formatujSumu(
                     Math.round(((cislo(limit) * Math.max(0, efektivnaSadzba)) / 100 / 12) * 100) / 100,
-                    "EUR",
+                    menaZmluvy,
                   )}
                 </dd>
               </div>
@@ -931,7 +961,7 @@ export function FormularZmluvy({
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Poplatok za rámec mesačne")}</dt>
                   <dd className="tabular-nums">
-                    {formatujSumu(Math.round((cislo(poplatokRocne) / 12) * 100) / 100, "EUR")}
+                    {formatujSumu(Math.round((cislo(poplatokRocne) / 12) * 100) / 100, menaZmluvy)}
                   </dd>
                 </div>
               )}
@@ -961,21 +991,21 @@ export function FormularZmluvy({
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t("Mesačná splátka")}</dt>
                   <dd className="font-medium tabular-nums">
-                    {formatujSumu(nahlad.riadky[0].amount, "EUR")}
+                    {formatujSumu(nahlad.riadky[0].amount, menaZmluvy)}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t("Zaplatíte spolu")}</dt>
-                  <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.zaplatiSpolu, "EUR")}</dd>
+                  <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.zaplatiSpolu, menaZmluvy)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t("Z toho úrok")}</dt>
-                  <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.urokSpolu, "EUR")}</dd>
+                  <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.urokSpolu, menaZmluvy)}</dd>
                 </div>
                 {nahlad.suhrn.dphSpolu > 0 && (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">{t("Z toho DPH")}</dt>
-                    <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.dphSpolu, "EUR")}</dd>
+                    <dd className="tabular-nums">{formatujSumu(nahlad.suhrn.dphSpolu, menaZmluvy)}</dd>
                   </div>
                 )}
                 <div className="flex justify-between border-t pt-2">

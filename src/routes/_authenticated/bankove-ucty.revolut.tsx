@@ -43,6 +43,12 @@ function RevolutNavrat() {
       if (!code) {
         setStav("chyba");
         setChyba(t("V adrese nie je kód z Revolutu. Spustite potvrdenie znova."));
+      } else if (!cid && !spustene.current) {
+        // Bez vybranej firmy by obrazovka visela na „Vymieňam kód…“ navždy.
+        setStav("chyba");
+        setChyba(
+          t("Nie je vybraná firma. Prihláste sa, vyberte firmu a spustite pripojenie Revolutu znova."),
+        );
       }
       return;
     }

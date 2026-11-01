@@ -6,7 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createCashEntry, deleteCashEntry, getCashBook } from "@/lib/faktero/pokladna.functions";
 import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { potvrd } from "@/lib/potvrdenie";
@@ -20,16 +20,6 @@ export const Route = createFileRoute("/_authenticated/pokladna")({
   component: PokladnaPage,
 });
 
-function suma(n: number) {
-  return formatovacMeny("EUR", "sk-SK")(n || 0);
-}
-
-/** Príjem s „+“, výdaj záporný — rovnaké znamienko ako pri zostatku (formatujMenu). */
-function sumaSoZnamienkom(r: { typ: string; suma: number }) {
-  const n = Math.abs(Number(r.suma) || 0);
-  return r.typ === "prijem" ? `+${suma(n)}` : suma(-n);
-}
-
 function tentoMesiac() {
   return new Date().toISOString().slice(0, 7);
 }
@@ -37,6 +27,14 @@ function tentoMesiac() {
 function PokladnaPage() {
   const { t } = useT();
   const mena = useMenaFirmy();
+  // Sumy v mene firmy (CZ → Kč) a jazyku rozhrania, nie napevno v eurách.
+  const formatMeny = useFormatMenyFirmy();
+  const suma = (n: number) => formatMeny.suma(n || 0);
+  /** Príjem s „+“, výdaj záporný — rovnaké znamienko ako pri zostatku (formatujMenu). */
+  const sumaSoZnamienkom = (r: { typ: string; suma: number }) => {
+    const n = Math.abs(Number(r.suma) || 0);
+    return r.typ === "prijem" ? `+${suma(n)}` : suma(-n);
+  };
   const fetchBook = useServerFn(getCashBook);
   const doCreate = useServerFn(createCashEntry);
   const doDelete = useServerFn(deleteCashEntry);

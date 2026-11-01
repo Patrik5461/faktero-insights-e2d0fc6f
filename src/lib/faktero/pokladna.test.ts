@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { jeHotovostny, priebehPokladne, stavPokladne } from "./pokladna";
+import { jeHotovostny, pociatocnyStavMesiaca, priebehPokladne, stavPokladne } from "./pokladna";
 
 const doklady = [
   {
@@ -154,5 +154,26 @@ describe("priebehPokladne", () => {
   it("doklad s nulovou sumou sa do priebehu nedostane", () => {
     const r = priebehPokladne([], [{ issue_date: "2026-08-01", total_amount: null }]);
     expect(r).toHaveLength(0);
+  });
+});
+
+describe("počiatočný zostatok mesiaca (B-17)", () => {
+  const priebeh = priebehPokladne(
+    [
+      { id: "a", type: "prijem", amount: 100, entry_date: "2026-01-10", entry_number: "PD1" },
+      { id: "b", type: "vydaj", amount: 30, entry_date: "2026-01-20", entry_number: "PD2" },
+      { id: "c", type: "prijem", amount: 500, entry_date: "2026-04-05", entry_number: "PD3" },
+    ] as any,
+    [],
+  );
+  it("mesiac bez pohybov v minulosti preberá zostatok z jeho začiatku, nie konečný", () => {
+    expect(pociatocnyStavMesiaca(priebeh, "2026-02")).toBe(70);
+    expect(pociatocnyStavMesiaca(priebeh, "2026-03")).toBe(70);
+  });
+  it("mesiac s pohybmi a mesiac pred prvým pohybom", () => {
+    expect(pociatocnyStavMesiaca(priebeh, "2026-04")).toBe(70);
+    expect(pociatocnyStavMesiaca(priebeh, "2026-01")).toBe(0);
+    expect(pociatocnyStavMesiaca(priebeh, "2025-12")).toBe(0);
+    expect(pociatocnyStavMesiaca(priebeh, "2026-05")).toBe(570);
   });
 });

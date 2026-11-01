@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Copy, Mail, RefreshCw, ExternalLink, Trash2, Check, AlertCircle } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia";
+import { TEXT_BANKU_SPRAVUJE } from "@/lib/faktero/banka-ui";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
@@ -54,6 +56,9 @@ function NotifikaciePage() {
   const nastavFn = useServerFn(nastavNotifikacie);
   const novaFn = useServerFn(novaAdresaNotifikacii);
   const mailyFn = useServerFn(mailyNotifikacii);
+  // Zapnutie, banku a novú adresu mení len majiteľ/administrátor (server inak odmietne).
+  const jeAdmin = useJeAdminFirmy();
+  const clenstvo = useClenstvoFirmy();
   const [cid, setCid] = useState<string | null>(null);
   const [stav, setStav] = useState<any | null>(null);
   const [maily, setMaily] = useState<any[]>([]);
@@ -119,6 +124,14 @@ function NotifikaciePage() {
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-6">
+          {clenstvo.nacitane && !jeAdmin && (
+            <p
+              className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+              data-testid="banku-spravuje"
+            >
+              {t(TEXT_BANKU_SPRAVUJE)}
+            </p>
+          )}
           <div className="rounded-xl border border-border bg-card p-4 text-sm text-foreground/80">
             <ul className="space-y-1">
               <li>
@@ -227,7 +240,7 @@ function NotifikaciePage() {
                   <select
                     aria-label={t("Banka")}
                     value={a.banka}
-                    disabled={busy !== null}
+                    disabled={busy !== null || !jeAdmin}
                     onChange={(e) =>
                       sprav(`banka-${a.id}`, () =>
                         nastavFn({
@@ -249,7 +262,7 @@ function NotifikaciePage() {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
-                    disabled={busy !== null}
+                    disabled={busy !== null || !jeAdmin}
                     onClick={() =>
                       sprav(
                         `aktiv-${a.id}`,
@@ -267,7 +280,7 @@ function NotifikaciePage() {
                     {a.active ? t("Vypnúť príjem") : t("Zapnúť príjem")}
                   </button>
                   <button
-                    disabled={busy !== null}
+                    disabled={busy !== null || !jeAdmin}
                     onClick={async () => {
                       if (
                         !(await potvrd(
@@ -380,7 +393,10 @@ function NotifikaciePage() {
             <Navod banka={bankaPodlaKodu(banka)} />
             <button
               disabled={
-                busy !== null || !cid || (ucet === NOVY && iban.replace(/\s/g, "").length < 15)
+                busy !== null ||
+                !jeAdmin ||
+                !cid ||
+                (ucet === NOVY && iban.replace(/\s/g, "").length < 15)
               }
               onClick={() =>
                 sprav(

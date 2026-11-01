@@ -30,8 +30,8 @@ export const getPeriodLock = createServerFn({ method: "POST" })
       _user_id: context.userId,
     });
 
-    // Koľko doteraz nezamknutých dokladov by zámok pokryl — bez toho človek
-    // netuší, čoho sa rozhodnutie týka.
+    // Koľko dokladov a jázd má firma celkom (bez ohľadu na dátum a zámok) —
+    // UI to tak aj píše („Vo firme je …“), aby bolo vidieť, čoho sa zámok týka.
     const [{ count: faktury }, { count: prijate }, { count: jazdy }] = await Promise.all([
       context.supabase
         .from("invoices")

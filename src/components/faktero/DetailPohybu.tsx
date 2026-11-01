@@ -82,7 +82,7 @@ export function DetailPohybu({
   const fmt = (n: number, c = mena) => formatovacMeny(c, "sk-SK")(n);
   const stav = p ? stavPohybu(p) : null;
   const suma = Number(p?.amount ?? 0);
-  const pokrytie = d ? pokrytiePohybu(suma, d.doklady) : null;
+  const pokrytie = d ? pokrytiePohybu(suma, d.doklady, mena) : null;
 
   async function nastav(vybavenie: "bez_dokladu" | "transakcna_dan" | null) {
     setBusy(true);
@@ -292,6 +292,8 @@ export function DetailPohybu({
                       className={`text-sm ${pokrytie.uplne ? "" : "text-amber-700 dark:text-amber-300"}`}
                     >
                       {t("Spolu {spolu} z {z}", { spolu: fmt(pokrytie.spolu), z: fmt(pokrytie.z) })}
+                      {pokrytie.inaMena > 0 &&
+                        ` · ${t("doklady v inej mene ({n}) nie sú v súčte", { n: pokrytie.inaMena })}`}
                     </span>
                     {d.doklady.some((x) => x.druh !== "poplatok") && (
                       <button

@@ -8,6 +8,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { zoznamZmluvFn } from "@/lib/faktero/financovanie.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
+import { zostavaPodlaMien } from "@/lib/faktero/financovanie-zostava";
+import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { nazovDruhuFinancovania, type StavRamca } from "@/lib/faktero/kontokorent";
 import { Banknote, Car, Landmark, Plus, TriangleAlert } from "lucide-react";
 
@@ -41,6 +43,7 @@ function datum(d: string, jazyk: string = "sk"): string {
 
 function Stranka() {
   const { t, jazyk } = useT();
+  const { domaca } = useFormatMenyFirmy();
   const nacitaj = useServerFn(zoznamZmluvFn);
   const [zmluvy, setZmluvy] = useState<Zmluva[] | null>(null);
 
@@ -55,10 +58,8 @@ function Stranka() {
   const aktivne = (zmluvy ?? []).filter((z) => z.status === "active");
   const zavrete = (zmluvy ?? []).filter((z) => z.status !== "active");
   // Kontokorent sa do „zostáva splatiť" nepočíta — nemá predpis, len čerpanie.
-  const dlhSpolu = aktivne
-    .filter((z) => z.kind !== "kontokorent")
-    .reduce((s, z) => s + z.zostavaSuma, 0);
-  const mena = aktivne[0]?.currency ?? "EUR";
+  // Meny zmlúv sa nesčítajú, každá ide zvlášť.
+  const dlhSpolu = zostavaPodlaMien(aktivne, domaca);
 
   return (
     <>
@@ -96,8 +97,8 @@ function Stranka() {
             {aktivne.length > 0 && (
               <div className="rounded-xl border bg-card p-5">
                 <div className="text-sm text-muted-foreground">{t("Zostáva splatiť")}</div>
-                <div className="mt-1 text-3xl font-semibold tabular-nums">
-                  {formatujSumu(dlhSpolu, mena)}
+                <div className="mt-1 text-3xl font-semibold tabular-nums" data-testid="zostava-splatit">
+                  <SuctyPoMenach sucty={dlhSpolu} />
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   {aktivne.length === 1

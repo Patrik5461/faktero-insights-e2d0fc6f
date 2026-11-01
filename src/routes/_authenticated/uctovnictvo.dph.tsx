@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { riadkyPreIds, vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
+  dokladyBezPrepoctu,
+  kurzVystavenej,
+  sumyPrijatejDomace,
   sumyVystavenej,
   vstupPrehladu,
   vystupPrehladu,
@@ -31,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { domacaMena } from "@/lib/faktero/kurzy";
 import { vatBucketLabel, vatBucketOrder } from "@/lib/faktero/vat-rates";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -93,7 +97,7 @@ function periodBounds(
   };
 }
 
-function fmt(n: number, currency = "EUR") {
+function fmtMena(n: number, currency: string) {
   return new Intl.NumberFormat("sk-SK", {
     style: "currency",
     currency,
@@ -124,6 +128,9 @@ function DphPage() {
   const now = new Date();
   /* Priehradky aj názvy sadzieb patria krajine registrácie firmy. */
   const krajina = useKrajinaDane();
+  /* Súčty prehľadu sú v domácej mene firmy (rozhodnutie 1. 11. 2026), doklady v svojej. */
+  const domaca = domacaMena(krajina);
+  const fmt = (n: number, currency: string = domaca) => fmtMena(n, currency);
   const [year, setYear] = useState(now.getFullYear());
   const [mode, setMode] = useState<Mode>("month");
   const [periodIdx, setPeriodIdx] = useState(now.getMonth());
@@ -155,7 +162,7 @@ function DphPage() {
           supabase
             .from("invoices")
             .select(
-              "id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, status, reverse_charge, type",
+              "id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, exchange_rate, status, reverse_charge, type",
             )
             .eq("company_id", cid)
             .gte("issue_date", period.from)
@@ -175,7 +182,7 @@ function DphPage() {
           supabase
             .from("purchase_invoices")
             .select(
-              "id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency",
+              "id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur",
             )
             .eq("company_id", cid)
             .gte("issue_date", period.from)
@@ -210,7 +217,10 @@ function DphPage() {
   }, [period.from, period.to]);
 
   // Dobropis vstupuje záporne v súčtoch aj v zozname dokladov (`dph-prehlad.ts`).
-  const output = useMemo(() => vystupPrehladu(invoices, items), [invoices, items]);
+  const output = useMemo(
+    () => vystupPrehladu(invoices, items, krajina),
+    [invoices, items, krajina],
+  );
 
   // Krajina prichádza až po načítaní firmy — bez nej v závislostiach by
   // prijaté faktúry ostali priradené k sadzbám tej predchádzajúcej.
@@ -230,10 +240,28 @@ function DphPage() {
   const totalInputVat = sucet(input, "vat");
   const rozdiel = totalOutputVat - totalInputVat;
 
+  // Doklady v cudzej mene: s kurzom sú v súčtoch prepočítané, bez kurzu chýbajú.
+  const bezPrepoctu = useMemo(
+    () => dokladyBezPrepoctu(invoices, purchases, krajina),
+    [invoices, purchases, krajina],
+  );
+  const prepocitane =
+    invoices.some((i) => kurzVystavenej(i, krajina) > 0 && kurzVystavenej(i, krajina) !== 1) ||
+    purchases.some(
+      (p) => (p.currency || domaca) !== domaca && sumyPrijatejDomace(p, krajina) !== null,
+    );
+  const cislaBezPrepoctu = bezPrepoctu
+    .map((d) =>
+      (d.druh === "vystavena" ? invoices : purchases).find((x: any) => x.id === d.id)?.invoice_number,
+    )
+    .filter(Boolean)
+    .join(", ");
+
   function exportCsv() {
     const lines: string[] = [];
     lines.push(`${t("DPH prehľad")};${nazovObdobia}`);
     lines.push(`${t("Od")};${period.from};${t("Do")};${period.to}`);
+    lines.push(`${t("Mena súčtov")};${domaca}`);
     lines.push("");
     lines.push(t("DPH NA VÝSTUPE (vystavené faktúry)"));
     lines.push(t("Sadzba;Základ dane;DPH;Počet faktúr"));
@@ -258,19 +286,19 @@ function DphPage() {
     lines.push(`${t("Rozdiel (odvod/nadmerný odpočet)")};${rozdiel.toFixed(2)}`);
     lines.push("");
     lines.push(t("VYSTAVENÉ FAKTÚRY"));
-    lines.push(t("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP"));
+    lines.push(t("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP;Mena"));
     for (const i of invoices) {
       const s = sumyVystavenej(i);
       lines.push(
-        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${s.zaklad.toFixed(2)};${s.dph.toFixed(2)};${s.spolu.toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")}`,
+        `${bezVzorca(i.invoice_number)};${i.issue_date};${bezVzorca((i.customer_name || "").replace(/;/g, ","))};${s.zaklad.toFixed(2)};${s.dph.toFixed(2)};${s.spolu.toFixed(2)};${i.reverse_charge ? t("áno") : t("nie")};${i.currency || domaca}`,
       );
     }
     lines.push("");
     lines.push(t("PRIJATÉ FAKTÚRY"));
-    lines.push(t("Číslo;Dátum;Dodávateľ;Základ;DPH;Spolu"));
+    lines.push(t("Číslo;Dátum;Dodávateľ;Základ;DPH;Spolu;Mena"));
     for (const p of purchases) {
       lines.push(
-        `${bezVzorca(p.invoice_number)};${p.issue_date};${bezVzorca((p.supplier_name || "").replace(/;/g, ","))};${Number(p.amount_without_vat || 0).toFixed(2)};${Number(p.vat_amount || 0).toFixed(2)};${Number(p.amount_total || 0).toFixed(2)}`,
+        `${bezVzorca(p.invoice_number)};${p.issue_date};${bezVzorca((p.supplier_name || "").replace(/;/g, ","))};${Number(p.amount_without_vat || 0).toFixed(2)};${Number(p.vat_amount || 0).toFixed(2)};${Number(p.amount_total || 0).toFixed(2)};${p.currency || domaca}`,
       );
     }
     const csv = "\uFEFF" + lines.join("\n");
@@ -313,10 +341,10 @@ function DphPage() {
 <table><tr class="tot"><td>${rozdiel >= 0 ? t("Odvod DPH") : t("Nadmerný odpočet")}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>${t("Vystavené faktúry ({n})", { n: invoices.length })}</h2>
 <table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Odberateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).zaklad, i.currency || "EUR")}</td><td style="text-align:right">${fmt(sumyVystavenej(i).dph, i.currency || "EUR")}</td><td style="text-align:right">${fmt(sumyVystavenej(i).spolu, i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${escHtml(i.invoice_number)}</td><td>${escHtml(datumNaDoklade(i.issue_date))}</td><td>${escHtml(i.customer_name)}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).zaklad, i.currency || domaca)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).dph, i.currency || domaca)}</td><td style="text-align:right">${fmt(sumyVystavenej(i).spolu, i.currency || domaca)}</td></tr>`).join("")}</tbody></table>
 <h2>${t("Prijaté faktúry ({n})", { n: purchases.length })}</h2>
 <table><thead><tr><th>${t("Číslo")}</th><th>${t("Dátum")}</th><th>${t("Dodávateľ")}</th><th style="text-align:right">${t("Základ")}</th><th style="text-align:right">${t("DPH")}</th><th style="text-align:right">${t("Spolu")}</th></tr></thead>
-<tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(p.issue_date))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${purchases.map((p) => `<tr><td>${escHtml(p.invoice_number)}</td><td>${escHtml(datumNaDoklade(p.issue_date))}</td><td>${escHtml(p.supplier_name)}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || domaca)}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || domaca)}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || domaca)}</td></tr>`).join("")}</tbody></table>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
     win.document.open();
@@ -336,9 +364,13 @@ function DphPage() {
           <Link to="/uctovnictvo/vykazy" className="underline">
             {t("Výkazy k DPH")}
           </Link>{" "}
-          {t(
-            "z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich v XML pre eDane.",
-          )}
+          {krajina === "CZ"
+            ? t("z tých istých dokladov zostavia přiznání, kontrolní hlášení aj souhrnné hlášení a stiahnu ich v XML pre EPO.")
+            : krajina === "DE"
+              ? t("z tých istých dokladov zostavia UStVA a súhrnné hlásenie (ZM) pre ELSTER.")
+              : t(
+                  "z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich v XML pre eDane.",
+                )}
         </p>
         <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
@@ -443,6 +475,25 @@ function DphPage() {
             <CardTitle>{t("DPH sumár")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {prepocitane && (
+              <p className="text-xs text-muted-foreground" data-testid="dph-prepocitane">
+                {t("Sumy sú v {mena}. Doklady v cudzej mene sú prepočítané kurzom {banka} z dokladu.", {
+                  mena: domaca,
+                  banka: domaca === "CZK" ? "ČNB" : "ECB",
+                })}
+              </p>
+            )}
+            {bezPrepoctu.length > 0 && (
+              <div
+                className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40"
+                data-testid="dph-bez-prepoctu"
+              >
+                {t(
+                  "{n} dokladov v cudzej mene nemá kurz, v súčtoch preto nie sú: {cisla}. Otvorte ich a uložte znova, aby sa prepočítali.",
+                  { n: bezPrepoctu.length, cisla: cislaBezPrepoctu },
+                )}
+              </div>
+            )}
             <div>
               <h2 className="font-semibold mb-2">{t("DPH na výstupe (vystavené faktúry)")}</h2>
               <div className="hidden sm:block">
@@ -552,9 +603,9 @@ function DphPage() {
                 cislo: i.invoice_number,
                 datum: datumNaDoklade(i.issue_date),
                 meno: `${i.customer_name ?? ""}${i.reverse_charge ? ` (${t("PDP")})` : ""}${typDokladu(i.type)}`,
-                zaklad: fmt(sumyVystavenej(i).zaklad, i.currency || "EUR"),
-                dph: fmt(sumyVystavenej(i).dph, i.currency || "EUR"),
-                spolu: fmt(sumyVystavenej(i).spolu, i.currency || "EUR"),
+                zaklad: fmt(sumyVystavenej(i).zaklad, i.currency || domaca),
+                dph: fmt(sumyVystavenej(i).dph, i.currency || domaca),
+                spolu: fmt(sumyVystavenej(i).spolu, i.currency || domaca),
               }))}
             />
             <Table className="hidden md:table">
@@ -579,13 +630,13 @@ function DphPage() {
                       {typDokladu(i.type)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(sumyVystavenej(i).zaklad, i.currency || "EUR")}
+                      {fmt(sumyVystavenej(i).zaklad, i.currency || domaca)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(sumyVystavenej(i).dph, i.currency || "EUR")}
+                      {fmt(sumyVystavenej(i).dph, i.currency || domaca)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(sumyVystavenej(i).spolu, i.currency || "EUR")}
+                      {fmt(sumyVystavenej(i).spolu, i.currency || domaca)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -613,9 +664,9 @@ function DphPage() {
                 cislo: p.invoice_number,
                 datum: datumNaDoklade(p.issue_date),
                 meno: p.supplier_name ?? "",
-                zaklad: fmt(Number(p.amount_without_vat || 0), p.currency || "EUR"),
-                dph: fmt(Number(p.vat_amount || 0), p.currency || "EUR"),
-                spolu: fmt(Number(p.amount_total || 0), p.currency || "EUR"),
+                zaklad: fmt(Number(p.amount_without_vat || 0), p.currency || domaca),
+                dph: fmt(Number(p.vat_amount || 0), p.currency || domaca),
+                spolu: fmt(Number(p.amount_total || 0), p.currency || domaca),
               }))}
             />
             <Table className="hidden md:table">
@@ -636,13 +687,13 @@ function DphPage() {
                     <TableCell className="whitespace-nowrap">{datumNaDoklade(p.issue_date)}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
                     <TableCell className="text-right">
-                      {fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}
+                      {fmt(Number(p.amount_without_vat || 0), p.currency || domaca)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(Number(p.vat_amount || 0), p.currency || "EUR")}
+                      {fmt(Number(p.vat_amount || 0), p.currency || domaca)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(Number(p.amount_total || 0), p.currency || "EUR")}
+                      {fmt(Number(p.amount_total || 0), p.currency || domaca)}
                     </TableCell>
                   </TableRow>
                 ))}
