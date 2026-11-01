@@ -87,6 +87,7 @@ import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/dokla
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 
 import { bezVzorca } from "@/lib/bezpecny-text";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
@@ -103,22 +104,18 @@ const STATUS_LABEL: Record<string, string> = {
 /** Filter navyše — nie je to hodnota `status`, počíta sa z `purchase_invoice_payments`. */
 const CIASTOCNE = "ciastocne";
 
+/** Tón stavu prijatej faktúry (redizajn webu — texty ostávajú v STATUS_LABEL). */
+const TON_PRIJATEJ: Record<string, TonStavu> = {
+  draft: "neutralny",
+  received: "informacia",
+  booked: "priebeh",
+  paid: "uspech",
+  cancelled: "zruseny",
+};
+
 function StatusBadge({ status }: { status: string }) {
   const { t } = useT();
-  const map: Record<string, string> = {
-    draft: "bg-muted text-muted-foreground",
-    received: "bg-amber-100 text-amber-800",
-    booked: "bg-sky-100 text-sky-800",
-    paid: "bg-emerald-100 text-emerald-800",
-    cancelled: "bg-rose-100 text-rose-800",
-  };
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? map.draft}`}
-    >
-      {t(STATUS_LABEL[status] ?? status)}
-    </span>
-  );
+  return <StavOdznak ton={TON_PRIJATEJ[status] ?? "neutralny"}>{t(STATUS_LABEL[status] ?? status)}</StavOdznak>;
 }
 
 function fmtMoney(n: number, c = "EUR") {
@@ -1114,7 +1111,7 @@ function PurchaseInvoicesPage() {
                   <span className="block truncate font-medium">
                     {z.faktura?.supplier_name ?? t("Faktúra")}{" "}
                     <span className="text-muted-foreground">{z.faktura?.invoice_number}</span>{" "}
-                    <span className="tabular-nums">
+                    <span className="suma">
                       {z.faktura?.amount_total != null
                         ? formatujMenu(z.faktura.amount_total, z.faktura.currency ?? "EUR")
                         : ""}
@@ -1177,20 +1174,16 @@ function PurchaseInvoicesPage() {
                   {r.invoice_number}
                   <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                   {duplicity.has(r.id) && (
-                    <span
-                      title={t("Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu.")}
-                      className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-                    >
+                    <StavOdznak ton="pozor" maly
+                      title={t("Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu.")}>
                       Duplicita?
-                    </span>
+                    </StavOdznak>
                   )}
                   {r.na_kontrolu_at ? (
-                    <span
-                      title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}
-                      className="inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-                    >
+                    <StavOdznak ton="pozor" maly
+                      title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}>
                       {t("Na kontrolu")}
-                    </span>
+                    </StavOdznak>
                   ) : null}
                 </span>
               }
@@ -1206,12 +1199,9 @@ function PurchaseInvoicesPage() {
                 <div className="flex flex-col items-end gap-1">
                   <StatusBadge status={r.status} />
                   {jeCiastocneUhradena(r, uhradene[r.id]) && (
-                    <span
-                      className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
-                      title={formatujMenu(uhradene[r.id], r.currency ?? "EUR")}
-                    >
+                    <StavOdznak ton="pozor" title={formatujMenu(uhradene[r.id], r.currency ?? "EUR")}>
                       {t("Čiastočne uhradená")}
-                    </span>
+                    </StavOdznak>
                   )}
                 </div>
               }
@@ -1239,7 +1229,7 @@ function PurchaseInvoicesPage() {
         >
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
               <tr>
                 <th className="w-8 p-3">
                   <input
@@ -1315,32 +1305,28 @@ function PurchaseInvoicesPage() {
                       onChange={() => toggle(r.id)}
                     />
                   </td>
-                  <td className="p-3 font-medium">
+                  <td className="cislo-dokladu whitespace-nowrap p-3">
                     {r.invoice_number}
                     <span className="ml-1.5 inline-flex align-middle">
                       <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                     </span>
                     {duplicity.has(r.id) && (
-                      <span
-                        title={t("Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu.")}
-                        className="ml-2 inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-                      >
+                      <StavOdznak ton="pozor" maly className="ml-2"
+                        title={t("Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu.")}>
                         Duplicita?
-                      </span>
+                      </StavOdznak>
                     )}
                   </td>
-                  <td className="p-3">
+                  <td className="min-w-[11rem] p-3">
                     {r.odberatel_nesedi ? (
                       <CudziaFakturaZnak nesedi={nacitajNesedi(r.odberatel_nesedi)} className="mr-1.5 align-middle" />
                     ) : null}
                     {/* eFaktúra zaradená automaticky, ktorú ešte nikto neotvoril — hromadný príkaz ju vynechá. */}
                     {r.na_kontrolu_at ? (
-                      <span
-                        title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}
-                        className="mr-1.5 inline-flex rounded bg-amber-100 px-1.5 py-0.5 align-middle text-[11px] font-medium text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-                      >
+                      <StavOdznak ton="pozor" maly className="mr-1.5 align-middle"
+                        title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}>
                         {t("Na kontrolu")}
-                      </span>
+                      </StavOdznak>
                     ) : null}
                     {r.supplier_name}
                     {r.stitky?.length ? (
@@ -1364,7 +1350,7 @@ function PurchaseInvoicesPage() {
                     </td>
                   )}
                   {je("vystavena") && (
-                    <td className="p-3">
+                    <td className="whitespace-nowrap p-3">
                       {datumNaDoklade(r.issue_date)}
                       {!je("duzp") && r.delivery_date && r.delivery_date !== r.issue_date ? (
                         <div
@@ -1378,13 +1364,13 @@ function PurchaseInvoicesPage() {
                   )}
                   {je("duzp") && (
                     <td
-                      className={`p-3 ${r.delivery_date && r.delivery_date !== r.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                      className={`whitespace-nowrap p-3 ${r.delivery_date && r.delivery_date !== r.issue_date ? "font-medium" : "text-muted-foreground"}`}
                     >
                       {datumNaDoklade(datumDodania(r))}
                     </td>
                   )}
                   {je("splatnost") && (
-                    <td className="p-3">
+                    <td className="whitespace-nowrap p-3">
                       {datumNaDoklade(r.due_date)}
                       {r.povodna_splatnost && r.povodna_splatnost !== r.due_date && (
                         <span
@@ -1397,17 +1383,17 @@ function PurchaseInvoicesPage() {
                     </td>
                   )}
                   {je("zaklad") && (
-                    <td className="p-3 text-right tabular-nums">
+                    <td className="suma p-3 text-right">
                       {fmtMoney(Number(r.amount_without_vat ?? 0), r.currency)}
                     </td>
                   )}
                   {je("dph") && (
-                    <td className="p-3 text-right tabular-nums">
+                    <td className="suma p-3 text-right">
                       {fmtMoney(Number(r.vat_amount ?? 0), r.currency)}
                     </td>
                   )}
                   {je("suma") && (
-                    <td className="p-3 text-right tabular-nums">
+                    <td className="suma p-3 text-right">
                       {fmtMoney(Number(r.amount_total ?? 0), r.currency)}
                     </td>
                   )}
@@ -1460,17 +1446,24 @@ function PurchaseInvoicesPage() {
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <StatusBadge status={r.status} />
                       {jeCiastocneUhradena(r, uhradene[r.id]) && (
-                        <span
-                          className="mt-1 block w-fit rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
+                        <StavOdznak
+                          ton="pozor"
+                          className="mt-1 flex w-fit"
                           title={formatujMenu(uhradene[r.id], r.currency ?? "EUR")}
                         >
                           {t("Čiastočne uhradená")}
-                        </span>
+                        </StavOdznak>
                       )}
                       {r.locked_at ? (
-                        <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" title={t("Zamknutý doklad")}>
-                          <Lock className="h-3 w-3" /> {t("Zamknutá")}
-                        </span>
+                        <StavOdznak
+                          ton="neutralny"
+                          maly
+                          className="mt-1 flex w-fit"
+                          title={t("Zamknutý doklad")}
+                          ikona={<Lock />}
+                        >
+                          {t("Zamknutá")}
+                        </StavOdznak>
                       ) : null}
                       {sch.stavy[r.id] ? (
                         <div
@@ -1486,14 +1479,14 @@ function PurchaseInvoicesPage() {
                           className={`mt-1 block text-xs ${
                             stavOdovzdania(r).druh === "odovzdane" ||
                             stavOdovzdania(r).druh === "odovzdane_znova"
-                              ? "text-emerald-700 dark:text-emerald-300"
-                              : "text-amber-700 dark:text-amber-300"
+                              ? "dk-text-uspech"
+                              : "dk-text-pozor"
                           }`}
                         >
                           {t(textOdznaku(stavOdovzdania(r))!)}
                         </span>
                       ) : r.zauctovane_at && r.status !== "booked" ? (
-                        <span className="mt-1 block text-xs text-sky-700 dark:text-sky-300">
+                        <span className="mt-1 block text-xs dk-text-info">
                           {t("Zaúčtovaná")}
                         </span>
                       ) : null}
@@ -1509,10 +1502,10 @@ function PurchaseInvoicesPage() {
                         <span
                           className={`mt-1 block text-xs ${
                             stavSamofaktury(r) === "odsuhlasena"
-                              ? "text-emerald-700 dark:text-emerald-300"
+                              ? "dk-text-uspech"
                               : stavSamofaktury(r) === "zamietnuta"
-                                ? "text-rose-700 dark:text-rose-300"
-                                : "text-amber-700 dark:text-amber-300"
+                                ? "dk-text-chyba"
+                                : "dk-text-pozor"
                           }`}
                         >
                           {t("Samofaktúra")} · {t(NAZVY_STAVOV[stavSamofaktury(r)]).toLowerCase()}
@@ -1590,7 +1583,7 @@ function PurchaseInvoicesPage() {
       />
       {zauctovanie && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dk-prekrytie p-4"
           onClick={() => setZauctovanie(false)}
         >
           <div
@@ -1624,7 +1617,7 @@ function PurchaseInvoicesPage() {
             {kontrolaCl && kontrolaCl.bez.length > 0 && (
               <div
                 role="alert"
-                className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+                className="mt-3 rounded-md border dk-pozor px-3 py-2 text-xs"
               >
                 {t("Bez členenia DPH: {zoznam}. Platiteľ DPH ich nezaúčtuje — vyberte členenie DPH, alebo ich nastavte v pravidle či v predvolených predkontáciách.", {
                   zoznam: kontrolaCl.bez.slice(0, 8).join(", ") + (kontrolaCl.bez.length > 8 ? ` +${kontrolaCl.bez.length - 8}` : ""),
@@ -1761,14 +1754,14 @@ function StatCard({
 }) {
   const toneCls =
     tone === "amber"
-      ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100"
+      ? "dk-pozor"
       : tone === "rose"
-        ? "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100"
+        ? "dk-chyba"
         : "border-border bg-card";
   return (
     <div className={`rounded-xl border p-4 ${toneCls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="text-xs font-semibold opacity-80">{label}</div>
+      <div className="suma mt-1 text-2xl">{value}</div>
     </div>
   );
 }

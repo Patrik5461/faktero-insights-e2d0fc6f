@@ -717,7 +717,7 @@ function Vyber({
               type="button"
               disabled={!cielOznaceneho || citamVyrez}
               onClick={() => void pouziOznacene()}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {citamVyrez ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               {t("Použiť do poľa")} {cielOznaceneho ? t(poleVyberu(cielOznaceneho).nazov) : ""}
@@ -814,7 +814,7 @@ function StranaNahladu({
         {slovo && obdlznik(slovo, "rounded-sm bg-primary/25 ring-2 ring-primary")}
         {tah && obdlznik(tah, "border-2 border-dashed border-primary bg-primary/10")}
         {oznacene && obdlznik(oznacene, "border-2 border-primary bg-primary/15")}
-        {hotovo && obdlznik(hotovo, "rounded-sm bg-green-500/25 ring-2 ring-green-500")}
+        {hotovo && obdlznik(hotovo, "rounded-sm bg-[color-mix(in_oklch,var(--stav-uspech-bod)_25%,transparent)] ring-2 ring-[var(--stav-uspech-bod)]")}
       </div>
     </div>
   );

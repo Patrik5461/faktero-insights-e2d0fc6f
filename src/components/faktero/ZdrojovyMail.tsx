@@ -108,7 +108,7 @@ function OknoMailu({
   useZatvorNaEscape(onClose);
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 dk-prekrytie p-4"
       onClick={(e) => {
         e.stopPropagation();
         onClose();
@@ -118,7 +118,7 @@ function OknoMailu({
         role="dialog"
         aria-modal="true"
         aria-label={t("Zdrojový e-mail")}
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col rounded-xl border border-border bg-card"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col rounded-2xl border border-border bg-popover shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-border p-5">

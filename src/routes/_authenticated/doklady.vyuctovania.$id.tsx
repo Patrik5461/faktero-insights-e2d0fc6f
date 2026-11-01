@@ -318,7 +318,7 @@ function Detail() {
                 {TYPY_VYUCTOVANIA.map((typ) => (
                   <label
                     key={typ.kod}
-                    className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-2 text-sm has-[:checked]:border-primary"
+                    className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                   >
                     <input
                       type="radio"
@@ -421,7 +421,7 @@ function Detail() {
                 <button
                   type="button"
                   onClick={() => setVyber(true)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
                 >
                   <Plus className="h-4 w-4" /> {t("Pridať doklady")}
                 </button>
@@ -431,7 +431,7 @@ function Detail() {
               ) : (
                 <div className="mt-3 overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-xs text-muted-foreground">
+                    <thead className="text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                       <tr>
                         <th className="py-1 pr-2">{t("Dátum")}</th>
                         <th className="py-1 pr-2">{t("Dodávateľ")}</th>
@@ -471,7 +471,7 @@ function Detail() {
                                 {p.druh === "prijata" ? t("faktúra") : t("bloček")}
                               </span>
                             </td>
-                            <td className="py-1.5 pr-2 text-right tabular-nums">
+                            <td className="suma py-1.5 pr-2 text-right">
                               {formatujMenu(p.spolu, p.mena)}
                             </td>
                             <td className="py-1.5 text-right">
@@ -568,20 +568,20 @@ function Detail() {
               <dl className="mt-3 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t("Doklady spolu")}</dt>
-                  <dd className="tabular-nums">{formatujMenu(s.spolu, f.mena)}</dd>
+                  <dd className="suma">{formatujMenu(s.spolu, f.mena)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{t("z toho DPH")}</dt>
-                  <dd className="tabular-nums">{formatujMenu(s.dph, f.mena)}</dd>
+                  <dd className="suma">{formatujMenu(s.dph, f.mena)}</dd>
                 </div>
                 {f.typ === "zaloha" && (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">{t("Záloha")}</dt>
-                    <dd className="tabular-nums">−{formatujMenu(s.zaloha, f.mena)}</dd>
+                    <dd className="suma">−{formatujMenu(s.zaloha, f.mena)}</dd>
                   </div>
                 )}
               </dl>
-              <p className="mt-3 rounded-md bg-secondary/60 p-3 text-sm font-medium">
+              <p className="mt-3 rounded-lg border border-border bg-muted p-3 text-sm font-semibold">
                 {f.typ === "karta"
                   ? t("Platené firemnou kartou — nič sa nedopláca.")
                   : s.rozdiel > 0
@@ -591,7 +591,7 @@ function Detail() {
                       : t("Vyrovnané — nikto nikomu nič nedlhuje.")}
               </p>
               {s.inaMena ? (
-                <p className="mt-2 text-xs text-amber-700">
+                <p className="dk-text-pozor mt-2 text-xs font-medium">
                   {t("Doklady v inej mene ako {mena}: {n} — do súčtu nevstupujú.", {
                     n: s.inaMena,
                     mena: f.mena,
@@ -603,7 +603,7 @@ function Detail() {
                   type="button"
                   onClick={() => void ulozit()}
                   disabled={busy}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Uložiť")}
                 </button>
@@ -612,7 +612,7 @@ function Detail() {
                     type="button"
                     onClick={() => void ulozit("uzavrete")}
                     disabled={busy}
-                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                    className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     {t("Uzavrieť vyúčtovanie")}
                   </button>
@@ -626,7 +626,7 @@ function Detail() {
             type="button"
             onClick={() => void ulozit("otvorene")}
             disabled={busy}
-            className="mt-4 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            className="mt-4 rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
           >
             {t("Otvoriť na úpravu")}
           </button>
@@ -729,12 +729,12 @@ function VyberDokladov({
   );
   const kluc = (k: PolozkaVyuctovania) => `${k.druh}:${k.id}`;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 dk-prekrytie p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Pridať doklady do vyúčtovania")}
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col rounded-xl border border-border bg-card"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col rounded-2xl border border-border bg-popover shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-b border-border p-5">
@@ -787,7 +787,7 @@ function VyberDokladov({
                         · {k.druh === "prijata" ? t("faktúra") : t("bloček")} {k.cislo ?? ""}
                       </span>
                     </span>
-                    <span className="tabular-nums">{formatujMenu(k.spolu, k.mena)}</span>
+                    <span className="suma">{formatujMenu(k.spolu, k.mena)}</span>
                   </label>
                 </li>
               ))}
@@ -797,14 +797,14 @@ function VyberDokladov({
         <div className="flex justify-end gap-2 border-t border-border p-4">
           <button
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent"
           >
             {t("Zrušiť")}
           </button>
           <button
             onClick={() => onPridaj((kandidati ?? []).filter((k) => vybrane.has(kluc(k))))}
             disabled={!vybrane.size}
-            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {t("Pridať")} ({vybrane.size})
           </button>

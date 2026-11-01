@@ -166,7 +166,7 @@ export function NavrhyAiOkno({
   const bezCiselnika = riadky.some((r) => r.stav === "bez_ciselnika");
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dk-prekrytie p-4"
       onClick={onClose}
     >
       <div
@@ -177,7 +177,7 @@ export function NavrhyAiOkno({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Sparkles className="h-5 w-5 text-violet-600" /> {t("Návrhy AI pre vybrané faktúry")}
+          <Sparkles className="h-5 w-5 text-primary" /> {t("Návrhy AI pre vybrané faktúry")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {t(
@@ -228,7 +228,7 @@ export function NavrhyAiOkno({
                     <div className="font-medium">{r.cislo || "—"}</div>
                     <div className="text-xs text-muted-foreground">{r.dodavatel || "—"}</div>
                     {r.dovod && (
-                      <div className="text-xs text-violet-700 dark:text-violet-300">{r.dovod}</div>
+                      <div className="text-xs dk-text-info">{r.dovod}</div>
                     )}
                     {!maNavrh(r) && (
                       <div className="text-xs text-muted-foreground">

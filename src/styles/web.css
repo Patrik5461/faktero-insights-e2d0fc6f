@@ -652,4 +652,54 @@ html.dark [data-web-redizajn] {
   [data-web-redizajn] .fk-text-chyba { color: var(--stav-chyba-text); }
   [data-web-redizajn] .fk-text-info { color: var(--stav-informacia-text); }
   [data-web-redizajn] .fk-text-uspech { color: var(--stav-uspech-text); }
+
+/* doklady (agenda Doklady: prijaté faktúry, bločky, nespracované,     */
+/* iné doklady, vyúčtovanie, kôš, schvaľovanie, doklady e-mailom,      */
+/* import dokladov) — redizajn 2026-11, agent „doklady“                */
+/* ------------------------------------------------------------------ */
+
+/* Pásy a rámčeky s upozornením v stavových tónoch (namiesto pevných
+   amber/rose/sky/emerald farieb). Trieda dáva len farby — rozostupy,
+   zaoblenie a rámik (`border`) ostávajú v triedach Tailwindu na mieste. */
+[data-web-redizajn] .dk-pozor {
+  background-color: var(--stav-pozor-plocha);
+  color: var(--stav-pozor-text);
+  border-color: color-mix(in oklch, var(--stav-pozor-bod) 45%, transparent);
+}
+[data-web-redizajn] .dk-chyba {
+  background-color: var(--stav-chyba-plocha);
+  color: var(--stav-chyba-text);
+  border-color: color-mix(in oklch, var(--stav-chyba-bod) 45%, transparent);
+}
+[data-web-redizajn] .dk-uspech {
+  background-color: var(--stav-uspech-plocha);
+  color: var(--stav-uspech-text);
+  border-color: color-mix(in oklch, var(--stav-uspech-bod) 45%, transparent);
+}
+[data-web-redizajn] .dk-info {
+  background-color: var(--stav-informacia-plocha);
+  color: var(--stav-informacia-text);
+  border-color: color-mix(in oklch, var(--stav-informacia-bod) 45%, transparent);
+}
+/* Len farba textu/ikony v tóne (sumy, vety „po lehote“, fajky). */
+[data-web-redizajn] .dk-text-pozor {
+  color: var(--stav-pozor-text);
+}
+[data-web-redizajn] .dk-text-chyba {
+  color: var(--stav-chyba-text);
+}
+[data-web-redizajn] .dk-text-uspech {
+  color: var(--stav-uspech-text);
+}
+[data-web-redizajn] .dk-text-info {
+  color: var(--stav-informacia-text);
+}
+/* Rámik poľa s chybou (povinné chýba) v tóne chyby. */
+[data-web-redizajn] .dk-ramik-chyba {
+  border-color: var(--stav-chyba-bod);
+}
+/* Prekrytie ručne kreslených okien (role="dialog") ako pri ui/dialog. */
+[data-web-redizajn] .dk-prekrytie {
+  background-color: var(--w-prekrytie);
+  backdrop-filter: blur(2px);
 }

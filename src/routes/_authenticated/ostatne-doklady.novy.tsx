@@ -406,7 +406,7 @@ function OstatnyDokladPage() {
           <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
-            <div className="min-w-0 rounded-2xl border border-border bg-card p-5">
+            <div className="min-w-0 rounded-xl border border-border bg-card p-5">
               {stav && (
                 <div className="mb-4 text-sm">
                   {t("Stav:")}{" "}
@@ -554,7 +554,7 @@ function OstatnyDokladPage() {
               </div>
             </div>
 
-            <div className="min-w-0 rounded-2xl border border-border bg-card p-5">
+            <div className="min-w-0 rounded-xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold">{t("Prílohy")}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("PDF alebo fotky, aj viac strán naraz. Najviac 20 MB na súbor. Prvú prílohu prečíta AI a vyplní druh, odosielateľa, predmet, sumu a lehotu.")}
@@ -601,7 +601,7 @@ function OstatnyDokladPage() {
                   role="status"
                   className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
                     citanie.stav === "chyba"
-                      ? "border-amber-500/40 bg-amber-500/5"
+                      ? "dk-pozor"
                       : "border-primary/30 bg-primary/5"
                   }`}
                 >
@@ -690,7 +690,7 @@ function OstatnyDokladPage() {
                 <button
                   onClick={() => uloz(true)}
                   disabled={ukladam}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary-hover hover:bg-primary/15 disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" /> {t("Uložiť a spracovať")}
                 </button>
@@ -698,7 +698,7 @@ function OstatnyDokladPage() {
               <button
                 onClick={() => uloz(false)}
                 disabled={ukladam}
-                className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {ukladam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 {t("Uložiť")}

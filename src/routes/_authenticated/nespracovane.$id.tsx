@@ -161,7 +161,7 @@ function Detail() {
     return r && !(u?.platba === "hotovost" && Math.abs(r.rozdiel) <= 0.02) ? r : null;
   })();
   const zle = (k: string) => chyby.includes(k);
-  const ram = (k: string) => (zle(k) ? "border-red-500 ring-1 ring-red-300" : "border-input");
+  const ram = (k: string) => (zle(k) ? "dk-ramik-chyba ring-1 ring-destructive/30" : "border-input");
   const s = u ? sucty(u) : { zaklad: 0, dph: 0, celkom: 0 };
   const sadzby = useMemo(() => sadzbyKrajiny("SK", u?.datumVystavenia || null), [u?.datumVystavenia]);
 
@@ -383,12 +383,12 @@ function Detail() {
           disabled={busy}
           onClick={() => void docitajDoklad()}
           title={t("Prečíta doklad znova a doplní chýbajúce údaje (VS, IBAN, splatnosť, adresu). Vyplnené neprepíše.")}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-card px-3 py-1.5 text-xs font-semibold hover:bg-secondary disabled:opacity-60"
         >
           <RefreshCw className="h-3.5 w-3.5" /> {t("Dočítať z dokladu")}
         </button>
       ) : null}
-    <div className="inline-flex rounded-lg border border-border p-0.5 text-xs" role="group" aria-label={t("Rozloženie")}>
+    <div className="inline-flex rounded-lg border border-border bg-secondary p-0.5 text-xs" role="group" aria-label={t("Rozloženie")}>
       {(
         [
           ["klasicky", "Klasické"],
@@ -400,7 +400,7 @@ function Detail() {
           type="button"
           aria-pressed={vzhlad === k}
           onClick={() => void zmenVzhlad(k)}
-          className={`rounded-md px-3 py-1.5 ${vzhlad === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
+          className={`rounded-md px-3 py-1.5 ${vzhlad === k ? "bg-card font-semibold text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
           {t(n)}
         </button>
@@ -481,7 +481,7 @@ function Detail() {
   // Dodávateľ sa kreslí raz — pri bežnom doklade až za sumami, pri ostatných hneď za druhom.
   const sekciaDodavatela = (
     <section className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="mb-2 text-sm font-semibold text-foreground">
         {druh === "ostatny" ? t("Odosielateľ") : t("Dodávateľ")}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -592,7 +592,7 @@ function Detail() {
                 <Loader2 className="h-4 w-4 animate-spin" /> {t("Čítam doklad — údaje sa doplnia samy.")}
               </div>
             )}
-            {d.chyba && <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{d.chyba}</div>}
+            {d.chyba && <div className="dk-pozor rounded-md border p-3 text-sm">{d.chyba}</div>}
             {upozornenieVlastnej}
             {d.zdrojUdajov && (
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
@@ -602,14 +602,14 @@ function Detail() {
               </div>
             )}
             {d.varovania.map((v) => (
-              <div key={v} role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              <div key={v} role="alert" className="dk-pozor rounded-md border p-3 text-sm">
                 {t(v)}
               </div>
             ))}
 
             <section className="rounded-xl border border-border bg-card p-4">
               <label className="block text-sm">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Druh dokladu")}</span>
+                <span className="text-sm font-semibold text-foreground">{t("Druh dokladu")}</span>
                 <select
                   aria-label={t("Druh dokladu")}
                   value={druh}
@@ -655,7 +655,7 @@ function Detail() {
                   value={u.jobId}
                   onChange={(v) => setU((p) => (p ? { ...p, jobId: v } : p))}
                   companyId={d.companyId}
-                  className={`mt-3 ${zle("zakazka") ? "[&_select]:border-red-500" : ""}`}
+                  className={`mt-3 ${zle("zakazka") ? "[&_select]:border-destructive" : ""}`}
                 />
                 <VozidloPicker
                   value={u.vehicleId ?? ""}
@@ -708,7 +708,7 @@ function Detail() {
             ) : druh ? (
               <>
                 <section className="rounded-xl border border-border bg-card p-4">
-                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Doklad")}</div>
+                  <div className="mb-2 text-sm font-semibold text-foreground">{t("Doklad")}</div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block text-sm">
                       <span className="text-xs text-muted-foreground">{t("Číslo dokladu")}</span>
@@ -775,7 +775,7 @@ function Detail() {
 
                 <section className="rounded-xl border border-border bg-card p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Sumy podľa sadzieb DPH")}</span>
+                    <span className="text-sm font-semibold text-foreground">{t("Sumy podľa sadzieb DPH")}</span>
                     <button type="button" onClick={() => set({ rozpis: [...u.rozpis, { sadzba: sadzby[0] ?? 23, zaklad: 0, dph: 0 }], celkom: null })} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
                       <Plus className="h-3.5 w-3.5" /> {t("Pridať sadzbu")}
                     </button>
@@ -819,7 +819,7 @@ function Detail() {
                       ))}
                     </tbody>
                   </table>
-                  <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-red-600" : ""}`}>
+                  <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-destructive" : ""}`}>
                     <span className="text-muted-foreground">
                       {t("Základ {zaklad} · DPH {dph}", { zaklad: s.zaklad.toFixed(2), dph: s.dph.toFixed(2) })}
                     </span>
@@ -836,7 +836,7 @@ function Detail() {
 
                 {faktura && (
                   <section className="rounded-xl border border-border bg-card p-4">
-                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Platobné údaje")}</div>
+                    <div className="mb-2 text-sm font-semibold text-foreground">{t("Platobné údaje")}</div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {faktura && (
                         <label className="block text-sm">
@@ -916,13 +916,13 @@ function Detail() {
 
             {druh && druh !== "ostatny" ? (
                 <section className="rounded-xl border border-border bg-card p-4">
-                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Položky")}</div>
+                  <div className="mb-2 text-sm font-semibold text-foreground">{t("Položky")}</div>
                   <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} navrhy={navrhy} />
                 </section>
             ) : null}
 
             <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 p-3 pr-24 backdrop-blur">
-              <button type="button" disabled={busy || d.stav === "cita"} onClick={() => void vytvorDoklad()} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
+              <button type="button" disabled={busy || d.stav === "cita"} onClick={() => void vytvorDoklad()} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Vytvoriť")}
               </button>
               {druh && druh !== "ostatny" ? (
@@ -932,15 +932,15 @@ function Detail() {
                   tlacidlo
                 />
               ) : null}
-              <button type="button" disabled={busy} onClick={ulozZmeny} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-60">
+              <button type="button" disabled={busy} onClick={ulozZmeny} className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60">
                 {t("Uložiť zmeny")}
               </button>
               {chyby.length > 0 && druh ? (
-                <span className="text-xs text-red-600">
+                <span className="text-xs font-medium text-destructive">
                   {t("Chýba: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") })}
                 </span>
               ) : rozdielVyrovna && druh ? (
-                <span className="text-xs text-amber-700 dark:text-amber-300">
+                <span className="dk-text-pozor text-xs font-medium">
                   {t("Položky nesedia so sumou o {rozdiel} — doplní sa vyrovnávacia položka.", {
                     rozdiel: rozdielVyrovna.rozdiel.toFixed(2),
                   })}

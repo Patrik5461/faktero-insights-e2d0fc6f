@@ -592,7 +592,7 @@ export function ZauctovaniePanel({
   const upozornenieClenenia = bezClenenia ? (
     <p
       role="alert"
-      className="mt-2 w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+      className="dk-pozor mt-2 w-full rounded-md border px-3 py-2 text-xs"
     >
       {t(
         "Chýba členenie DPH. Platiteľ DPH faktúru bez neho nezaúčtuje — vyberte ho, alebo ho nastavte v predvolených predkontáciách.",
@@ -1212,7 +1212,7 @@ export function ZauctovaniePanel({
               onClick={() => uloz(false)}
               // Cudzia faktúra sa zaúčtuje až po potvrdení „patrí tejto firme“ (server ju aj tak vynechá).
               disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1408,7 +1408,7 @@ export function ZauctovaniePanel({
     <SekciaZauctovania
       stav={
         odovzdana ? (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+          <span className="dk-uspech rounded-full px-2 py-0.5 text-xs font-semibold">
             {program
               ? t("V účtovníctve ({program}) od {kedy}", {
                   program,
@@ -1417,11 +1417,11 @@ export function ZauctovaniePanel({
               : t("V Pohode od {kedy}", { kedy: kedy(row.exported_at, loc) })}
           </span>
         ) : zauctovana ? (
-          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+          <span className="dk-info rounded-full px-2 py-0.5 text-xs font-semibold">
             {t("Zaúčtovaná {kedy} — čaká na odovzdanie", { kedy: kedy(row.zauctovane_at, loc) })}
           </span>
         ) : (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
             {t("Nezaúčtovaná")}
           </span>
         )
@@ -1564,7 +1564,7 @@ export function ZauctovaniePanel({
                 <button
                   onClick={() => uloz(false)}
                   disabled={busy || bezClenenia || jeCudzia(row)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}
                   {t("Zaúčtovať")}
