@@ -523,10 +523,7 @@ function VykazyPage() {
                   <tbody>
                     {riadkyPriznania.map((k) => (
                       <tr key={k} className="border-b border-border last:border-0">
-                        <td className="w-16 whitespace-nowrap py-1.5 pl-4 pr-2 text-right text-muted-foreground tabular-nums">
-                          {t("r. {r}", { r: k.replace(/^r/, "") })}
-                        </td>
-                        <td className="px-4 py-1.5">{t(POPIS_RIADKOV[k])}</td>
+                        <td className="px-4 py-1.5 text-muted-foreground">{t(POPIS_RIADKOV[k])}</td>
                         <td className="suma px-4 py-1.5 text-right">
                           {eur((data.priznanie as Record<string, number>)[k])}
                           <span className="suma-mena">€</span>
