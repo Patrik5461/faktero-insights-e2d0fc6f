@@ -2937,6 +2937,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "efaktura_received_documents_matched_supplier_invoice_id_fkey"
+            columns: ["matched_supplier_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_invoices"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_templates: {

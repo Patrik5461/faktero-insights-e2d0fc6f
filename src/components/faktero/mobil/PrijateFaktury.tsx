@@ -17,6 +17,16 @@ import { MobilObrazovka, Pracujem } from "./MobilChrome";
 import { OznacenieDokladu, PoznamkaDokladu } from "./DokladOznacenie";
 import { datum } from "./PrijateDoklady";
 import {
+  VYBER_EFAKTURY_K_PRIJATEJ,
+  jeZPrijatejEfaktury,
+  prijataEfakturaZVyberu,
+  type PrijataEfakturaFaktury,
+  type RiadokPrijatejEfaktury,
+} from "@/lib/faktero/efaktura/prijata-efaktura-faktury";
+import type { PrijataEfakturaApp } from "@/lib/mobile/efaktury-prijate";
+import { OdznakPrijatejEfaktury, SekciaPrijatejEfaktury } from "./PrijataEfakturaStav";
+import { DetailEfaktury } from "./PrijateEfaktury";
+import {
   Card,
   FilterChips,
   ListCard,
@@ -58,12 +68,31 @@ type Faktura = {
   stitky: string[] | null;
   exported_at: string | null;
   locked_at: string | null;
+  source?: string | null;
+  /** Faktúra vznikla z prijatej eFaktúry (`null` = nie). */
+  efaktura?: PrijataEfakturaFaktury | null;
 };
 
-const STLPCE =
-  "id, company_id, invoice_number, variable_symbol, supplier_name, supplier_ico, issue_date, due_date, amount_total, currency, status, type, payment_date, payment_method, advance_invoice_id, note, komentar, stav_id, stitky, exported_at, locked_at";
+/** Riadok zo servera — eFaktúra prichádza vnoreným výberom. */
+type RiadokZoServera = Faktura & { efaktura_received_documents?: unknown };
 
-type Filter = "vsetky" | "neuhradene" | "poSplatnosti";
+const STLPCE =
+  "id, company_id, invoice_number, variable_symbol, supplier_name, supplier_ico, issue_date, due_date, amount_total, currency, status, type, payment_date, payment_method, advance_invoice_id, note, komentar, stav_id, stitky, exported_at, locked_at, source";
+
+/**
+ * Prijatá eFaktúra, z ktorej faktúra vznikla — vnorený výber v tom istom
+ * dotaze (žiadny dotaz na faktúru). Väzbu drží cudzí kľúč
+ * `efaktura_received_documents.matched_supplier_invoice_id`.
+ */
+const VYBER = `${STLPCE}, ${VYBER_EFAKTURY_K_PRIJATEJ}`;
+
+/** Zo servera do zoznamu: väzbu na eFaktúru zhrnúť, surový výber zahodiť (aj z pamäte telefónu). */
+export function rozoberPrijatu(r: RiadokZoServera): Faktura {
+  const { efaktura_received_documents: ef, ...f } = r;
+  return { ...f, efaktura: prijataEfakturaZVyberu(ef, f.source) };
+}
+
+type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "efPrijate";
 
 /** Uhrádza sa len platná faktúra — koncept ani storno nie. */
 const daSaPlatit = (f: { status: string | null }) =>
@@ -89,11 +118,15 @@ export function PrijateFaktury({
   const [hladanie, setHladanie] = useState("");
   const [filter, setFilter] = useState<Filter>("vsetky");
   const [otvorena, setOtvorena] = useState<Faktura | null>(null);
+  /** Zoznam je z pamäte telefónu (čas uloženia) — údaje eFaktúry nemusia byť čerstvé. */
+  const [zPamateKedy, setZPamateKedy] = useState<number | null>(null);
 
   const obnov = useCallback(async () => {
+    const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
+    const kluc = `prijate-faktury:${firma.id}`;
     const { data, error } = await supabase
       .from("purchase_invoices")
-      .select(STLPCE)
+      .select(VYBER)
       .eq("company_id", firma.id)
       .is("deleted_at", null)
       .order("issue_date", { ascending: false, nullsFirst: false })
@@ -105,13 +138,26 @@ export function PrijateFaktury({
     if (error || !data) {
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       const online = await isOnline();
+      // Bez signálu posledný známy zoznam (ako pri vystavených) — aj s eFaktúrou.
+      const zapamatane = online ? null : await zPamate<Faktura[]>(kluc);
+      if (zapamatane?.hodnota?.length) {
+        setFaktury(zapamatane.hodnota);
+        setZPamateKedy(zapamatane.kedy);
+        setNedostupne(false);
+        toast.message(t("efr.zoznamZPamate"), {
+          description: new Date(zapamatane.kedy).toLocaleString(loc),
+        });
+        return;
+      }
       setNedostupne(!online);
       if (online) toast.error(error?.message ?? t("pf.chybaNacitania"));
       setFaktury([]);
       return;
     }
-    const rows = data as unknown as Faktura[];
+    const rows = (data as unknown as RiadokZoServera[]).map(rozoberPrijatu);
     setFaktury(rows);
+    setZPamateKedy(null);
+    void ulozDoPamate(kluc, rows);
     // Úhrady len pre neuhradené — zaplatená ani storno čiastočná byť nemôže.
     const ids = rows
       .filter((r) => r.status !== "paid" && daSaPlatit(r))
@@ -130,7 +176,7 @@ export function PrijateFaktury({
     for (const x of (u ?? []) as { purchase_invoice_id: string; amount: number }[])
       sucty[x.purchase_invoice_id] = (sucty[x.purchase_invoice_id] ?? 0) + Number(x.amount || 0);
     setUhradene(sucty);
-  }, [firma.id, t]);
+  }, [firma.id, t, loc]);
 
   useEffect(() => {
     void obnov();
@@ -147,18 +193,37 @@ export function PrijateFaktury({
       )
         return false;
       if (filter === "vsetky") return true;
+      if (filter === "efPrijate") return jeZPrijatejEfaktury(f.efaktura);
       if (f.status === "paid" || !daSaPlatit(f)) return false;
       if (filter === "poSplatnosti") return (dniPoSplatnosti(f.due_date) ?? 0) > 0;
       return true;
     });
   }, [faktury, hladanie, filter]);
 
+  const maEfaktury = useMemo(() => (faktury ?? []).some((f) => f.efaktura), [faktury]);
+  /** Náhľad pôvodnej eFaktúry otvorený z detailu prijatej faktúry. */
+  const [nahladEfaktury, setNahladEfaktury] = useState<RiadokPrijatejEfaktury | null>(null);
+
+  if (otvorena && nahladEfaktury) {
+    return (
+      <DetailEfaktury
+        firma={firma}
+        efaktura={nahladEfaktury as PrijataEfakturaApp}
+        onSpat={() => setNahladEfaktury(null)}
+        onZmena={() => {}}
+      />
+    );
+  }
+
   if (otvorena) {
     return (
       <DetailPrijatej
         faktura={otvorena}
+        zPamateKedy={zPamateKedy}
+        onNahladEfaktury={setNahladEfaktury}
         onSpat={() => {
           setOtvorena(null);
+          setNahladEfaktury(null);
           void obnov();
         }}
         onZmena={(z) => {
@@ -192,6 +257,9 @@ export function PrijateFaktury({
             { kod: "vsetky", popis: t("pf.filterVsetky") },
             { kod: "neuhradene", popis: t("pf.filterNeuhradene") },
             { kod: "poSplatnosti", popis: t("pf.filterPoSplatnosti") },
+            ...(maEfaktury || filter === "efPrijate"
+              ? [{ kod: "efPrijate" as const, popis: t("efr.filterPrijate") }]
+              : []),
           ]}
         />
       </div>
@@ -217,9 +285,22 @@ export function PrijateFaktury({
                 key={f.id}
                 onClick={() => setOtvorena(f)}
                 title={f.supplier_name ?? t("pf.bezDodavatela")}
-                subtitle={[f.invoice_number, datum(f.due_date ?? f.issue_date, loc)]
-                  .filter(Boolean)
-                  .join(" · ")}
+                subtitle={
+                  f.efaktura ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate">
+                        {[f.invoice_number, datum(f.due_date ?? f.issue_date, loc)]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                      <OdznakPrijatejEfaktury efaktura={f.efaktura} />
+                    </span>
+                  ) : (
+                    [f.invoice_number, datum(f.due_date ?? f.issue_date, loc)]
+                      .filter(Boolean)
+                      .join(" · ")
+                  )
+                }
                 right={suma(f.amount_total, f.currency, loc)}
                 rightSub={s ? <StatusBadge text={t(s.kluc)} ton={s.ton} /> : undefined}
               />
@@ -257,10 +338,14 @@ function stitokZoznamu(
 
 function DetailPrijatej({
   faktura: f,
+  zPamateKedy,
+  onNahladEfaktury,
   onSpat,
   onZmena,
 }: {
   faktura: Faktura;
+  zPamateKedy?: number | null;
+  onNahladEfaktury?: (r: RiadokPrijatejEfaktury) => void;
   onSpat: () => void;
   onZmena: (z: Partial<Faktura>) => void;
 }) {
@@ -567,6 +652,15 @@ function DetailPrijatej({
           <Riadok label={t("pf.vs")} value={vsPrijatej(f) || "—"} />
           <Riadok label={t("pf.datumVystavenia")} value={datum(f.issue_date, loc)} />
         </Card>
+
+        {f.efaktura && (
+          <SekciaPrijatejEfaktury
+            fakturaId={f.id}
+            efaktura={f.efaktura}
+            zPamateKedy={zPamateKedy}
+            onNahlad={onNahladEfaktury}
+          />
+        )}
 
         <PoznamkaDokladu
           tabulka="purchase_invoices"
