@@ -19,6 +19,7 @@ import { MENY } from "@/lib/faktero/mena";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import {
   firmaZPrenosu,
   nacitajPrenos,
@@ -35,6 +36,8 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 });
 
 function Onboarding() {
+  // Onboarding je mimo AppShell — vzhľad webu (redizajn) si zapne sám; len web.
+  useWebRedizajn();
   const { t } = useT();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -183,8 +186,9 @@ function Onboarding() {
   const popisky = popiskyIdentifikatorov(form.country);
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight">{t("Vytvorte si firmu")}</h1>
+    <div className="min-h-screen bg-page">
+    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("Vytvorte si firmu")}</h1>
       <p className="mt-2 text-muted-foreground">
         {t("Tieto údaje sa zobrazia na faktúrach. Môžete ich kedykoľvek upraviť.")}
       </p>
@@ -203,7 +207,7 @@ function Onboarding() {
           <button
             type="button"
             onClick={pouziPrenos}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             {t("Použiť údaje z faktúry, ktorú ste vytvorili")}
           </button>
@@ -212,7 +216,7 @@ function Onboarding() {
 
       <form
         onSubmit={onSubmit}
-        className="mt-8 space-y-5 rounded-xl border border-border bg-card p-6"
+        className="mt-8 space-y-5 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6"
       >
         {errorMsg && (
           <div
@@ -223,7 +227,7 @@ function Onboarding() {
           </div>
         )}
         <label className="block">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-semibold">
             {t("Názov firmy")}
             <span className="text-destructive"> *</span>
           </span>
@@ -242,14 +246,14 @@ function Onboarding() {
             />
           </div>
         </label>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <label className="block">
-            <span className="text-sm font-medium">{t(popisky.ico)}</span>
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <label className="block min-w-0">
+            <span className="text-sm font-semibold">{t(popisky.ico)}</span>
             <div className="mt-1 flex -space-x-px items-start">
               <input
                 value={form.ico}
                 onChange={(e) => set("ico", e.target.value)}
-                className={`w-full min-w-0 border border-input bg-background px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2 focus:ring-ring ${jeDe ? "rounded-md" : "rounded-l-md"}`}
+                className={`w-full min-w-0 flex-1 basis-24 border border-input bg-background px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2 focus:ring-ring ${jeDe ? "rounded-md" : "rounded-l-md"}`}
               />
               {!jeDe && (
                 <IcoLookupButton
@@ -295,7 +299,7 @@ function Onboarding() {
           {/* Mena firmy sa dedí do dokladov — voľný text by sem pustil kód,
               ktorý nikto nekontroluje. */}
           <label className="block">
-            <span className="text-sm font-medium">{t("Mena")}</span>
+            <span className="text-sm font-semibold">{t("Mena")}</span>
             <select
               value={form.default_currency}
               onChange={(e) => set("default_currency", e.target.value)}
@@ -311,7 +315,7 @@ function Onboarding() {
         </div>
 
         {prenos && prenosPouzity && (
-          <label className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm">
+          <label className="flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
             <input
               type="checkbox"
               checked={vytvoritKoncept}
@@ -338,11 +342,12 @@ function Onboarding() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          className="w-full rounded-md bg-primary px-4 py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {loading ? t("Vytváram...") : t("Vytvoriť firmu a pokračovať")}
         </button>
       </form>
+    </div>
     </div>
   );
 }
@@ -363,7 +368,7 @@ function Field({
   const { t } = useT();
   return (
     <label className="block">
-      <span className="text-sm font-medium">
+      <span className="text-sm font-semibold">
         {t(label)}
         {required && <span className="text-destructive"> *</span>}
       </span>

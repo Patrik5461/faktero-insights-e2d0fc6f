@@ -1,3 +1,5 @@
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -51,16 +53,14 @@ function Stranka() {
       />
       <PageBody>
         {stav === null ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
-          </div>
+          <NacitavanieStav />
         ) : (
           <div className="space-y-6">
             <ShoptetPanel companyId={cid} stav={stav.shoptet} onZmena={obnov} />
             <ZasielkovnaPanel companyId={cid} stav={stav.zasielkovna} onZmena={obnov} />
             <p className="text-sm text-muted-foreground">
               {t("E-shop na WordPresse? Pozrite si")}{" "}
-              <Link to="/pomoc/woocommerce" className="text-primary hover:underline">
+              <Link to="/pomoc/woocommerce" className="font-medium text-primary hover:text-primary-hover hover:underline">
                 {t("doplnok pre WooCommerce")}
               </Link>
               .
@@ -155,7 +155,7 @@ function ShoptetPanel({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <div className="flex items-start gap-3">
         <ShoppingBag className="mt-0.5 hidden h-5 w-5 shrink-0 text-primary sm:block" />
         <div className="min-w-0 flex-1">
@@ -163,7 +163,7 @@ function ShoptetPanel({
             <ShoppingBag className="h-5 w-5 text-primary sm:hidden" />
             Shoptet
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 max-w-[75ch] text-sm text-muted-foreground">
             {t(
               "Z objednávok e-shopu vystavíte faktúry jedným klikom — s položkami, dopravou a zľavami presne tak, ako ich zákazník zaplatil. Tá istá objednávka nedostane faktúru dvakrát.",
             )}
@@ -171,7 +171,7 @@ function ShoptetPanel({
           {!stav ? (
             <div className="mt-4 max-w-xl">
               <label className="block text-sm">
-                <span className="text-xs text-muted-foreground">{t("Súkromný API token")}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{t("Súkromný API token")}</span>
                 <input
                   value={token}
                   onChange={(e) => setToken(e.target.value.trim())}
@@ -187,7 +187,7 @@ function ShoptetPanel({
               <button
                 onClick={() => void pripojit()}
                 disabled={busy || token.length < 20}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Pripojiť e-shop")}
               </button>
@@ -195,9 +195,7 @@ function ShoptetPanel({
           ) : (
             <div className="mt-4">
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  {t("pripojené")}
-                </span>
+                <StavOdznak ton="uspech">{t("pripojené")}</StavOdznak>
                 <strong>{stav.eshop_nazov ?? t("e-shop")}</strong>
                 {stav.eshop_url ? (
                   <span className="text-muted-foreground">{stav.eshop_url}</span>
@@ -208,14 +206,14 @@ function ShoptetPanel({
                     await odpoj({ data: { company_id: companyId, co: "shoptet" } });
                     onZmena();
                   }}
-                  className="ml-auto rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                  className="ml-auto rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"
                 >
                   {t("Odpojiť")}
                 </button>
               </div>
               <div className="mt-4 flex flex-wrap items-end gap-2">
                 <label className="text-sm">
-                  <span className="text-xs text-muted-foreground">{t("Objednávky za posledných")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">{t("Objednávky za posledných")}</span>
                   <select
                     value={dni}
                     onChange={(e) => setDni(Number(e.target.value))}
@@ -231,23 +229,23 @@ function ShoptetPanel({
                 <button
                   onClick={() => void nacitajObj()}
                   disabled={busy}
-                  className="h-9 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                  className="h-9 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
                 >
                   {t("Načítať")}
                 </button>
                 <button
                   onClick={() => void vystavit()}
                   disabled={busy || !vybrane.size}
-                  className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="h-9 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {t("Vystaviť faktúry ({n})", { n: vybrane.size })}
                 </button>
                 {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
               {rows && (
-                <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+                <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-xs text-muted-foreground">
+                    <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                       <tr className="border-b border-border">
                         <th className="p-2 w-8">
                           <input
@@ -302,8 +300,8 @@ function ShoptetPanel({
                                 }
                               />
                             </td>
-                            <td className="p-2 font-medium">
-                              {r.kod}
+                            <td className="whitespace-nowrap p-2 font-medium">
+                              <span className="cislo-dokladu">{r.kod}</span>
                               <div className="text-xs font-normal text-muted-foreground">
                                 {r.vytvorena
                                   ? new Date(r.vytvorena).toLocaleDateString(loc)
@@ -315,18 +313,18 @@ function ShoptetPanel({
                             <td className="p-2 text-xs">
                               {r.platba ?? "—"}
                               {r.zaplatena ? (
-                                <span className="ml-1 text-emerald-700">· {t("zaplatená")}</span>
+                                <span className="ml-1 font-semibold text-primary-hover">· {t("zaplatená")}</span>
                               ) : null}
                             </td>
-                            <td className="p-2 text-right tabular-nums">
-                              {r.suma.toFixed(2)} {r.mena}
+                            <td className="whitespace-nowrap p-2 text-right">
+                              <span className="suma">{r.suma.toFixed(2)}</span> <span className="suma-mena">{r.mena}</span>
                             </td>
                             <td className="p-2 text-xs">
                               {r.faktura ? (
                                 <Link
                                   to="/faktury/$id"
                                   params={{ id: r.faktura.id }}
-                                  className="text-primary hover:underline"
+                                  className="cislo-dokladu text-primary hover:text-primary-hover hover:underline"
                                 >
                                   {r.faktura.invoice_number}
                                 </Link>
@@ -343,7 +341,7 @@ function ShoptetPanel({
               )}
               <AutoImport companyId={companyId} stav={stav} onZmena={onZmena} />
               {stav.posledna_chyba ? (
-                <p className="mt-2 text-xs text-amber-700">{t("Posledná chyba: {chyba}", { chyba: stav.posledna_chyba })}</p>
+                <p className="mt-2 text-xs text-warning">{t("Posledná chyba: {chyba}", { chyba: stav.posledna_chyba })}</p>
               ) : null}
             </div>
           )}
@@ -382,7 +380,7 @@ function ZasielkovnaPanel({
     }
   }
   return (
-    <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <div className="flex items-start gap-3">
         <Package className="mt-0.5 hidden h-5 w-5 shrink-0 text-primary sm:block" />
         <div className="min-w-0 flex-1">
@@ -390,7 +388,7 @@ function ZasielkovnaPanel({
             <Package className="h-5 w-5 text-primary sm:hidden" />
             Zásielkovňa
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 max-w-[75ch] text-sm text-muted-foreground">
             {t(
               "Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány (Účtovníctvo → Výpis z platobnej brány).",
             )}
@@ -398,7 +396,7 @@ function ZasielkovnaPanel({
           {!stav ? (
             <div className="mt-4 grid max-w-xl gap-3 sm:grid-cols-2">
               <label className="block text-sm sm:col-span-2">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground">
                   {t("API heslo (klientská sekcia Zásielkovne → Nastavenia API)")}
                 </span>
                 <input
@@ -409,7 +407,7 @@ function ZasielkovnaPanel({
                 />
               </label>
               <label className="block text-sm sm:col-span-2">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground">
                   {t("Označenie odosielateľa (e-shop v klientskej sekcii)")}
                 </span>
                 <input
@@ -423,7 +421,7 @@ function ZasielkovnaPanel({
                 <button
                   onClick={() => void pripojit()}
                   disabled={busy || heslo.length !== 32}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("Pripojiť")}
                 </button>
@@ -431,9 +429,7 @@ function ZasielkovnaPanel({
             </div>
           ) : (
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                {t("pripojené")}
-              </span>
+              <StavOdznak ton="uspech">{t("pripojené")}</StavOdznak>
               <span>{t("odosielateľ: {meno}", { meno: stav.odosielatel ?? t("názov firmy") })}</span>
               <button
                 onClick={async () => {
@@ -446,12 +442,12 @@ function ZasielkovnaPanel({
                   await odpoj({ data: { company_id: companyId, co: "zasielkovna" } });
                   onZmena();
                 }}
-                className="ml-auto rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                className="ml-auto rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"
               >
                 {t("Odpojiť")}
               </button>
               {stav.posledna_chyba ? (
-                <p className="w-full text-xs text-amber-700">
+                <p className="w-full text-xs text-warning">
                   {t("Posledná chyba: {chyba}", { chyba: stav.posledna_chyba })}
                 </p>
               ) : null}
@@ -499,8 +495,8 @@ function AutoImport({
     }
   }
   return (
-    <div className="mt-5 rounded-lg border border-border p-4">
-      <label className="flex items-center gap-2 text-sm font-medium">
+    <div className="mt-5 rounded-lg border border-border bg-muted/30 p-4">
+      <label className="flex items-center gap-2 text-sm font-semibold">
         <input type="checkbox" checked={zapnut} onChange={(e) => setZapnut(e.target.checked)} />
         {t("Vystavovať faktúry automaticky každú hodinu")}
       </label>
@@ -518,7 +514,7 @@ function AutoImport({
       {zapnut && (
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {stavy.length === 0 ? (
-            <span className="text-xs text-amber-700">
+            <span className="text-xs text-warning">
               {t("Stavy objednávok sa nenačítali — pripojte e-shop znova.")}
             </span>
           ) : (
@@ -542,7 +538,7 @@ function AutoImport({
       <button
         onClick={() => void ulozit()}
         disabled={busy}
-        className="mt-3 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+        className="mt-3 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent disabled:opacity-50"
       >
         {t("Uložiť")}
       </button>

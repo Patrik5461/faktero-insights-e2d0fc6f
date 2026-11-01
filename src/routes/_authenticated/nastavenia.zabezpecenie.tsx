@@ -14,6 +14,7 @@ import {
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/zabezpecenie")({
   // `?admin=1` — sem posiela /admin administrátora bez dvojfaktorového overenia.
@@ -32,16 +33,16 @@ function ZabezpeceniePage() {
     <>
       <PageHeader title={t("Zabezpečenie účtu")} description={t("Heslo a dvojfaktorové overenie vášho účtu.")} />
       <PageBody>
-        <div className="mx-auto grid max-w-2xl gap-6">
+        <div className="grid max-w-3xl gap-6">
           {admin === 1 && (
             <div
               role="alert"
-              className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200"
+              className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-foreground"
             >
               {t(
                 "Administrácia platformy je prístupná len s dvojfaktorovým overením. Zapnite ho nižšie — hneď potom sa do administrácie dostanete. Ak ho už máte zapnuté, odhláste sa a prihláste znova s kódom.",
               )}{" "}
-              <Link to="/admin" className="font-medium underline">
+              <Link to="/admin" className="font-semibold text-primary underline underline-offset-2 hover:text-primary-hover">
                 {t("Späť do administrácie")}
               </Link>
             </div>
@@ -117,29 +118,32 @@ function Dvojfaktor() {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-2">
         <ShieldCheck className="h-5 w-5 text-primary" />
         <h2 className="text-base font-semibold">{t("Dvojfaktorové overenie")}</h2>
         {faktor && (
-          <span className="rounded-full bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+          <StavOdznak ton="uspech" maly>
             {t("zapnuté")}
-          </span>
+          </StavOdznak>
         )}
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 max-w-prose text-sm text-muted-foreground">
         {t(
           "Pri prihlásení sa okrem hesla zadá aj 6-miestny kód z overovacej appky v telefóne (Google Authenticator, Microsoft Authenticator, 1Password…). Kto pozná vaše heslo, sa bez telefónu do účtu nedostane. Kód sa pýta len pri prihlásení — na zariadení, kde ste prihlásený, až do odhlásenia nie.",
         )}
       </p>
 
       {faktor === undefined ? (
-        <p className="mt-4 text-sm text-muted-foreground">{t("Načítavam…")}</p>
+        <p className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
+          {t("Načítavam…")}
+        </p>
       ) : faktor ? (
         <button
           onClick={vypnut}
           disabled={pracujem}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent disabled:opacity-50"
         >
           <ShieldOff className="h-4 w-4" /> {t("Vypnúť")}
         </button>
@@ -153,7 +157,7 @@ function Dvojfaktor() {
             <img src={zapinanie.qr} alt={t("QR kód pre overovaciu appku")} className="h-44 w-44 rounded-lg border border-border bg-white p-2" />
             <div className="min-w-0 text-xs text-muted-foreground">
               {t("Nejde naskenovať? Zadajte kľúč ručne:")}
-              <code className="mt-1 block break-all rounded bg-secondary px-2 py-1 font-mono text-foreground">
+              <code className="mt-1 block break-all rounded-md border border-border bg-muted px-2 py-1 font-mono text-foreground">
                 {zapinanie.tajomstvo}
               </code>
             </div>
@@ -172,15 +176,15 @@ function Dvojfaktor() {
             <button
               type="submit"
               disabled={pracujem}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {pracujem && <Loader2 className="h-4 w-4 animate-spin" />} {t("Zapnúť")}
             </button>
-            <button type="button" onClick={() => setZapinanie(null)} className="rounded-md border border-border px-3 py-2 text-sm">
+            <button type="button" onClick={() => setZapinanie(null)} className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold hover:bg-accent">
               {t("Zrušiť")}
             </button>
           </div>
-          <p className="text-xs text-amber-700 dark:text-amber-400">
+          <p className="text-xs text-warning">
             {t(
               "Mobilné appky vedia kód zadať od najbližšej verzie. Kým ju nemáte, v appke sa po zapnutí neukážu údaje — odhláste sa v nej a prihláste znova po aktualizácii.",
             )}
@@ -190,7 +194,7 @@ function Dvojfaktor() {
         <button
           onClick={zacni}
           disabled={pracujem}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} {t("Zapnúť")}
         </button>
@@ -218,27 +222,27 @@ function ZmenaHesla() {
     toast.success(t("Heslo je zmenené."));
   }
 
-  const pole = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const pole = "mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
   return (
-    <section className="rounded-2xl border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-2">
         <KeyRound className="h-5 w-5 text-primary" />
         <h2 className="text-base font-semibold">{t("Zmena hesla")}</h2>
       </div>
       <form onSubmit={uloz} className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
-          <span className="font-medium">{t("Nové heslo")}</span>
+          <span className="font-semibold">{t("Nové heslo")}</span>
           <input type="password" autoComplete="new-password" minLength={8} required value={heslo} onChange={(e) => setHeslo(e.target.value)} className={pole} />
         </label>
         <label className="block text-sm">
-          <span className="font-medium">{t("Nové heslo znova")}</span>
+          <span className="font-semibold">{t("Nové heslo znova")}</span>
           <input type="password" autoComplete="new-password" minLength={8} required value={znova} onChange={(e) => setZnova(e.target.value)} className={pole} />
         </label>
         <div className="sm:col-span-2">
           <button
             type="submit"
             disabled={ukladam}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             {ukladam && <Loader2 className="h-4 w-4 animate-spin" />} {t("Zmeniť heslo")}
           </button>
@@ -281,12 +285,12 @@ function OdhlasitOstatne() {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center gap-2">
         <LogOut className="h-5 w-5 text-primary" />
         <h2 className="text-base font-semibold">{t("Prihlásené zariadenia")}</h2>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 max-w-prose text-sm text-muted-foreground">
         {t(
           "Stratili ste telefón alebo ste sa prihlásili na cudzom počítači? Odhláste všetky ostatné zariadenia naraz. Ak máte podozrenie, že niekto pozná vaše heslo, zmeňte ho aj vyššie.",
         )}
@@ -295,7 +299,7 @@ function OdhlasitOstatne() {
         type="button"
         onClick={odhlas}
         disabled={pracujem}
-        className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+        className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
       >
         {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}{" "}
         {t("Odhlásiť ostatné zariadenia")}

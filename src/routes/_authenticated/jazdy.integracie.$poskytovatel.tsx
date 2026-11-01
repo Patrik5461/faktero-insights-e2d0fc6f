@@ -15,6 +15,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { triedaStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   gpsStav,
@@ -230,7 +232,7 @@ function GpsIntegraciaPage() {
         action={
           <Link
             to="/jazdy/integracie"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted"
+            className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent"
           >
             <ArrowLeft className="h-4 w-4" /> {t("Integrácie")}
           </Link>
@@ -243,7 +245,7 @@ function GpsIntegraciaPage() {
           </div>
         )}
         {!stav && !chybaNacitania && (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         )}
         {stav && a && (
           <div className="space-y-4">
@@ -261,7 +263,7 @@ function GpsIntegraciaPage() {
                 href={a.web}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
+                className="inline-flex items-center gap-1 font-semibold text-primary underline-offset-2 hover:text-primary-hover hover:underline"
               >
                 {t("Web poskytovateľa")} <ExternalLink className="h-3.5 w-3.5" />
               </a>
@@ -300,7 +302,7 @@ function GpsIntegraciaPage() {
 
             {formular === "" ? (
               <div className="rounded-xl border border-border bg-card p-5">
-                <div className="mb-3 font-medium">
+                <div className="mb-3 text-base font-semibold">
                   {stav.pripojenia.length ? t("Ďalší účet") : t("Pripojiť účet")}
                 </div>
                 {!stav.spravca ? (
@@ -327,7 +329,7 @@ function GpsIntegraciaPage() {
               stav.spravca && (
                 <button
                   onClick={() => setFormular("")}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted"
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent"
                 >
                   <Plus className="h-4 w-4" /> {t("Pridať ďalší účet")}
                 </button>
@@ -335,7 +337,7 @@ function GpsIntegraciaPage() {
             )}
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 flex items-center gap-2 font-medium">
+              <div className="mb-3 flex items-center gap-2 text-base font-semibold">
                 <Link2 className="h-4 w-4" /> {t("História synchronizácií")}
               </div>
               {stav.logy.length === 0 ? (
@@ -343,17 +345,14 @@ function GpsIntegraciaPage() {
               ) : (
                 <ul className="space-y-2 text-xs">
                   {stav.logy.map((l: any) => (
-                    <li key={l.id} className="rounded-md border border-border p-2">
+                    <li key={l.id} className="rounded-lg border border-border p-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium">{t(DRUHY_LOGU[l.druh] ?? l.druh)}</span>
+                        <span className="font-semibold">{t(DRUHY_LOGU[l.druh] ?? l.druh)}</span>
                         <span
-                          className={
-                            l.stav === "ok"
-                              ? "text-emerald-700"
-                              : l.stav === "ciastocne"
-                                ? "text-amber-700"
-                                : "text-destructive"
-                          }
+                          className={triedaStavu(
+                            l.stav === "ok" ? "uspech" : l.stav === "ciastocne" ? "pozor" : "chyba",
+                            true,
+                          )}
                         >
                           {t(STAVY[l.stav] ?? l.stav)}
                         </span>
@@ -399,7 +398,7 @@ function PripojenieKarta(props: {
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="break-words font-medium">{popis}</div>
+          <div className="break-words text-base font-semibold">{popis}</div>
           <div className="mt-1 text-xs text-muted-foreground">
             {t(STAVY[p.stav] ?? p.stav)} · {t("Posledná synchronizácia")}: {fmt(p.posledna_sync_at)}
             {p.neuplne && p.posledna_sync_at ? " · " + t("nedokončená") : ""}
@@ -409,7 +408,7 @@ function PripojenieKarta(props: {
           <button
             disabled={!!busy || !p.aktivne || p.prihlasenieNeplatne}
             onClick={props.onSync}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             <RefreshCcw className={`h-4 w-4 ${busy === "sync:" + p.id ? "animate-spin" : ""}`} />
             {t("Synchronizovať teraz")}
@@ -419,14 +418,14 @@ function PripojenieKarta(props: {
               <button
                 disabled={!!busy}
                 onClick={props.onUprav}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
               >
                 <Save className="h-4 w-4" /> {t("Prihlasovacie údaje")}
               </button>
               <button
                 disabled={!!busy}
                 onClick={props.onOdpoj}
-                className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
               >
                 <Power className="h-4 w-4" /> {t("Odpojiť")}
               </button>
@@ -436,7 +435,7 @@ function PripojenieKarta(props: {
       </div>
 
       {p.prihlasenieNeplatne && (
-        <div className="mt-3 flex items-start gap-2 rounded-md bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-400">
+        <div className="mt-3 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {t("Prihlasovacie údaje treba zadať znova (zmenil sa bezpečnostný kľúč systému).")}
         </div>
@@ -471,7 +470,7 @@ function PripojenieKarta(props: {
       {props.formular && <div className="mt-4 border-t border-border pt-4">{props.formular}</div>}
 
       <div className="mt-4 border-t border-border pt-4">
-        <div className="mb-2 text-sm font-medium">{t("Vozidlá")}</div>
+        <div className="mb-2 text-sm font-semibold">{t("Vozidlá")}</div>
         {vazby.length === 0 ? (
           <div className="text-sm text-muted-foreground">
             {t("Zatiaľ žiadne vozidlá. Spustite synchronizáciu.")}
@@ -479,7 +478,7 @@ function PripojenieKarta(props: {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-muted-foreground">
+              <thead className="whitespace-nowrap text-left text-xs font-semibold text-muted-foreground">
                 <tr>
                   <th className="py-2 pr-3">{t("Vozidlo v GPS")}</th>
                   <th className="py-2 pr-3">{t("EČV")}</th>
@@ -491,7 +490,7 @@ function PripojenieKarta(props: {
                 {vazby.map((v: any) => (
                   <tr key={v.id} className="border-t border-border">
                     <td className="py-2 pr-3">{v.nazov ?? v.externe_id}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{v.spz ?? "—"}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{v.spz ?? "—"}</td>
                     <td className="py-2 pr-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <select
@@ -512,14 +511,14 @@ function PripojenieKarta(props: {
                           <button
                             disabled={!!busy}
                             onClick={() => props.onZaloz(v.id)}
-                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1.5 text-xs hover:bg-muted disabled:opacity-50"
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-input bg-background px-2 py-1.5 text-xs font-semibold hover:bg-accent disabled:opacity-50"
                           >
                             <Plus className="h-3.5 w-3.5" /> {t("Založiť vozidlo")}
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="py-2 pr-3 text-muted-foreground">{fmt(v.jazdy_do)}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{fmt(v.jazdy_do)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -607,7 +606,7 @@ function Formular(props: {
           const ulozene = p.typ === "heslo" && ulozeneTajne.has(p.kluc);
           return (
             <div key={p.kluc} className="min-w-0">
-              <label htmlFor={id} className="mb-1 block text-xs font-medium">
+              <label htmlFor={id} className="mb-1 block text-xs font-semibold">
                 {t(p.nazov)}
                 {p.povinne && <span className="text-destructive"> *</span>}
               </label>
@@ -630,7 +629,7 @@ function Formular(props: {
           );
         })}
         <div className="min-w-0">
-          <label htmlFor="gps-nazov" className="mb-1 block text-xs font-medium">
+          <label htmlFor="gps-nazov" className="mb-1 block text-xs font-semibold">
             {t("Pomenovanie (nepovinné)")}
           </label>
           <input
@@ -644,7 +643,7 @@ function Formular(props: {
       </div>
       {vysledok && (
         <div
-          className={`break-words rounded-md p-2 text-sm ${vysledok.ok ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}
+          className={`break-words rounded-md p-2 text-sm ${vysledok.ok ? "border border-primary/25 bg-primary/10 text-primary-hover" : "bg-destructive/10 text-destructive"}`}
         >
           {vysledok.text}
         </div>
@@ -653,14 +652,14 @@ function Formular(props: {
         <button
           disabled={!!busy}
           onClick={test}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
         >
           <TestTube2 className="h-4 w-4" /> {t("Otestovať pripojenie")}
         </button>
         <button
           disabled={!!busy}
           onClick={uloz}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           <Save className="h-4 w-4" /> {pr ? t("Uložiť") : t("Pripojiť")}
         </button>
@@ -668,7 +667,7 @@ function Formular(props: {
           <button
             disabled={!!busy}
             onClick={props.onZavri}
-            className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
+            className="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             {t("Zrušiť")}
           </button>

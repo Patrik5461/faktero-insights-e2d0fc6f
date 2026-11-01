@@ -190,8 +190,8 @@ function InvoiceAppearancePage() {
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_minmax(0,320px)]">
           <div className="grid gap-6">
             {/* Logo */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">{t("Logo firmy")}</h2>
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <h2 className="text-base font-semibold">{t("Logo firmy")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("PNG alebo JPG, max. 2 MB. Zobrazí sa v ľavom hornom rohu dokladu.")}
               </p>
@@ -222,7 +222,7 @@ function InvoiceAppearancePage() {
                   <button
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading !== null}
-                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                   >
                     {uploading === "logo" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -234,7 +234,7 @@ function InvoiceAppearancePage() {
                   {c.logo_url && (
                     <button
                       onClick={() => removeImage("logo")}
-                      className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-sm"
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
                     >
                       <Trash2 className="h-4 w-4" /> {t("Odstrániť")}
                     </button>
@@ -246,15 +246,15 @@ function InvoiceAppearancePage() {
                   type="checkbox"
                   checked={c.invoice_show_logo ?? true}
                   onChange={(e) => setC({ ...c, invoice_show_logo: e.target.checked })}
-                  className="h-4 w-4 rounded border-input"
+                  className="h-4 w-4 rounded border-input accent-primary"
                 />
                 {t("Zobrazovať logo na dokladoch")}
               </label>
             </section>
 
             {/* Pečiatka */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">{t("Pečiatka a podpis")}</h2>
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <h2 className="text-base font-semibold">{t("Pečiatka a podpis")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t(
                   "Najlepšie PNG s priehľadným pozadím, max. 2 MB. Zobrazí sa na faktúre a cenovej ponuke vedľa súm, kde sa doklad podpisuje.",
@@ -287,7 +287,7 @@ function InvoiceAppearancePage() {
                   <button
                     onClick={() => stampRef.current?.click()}
                     disabled={uploading !== null}
-                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
                   >
                     {uploading === "stamp" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -299,7 +299,7 @@ function InvoiceAppearancePage() {
                   {c.stamp_url && (
                     <button
                       onClick={() => removeImage("stamp")}
-                      className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-sm"
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
                     >
                       <Trash2 className="h-4 w-4" /> {t("Odstrániť")}
                     </button>
@@ -311,15 +311,15 @@ function InvoiceAppearancePage() {
                   type="checkbox"
                   checked={c.invoice_show_stamp ?? true}
                   onChange={(e) => setC({ ...c, invoice_show_stamp: e.target.checked })}
-                  className="h-4 w-4 rounded border-input"
+                  className="h-4 w-4 rounded border-input accent-primary"
                 />
                 {t("Zobrazovať pečiatku na dokladoch")}
               </label>
             </section>
 
             {/* Farba */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">{t("Farba akcentu")}</h2>
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <h2 className="text-base font-semibold">{t("Farba akcentu")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("Používa sa na linky, hlavičku tabuľky a sumu k úhrade.")}
               </p>
@@ -342,7 +342,7 @@ function InvoiceAppearancePage() {
                   <button
                     key={p.value}
                     onClick={() => setC({ ...c, invoice_accent_color: p.value })}
-                    className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs hover:bg-muted"
+                    className="inline-flex items-center gap-2 rounded-full border border-input bg-card px-3 py-1 text-xs font-semibold hover:bg-accent"
                   >
                     <span
                       className="h-3 w-3 rounded-full"
@@ -356,8 +356,8 @@ function InvoiceAppearancePage() {
             </section>
 
             {/* Predvolený text nad položkami novej faktúry */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">{t("Text nad položkami")}</h2>
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <h2 className="text-base font-semibold">{t("Text nad položkami")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("Predvyplní sa do každej novej faktúry, napr. „Fakturujeme vám:“. Prázdne = „Fakturujeme Vám“ v jazyku faktúry.")}
               </p>
@@ -372,8 +372,8 @@ function InvoiceAppearancePage() {
             </section>
 
             {/* Pätička */}
-            <section className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-sm font-semibold">{t("Pätička dokladu")}</h2>
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <h2 className="text-base font-semibold">{t("Pätička dokladu")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("Napr. zápis v OR SR, poznámka o prenose daňovej povinnosti, ďakovná veta.")}
               </p>
@@ -389,7 +389,7 @@ function InvoiceAppearancePage() {
               <button
                 onClick={save}
                 disabled={saving}
-                className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -407,8 +407,8 @@ function InvoiceAppearancePage() {
           </div>
 
           {/* Live náhľad */}
-          <aside className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <aside className="rounded-xl border border-border bg-card p-4 lg:sticky lg:top-20">
+            <div className="text-sm font-semibold text-foreground">
               {t("Náhľad")}
             </div>
             <div className="mt-3 rounded-lg border border-border bg-background p-4 text-[10px] leading-relaxed">

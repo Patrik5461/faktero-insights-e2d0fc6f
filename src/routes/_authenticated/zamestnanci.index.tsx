@@ -8,6 +8,8 @@ import { listZamestnancov } from "@/lib/faktero/zamestnanci.functions";
 import { celeMeno, datumSk, DRUH_ZMLUVY, type DruhZmluvy, type Pripomienka } from "@/lib/faktero/zamestnanci";
 import { ChybaModulu, tlacidlo } from "@/components/faktero/zamestnanci/ui";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/")({
@@ -17,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/zamestnanci/")({
 
 const FARBA: Record<Pripomienka["zavaznost"], string> = {
   danger: "border-destructive/30 bg-destructive/10 text-destructive",
-  warning: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400",
+  warning: "border-warning/30 bg-warning/10 text-warning",
   info: "border-border bg-muted/40 text-foreground",
 };
 
@@ -68,7 +70,7 @@ function ZamestnanciPage() {
                     key={p.kluc}
                     to="/zamestnanci/$id"
                     params={{ id: p.employee_id }}
-                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm hover:opacity-90 ${FARBA[p.zavaznost]}`}
+                    className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm transition-colors hover:border-current ${FARBA[p.zavaznost]}`}
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <span className="min-w-0">
@@ -79,7 +81,7 @@ function ZamestnanciPage() {
               </section>
             )}
 
-            <div className="mb-3 inline-flex rounded-md border border-border bg-card p-0.5 text-sm">
+            <div className="mb-4 inline-flex rounded-lg border border-border bg-muted p-1 text-sm">
               {(
                 [
                   ["active", "Aktívni"],
@@ -92,7 +94,7 @@ function ZamestnanciPage() {
                   type="button"
                   onClick={() => setStav(k)}
                   aria-pressed={stav === k}
-                  className={`rounded px-3 py-1.5 ${stav === k ? "bg-secondary font-medium" : "text-muted-foreground"}`}
+                  className={`rounded-md px-3 py-1.5 font-semibold transition-colors ${stav === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   {t(nazov)}
                 </button>
@@ -100,16 +102,18 @@ function ZamestnanciPage() {
             </div>
 
             {nacitava ? (
-              <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+              <NacitavanieStav className="rounded-xl border border-border bg-card" />
             ) : !data || data.zamestnanci.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card p-8 text-center">
-                <IdCard className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                <div className="text-sm font-medium">
+              <div className="flex flex-col items-center rounded-xl border border-border bg-card px-6 py-12 text-center">
+                <div className="grid h-12 w-12 place-items-center rounded-xl border border-border bg-card text-primary shadow-sm">
+                  <IdCard className="h-5 w-5" />
+                </div>
+                <div className="mt-4 text-[15px] font-semibold">
                   {stav === "active"
                     ? t("Zatiaľ tu nie je žiadny aktívny zamestnanec.")
                     : t("Žiadny zamestnanec v tomto zozname.")}
                 </div>
-                <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
+                <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
                   {t(
                     "Na karte zamestnanca vediete zmluvy, dokumenty, dovolenky a dochádzku. Faktero vám pripomenie prihlášku do poisťovní, koniec skúšobnej doby aj lekárske prehliadky.",
                   )}
@@ -121,36 +125,32 @@ function ZamestnanciPage() {
             ) : (
               <div className="overflow-x-auto rounded-xl border border-border bg-card">
                 <table className="w-full min-w-[640px] text-sm">
-                  <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
                     <tr>
-                      <th className="p-3">{t("Meno")}</th>
-                      <th className="p-3">{t("Pozícia")}</th>
-                      <th className="p-3">{t("Zmluva")}</th>
-                      <th className="p-3">{t("Nástup")}</th>
-                      <th className="p-3">{t("Stav")}</th>
+                      <th className="whitespace-nowrap px-4 py-2.5">{t("Meno")}</th>
+                      <th className="whitespace-nowrap px-4 py-2.5">{t("Pozícia")}</th>
+                      <th className="whitespace-nowrap px-4 py-2.5">{t("Zmluva")}</th>
+                      <th className="whitespace-nowrap px-4 py-2.5">{t("Nástup")}</th>
+                      <th className="whitespace-nowrap px-4 py-2.5">{t("Stav")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {data.zamestnanci.map((z) => {
                       const k = zmluvaZamestnanca(z.id);
                       return (
-                        <tr key={z.id} className="hover:bg-muted/30">
-                          <td className="p-3 font-medium">
-                            <Link to="/zamestnanci/$id" params={{ id: z.id }} className="hover:underline">
+                        <tr key={z.id} className="transition-colors hover:bg-muted/40">
+                          <td className="px-4 py-3 font-semibold">
+                            <Link to="/zamestnanci/$id" params={{ id: z.id }} className="hover:text-primary hover:underline">
                               {celeMeno(z)}
                             </Link>
                           </td>
-                          <td className="p-3 text-muted-foreground">{z.position || "—"}</td>
-                          <td className="p-3 text-muted-foreground">{k ? t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind) : "—"}</td>
-                          <td className="p-3 text-muted-foreground">{datumSk(z.start_date)}</td>
-                          <td className="p-3">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs ${
-                                z.status === "active" ? "bg-emerald-500/10 text-emerald-700" : "bg-muted text-muted-foreground"
-                              }`}
-                            >
+                          <td className="px-4 py-3 text-muted-foreground">{z.position || "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{k ? t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind) : "—"}</td>
+                          <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">{datumSk(z.start_date)}</td>
+                          <td className="px-4 py-3">
+                            <StavOdznak ton={z.status === "active" ? "uspech" : "neutralny"}>
                               {z.status === "active" ? t("Aktívny") : t("Ukončený")}
-                            </span>
+                            </StavOdznak>
                           </td>
                         </tr>
                       );

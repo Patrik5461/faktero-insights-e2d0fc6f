@@ -14,6 +14,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { triedaStavu } from "@/components/faktero/web/Stav";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -265,14 +266,14 @@ function CommanderPage() {
       />
       <PageBody>
         {(state.credentials_invalid || conn?.credentials_invalid || needsReauth) && (
-          <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <div className="mb-4 rounded-xl border border-warning/35 bg-warning/10 p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-800 dark:text-amber-400" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
               <div className="flex-1">
-                <div className="font-medium text-amber-900 dark:text-amber-200">
+                <div className="font-semibold text-foreground">
                   {t("Prihlasovacie údaje Commander GPS je potrebné znova zadať")}
                 </div>
-                <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
+                <p className="mt-1 text-sm text-foreground/80">
                   {t(
                     "Toto sa stáva po zmene bezpečnostného kľúča systému. Zadajte prosím váš Commander username a heslo znova.",
                   )}
@@ -284,7 +285,7 @@ function CommanderPage() {
                     el?.scrollIntoView({ behavior: "smooth", block: "center" });
                     (el as HTMLInputElement | null)?.focus();
                   }}
-                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-warning px-3 py-2 text-sm font-semibold text-warning-foreground hover:bg-warning/90"
                 >
                   <KeyRound className="h-4 w-4" /> {t("Zadať credentials znova")}
                 </button>
@@ -301,7 +302,7 @@ function CommanderPage() {
                   <Satellite className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="font-medium">{t("Pripojenie")}</div>
+                  <div className="text-base font-semibold">{t("Pripojenie")}</div>
                   <div className="text-xs text-muted-foreground">
                     {t("Údaje sú uložené šifrovane a používané iba na serveri.")}
                   </div>
@@ -310,7 +311,7 @@ function CommanderPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium" htmlFor="commander-username">
+                  <label className="mb-1 block text-xs font-semibold" htmlFor="commander-username">
                     {t("Prihlasovacie meno do Commandera")}
                   </label>
                   <input
@@ -323,7 +324,7 @@ function CommanderPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium">{t("Heslo do Commandera")}</label>
+                  <label className="mb-1 block text-xs font-semibold">{t("Heslo do Commandera")}</label>
                   <input aria-label={t("Heslo do Commandera")}
                     type="password"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -356,7 +357,7 @@ function CommanderPage() {
 
               {conn && (
                 <div
-                  className={`mt-3 rounded-md border p-3 text-xs ${conn.auto_sync_daily ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "border-border bg-muted text-muted-foreground"}`}
+                  className={`mt-3 rounded-md border p-3 text-xs ${conn.auto_sync_daily ? "border-primary/25 bg-primary/10 text-primary-hover" : "border-border bg-muted text-muted-foreground"}`}
                 >
                   {conn.auto_sync_daily
                     ? t("Automatická synchronizácia je aktívna. Jazdy sa importujú denne v noci (cca 03:00).")
@@ -368,14 +369,14 @@ function CommanderPage() {
                 <button
                   disabled={!!busy}
                   onClick={onTest}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                 >
                   <TestTube2 className="h-4 w-4" /> {t("Otestovať pripojenie")}
                 </button>
                 <button
                   disabled={!!busy}
                   onClick={onSave}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" /> {t("Uložiť")}
                 </button>
@@ -383,7 +384,7 @@ function CommanderPage() {
                   <button
                     disabled={!!busy}
                     onClick={onDisconnect}
-                    className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
                     <Power className="h-4 w-4" /> {t("Odpojiť")}
                   </button>
@@ -395,7 +396,7 @@ function CommanderPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="font-medium">{t("Prepojené vozidlá")}</div>
+                  <div className="text-base font-semibold">{t("Prepojené vozidlá")}</div>
                   <div className="text-xs text-muted-foreground">
                     {state.links.length === 0
                       ? t("Žiadne vozidlá ešte neboli synchronizované.")
@@ -405,7 +406,7 @@ function CommanderPage() {
                 <button
                   disabled={!conn || !!busy}
                   onClick={onSyncVehicles}
-                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                 >
                   <RefreshCcw className="h-4 w-4" /> {t("Synchronizovať vozidlá")}
                 </button>
@@ -413,7 +414,7 @@ function CommanderPage() {
               {state.links.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-left text-xs uppercase text-muted-foreground">
+                    <thead className="whitespace-nowrap text-left text-xs font-semibold text-muted-foreground">
                       <tr>
                         <th className="py-2 pr-3">{t("Commander vozidlo")}</th>
                         <th className="py-2 pr-3">{t("EČV")}</th>
@@ -454,10 +455,10 @@ function CommanderPage() {
 
             {/* Rides sync */}
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 font-medium">{t("Importovať jazdy")}</div>
+              <div className="mb-3 text-base font-semibold">{t("Importovať jazdy")}</div>
               <div className="flex flex-wrap items-end gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium">{t("Obdobie")}</label>
+                  <label className="mb-1 block text-xs font-semibold">{t("Obdobie")}</label>
                   <select aria-label={t("Obdobie")}
                     value={preset}
                     onChange={(e) => setPreset(e.target.value as any)}
@@ -473,7 +474,7 @@ function CommanderPage() {
                 {preset === "custom" && (
                   <>
                     <div>
-                      <label className="mb-1 block text-xs font-medium">{t("Od")}</label>
+                      <label className="mb-1 block text-xs font-semibold">{t("Od")}</label>
                       <input aria-label={t("Od")}
                         type="date"
                         value={from}
@@ -482,7 +483,7 @@ function CommanderPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium">{t("Do")}</label>
+                      <label className="mb-1 block text-xs font-semibold">{t("Do")}</label>
                       <input aria-label={t("Do")}
                         type="date"
                         value={to}
@@ -495,7 +496,7 @@ function CommanderPage() {
                 <button
                   disabled={!conn || !!busy}
                   onClick={onSyncRides}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   <PlugZap className="h-4 w-4" /> {t("Synchronizovať jazdy")}
                 </button>
@@ -505,7 +506,7 @@ function CommanderPage() {
                   title={t(
                     "Pre adminov: znovu skontroluje preskočené jazdy a importuje tie, ktoré ešte nie sú v knihe jázd.",
                   )}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-50"
                 >
                   <RefreshCcw className="h-4 w-4" /> {t("Znovu importovať preskočené")}
                 </button>
@@ -516,7 +517,7 @@ function CommanderPage() {
           {/* Sidebar: status + logs */}
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 font-medium">{t("Stav")}</div>
+              <div className="mb-3 text-base font-semibold">{t("Stav")}</div>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("Pripojenie")}</dt>
@@ -545,7 +546,7 @@ function CommanderPage() {
               </dl>
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 flex items-center gap-2 font-medium">
+              <div className="mb-3 flex items-center gap-2 text-base font-semibold">
                 <Link2 className="h-4 w-4" /> {t("História synchronizácií")}
               </div>
               {state.logs.length === 0 ? (
@@ -553,11 +554,11 @@ function CommanderPage() {
               ) : (
                 <ul className="space-y-2 text-xs">
                   {state.logs.map((l: any) => (
-                    <li key={l.id} className="rounded-md border border-border p-2">
+                    <li key={l.id} className="rounded-lg border border-border p-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{l.sync_type}</span>
+                        <span className="font-semibold">{l.sync_type}</span>
                         <span
-                          className={l.status === "ok" ? "text-emerald-700" : "text-destructive"}
+                          className={triedaStavu(l.status === "ok" ? "uspech" : "chyba", true)}
                         >
                           {t(popisStavuSync(l.status))}
                         </span>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
+import { triedaStavu } from "@/components/faktero/web/Stav";
 import { useT } from "@/lib/i18n/useT";
 import {
   LifeBuoy,
@@ -390,8 +391,8 @@ function Page() {
   const jazykPdf = jazyk === "cs" || jazyk === "de" ? jazyk : "sk";
   return (
     <MarketingShell>
-      <div className="mx-auto max-w-5xl px-4 py-16">
-        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+        <p className="text-sm font-semibold text-primary">
           {t("Pomoc")}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">{t("Centrum pomoci")}</h1>
@@ -412,14 +413,14 @@ function Page() {
           <a
             href={`/docs/faktero-manualy-${jazykPdf}.pdf`}
             download
-            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+            className="inline-flex items-center rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-secondary"
           >
             {t("Všetky manuály (PDF)")}
           </a>
           <a
             href={`/docs/faktero-prepojenia-${jazykPdf}.pdf`}
             download
-            className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+            className="inline-flex items-center rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-secondary"
           >
             {t("API a prepojenia (PDF)")}
           </a>
@@ -427,9 +428,9 @@ function Page() {
         {VIDEO_NAVODY.length > 0 && (
           <Link
             to="/pomoc/videa"
-            className="mt-8 flex items-center gap-4 rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-5 transition hover:border-emerald-500/60 hover:shadow-sm dark:bg-emerald-950/20"
+            className="mt-8 flex items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/60 sm:p-5"
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
               <PlayCircle className="h-6 w-6" />
             </span>
             <div>
@@ -438,14 +439,14 @@ function Page() {
                 {t("Pozrite si, ako na to — krátke videá so slovenským komentárom.")}
               </p>
             </div>
-            <span className="ml-auto hidden text-sm font-medium text-emerald-700 sm:block dark:text-emerald-300">
+            <span className="ml-auto hidden shrink-0 whitespace-nowrap text-sm font-semibold text-primary-hover sm:block">
               {t(pocetVidei(VIDEO_NAVODY.length), { n: VIDEO_NAVODY.length })} →
             </span>
           </Link>
         )}
         {SKUPINY.map((skupina) => (
           <section key={skupina} className="mt-10">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-base font-semibold text-foreground">
               {t(skupina)}
             </h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -453,15 +454,15 @@ function Page() {
                 const Icon = c.icon;
                 const body = (
                   <div
-                    className={`h-full rounded-xl border p-5 transition ${c.available ? "border-border bg-card hover:border-emerald-500/50 hover:shadow-sm" : "border-dashed border-border bg-card/40 opacity-70"}`}
+                    className={`h-full rounded-xl border p-5 transition-colors ${c.available ? "border-border bg-card shadow-sm hover:border-primary/50 hover:bg-accent" : "border-dashed border-border bg-card/40 opacity-70"}`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary-hover">
                         <Icon className="h-5 w-5" />
                       </span>
-                      <div className="font-semibold">{t(c.label)}</div>
+                      <div className="min-w-0 font-semibold">{t(c.label)}</div>
                       {!c.available && (
-                        <span className="ml-auto text-[10px] font-medium uppercase text-muted-foreground">
+                        <span className={`ml-auto shrink-0 ${triedaStavu("neutralny", true)}`}>
                           {t("Pripravujeme")}
                         </span>
                       )}
@@ -480,8 +481,8 @@ function Page() {
             </div>
           </section>
         ))}
-        <div className="mt-10 rounded-xl border border-border bg-card p-6 text-sm">
-          <h2 className="font-semibold">{t("Právne dokumenty")}</h2>
+        <div className="mt-10 rounded-xl border border-border bg-card p-6 text-sm shadow-sm">
+          <h2 className="text-base font-semibold">{t("Právne dokumenty")}</h2>
           <p className="text-muted-foreground mt-1">
             {t("Obchodné podmienky, GDPR, GoPay podmienky a ďalšie nájdete v sekcii")}{" "}
             <Link to="/pravne" className="text-primary underline underline-offset-2">

@@ -14,13 +14,13 @@ export function VysvetlenieRoli() {
   const { t } = useT();
   return (
     <details className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <summary className="flex cursor-pointer items-center gap-2 font-medium">
+      <summary className="flex cursor-pointer items-center gap-2 font-semibold">
         <Info className="h-4 w-4 text-primary" /> {t("Čo ktorá rola umožňuje")}
       </summary>
       <dl className="mt-3 space-y-2">
         {POPIS_ROLI.map((r) => (
           <div key={r.rola} className="grid gap-1 sm:grid-cols-[10rem_1fr]">
-            <dt className="font-medium">{t(r.nazov)}</dt>
+            <dt className="font-semibold">{t(r.nazov)}</dt>
             <dd className="text-muted-foreground">{t(r.text)}</dd>
           </div>
         ))}
@@ -57,13 +57,13 @@ export function EditorOpravneni({
       {OBLASTI.map((o) => (
         <div key={o.kluc} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium">{t(o.nazov)}</div>
+            <div className="text-sm font-semibold">{t(o.nazov)}</div>
             <div className="text-xs text-muted-foreground">{t(o.popis)}</div>
           </div>
           <div
             role="radiogroup"
             aria-label={t(o.nazov)}
-            className="inline-flex rounded-md border border-border p-0.5"
+            className="inline-flex rounded-md border border-input bg-background p-0.5"
           >
             {UROVNE.map((u) => {
               const zvolene = uroven(hodnota, o.kluc) === u.kluc;
@@ -78,7 +78,7 @@ export function EditorOpravneni({
                     zvolene
                       ? u.kluc === "none"
                         ? "bg-secondary font-medium"
-                        : "bg-primary font-medium text-primary-foreground"
+                        : "bg-primary font-semibold text-primary-foreground hover:bg-primary-hover"
                       : "text-muted-foreground hover:bg-secondary/60"
                   }`}
                 >

@@ -7,6 +7,8 @@ import { getRecurringDiagnostics } from "@/lib/faktero/recurring.functions";
 import { previewTatraAuthorizeUrl } from "@/lib/faktero/tatrabanka.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw, Link2, Copy } from "lucide-react";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { ChybovyStav, NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/diagnostika")({
@@ -56,8 +58,8 @@ function DiagnostikaPage() {
     load();
   }, []);
 
-  if (loading) return <div className="p-6 text-sm text-muted-foreground">{t("Načítavam…")}</div>;
-  if (err) return <div className="p-6 text-sm text-destructive">{err}</div>;
+  if (loading) return <NacitavanieStav />;
+  if (err) return <ChybovyStav nadpis={err} />;
 
   const isPlatformAdmin = data?.is_platform_admin === true;
   const cron = data?.cron ?? {};
@@ -73,12 +75,12 @@ function DiagnostikaPage() {
       />
       <PageBody>
         <div className="mb-4 flex items-center justify-between">
-          <Link to="/opakovane" className="text-sm text-primary hover:underline">
+          <Link to="/opakovane" className="text-sm font-medium text-primary hover:text-primary-hover hover:underline">
             ← {t("Opakované faktúry")}
           </Link>
           <button
             onClick={load}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
           >
             <RefreshCw className="h-3.5 w-3.5" /> {t("nacitat::Obnoviť")}
           </button>
@@ -114,7 +116,7 @@ function DiagnostikaPage() {
           )}
 
           <Card title="Chyby (7 dní)" icon={AlertTriangle}>
-            <div className="text-3xl font-semibold tabular-nums">{data?.failed_7d ?? 0}</div>
+            <div className="text-3xl font-bold tabular-nums">{data?.failed_7d ?? 0}</div>
             <div className="mt-1 text-xs text-muted-foreground">{t("neúspešných generovaní")}</div>
           </Card>
         </div>
@@ -127,20 +129,21 @@ function DiagnostikaPage() {
               ) : (
                 <ul className="divide-y divide-border text-sm">
                   {runs.map((r, i) => (
-                    <li key={i} className="flex items-center justify-between py-2">
+                    <li key={i} className="flex items-center justify-between gap-3 py-2">
                       <div className="min-w-0">
-                        <div className="font-medium">
+                        <div className="font-medium tabular-nums">
                           {new Date(r.start_time).toLocaleString("sk-SK")}
                         </div>
                         <div className="truncate text-xs text-muted-foreground">
                           {r.return_message ?? "—"}
                         </div>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-700" : "bg-destructive/10 text-destructive"}`}
+                      <StavOdznak
+                        ton={r.status === "succeeded" ? "uspech" : "chyba"}
+                        className="shrink-0"
                       >
                         {r.status}
-                      </span>
+                      </StavOdznak>
                     </li>
                   ))}
                 </ul>
@@ -154,9 +157,9 @@ function DiagnostikaPage() {
             ) : (
               <ul className="divide-y divide-border text-sm">
                 {logs.map((l) => (
-                  <li key={l.id} className="flex items-center justify-between py-2">
+                  <li key={l.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="min-w-0">
-                      <div className="font-medium">
+                      <div className="font-medium tabular-nums">
                         {new Date(l.created_at).toLocaleString("sk-SK")}
                         <span className="ml-2 text-xs text-muted-foreground">({l.run_type})</span>
                       </div>
@@ -164,11 +167,12 @@ function DiagnostikaPage() {
                         <div className="truncate text-xs text-destructive">{l.error_message}</div>
                       )}
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${l.status === "success" ? "bg-emerald-500/10 text-emerald-700" : "bg-destructive/10 text-destructive"}`}
+                    <StavOdznak
+                      ton={l.status === "success" ? "uspech" : "chyba"}
+                      className="shrink-0"
                     >
                       {l.status}
-                    </span>
+                    </StavOdznak>
                   </li>
                 ))}
               </ul>
@@ -205,7 +209,7 @@ function DiagnostikaPage() {
                             navigator.clipboard.writeText(tb.authorize_url);
                             toast.success(t("Skopírované"));
                           }}
-                          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted/60"
+                          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-input px-2 text-xs hover:bg-accent"
                         >
                           <Copy className="h-3 w-3" /> {t("Kopírovať")}
                         </button>
@@ -233,9 +237,9 @@ function Card({
 }) {
   const { t } = useT();
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-        <Icon className="h-4 w-4 text-muted-foreground" />
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
         {t(title)}
       </div>
       {children}
@@ -246,9 +250,9 @@ function Card({
 function Row({ k, v }: { k: string; v: any }) {
   const { t } = useT();
   return (
-    <div className="flex items-baseline justify-between py-1 text-sm">
-      <span className="text-muted-foreground">{t(k)}</span>
-      <span className="ml-2 truncate font-medium">{String(v)}</span>
+    <div className="flex items-baseline justify-between gap-3 py-1 text-sm">
+      <span className="shrink-0 text-muted-foreground">{t(k)}</span>
+      <span className="min-w-0 truncate text-right font-medium">{String(v)}</span>
     </div>
   );
 }

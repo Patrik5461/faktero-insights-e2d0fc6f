@@ -51,6 +51,7 @@ import {
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/$id")({
@@ -110,7 +111,7 @@ function KartaZamestnanca() {
         {chyba ? (
           <ChybaModulu sprava={chyba} />
         ) : !detail || !cid ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : (
           <>
             {detail.pripomienky.length > 0 && (
@@ -118,14 +119,14 @@ function KartaZamestnanca() {
                 {detail.pripomienky.map((p) => (
                   <div
                     key={p.kluc}
-                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+                    className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm ${
                       p.zavaznost === "danger"
                         ? "border-destructive/30 bg-destructive/10 text-destructive"
-                        : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
+                        : "border-warning/30 bg-warning/10 text-warning"
                     }`}
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
+                    <span className="min-w-0">
                       <strong>{p.nadpis}</strong> — {p.text}
                     </span>
                   </div>
@@ -141,8 +142,8 @@ function KartaZamestnanca() {
                   role="tab"
                   aria-selected={zalozka === k}
                   onClick={() => setZalozka(k)}
-                  className={`-mb-px border-b-2 px-3 py-2 text-sm ${
-                    zalozka === k ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                  className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-sm transition-colors ${
+                    zalozka === k ? "border-primary font-semibold text-foreground" : "border-transparent font-medium text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {t(nazov)}
@@ -228,9 +229,9 @@ function Udaje({ cid, detail, obnov }: Vlastnosti) {
         </div>
       </form>
       <CitliveUdaje cid={cid} detail={detail} obnov={obnov} />
-      <div className="rounded-xl border border-destructive/30 p-4">
+      <div className="rounded-xl border border-destructive/30 bg-card p-4 sm:p-5">
         <div className="text-sm font-semibold">{t("Zmazanie zamestnanca")}</div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           {t("Zmaže kartu, zmluvy, dokumenty, neprítomnosti aj dochádzku.")}
         </p>
         <button type="button" onClick={zmazat} className={`${tlacidloObrys} mt-3 text-destructive`}>
@@ -284,12 +285,12 @@ function CitliveUdaje({ cid, detail, obnov }: Vlastnosti) {
   const riadok = (nazov: string, vyplnene: boolean, hodnota: string | null | undefined) => (
     <div className="flex items-center justify-between gap-3 py-1 text-sm">
       <span className="text-muted-foreground">{t(nazov)}</span>
-      <span className="font-mono">{hodnoty ? hodnota || "—" : vyplnene ? "••••••••" : t("nevyplnené")}</span>
+      <span className="font-medium tabular-nums">{hodnoty ? hodnota || "—" : vyplnene ? "••••••••" : t("nevyplnené")}</span>
     </div>
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
+    <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
       <h3 className="mb-1 text-sm font-semibold">{t("Citlivé údaje")}</h3>
       <p className="mb-3 text-xs text-muted-foreground">
         {t("Uložené šifrovane. Každé zobrazenie a zmena sa zapíše do záznamu prístupov.")}
@@ -395,7 +396,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
         </button>
       )}
       {forma && (
-        <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4">
+        <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={popis} htmlFor="k-kind">{t("Druh")}</label>
@@ -480,14 +481,14 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
       ) : (
         <ul className="space-y-2">
           {detail.zmluvy.map((k) => (
-            <li key={k.id} className="rounded-xl border border-border bg-card p-4 text-sm">
+            <li key={k.id} className="rounded-xl border border-border bg-card p-4 text-sm sm:px-5">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-medium">
+                  <div className="font-semibold">
                     {t(DRUH_ZMLUVY[k.kind as DruhZmluvy] ?? k.kind)}{" "}
                     {k.number ? t("č. {cislo}", { cislo: k.number }) : ""}
                   </div>
-                  <div className="text-muted-foreground">
+                  <div className="mt-0.5 tabular-nums text-muted-foreground">
                     {datumSk(k.start_date)} – {k.end_date ? datumSk(k.end_date) : t("na dobu neurčitú")}
                     {k.probation_end
                       ? ` · ${t("skúšobná doba do {datum}", { datum: datumSk(k.probation_end) })}`
@@ -594,7 +595,7 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">{t("Vyrobiť zo šablóny")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -639,13 +640,13 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
           <button type="button" className={tlacidlo} onClick={vyrobit} disabled={pracuje}>
             <FileText className="h-4 w-4" /> {pracuje ? t("Pracujem…") : t("Vyrobiť PDF")}
           </button>
-          <Link to="/zamestnanci/sablony" className="text-xs text-muted-foreground underline">
+          <Link to="/zamestnanci/sablony" className="text-xs font-medium text-primary underline-offset-2 hover:underline">
             {t("Upraviť šablóny")}
           </Link>
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <h3 className="mb-3 text-sm font-semibold">{t("Nahrať vlastný dokument")}</h3>
         <label className={`${tlacidloObrys} cursor-pointer`}>
           <Upload className="h-4 w-4" /> {t("Vybrať súbor")}
@@ -667,10 +668,10 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {detail.dokumenty.map((d) => (
-            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div className="min-w-0">
-                <div className="truncate font-medium">{d.title}</div>
-                <div className="text-xs text-muted-foreground">{datumSk(d.created_at)}</div>
+                <div className="truncate font-semibold">{d.title}</div>
+                <div className="text-xs tabular-nums text-muted-foreground">{datumSk(d.created_at)}</div>
               </div>
               <div className="flex gap-2">
                 <button
@@ -741,7 +742,7 @@ function Nepritomnosti({ cid, detail, obnov }: Vlastnosti) {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4">
+      <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="grid gap-4 sm:grid-cols-4">
           <div>
             <label className={popis} htmlFor="n-kind">{t("Druh")}</label>
@@ -780,9 +781,9 @@ function Nepritomnosti({ cid, detail, obnov }: Vlastnosti) {
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {detail.nepritomnosti.map((n) => (
-            <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+            <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div>
-                <span className="font-medium">
+                <span className="font-semibold">
                   {t(DRUH_NEPRITOMNOSTI[n.kind as DruhNepritomnosti] ?? n.kind)}
                 </span>{" "}
                 <span className="text-muted-foreground">
@@ -861,7 +862,7 @@ function DochadzkaZalozka({ cid, employeeId }: { cid: string; employeeId: string
 
   return (
     <div className="max-w-3xl space-y-4">
-      <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4">
+      <form onSubmit={ulozit} className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className={popis} htmlFor="a-den">{t("Deň *")}</label>
@@ -905,7 +906,7 @@ function DochadzkaZalozka({ cid, employeeId }: { cid: string; employeeId: string
           <input id="a-mesiac" type="month" className={pole} value={mesiac} onChange={(e) => e.target.value && setMesiac(e.target.value)} />
         </div>
         <div className="text-sm">
-          {t("Spolu")} <strong>{String(Math.round(spolu * 100) / 100).replace(".", ",")} h</strong>{" "}
+          {t("Spolu")} <strong className="tabular-nums">{String(Math.round(spolu * 100) / 100).replace(".", ",")} h</strong>{" "}
           {t("za {n} dní", { n: new Set(zaznamy.map((z) => z.work_date)).size })}
         </div>
       </div>
@@ -915,9 +916,9 @@ function DochadzkaZalozka({ cid, employeeId }: { cid: string; employeeId: string
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {zaznamy.map((z) => (
-            <li key={z.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+            <li key={z.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
               <div>
-                <span className="font-medium">{datumSk(z.work_date)}</span>{" "}
+                <span className="font-semibold tabular-nums">{datumSk(z.work_date)}</span>{" "}
                 <span className="text-muted-foreground">
                   {z.time_from && z.time_to ? `${z.time_from.slice(0, 5)}–${z.time_to.slice(0, 5)}` : ""}
                   {z.break_minutes

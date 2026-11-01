@@ -6,6 +6,8 @@ import { ExternalLink, FileText, Loader2, ScanText, Trash2, Upload } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -26,20 +28,15 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /** Štítok termínu — prepadnutý červený, blížiaci sa oranžový, ostatné sivé. */
 export function StitokTerminu({ t: termin }: { t: Termin }) {
   const { t } = useT();
-  const cls =
-    termin.stav === "prepadnute"
-      ? "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200"
-      : termin.stav === "coskoro"
-        ? "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
-        : "bg-secondary text-muted-foreground";
+  const ton = termin.stav === "prepadnute" ? "chyba" : termin.stav === "coskoro" ? "pozor" : "neutralny";
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>
+    <StavOdznak ton={ton} maly>
       {t(termin.nazov)}{" "}
       {termin.stav === "prepadnute"
         ? // „prepadlo“ sedelo len na niektoré termíny („STK prepadlo“ je zle) — platnosť drží rod.
           t("platnosť skončila {datum}", { datum: datumNaDoklade(termin.datum) })
         : t("do {datum}", { datum: datumNaDoklade(termin.datum) })}
-    </span>
+    </StavOdznak>
   );
 }
 
@@ -135,7 +132,7 @@ type Dokument = {
 };
 
 const MAX_SUBOR = 20 * 1024 * 1024;
-const vstup = "mt-1 h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
+const vstup = "mt-1.5 h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
 
 function Pole({
   label,
@@ -149,7 +146,7 @@ function Pole({
   const { t } = useT();
   return (
     <label className={`block min-w-0 ${siroke ? "sm:col-span-2" : ""}`}>
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       {children}
     </label>
   );
@@ -236,7 +233,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (!f) return <p className="text-sm text-muted-foreground">{t("Načítavam…")}</p>;
+  if (!f) return <NacitavanieStav className="rounded-xl border border-border bg-card" />;
   const set = (k: string, h: string | boolean) => setF((p) => (p ? { ...p, [k]: h } : p));
   const txt = (k: string) => String(f[k] ?? "");
   const oznacene = (k: string) => (doplnene.has(k) ? "ring-2 ring-primary/40" : "");
@@ -546,7 +543,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
             </select>
           </Pole>
           {zmiesane && txt("odpocet_dph") === "100" && (
-            <p className="text-xs text-amber-700 sm:col-span-2 dark:text-amber-300">
+            <p className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning sm:col-span-2">
               {t(
                 "Pri zmiešanom použití osobného auta sa na Slovensku od 1. 1. 2026 do 30. 6. 2028 odpočítava DPH paušálne 50 % (§ 85n zákona o DPH). 100 % len pri aute výlučne na podnikanie s podrobnou elektronickou evidenciou jázd a oznámením daňovému úradu.",
               )}
@@ -623,19 +620,19 @@ export function VozidloKarta({ id }: { id: string | null }) {
           )}
         </section>
 
-        <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center gap-2 border-t border-border bg-background/95 px-1 py-3 backdrop-blur">
+        <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center gap-2 border-t border-border bg-page/95 px-1 py-3 backdrop-blur">
           <button
             type="button"
             onClick={() => void uloz()}
             disabled={ukladam}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {ukladam && <Loader2 className="h-4 w-4 animate-spin" />}
             {id ? t("Uložiť zmeny") : t("Pridať vozidlo")}
           </button>
           <Link
             to="/vozovy-park"
-            className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors hover:bg-accent"
           >
             {t("Späť na vozový park")}
           </Link>
@@ -685,7 +682,7 @@ export function VozidloKarta({ id }: { id: string | null }) {
               type="button"
               onClick={() => subor.current?.click()}
               disabled={nahravam}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-primary/50 px-3 py-3 text-sm font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/50 px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
             >
               {nahravam ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -902,7 +899,7 @@ function NakladyVozidla({ id }: { id: string }) {
         )}
       </p>
       {naklady === null ? (
-        <p className="mt-3 text-xs text-muted-foreground">{t("Načítavam…")}</p>
+        <NacitavanieStav className="py-6" />
       ) : naklady.length === 0 ? (
         <p className="mt-3 text-xs text-muted-foreground">
           {t(
@@ -914,11 +911,11 @@ function NakladyVozidla({ id }: { id: string }) {
           <dl className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">{t("Tento rok ({rok})", { rok })}</dt>
-              <dd className="font-medium tabular-nums">{sucet(tentoRok)}</dd>
+              <dd className="suma">{sucet(tentoRok)}</dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">{t("Spolu")}</dt>
-              <dd className="tabular-nums">{sucet(naklady)}</dd>
+              <dd className="suma font-medium">{sucet(naklady)}</dd>
             </div>
           </dl>
           <ul className="mt-3 divide-y divide-border text-sm">
@@ -952,7 +949,7 @@ function NakladyVozidla({ id }: { id: string }) {
                         : t("prijatá faktúra")}
                   </span>
                 </Link>
-                <span className="shrink-0 tabular-nums">{formatujMenu(n.bezDph, n.mena)}</span>
+                <span className="suma shrink-0 whitespace-nowrap font-medium">{formatujMenu(n.bezDph, n.mena)}</span>
               </li>
             ))}
           </ul>

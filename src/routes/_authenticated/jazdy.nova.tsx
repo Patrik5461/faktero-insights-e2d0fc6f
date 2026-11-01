@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { toast } from "sonner";
@@ -338,18 +339,21 @@ function NewTripPage() {
       />
       <PageBody>
         {nacitavam ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : vehicles.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-6 text-sm">
             {t("Najskôr pridajte vozidlo v sekcii")}{" "}
-            <a href="/jazdy/vozidla" className="text-primary hover:underline">
+            <a href="/jazdy/vozidla" className="font-semibold text-primary underline-offset-2 hover:text-primary-hover hover:underline">
               {t("Vozidlá")}
             </a>
             .
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-            <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+            <form
+              onSubmit={submit}
+              className="grid min-w-0 gap-4 self-start rounded-xl border border-border bg-card p-4 shadow-sm sm:grid-cols-2 sm:p-6"
+            >
               <Field label="Dátum *">
                 <input
                   type="date"
@@ -462,9 +466,9 @@ function NewTripPage() {
                 neuloží počet litrov a náklad vyjde nula aj s cenou paliva. */}
               <Field label="">
                 {vozidloBezSpotreby && (
-                  <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-foreground">
                     {t("Vozidlo nemá zadanú spotrebu, takže jazda nebude mať náklad.")}{" "}
-                    <a href="/jazdy/vozidla" className="underline">
+                    <a href="/jazdy/vozidla" className="font-semibold text-warning underline underline-offset-2">
                       {t("Doplniť spotrebu")}
                     </a>
                   </div>
@@ -509,7 +513,7 @@ function NewTripPage() {
                 </span>
               </Field>
               <Field label="Vzdialenosť (auto)">
-                <div className="input bg-muted/40 tabular-nums">
+                <div className="input bg-muted/60 font-semibold tabular-nums">
                   {Number.isFinite(distance) ? formatujCislo(distance, 1) : "—"} km
                 </div>
               </Field>
@@ -540,7 +544,7 @@ function NewTripPage() {
                 onChange={(v) => setForm((p) => ({ ...p, job_id: v }))}
               />
               <label className="sm:col-span-2 block">
-                <span className="text-sm font-medium">{t("Poznámka")}</span>
+                <span className="text-sm font-semibold">{t("Poznámka")}</span>
                 <textarea
                   rows={2}
                   value={form.note}
@@ -548,18 +552,18 @@ function NewTripPage() {
                   className="input mt-1"
                 />
               </label>
-              <div className="sm:col-span-2 flex justify-end gap-2">
+              <div className="sm:col-span-2 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
                 <button
                   type="button"
                   onClick={() => navigate({ to: "/jazdy" })}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 text-sm font-semibold hover:bg-accent disabled:opacity-60"
                 >
                   {t("Zrušiť")}
                 </button>
                 <button
                   disabled={saving}
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {saving ? t("Ukladám…") : t("Uložiť jazdu")}
                 </button>
@@ -573,9 +577,9 @@ function NewTripPage() {
             stĺpce poskladajú pod seba a mapa ide nakoniec.
           */}
             <aside className="lg:sticky lg:top-4 lg:self-start">
-              <div className="rounded-xl border border-border bg-card p-3">
+              <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-medium">{t("Trasa na mape")}</h2>
+                  <h2 className="text-base font-semibold">{t("Trasa na mape")}</h2>
                   {/*
                   Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
                   dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
@@ -585,7 +589,7 @@ function NewTripPage() {
                     type="button"
                     onClick={navrhniTrasuPreFormular}
                     disabled={hladamTrasu}
-                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
+                    className="inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 text-xs font-semibold hover:bg-accent disabled:opacity-60"
                   >
                     <MapIcon className="h-3.5 w-3.5" />
                     {hladamTrasu
@@ -598,7 +602,7 @@ function NewTripPage() {
 
                 {trasa && (
                   <div className="mt-2 text-sm">
-                    <span className="font-medium">{trasa.vzdialenost_km} km</span>
+                    <span className="font-semibold tabular-nums">{trasa.vzdialenost_km} km</span>
                     <span className="text-muted-foreground">
                       {" "}
                       · {t("približne {n} min", { n: trasa.trvanie_min })}
@@ -614,7 +618,7 @@ function NewTripPage() {
                     <MapaTrasy route={zobrazenaTrasa} vyska={300} />
                   </div>
                 ) : (
-                  <p className="mt-3 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+                  <p className="mt-3 rounded-lg border border-dashed border-input bg-muted/40 p-4 text-xs text-muted-foreground">
                     {upravujem
                       ? t(
                           "Táto jazda nemá zapísanú trasu. Doplňte odkiaľ a kam a dajte Navrhnúť trasu.",
@@ -628,7 +632,7 @@ function NewTripPage() {
                     <button
                       type="button"
                       onClick={pouziKilometre}
-                      className="mt-3 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                      className="mt-3 w-full inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
                     >
                       {t("Doplniť {km} km do tachometra", { km: trasa.vzdialenost_km })}
                     </button>
@@ -654,7 +658,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   const { t } = useT();
   return (
     <label className="block">
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <div className="mt-1">{children}</div>
     </label>
   );

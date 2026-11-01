@@ -26,6 +26,8 @@ import { potvrd } from "@/lib/potvrdenie";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Firma — Faktero") }],
@@ -46,7 +48,12 @@ function CompanyPage() {
       .single()
       .then(({ data }) => setC(data));
   }, []);
-  if (!c) return <PageBody>{t("Načítavam…")}</PageBody>;
+  if (!c)
+    return (
+      <PageBody>
+        <NacitavanieStav />
+      </PageBody>
+    );
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -89,10 +96,10 @@ function CompanyPage() {
       <PageBody>
         <form
           onSubmit={save}
-          className="grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2"
+          className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 sm:p-6"
         >
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium">{t("Názov *")}</span>
+            <span className="text-sm font-semibold">{t("Názov *")}</span>
             <div className="mt-1">
               <CompanyNameAutocomplete
                 value={c.name ?? ""}
@@ -108,7 +115,7 @@ function CompanyPage() {
             </div>
           </label>
           <label className="block min-w-0">
-            <span className="text-sm font-medium">{t(popisky.ico)}</span>
+            <span className="text-sm font-semibold">{t(popisky.ico)}</span>
             {/* Políčko sa zmenší (min-w-0), tlačidlo nie — česky je jeho text dlhší. */}
             <div className="mt-1 flex min-w-0 -space-x-px items-start">
               <input
@@ -165,7 +172,7 @@ function CompanyPage() {
                 {t("Registergericht, číslo HRB a konateľ sa vytlačia do päty faktúry.")}
               </p>
               {chybyDe.length > 0 && (
-                <ul className="sm:col-span-2 space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-400">
+                <ul className="sm:col-span-2 space-y-1 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground">
                   {chybyDe.map((ch) => (
                     <li key={ch}>{t(ch)}</li>
                   ))}
@@ -224,7 +231,7 @@ function CompanyPage() {
                 onChange={(e) =>
                   setC((prev: any) => ({ ...prev, dan_z_prijatej_platby: e.target.checked }))
                 }
-                className="mt-0.5 h-4 w-4 rounded border-input"
+                className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
               />
               <span className="text-sm">
                 {t("Uplatňujem daň na základe prijatia platby (§ 68d)")}
@@ -242,9 +249,9 @@ function CompanyPage() {
           */}
           {jeDe && Boolean(c.vat_payer) && c.vat_scheme !== "de_kleinunternehmer" && (
             <fieldset className="grid gap-4 rounded-lg border border-border p-4 sm:col-span-2 sm:grid-cols-2">
-              <legend className="px-1 text-sm font-medium">{t("Umsatzsteuer-Voranmeldung")}</legend>
+              <legend className="px-1 text-sm font-semibold">{t("Umsatzsteuer-Voranmeldung")}</legend>
               <label className="block">
-                <span className="text-sm font-medium">{t("Spôsob zdaňovania")}</span>
+                <span className="text-sm font-semibold">{t("Spôsob zdaňovania")}</span>
                 <select
                   value={c.de_versteuerung === "ist" ? "ist" : "soll"}
                   onChange={(e) => f("de_versteuerung")(e.target.value)}
@@ -264,7 +271,7 @@ function CompanyPage() {
                 </span>
               </label>
               <label className="block">
-                <span className="text-sm font-medium">{t("Voranmeldungszeitraum")}</span>
+                <span className="text-sm font-semibold">{t("Voranmeldungszeitraum")}</span>
                 <select
                   value={c.de_ustva_obdobie === "stvrtrocne" ? "stvrtrocne" : "mesacne"}
                   onChange={(e) => f("de_ustva_obdobie")(e.target.value)}
@@ -284,7 +291,7 @@ function CompanyPage() {
                   onChange={(e) =>
                     setC((prev: any) => ({ ...prev, de_dauerfrist: e.target.checked }))
                   }
-                  className="mt-0.5 h-4 w-4 rounded border-input"
+                  className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
                 />
                 <span className="text-sm">
                   {t("Dauerfristverlängerung")}
@@ -296,7 +303,7 @@ function CompanyPage() {
                 </span>
               </label>
               <label className="block sm:col-span-2">
-                <span className="text-sm font-medium">{t("Kurz pri faktúre v cudzej mene")}</span>
+                <span className="text-sm font-semibold">{t("Kurz pri faktúre v cudzej mene")}</span>
                 <select
                   value={c.kurz_de_zdroj === "ecb_tageskurs" ? "ecb_tageskurs" : "bmf"}
                   onChange={(e) => f("kurz_de_zdroj")(e.target.value)}
@@ -320,7 +327,7 @@ function CompanyPage() {
           {/* Predvolená mena firmy sa dedí do každého nového dokladu, takže
               práve tu voľný text škodí najviac. */}
           <label className="block">
-            <span className="text-sm font-medium">{t("Mena")}</span>
+            <span className="text-sm font-semibold">{t("Mena")}</span>
             <select
               value={c.default_currency ?? "EUR"}
               onChange={(e) => f("default_currency")(e.target.value)}
@@ -345,7 +352,7 @@ function CompanyPage() {
                 "Tokeny: {YYYY} rok, {YY} rok 2-cif., {MM} mesiac, {NN}–{NNNN} poradie (počet N = počet číslic). Ak formát obsahuje {MM}, poradie sa resetuje mesačne, inak ročne.",
               )}
             </p>
-            <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-400">
+            <p className="mt-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground">
               {t(
                 "Pozor: zmena šablóny uprostred roka rozdelí číselný rad — nové faktúry budú číslované podľa novej šablóny, staré zostanú nezmenené. Ak by nové číslo kolidovalo s existujúcim, poradie sa automaticky posunie na najbližšie voľné.",
               )}
@@ -353,7 +360,7 @@ function CompanyPage() {
           </div>
 
           <label className="block">
-            <span className="text-sm font-medium">{t("Preferovaný účtovný systém")}</span>
+            <span className="text-sm font-semibold">{t("Preferovaný účtovný systém")}</span>
             <select
               value={c.preferred_accounting_system ?? "pohoda"}
               onChange={(e) => setC({ ...c, preferred_accounting_system: e.target.value })}
@@ -367,23 +374,23 @@ function CompanyPage() {
             </select>
           </label>
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-medium">{t("Prepojenie s Pohodou")}</div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">{t("Prepojenie s Pohodou")}</div>
                 <div className="text-xs text-muted-foreground">
                   {t("Predkontácie, členenia DPH, čo sa posiela a balíček pre účtovníčku.")}
                 </div>
               </div>
               <Link
                 to="/uctovnictvo/pohoda"
-                className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 {t("Otvoriť")}
               </Link>
             </div>
           </div>
           <label className="sm:col-span-2 block">
-            <span className="text-sm font-medium">{t("Pätička faktúry")}</span>
+            <span className="text-sm font-semibold">{t("Pätička faktúry")}</span>
             <textarea
               rows={3}
               value={c.invoice_footer ?? ""}
@@ -392,7 +399,7 @@ function CompanyPage() {
             />
           </label>
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 text-base font-semibold text-foreground">
               {t("E-mail")}
             </h2>
           </div>
@@ -413,7 +420,7 @@ function CompanyPage() {
             onChange={f("email_default_subject")}
           />
           <label className="sm:col-span-2 block">
-            <span className="text-sm font-medium">{t("Predvolená správa e-mailu")}</span>
+            <span className="text-sm font-semibold">{t("Predvolená správa e-mailu")}</span>
             <textarea
               rows={5}
               value={c.email_default_message ?? ""}
@@ -433,7 +440,7 @@ function CompanyPage() {
               onChange={(e) => setC({ ...c, efaktura_upozornenie_email: e.target.checked })}
             />
             <span className="min-w-0">
-              <span className="block text-sm font-medium">{t("Upozornenie na prijatú eFaktúru")}</span>
+              <span className="block text-sm font-semibold">{t("Upozornenie na prijatú eFaktúru")}</span>
               <span className="block text-xs text-muted-foreground">
                 {t(
                   "Keď vám dodávateľ pošle eFaktúru, príde na e-mail firmy správa s odkazom na Prijaté eFaktúry. Viac eFaktúr naraz príde v jednom e-maile.",
@@ -442,32 +449,32 @@ function CompanyPage() {
             </span>
           </label>
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-medium">{t("E-mailové šablóny")}</div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">{t("E-mailové šablóny")}</div>
                 <div className="text-xs text-muted-foreground">
                   {t("Editor pre odoslanie faktúry, upomienky a žiadosti o schválenie.")}
                 </div>
               </div>
               <Link
                 to="/nastavenia/email-sablony"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 {t("Otvoriť editor")}
               </Link>
             </div>
           </div>
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-medium">{t("Vzhľad faktúry")}</div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold">{t("Vzhľad faktúry")}</div>
                 <div className="text-xs text-muted-foreground">
                   {t("Logo, farba akcentu a pätička na PDF faktúrach.")}
                 </div>
               </div>
               <Link
                 to="/nastavenia/vzhlad-faktury"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 {t("Otvoriť editor")}
               </Link>
@@ -475,7 +482,7 @@ function CompanyPage() {
           </div>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 text-base font-semibold text-foreground">
               {t("Automatické upomienky po splatnosti")}
             </h2>
             <label className="flex items-center gap-2 text-sm">
@@ -488,14 +495,14 @@ function CompanyPage() {
             </label>
             <p className="mt-2 text-xs text-muted-foreground">
               {t("Komu a kedy upomienky odišli, nájdete v")}{" "}
-              <Link to="/faktury/upomienky" className="font-medium text-primary hover:underline">
+              <Link to="/faktury/upomienky" className="font-semibold text-primary underline-offset-2 hover:text-primary-hover hover:underline">
                 {t("Odoslaných upomienkach")}
               </Link>
               .
             </p>
           </div>
           <label className="block">
-            <span className="text-sm font-medium">{t("Dní po splatnosti — 1. upomienka")}</span>
+            <span className="text-sm font-semibold">{t("Dní po splatnosti — 1. upomienka")}</span>
             <input
               type="number"
               min={1}
@@ -505,7 +512,7 @@ function CompanyPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">{t("Dní po splatnosti — 2. upomienka")}</span>
+            <span className="text-sm font-semibold">{t("Dní po splatnosti — 2. upomienka")}</span>
             <input
               type="number"
               min={1}
@@ -515,7 +522,7 @@ function CompanyPage() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">{t("Dní po splatnosti — 3. upomienka")}</span>
+            <span className="text-sm font-semibold">{t("Dní po splatnosti — 3. upomienka")}</span>
             <input
               type="number"
               min={1}
@@ -525,8 +532,8 @@ function CompanyPage() {
             />
           </label>
           {[1, 2, 3].map((n) => (
-            <div key={n} className="sm:col-span-2 grid gap-2 rounded-md border border-border p-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div key={n} className="sm:col-span-2 grid gap-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="text-sm font-semibold text-foreground">
                 {t("{n}. upomienka — e-mail", { n })}
               </div>
               <input
@@ -550,7 +557,7 @@ function CompanyPage() {
           <div className="sm:col-span-2 flex justify-end">
             <button
               type="submit"
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
             >
               {t("Uložiť zmeny")}
             </button>
@@ -690,8 +697,8 @@ function TeamSection({ companyId }: { companyId: string }) {
   }
 
   return (
-    <div className="mt-8 rounded-xl border border-border bg-card p-6">
-      <h2 className="text-lg font-semibold">{t("Používatelia a pozvánky")}</h2>
+    <div className="mt-6 rounded-xl border border-border bg-card p-5 sm:p-6">
+      <h2 className="text-base font-semibold">{t("Používatelia a pozvánky")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {t(
           "Pozvite kolegu alebo účtovníka na e-mail. Prijatie pozvánky ich pripojí k tejto firme.",
@@ -700,15 +707,15 @@ function TeamSection({ companyId }: { companyId: string }) {
       <VysvetlenieRoli />
 
       {clenovia && clenovia.length > 0 && (
-        <div className="mt-5 overflow-x-auto rounded-md border border-border">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="p-3">{t("Kto má prístup")}</th>
-                <th className="p-3">{t("Rola")}</th>
-                <th className="p-3">{t("Telefón, číslo zamestnanca, projekt")}</th>
-                <th className="p-3">{t("Od")}</th>
-                <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Kto má prístup")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Rola")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Telefón, číslo zamestnanca, projekt")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Od")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -724,7 +731,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                   <td className="p-3">
                     {m.podpora_do ? (
                       <div className="max-w-xs text-xs">
-                        <div className="font-medium text-foreground">
+                        <div className="font-semibold text-foreground">
                           {t("Technická podpora Faktero")}
                         </div>
                         <div className="text-muted-foreground">
@@ -763,7 +770,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                                   opr: (m.permissions ?? {}) as Opravnenia,
                                 })
                               }
-                              className="font-medium text-primary hover:underline"
+                              className="font-semibold text-primary hover:text-primary-hover hover:underline"
                             >
                               {t("Upraviť")}
                             </button>
@@ -784,14 +791,14 @@ function TeamSection({ companyId }: { companyId: string }) {
                                     return toast.error(t("Vyberte aspoň jednu oblasť."));
                                   zmenRolu(m.user_id, "custom", opr);
                                 }}
-                                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
                               >
                                 {t("Uložiť prístup")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setUpravuje(null)}
-                                className="rounded-md border border-border px-3 py-1.5 text-xs"
+                                className="rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
                               >
                                 {t("Zrušiť")}
                               </button>
@@ -804,12 +811,12 @@ function TeamSection({ companyId }: { companyId: string }) {
                   <td className="p-3 align-top">
                     <UdajeClena companyId={companyId} clen={m} onUlozene={load} />
                   </td>
-                  <td className="p-3 text-muted-foreground">{datum(m.created_at)}</td>
+                  <td className="whitespace-nowrap p-3 text-muted-foreground tabular-nums">{datum(m.created_at)}</td>
                   <td className="p-3 text-right">
                     <button
                       type="button"
                       onClick={() => odober(m.user_id, m.email ?? t("tento účet"))}
-                      className="text-xs text-rose-600 hover:underline"
+                      className="whitespace-nowrap text-xs font-semibold text-destructive hover:underline"
                     >
                       {t("Odobrať prístup")}
                     </button>
@@ -823,20 +830,20 @@ function TeamSection({ companyId }: { companyId: string }) {
 
       {clenovia && clenovia.length > 0 && <TechnickaPodpora companyId={companyId} onZmena={load} />}
 
-      <form onSubmit={invite} className="mt-4 flex flex-wrap items-end gap-3">
+      <form onSubmit={invite} className="mt-5 flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="text-sm font-medium">{t("Email")}</span>
+          <span className="text-sm font-semibold">{t("Email")}</span>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="kolega@firma.sk"
-            className="mt-1 w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="mt-1 w-64 max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">{t("Rola")}</span>
+          <span className="text-sm font-semibold">{t("Rola")}</span>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as any)}
@@ -851,7 +858,7 @@ function TeamSection({ companyId }: { companyId: string }) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           {busy ? t("Odosielam…") : t("Pozvať používateľa")}
         </button>
@@ -866,8 +873,8 @@ function TeamSection({ companyId }: { companyId: string }) {
       )}
 
       {odkaz && (
-        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-          <div className="font-medium">{t("Odkaz na pozvánku")}</div>
+        <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+          <div className="font-semibold">{t("Odkaz na pozvánku")}</div>
           <div className="mt-1 break-all font-mono text-xs">{odkaz}</div>
           <button
             type="button"
@@ -875,7 +882,7 @@ function TeamSection({ companyId }: { companyId: string }) {
               navigator.clipboard?.writeText(odkaz);
               toast.success(t("Odkaz skopírovaný"));
             }}
-            className="mt-2 rounded-md border border-amber-300 px-2 py-1 text-xs hover:bg-amber-100 dark:border-amber-900/40"
+            className="mt-2 rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"
           >
             {t("Skopírovať")}
           </button>
@@ -883,15 +890,15 @@ function TeamSection({ companyId }: { companyId: string }) {
       )}
 
       {invs.length > 0 && (
-        <div className="mt-6 overflow-x-auto rounded-md border border-border">
+        <div className="mt-6 overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="p-3">{t("Email")}</th>
-                <th className="p-3">{t("Rola")}</th>
-                <th className="p-3">{t("Stav")}</th>
-                <th className="p-3">{t("Vytvorené")}</th>
-                <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Email")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Rola")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Stav")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold">{t("Vytvorené")}</th>
+                <th className="whitespace-nowrap px-3 py-2.5 font-semibold"><span className="sr-only">{t("Akcie")}</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -913,13 +920,20 @@ function TeamSection({ companyId }: { companyId: string }) {
                         </div>
                       )}
                     </td>
-                    <td className="p-3">{t(status)}</td>
-                    <td className="p-3 text-muted-foreground">{datum(r.created_at)}</td>
+                    <td className="p-3">
+                      <StavOdznak
+                        ton={r.accepted_at ? "uspech" : expired ? "zruseny" : "priebeh"}
+                        maly
+                      >
+                        {t(status)}
+                      </StavOdznak>
+                    </td>
+                    <td className="whitespace-nowrap p-3 text-muted-foreground tabular-nums">{datum(r.created_at)}</td>
                     <td className="p-3 text-right">
                       {!r.accepted_at && (
                         <button
                           onClick={() => revoke(r.id)}
-                          className="text-xs text-rose-600 hover:underline"
+                          className="whitespace-nowrap text-xs font-semibold text-destructive hover:underline"
                         >
                           {t("Zrušiť")}
                         </button>
@@ -952,7 +966,7 @@ function In({
   const { t } = useT();
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -119,13 +119,13 @@ function ExportPage() {
                 ) : (
                   <div className="overflow-x-auto rounded-xl border border-border bg-card">
                     <table className="w-full min-w-[520px] text-sm">
-                      <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <thead className="bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
                         <tr>
-                          <th className="p-3">{t("Zamestnanec")}</th>
-                          <th className="p-3 text-right">{t("Dni")}</th>
-                          <th className="p-3 text-right">{t("Hodiny")}</th>
+                          <th className="whitespace-nowrap px-4 py-2.5">{t("Zamestnanec")}</th>
+                          <th className="whitespace-nowrap px-4 py-2.5 text-right">{t("Dni")}</th>
+                          <th className="whitespace-nowrap px-4 py-2.5 text-right">{t("Hodiny")}</th>
                           {druhy.map((k) => (
-                            <th key={k} className="p-3 text-right">
+                            <th key={k} className="whitespace-nowrap px-4 py-2.5 text-right">
                               {t(DRUH_NEPRITOMNOSTI[k])}
                             </th>
                           ))}
@@ -134,10 +134,10 @@ function ExportPage() {
                       <tbody className="divide-y divide-border">
                         {vysledok.suhrn.map((s) => (
                           <tr key={s.employee_id}>
-                            <td className="p-3 font-medium">{s.meno}</td>
-                            <td className="p-3 text-right">{s.odpracovaneDni}</td>
-                            <td className="p-3 text-right">{formatujCislo(s.hodiny, 0, 2)}</td>
-                            {druhy.map((k) => <td key={k} className="p-3 text-right">{formatujCislo(s.nepritomnosti[k], 0, 2)}</td>)}
+                            <td className="px-4 py-3 font-semibold">{s.meno}</td>
+                            <td className="whitespace-nowrap px-4 py-2.5 text-right">{s.odpracovaneDni}</td>
+                            <td className="whitespace-nowrap px-4 py-2.5 text-right">{formatujCislo(s.hodiny, 0, 2)}</td>
+                            {druhy.map((k) => <td key={k} className="whitespace-nowrap px-4 py-2.5 text-right">{formatujCislo(s.nepritomnosti[k], 0, 2)}</td>)}
                           </tr>
                         ))}
                       </tbody>

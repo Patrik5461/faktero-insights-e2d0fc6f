@@ -26,7 +26,8 @@ import {
   neprecitanaPreZakaznika,
   type KategoriaPoziadavky,
 } from "@/lib/faktero/podpora";
-import { PodporaStav } from "@/components/faktero/PodporaStav";
+import { PodporaStavWeb } from "@/components/faktero/PodporaStav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { TelegramOdkaz, TelegramTlacidlo } from "@/components/faktero/TelegramOdkaz";
 import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
 import { WhatsAppOdkaz, WhatsAppTlacidlo } from "@/components/faktero/WhatsAppOdkaz";
@@ -117,7 +118,7 @@ function PodporaPage() {
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-6">
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -144,7 +145,7 @@ function PodporaPage() {
                       href={v.cesta}
                       target="_blank"
                       rel="noopener"
-                      className="block rounded-lg border border-border p-3 hover:bg-secondary/60"
+                      className="block rounded-lg border border-border p-3 transition-colors hover:border-primary/40 hover:bg-accent"
                     >
                       <div className="text-sm font-medium">
                         {v.titulok} <span className="text-muted-foreground">· {v.nadpis}</span>
@@ -157,13 +158,13 @@ function PodporaPage() {
                   <Link
                     to="/ai-asistent"
                     search={{ otazka: otazka.trim() }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-secondary"
                   >
                     <Sparkles className="h-4 w-4 text-primary" /> {t("Opýtať sa Faktero AI")}
                   </Link>
                   <button
                     onClick={() => setNova(true)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-secondary"
                   >
                     <MessageSquarePlus className="h-4 w-4 text-primary" /> {t("Napísať podpore")}
                   </button>
@@ -177,7 +178,7 @@ function PodporaPage() {
                     href={c.cesta}
                     target="_blank"
                     rel="noopener"
-                    className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/60"
+                    className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:border-primary/40 hover:bg-accent"
                   >
                     {t(c.nazov)} <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </a>
@@ -191,50 +192,48 @@ function PodporaPage() {
               href="/pomoc"
               target="_blank"
               rel="noopener"
-              className="rounded-2xl border border-border bg-card p-4 hover:bg-secondary/40"
+              className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent"
             >
               <BookOpen className="h-5 w-5 text-primary" />
-              <div className="mt-2 font-medium">{t("Všetky manuály")}</div>
+              <div className="mt-2 font-semibold">{t("Všetky manuály")}</div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Návody ku každej agende, krok za krokom.")}
               </p>
             </a>
             <Link
               to="/ai-asistent"
-              className="rounded-2xl border border-border bg-card p-4 hover:bg-secondary/40"
+              className="rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent"
             >
               <Sparkles className="h-5 w-5 text-primary" />
-              <div className="mt-2 font-medium">Faktero AI</div>
+              <div className="mt-2 font-semibold">Faktero AI</div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Odpovie na otázky o vašich faktúrach aj o tom, ako čo vo Fakteri spraviť.")}
               </p>
             </Link>
             <button
               onClick={() => setNova(true)}
-              className="rounded-2xl border border-border bg-card p-4 text-left hover:bg-secondary/40"
+              className="rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent"
             >
               <LifeBuoy className="h-5 w-5 text-primary" />
-              <div className="mt-2 font-medium">{t("Napísať podpore")}</div>
+              <div className="mt-2 font-semibold">{t("Napísať podpore")}</div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("Otázka, chyba alebo nápad — odpovieme v pracovné dni spravidla do 24 hodín.")}
               </p>
             </button>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border p-4">
-              <h2 className="font-semibold">{t("Moje požiadavky")}</h2>
+          <div className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
+              <h2 className="text-base font-semibold">{t("Moje požiadavky")}</h2>
               <button
                 onClick={() => setNova(true)}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
               >
                 <MessageSquarePlus className="h-4 w-4" /> {t("Nová požiadavka")}
               </button>
             </div>
             {poziadavky === null ? (
-              <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
-              </div>
+              <NacitavanieStav className="py-8" />
             ) : poziadavky.length === 0 ? (
               <p className="p-6 text-center text-sm text-muted-foreground">
                 {t("Zatiaľ ste nám nepísali. Keď niečo nebude jasné, napíšte — odpoveď nájdete tu.")}
@@ -248,9 +247,9 @@ function PodporaPage() {
                       <Link
                         to="/podpora/$id"
                         params={{ id: p.id }}
-                        className="flex flex-wrap items-center gap-x-3 gap-y-1 p-4 hover:bg-secondary/40"
+                        className="flex flex-wrap items-center gap-x-3 gap-y-1 p-4 transition-colors hover:bg-accent"
                       >
-                        <span className="text-xs tabular-nums text-muted-foreground">
+                        <span className="cislo-dokladu whitespace-nowrap text-xs text-muted-foreground">
                           {cisloPoziadavky(p.cislo)}
                         </span>
                         <span
@@ -259,12 +258,12 @@ function PodporaPage() {
                           {p.predmet}
                         </span>
                         {nove && (
-                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
                             {t("Nová odpoveď")}
                           </span>
                         )}
-                        <PodporaStav stav={p.stav} />
-                        <span className="text-xs text-muted-foreground">
+                        <PodporaStavWeb stav={p.stav} />
+                        <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
                           {new Date(p.posledna_sprava_at).toLocaleDateString("sk-SK")}
                         </span>
                       </Link>
@@ -352,17 +351,17 @@ function NovaPoziadavka({
 
   const pole = "mt-1 w-full rounded-md border border-input bg-background px-3 text-sm";
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onZavri}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[color:var(--w-prekrytie)] p-4 backdrop-blur-[2px]" onClick={onZavri}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Nová požiadavka")}
-        className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="w-full max-w-lg rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold">{t("Napísať podpore")}</h3>
         <label className="mt-4 block text-sm">
-          <span className="text-xs font-medium text-muted-foreground">{t("O čo ide")}</span>
+          <span className="text-sm font-semibold text-foreground">{t("O čo ide")}</span>
           <select
             value={kategoria}
             onChange={(e) => setKategoria(e.target.value as KategoriaPoziadavky)}
@@ -376,7 +375,7 @@ function NovaPoziadavka({
           </select>
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-xs font-medium text-muted-foreground">{t("Predmet (nepovinné)")}</span>
+          <span className="text-sm font-semibold text-foreground">{t("Predmet (nepovinné)")}</span>
           <input
             value={predmet}
             onChange={(e) => setPredmet(e.target.value)}
@@ -386,7 +385,7 @@ function NovaPoziadavka({
           />
         </label>
         <label className="mt-3 block text-sm">
-          <span className="text-xs font-medium text-muted-foreground">{t("Správa")}</span>
+          <span className="text-sm font-semibold text-foreground">{t("Správa")}</span>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -402,14 +401,14 @@ function NovaPoziadavka({
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onZavri}
-            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm font-semibold transition-colors hover:bg-secondary"
           >
             {t("Zrušiť")}
           </button>
           <button
             onClick={() => void odosli()}
             disabled={posielam}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {posielam && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("Odoslať")}

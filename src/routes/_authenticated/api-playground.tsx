@@ -1,3 +1,4 @@
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { createFileRoute } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -197,9 +198,9 @@ function Playground() {
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
               <label className="block text-sm">
-                <span className="font-medium">{t("API kľúč")}</span>
+                <span className="font-semibold">{t("API kľúč")}</span>
                 <select
                   value={selectedKeyId}
                   onChange={(e) => setSelectedKeyId(e.target.value)}
@@ -216,7 +217,7 @@ function Playground() {
                 </select>
               </label>
               <label className="block text-sm">
-                <span className="font-medium">{t("Plaintext token (Bearer)")}</span>
+                <span className="font-semibold">{t("Plaintext token (Bearer)")}</span>
                 <input
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
@@ -228,7 +229,7 @@ function Playground() {
                 </span>
               </label>
               <label className="block text-sm">
-                <span className="font-medium">{t("Požiadavka")}</span>
+                <span className="font-semibold">{t("Požiadavka")}</span>
                 <select
                   value={recipeId}
                   onChange={(e) => {
@@ -248,7 +249,7 @@ function Playground() {
 
               {recipe.vars?.map((v) => (
                 <label key={v.key} className="block text-sm">
-                  <span className="font-medium">{t(v.label)}</span>
+                  <span className="font-semibold">{t(v.label)}</span>
                   <input
                     value={vars[v.key] ?? ""}
                     placeholder={v.placeholder ? t(v.placeholder) : undefined}
@@ -258,49 +259,52 @@ function Playground() {
                 </label>
               ))}
 
-              <div className="flex items-center justify-between">
-                <div className="font-mono text-xs">
-                  <span className="rounded bg-secondary px-2 py-0.5 font-semibold">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <div className="min-w-0 font-mono text-xs">
+                  <span className="rounded-sm border border-border bg-muted px-1.5 py-0.5 font-semibold">
                     {recipe.method}
                   </span>{" "}
-                  <span>{path}</span>
+                  <span className="break-all">{path}</span>
                 </div>
                 <button
                   onClick={run}
                   disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   <Play className="h-4 w-4" /> {busy ? t("Posielam…") : t("Spustiť")}
                 </button>
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">cURL</h3>
+                <h3 className="text-base font-semibold">cURL</h3>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(curl);
                     toast.success(t("Skopírované"));
                   }}
-                  className="rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                  className="rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-accent"
                 >
                   <Copy className="mr-1 inline h-3 w-3" /> {t("Kopírovať")}
                 </button>
               </div>
-              <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">{curl}</pre>
+              <pre className="overflow-x-auto rounded-md border border-border bg-muted p-3 text-xs">{curl}</pre>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-2 text-sm font-semibold">{t("Odpoveď")}</h3>
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <h3 className="mb-2 text-base font-semibold">{t("Odpoveď")}</h3>
               {response ? (
                 <>
                   <div className="mb-2 text-xs">
-                    HTTP <span className="font-mono font-semibold">{response.status}</span>
+                    HTTP{" "}
+                    <StavOdznak ton={response.status >= 200 && response.status < 300 ? "uspech" : "chyba"} maly>
+                      {response.status}
+                    </StavOdznak>
                   </div>
-                  <pre className="max-h-[400px] overflow-auto rounded-md bg-muted p-3 text-xs">
+                  <pre className="max-h-[400px] overflow-auto rounded-md border border-border bg-muted p-3 text-xs">
                     {response.body}
                   </pre>
                 </>
@@ -309,19 +313,19 @@ function Playground() {
               )}
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-2 text-sm font-semibold">{t("Posledné api_logs")}</h3>
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <h3 className="mb-2 text-base font-semibold">{t("Posledné api_logs")}</h3>
               <div className="space-y-1 text-xs">
                 {logs.length === 0 && <div className="text-muted-foreground">{t("Žiadne záznamy.")}</div>}
                 {logs.map((l) => (
                   <div
                     key={l.id}
-                    className="flex items-center justify-between border-b border-border py-1"
+                    className="flex items-center justify-between gap-3 border-b border-border py-1.5 last:border-0"
                   >
-                    <span className="font-mono">
+                    <span className="min-w-0 truncate font-mono">
                       {l.method} {l.path}
                     </span>
-                    <span className={l.status >= 400 ? "text-destructive" : "text-foreground"}>
+                    <span className={`shrink-0 whitespace-nowrap tabular-nums ${l.status >= 400 ? "font-semibold text-destructive" : "text-foreground"}`}>
                       HTTP {l.status} · {l.duration_ms ?? "—"}ms
                     </span>
                   </div>

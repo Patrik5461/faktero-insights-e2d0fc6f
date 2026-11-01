@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
@@ -30,6 +31,8 @@ export const Route = createFileRoute("/zabudnute-heslo")({
  * alebo nie — inak by sa dalo zisťovať, kto vo Fakteri účet má.
  */
 function ZabudnuteHesloPage() {
+  // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
+  useWebRedizajn();
   const { t } = useT();
   const { email: zAdresy } = Route.useSearch();
   const [email, setEmail] = useState(zAdresy ?? "");
@@ -49,12 +52,12 @@ function ZabudnuteHesloPage() {
   }
 
   return (
-    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-4 py-10 outline-none">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("Zabudnuté heslo")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Zabudnuté heslo")}</h1>
         {odoslane ? (
           <>
             <p className="mt-3 text-sm text-muted-foreground">
@@ -78,7 +81,7 @@ function ZabudnuteHesloPage() {
             </p>
             <form onSubmit={odosli} className="mt-5 space-y-3">
               <label className="block">
-                <span className="text-sm font-medium">{t("E-mail")}</span>
+                <span className="text-sm font-semibold">{t("E-mail")}</span>
                 <input
                   type="email"
                   autoComplete="username"
@@ -91,7 +94,7 @@ function ZabudnuteHesloPage() {
               <button
                 type="submit"
                 disabled={posielam}
-                className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {posielam ? t("Posielam…") : t("Poslať odkaz")}
               </button>

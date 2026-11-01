@@ -57,9 +57,9 @@ export function StiahnutieDat() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
       <h2 className="text-base font-semibold">{t("Stiahnuť všetky dáta")}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-1 max-w-prose text-sm text-muted-foreground">
         {t(
           "Balík ZIP s tabuľkami všetkých agend — faktúry a ich položky, prijaté faktúry, doklady, odberatelia, cenník, pokladňa, banka, jazdy a zákazky. Tabuľky sú v CSV, ktoré otvorí Excel aj o desať rokov.",
         )}
@@ -70,7 +70,7 @@ export function StiahnutieDat() {
           type="checkbox"
           checked={sPdf}
           onChange={(e) => setSPdf(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-input"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-primary"
         />
         <span>
           {t("Priložiť aj PDF vystavených faktúr")}
@@ -85,7 +85,7 @@ export function StiahnutieDat() {
           type="checkbox"
           checked={sSkenmi}
           onChange={(e) => setSSkenmi(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-input"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-primary"
         />
         <span>
           {t("Priložiť aj skeny prijatých faktúr a bločkov")}
@@ -97,36 +97,36 @@ export function StiahnutieDat() {
 
       <div className="mt-3 flex flex-wrap items-end gap-3 text-sm">
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("Doklady od")}</span>
+          <span className="text-xs font-semibold text-muted-foreground">{t("Doklady od")}</span>
           <input
             type="date"
             value={od}
             onChange={(e) => setOd(e.target.value)}
-            className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5"
+            className="mt-1 block h-9 rounded-md border border-input bg-background px-2.5 text-sm"
           />
         </label>
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("do")}</span>
+          <span className="text-xs font-semibold text-muted-foreground">{t("do")}</span>
           <input
             type="date"
             value={doDna}
             onChange={(e) => setDoDna(e.target.value)}
-            className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5"
+            className="mt-1 block h-9 rounded-md border border-input bg-background px-2.5 text-sm"
           />
         </label>
         <label className="block">
-          <span className="text-xs text-muted-foreground">{t("podľa dátumu")}</span>
+          <span className="text-xs font-semibold text-muted-foreground">{t("podľa dátumu")}</span>
           <select
             value={podla}
             onChange={(e) => setPodla(e.target.value as any)}
-            className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5"
+            className="mt-1 block h-9 rounded-md border border-input bg-background px-2.5 text-sm"
           >
             <option value="vystavenia">{t("vystavenia")}</option>
             <option value="dodania">{t("dodania")}</option>
             <option value="vytvorenia">{t("vytvorenia vo Fakteri")}</option>
           </select>
         </label>
-        <span className="pb-2 text-xs text-muted-foreground">
+        <span className="pb-2.5 text-xs text-muted-foreground">
           {t("Bez dátumov sa stiahne všetko.")}
         </span>
       </div>
@@ -134,20 +134,20 @@ export function StiahnutieDat() {
       <button
         onClick={spusti}
         disabled={bezi}
-        className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
       >
         {bezi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
         {bezi ? t("Pripravujem balík…") : t("Pripraviť a stiahnuť")}
       </button>
 
       {vysledok && (
-        <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
-          <div className="font-medium">
+        <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-sm">
+          <div className="font-semibold">
             {t("Balík je hotový ({velkost})", { velkost: velkostSlovom(vysledok.velkost) })}
             {vysledok.pdfka > 0 && t(", z toho {n} PDF faktúr", { n: vysledok.pdfka })}
             {vysledok.skenov > 0 && t(", {n} skenov", { n: vysledok.skenov })}
           </div>
-          <ul className="mt-1 text-xs text-muted-foreground">
+          <ul className="mt-1 text-xs tabular-nums text-muted-foreground">
             {Object.entries(vysledok.pocty)
               .filter(([, n]) => n > 0)
               .map(([co, n]) => (
@@ -157,19 +157,19 @@ export function StiahnutieDat() {
               ))}
           </ul>
           {vysledok.orezaneSkeny && (
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+            <p className="mt-2 text-xs text-warning">
               {t("Skenov je priložených prvých 200 — zúžte obdobie a stiahnite zvyšok.")}
             </p>
           )}
           {vysledok.orezanePdf && (
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+            <p className="mt-2 text-xs text-warning">
               {t("PDF je priložených prvých 300 — zvyšok stiahnite zo zoznamu faktúr.")}
             </p>
           )}
           {vysledok.url && (
             <a
               href={vysledok.url}
-              className="mt-2 inline-block text-xs text-primary underline"
+              className="mt-2 inline-block text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary-hover"
               target="_blank"
               rel="noreferrer"
             >

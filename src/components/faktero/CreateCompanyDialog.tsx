@@ -144,7 +144,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
             </div>
           )}
           <label className="block">
-            <span className="text-sm font-medium">{t("Názov firmy *")}</span>
+            <span className="text-sm font-semibold">{t("Názov firmy *")}</span>
             <div className="mt-1">
               <CompanyNameAutocomplete
                 value={form.name}
@@ -159,7 +159,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
           </label>
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="block">
-              <span className="text-sm font-medium">{t(popisky.ico)}</span>
+              <span className="text-sm font-semibold">{t(popisky.ico)}</span>
               <div className="mt-1 flex -space-x-px items-start">
                 <input
                   value={form.ico}
@@ -209,14 +209,14 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
                   reset();
                 }
               }}
-              className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+              className="rounded-md border border-input px-4 py-2 text-sm font-semibold hover:bg-accent"
             >
               {t("Zrušiť")}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
             >
               {loading ? t("Vytváram…") : t("Vytvoriť firmu")}
             </button>
@@ -239,7 +239,7 @@ function Field({
   const { t } = useT();
   return (
     <label className="block">
-      <span className="text-sm font-medium">{t(label)}</span>
+      <span className="text-sm font-semibold">{t(label)}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}

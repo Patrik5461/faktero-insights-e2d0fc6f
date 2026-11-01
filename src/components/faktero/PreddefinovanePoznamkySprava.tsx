@@ -127,7 +127,7 @@ export function PreddefinovanePoznamkySprava({
           {zobrazene.map((p) => (
             <li key={p.id} className="flex min-w-0 flex-wrap items-start gap-2 p-3">
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium">{p.nazov || t("(bez názvu)")}</div>
+                <div className="text-sm font-semibold">{p.nazov || t("(bez názvu)")}</div>
                 <div className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
                   {p.text}
                 </div>
@@ -150,7 +150,7 @@ export function PreddefinovanePoznamkySprava({
                     agendy: p.agendy as AgendaPoznamky[],
                   })
                 }
-                className="rounded p-1 text-muted-foreground hover:bg-secondary"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -158,7 +158,7 @@ export function PreddefinovanePoznamkySprava({
                 type="button"
                 aria-label={t("Zmazať")}
                 onClick={() => zmaz(p)}
-                className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -187,7 +187,7 @@ export function PreddefinovanePoznamkySprava({
             className="input w-full"
           />
           <fieldset className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            <legend className="mb-1 text-xs text-muted-foreground">
+            <legend className="mb-1 text-xs font-semibold text-muted-foreground">
               {t("Kde sa ponúka (nič nezaškrtnuté = všade)")}
             </legend>
             {AGENDY_POZNAMOK.map((a) => (
@@ -203,7 +203,7 @@ export function PreddefinovanePoznamkySprava({
                         : uprava.agendy.filter((x) => x !== a),
                     })
                   }
-                  className="h-4 w-4 rounded border-input"
+                  className="h-4 w-4 rounded border-input accent-primary"
                 />
                 {t(NAZVY_AGEND_POZNAMOK[a])}
               </label>
@@ -213,7 +213,7 @@ export function PreddefinovanePoznamkySprava({
             <button
               type="button"
               onClick={() => setUprava(null)}
-              className="h-9 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              className="h-9 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
             >
               {t("Zrušiť")}
             </button>
@@ -221,7 +221,7 @@ export function PreddefinovanePoznamkySprava({
               type="button"
               disabled={busy}
               onClick={uloz}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("Uložiť")}
@@ -232,7 +232,7 @@ export function PreddefinovanePoznamkySprava({
         <button
           type="button"
           onClick={() => setUprava({ ...PRAZDNA, agendy: agenda ? [agenda] : [] })}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-semibold hover:bg-accent"
         >
           <Plus className="h-4 w-4" />
           {t("Pridať poznámku")}
@@ -255,11 +255,16 @@ export function OknoPreddefinovanychPoznamok({
   const { t } = useT();
   useZatvorNaEscape(onClose);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      data-slot="dialog-overlay"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t("Preddefinované poznámky")}
+        data-slot="dialog-content"
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col rounded-xl border border-border bg-card"
         onClick={(e) => e.stopPropagation()}
       >
@@ -269,7 +274,7 @@ export function OknoPreddefinovanychPoznamok({
             type="button"
             aria-label={t("Zavrieť")}
             onClick={onClose}
-            className="rounded p-1 hover:bg-secondary"
+            className="rounded-md p-1 hover:bg-accent"
           >
             <X className="h-4 w-4" />
           </button>
