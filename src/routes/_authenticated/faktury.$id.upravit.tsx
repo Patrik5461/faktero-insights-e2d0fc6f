@@ -493,7 +493,7 @@ function EditInvoice() {
             </div>
           )}
           {inv.status !== "draft" && (
-            <div className="rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="fk-oznam fk-oznam-pozor rounded-xl px-4 py-3 text-sm">
               <strong>
                 {(inv.status as string) === "paid"
                   ? t("Opravujete už uhradenú faktúru.")
@@ -542,8 +542,8 @@ function EditInvoice() {
             na širokej obrazovke sa tak položky nezosúvajú kamsi pod prehyb.
           */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">{t("Základné údaje")}</h3>
+            <section className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">{t("Základné údaje")}</h3>
               {/* Tie isté polia a mriežka ako pri vystavení (PoleDokladu). */}
               <MriezkaDokladu>
                 <div className={bunka.cela}>
@@ -578,7 +578,7 @@ function EditInvoice() {
                     </label>
                   )}
                   {form.invoice_number.trim() !== (inv?.invoice_number ?? "") && (
-                    <p className="mt-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+                    <p className="fk-oznam fk-oznam-pozor mt-1 rounded-md px-3 py-2 text-xs">
                       {t("Číslo sa mení z {stare} na {nove}. Odberateľ mohol starý doklad dostať, tak mu pošlite nové PDF. Variabilný symbol sa nemení sám — keď má sedieť s číslom, prepíšte ho tiež.", { stare: inv?.invoice_number ?? "", nove: form.invoice_number.trim() || "—" })}
                     </p>
                   )}
@@ -630,8 +630,8 @@ function EditInvoice() {
               </MriezkaDokladu>
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">
+            <section className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">
                 {t("Platobné údaje a symboly")}
               </h3>
               <MriezkaDokladu>
@@ -691,8 +691,8 @@ function EditInvoice() {
             </section>
           </div>
 
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">
               {t("Text nad položkami")} <span className="text-destructive">*</span>
             </h3>
             <textarea
@@ -705,12 +705,12 @@ function EditInvoice() {
             />
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">{t("Položky")}</h3>
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-4 text-sm font-semibold text-foreground">{t("Položky")}</h3>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
+                  <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground">
                     <th className="py-2 font-medium">{t("Názov")}</th>
                     <th className="py-2 pl-3 font-medium">{t("Mn.")}</th>
                     <th className="py-2 pl-3 font-medium">{t("MJ")}</th>
@@ -1020,7 +1020,7 @@ function EditInvoice() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
+          <section className="rounded-xl border border-border bg-card p-5">
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               {/* Zľava na celý doklad — rozpočíta sa pomerne medzi sadzby DPH. */}
               <div className="flex items-center justify-between gap-2 pb-1">
@@ -1060,13 +1060,13 @@ function EditInvoice() {
                 <>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Medzisúčet")}</span>
-                    <span className="tabular-nums">
+                    <span className="whitespace-nowrap tabular-nums">
                       {zobrazene.medzisucet.toFixed(2)} {form.currency}
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t("Zľava")}</span>
-                    <span className="tabular-nums">
+                    <span className="whitespace-nowrap tabular-nums">
                       −{totals.zlava.toFixed(2)} {form.currency}
                     </span>
                   </div>
@@ -1074,27 +1074,27 @@ function EditInvoice() {
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("Bez DPH")}</span>
-                <span className="tabular-nums">
+                <span className="whitespace-nowrap tabular-nums">
                   {zobrazene.subtotal.toFixed(2)} {form.currency}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("DPH")}</span>
-                <span className="tabular-nums">
+                <span className="whitespace-nowrap tabular-nums">
                   {zobrazene.vat_total.toFixed(2)} {form.currency}
                 </span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
                 <span>{t("Spolu")}</span>
-                <span className="tabular-nums text-primary">
+                <span className="whitespace-nowrap tabular-nums text-primary">
                   {zobrazene.total.toFixed(2)} {form.currency}
                 </span>
               </div>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">{t("Poznámka")}</h3>
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">{t("Poznámka")}</h3>
             <textarea
               rows={3}
               value={form.notes}
@@ -1131,7 +1131,7 @@ function EditInvoice() {
           />
 
           <div /* Vpravo dole sedí plávajúce tlačidlo pomoci — nech neprekryje „Uložiť". */
-            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
+            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
           >
             <Link
               to="/faktury/$id"
@@ -1332,9 +1332,9 @@ function OdberatelSekcia({
   });
   const zmeneny = zmenilSaOdberatel(povodny, odberatel);
   return (
-    <section className="rounded-2xl border border-border bg-card p-5">
+    <section className="rounded-xl border border-border bg-card p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide">{t("Odberateľ")}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t("Odberateľ")}</h3>
         {zmeneny && (
           <button
             type="button"
@@ -1375,7 +1375,7 @@ function OdberatelSekcia({
         <div className="sm:col-span-2">{pole("customer_email", t("E-mail"))}</div>
       </div>
       {upozornenia.length > 0 && (
-        <ul className="mt-4 space-y-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+        <ul className="fk-oznam fk-oznam-pozor mt-4 space-y-1 rounded-md px-3 py-2 text-sm">
           {upozornenia.map((u) => (
             <li key={u}>{t(u)}</li>
           ))}

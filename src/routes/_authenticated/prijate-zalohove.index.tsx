@@ -1,5 +1,6 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -213,7 +214,7 @@ function PrijateZalohovePage() {
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
+                      <tr className="whitespace-nowrap border-b border-border text-left text-xs font-semibold text-muted-foreground">
                         <th className="p-3">{t("Číslo")}</th>
                         <th className="p-3">{t("Dodávateľ")}</th>
                         <th className="p-3">{t("Vystavená")}</th>
@@ -232,12 +233,19 @@ function PrijateZalohovePage() {
                           }
                           className="cursor-pointer border-b border-border/60 hover:bg-muted/40"
                         >
-                          <td className="p-3 font-medium">{r.invoice_number}</td>
-                          <td className="p-3">{r.supplier_name}</td>
-                          <td className="p-3">{datumNaDoklade(r.issue_date)}</td>
-                          <td className="p-3">{datumNaDoklade(r.due_date)}</td>
-                          <td className="p-3 text-right tabular-nums">
-                            {formatujMenu(r.amount_total, r.currency)}
+                          <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">{r.invoice_number}</td>
+                          <td className="p-3">
+                            <span
+                              className="block max-w-[14rem] truncate 2xl:max-w-[22rem]"
+                              title={r.supplier_name ?? undefined}
+                            >
+                              {r.supplier_name}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap p-3">{datumNaDoklade(r.issue_date)}</td>
+                          <td className="whitespace-nowrap p-3">{datumNaDoklade(r.due_date)}</td>
+                          <td className="whitespace-nowrap p-3 text-right">
+                            <span className="suma">{formatujMenu(r.amount_total, r.currency)}</span>
                           </td>
                           <td className="p-3">
                             <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
@@ -300,30 +308,24 @@ function StavZalohy({ riadok, zuctovanaNa }: { riadok: Riadok; zuctovanaNa?: str
   const { t } = useT();
   if (zuctovanaNa) {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700">
-        {t("Zúčtovaná — {cislo}", { cislo: zuctovanaNa })}
-      </span>
+      <StavOdznak ton="uspech">{t("Zúčtovaná — {cislo}", { cislo: zuctovanaNa })}</StavOdznak>
     );
   }
   if (riadok.payment_date) {
     return (
-      <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600">
-        {t("Zaplatená")}
-      </span>
+      <StavOdznak ton="informacia">{t("Zaplatená")}</StavOdznak>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-800">
-      {t("Čaká na úhradu")}
-    </span>
+    <StavOdznak ton="pozor">{t("Čaká na úhradu")}</StavOdznak>
   );
 }
 
 function Statistika({ label, hodnota }: { label: string; hodnota: string }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums">{hodnota}</div>
+      <div className="text-sm font-medium text-muted-foreground">{label}</div>
+      <div className="suma mt-1 text-xl font-semibold">{hodnota}</div>
     </div>
   );
 }

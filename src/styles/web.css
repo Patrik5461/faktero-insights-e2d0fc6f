@@ -600,3 +600,56 @@ html.dark [data-web-redizajn] {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* fakturacia — pomocné triedy agendy Fakturácia a eFaktúra            */
+/* (faktúry, zálohové, ponuky, objednávky, opakované, eFaktúra).       */
+/* Len tokeny --stav-*; svetlý aj tmavý motív, klasický aj kompaktný.  */
+/* V @layer components → utilita na konkrétnom mieste ju smie prebiť.  */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Oznamový pás / rámček (upozornenie, chyba, informácia, hotovo). */
+  [data-web-redizajn] .fk-oznam {
+    --o-plocha: var(--stav-neutralny-plocha);
+    --o-text: var(--stav-neutralny-text);
+    --o-bod: var(--stav-neutralny-bod);
+    background: var(--o-plocha);
+    color: var(--o-text);
+    border: 1px solid color-mix(in oklch, var(--o-bod) 45%, transparent);
+  }
+  [data-web-redizajn] .fk-oznam-pozor {
+    --o-plocha: var(--stav-pozor-plocha);
+    --o-text: var(--stav-pozor-text);
+    --o-bod: var(--stav-pozor-bod);
+  }
+  [data-web-redizajn] .fk-oznam-chyba {
+    --o-plocha: var(--stav-chyba-plocha);
+    --o-text: var(--stav-chyba-text);
+    --o-bod: var(--stav-chyba-bod);
+  }
+  [data-web-redizajn] .fk-oznam-info {
+    --o-plocha: var(--stav-informacia-plocha);
+    --o-text: var(--stav-informacia-text);
+    --o-bod: var(--stav-informacia-bod);
+  }
+  [data-web-redizajn] .fk-oznam-uspech {
+    --o-plocha: var(--stav-uspech-plocha);
+    --o-text: var(--stav-uspech-text);
+    --o-bod: var(--stav-uspech-bod);
+  }
+  /* Ikona v pásoch nesie výraznejšiu farbu tónu. */
+  [data-web-redizajn] .fk-oznam > svg:first-child,
+  [data-web-redizajn] .fk-oznam .fk-oznam-ikona {
+    color: var(--o-bod);
+  }
+  [data-web-redizajn] .fk-oznam a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  /* Farebný text bez plochy (napr. „predĺžená“, rozdiel sumy, „Zaúčtovaná“). */
+  [data-web-redizajn] .fk-text-pozor { color: var(--stav-pozor-text); }
+  [data-web-redizajn] .fk-text-chyba { color: var(--stav-chyba-text); }
+  [data-web-redizajn] .fk-text-info { color: var(--stav-informacia-text); }
+  [data-web-redizajn] .fk-text-uspech { color: var(--stav-uspech-text); }
+}

@@ -63,7 +63,8 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { formatujMenu } from "@/lib/faktero/mena";
 import { supabase } from "@/integrations/supabase/client";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
-import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
+import { useStavSchvalovania } from "@/hooks/useStavSchvalovania";
+import { StavOdznak, triedaStavu } from "@/components/faktero/web/Stav";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
@@ -1023,7 +1024,7 @@ function InvoicesPage() {
               >
                 <Landmark className="h-4 w-4" /> {t("Spárovať platby")}
                 {cakaNaParovanie > 0 && (
-                  <span className="rounded-full bg-emerald-700 px-1.5 text-xs font-medium text-white">
+                  <span className="rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
                     {cakaNaParovanie}
                   </span>
                 )}
@@ -1213,7 +1214,7 @@ function InvoicesPage() {
               onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
               title={
                 <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-                  {i.invoice_number}
+                  <span className="cislo-dokladu">{i.invoice_number}</span>
                   <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                   {i.type === "credit_note" || i.type === "debit_note" ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -1222,9 +1223,9 @@ function InvoicesPage() {
                   ) : null}
                   <OdznakEfaktury stav={efakturaMap[i.id]} />
                   {reminderMap[i.id] ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
-                      <Bell className="h-3 w-3" /> {t("Upomienka #{n}", { n: reminderMap[i.id] })}
-                    </span>
+                    <StavOdznak ton="pozor" maly ikona={<Bell aria-hidden="true" />}>
+                      {t("Upomienka #{n}", { n: reminderMap[i.id] })}
+                    </StavOdznak>
                   ) : null}
                 </span>
               }
@@ -1282,9 +1283,9 @@ function InvoicesPage() {
             >
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
-                    <th className="w-10 p-3">
+                    <th className="w-10 px-2 py-3">
                       <input
                         type="checkbox"
                         aria-label={t("Vybrať všetko")}
@@ -1293,15 +1294,15 @@ function InvoicesPage() {
                       />
                       <span className="sr-only">{t("Výber")}</span>
                     </th>
-                    <th className="p-3">{t("Číslo")}</th>
-                    <th className="p-3">{t("Odberateľ")}</th>
-                    <th className="p-3">{t("Vystavená")}</th>
-                    <th className="p-3">{t("Dodaná")}</th>
-                    <th className="p-3">{t("Splatnosť")}</th>
-                    <th className="p-3 text-right">{t("Suma")}</th>
-                    <th className="p-3">{t("Účtovná položka")}</th>
-                    <th className="p-3">{t("Stav")}</th>
-                    <th className="p-3"><span className="sr-only">{t("Akcie")}</span></th>
+                    <th className="px-2 py-3">{t("Číslo")}</th>
+                    <th className="px-2 py-3">{t("Odberateľ")}</th>
+                    <th className="px-2 py-3">{t("Vystavená")}</th>
+                    <th className="px-2 py-3">{t("Dodaná")}</th>
+                    <th className="px-2 py-3">{t("Splatnosť")}</th>
+                    <th className="px-2 py-3 text-right">{t("Suma")}</th>
+                    <th className="px-2 py-3">{t("Účtovná položka")}</th>
+                    <th className="px-2 py-3">{t("Stav")}</th>
+                    <th className="px-2 py-3"><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1336,7 +1337,7 @@ function InvoicesPage() {
                       }
                       onDoubleClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
                     >
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           aria-label={t("Vybrať riadok")}
@@ -1344,9 +1345,10 @@ function InvoicesPage() {
                           onChange={(e) => list.toggleSelect(i.id, e.target.checked)}
                         />
                       </td>
-                      <td className="p-3 font-medium">
-                        <span className="inline-flex items-center gap-2">
-                          {i.invoice_number}
+                      <td className="px-2 py-3 font-medium">
+                        {/* Odznaky (eFaktúra, upomienka…) sa zalomia pod číslo, aby tabuľka nevytlačila stĺpec Stav. */}
+                        <span className="inline-flex max-w-[12rem] flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
                           <OdovzdaneIkona kedy={i.exported_at} doklad={i} />
                           {i.type === "credit_note" || i.type === "debit_note" ? (
                             <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -1355,24 +1357,34 @@ function InvoicesPage() {
                           ) : null}
                           <OdznakEfaktury stav={efakturaMap[i.id]} />
                           {reminderMap[i.id] ? (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"
+                            <StavOdznak
+                              ton="pozor"
+                              maly
+                              ikona={<Bell aria-hidden="true" />}
                               title={t("Upomienka bola odoslaná")}
                             >
-                              <Bell className="h-3 w-3" /> #{reminderMap[i.id]}
-                            </span>
+                              #{reminderMap[i.id]}
+                            </StavOdznak>
                           ) : null}
                         </span>
                       </td>
 
-                      <td className="p-3">{i.customer_name ?? "—"}</td>
-                      <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
+                      <td className="px-2 py-3">
+                        {/* Jeden riadok; plné meno v tooltipe. */}
+                        <span
+                          className="block max-w-[9rem] truncate 2xl:max-w-[20rem]"
+                          title={i.customer_name ?? undefined}
+                        >
+                          {i.customer_name ?? "—"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-3">{datumNaDoklade(i.issue_date)}</td>
                       <td
-                        className={`p-3 ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                        className={`whitespace-nowrap px-2 py-3 ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
                       >
                         {datumNaDoklade(datumDodania(i))}
                       </td>
-                      <td className="p-3">
+                      <td className="whitespace-nowrap px-2 py-3">
                         {datumNaDoklade(i.due_date)}
                         {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (
                           <span className="block text-xs text-muted-foreground" title={t("Pôvodne {datum}", { datum: datumNaDoklade(i.povodna_splatnost) })}>
@@ -1380,11 +1392,11 @@ function InvoicesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="p-3 text-right">
+                      <td className="whitespace-nowrap px-2 py-3 text-right">
                         {/* Dobropis bez mínusu — že znižuje, hovorí štítok Dobropis. */}
-                        {formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}
+                        <span className="suma">{formatujMenu(sumaNaZobrazenie(i, i.total), i.currency)}</span>
                       </td>
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
                         {(() => {
                           // Koncept sa účtuje až po vystavení; odovzdanú najprv treba vrátiť z Pohody.
                           const z = dovodZamku(i, cis.zamknuteDo);
@@ -1403,7 +1415,7 @@ function InvoicesPage() {
                           );
                         })()}
                       </td>
-                      <td className="p-3">
+                      <td className="px-2 py-3">
                         <StatusBadge status={i.status} />
                         {cis.stavy.length && !list.showDeleted ? (
                           <div className="mt-1" onClick={(e) => e.stopPropagation()}>
@@ -1430,13 +1442,13 @@ function InvoicesPage() {
                           </div>
                         ) : null}
                         {sch.stavy[i.id] ? (
-                          <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[i.id].stav)}`} title={t("Schvaľovanie")}>
+                          <div className={`mt-1 text-xs ${textSchvalovania(sch.stavy[i.id].stav)}`} title={t("Schvaľovanie")}>
                             {t(sch.stavy[i.id].odznak)}
                           </div>
                         ) : null}
                         {i.zauctovane_at ? (
                           <div
-                            className="mt-1 text-xs text-sky-700"
+                            className="mt-1 text-xs fk-text-info"
                             title={[i.pohoda_predkontacia, i.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
                           >
                             {t("Zaúčtovaná")}
@@ -1444,7 +1456,7 @@ function InvoicesPage() {
                           </div>
                         ) : null}
                       </td>
-                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         {list.showDeleted ? (
                           <button
                             title={t("Obnoviť")}
@@ -1590,6 +1602,20 @@ function InvoicesPage() {
   );
 }
 
+/**
+ * Farba textu stavu schvaľovania (rovnaké vetvy ako `farbaOdznaku`
+ * v useStavSchvalovania, len tokenmi webu — svetlý aj tmavý motív).
+ */
+function textSchvalovania(stav: string | undefined): string {
+  return stav === "schvaleny"
+    ? "fk-text-uspech"
+    : stav === "zamietnuty"
+      ? "fk-text-chyba"
+      : stav === "vrateny"
+        ? "fk-text-info"
+        : "fk-text-pozor";
+}
+
 type EfakturaStav = { stav: "odoslana" | "dorucena" | "zlyhala"; kedy?: string | null };
 
 /** Štítok pri čísle faktúry: odišla ako eFaktúra, bola doručená, alebo odoslanie zlyhalo. */
@@ -1606,15 +1632,14 @@ function OdznakEfaktury({ stav }: { stav?: EfakturaStav }) {
       : t("eFaktúra odoslaná");
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-        zlyhala
-          ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
-          : "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200"
-      }`}
+      className={triedaStavu(
+        zlyhala ? "chyba" : stav.stav === "dorucena" ? "uspech" : "priebeh",
+        true,
+      )}
       title={popis}
       aria-label={popis}
     >
-      <FileCheck2 className="h-3 w-3" aria-hidden="true" /> {t("eFaktúra")}
+      <FileCheck2 aria-hidden="true" /> {t("eFaktúra")}
     </span>
   );
 }

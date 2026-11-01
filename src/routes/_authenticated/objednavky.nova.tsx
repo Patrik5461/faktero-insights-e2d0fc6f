@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +52,7 @@ const PRAZDNA: Polozka = {
   vat_rate: DEFAULT_VAT_RATE,
 };
 
-const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
+const pole = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const popis = "mb-1 block text-[13px] font-semibold text-foreground";
 
 /** Dnešok v miestnom čase — `toISOString()` by po polnoci vrátil včerajšok. */
@@ -271,7 +272,7 @@ function NewOrder() {
   if (nacitava) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav />
       </PageBody>
     );
   }
@@ -285,7 +286,7 @@ function NewOrder() {
       <PageBody>
         <form onSubmit={odosli} className="space-y-4">
           {chyba && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="fk-oznam fk-oznam-chyba rounded-lg px-3 py-2 text-sm">
               {chyba}
             </div>
           )}
@@ -370,10 +371,10 @@ function NewOrder() {
 
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="text-sm font-medium">{t("Položky")}</div>
+              <div className="text-sm font-semibold">{t("Položky")}</div>
               {products.length > 0 && (
                 <select
-                  className="min-w-0 max-w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                  className="min-w-0 max-w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                   value=""
                   onChange={(e) => {
                     if (e.target.value) pridajProdukt(e.target.value);
@@ -447,7 +448,7 @@ function NewOrder() {
                         }
                       />
                       {p._dovod && (
-                        <span className="mt-0.5 block text-[10px] leading-tight text-emerald-700">
+                        <span className="fk-text-uspech mt-0.5 block text-[10px] leading-tight">
                           {p._dovod}
                         </span>
                       )}
@@ -469,7 +470,7 @@ function NewOrder() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("Spolu")}</span>
-                    <span className="font-medium tabular-nums">
+                    <span className="suma">
                       {suma(Number(p.quantity) * Number(p.unit_price))}
                     </span>
                   </div>
@@ -479,14 +480,14 @@ function NewOrder() {
 
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
-                <thead className="text-xs text-muted-foreground">
+                <thead className="text-xs text-muted-foreground [&_th]:whitespace-nowrap">
                   <tr className="border-b border-border">
-                    <th className="py-2 text-left font-medium">{t("Názov")}</th>
-                    <th className="py-2 pl-3 text-left font-medium">{t("Množstvo")}</th>
-                    <th className="py-2 pl-3 text-left font-medium">{t("MJ")}</th>
-                    <th className="py-2 pl-3 text-right font-medium">{t("Cena bez DPH")}</th>
-                    <th className="py-2 pl-3 text-left font-medium">{t("DPH")}</th>
-                    <th className="py-2 pl-3 text-right font-medium">{t("Spolu")}</th>
+                    <th className="py-2 text-left font-semibold">{t("Názov")}</th>
+                    <th className="py-2 pl-3 text-left font-semibold">{t("Množstvo")}</th>
+                    <th className="py-2 pl-3 text-left font-semibold">{t("MJ")}</th>
+                    <th className="py-2 pl-3 text-right font-semibold">{t("Cena bez DPH")}</th>
+                    <th className="py-2 pl-3 text-left font-semibold">{t("DPH")}</th>
+                    <th className="py-2 pl-3 text-right font-semibold">{t("Spolu")}</th>
                     <th><span className="sr-only">{t("Akcie")}</span></th>
                   </tr>
                 </thead>
@@ -530,7 +531,7 @@ function NewOrder() {
                           }
                         />
                         {p._dovod && (
-                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-700">
+                          <div className="fk-text-uspech pr-2 text-right text-[10px] leading-tight">
                             {p._dovod}
                           </div>
                         )}
@@ -548,7 +549,7 @@ function NewOrder() {
                           ))}
                         </select>
                       </td>
-                      <td className="py-2 pl-3 text-right tabular-nums">
+                      <td className="suma py-2 pl-3 text-right">
                         {suma(Number(p.quantity) * Number(p.unit_price))}
                       </td>
                       <td className="py-2 pl-2 text-right">
@@ -570,7 +571,7 @@ function NewOrder() {
             <button
               type="button"
               onClick={() => setPolozky([...polozky, { ...PRAZDNA }])}
-              className="mt-3 inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+              className="mt-3 inline-flex items-center gap-1 rounded-md border border-input px-3 py-1.5 text-sm hover:bg-muted"
             >
               <Plus className="h-4 w-4" /> {t("Pridať riadok")}
             </button>
@@ -579,15 +580,15 @@ function NewOrder() {
               <div className="w-full space-y-1 text-sm sm:w-64">
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t("Základ")}</span>
-                  <span className="tabular-nums">{suma(sucty.subtotal)}</span>
+                  <span className="suma font-medium">{suma(sucty.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t("DPH")}</span>
-                  <span className="tabular-nums">{suma(sucty.vat_total)}</span>
+                  <span className="suma font-medium">{suma(sucty.vat_total)}</span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-1 font-medium">
                   <span>{t("Spolu")}</span>
-                  <span className="tabular-nums">{suma(sucty.total)}</span>
+                  <span className="suma">{suma(sucty.total)}</span>
                 </div>
               </div>
             </div>

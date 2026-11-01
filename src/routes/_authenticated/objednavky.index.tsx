@@ -18,6 +18,9 @@ import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { EmptyState } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/objednavky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté objednávky — Faktero") }] }),
@@ -25,12 +28,13 @@ export const Route = createFileRoute("/_authenticated/objednavky/")({
   component: OrdersPage,
 });
 
-const FARBA: Record<StavPrijatejObjednavky, string> = {
-  draft: "bg-muted text-muted-foreground",
-  confirmed: "bg-blue-500/10 text-blue-600",
-  partially_invoiced: "bg-amber-500/10 text-amber-800",
-  completed: "bg-emerald-500/10 text-emerald-700",
-  cancelled: "bg-muted text-muted-foreground line-through",
+/* Tón odznaku stavu prijatej objednávky (Stav.tsx nemá mapu pre objednávky). */
+const TON_OBJEDNAVKY: Record<StavPrijatejObjednavky, TonStavu> = {
+  draft: "neutralny",
+  confirmed: "informacia",
+  partially_invoiced: "pozor",
+  completed: "uspech",
+  cancelled: "zruseny",
 };
 
 function suma(n: unknown) {
@@ -138,26 +142,24 @@ function OrdersPage() {
           {zobrazene.length > 0 && (
             <span className="ml-auto text-xs text-muted-foreground">
               {t("Hodnota {suma} · nevyfakturované", { suma: suma(spolu.hodnota) })}{" "}
-              <span className="font-medium text-foreground">{suma(spolu.zostava)}</span>
+              <span className="suma text-foreground">{suma(spolu.zostava)}</span>
             </span>
           )}
         </div>
 
         {loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="rounded-xl border border-border bg-card" />
         ) : rows.length > 0 && zobrazene.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             {t("Nič nevyhovuje filtru.")}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center">
-            <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">
-              {filter === "otvorene" ? t("Žiadna otvorená objednávka") : t("Zatiaľ žiadna objednávka")}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("Objednávka je záväzok odberateľa. Vzniká ručne alebo z prijatej cenovej ponuky a vybavuje sa faktúrami — aj po častiach.")}
-            </p>
+          <div className="rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={ClipboardList}
+              title={filter === "otvorene" ? "Žiadna otvorená objednávka" : "Zatiaľ žiadna objednávka"}
+              description="Objednávka je záväzok odberateľa. Vzniká ručne alebo z prijatej cenovej ponuky a vybavuje sa faktúrami — aj po častiach."
+            />
           </div>
         ) : (
           <ResponsiveTable
@@ -165,15 +167,15 @@ function OrdersPage() {
             desktop={
               <div className="overflow-x-auto rounded-xl border border-border bg-card">
                 <table className="w-full text-sm">
-                  <thead className="text-xs text-muted-foreground">
+                  <thead className="bg-muted/40 text-xs text-muted-foreground [&_th]:whitespace-nowrap">
                     <tr className="border-b border-border">
-                      <th className="px-4 py-2 text-left font-medium">{t("Číslo")}</th>
-                      <th className="px-4 py-2 text-left font-medium">{t("Odberateľ")}</th>
-                      <th className="px-4 py-2 text-left font-medium">{t("Objednané")}</th>
-                      <th className="px-4 py-2 text-left font-medium">{t("Termín")}</th>
-                      <th className="px-4 py-2 text-left font-medium">{t("Stav")}</th>
-                      <th className="px-4 py-2 text-right font-medium">{t("Vybavené")}</th>
-                      <th className="px-4 py-2 text-right font-medium">{t("Hodnota")}</th>
+                      <th className="px-4 py-2 text-left font-semibold">{t("Číslo")}</th>
+                      <th className="px-4 py-2 text-left font-semibold">{t("Odberateľ")}</th>
+                      <th className="px-4 py-2 text-left font-semibold">{t("Objednané")}</th>
+                      <th className="px-4 py-2 text-left font-semibold">{t("Termín")}</th>
+                      <th className="px-4 py-2 text-left font-semibold">{t("Stav")}</th>
+                      <th className="px-4 py-2 text-right font-semibold">{t("Vybavené")}</th>
+                      <th className="px-4 py-2 text-right font-semibold">{t("Hodnota")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -190,7 +192,7 @@ function OrdersPage() {
                             <Link
                               to="/objednavky/$id"
                               params={{ id: o.id }}
-                              className="font-medium text-primary hover:underline"
+                              className="cislo-dokladu whitespace-nowrap text-primary hover:underline"
                             >
                               {o.order_number}
                             </Link>
@@ -200,20 +202,27 @@ function OrdersPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-2">{o.customers?.name ?? o.customer_name ?? "—"}</td>
+                          <td className="px-4 py-2">
+                            <span
+                              className="block max-w-[220px] 2xl:max-w-[320px] truncate"
+                              title={o.customers?.name ?? o.customer_name ?? undefined}
+                            >
+                              {o.customers?.name ?? o.customer_name ?? "—"}
+                            </span>
+                          </td>
                           <td className="px-4 py-2 whitespace-nowrap">{datum(o.order_date)}</td>
                           <td className="px-4 py-2 whitespace-nowrap">
                             {datum(o.requested_date)}
                             {meska && (
-                              <span className="ml-1.5 inline-flex items-center gap-1 text-xs text-destructive">
+                              <span className="fk-text-chyba ml-1.5 inline-flex items-center gap-1 text-xs">
                                 <AlertTriangle className="h-3 w-3" /> {t("po termíne")}
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-2">
-                            <span className={`rounded-full px-2 py-0.5 text-xs ${FARBA[stav]}`}>
+                          <td className="whitespace-nowrap px-4 py-2">
+                            <StavOdznak ton={tonStavu(TON_OBJEDNAVKY, stav)}>
                               {t(STAV_POPIS[stav])}
-                            </span>
+                            </StavOdznak>
                           </td>
                           <td className="px-4 py-2 text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -228,7 +237,7 @@ function OrdersPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-2 text-right tabular-nums">{suma(o.total)}</td>
+                          <td className="suma whitespace-nowrap px-4 py-2 text-right">{suma(o.total)}</td>
                         </tr>
                       );
                     })}
@@ -255,18 +264,18 @@ function OrdersPage() {
                   }
                   subtitle={o.customers?.name ?? o.customer_name ?? "—"}
                   status={
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${FARBA[stav]}`}>
+                    <StavOdznak ton={tonStavu(TON_OBJEDNAVKY, stav)}>
                       {t(STAV_POPIS[stav])}
-                    </span>
+                    </StavOdznak>
                   }
                   meta={
                     <>
                       {datum(o.order_date)} · {t("Termín")} {datum(o.requested_date)}
-                      {meska && <span className="text-destructive"> · {t("po termíne")}</span>}
+                      {meska && <span className="fk-text-chyba"> · {t("po termíne")}</span>}
                       {` · ${t("Vybavené")} ${percento} %`}
                     </>
                   }
-                  amount={<span className="tabular-nums">{suma(o.total)}</span>}
+                  amount={<span className="suma">{suma(o.total)}</span>}
                 />
               );
             }}

@@ -253,7 +253,7 @@ export function VystavenaDetailKompaktna({
             onZmena={onZmena}
           />
           <Hodnota popis={inv.type === "proforma" ? "Číslo zálohovej faktúry" : "Číslo faktúry"}>
-            {inv.invoice_number}
+            <span className="cislo-dokladu">{inv.invoice_number}</span>
           </Hodnota>
           <div className="grid grid-cols-2 gap-3">
             <Hodnota popis="Dátum vystavenia" title={lenCitanie}>
@@ -283,7 +283,7 @@ export function VystavenaDetailKompaktna({
         <Sekcia nadpis="Čiastka a DPH" ok={sumaSedi}>
           <div className="grid grid-cols-2 gap-3">
             <Hodnota popis="Celková suma" title={lenCitanie}>
-              <span className="tabular-nums">{formatujCislo(naZobr(u.spolu), 2)}</span>
+              <span className="suma">{formatujCislo(naZobr(u.spolu), 2)}</span>
             </Hodnota>
             <Hodnota popis="Mena">{menaDokladu}</Hodnota>
           </div>
@@ -296,10 +296,10 @@ export function VystavenaDetailKompaktna({
                     : t("Základ dane {sadzba} %", { sadzba: r.sadzba })
                 }
               >
-                <span className="tabular-nums">{formatujCislo(naZobr(r.zaklad), 2)}</span>
+                <span className="whitespace-nowrap tabular-nums">{formatujCislo(naZobr(r.zaklad), 2)}</span>
               </Hodnota>
               <Hodnota popis={t("Daň {sadzba} %", { sadzba: r.sadzba })}>
-                <span className="tabular-nums">{formatujCislo(naZobr(r.dan), 2)}</span>
+                <span className="whitespace-nowrap tabular-nums">{formatujCislo(naZobr(r.dan), 2)}</span>
               </Hodnota>
             </div>
           ))}
@@ -313,20 +313,20 @@ export function VystavenaDetailKompaktna({
             {u.zlava ? (
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">{t("Zľava")}</span>
-                <span className="tabular-nums">−{formatujMenu(u.zlava, menaDokladu)}</span>
+                <span className="whitespace-nowrap tabular-nums">−{formatujMenu(u.zlava, menaDokladu)}</span>
               </div>
             ) : null}
             {u.zaloha ? (
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">{t("Zúčtovaná záloha")}</span>
-                <span className="tabular-nums">−{formatujMenu(u.zaloha, menaDokladu)}</span>
+                <span className="whitespace-nowrap tabular-nums">−{formatujMenu(u.zaloha, menaDokladu)}</span>
               </div>
             ) : null}
             <div className="flex items-center justify-between gap-3">
               <span className="font-medium">
                 {u.uhrada.uhradena ? t("Uhradené") : t("Suma na úhradu")}
               </span>
-              <span className="text-lg font-semibold tabular-nums">{suma(kUhrade)}</span>
+              <span className="suma whitespace-nowrap text-lg font-semibold">{suma(kUhrade)}</span>
             </div>
           </div>
           {u.rezimy.length ? (
@@ -419,14 +419,14 @@ export function VystavenaDetailKompaktna({
                             </span>
                           ) : null}
                         </span>
-                        <span className="shrink-0 font-medium tabular-nums">
+                        <span className="suma shrink-0 whitespace-nowrap font-medium">
                           {formatujMenu(Number(p.amount), p.currency || menaDokladu)}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => void zrusVazbu(p)}
-                        className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary"
+                        className="rounded border border-input px-2 py-1 text-xs text-muted-foreground hover:bg-secondary"
                       >
                         {t("Zrušiť väzbu")}
                       </button>
@@ -512,7 +512,7 @@ function StavUhrady({
   const dni = dniPoSplatnosti(inv.due_date);
   const zostava = Math.max(0, naZobr(u.kUhrade ?? u.spolu) - uhradene);
   const male =
-    "inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-secondary";
+    "inline-flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1.5 text-xs hover:bg-secondary";
   return (
     <div className="space-y-2" aria-label={t("Úhrada")} role="group">
       {inv.due_date ? (
@@ -544,7 +544,7 @@ function StavUhrady({
           <div className="text-xs text-muted-foreground">
             {poSplatnosti ? t("Po splatnosti — zostáva uhradiť") : t("Zostáva k úhrade")}
           </div>
-          <div className="text-xl font-semibold tabular-nums">{formatujMenu(zostava, mena)}</div>
+          <div className="suma text-xl font-semibold">{formatujMenu(zostava, mena)}</div>
           {uhradene > 0.004 ? (
             <div className="text-xs text-muted-foreground">
               {t("Čiastočne uhradená — {suma}", { suma: formatujMenu(uhradene, mena) })}
@@ -558,8 +558,8 @@ function StavUhrady({
           <ul className="mt-0.5 space-y-0.5 text-sm">
             {platby.map((p) => (
               <li key={p.id} className="flex justify-between gap-2 tabular-nums">
-                <span>{datumNaDoklade(String(p.paid_at).slice(0, 10))}</span>
-                <span className="font-medium">{formatujMenu(Number(p.amount), mena)}</span>
+                <span className="whitespace-nowrap">{datumNaDoklade(String(p.paid_at).slice(0, 10))}</span>
+                <span className="suma whitespace-nowrap font-medium">{formatujMenu(Number(p.amount), mena)}</span>
               </li>
             ))}
           </ul>

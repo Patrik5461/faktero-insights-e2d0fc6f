@@ -403,7 +403,7 @@ function NewQuote() {
                     onChange={(e) => {
                       if (e.target.value) zKatalogu(e.target.value);
                     }}
-                    className="min-w-0 max-w-full flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm sm:max-w-xs"
+                    className="min-w-0 max-w-full flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm sm:max-w-xs"
                   >
                     <option value="">{t("Z katalógu…")}</option>
                     {produkty.map((p) => (
@@ -416,7 +416,7 @@ function NewQuote() {
                 <button
                   type="button"
                   onClick={() => setItems([...items, novaPolozka()])}
-                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
                 >
                   <Plus className="h-3.5 w-3.5" /> {t("Pridať")}
                 </button>
@@ -445,7 +445,7 @@ function NewQuote() {
                       onChange={(v) => setItem(idx, { unit_price: Number(v), _cena_rucne: true })}
                     />
                     {it._dovod && (
-                      <div className="mt-1 text-[10px] leading-tight text-emerald-700">
+                      <div className="fk-text-uspech mt-1 text-[10px] leading-tight">
                         {it._dovod}
                       </div>
                     )}
@@ -462,7 +462,7 @@ function NewQuote() {
                     value={String(it.vat_rate)}
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
-                  <div className="text-right text-sm font-medium">
+                  <div className="suma text-right text-sm">
                     {formatujMenu(
                       zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
                         (1 + it.vat_rate / 100),
@@ -514,23 +514,23 @@ function NewQuote() {
               {totals.zlava > 0 && (
                 <>
                   <div className="text-muted-foreground">
-                    {t("Medzisúčet:")} {formatujMenu(totals.medzisucet, form.currency)}
+                    {t("Medzisúčet:")} <span className="suma font-medium">{formatujMenu(totals.medzisucet, form.currency)}</span>
                   </div>
                   <div className="text-muted-foreground">
-                    {t("Zľava:")} −{formatujMenu(totals.zlava, form.currency)}
+                    {t("Zľava:")} <span className="suma font-medium">−{formatujMenu(totals.zlava, form.currency)}</span>
                   </div>
                 </>
               )}
               <div>
                 {t("Bez DPH:")}{" "}
-                <span className="font-medium">{formatujMenu(totals.subtotal, form.currency)}</span>
+                <span className="suma">{formatujMenu(totals.subtotal, form.currency)}</span>
               </div>
               <div>
                 {t("DPH:")}{" "}
-                <span className="font-medium">{formatujMenu(totals.vat_total, form.currency)}</span>
+                <span className="suma">{formatujMenu(totals.vat_total, form.currency)}</span>
               </div>
               <div className="text-lg font-semibold">
-                {t("Spolu:")} {formatujMenu(totals.total, form.currency)}
+                {t("Spolu:")} <span className="suma">{formatujMenu(totals.total, form.currency)}</span>
               </div>
             </div>
           </div>

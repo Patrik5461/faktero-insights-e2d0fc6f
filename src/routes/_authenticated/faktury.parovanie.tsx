@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -201,7 +202,7 @@ function ParovaniePage() {
             {/* Odrezaný zoznam vyzeral ako celý. Pri tisíckach pohybov to
                 znamenalo, že staršie platby nikto nikdy neuvidel. */}
             {data.orezane && (
-              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              <div className="fk-oznam fk-oznam-pozor mb-4 rounded-md p-3 text-sm">
                 {t("Platieb je viac, než sa dá spracovať naraz. Načítaných je {n} najnovších za posledných {dni} dní. Spárujte ich a zvyšok sa načíta po obnovení stránky.", { n: data.stropPlatieb ?? 2000, dni: data.dniDozadu ?? 400 })}
               </div>
             )}
@@ -220,7 +221,7 @@ function ParovaniePage() {
               <>
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <thead className="whitespace-nowrap bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                       <tr>
                         <th className="w-10 px-3 py-2"><span className="sr-only">{t("Výber")}</span></th>
                         <th className="px-3 py-2">{t("Platba z banky")}</th>
@@ -243,42 +244,40 @@ function ParovaniePage() {
                           <td className="px-3 py-3">
                             <div className="font-medium">{z.transakcia?.counterparty ?? "—"}</div>
                             <div className="text-xs text-muted-foreground">
-                              {datumNaDoklade(z.transakcia?.booking_date)} · VS{" "}
+                              <span className="whitespace-nowrap">{datumNaDoklade(z.transakcia?.booking_date)}</span> · VS{" "}
                               {z.transakcia?.variable_symbol ?? "—"} ·{" "}
-                              {fmt(z.transakcia?.amount ?? 0, z.transakcia?.currency)}
+                              <span className="suma whitespace-nowrap">{fmt(z.transakcia?.amount ?? 0, z.transakcia?.currency)}</span>
                             </div>
                           </td>
                           <td className="px-3 py-3">
                             <Link
                               to="/faktury/$id"
                               params={{ id: z.invoiceId }}
-                              className="font-medium text-primary hover:underline"
+                              className="cislo-dokladu font-medium text-primary hover:underline"
                             >
                               {z.faktura?.invoice_number}
                             </Link>
                             <div className="text-xs text-muted-foreground">
                               {z.faktura?.customer_name ?? "—"} ·{" "}
-                              {fmt(z.faktura?.total ?? 0, z.faktura?.currency)}
+                              <span className="suma whitespace-nowrap">{fmt(z.faktura?.total ?? 0, z.faktura?.currency)}</span>
                             </div>
                           </td>
                           <td className="px-3 py-3">
-                            <span
-                              className={`mr-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                                z.istota === "auto"
-                                  ? "bg-emerald-500/10 text-emerald-700"
-                                  : "bg-amber-500/10 text-amber-800"
-                              }`}
+                            <StavOdznak
+                              ton={z.istota === "auto" ? "uspech" : "pozor"}
+                              maly
+                              className="mr-2"
                             >
                               {z.istota === "auto" ? t("isté") : t("na rozhodnutie")}
-                            </span>
+                            </StavOdznak>
                             <span className="text-xs text-muted-foreground">
                               {z.dovody.map((d) => t(d)).join(" · ")}
                             </span>
                           </td>
-                          <td className="px-3 py-3 text-right tabular-nums font-medium">
-                            {fmt(z.suma, z.transakcia?.currency)}
+                          <td className="whitespace-nowrap px-3 py-3 text-right font-medium">
+                            <span className="suma">{fmt(z.suma, z.transakcia?.currency)}</span>
                             {z.ciastocna && (
-                              <div className="text-xs font-normal text-amber-700 dark:text-amber-300">
+                              <div className="fk-text-pozor text-xs font-normal">
                                 {t("faktúra ostane otvorená")}
                               </div>
                             )}
@@ -300,7 +299,7 @@ function ParovaniePage() {
                   <button
                     onClick={zapisVybrane}
                     disabled={busy || vybrane.size === 0}
-                    className="inline-flex items-center gap-2 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -340,9 +339,9 @@ function Dlazdica({
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 ${zvyraznene && value > 0 ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card"}`}
+      className={`rounded-xl border p-4 ${zvyraznene && value > 0 ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}
     >
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium text-muted-foreground">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
   );

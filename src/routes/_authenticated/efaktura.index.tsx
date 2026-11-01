@@ -17,6 +17,7 @@ import {
   sparujEpostakFirmuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import type { OdosielanieFirmy } from "@/lib/faktero/efaktura/types";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 
 /** Kroky onboardingu „len odosielanie“, ktoré robí firma sama (podľa nextAction ePoštáka). */
 const ROZBEHNUTE_ODOSIELANIE = new Set(["vytvorena", "caka_na_fs", "caka_na_potvrdenie", "aktivuje_sa"]);
@@ -60,7 +61,7 @@ function LenOdosielanie({
     const naFs = !odosielanie.nextAction || odosielanie.nextAction === "select_provider_on_pfs";
     const naMail = odosielanie.nextAction === "complete_client_activation";
     return (
-      <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-6 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+      <div className="fk-oznam fk-oznam-pozor mb-6 rounded-xl p-6">
         <h2 className="text-lg font-semibold">{t("Zapína sa odosielanie eFaktúr z Faktera")}</h2>
         <p className="mt-1 text-sm">
           {poskytovatel
@@ -88,7 +89,7 @@ function LenOdosielanie({
   }
   if (odosielanie.stav === "zamietnuta" || odosielanie.stav === "chyba") {
     return (
-      <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+      <div className="fk-oznam fk-oznam-chyba mb-6 rounded-xl p-4 text-sm">
         {t("Zapnutie odosielania eFaktúr z Faktera sa nedokončilo. Napíšte nám, prosím, cez Pomoc a podporu — žiadosť obnovíme.")}
       </div>
     );
@@ -148,7 +149,7 @@ function SparovanieSPostakom({
         <button
           onClick={spusti}
           disabled={bezi || !companyId}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
         >
           <Link2 className="h-4 w-4" />{" "}
           {bezi ? t("Overujem…") : profil?.epostak_firm_id ? t("Overiť znova") : t("Spárovať")}
@@ -156,7 +157,7 @@ function SparovanieSPostakom({
       </div>
 
       {stav?.sparovane && (
-        <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+        <div className="fk-oznam fk-oznam-uspech mt-3 rounded-lg p-3 text-sm">
           {t("Spárované s")} <span className="font-medium">{stav.name}</span>
           {stav.peppolId ? (
             <>
@@ -169,7 +170,7 @@ function SparovanieSPostakom({
       )}
       {/* Po obnovení stránky výsledok kliknutia nie je — ukáže sa uložený stav. */}
       {!stav && profil?.epostak_firm_id && (
-        <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+        <div className="fk-oznam fk-oznam-uspech mt-3 rounded-lg p-3 text-sm">
           {t("Spárované s ePoštákom")}
           {profil.peppol_participant_id ? (
             <>
@@ -184,11 +185,11 @@ function SparovanieSPostakom({
         </div>
       )}
       {stav && !stav.sparovane && (
-        <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+        <div className="fk-oznam fk-oznam-chyba mt-3 rounded-lg p-3 text-sm">
           {t("Firmu s IČO")} <span className="font-mono">{stav.ico}</span>{" "}
           {t("ePošták nepozná.")}
           {stav.dostupne?.length ? (
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="mt-1 text-xs opacity-90">
               {t("Registrované sú:")} {stav.dostupne.map((f: any) => `${f.name} (${f.ico})`).join(", ")}
             </div>
           ) : null}
@@ -209,22 +210,22 @@ function StatusPill({ status }: { status: Status }) {
   const { t } = useT();
   if (status === "done") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-hover">
-        <CheckCircle2 className="h-3.5 w-3.5" /> {t("Hotovo")}
-      </span>
+      <StavOdznak ton="uspech" ikona={<CheckCircle2 />}>
+        {t("Hotovo")}
+      </StavOdznak>
     );
   }
   if (status === "missing") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-        <Circle className="h-3.5 w-3.5" /> {t("Chýba")}
-      </span>
+      <StavOdznak ton="chyba" ikona={<Circle />}>
+        {t("Chýba")}
+      </StavOdznak>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      <Clock className="h-3.5 w-3.5" /> {t("Pripravujeme")}
-    </span>
+    <StavOdznak ton="neutralny" ikona={<Clock />}>
+      {t("Pripravujeme")}
+    </StavOdznak>
   );
 }
 
@@ -381,7 +382,7 @@ function EFakturaPage() {
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-semibold text-primary">
+                <div className="text-4xl font-semibold tabular-nums text-primary">
                   {readinessQuery.data.score}%
                 </div>
                 <div className="text-xs text-muted-foreground">EN 16931 + Peppol BIS 3.0</div>
@@ -394,14 +395,14 @@ function EFakturaPage() {
               />
             </div>
             {readinessQuery.data.blockers.length > 0 && (
-              <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+              <div className="fk-oznam fk-oznam-chyba mt-4 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
                   <AlertTriangle className="h-4 w-4" /> {t("Blokujúce nedostatky")} (
                   {readinessQuery.data.blockers.length})
                 </div>
                 <ul className="mt-2 space-y-1 text-sm">
                   {readinessQuery.data.blockers.map((b) => (
-                    <li key={b.key} className="flex items-center justify-between">
+                    <li key={b.key} className="flex items-center justify-between gap-3">
                       <span>{t(b.label)}</span>
                       {b.fixUrl === "/efaktura" ? (
                         /* Peppol nedostatky sa riešia spárovaním na tejto stránke —
@@ -413,13 +414,13 @@ function EFakturaPage() {
                               .getElementById("sparovanie")
                               ?.scrollIntoView({ behavior: "smooth", block: "start" })
                           }
-                          className="text-xs text-primary hover:underline"
+                          className="shrink-0 text-xs font-semibold underline underline-offset-2"
                         >
-                          {t("Spárovať")} →
+                          {t("Spárovať")}
                         </button>
                       ) : b.fixUrl ? (
-                        <Link to={b.fixUrl} className="text-xs text-primary hover:underline">
-                          {t("Opraviť")} →
+                        <Link to={b.fixUrl} className="shrink-0 text-xs font-semibold">
+                          {t("Opraviť")}
                         </Link>
                       ) : null}
                     </li>
@@ -429,7 +430,7 @@ function EFakturaPage() {
             )}
             {readinessQuery.data.missing.filter((m) => m.severity === "warning").length > 0 && (
               <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="text-sm font-medium">{t("Upozornenia — zatiaľ nesplnené")}</div>
+                <div className="text-sm font-semibold">{t("Upozornenia — zatiaľ nesplnené")}</div>
                 <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                   {readinessQuery.data.missing
                     .filter((m) => m.severity === "warning")
@@ -445,12 +446,12 @@ function EFakturaPage() {
           </div>
         )}
         {readinessQuery.isError && (
-          <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          <div className="fk-oznam fk-oznam-chyba mb-6 rounded-xl p-4 text-sm">
             {t("Skóre pripravenosti sa nepodarilo načítať:")}{" "}
             {(readinessQuery.error as Error).message}
           </div>
         )}
-        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6">
+        <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-start gap-3">
             <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0">
@@ -464,13 +465,13 @@ function EFakturaPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
-            <h2 className="font-semibold">{t("Kontrola pripravenosti")}</h2>
+            <h2 className="text-base font-semibold">{t("Kontrola pripravenosti")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("Skontrolujeme, či máte vyplnené všetko potrebné na prechod na eFaktúru.")}
             </p>
             <ul className="mt-4 divide-y divide-border">
               {checklist.map((item) => (
-                <li key={item.label} className="flex items-center justify-between py-3">
+                <li key={item.label} className="flex items-center justify-between gap-3 py-3">
                   <span className="text-sm">{t(item.label)}</span>
                   <StatusPill status={item.status} />
                 </li>
@@ -479,7 +480,7 @@ function EFakturaPage() {
             <div className="mt-5">
               <Link
                 to="/firma"
-                className="inline-flex items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/50"
+                className="inline-flex items-center rounded-md border border-input bg-background px-3 py-2 text-sm font-semibold hover:bg-muted/50"
               >
                 {t("Upraviť firemné údaje")}
               </Link>
@@ -487,18 +488,18 @@ function EFakturaPage() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-semibold">{t("Koho sa bude eFaktúra týkať")}</h2>
+            <h2 className="text-base font-semibold">{t("Koho sa bude eFaktúra týkať")}</h2>
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>{t("Platitelia DPH")}</span>
               </li>
               <li className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>{t("Neplatitelia DPH pri prijímaní eFaktúr")}</span>
               </li>
               <li className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>{t("B2B a B2G transakcie")}</span>
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
@@ -515,7 +516,7 @@ function EFakturaPage() {
             <div className="flex items-start gap-3">
               <Mail className="mt-0.5 h-5 w-5 text-primary" />
               <div className="flex-1">
-                <h2 className="font-semibold">{t("Chcem dostávať novinky k eFaktúre")}</h2>
+                <h2 className="text-base font-semibold">{t("Chcem dostávať novinky k eFaktúre")}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {t("Pošleme vám e-mail pri každom dôležitom kroku — termíny povinnosti, zmeny pravidiel a novinky vo Fakteri.")}
                 </p>
