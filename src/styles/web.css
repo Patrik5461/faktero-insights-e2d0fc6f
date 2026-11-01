@@ -652,7 +652,9 @@ html.dark [data-web-redizajn] {
   [data-web-redizajn] .fk-text-chyba { color: var(--stav-chyba-text); }
   [data-web-redizajn] .fk-text-info { color: var(--stav-informacia-text); }
   [data-web-redizajn] .fk-text-uspech { color: var(--stav-uspech-text); }
+}
 
+/* ------------------------------------------------------------------ */
 /* doklady (agenda Doklady: prijaté faktúry, bločky, nespracované,     */
 /* iné doklady, vyúčtovanie, kôš, schvaľovanie, doklady e-mailom,      */
 /* import dokladov) — redizajn 2026-11, agent „doklady“                */
