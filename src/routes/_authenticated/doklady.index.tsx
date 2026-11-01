@@ -61,7 +61,8 @@ import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokla
 import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { potvrd } from "@/lib/potvrdenie";
-import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
+import { suctyBlockovPoMenach } from "@/lib/faktero/sucty-zoznamov";
 import { MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -113,14 +114,6 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
 
 /** Stĺpce zoznamu dokladov na výber (ako v Doklado). */
 /** Súčet súm s DPH po menách — meny sa nesčítavajú. */
-function sumyDokladov(riadky: any[]): string {
-  const po = new Map<string, number>();
-  for (const r of riadky) {
-    const m = String(r.currency ?? "EUR");
-    po.set(m, (po.get(m) ?? 0) + Number(r.total_amount ?? 0));
-  }
-  return [...po.entries()].map(([m, v]) => formatujMenu(v, m)).join(" + ");
-}
 
 const STLPCE_DOKLADOV: StlpecZoznamu[] = [
   { kluc: "datum", nazov: "Dátum" },
@@ -521,17 +514,9 @@ function DokladyPage() {
     }
   }
 
-  const totals = useMemo(() => {
-    let net = 0,
-      vat = 0,
-      total = 0;
-    for (const r of rows) {
-      net += Number(r.net_amount ?? 0);
-      vat += Number(r.vat_amount ?? 0);
-      total += Number(r.total_amount ?? 0);
-    }
-    return { net, vat, total };
-  }, [rows]);
+  // Karty po menách — bloček v CZK sa k eurám nepripočíta (D-20).
+  const menyFirmy = useFormatMenyFirmy();
+  const totals = useMemo(() => suctyBlockovPoMenach(rows, menyFirmy.domaca), [rows, menyFirmy.domaca]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -1564,7 +1549,11 @@ function DokladyPage() {
               doplnok={
                 <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
                   {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
-                  {naExport.length ? ` · ${sumyDokladov(naExport)}` : ""}
+                  {naExport.length
+                    ? ` · ${menyFirmy.formatSucty(
+                        menyFirmy.sucty(naExport, (r: any) => Number(r.total_amount ?? 0), (r: any) => r.currency),
+                      )}`
+                    : ""}
                 </span>
               }
             />
@@ -1602,17 +1591,18 @@ function SummaryCard({
   highlight,
 }: {
   label: string;
-  value: number;
+  value: Map<string, number>;
   highlight?: boolean;
 }) {
-  const mena = useMenaFirmy();
   return (
     <div
       className={`min-w-0 rounded-xl border border-border p-3 sm:p-4 ${highlight ? "bg-primary/5" : "bg-card"}`}
     >
       <div className="text-xs text-muted-foreground">{label}</div>
-      {/* whitespace-nowrap: „€“ sa na úzkej karte inak zalomí na nový riadok. */}
-      <div className="mt-1 whitespace-nowrap text-base font-semibold tabular-nums sm:text-xl">{formatujMenu(value, mena.kod)}</div>
+      {/* Každá mena sa láme ako celok — „€“ sa na úzkej karte neodtrhne. */}
+      <div className="mt-1 min-w-0 text-base font-semibold tabular-nums sm:text-xl">
+        <SuctyPoMenach sucty={value} />
+      </div>
     </div>
   );
 }

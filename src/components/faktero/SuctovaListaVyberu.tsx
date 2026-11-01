@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
-import { formatujMenu } from "@/lib/faktero/mena";
 import { suhrnVyberu, type PolozkaSuhrnu, type SumaMeny } from "@/lib/faktero/suhrn-vyberu";
 import { suhrnZPoloziek, type SuhrnDph } from "@/lib/faktero/suhrn-dph";
 import { RozpisSuctov } from "@/components/faktero/SuctyDokladov";
 import { useT } from "@/lib/i18n/useT";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 
 /**
  * Lišta pod zoznamom dokladov, keď sú niektoré označené: koľko ich je, koľko
@@ -38,29 +38,19 @@ export function SuctovaListaVyberu({
   onZrusit?: () => void;
 }) {
   const { t } = useT();
+  const menyFirmy = useFormatMenyFirmy();
   const n = pocet ?? polozky.length;
   if (!n) return null;
   const s = suhrnVyberu(polozky);
   const doklady = (k: number) =>
     t(k === 1 ? "{n} doklad" : k >= 2 && k <= 4 ? "{n} doklady" : "{n} dokladov", { n: k });
-  const sumy = (x: SumaMeny[], bezDph: boolean) =>
-    x.length
-      ? x
-          .map((m) =>
-            bezDph && m.bezDph != null
-              ? t("{s} / {b} bez DPH", {
-                  s: formatujMenu(m.celkom, m.mena),
-                  b: formatujMenu(m.bezDph, m.mena),
-                })
-              : formatujMenu(m.celkom, m.mena),
-          )
-          .join(" + ")
-      : null;
+  // Meny vedľa seba „100,00 € · 2 000,00 Kč“ — nie „+“, akoby sa sčítavali (AB-15).
+  const sumy = (x: SumaMeny[]) => (x.length ? menyFirmy.formatSucty(x) : null);
   const spolu = rozpis ?? suhrnZPoloziek(polozky);
   // Rozpis vystavených pozná aj koncepty mimo záložky Koncepty — jeho počet platí.
   const mimoSuctu = rozpis ? rozpis.mimo : s.mimoSuctu;
-  const naExport = sumy(s.naExport.sumy, false);
-  const naUhradu = sumy(s.naUhradu.sumy, false);
+  const naExport = sumy(s.naExport.sumy);
+  const naUhradu = sumy(s.naUhradu.sumy);
 
   return (
     <div

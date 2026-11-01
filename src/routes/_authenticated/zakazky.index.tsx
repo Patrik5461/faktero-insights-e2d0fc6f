@@ -6,7 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listJobs } from "@/lib/faktero/jobs.functions";
 import { STAV_ZAKAZKY_POPIS, prekrocenyRozpocet, type StavZakazky } from "@/lib/faktero/zakazky";
 import { Plus, HardHat } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
@@ -22,14 +22,13 @@ const FARBA_STAVU: Record<StavZakazky, string> = {
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
-function suma(n: number) {
-  return formatovacMeny("EUR", "sk-SK")(n || 0);
-}
-
 function JobsPage() {
   const { t } = useT();
   const navigate = useNavigate();
   const fetchJobs = useServerFn(listJobs);
+  // Vyhodnotenie zákaziek je v domácej mene firmy (CZ firma Kč), nie natvrdo v EUR (K-01).
+  const menyFirmy = useFormatMenyFirmy();
+  const suma = (n: number) => menyFirmy.suma(n || 0);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"otvorene" | "uzavrete" | "vsetky">("otvorene");
@@ -116,7 +115,9 @@ function JobsPage() {
             <div className="text-sm text-muted-foreground">
               {filter === "otvorene"
                 ? t("Žiadna otvorená zákazka.")
-                : t("Zatiaľ ste nezaložili žiadnu zákazku.")}
+                : filter === "uzavrete"
+                  ? t("Žiadna uzavretá zákazka.")
+                  : t("Zatiaľ ste nezaložili žiadnu zákazku.")}
             </div>
             <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
               {t(

@@ -15,16 +15,25 @@ import {
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
-import { STAV_ZAKAZKY_POPIS, nakladZBlocku, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
+import {
+  STAV_ZAKAZKY_POPIS,
+  chybaZakazky,
+  nakladZBlocku,
+  nakladZJazdy,
+  vynosZFaktury,
+  type StavZakazky,
+} from "@/lib/faktero/zakazky";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { SumaVDomacejMene, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
+import { formatujSucetPoMenach } from "@/lib/faktero/mena-sucet";
+import { StatusBadge } from "./dashboard";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { preloz } from "@/lib/i18n/jazyk";
+import { lokalJazyka, preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazka — Faktero") }] }),
@@ -37,10 +46,6 @@ const FARBA_STAVU: Record<StavZakazky, string> = {
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
-function suma(n: number) {
-  return formatovacMeny("EUR", "sk-SK")(n || 0);
-}
-
 function Karta({
   titulok,
   hodnota,
@@ -48,7 +53,7 @@ function Karta({
   poznamka,
 }: {
   titulok: string;
-  hodnota: string;
+  hodnota: React.ReactNode;
   farba?: string;
   poznamka?: string;
 }) {
@@ -78,8 +83,12 @@ function Prucok({ percento, obratene }: { percento: number; obratene?: boolean }
 }
 
 function JobDetail() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const mena = useMenaFirmy();
+  const menyFirmy = useFormatMenyFirmy();
+  /** Súčty vyhodnotenia sú v domácej mene firmy, riadky dokladov v ich mene (K-01). */
+  const suma = (n: unknown, menaDokladu?: unknown) => menyFirmy.suma(Number(n) || 0, menaDokladu);
+  const datum = (d: unknown) => (d ? datumNaDoklade(d, jazyk) : "—");
   const { id } = useParams({ from: "/_authenticated/zakazky/$id" });
   const nav = useNavigate();
   const fetchJob = useServerFn(getJob);
@@ -125,14 +134,19 @@ function JobDetail() {
 
   useEffect(() => {
     if (!cid || !upravujem || customers.length) return;
+    // Len odberatelia, ako pri novej zákazke (K-06) — a aktuálne zvolený, aj
+    // keby už odberateľom nebol, aby úprava ticho nezmazala väzbu.
+    const aktualny = data?.job?.customer_id as string | undefined;
     supabase
       .from("customers")
-      .select("id, name")
+      .select("id, name, odberatel")
       .eq("company_id", cid)
       .is("deleted_at", null)
       .order("name")
-      .then(({ data: d }) => setCustomers(d ?? []));
-  }, [cid, upravujem, customers.length]);
+      .then(({ data: d }) =>
+        setCustomers((d ?? []).filter((c: any) => c.odberatel || c.id === aktualny)),
+      );
+  }, [cid, upravujem, customers.length, data?.job?.customer_id]);
 
   function zacniUpravu() {
     const j = data.job;
@@ -179,6 +193,13 @@ function JobDetail() {
 
   const j = data.job;
   const v = data.vyhodnotenie;
+  // Výnosy a náklady sú prehľad — v domácej mene so značkou „prepočítané“.
+  const sucetKarty = (suma: number) => ({
+    domaca: (v.mena ?? menyFirmy.domaca) as "EUR" | "CZK",
+    suma,
+    prepocitane: !!v.prepocitane,
+    bezPrepoctu: new Map<string, number>(),
+  });
   const otvorena = j.status === "active";
   const maDoklady = Boolean(
     data.faktury?.length ||
@@ -267,6 +288,12 @@ function JobDetail() {
             className="mb-6 space-y-4 rounded-xl border border-border bg-card p-4"
             onSubmit={(e) => {
               e.preventDefault();
+              // Rovnaké kontroly ako Nová zákazka — inak prišla surová chyba zo servera (K-07).
+              const chyba = chybaZakazky(form);
+              if (chyba) {
+                setError(t(chyba));
+                return;
+              }
               akcia(async () => {
                 await doUpdate({
                   data: {
@@ -406,8 +433,8 @@ function JobDetail() {
 
         {/* Na telefóne dve karty vedľa seba ako súhrny v ostatných agendách, nie sedem pod sebou. */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Karta titulok="Výnosy" hodnota={suma(v.vynosy)} />
-          <Karta titulok="Náklady" hodnota={suma(v.naklady)} />
+          <Karta titulok="Výnosy" hodnota={<SumaVDomacejMene sucet={sucetKarty(v.vynosy)} />} />
+          <Karta titulok="Náklady" hodnota={<SumaVDomacejMene sucet={sucetKarty(v.naklady)} />} />
           <Karta
             titulok="Zisk"
             hodnota={suma(v.zisk)}
@@ -419,6 +446,14 @@ function JobDetail() {
             poznamka={v.marza == null ? "Zatiaľ bez výnosov" : undefined}
           />
         </div>
+
+        {v.bez_prepoctu?.length > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("Doklady v cudzej mene bez kurzu sa do súčtov nezapočítali: {sumy}", {
+              sumy: formatujSucetPoMenach(v.bez_prepoctu, lokalJazyka(jazyk), { domaca: v.mena }),
+            })}
+          </p>
+        )}
 
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Karta
@@ -498,7 +533,7 @@ function JobDetail() {
         <Zoznam
           titulok="Vydané faktúry"
           prazdne="K zákazke zatiaľ nie je priradená žiadna faktúra."
-          hlavicka={["Číslo", "Dátum", "Typ", "Bez DPH"]}
+          hlavicka={["Číslo", "Dátum", "Typ", "Stav", "Bez DPH"]}
           riadky={data.faktury.map((f: any) => [
             <Link
               key={f.id}
@@ -508,15 +543,29 @@ function JobDetail() {
             >
               {f.invoice_number}
             </Link>,
-            f.issue_date,
+            datum(f.issue_date),
             f.type === "credit_note"
               ? t("Dobropis")
               : f.type === "debit_note"
                 ? t("Ťarchopis")
                 : f.type === "proforma"
                   ? t("Zálohová")
-                  : t("Faktúra"),
-            suma(Number(f.subtotal)),
+                  : f.type === "advance_payment"
+                    ? t("Daňový doklad k platbe")
+                    : t("Faktúra"),
+            <StatusBadge key="stav" status={f.status} />,
+            // Koncept, storno, zálohová a doklad k platbe sa do výnosov nepočítajú (K-08).
+            vynosZFaktury(f) === 0 && Number(f.subtotal) !== 0 ? (
+              <span
+                key="suma"
+                className="text-muted-foreground line-through"
+                title={t("Nepočíta sa do výnosov zákazky")}
+              >
+                {suma(f.subtotal, f.currency)}
+              </span>
+            ) : (
+              suma(f.subtotal, f.currency)
+            ),
           ])}
         />
 
@@ -527,8 +576,8 @@ function JobDetail() {
           riadky={data.prijate_faktury.map((f: any) => [
             f.invoice_number,
             f.supplier_name,
-            f.issue_date,
-            suma(Number(f.amount_without_vat)),
+            datum(f.issue_date),
+            suma(f.amount_without_vat, f.currency),
           ])}
         />
 
@@ -539,8 +588,8 @@ function JobDetail() {
           riadky={(data.blocky ?? []).map((b: any) => [
             b.document_number ?? "—",
             b.supplier_name,
-            b.issue_date,
-            suma(nakladZBlocku(b)),
+            datum(b.issue_date),
+            suma(nakladZBlocku(b), b.currency),
           ])}
         />
 
@@ -572,8 +621,8 @@ function JobDetail() {
               {o.order_number}
             </Link>,
             o.supplier_name ?? "—",
-            o.order_date,
-            o.expected_date ?? "—",
+            datum(o.order_date),
+            datum(o.expected_date),
             t(STAV_POPIS[o.status as StavObjednavky] ?? o.status),
           ])}
         />
@@ -582,11 +631,11 @@ function JobDetail() {
           titulok="Jazdy"
           prazdne="K zákazke nie je priradená žiadna jazda."
           hlavicka={["Dátum", "Trasa", "Km", "Náklad"]}
-          riadky={data.jazdy.map((t: any) => [
-            t.trip_date,
-            [t.start_location, t.end_location].filter(Boolean).join(" → ") || (t.purpose ?? "—"),
-            Number(t.distance_km),
-            suma(nakladZJazdy(t)),
+          riadky={data.jazdy.map((j: any) => [
+            datum(j.trip_date),
+            [j.start_location, j.end_location].filter(Boolean).join(" → ") || (j.purpose ?? "—"),
+            Number(j.distance_km),
+            suma(nakladZJazdy(j)),
           ])}
         />
 

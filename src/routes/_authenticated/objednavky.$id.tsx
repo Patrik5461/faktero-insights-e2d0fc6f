@@ -30,7 +30,8 @@ import {
 } from "@/lib/faktero/objednavky-odberatel";
 import { FileText, Pencil, Trash2, Ban, Check } from "lucide-react";
 import { toast } from "sonner";
-import { formatovacMeny, formatujMnozstvo } from "@/lib/faktero/mena";
+import { formatujMnozstvo } from "@/lib/faktero/mena";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { potvrd } from "@/lib/potvrdenie";
 
 export const Route = createFileRoute("/_authenticated/objednavky/$id")({
@@ -45,10 +46,6 @@ const FARBA: Record<StavPrijatejObjednavky, string> = {
   completed: "bg-emerald-500/10 text-emerald-700",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
-
-function suma(n: unknown) {
-  return formatovacMeny("EUR", "sk-SK")(Number(n) || 0);
-}
 
 function dnesLokalne(): string {
   const d = new Date();
@@ -70,6 +67,9 @@ function OrderDetail() {
   const zmaz = useServerFn(deleteSalesOrder);
 
   const [o, setO] = useState<any>(null);
+  // Sumy v mene objednávky, faktúry v ich vlastnej (D-02) — nie natvrdo EUR.
+  const menyFirmy = useFormatMenyFirmy();
+  const suma = (n: unknown, mena: unknown = o?.currency) => menyFirmy.suma(Number(n) || 0, mena);
   const [loading, setLoading] = useState(true);
   const [chyba, setChyba] = useState<string | null>(null);
   const cid = useMemo(() => getActiveCompanyId(), []);
@@ -217,8 +217,10 @@ function OrderDetail() {
               </span>
             </Karta>
             <Karta popis={t("Hodnota objednávky")}>{suma(o.total)}</Karta>
-            <Karta popis={t("Zostáva vyfakturovať")}>
-              <span className={o.zostava > 0 ? "" : "text-emerald-700"}>{suma(o.zostava)}</span>
+            <Karta popis={t("Zostáva vyfakturovať (s DPH)")}>
+              <span className={o.zostava > 0 ? "" : "text-emerald-700"}>
+                {suma(o.zostava_s_dph ?? o.zostava)}
+              </span>
             </Karta>
             <Karta popis={t("Vybavené")}>
               <div className="flex items-center gap-2">
@@ -306,7 +308,7 @@ function OrderDetail() {
                       <td
                         className={`px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "text-emerald-700"}`}
                       >
-                        {zostava > 0 ? zostava : t("vybavené")}
+                        {zostava > 0 ? formatujMnozstvo(zostava, lokalJazyka(jazyk)) : t("vybavené")}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">{suma(p.unit_price)}</td>
                       <td className="px-4 py-2 text-right tabular-nums">
@@ -338,7 +340,7 @@ function OrderDetail() {
                       {f.invoice_number}
                     </Link>
                     <span className="text-muted-foreground">
-                      {datum(f.issue_date)} · {suma(f.total)}
+                      {datum(f.issue_date)} · {suma(f.total, f.currency ?? o.currency)}
                     </span>
                   </li>
                 ))}

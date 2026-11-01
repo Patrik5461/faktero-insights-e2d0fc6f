@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createJob } from "@/lib/faktero/jobs.functions";
-import { ArrowLeft } from "lucide-react";
+import { chybaZakazky } from "@/lib/faktero/zakazky";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
@@ -58,12 +58,9 @@ function NewJob() {
   async function ulozit(e: React.FormEvent) {
     e.preventDefault();
     if (!cid) return;
-    if (!name.trim()) {
-      setError(t("Zadajte názov zákazky."));
-      return;
-    }
-    if (startDate && endDate && endDate < startDate) {
-      setError(t("Koniec zákazky nemôže byť skôr ako jej začiatok."));
+    const chyba = chybaZakazky({ name, start_date: startDate, end_date: endDate });
+    if (chyba) {
+      setError(t(chyba));
       return;
     }
     setSaving(true);

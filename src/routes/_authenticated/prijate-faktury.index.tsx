@@ -9,7 +9,7 @@ import { nacitajNesedi } from "@/lib/faktero/cudzia-faktura";
 import { stavOdovzdania, textOdznaku } from "@/lib/faktero/stav-odovzdania";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -64,6 +64,9 @@ import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
 import { jeCiastocneUhradena, nezaplateneZoznamu, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
+import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
+import { celkomPrijatychPoMenach } from "@/lib/faktero/sucty-zoznamov";
+import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { riadkyPreIds, vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
@@ -135,16 +138,6 @@ function hraniceMesiaca(mesiac: string): { od: string; do: string } | null {
   return { od: `${m[1]}-${m[2]}-01`, do: `${m[1]}-${m[2]}-${String(posledny).padStart(2, "0")}` };
 }
 
-/** Súčet súm s DPH po menách — meny sa nesčítavajú. */
-function sumyPodlaMeny(riadky: any[]): string {
-  const po = new Map<string, number>();
-  for (const r of riadky) {
-    const m = String(r.currency ?? "EUR");
-    po.set(m, (po.get(m) ?? 0) + Number(r.amount_total ?? 0));
-  }
-  return [...po.entries()].map(([m, v]) => fmtMoney(Math.round(v * 100) / 100, m)).join(" + ");
-}
-
 /** Stĺpce zoznamu na výber. */
 const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "cislo", nazov: "Číslo", povinny: true },
@@ -166,6 +159,7 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
 
 function PurchaseInvoicesPage() {
   const { t, jazyk } = useT();
+  const menyFirmy = useFormatMenyFirmy();
   const navigate = useNavigate();
   // Naposledy otvorená faktúra — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("prijate-faktury");
@@ -792,12 +786,19 @@ function PurchaseInvoicesPage() {
   }, []);
 
   const totals = useMemo(() => {
-    const total = rows.reduce((s, r) => s + Number(r.amount_total ?? 0), 0);
-    const today = new Date().toLocaleDateString("sv-SE");
-    // Koncept a storno nie sú dlh; čiastočná úhrada a zaplatená záloha sa odpočítajú.
-    const { nezaplatene, poSplatnosti } = nezaplateneZoznamu(rows, uhradene, zaplateneZalohy, today);
-    return { total, unpaid: nezaplatene, overdueCount: poSplatnosti, count: rows.length };
-  }, [rows, uhradene, zaplateneZalohy]);
+    // Po menách a bez konceptov, storien a záloh — rovnako ako pätička (D-17).
+    const total = celkomPrijatychPoMenach(rows, zapocitatelna, menyFirmy.domaca);
+    const today = dnesBratislava();
+    // Koncept a storno nie sú dlh; čiastočná úhrada a zaplatená záloha sa odpočítajú (D-18 po menách).
+    const { poMenach, poSplatnosti } = nezaplateneZoznamu(
+      rows,
+      uhradene,
+      zaplateneZalohy,
+      today,
+      menyFirmy.domaca,
+    );
+    return { total, unpaid: poMenach, overdueCount: poSplatnosti, count: rows.length };
+  }, [rows, uhradene, zaplateneZalohy, menyFirmy.domaca]);
 
   /** Excel s práve vyfiltrovanými a zoradenými faktúrami (aj s položkami). */
   async function stiahniExcelPrijatych() {
@@ -871,7 +872,11 @@ function PurchaseInvoicesPage() {
         doplnok={
           <span title={t("Zaúčtované a ešte neodovzdané do účtovníctva")}>
             {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
-            {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
+            {naExport.length
+              ? ` · ${menyFirmy.formatSucty(
+                  menyFirmy.sucty(naExport, (r: any) => Number(r.amount_total ?? 0), (r: any) => r.currency),
+                )}`
+              : ""}
           </span>
         }
       />
@@ -915,8 +920,12 @@ function PurchaseInvoicesPage() {
         <PrijemMailom />
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard label={t("Počet faktúr")} value={String(totals.count)} />
-          <StatCard label={t("Celková suma")} value={fmtMoney(totals.total)} />
-          <StatCard label={t("Nezaplatené")} value={fmtMoney(totals.unpaid)} tone="amber" />
+          <StatCard label={t("Celková suma")} value={<SuctyPoMenach sucty={totals.total} />} />
+          <StatCard
+            label={t("Nezaplatené")}
+            value={<SuctyPoMenach sucty={totals.unpaid} />}
+            tone="amber"
+          />
           <StatCard
             label={t("Po splatnosti")}
             value={String(totals.overdueCount)}
@@ -1756,7 +1765,7 @@ function StatCard({
   tone,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   tone?: "amber" | "rose";
 }) {
   const toneCls =
@@ -1766,9 +1775,9 @@ function StatCard({
         ? "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100"
         : "border-border bg-card";
   return (
-    <div className={`rounded-xl border p-4 ${toneCls}`}>
+    <div className={`min-w-0 rounded-xl border p-4 ${toneCls}`}>
       <div className="text-xs uppercase tracking-wide opacity-80">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 min-w-0 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
   );
 }

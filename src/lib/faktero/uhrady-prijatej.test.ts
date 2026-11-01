@@ -188,3 +188,22 @@ describe("nezaplateneZoznamu", () => {
     expect(r.poSplatnosti).toBe(1); // len b
   });
 });
+
+describe("nezaplateneZoznamu po menách (D-18)", () => {
+  it("CZK, USD a PLN sa k eurám nepripočítajú", () => {
+    const r = nezaplateneZoznamu(
+      [
+        { id: "a", status: "received", amount_total: 100, currency: "EUR" },
+        { id: "b", status: "received", amount_total: 2500, currency: "CZK" },
+        { id: "c", status: "booked", amount_total: 40, currency: "USD" },
+        { id: "d", status: "received", amount_total: 10, currency: "PLN" },
+        { id: "e", status: "received", amount_total: 500, currency: "CZK" },
+      ],
+      { e: 200 },
+      {},
+      "2026-11-01",
+    );
+    expect(Object.fromEntries(r.poMenach)).toEqual({ EUR: 100, CZK: 2800, USD: 40, PLN: 10 });
+    expect([...r.poMenach.keys()][0]).toBe("EUR");
+  });
+});

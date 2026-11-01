@@ -66,3 +66,10 @@ describe("čerstvosť overenia", () => {
     expect(jeCerstve(null, dnes)).toBe(false);
   });
 });
+
+describe("tuzemské IČ DPH podľa krajiny firmy (K-12)", () => {
+  it("pre CZ firmu je SK odberateľ zahraničný a CZ tuzemský", () => {
+    expect(jeTuzemske("SK2020123456", "CZ")).toBe(false);
+    expect(jeTuzemske("CZ12345678", "CZ")).toBe(true);
+  });
+});

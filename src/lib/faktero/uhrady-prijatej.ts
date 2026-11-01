@@ -5,6 +5,8 @@
  * ukazuje (zostáva k úhrade, čiastočne uhradená, dni po splatnosti).
  */
 
+import { sucetPoMenach } from "./mena-sucet";
+
 export type UhradaPrijatej = {
   id: string;
   amount: number | string;
@@ -212,13 +214,22 @@ export function nezaplateneZoznamu(
     advance_amount?: number | string | null;
     advance_invoice_id?: string | null;
     due_date?: string | null;
+    currency?: string | null;
   }[],
   uhradene: Record<string, number>,
   zaplateneZalohy: Record<string, number>,
   dnes: string,
-): { nezaplatene: number; poSplatnosti: number } {
+  domaca = "EUR",
+): {
+  /** Súčet bez ohľadu na menu — len pre zoznam v jedinej mene; karta berie `poMenach`. */
+  nezaplatene: number;
+  /** Zostatky po menách (domáca prvá) — rôzne meny sa nesčítavajú. */
+  poMenach: Map<string, number>;
+  poSplatnosti: number;
+} {
   let nezaplatene = 0;
   let poSplatnosti = 0;
+  const zostatky: { suma: number; mena: string | null | undefined }[] = [];
   for (const r of riadky) {
     if (["paid", "cancelled", "draft"].includes(String(r.status))) continue;
     const s = stavUhradyPrijatej({
@@ -232,8 +243,19 @@ export function nezaplateneZoznamu(
     });
     if (s.zostava < 0.005) continue;
     // Dobropis (záporná suma) zmenšuje dlh voči dodávateľovi.
-    nezaplatene += Number(r.amount_total ?? 0) < 0 ? -s.zostava : s.zostava;
+    const zostava = Number(r.amount_total ?? 0) < 0 ? -s.zostava : s.zostava;
+    nezaplatene += zostava;
+    zostatky.push({ suma: zostava, mena: r.currency });
     if (r.due_date && r.due_date < dnes) poSplatnosti++;
   }
-  return { nezaplatene: r2(nezaplatene), poSplatnosti };
+  return {
+    nezaplatene: r2(nezaplatene),
+    poMenach: sucetPoMenach(
+      zostatky,
+      (z) => z.suma,
+      (z) => z.mena,
+      domaca,
+    ),
+    poSplatnosti,
+  };
 }

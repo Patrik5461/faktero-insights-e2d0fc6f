@@ -13,6 +13,7 @@ import { najdiDuplicituPrijatejFn } from "@/lib/faktero/prijate-duplicity.functi
 import { textDuplicity } from "@/lib/faktero/prijate-duplicity";
 import { Upload, Loader2 } from "lucide-react";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
+import { menyNaVyber } from "@/lib/faktero/meny-na-vyber";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
@@ -846,9 +847,11 @@ export function PrijataFakturaForm({
           onChange={(e) => set("currency", e.target.value)}
           className="input"
         >
-          <option value="EUR">EUR</option>
-          <option value="CZK">CZK</option>
-          <option value="USD">USD</option>
+          {menyNaVyber(form.currency).map((m) => (
+            <option key={m.code} value={m.code}>
+              {m.code}
+            </option>
+          ))}
         </select>
       </Field>
     </>

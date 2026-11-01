@@ -28,6 +28,7 @@ import {
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { kontrolaPoloziekPonuky } from "@/lib/faktero/ponuka-polozky";
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová cenová ponuka — Faktero") }] }),
@@ -224,6 +225,10 @@ function NewQuote() {
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
     if (!cust) return toast.error(t("Vyberte odberateľa"));
+    // Položky skontrolovať PRED pridelením čísla — inak číslo prepadne (D-06).
+    const kontrola = kontrolaPoloziekPonuky(items);
+    if (kontrola.chyba) return toast.error(t(kontrola.chyba));
+    const platne = kontrola.riadky;
     const { quote_number, number_series_id } = await dalsieCislo({
       data: { company_id: cid, number_series_id: form.number_series_id || null },
     });
@@ -264,7 +269,7 @@ function NewQuote() {
       return toast.error(t(friendlyError(error)));
     }
 
-    const rows = items.map((it, i) => {
+    const rows = platne.map((it, i) => {
       const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       const v = s * (Number(it.vat_rate) / 100);
       return {
@@ -284,7 +289,18 @@ function NewQuote() {
       };
     });
     const { error: e2 } = await supabase.from("quote_items").insert(rows);
-    if (e2) return toast.error(e2.message);
+    if (e2) {
+      // Hlavička bez položiek by v zozname vyzerala ako hotová ponuka — preč s ňou.
+      // Mazať smie len admin (RLS vráti 0 riadkov bez chyby) — inak aspoň do koša.
+      const { data: zmazane, error: e3 } = await supabase
+        .from("quotes")
+        .delete()
+        .eq("id", q.id)
+        .select("id");
+      if (e3 || !zmazane?.length)
+        await supabase.from("quotes").update({ deleted_at: new Date().toISOString() }).eq("id", q.id);
+      return toast.error(e2.message);
+    }
     if (reserveStock) {
       try {
         const r = await reserveFn({ data: { company_id: cid, quote_id: q.id } });

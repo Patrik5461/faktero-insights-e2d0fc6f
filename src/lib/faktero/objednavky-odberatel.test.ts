@@ -6,6 +6,7 @@ import {
   novoVybavene,
   percentoVybavenia,
   polozkyNaFakturu,
+  polozkyZPonuky,
   saDaZmazat,
   stavPodlaVybavenia,
   suctyObjednavky,
@@ -225,5 +226,34 @@ describe("jePoTermine", () => {
   it("bez termínu sa nič nestráži", () => {
     expect(jePoTermine(null, "confirmed", "2026-08-10")).toBe(false);
     expect(jePoTermine("", "confirmed", "2026-08-10")).toBe(false);
+  });
+});
+
+describe("zostava s DPH (D-03)", () => {
+  it("nevyfakturované s DPH sa dá porovnať s hodnotou objednávky", () => {
+    const s = suctyObjednavky([
+      { quantity: 10, invoiced_quantity: 4, unit_price: 100, vat_rate: 23 },
+      { quantity: 1, invoiced_quantity: 0, unit_price: 50, vat_rate: 0 },
+    ]);
+    expect(s.total).toBe(1280);
+    expect(s.zostava).toBe(650);
+    expect(s.zostava_s_dph).toBe(788); // 600 × 1,23 + 50
+  });
+});
+
+describe("polozkyZPonuky (D-05)", () => {
+  it("zľava riadku aj zľava na doklad sa premietnu do ceny", () => {
+    const p = polozkyZPonuky(
+      [
+        { quantity: 2, unit_price: 100, discount_percent: 10, vat_rate: 23 }, // 180
+        { quantity: 1, unit_price: 20, discount_percent: 0, vat_rate: 23 }, // 20
+      ],
+      20, // 10 % z 200
+    );
+    expect(p.map((x) => x.unit_price)).toEqual([81, 18]);
+    expect(suctyObjednavky(p).subtotal).toBe(180);
+  });
+  it("bez zliav cena ostane", () => {
+    expect(polozkyZPonuky([{ quantity: 3, unit_price: 12.5 }], 0)[0].unit_price).toBe(12.5);
   });
 });

@@ -100,23 +100,59 @@ export type Sucty = {
   total: number;
   /** Hodnota toho, čo ešte nie je vyfakturované — bez DPH. */
   zostava: number;
+  /**
+   * To isté s DPH — porovnáva sa s `total` (s DPH). Predtým stálo vedľa seba
+   * „Hodnota“ s DPH a „nevyfakturované“ bez DPH, takže neboli porovnateľné (D-03).
+   */
+  zostava_s_dph: number;
 };
 
 export function suctyObjednavky(polozky: PolozkaObjednavky[]): Sucty {
   let subtotal = 0;
   let vat = 0;
   let zostava = 0;
+  let zostavaDph = 0;
   for (const p of polozky ?? []) {
     const mnozstvo = cislo(p.quantity);
     const cena = cislo(p.unit_price);
     const zaklad = centy(mnozstvo * cena);
     subtotal += zaklad;
     vat += centy((zaklad * cislo(p.vat_rate)) / 100);
-    zostava += centy(zostavaVybavit(p) * cena);
+    const zost = centy(zostavaVybavit(p) * cena);
+    zostava += zost;
+    zostavaDph += centy((zost * cislo(p.vat_rate)) / 100);
   }
   subtotal = centy(subtotal);
   vat = centy(vat);
-  return { subtotal, vat_total: vat, total: centy(subtotal + vat), zostava: centy(zostava) };
+  return {
+    subtotal,
+    vat_total: vat,
+    total: centy(subtotal + vat),
+    zostava: centy(zostava),
+    zostava_s_dph: centy(zostava + zostavaDph),
+  };
+}
+
+/**
+ * Položky objednávky z ponuky so zľavami. Objednávka zľavy nepozná (nemá na ne
+ * stĺpce), preto sa premietnu do jednotkovej ceny: najprv zľava riadku, potom
+ * pomerný podiel zľavy na celú ponuku (rovnaký koeficient pre všetky riadky,
+ * takže pomer medzi sadzbami DPH ostane). Predtým sa zľavy pri prevode
+ * stratili a objednávka bola drahšia než prijatá ponuka (D-05).
+ */
+export function polozkyZPonuky<
+  T extends { quantity?: unknown; unit_price?: unknown; discount_percent?: unknown },
+>(polozky: T[], zlavaDokladu: unknown): (T & { unit_price: number })[] {
+  const zaklady = polozky.map((p) => {
+    const z = 1 - Math.min(Math.max(cislo(p.discount_percent), 0), 100) / 100;
+    return { p, cena: cislo(p.unit_price) * z };
+  });
+  const zakladSpolu = zaklady.reduce((s, x) => s + cislo(x.p.quantity) * x.cena, 0);
+  const zlava = Math.max(0, cislo(zlavaDokladu));
+  const k = zakladSpolu > 0 && zlava > 0 ? Math.max(0, (zakladSpolu - zlava) / zakladSpolu) : 1;
+  // Päť desatinných miest ako `riadkySoZlavou` — centy by pri väčšom množstve
+  // posunuli súčet objednávky od ponuky.
+  return zaklady.map(({ p, cena }) => ({ ...p, unit_price: Math.round(cena * k * 1e5) / 1e5 }));
 }
 
 /**

@@ -2,11 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { cisloZRadu } from "./cislo-z-radu.server";
+import { domacaMena } from "./kurzy";
 import {
-  centy,
   cislo,
   novoVybavene,
   polozkyNaFakturu,
+  polozkyZPonuky,
   stavPodlaVybavenia,
   suctyObjednavky,
   type StavPrijatejObjednavky,
@@ -104,7 +105,7 @@ export const getSalesOrder = createServerFn({ method: "POST" })
     const o = await nacitajObjednavku(context.supabase, data.company_id, data.id);
     const { data: faktury } = await context.supabase
       .from("invoices")
-      .select("id, invoice_number, issue_date, status, total, deleted_at")
+      .select("id, invoice_number, issue_date, status, total, currency, deleted_at")
       .eq("company_id", data.company_id)
       .eq("sales_order_id", data.id)
       .order("issue_date", { ascending: false });
@@ -123,7 +124,20 @@ const Ulozenie = CompanyScoped.extend({
   customer_order_number: z.string().nullable().optional(),
   order_date: z.string().min(1, "Zadajte dátum objednávky."),
   requested_date: z.preprocess(prazdneNaNull, z.string().nullable().optional()),
-  currency: z.string().default("EUR"),
+  /**
+   * Mena objednávky. Chýba = pri novej mena firmy (CZ firma CZK), pri úprave
+   * ostáva tá, ktorá je uložená — predtým každá úprava prepísala menu na EUR (D-04, K-15).
+   */
+  currency: z.preprocess(
+    prazdneNaNull,
+    z
+      .string()
+      .trim()
+      .transform((m) => m.toUpperCase())
+      .pipe(z.string().regex(/^[A-Z]{3}$/, "Neplatná mena."))
+      .nullable()
+      .optional(),
+  ),
   job_id: z.preprocess(prazdneNaNull, z.string().uuid().nullable().optional()),
   quote_id: z.preprocess(prazdneNaNull, z.string().uuid().nullable().optional()),
   reserve_stock: z.boolean().default(false),
@@ -162,15 +176,18 @@ export const saveSalesOrder = createServerFn({ method: "POST" })
       customer_order_number: data.customer_order_number || null,
       order_date: data.order_date,
       requested_date: data.requested_date ?? null,
-      currency: data.currency,
       job_id: data.job_id ?? null,
-      quote_id: data.quote_id ?? null,
       reserve_stock: data.reserve_stock,
       note: data.note || null,
       subtotal: sucty.subtotal,
       vat_total: sucty.vat_total,
       total: sucty.total,
     };
+
+    // Mena a väzba na ponuku sa pri úprave zapíšu len vtedy, keď ich formulár
+    // poslal — inak by úprava objednávky z ponuky zahodila menu aj ponuku.
+    if (data.currency) hlavicka.currency = data.currency;
+    if (data.quote_id !== undefined) hlavicka.quote_id = data.quote_id;
 
     let id = data.id;
     if (id) {
@@ -192,6 +209,14 @@ export const saveSalesOrder = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id);
       if (error) throw new Error(error.message);
     } else {
+      if (!hlavicka.currency) {
+        const { data: firma } = await sb
+          .from("companies")
+          .select("country")
+          .eq("id", data.company_id)
+          .maybeSingle();
+        hlavicka.currency = domacaMena(firma?.country);
+      }
       const cislo = await dalsieCislo(
         sb,
         data.company_id,
@@ -501,8 +526,10 @@ export const createSalesOrderFromQuote = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!q) throw new Error("Ponuka sa nenašla.");
 
-    const polozky = [...(q.quote_items ?? [])].sort(
-      (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0),
+    // Zľava riadku aj zľava na celú ponuku sa premietnu do ceny (D-05).
+    const polozky = polozkyZPonuky(
+      [...(q.quote_items ?? [])].sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)),
+      q.discount_total,
     );
     if (!polozky.length) throw new Error("Ponuka nemá žiadne položky.");
 
@@ -543,7 +570,7 @@ export const createSalesOrderFromQuote = createServerFn({ method: "POST" })
         description: p.description ?? null,
         quantity: cislo(p.quantity),
         unit: p.unit ?? "ks",
-        unit_price: centy(cislo(p.unit_price)),
+        unit_price: p.unit_price,
         vat_rate: cislo(p.vat_rate),
       })),
     );

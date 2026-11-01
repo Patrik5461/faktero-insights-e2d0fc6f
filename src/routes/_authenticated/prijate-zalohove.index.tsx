@@ -1,15 +1,19 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
-import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
+import { formatujMenu } from "@/lib/faktero/mena";
+import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
+import { suctyPrijatychZaloh } from "@/lib/faktero/sucty-zoznamov";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
+import { textChybyZapisu, zapisOverene } from "@/lib/faktero/over-zapis";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
@@ -31,6 +35,7 @@ type Riadok = {
   currency: string;
   payment_date: string | null;
   status: string;
+  deleted_at: string | null;
 };
 
 /**
@@ -50,22 +55,35 @@ function PrijateZalohovePage() {
   const [mazane, setMazane] = useState<Riadok | null>(null);
   // Hľadanie a filtre sú v adrese; zoznam sa načíta celý a filtruje sa tu.
   const lf = useListFilters({ pageSizeKey: "prijate-zalohove" });
+  // Vymazané zálohy (deleted_at) — len na požiadanie, s tlačidlom Obnoviť.
+  const ajVymazane = lf.zapnute("vymazane");
+  const { domaca } = useFormatMenyFirmy();
 
   async function load() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("purchase_invoices")
-      .select(
-        "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status",
-      )
-      .eq("company_id", cid)
-      .eq("type", "proforma")
-      .is("deleted_at", null)
-      .order("issue_date", { ascending: false })
-      .limit(500);
-    const zoznam = (data ?? []) as Riadok[];
+    // Celý zoznam po stránkach — predtým tichý strop 500 riadkov.
+    let zoznam: Riadok[];
+    try {
+      zoznam = await vsetkyRiadky<Riadok>((od, po) => {
+        let q = supabase
+          .from("purchase_invoices")
+          .select(
+            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status, deleted_at",
+          )
+          .eq("company_id", cid)
+          .eq("type", "proforma");
+        q = ajVymazane ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+        return q
+          .order("issue_date", { ascending: false })
+          .order("id")
+          .range(od, po) as any;
+      });
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa načítať zálohy."));
+      zoznam = [];
+    }
     setRows(zoznam);
     setLoading(false);
 
@@ -90,7 +108,7 @@ function PrijateZalohovePage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ajVymazane]);
 
   const hladane = lf.q.trim().toLowerCase();
   const stav = lf.filter("stav");
@@ -115,28 +133,81 @@ function PrijateZalohovePage() {
     [rows, zuctovane, hladane, stav, podla, obdobieOd, obdobieDo],
   );
 
-  const fmt = useMemo(() => formatovacMeny("EUR"), []);
-  const sucty = useMemo(() => {
-    let spolu = 0;
-    let nezaplatene = 0;
-    for (const r of zobrazene) {
-      spolu += Number(r.amount_total ?? 0);
-      if (!r.payment_date && r.status !== "cancelled") nezaplatene += Number(r.amount_total ?? 0);
-    }
-    return { spolu, nezaplatene };
-  }, [zobrazene]);
+  // Po menách — CZK ani USD sa k eurám nepripočítajú (AB-09); storno a
+  // zúčtované zálohy nie sú dlh (AB-10).
+  const sucty = useMemo(
+    () => suctyPrijatychZaloh(zobrazene, zuctovane, domaca),
+    [zobrazene, zuctovane, domaca],
+  );
 
   async function zmaz() {
     if (!mazane) return;
-    const { error } = await supabase
-      .from("purchase_invoices")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", mazane.id);
-    if (error) return toast.error(error.message);
-    toast.success(t("Zálohová faktúra vymazaná"));
+    try {
+      await zapisOverene(
+        supabase
+          .from("purchase_invoices")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", mazane.id)
+          .select("id"),
+      );
+    } catch (e) {
+      return toast.error(textChybyZapisu(e, t));
+    }
+    toast.success(t("Zálohová faktúra vymazaná. Nájdete ju cez filter „Zobraziť vymazané“."));
     setMazane(null);
     await load();
   }
+
+  async function obnov(r: Riadok) {
+    try {
+      await zapisOverene(
+        supabase.from("purchase_invoices").update({ deleted_at: null }).eq("id", r.id).select("id"),
+      );
+    } catch (e) {
+      return toast.error(textChybyZapisu(e, t));
+    }
+    toast.success(t("Obnovené"));
+    await load();
+  }
+
+  const akciaRiadku = (r: Riadok, mobil: boolean) =>
+    ajVymazane ? (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          void obnov(r);
+        }}
+        className={
+          mobil
+            ? "inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
+            : "rounded p-1.5 text-primary hover:bg-primary/10"
+        }
+        title={t("Obnoviť")}
+        aria-label={t("Obnoviť")}
+      >
+        <RotateCcw className={mobil ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        {mobil ? t("Obnoviť") : null}
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setMazane(r);
+        }}
+        className={
+          mobil
+            ? "inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+            : "rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        }
+        title={t("Vymazať")}
+        aria-label={t("Vymazať")}
+      >
+        <Trash2 className={mobil ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        {mobil ? t("Vymazať") : null}
+      </button>
+    );
 
   return (
     <>
@@ -159,8 +230,8 @@ function PrijateZalohovePage() {
       <PageBody>
         <div className="grid gap-4 sm:grid-cols-3">
           <Statistika label={t("Počet záloh")} hodnota={String(zobrazene.length)} />
-          <Statistika label={t("Celková suma")} hodnota={fmt(sucty.spolu)} />
-          <Statistika label={t("Nezaplatené")} hodnota={fmt(sucty.nezaplatene)} />
+          <Statistika label={t("Celková suma")} hodnota={<SuctyPoMenach sucty={sucty.spolu} />} />
+          <Statistika label={t("Nezaplatené")} hodnota={<SuctyPoMenach sucty={sucty.nezaplatene} />} />
         </div>
 
         <div className="mt-6">
@@ -187,11 +258,16 @@ function PrijateZalohovePage() {
                   { value: "splatnost", label: "dátumu splatnosti" },
                 ],
               },
+              { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
             ]}
           />
           {loading ? (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
               {t("Načítavam…")}
+            </div>
+          ) : rows.length === 0 && ajVymazane ? (
+            <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+              {t("Žiadna vymazaná zálohová faktúra.")}
             </div>
           ) : rows.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-10 text-center">
@@ -242,19 +318,7 @@ function PrijateZalohovePage() {
                           <td className="p-3">
                             <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
                           </td>
-                          <td className="p-3 text-right">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMazane(r);
-                              }}
-                              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              title={t("Vymazať")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
+                          <td className="p-3 text-right">{akciaRiadku(r, false)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -270,6 +334,7 @@ function PrijateZalohovePage() {
                   amount={formatujMenu(r.amount_total, r.currency)}
                   status={<StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />}
                   meta={t("splatná {datum}", { datum: datumNaDoklade(r.due_date) })}
+                  actions={akciaRiadku(r, true)}
                 />
               )}
             />
@@ -319,7 +384,7 @@ function StavZalohy({ riadok, zuctovanaNa }: { riadok: Riadok; zuctovanaNa?: str
   );
 }
 
-function Statistika({ label, hodnota }: { label: string; hodnota: string }) {
+function Statistika({ label, hodnota }: { label: string; hodnota: ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>

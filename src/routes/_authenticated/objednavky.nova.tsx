@@ -13,12 +13,13 @@ import { getSalesOrder, saveSalesOrder } from "@/lib/faktero/sales-orders.functi
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-odberatel";
-import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { Plus, Trash2 } from "lucide-react";
-import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY } from "@/lib/faktero/mena";
+import { menyNaVyber } from "@/lib/faktero/meny-na-vyber";
+import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
-import { sadzbyRezimu } from "@/lib/faktero/dph-rezim";
+import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/objednavky/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová objednávka — Faktero") }] }),
   /**
@@ -43,12 +44,12 @@ type Polozka = {
   _cena_rucne?: boolean;
 };
 
-const PRAZDNA: Polozka = {
+/** Prázdny riadok so základnou sadzbou režimu firmy (CZ 21 %, neplatiteľ 0 %), nie pevnou 23 % (D-11). */
+const PRAZDNA: Omit<Polozka, "vat_rate"> = {
   name: "",
   quantity: 1,
   unit: "ks",
   unit_price: 0,
-  vat_rate: DEFAULT_VAT_RATE,
 };
 
 const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
@@ -58,10 +59,6 @@ const popis = "mb-1 block text-[13px] font-semibold text-foreground";
 function dnesLokalne(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function suma(n: unknown) {
-  return formatovacMeny("EUR", "sk-SK")(Number(n) || 0);
 }
 
 function NewOrder() {
@@ -75,6 +72,8 @@ function NewOrder() {
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
 
   const rezim = useRezimDph();
+  const novaPolozka = (): Polozka => ({ ...PRAZDNA, vat_rate: zakladnaSadzbaRezimu(rezim) });
+  const menyFirmy = useFormatMenyFirmy();
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -95,8 +94,23 @@ function NewOrder() {
     note: "",
     /* Číselný rad objednávky; prázdne = predvolený. */
     number_series_id: "",
+    /* Mena objednávky; prázdne = mena firmy (CZ firma CZK). */
+    currency: "",
   });
-  const [polozky, setPolozky] = useState<Polozka[]>([{ ...PRAZDNA }]);
+  const [polozky, setPolozky] = useState<Polozka[]>(() => [novaPolozka()]);
+  const mena = form.currency || menyFirmy.domaca;
+  const suma = (n: unknown) => menyFirmy.suma(Number(n) || 0, mena);
+
+  // Režim DPH sa načíta neskôr — prázdne riadky dostanú jeho základnú sadzbu.
+  useEffect(() => {
+    const z = zakladnaSadzbaRezimu(rezim);
+    setPolozky((a) =>
+      a.some((p) => p.vat_rate !== z && !p.name)
+        ? a.map((p) => (p.name ? p : { ...p, vat_rate: z }))
+        : a,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rezim.krajina, rezim.platitel]);
 
   const cid = useMemo(() => getActiveCompanyId(), []);
 
@@ -134,6 +148,7 @@ function NewOrder() {
           number_series_id: o.number_series_id ?? "",
           reserve_stock: !!o.reserve_stock,
           note: o.note ?? "",
+          currency: o.currency ?? "",
         });
         setPolozky(
           (o.sales_order_items ?? []).map((p: any) => ({
@@ -214,7 +229,7 @@ function NewOrder() {
       quantity: 1,
       unit: produkt.unit ?? "ks",
       unit_price: c?.cena ?? Number(produkt.unit_price ?? 0),
-      vat_rate: Number(produkt.vat_rate ?? DEFAULT_VAT_RATE),
+      vat_rate: Number(produkt.vat_rate ?? zakladnaSadzbaRezimu(rezim)),
       _dovod: c?.dovod,
     };
     setPolozky((arr) => {
@@ -249,6 +264,9 @@ function NewOrder() {
           reserve_stock: form.reserve_stock,
           note: form.note || null,
           number_series_id: form.number_series_id || null,
+          // Mena vždy — server pri úprave bez nej ponechá uloženú; väzbu na
+          // ponuku formulár neposiela, takže ostane (D-04).
+          currency: mena,
           polozky: platne.map((p) => ({
             product_id: p.product_id ?? null,
             name: p.name.trim(),
@@ -344,6 +362,20 @@ function NewOrder() {
                   value={form.requested_date}
                   onChange={(e) => setForm({ ...form, requested_date: e.target.value })}
                 />
+              </PoleDokladu>
+              <PoleDokladu label={t("Mena")} htmlFor="mena-objednavky" className={bunka.polovica}>
+                <select
+                  id="mena-objednavky"
+                  className={VSTUP_DOKLADU}
+                  value={mena}
+                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                >
+                  {menyNaVyber(mena).map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.code} {m.symbol} — {t(m.name)}
+                    </option>
+                  ))}
+                </select>
               </PoleDokladu>
               <VyberRadu
                 vzhlad="pole"
@@ -569,7 +601,7 @@ function NewOrder() {
 
             <button
               type="button"
-              onClick={() => setPolozky([...polozky, { ...PRAZDNA }])}
+              onClick={() => setPolozky([...polozky, novaPolozka()])}
               className="mt-3 inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
             >
               <Plus className="h-4 w-4" /> {t("Pridať riadok")}

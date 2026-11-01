@@ -7,6 +7,9 @@
  * započítala do výnosov dvakrát".
  */
 
+import { domacaMena } from "./kurzy";
+import { menaAleboDomaca, sumaVDomacejMene } from "./mena-sucet";
+
 export type StavZakazky = "active" | "closed" | "cancelled";
 
 export const STAV_ZAKAZKY_POPIS: Record<StavZakazky, string> = {
@@ -25,20 +28,29 @@ export function centy(n: number): number {
   return Math.round(cislo(n) * 100) / 100;
 }
 
-export type FakturaRiadok = {
+/** Mena dokladu a jeho prepočet — chýba = doklad v domácej mene firmy. */
+type MenaDokladu = {
+  currency?: string | null;
+  exchange_rate?: unknown;
+};
+
+export type FakturaRiadok = MenaDokladu & {
   type?: string | null;
   status?: string | null;
   subtotal?: unknown;
+  /** Základ v domácej mene firmy (stĺpec `*_eur` nesie domácu menu aj pri CZ). */
+  subtotal_eur?: unknown;
   deleted_at?: string | null;
 };
 
-export type PrijataFakturaRiadok = {
+export type PrijataFakturaRiadok = MenaDokladu & {
   amount_without_vat?: unknown;
+  amount_without_vat_eur?: unknown;
   deleted_at?: string | null;
 };
 
 /** Bloček (expense_documents) priradený k zákazke. */
-export type BlocekRiadok = {
+export type BlocekRiadok = MenaDokladu & {
   net_amount?: unknown;
   vat_amount?: unknown;
   total_amount?: unknown;
@@ -133,6 +145,8 @@ export type VyhodnotenieVstup = {
   jazdy?: JazdaRiadok[];
   planovanyVynos?: unknown;
   planovanyNaklad?: unknown;
+  /** Krajina firmy — určí domácu menu (CZ → CZK) a zápis kurzu (ECB/ČNB). */
+  krajina?: string | null;
 };
 
 export type Vyhodnotenie = {
@@ -151,6 +165,15 @@ export type Vyhodnotenie = {
   plnenie_vynosu: number | null;
   /** Koľko percent plánovaného nákladu je už vyčerpané. */
   cerpanie_nakladu: number | null;
+  /** Domáca mena firmy — v nej sú všetky sumy vyhodnotenia. */
+  mena: "EUR" | "CZK";
+  /** Niektorý doklad bol v cudzej mene a prepočítal sa kurzom dokladu. */
+  prepocitane: boolean;
+  /**
+   * Doklady v cudzej mene bez kurzu aj bez sumy v domácej mene — do súčtov sa
+   * nezapočítali (kurz 1 by klamal), ukážu sa zvlášť „bez prepočtu“.
+   */
+  bez_prepoctu: { mena: string; suma: number }[];
 };
 
 function plan(v: unknown): number | null {
@@ -160,14 +183,46 @@ function plan(v: unknown): number | null {
 }
 
 export function vyhodnotZakazku(vstup: VyhodnotenieVstup): Vyhodnotenie {
-  const vynosy = centy((vstup.faktury ?? []).reduce((s, f) => s + vynosZFaktury(f), 0));
+  /*
+    Zákazka je prehľad — sumy v cudzej mene sa prepočítajú do domácej meny
+    firmy kurzom dokladu (`*_eur`, inak `exchange_rate`), nie sčítajú nominálne
+    (K-02). Doklad bez kurzu ide do „bez prepočtu“.
+  */
+  const mena = domacaMena(vstup.krajina);
+  let prepocitane = false;
+  const chybajuce = new Map<string, number>();
+  const doDomacej = (suma: number, d: MenaDokladu, sumaDomaca?: unknown): number => {
+    if (suma === 0) return 0;
+    const v = sumaVDomacejMene(
+      { suma, mena: d.currency, sumaDomaca, kurz: d.exchange_rate },
+      vstup.krajina,
+    );
+    if (v) {
+      prepocitane ||= v.prepocitane;
+      return v.suma;
+    }
+    const m = menaAleboDomaca(d.currency, mena);
+    chybajuce.set(m, centy((chybajuce.get(m) ?? 0) + suma));
+    return 0;
+  };
+  // `*_eur` je bez znamienka dobropisu — znamienko sa vezme zo sumy v mene dokladu.
+  const domacaSoZnamienkom = (suma: number, ulozena: unknown) =>
+    ulozena == null || ulozena === "" ? undefined : Math.sign(suma) * Math.abs(cislo(ulozena));
+
+  const vynosy = centy(
+    (vstup.faktury ?? []).reduce((s, f) => {
+      const v = vynosZFaktury(f);
+      return s + doDomacej(v, f, domacaSoZnamienkom(v, f.subtotal_eur));
+    }, 0),
+  );
 
   const naklad_material = centy((vstup.pohyby ?? []).reduce((s, p) => s + nakladZPohybu(p), 0));
   const naklad_sluzby = centy(
-    (vstup.prijateFaktury ?? []).reduce(
-      (s, f) => s + (f.deleted_at ? 0 : cislo(f.amount_without_vat)),
-      0,
-    ) + (vstup.blocky ?? []).reduce((s, b) => s + nakladZBlocku(b), 0),
+    (vstup.prijateFaktury ?? []).reduce((s, f) => {
+      if (f.deleted_at) return s;
+      const n = cislo(f.amount_without_vat);
+      return s + doDomacej(n, f, domacaSoZnamienkom(n, f.amount_without_vat_eur));
+    }, 0) + (vstup.blocky ?? []).reduce((s, b) => s + doDomacej(nakladZBlocku(b), b), 0),
   );
   const naklad_doprava = centy((vstup.jazdy ?? []).reduce((s, j) => s + nakladZJazdy(j), 0));
 
@@ -201,10 +256,30 @@ export function vyhodnotZakazku(vstup: VyhodnotenieVstup): Vyhodnotenie {
       planovany_naklad != null && planovany_naklad > 0
         ? Math.round((naklady / planovany_naklad) * 1000) / 10
         : null,
+    mena,
+    prepocitane,
+    bez_prepoctu: [...chybajuce.entries()]
+      .filter(([, suma]) => Math.abs(suma) >= 0.005)
+      .map(([m, suma]) => ({ mena: m, suma })),
   };
 }
 
 /** Prekročený rozpočet je to, čo chce mať človek na zozname zvýraznené. */
 export function prekrocenyRozpocet(v: Vyhodnotenie): boolean {
   return v.planovany_naklad != null && v.planovany_naklad > 0 && v.naklady > v.planovany_naklad;
+}
+
+/**
+ * Kontrola zákazky pred uložením — rovnaká pre novú aj úpravu, na webe aj na
+ * serveri (K-07). Vracia kľúč textu pre `t()`, alebo `null`.
+ */
+export function chybaZakazky(z: {
+  name?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}): string | null {
+  if (!String(z.name ?? "").trim()) return "Zadajte názov zákazky.";
+  if (z.start_date && z.end_date && z.end_date < z.start_date)
+    return "Koniec zákazky nemôže byť skôr ako jej začiatok.";
+  return null;
 }

@@ -391,7 +391,7 @@ function QuoteDetail() {
                       }`}
                     >
                       <div className="font-medium">
-                        {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") })}
+                        {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) })}
                       </div>
                       {q.response_note && (
                         <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
@@ -523,7 +523,7 @@ function QuoteDetail() {
                     }`}
                   >
                     <div className="font-medium">
-                      {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString("sk-SK") })}
+                      {q.status === "accepted" ? t("Odberateľ ponuku prijal {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) }) : t("Odberateľ ponuku zamietol {kedy}", { kedy: new Date(q.responded_at).toLocaleString(lokalJazyka(jazyk), { timeZone: "Europe/Bratislava" }) })}
                     </div>
                     {q.response_note && (
                       <div className="mt-2 whitespace-pre-wrap text-muted-foreground">

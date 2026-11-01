@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  chybaZakazky,
   nakladZJazdy,
   nakladZPohybu,
   prekrocenyRozpocet,
@@ -169,5 +170,74 @@ describe("bločky na zákazke (test 30. 10.)", () => {
     expect(v.naklad_sluzby).toBe(240);
     expect(v.naklady).toBe(240);
     expect(v.zisk).toBe(760);
+  });
+});
+
+describe("cudzia mena na zákazke (K-02)", () => {
+  it("výnosy a náklady prepočíta do domácej meny, nie nominálne", () => {
+    const v = vyhodnotZakazku({
+      krajina: "SK",
+      faktury: [
+        { type: "regular", status: "issued", subtotal: 100, currency: "EUR" },
+        // ECB: 25 CZK za 1 EUR → 2 500 CZK = 100 EUR
+        { type: "regular", status: "issued", subtotal: 2500, currency: "CZK", exchange_rate: 25 },
+        // uložená suma v domácej mene má prednosť pred kurzom
+        {
+          type: "regular",
+          status: "issued",
+          subtotal: 110,
+          currency: "USD",
+          exchange_rate: 1.1,
+          subtotal_eur: 99,
+        },
+        {
+          type: "credit_note",
+          status: "issued",
+          subtotal: -50,
+          currency: "CZK",
+          exchange_rate: 25,
+        },
+      ],
+      prijateFaktury: [
+        { amount_without_vat: 1000, currency: "CZK", exchange_rate: 25 },
+        { amount_without_vat: 30, currency: "EUR" },
+      ],
+      blocky: [{ net_amount: 10, currency: "USD" }], // bez kurzu
+    });
+    expect(v.mena).toBe("EUR");
+    expect(v.vynosy).toBe(297); // 100 + 100 + 99 − 2
+    expect(v.naklad_sluzby).toBe(70); // 40 + 30, bloček bez kurzu mimo
+    expect(v.prepocitane).toBe(true);
+    expect(v.bez_prepoctu).toEqual([{ mena: "USD", suma: 10 }]);
+  });
+
+  it("CZ firma počíta v Kč kurzom ČNB", () => {
+    const v = vyhodnotZakazku({
+      krajina: "CZ",
+      faktury: [
+        { type: "regular", status: "issued", subtotal: 1000, currency: "CZK" },
+        { type: "regular", status: "issued", subtotal: 10, currency: "EUR", exchange_rate: 25 },
+      ],
+    });
+    expect(v.mena).toBe("CZK");
+    expect(v.vynosy).toBe(1250);
+  });
+
+  it("bez cudzej meny nič neprepočítava", () => {
+    const v = vyhodnotZakazku({ faktury: [{ type: "regular", status: "issued", subtotal: 5 }] });
+    expect(v.prepocitane).toBe(false);
+    expect(v.bez_prepoctu).toEqual([]);
+  });
+});
+
+describe("chybaZakazky (K-07)", () => {
+  it("názov je povinný a koniec nesmie byť pred začiatkom", () => {
+    expect(chybaZakazky({ name: "  " })).toBe("Zadajte názov zákazky.");
+    expect(chybaZakazky({ name: "Stavba", start_date: "2026-11-10", end_date: "2026-11-01" })).toBe(
+      "Koniec zákazky nemôže byť skôr ako jej začiatok.",
+    );
+    expect(
+      chybaZakazky({ name: "Stavba", start_date: "2026-11-01", end_date: "2026-11-01" }),
+    ).toBeNull();
   });
 });

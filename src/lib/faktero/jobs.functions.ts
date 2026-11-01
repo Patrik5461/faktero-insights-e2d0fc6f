@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { dalsieCisloDokladu } from "./cislovanie";
-import { vyhodnotZakazku, type Vyhodnotenie } from "./zakazky";
+import { chybaZakazky, vyhodnotZakazku, type Vyhodnotenie } from "./zakazky";
 import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 /**
@@ -53,19 +53,22 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
     pohyby: new Map<string, any[]>(),
     jazdy: new Map<string, any[]>(),
     objednavky: new Map<string, any[]>(),
+    krajina: null as string | null,
   };
   if (!jobIds.length) return prazdne;
 
-  const [faktury, prijate, blocky, pohyby, jazdy, objednavky] = await Promise.all([
+  const [faktury, prijate, blocky, pohyby, jazdy, objednavky, firma] = await Promise.all([
     supabase
       .from("invoices")
-      .select("id, job_id, invoice_number, type, status, issue_date, subtotal, total, deleted_at")
+      .select(
+        "id, job_id, invoice_number, type, status, issue_date, subtotal, total, currency, exchange_rate, subtotal_eur, deleted_at",
+      )
       .eq("company_id", companyId)
       .in("job_id", jobIds),
     supabase
       .from("purchase_invoices")
       .select(
-        "id, job_id, invoice_number, supplier_name, issue_date, amount_without_vat, amount_total, deleted_at",
+        "id, job_id, invoice_number, supplier_name, issue_date, amount_without_vat, amount_total, currency, exchange_rate, amount_without_vat_eur, deleted_at",
       )
       .eq("company_id", companyId)
       // Náklad zákazky nesie ostrá faktúra; záloha by ho zdvojila.
@@ -75,7 +78,7 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
     supabase
       .from("expense_documents")
       .select(
-        "id, job_id, document_number, supplier_name, issue_date, net_amount, vat_amount, total_amount",
+        "id, job_id, document_number, supplier_name, issue_date, net_amount, vat_amount, total_amount, currency, exchange_rate",
       )
       .eq("company_id", companyId)
       .in("job_id", jobIds),
@@ -96,6 +99,8 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
       .select("id, job_id, order_number, supplier_name, order_date, expected_date, status")
       .eq("company_id", companyId)
       .in("job_id", jobIds),
+    // Krajina firmy → domáca mena a kurz pre prepočet cudzích dokladov (K-02).
+    supabase.from("companies").select("country").eq("id", companyId).maybeSingle(),
   ]);
 
   const zoskup = (rows: any[] | null) => {
@@ -115,6 +120,7 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
     pohyby: zoskup(pohyby.data),
     jazdy: zoskup(jazdy.data),
     objednavky: zoskup(objednavky.data),
+    krajina: (firma?.data?.country as string | null) ?? null,
   };
 }
 
@@ -130,6 +136,7 @@ function vyhodnotenie(
     jazdy: p.jazdy.get(job.id) ?? [],
     planovanyVynos: job.planned_revenue,
     planovanyNaklad: job.planned_cost,
+    krajina: p.krajina,
   });
 }
 
@@ -205,7 +212,7 @@ export const getJob = createServerFn({ method: "POST" })
   });
 
 const ZakazkaVstup = z.object({
-  name: z.string().trim().min(1).max(255),
+  name: z.string().trim().min(1, "Zadajte názov zákazky.").max(255),
   customer_id: z.string().uuid().nullable().optional(),
   start_date: z.string().date().nullable().optional(),
   end_date: z.string().date().nullable().optional(),
@@ -249,6 +256,8 @@ export const createJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.merge(ZakazkaVstup).parse(d))
   .handler(async ({ data, context }) => {
+    const chyba = chybaZakazky(data);
+    if (chyba) throw new Error(chyba);
     const { supabase, userId } = context;
     const { data: job, error } = await supabase
       .from("jobs")
@@ -278,6 +287,9 @@ export const updateJob = createServerFn({ method: "POST" })
     CompanyScoped.extend({ id: z.string().uuid() }).merge(ZakazkaVstup).parse(d),
   )
   .handler(async ({ data, context }) => {
+    // Rovnaké kontroly ako pri novej zákazke (K-07).
+    const chyba = chybaZakazky(data);
+    if (chyba) throw new Error(chyba);
     const { supabase } = context;
     const job = await nacitajZakazku(supabase, data.company_id, data.id);
     if (job.status !== "active") throw new Error("Upraviť sa dá len otvorená zákazka.");

@@ -13,7 +13,7 @@ import {
   type StavPrijatejObjednavky,
 } from "@/lib/faktero/objednavky-odberatel";
 import { Plus, ClipboardList, AlertTriangle } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
@@ -33,10 +33,6 @@ const FARBA: Record<StavPrijatejObjednavky, string> = {
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
-function suma(n: unknown) {
-  return formatovacMeny("EUR", "sk-SK")(Number(n) || 0);
-}
-
 /** Dnešok v miestnom čase — `toISOString()` by po polnoci vrátil včerajšok. */
 function dnesLokalne(): string {
   const d = new Date();
@@ -53,6 +49,8 @@ function OrdersPage() {
   const { t } = useT();
   const navigate = useNavigate();
   const nacitaj = useServerFn(listSalesOrders);
+  const menyFirmy = useFormatMenyFirmy();
+  const suma = (n: unknown, mena: unknown) => menyFirmy.suma(Number(n) || 0, mena);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const lf = useListFilters();
@@ -90,16 +88,17 @@ function OrdersPage() {
     [rows, hladane, obdobieOd, obdobieDo],
   );
 
+  // Po menách (D-01, K-14) a obe hodnoty s DPH, aby sa dali porovnať (D-03).
   const spolu = useMemo(
-    () =>
-      zobrazene.reduce(
-        (s, r) => ({
-          hodnota: s.hodnota + Number(r.total || 0),
-          zostava: s.zostava + Number(r.zostava || 0),
-        }),
-        { hodnota: 0, zostava: 0 },
+    () => ({
+      hodnota: menyFirmy.sucty(zobrazene, (r) => Number(r.total || 0), (r) => r.currency),
+      zostava: menyFirmy.sucty(
+        zobrazene,
+        (r) => Number(r.zostava_s_dph ?? r.zostava ?? 0),
+        (r) => r.currency,
       ),
-    [zobrazene],
+    }),
+    [zobrazene, menyFirmy],
   );
 
   return (
@@ -136,9 +135,9 @@ function OrdersPage() {
         />
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {zobrazene.length > 0 && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              {t("Hodnota {suma} · nevyfakturované", { suma: suma(spolu.hodnota) })}{" "}
-              <span className="font-medium text-foreground">{suma(spolu.zostava)}</span>
+            <span className="ml-auto inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
+              {t("Hodnota s DPH")} <SuctyPoMenach sucty={spolu.hodnota} /> · {t("nevyfakturované s DPH")}{" "}
+              <SuctyPoMenach sucty={spolu.zostava} className="font-medium text-foreground" />
             </span>
           )}
         </div>
@@ -228,7 +227,7 @@ function OrdersPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-2 text-right tabular-nums">{suma(o.total)}</td>
+                          <td className="px-4 py-2 text-right tabular-nums">{suma(o.total, o.currency)}</td>
                         </tr>
                       );
                     })}
@@ -266,7 +265,7 @@ function OrdersPage() {
                       {` · ${t("Vybavené")} ${percento} %`}
                     </>
                   }
-                  amount={<span className="tabular-nums">{suma(o.total)}</span>}
+                  amount={<span className="tabular-nums">{suma(o.total, o.currency)}</span>}
                 />
               );
             }}

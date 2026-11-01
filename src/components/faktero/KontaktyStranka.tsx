@@ -166,6 +166,8 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
   async function save(c: Customer) {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // „Názov *“ je naozaj povinný — kontakt bez mena sa v adresári ani na doklade nedá nájsť (K-04).
+    if (!String(c.name ?? "").trim()) return toast.error(t("Vyplňte názov."));
     if (!c.odberatel && !c.dodavatel)
       return toast.error(t("Kontakt musí byť odberateľ, dodávateľ alebo oboje."));
     // Zľava príde z políčka ako reťazec; číselný stĺpec ho neprijme a prázdne

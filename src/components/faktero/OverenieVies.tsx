@@ -36,8 +36,9 @@ export function OverenieVies({
 
   const ic = String(icDph ?? "").trim();
   if (!ic) return null;
-  // Nemecká firma nemá čo overovať pri nemeckom odberateľovi; SK a CZ ostávajú, ako boli.
-  if (jeTuzemske(ic, krajinaFirmy === "DE" ? "DE" : "SK")) return null;
+  // Tuzemský odberateľ podľa krajiny firmy: pre CZ firmu je tuzemský CZ, a SK
+  // odberateľ je dodanie do iného štátu EÚ, ktoré dôkaz z VIES potrebuje (K-12).
+  if (jeTuzemske(ic, krajinaFirmy)) return null;
   if (!jeEuIcDph(ic)) {
     return (
       <p className="mt-1 text-xs text-muted-foreground">
