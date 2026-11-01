@@ -49,11 +49,14 @@ export default {
 
     await t.krok("Prehľad: odkaz pod minimom otvorí kartu", async () => {
       await t.go("/sklad");
+      // Karta so zoznamom (najvnútornejší div s nadpisom AJ odkazmi) — samotný
+      // nadpis je tiež div, v ňom by sa odkazy nenašli nikdy.
       const zoznam = t.page
         .locator("div", { has: t.page.getByText("Položky pod minimálnym stavom") })
+        .filter({ has: t.page.locator('a[href*="/sklad/produkty/"]') })
         .last();
       await zoznam.waitFor({ timeout: 20000 });
-      const odkazy = zoznam.locator('a[href*="/sklad/produkty/"]');
+      const odkazy = zoznam.locator('a[href*="/sklad/produkty/"]', { hasText: nazov });
       const n = await odkazy.count();
       t.over(n > 0, "na Prehľade nie je žiadna položka pod minimom s odkazom");
       await odkazy.first().click();

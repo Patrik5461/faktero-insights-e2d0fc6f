@@ -139,6 +139,12 @@ describe("pripravRiadky (SA-12a/b)", () => {
     expect(chyby.map((c) => c.riadok)).toEqual([3, 4]);
     expect(chyby[0].pole).toBe("purchase_price");
   });
+  it("súbor len so zlým riadkom: nič na import, ale chyba ostane (stránka ju musí ukázať)", () => {
+    const { riadky, chyby } = pripravRiadky([{ Názov: "B", Nákup: "jeden euro" }], mapovanie);
+    expect(riadky).toEqual([]);
+    expect(chyby).toHaveLength(1);
+    expect(chyby[0]).toMatchObject({ riadok: 2, pole: "purchase_price" });
+  });
   it("reimport exportu výberu nenesie počiatočný stav ani nuly", () => {
     const hlavicky = [
       "SKU",

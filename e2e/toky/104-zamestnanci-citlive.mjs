@@ -75,11 +75,11 @@ export default {
       const okno = page.getByRole("alertdialog");
       await okno.waitFor({ timeout: 10000 });
       await okno
-        .getByRole("button", { name: /Zrušiť|Nie/ })
+        .getByRole("button", { name: /Späť|Zrušiť|Nie/ })
         .first()
         .click();
       await page.waitForTimeout(1000);
-      t.over(await page.getByText(`pozn ${t.znacka}`).count(), "záznam zmizol aj po Zrušiť");
+      t.over(await page.getByText(`pozn ${t.znacka}`).count(), "záznam zmizol aj po Späť");
       await page.getByRole("button", { name: "Zmazať záznam dochádzky" }).first().click();
       await t.potvrd(page);
       await page

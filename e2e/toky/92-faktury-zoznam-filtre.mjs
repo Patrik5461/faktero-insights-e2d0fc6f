@@ -156,7 +156,8 @@ export default {
       await m.getByRole("menuitem", { name: "Pridať štítok…" }).click();
       const okno = m.getByRole("alertdialog").last();
       await okno.waitFor({ timeout: 10000 });
-      await okno.getByRole("textbox").fill(`e2e-${t.znacka}`);
+      // Pole s návrhmi štítkov (datalist) má rolu combobox, nie textbox.
+      await okno.locator("input").fill(`e2e-${t.znacka}`);
       await okno.getByRole("button").last().click();
       const f3 = faktury.po[2];
       await t.cakajNa("štítok na vybranej faktúre", async () => {

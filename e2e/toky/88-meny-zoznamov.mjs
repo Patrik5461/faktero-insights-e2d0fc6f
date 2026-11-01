@@ -14,7 +14,10 @@ import { prijataCezRest } from "../lib/zauctovanie.mjs";
 const bezMedzier = (s) => s.replace(/\s+/g, " ").replace(/ | /g, " ");
 
 async function textKarty(page, nazov) {
-  const karta = page.locator("div", { has: page.getByText(nazov, { exact: true }) }).last();
+  // Najvnútornejší div s nadpisom karty A sumou — samotný nadpis je tiež div.
+  const karta = page
+    .locator("div", { has: page.getByText(nazov, { exact: true }), hasText: /\d/ })
+    .last();
   return bezMedzier(await karta.innerText());
 }
 

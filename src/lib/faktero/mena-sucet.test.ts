@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatujMenuKratko,
   formatujSucetPoMenach,
   menaAleboDomaca,
   sucetPoMenach,
@@ -112,5 +113,16 @@ describe("sucetVDomacejMene", () => {
     const s = sucetVDomacejMene([{ s: 1 }, { s: 2 }], (r) => ({ suma: r.s }), "CZ");
     expect(s).toMatchObject({ domaca: "CZK", suma: 3, prepocitane: false });
     expect(s.bezPrepoctu.size).toBe(0);
+  });
+});
+
+describe("formatujMenuKratko (súčty zákazky, pokladne)", () => {
+  it("koruny krátkym symbolom, nie kódom", () => {
+    expect(n(formatujMenuKratko(2500, "CZK"))).toBe("2 500,00 Kč");
+    expect(n(formatujMenuKratko(-12.5, "EUR"))).toBe("-12,50 €");
+  });
+  it("prázdna suma je nula, iné meny ostanú s kódom", () => {
+    expect(n(formatujMenuKratko(null, "CZK"))).toBe("0,00 Kč");
+    expect(formatujMenuKratko(10, "USD")).toContain("USD");
   });
 });

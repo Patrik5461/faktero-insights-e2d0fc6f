@@ -143,7 +143,7 @@ export default {
       await okno.waitFor({ timeout: 15000 });
       const text = await okno.innerText();
       t.over(/Všetky upomienky/.test(text), `okno: ${text.slice(0, 200)}`);
-      await okno.getByRole("button", { name: "Zrušiť" }).click();
+      await okno.getByRole("button", { name: "Späť" }).click();
       const r = await t.rest.get(`invoice_reminders?invoice_id=eq.${f.upomienky.id}&select=id`);
       t.over(r.data?.length === 3, `upomienok je ${r.data?.length}`);
     });

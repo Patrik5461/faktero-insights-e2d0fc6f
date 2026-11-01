@@ -160,44 +160,52 @@ function ImportStockPage() {
           </div>
         )}
 
-        {preview.length > 0 && (
+        {/*
+          Chyby musia byť vidieť aj vtedy, keď neprešiel ani jeden riadok —
+          inak súbor len so zlými riadkami „nespraví nič“ a nikto nevie prečo.
+        */}
+        {(preview.length > 0 || pripravene.chyby.length > 0) && (
           <div className="mt-4 rounded-xl border border-border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">
-              {t("Náhľad ({n} riadkov, zobrazujem 10)", { n: rows.length })}
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    {stlpceNahladu.map((k) => (
-                      <th key={k} className="p-1">
-                        {t(NAZVY_POLI[k])}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {preview.map((r, i) => (
-                    <tr key={i}>
-                      {stlpceNahladu.map((k) => (
-                        <td key={k} className="p-1">
-                          {String((r as any)[k] ?? "")}
-                        </td>
+            {preview.length > 0 && (
+              <>
+                <div className="mb-3 text-sm font-semibold">
+                  {t("Náhľad ({n} riadkov, zobrazujem 10)", { n: rows.length })}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="text-left text-muted-foreground">
+                      <tr>
+                        {stlpceNahladu.map((k) => (
+                          <th key={k} className="p-1">
+                            {t(NAZVY_POLI[k])}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {preview.map((r, i) => (
+                        <tr key={i}>
+                          {stlpceNahladu.map((k) => (
+                            <td key={k} className="p-1">
+                              {String((r as any)[k] ?? "")}
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <button
-              disabled={busy}
-              onClick={runImport}
-              className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-            >
-              {busy
-                ? t("Importujem…")
-                : t("Potvrdiť import ({n} riadkov)", { n: pripravene.riadky.length })}
-            </button>
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  disabled={busy}
+                  onClick={runImport}
+                  className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                >
+                  {busy
+                    ? t("Importujem…")
+                    : t("Potvrdiť import ({n} riadkov)", { n: pripravene.riadky.length })}
+                </button>
+              </>
+            )}
             {pripravene.chyby.length > 0 && (
               <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs">
                 <div className="mb-1 font-medium text-destructive">

@@ -319,6 +319,8 @@ export default {
       for (const cb of await page.locator("tbody input[type=checkbox]").all()) await cb.uncheck();
       await riadok.locator("input[type=checkbox]").check();
       await page.getByRole("button", { name: /Zapísať úhrady \(1\)/ }).click();
+      // Úhrada „na rozhodnutie“ sa najprv potvrdzuje (AB-14).
+      await t.potvrd(page);
       await t.cakajNa("faktúra B uhradená", async () => {
         const f = (await t.rest.get(`invoices?id=eq.${faA.b.id}&select=status`)).data?.[0];
         return f?.status === "paid";

@@ -47,9 +47,20 @@ export default {
     });
 
     await t.krok("detail objednávky v Kč", async () => {
-      const text = (await page.locator("main").innerText()).replace(/\s+/g, " ");
-      t.over(/Kč/.test(text), "v detaile chýba Kč");
-      t.over(!/€/.test(text), "detail objednávky ukazuje €");
+      // Mimo súčtov sa mena píše kódom (formatujMenu → „CZK“), v súčtoch „Kč“.
+      // URL sa prepne skôr, ako zmizne formulár (jeho výber meny má aj „EUR €“).
+      await page.locator("#mena-objednavky").waitFor({ state: "detached", timeout: 20000 });
+      const text = await t.cakajNa("detail objednávky načítaný", async () => {
+        const x = (await page.locator("main").innerText()).replace(/\s+/g, " ");
+        // Počkať na úplne načítaný detail (sumy v mene objednávky).
+        return /Kč|CZK/.test(x) && !/Načítavam/.test(x) ? x : null;
+      });
+      t.over(/Kč|CZK/.test(text), "v detaile chýba Kč/CZK");
+      const euro = text.indexOf("€");
+      t.over(
+        euro < 0,
+        `detail objednávky ukazuje €: …${text.slice(Math.max(0, euro - 120), euro + 20)}`,
+      );
     });
 
     await t.krok("úprava objednávky menu nezmení", async () => {
@@ -78,9 +89,11 @@ export default {
       await t.go(`/zakazky/${z.id}`);
       await page.getByText(`${t.znacka} zákazka`).first().waitFor({ timeout: 20000 });
       const main = (await page.locator("main").innerText()).replace(/\s+/g, " ");
-      t.over(/Kč/.test(main) && !/€/.test(main), "sumy zákazky nie sú v Kč");
+      t.over(/Kč|CZK/.test(main) && !/€/.test(main), "sumy zákazky nie sú v Kč");
+      // „Upraviť“ je v ponuke „…“ hlavičky dokladu (jedna primárna akcia).
+      await page.getByRole("button", { name: "Ďalšie akcie" }).first().click();
       await page
-        .getByRole("button", { name: /Upraviť/ })
+        .getByRole("menuitem", { name: /Upraviť/ })
         .first()
         .click();
       await page.getByLabel("Koniec").fill("2000-01-01");

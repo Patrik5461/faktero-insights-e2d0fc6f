@@ -29,7 +29,11 @@ export default {
 
     await t.krok("pokladňa: sumy v Kč", async () => {
       await t.go("/pokladna");
-      await main().getByText(/Kč/).first().waitFor({ timeout: 30000 });
+      // Jednomenové sumy píše formatujMenu kódom („CZK“), súčty po menách „Kč“.
+      await main()
+        .getByText(/Kč|CZK/)
+        .first()
+        .waitFor({ timeout: 30000 });
       const text = await main().innerText();
       t.over(!/\d\s?€/.test(text), "pokladňa českej firmy ukazuje sumy v eurách");
     });
@@ -39,7 +43,7 @@ export default {
       await main().getByText(/EPO/).first().waitFor({ timeout: 30000 });
       const text = await main().innerText();
       t.over(!text.includes("eDane"), "česká firma vidí text o eDane");
-      t.over(/Kč/.test(text), "súčty DPH prehľadu nie sú v Kč");
+      t.over(/Kč|CZK/.test(text), "súčty DPH prehľadu nie sú v Kč");
     });
 
     await t.krok("výkazy: plátce vidí tlačivá, nie box neplatiteľa", async () => {
@@ -60,7 +64,13 @@ export default {
         .getByText(/Tatra banka/)
         .first()
         .waitFor({ timeout: 30000 });
-      const text = await main().innerText();
+      // Len panel Tatra banky — „90 dní“ právom píšu Fio a Revolut vedľa.
+      const panel = main()
+        .locator("div", { has: page.getByRole("heading", { name: /Tatra banka/ }) })
+        .filter({ hasText: "13 mesiacov" })
+        .last();
+      await panel.waitFor({ timeout: 10000 });
+      const text = await panel.innerText();
       t.over(text.includes("13 mesiacov"), "chýba „13 mesiacov“ histórie TB");
       t.over(!text.includes("Bez platobných príkazov"), "TB stále tvrdí „bez platobných príkazov“");
       t.over(!text.includes("90 dní"), "TB stále tvrdí „90 dní“");

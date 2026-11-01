@@ -27,7 +27,7 @@ import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodava
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 import { SumaVDomacejMene, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
-import { formatujSucetPoMenach } from "@/lib/faktero/mena-sucet";
+import { formatujMenuKratko, formatujSucetPoMenach } from "@/lib/faktero/mena-sucet";
 import { StatusBadge } from "./dashboard";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
@@ -88,6 +88,9 @@ function JobDetail() {
   const menyFirmy = useFormatMenyFirmy();
   /** Súčty vyhodnotenia sú v domácej mene firmy, riadky dokladov v ich mene (K-01). */
   const suma = (n: unknown, menaDokladu?: unknown) => menyFirmy.suma(Number(n) || 0, menaDokladu);
+  /** Súčty vyhodnotenia krátkym symbolom („Kč“) ako Výnosy/Náklady, nie kódom „CZK“. */
+  const sucet = (n: unknown) =>
+    formatujMenuKratko(Number(n) || 0, menyFirmy.domaca, menyFirmy.locale);
   const datum = (d: unknown) => (d ? datumNaDoklade(d, jazyk) : "—");
   const { id } = useParams({ from: "/_authenticated/zakazky/$id" });
   const nav = useNavigate();
@@ -437,7 +440,7 @@ function JobDetail() {
           <Karta titulok="Náklady" hodnota={<SumaVDomacejMene sucet={sucetKarty(v.naklady)} />} />
           <Karta
             titulok="Zisk"
-            hodnota={suma(v.zisk)}
+            hodnota={sucet(v.zisk)}
             farba={v.zisk < 0 ? "text-destructive" : "text-emerald-700"}
           />
           <Karta
@@ -458,17 +461,17 @@ function JobDetail() {
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Karta
             titulok="Materiál zo skladu"
-            hodnota={suma(v.naklad_material)}
+            hodnota={sucet(v.naklad_material)}
             poznamka="Vo váženej nákupnej cene"
           />
           <Karta
             titulok="Prijaté faktúry a bločky"
-            hodnota={suma(v.naklad_sluzby)}
+            hodnota={sucet(v.naklad_sluzby)}
             poznamka="Bez DPH"
           />
           <Karta
             titulok="Doprava"
-            hodnota={suma(v.naklad_doprava)}
+            hodnota={sucet(v.naklad_doprava)}
             poznamka={
               // Bez spotreby vozidla alebo ceny paliva sa jazda uloží bez
               // nákladu. Nula pri načítaných jazdách je vtedy chýbajúci údaj,
@@ -489,7 +492,7 @@ function JobDetail() {
                   <div className="mb-1 flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("Výnosy")}</span>
                     <span className="tabular-nums">
-                      {t("{suma} z {plan}", { suma: suma(v.vynosy), plan: suma(v.planovany_vynos) })}
+                      {t("{suma} z {plan}", { suma: sucet(v.vynosy), plan: sucet(v.planovany_vynos) })}
                       {v.plnenie_vynosu != null && ` (${v.plnenie_vynosu} %)`}
                     </span>
                   </div>
@@ -501,7 +504,7 @@ function JobDetail() {
                   <div className="mb-1 flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("Náklady")}</span>
                     <span className="tabular-nums">
-                      {t("{suma} z {plan}", { suma: suma(v.naklady), plan: suma(v.planovany_naklad) })}
+                      {t("{suma} z {plan}", { suma: sucet(v.naklady), plan: sucet(v.planovany_naklad) })}
                       {v.cerpanie_nakladu != null && ` (${v.cerpanie_nakladu} %)`}
                     </span>
                   </div>
@@ -511,9 +514,9 @@ function JobDetail() {
             </div>
             {v.planovany_zisk != null && (
               <div className="mt-3 text-sm text-muted-foreground">
-                {t("Plánovaný zisk {suma}, skutočný", { suma: suma(v.planovany_zisk) })}{" "}
+                {t("Plánovaný zisk {suma}, skutočný", { suma: sucet(v.planovany_zisk) })}{" "}
                 <span className={v.zisk < 0 ? "text-destructive" : "text-emerald-700"}>
-                  {suma(v.zisk)}
+                  {sucet(v.zisk)}
                 </span>
                 .
               </div>
