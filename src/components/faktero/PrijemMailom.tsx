@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
+import { useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { Mail, Copy, Check, RefreshCw, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,6 +41,7 @@ export function PrijemMailom({
   predvoleneOtvorene = false,
 }: { predvoleneOtvorene?: boolean } = {}) {
   const { t, jazyk } = useT();
+  const klik = useKlikNaRiadok();
   const [stav, setStav] = useState<StavPrijmuMailom | null>(null);
   const [otvorene, setOtvorene] = useState(predvoleneOtvorene);
   const [skopirovane, setSkopirovane] = useState(false);
@@ -362,6 +365,13 @@ export function PrijemMailom({
                     <ul className="space-y-1.5">
                       {stav.spravy.map((s) => {
                         const st = STAVY[s.status] ?? { text: s.status, ton: "neutralny" as TonStavu };
+                        // Klik na riadok len vtedy, keď z mailu vznikol práve jeden doklad.
+                        const ciele: CielDetailu[] = [
+                          ...(s.created_nespracovane_ids ?? []).slice(0, 1).map((id) => ({ to: "/nespracovane/$id", params: { id } }) as CielDetailu),
+                          ...(s.created_invoice_ids ?? []).slice(0, 1).map((id) => ({ to: "/prijate-faktury/$id", params: { id } }) as CielDetailu),
+                          ...(s.created_other_ids ?? []).slice(0, 1).map((id) => ({ to: "/ostatne-doklady/novy", search: { id } }) as CielDetailu),
+                        ];
+                        const p = klik(ciele.length === 1 ? ciele[0] : null);
                         return (
                           /*
                             Každý riadok má rovnakú stavbu: hore dátum, odosielateľ a stav
@@ -370,7 +380,8 @@ export function PrijemMailom({
                           */
                           <li
                             key={s.id}
-                            className="border-b border-border/60 pb-1.5 text-sm last:border-0"
+                            {...p}
+                            className={cn(p.className, "border-b border-border/60 pb-1.5 text-sm last:border-0")}
                           >
                             <div className="flex items-baseline gap-2">
                               <span className="min-w-0 flex-1 truncate">

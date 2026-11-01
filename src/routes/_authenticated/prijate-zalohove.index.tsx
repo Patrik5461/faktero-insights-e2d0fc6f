@@ -1,7 +1,7 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -10,6 +10,7 @@ import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { suctyPrijatychZaloh } from "@/lib/faktero/sucty-zoznamov";
@@ -49,7 +50,6 @@ type Riadok = {
  */
 function PrijateZalohovePage() {
   const { t } = useT();
-  const navigate = useNavigate();
   const [rows, setRows] = useState<Riadok[]>([]);
   const [zuctovane, setZuctovane] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -302,14 +302,20 @@ function PrijateZalohovePage() {
                     </thead>
                     <tbody>
                       {zobrazene.map((r) => (
-                        <tr
+                        <KlikatelnyRiadok
                           key={r.id}
-                          onClick={() =>
-                            navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })
-                          }
-                          className="cursor-pointer border-b border-border/60 hover:bg-muted/40"
+                          ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
+                          className="border-b border-border/60"
                         >
-                          <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">{r.invoice_number}</td>
+                          <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">
+                            <Link
+                              to="/prijate-faktury/$id"
+                              params={{ id: r.id }}
+                              className="text-inherit no-underline"
+                            >
+                              {r.invoice_number}
+                            </Link>
+                          </td>
                           <td className="p-3">
                             <span
                               className="block max-w-[14rem] truncate 2xl:max-w-[22rem]"
@@ -327,7 +333,7 @@ function PrijateZalohovePage() {
                             <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
                           </td>
                           <td className="p-3 text-right">{akciaRiadku(r, false)}</td>
-                        </tr>
+                        </KlikatelnyRiadok>
                       ))}
                     </tbody>
                   </table>
@@ -336,7 +342,7 @@ function PrijateZalohovePage() {
               mobileCard={(r: Riadok) => (
                 <MobileListCard
                   key={r.id}
-                  onClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
+                  ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
                   title={r.invoice_number}
                   subtitle={r.supplier_name}
                   amount={formatujMenu(r.amount_total, r.currency)}

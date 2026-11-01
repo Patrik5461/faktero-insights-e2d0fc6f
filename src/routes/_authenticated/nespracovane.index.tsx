@@ -29,6 +29,7 @@ import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { nahralDokladu } from "@/lib/faktero/spracoval";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
@@ -90,6 +91,7 @@ function Stranka() {
   const [prikazBusy, setPrikazBusy] = useState(false);
   // Naposledy otvorený doklad — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("nespracovane");
+  const klik = useKlikNaRiadok();
   // Mená kolegov pre stĺpec „Nahral“ (profily číta server po overení členstva).
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [mena, setMena] = useState<Record<string, string>>({});
@@ -241,6 +243,12 @@ function Stranka() {
     if (ok) obnovPoctyMenu();
     await obnov();
   }
+
+  // Kam vedie nová karta (Ctrl+klik) — bloček sa otvorí rovno, bez presunu medzi nespracované.
+  const cielRiadku = (r: any): CielDetailu =>
+    r.typ === "blocek"
+      ? { to: "/doklady/novy", search: { id: r.id } as any }
+      : { to: "/nespracovane/$id", params: { id: r.id } };
 
   async function otvor(r: any) {
     posledny.zapamataj(r.id);
@@ -454,8 +462,8 @@ function Stranka() {
                 <tr
                   key={r.kluc}
                   {...posledny.riadok(r.id)}
-                  className={`cursor-pointer hover:bg-muted/30 ${posledny.riadok(r.id).className}`}
-                  onClick={() => void otvor(r)}
+                  {...klik(cielRiadku(r), { naKlik: () => void otvor(r) })}
+                  className={`${TRIEDA_KLIK_RIADKU} ${posledny.riadok(r.id).className}`}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     {r.typ === "nespracovany" && r.stav !== "cita" ? (
@@ -511,7 +519,7 @@ function Stranka() {
               /* Klik kamkoľvek na kartu otvorí doklad (myš, prst). Klávesnica a
                  čítačka idú cez tlačidlo s názvom — karta s role="button" by
                  obsahovala ďalší ovládací prvok (zaškrtávacie pole). */
-              onClick={() => void otvor(r)}
+              {...klik(cielRiadku(r), { naKlik: () => void otvor(r), klavesnica: false })}
               className={`block cursor-pointer rounded-xl border border-border p-3 hover:bg-muted/30 ${posledny.karta(r.id).className || "bg-card"}`}
             >
               <div className="flex items-start justify-between gap-2">

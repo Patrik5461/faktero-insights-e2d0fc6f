@@ -1,6 +1,6 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -16,6 +16,7 @@ import { nazovTypu, TYPY_VYUCTOVANIA } from "@/lib/faktero/vyuctovanie-vydavkov"
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 /**
  * Súhrnné vyúčtovanie výdavkov zamestnancov (ako modul Vyúčtovanie výdavkov
@@ -46,7 +47,6 @@ function vysledokVyuctovania(
 
 function Zoznam() {
   const { t } = useT();
-  const navigate = useNavigate();
   const cid = useMemo(() => getActiveCompanyId(), []);
   const nacitaj = useServerFn(zoznamVyuctovaniFn);
   const [rows, setRows] = useState<any[] | null>(null);
@@ -145,7 +145,7 @@ function Zoznam() {
             items={zobrazene}
             mobileCard={(r: any) => (
               <MobileListCard
-                onClick={() => navigate({ to: "/doklady/vyuctovania/$id", params: { id: r.id } })}
+                ciel={{ to: "/doklady/vyuctovania/$id", params: { id: r.id } }}
                 title={r.nazov}
                 subtitle={r.zamestnanec_meno ?? "—"}
                 meta={[
@@ -188,8 +188,9 @@ function Zoznam() {
                   </thead>
                   <tbody>
                     {zobrazene.map((r) => (
-                      <tr
+                      <KlikatelnyRiadok
                         key={r.id}
+                        ciel={{ to: "/doklady/vyuctovania/$id", params: { id: r.id } }}
                         className="border-b border-border last:border-0 hover:bg-secondary/40"
                       >
                         <td className="p-3">
@@ -218,7 +219,7 @@ function Zoznam() {
                             <StavOdznak ton="neutralny">{t("otvorené")}</StavOdznak>
                           )}
                         </td>
-                      </tr>
+                      </KlikatelnyRiadok>
                     ))}
                   </tbody>
                 </table>
