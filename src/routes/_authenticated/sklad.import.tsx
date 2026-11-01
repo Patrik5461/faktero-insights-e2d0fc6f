@@ -8,6 +8,13 @@ import { toast } from "sonner";
 import { Upload } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import {
+  automatickeMapovanie,
+  dekodujCsv,
+  NAZVY_POLI,
+  POLIA_IMPORTU,
+  pripravRiadky,
+} from "@/lib/faktero/sklad-import";
 
 export const Route = createFileRoute("/_authenticated/sklad/import")({
   head: ({ match }) => ({
@@ -15,40 +22,6 @@ export const Route = createFileRoute("/_authenticated/sklad/import")({
   }),
   component: ImportStockPage,
 });
-
-const ALIASES: Record<string, string[]> = {
-  sku: ["sku", "kód", "kod", "code", "artikelnummer"],
-  name: ["názov", "nazov", "name", "produkt", "product", "bezeichnung"],
-  barcode: ["čiarový kód", "ciarovy kod", "barcode", "ean"],
-  unit: ["jednotka", "mj", "unit", "einheit"],
-  purchase_price: [
-    "nákupná cena",
-    "nakupna cena",
-    "purchase_price",
-    "purchase price",
-    "einkaufspreis",
-  ],
-  sale_price: [
-    "predajná cena",
-    "predajna cena",
-    "sale_price",
-    "sale price",
-    "cena",
-    "verkaufspreis",
-  ],
-  vat_rate: ["dph", "vat", "vat_rate", "mwst"],
-  min_stock: ["minimálny stav", "minimalny stav", "min stock", "min_stock", "minimum"],
-  initial_stock: ["počiatočný stav", "pociatocny stav", "initial stock", "initial_stock", "stav"],
-  warehouse_name: ["sklad", "warehouse", "warehouse_name", "lager"],
-};
-
-function detectField(header: string): string | null {
-  const h = header.trim().toLowerCase();
-  for (const [field, names] of Object.entries(ALIASES)) {
-    if (names.some((n) => n.toLowerCase() === h)) return field;
-  }
-  return null;
-}
 
 function ImportStockPage() {
   const { t } = useT();
@@ -62,18 +35,25 @@ function ImportStockPage() {
   async function onFile(file: File) {
     const XLSX = await import("xlsx");
     const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
+    /*
+      CSV dekódujeme sami: SheetJS bez `codepage` číta súbor bez BOM ako
+      latin1 a z „Čiarový kód“ urobí „ÄŒiarovÃ½ kÃ³d“. `raw: true` necháva
+      bunky ako text — „1,50“ prečíta `cisloZImportu`, nie SheetJS.
+    */
+    const jeCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
+    const wb = jeCsv
+      ? XLSX.read(dekodujCsv(buf), { type: "string", raw: true })
+      : XLSX.read(buf, { type: "array" });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json<any>(ws, { header: 1, raw: false, defval: "" });
+    const json = XLSX.utils.sheet_to_json<any>(ws, { header: 1, raw: true, defval: "" });
     if (!json.length) return toast.error(t("Súbor je prázdny."));
-    const hdr = (json[0] as string[]).map((h) => String(h ?? "").trim());
+    const hdr = (json[0] as string[]).map((h) =>
+      String(h ?? "")
+        .replace(/^\uFEFF/, "")
+        .trim(),
+    );
     setHeaders(hdr);
-    const auto: Record<string, string> = {};
-    hdr.forEach((h) => {
-      const f = detectField(h);
-      if (f) auto[h] = f;
-    });
-    setMapping(auto);
+    setMapping(automatickeMapovanie(hdr));
     const data = (json.slice(1) as any[])
       .map((arr) => {
         const o: Record<string, any> = {};
@@ -87,27 +67,26 @@ function ImportStockPage() {
     setResult(null);
   }
 
-  function buildRows() {
-    return rows
-      .map((r) => {
-        const out: any = {};
-        for (const [hdr, field] of Object.entries(mapping)) {
-          if (field) out[field] = r[hdr];
-        }
-        return out;
-      })
-      .filter((r) => r.name && String(r.name).trim() !== "");
-  }
+  const pripravene = pripravRiadky(rows, mapping);
 
   async function runImport() {
     const cid = getActiveCompanyId();
     if (!cid) return toast.error(t("Vyberte firmu."));
-    const payload = buildRows();
+    const payload = pripravene.riadky;
     if (!payload.length) return toast.error(t("Žiadne riadky s názvom produktu."));
     setBusy(true);
     try {
       const res = await fetchImport({ data: { company_id: cid, rows: payload as any } });
-      setResult(res);
+      // Riadky, ktoré neprešli už v prehliadači, patria do výsledku tiež.
+      const chybyVopred = pripravene.chyby.map((c) => ({
+        row: c.riadok,
+        reason: `${c.pole ? `${t(NAZVY_POLI[c.pole])}: ` : ""}${t(c.dovod, c.parametre)}`,
+      }));
+      setResult({
+        ...res,
+        errors: res.errors + chybyVopred.length,
+        errorList: [...chybyVopred, ...res.errorList].sort((a, b) => a.row - b.row),
+      });
       toast.success(
         t("Import dokončený. Vytvorené {n}, aktualizované {u}.", {
           n: res.createdItems,
@@ -121,7 +100,10 @@ function ImportStockPage() {
     }
   }
 
-  const preview = buildRows().slice(0, 10);
+  const preview = pripravene.riadky.slice(0, 10).map(({ riadok: _r, ...zvysok }) => zvysok);
+  const stlpceNahladu = POLIA_IMPORTU.filter((p) =>
+    preview.some((r) => (r as any)[p] !== undefined),
+  );
 
   return (
     <>
@@ -146,6 +128,9 @@ function ImportStockPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             {t(
               "Podporované stĺpce: SKU (kód položky), Názov, Čiarový kód, Jednotka, Nákupná cena, Predajná cena, DPH, Minimálny stav, Počiatočný stav, Sklad.",
+            )}{" "}
+            {t(
+              "Prázdna bunka hodnotu na karte nemení. Súbor exportovaný zo Skladových položiek sa dá nahrať späť — stĺpec „Stav“ sa ignoruje, príjem vytvorí len „Počiatočný stav“.",
             )}
           </p>
         </div>
@@ -163,9 +148,9 @@ function ImportStockPage() {
                     className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                   >
                     <option value="">{t("— ignorovať —")}</option>
-                    {Object.keys(ALIASES).map((f) => (
+                    {POLIA_IMPORTU.map((f) => (
                       <option key={f} value={f}>
-                        {f}
+                        {t(NAZVY_POLI[f])}
                       </option>
                     ))}
                   </select>
@@ -184,9 +169,9 @@ function ImportStockPage() {
               <table className="w-full text-xs">
                 <thead className="text-left text-muted-foreground">
                   <tr>
-                    {Object.keys(preview[0]).map((k) => (
+                    {stlpceNahladu.map((k) => (
                       <th key={k} className="p-1">
-                        {k}
+                        {t(NAZVY_POLI[k])}
                       </th>
                     ))}
                   </tr>
@@ -194,9 +179,9 @@ function ImportStockPage() {
                 <tbody className="divide-y divide-border">
                   {preview.map((r, i) => (
                     <tr key={i}>
-                      {Object.keys(preview[0]).map((k) => (
+                      {stlpceNahladu.map((k) => (
                         <td key={k} className="p-1">
-                          {String(r[k] ?? "")}
+                          {String((r as any)[k] ?? "")}
                         </td>
                       ))}
                     </tr>
@@ -209,8 +194,26 @@ function ImportStockPage() {
               onClick={runImport}
               className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? t("Importujem…") : t("Potvrdiť import ({n} riadkov)", { n: rows.length })}
+              {busy
+                ? t("Importujem…")
+                : t("Potvrdiť import ({n} riadkov)", { n: pripravene.riadky.length })}
             </button>
+            {pripravene.chyby.length > 0 && (
+              <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs">
+                <div className="mb-1 font-medium text-destructive">
+                  {t("{n} riadkov sa neimportuje:", { n: pripravene.chyby.length })}
+                </div>
+                <ul className="space-y-0.5">
+                  {pripravene.chyby.slice(0, 20).map((c) => (
+                    <li key={c.riadok}>
+                      {t("Riadok {n}:", { n: c.riadok })}{" "}
+                      {c.pole ? `${t(NAZVY_POLI[c.pole])}: ` : ""}
+                      {t(c.dovod, c.parametre)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

@@ -2,8 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { overPristup } from "./over-pristup";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { navrhniObjednavky } from "./stock-doobjednanie";
-import { objednaneNaCeste } from "./objednavky-dodavatel";
+import { navrhniObjednavky, podMinimom } from "./stock-doobjednanie";
+import { nacitajNaCeste } from "./sklad-na-ceste";
+import { cenaOcenenia, hodnotaZasoby } from "./stock-pohyb";
+import { vsetkyRiadky } from "./strankovanie";
+import { cisloZImportu } from "./sklad-import";
+import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "./vat-rates";
 import { colneUdajeNaZapis, jePlatnyColnyKod } from "./colny-kod";
 import { nazovHlavnehoSkladuFirmy } from "./hlavny-sklad";
 
@@ -364,47 +368,70 @@ export const getStockDashboard = createServerFn({ method: "POST" })
   .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const [{ data: items }, { data: levels }, { data: movements }] = await Promise.all([
-      supabase
-        .from("stock_items")
-        .select(
-          "id, sku, unit, min_stock, optimal_stock, track_stock, sale_price, purchase_price, avg_purchase_price, products(name)",
-        )
-        .eq("company_id", data.company_id),
-      supabase
-        .from("stock_levels")
-        .select("stock_item_id, quantity")
-        .eq("company_id", data.company_id),
+    // Karty a stavy po stránkach — PostgREST vráti najviac 1 000 riadkov.
+    const [items, levels, { data: movements }, naCeste] = await Promise.all([
+      vsetkyRiadky<any>((od, po) =>
+        supabase
+          .from("stock_items")
+          .select(
+            "id, product_id, sku, unit, min_stock, optimal_stock, track_stock, sale_price, purchase_price, avg_purchase_price, products(name)",
+          )
+          .eq("company_id", data.company_id)
+          .order("id")
+          .range(od, po),
+      ),
+      vsetkyRiadky<any>((od, po) =>
+        supabase
+          .from("stock_levels")
+          .select("id, stock_item_id, quantity, reserved_quantity")
+          .eq("company_id", data.company_id)
+          .order("id")
+          .range(od, po),
+      ),
       supabase
         .from("stock_movements")
         .select("id, type, quantity, total_value, unit_cost, stock_item_id, created_at, note")
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
         .limit(10),
+      nacitajNaCeste(supabase, data.company_id),
     ]);
     const levelMap = new Map<string, number>();
-    (levels ?? []).forEach((l) =>
-      levelMap.set(l.stock_item_id, (levelMap.get(l.stock_item_id) ?? 0) + Number(l.quantity)),
-    );
+    const reservedMap = new Map<string, number>();
+    levels.forEach((l) => {
+      levelMap.set(l.stock_item_id, (levelMap.get(l.stock_item_id) ?? 0) + Number(l.quantity));
+      reservedMap.set(
+        l.stock_item_id,
+        (reservedMap.get(l.stock_item_id) ?? 0) + Number(l.reserved_quantity ?? 0),
+      );
+    });
     // Sklad sa oceňuje priemernou obstarávacou cenou, nie poslednou nákupnou —
     // posledná cena hovorí o jednej dodávke, nie o tom, čo na sklade leží.
     // Pri zásobe, ktorá ešte nemá vypočítaný priemer, sa použije nákupná cena.
-    const totalValue = (items ?? []).reduce(
-      (sum, it) =>
-        sum +
-        (levelMap.get(it.id) ?? 0) *
-          (Number(it.avg_purchase_price ?? 0) || Number(it.purchase_price ?? 0)),
+    const totalValue = items.reduce(
+      (sum, it) => sum + hodnotaZasoby(levelMap.get(it.id) ?? 0, it),
       0,
     );
-    const belowMin = (items ?? []).filter(
-      (it) => it.track_stock && (levelMap.get(it.id) ?? 0) < Number(it.min_stock ?? 0),
+    // To isté pravidlo ako filter v Skladových položkách a stránka Pod minimom.
+    const belowMin = items.filter(
+      (it) =>
+        it.track_stock &&
+        podMinimom({
+          on_hand: levelMap.get(it.id) ?? 0,
+          reserved: reservedMap.get(it.id) ?? 0,
+          incoming: naCeste.get(it.id) ?? 0,
+          min_stock: it.min_stock,
+          optimal_stock: it.optimal_stock,
+        }),
     );
     return {
-      total_items: (items ?? []).length,
+      total_items: items.length,
       total_value: totalValue,
       below_min_count: belowMin.length,
       below_min_items: belowMin.slice(0, 10).map((it) => ({
         id: it.id,
+        // Detail karty (/sklad/produkty/$id) chce id produktu, nie karty.
+        product_id: (it.product_id as string | null) ?? null,
         sku: it.sku,
         name: (it as any).products?.name ?? null,
         unit: it.unit,
@@ -413,9 +440,10 @@ export const getStockDashboard = createServerFn({ method: "POST" })
       })),
       // Názov a kód karty k pohybu — bez nich sa nedá povedať, čoho sa týka.
       recent_movements: (movements ?? []).map((m) => {
-        const it = (items ?? []).find((i) => i.id === m.stock_item_id);
+        const it = items.find((i) => i.id === m.stock_item_id);
         return {
           ...m,
+          product_id: (it?.product_id as string | null) ?? null,
           sku: it?.sku ?? null,
           name: (it as any)?.products?.name ?? null,
           unit: it?.unit ?? null,
@@ -458,7 +486,7 @@ export const completeInventory = createServerFn({ method: "POST" })
         .select("id, avg_purchase_price, purchase_price")
         .in("id", ids);
       (zasoby ?? []).forEach((z) =>
-        cenaZasoby.set(z.id, Number(z.avg_purchase_price ?? 0) || Number(z.purchase_price ?? 0)),
+        cenaZasoby.set(z.id, cenaOcenenia(z)),
       );
     }
 
@@ -780,18 +808,41 @@ export const getProductStockDetail = createServerFn({ method: "POST" })
   .validator((d: unknown) => ProductDetailInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: product } = await supabase
+    let { data: product } = await supabase
       .from("products")
       .select("*")
       .eq("id", data.product_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
+    /*
+      Starší odkaz (Prehľad skladu → Pod minimom) posielal id skladovej karty
+      namiesto produktu a detail hlásil „Produkt sa nenašiel“. Ak id nie je
+      produkt, skúsi sa ako karta.
+    */
+    if (!product) {
+      const { data: karta } = await supabase
+        .from("stock_items")
+        .select("product_id")
+        .eq("id", data.product_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (karta?.product_id) {
+        const { data: p } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", karta.product_id)
+          .eq("company_id", data.company_id)
+          .maybeSingle();
+        product = p;
+      }
+    }
     if (!product) throw new Error("Produkt nenájdený.");
     const { data: stockItem } = await supabase
       .from("stock_items")
       .select("*")
       .eq("company_id", data.company_id)
-      .eq("product_id", data.product_id)
+      .eq("product_id", product.id)
+      .limit(1)
       .maybeSingle();
     let levels: any[] = [];
     let movements: any[] = [];
@@ -933,23 +984,38 @@ export const getStockValuation = createServerFn({ method: "POST" })
   .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const [{ data: items }, { data: levels }, { data: warehouses }, { data: products }] =
-      await Promise.all([
+    // Po stránkach — súčet z prvých 1 000 riadkov by bol ticho nižší.
+    const [items, levels, { data: warehouses }, products] = await Promise.all([
+      vsetkyRiadky<any>((od, po) =>
         supabase
           .from("stock_items")
           .select("id, sku, product_id, purchase_price, avg_purchase_price, sale_price, unit")
-          .eq("company_id", data.company_id),
+          .eq("company_id", data.company_id)
+          .order("id")
+          .range(od, po),
+      ),
+      vsetkyRiadky<any>((od, po) =>
         supabase
           .from("stock_levels")
-          .select("warehouse_id, stock_item_id, quantity")
-          .eq("company_id", data.company_id),
-        supabase.from("warehouses").select("id, name").eq("company_id", data.company_id),
-        /*
-          Aj zmazaný produkt tu musí mať meno: karta so zásobou ostáva
-          v ocenení a riadok „—" nepovie, čoho je na sklade za 15 €.
-        */
-        supabase.from("products").select("id, name, deleted_at").eq("company_id", data.company_id),
-      ]);
+          .select("id, warehouse_id, stock_item_id, quantity")
+          .eq("company_id", data.company_id)
+          .order("id")
+          .range(od, po),
+      ),
+      supabase.from("warehouses").select("id, name").eq("company_id", data.company_id),
+      /*
+        Aj zmazaný produkt tu musí mať meno: karta so zásobou ostáva
+        v ocenení a riadok „—" nepovie, čoho je na sklade za 15 €.
+      */
+      vsetkyRiadky<any>((od, po) =>
+        supabase
+          .from("products")
+          .select("id, name, deleted_at")
+          .eq("company_id", data.company_id)
+          .order("id")
+          .range(od, po),
+      ),
+    ]);
     const itemMap = new Map<string, any>();
     (items ?? []).forEach((i) => itemMap.set(i.id, i));
     const productMap = new Map<string, any>();
@@ -981,7 +1047,7 @@ export const getStockValuation = createServerFn({ method: "POST" })
       const qty = Number(l.quantity ?? 0);
       // Ocenenie ide váženou nákupnou cenou z príjemok; statická nákupná cena
       // na karte býva prázdna a hodnota skladu potom vyšla nula.
-      const pVal = qty * (Number(it.avg_purchase_price ?? 0) || Number(it.purchase_price ?? 0));
+      const pVal = hodnotaZasoby(qty, it);
       const sVal = qty * Number(it.sale_price ?? 0);
       totalPurchase += pVal;
       totalSale += sVal;
@@ -1024,70 +1090,57 @@ export const getLowStockReport = createServerFn({ method: "POST" })
   .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const [{ data: items }, { data: levels }, { data: warehouses }, { data: products }] =
-      await Promise.all([
+    const [items, levels, { data: warehouses }, products, naCeste] = await Promise.all([
+      vsetkyRiadky<any>((od, po) =>
         supabase
           .from("stock_items")
           .select("id, sku, product_id, min_stock, optimal_stock, track_stock, unit")
           .eq("company_id", data.company_id)
-          .eq("track_stock", true),
+          .eq("track_stock", true)
+          .order("id")
+          .range(od, po),
+      ),
+      vsetkyRiadky<any>((od, po) =>
         supabase
           .from("stock_levels")
-          .select("warehouse_id, stock_item_id, quantity, reserved_quantity")
-          .eq("company_id", data.company_id),
-        supabase.from("warehouses").select("id, name").eq("company_id", data.company_id),
+          .select("id, warehouse_id, stock_item_id, quantity, reserved_quantity")
+          .eq("company_id", data.company_id)
+          .order("id")
+          .range(od, po),
+      ),
+      supabase.from("warehouses").select("id, name").eq("company_id", data.company_id),
+      vsetkyRiadky<any>((od, po) =>
         supabase
           .from("products")
           .select("id, name")
           .eq("company_id", data.company_id)
-          .is("deleted_at", null),
-      ]);
+          .is("deleted_at", null)
+          .order("id")
+          .range(od, po),
+      ),
+      // Tovar objednaný u dodávateľa a ešte neprijatý. Bez neho by návrh pýtal
+      // znovu to, čo je už na ceste.
+      nacitajNaCeste(supabase, data.company_id),
+    ]);
     const whMap = new Map((warehouses ?? []).map((w) => [w.id, w] as const));
-    const productMap = new Map((products ?? []).map((p) => [p.id, p] as const));
+    const productMap = new Map(products.map((p) => [p.id, p] as const));
     const totalByItem = new Map<string, number>();
-    (levels ?? []).forEach((l) =>
+    levels.forEach((l) =>
       totalByItem.set(
         l.stock_item_id,
         (totalByItem.get(l.stock_item_id) ?? 0) + Number(l.quantity),
       ),
     );
     const rezervovaneByItem = new Map<string, number>();
-    (levels ?? []).forEach((l) =>
+    levels.forEach((l) =>
       rezervovaneByItem.set(
         l.stock_item_id,
         (rezervovaneByItem.get(l.stock_item_id) ?? 0) + Number(l.reserved_quantity ?? 0),
       ),
     );
 
-    // Tovar objednaný u dodávateľa a ešte neprijatý. Bez neho by návrh pýtal
-    // znovu to, čo je už na ceste.
-    const { data: otvoreneObjednavky } = await supabase
-      .from("purchase_orders")
-      .select("id, status")
-      .eq("company_id", data.company_id)
-      .in("status", ["sent", "partially_received"]);
-    let naCeste = new Map<string, number>();
-    if (otvoreneObjednavky?.length) {
-      const { data: poItems } = await supabase
-        .from("purchase_order_items")
-        .select("stock_item_id, quantity, received_quantity, purchase_order_id")
-        .in(
-          "purchase_order_id",
-          otvoreneObjednavky.map((o) => o.id),
-        );
-      const stavPodlaId = new Map(otvoreneObjednavky.map((o) => [o.id, o.status] as const));
-      naCeste = objednaneNaCeste(
-        (poItems ?? []).map((it) => ({
-          stock_item_id: it.stock_item_id,
-          quantity: Number(it.quantity ?? 0),
-          received_quantity: Number(it.received_quantity ?? 0),
-          stav: (stavPodlaId.get(it.purchase_order_id) ?? "sent") as any,
-        })),
-      );
-    }
-
     const navrhy = navrhniObjednavky(
-      (items ?? []).map((it) => ({
+      items.map((it) => ({
         stock_item_id: it.id,
         sku: it.sku,
         nazov: (it.product_id ? productMap.get(it.product_id)?.name : null) ?? it.sku ?? "—",
@@ -1100,7 +1153,7 @@ export const getLowStockReport = createServerFn({ method: "POST" })
       })),
     );
 
-    const productById = new Map((items ?? []).map((it) => [it.id, it.product_id] as const));
+    const productById = new Map(items.map((it) => [it.id, it.product_id] as const));
     const rows = navrhy.map((n) => ({
       stock_item_id: n.stock_item_id,
       product_id: productById.get(n.stock_item_id) ?? null,
@@ -1117,7 +1170,7 @@ export const getLowStockReport = createServerFn({ method: "POST" })
       /** Koľko objednať, aby zásoba dosiahla cieľový stav. */
       order_qty: n.objednat,
       shortage: Math.max(0, n.min_stock - n.available),
-      per_warehouse: (levels ?? [])
+      per_warehouse: levels
         .filter((l) => l.stock_item_id === n.stock_item_id)
         .map((l) => ({
           warehouse_id: l.warehouse_id,
@@ -1128,28 +1181,56 @@ export const getLowStockReport = createServerFn({ method: "POST" })
     return { rows };
   });
 
+/*
+  Bez `.default()`: čo v súbore nie je, sa na existujúcej karte nemení.
+  Predvolené hodnoty (DPH podľa krajiny firmy, nulové ceny, „ks“) dostane len
+  novo založená karta. Predtým import bez stĺpca DPH nastavil všetkým kartám
+  23 % (aj českej firme) a bez stĺpcov cien ich vynuloval.
+*/
+const cisloImportu = z.preprocess((v) => {
+  if (v === "" || v === null || v === undefined) return undefined;
+  const n = cisloZImportu(v);
+  return n === null ? undefined : n;
+}, z.number().finite().optional());
 const ImportRow = z.object({
+  riadok: z.number().int().positive().optional(),
   sku: z.string().trim().max(64).optional().nullable(),
   name: z.string().trim().min(1).max(255),
   barcode: z.string().trim().max(64).optional().nullable(),
-  unit: z.string().trim().max(16).optional().default("ks"),
-  purchase_price: z.coerce.number().nonnegative().optional().default(0),
-  sale_price: z.coerce.number().nonnegative().optional().default(0),
-  vat_rate: z.coerce.number().min(0).max(100).optional().default(23),
-  min_stock: z.coerce.number().nonnegative().optional().default(0),
-  initial_stock: z.coerce.number().optional().default(0),
+  unit: z.string().trim().min(1).max(16).optional(),
+  purchase_price: cisloImportu.refine((n) => n === undefined || n >= 0, "Záporná cena"),
+  sale_price: cisloImportu.refine((n) => n === undefined || n >= 0, "Záporná cena"),
+  vat_rate: cisloImportu.refine((n) => n === undefined || (n >= 0 && n <= 100), "Neplatná sadzba DPH"),
+  min_stock: cisloImportu.refine((n) => n === undefined || n >= 0, "Záporné minimum"),
+  initial_stock: cisloImportu,
   warehouse_name: z.string().trim().max(255).optional().nullable(),
 });
+type ImportRowT = z.infer<typeof ImportRow>;
 const ImportInput = z.object({
   company_id: z.string().uuid(),
-  rows: z.array(ImportRow).min(1).max(2000),
+  // Riadky sa overujú po jednom v handleri — zlý riadok nesmie zhodiť celý import.
+  rows: z.array(z.unknown()).min(1).max(2000),
 });
+
+/** `%` a `_` sú v `ilike` zástupné znaky — názov „50% zľava“ by chytil aj iné. */
+function presnyIlike(text: string): string {
+  return text.replace(/[\\%_]/g, (c) => "\\" + c);
+}
+
 export const importStockCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => ImportInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const cid = data.company_id;
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("country")
+      .eq("id", cid)
+      .maybeSingle();
+    const krajina = krajinaDane((firma as any)?.country ?? null);
+    const platneSadzby = sadzbyKrajiny(krajina);
+    const predvolenaSadzba = zakladnaSadzba(krajina);
     const { data: warehouses } = await supabase
       .from("warehouses")
       .select("id, name")
@@ -1157,22 +1238,8 @@ export const importStockCsv = createServerFn({ method: "POST" })
     const whByName = new Map<string, string>(
       (warehouses ?? []).map((w) => [w.name.toLowerCase(), w.id]),
     );
-    let defaultWh = (warehouses ?? []).find((w) => w.name) ?? null;
-    if (!defaultWh) {
-      const { data: created } = await supabase
-        .from("warehouses")
-        .insert({
-            company_id: cid,
-            name: await nazovHlavnehoSkladuFirmy(supabase, cid),
-            active: true,
-          })
-        .select()
-        .single();
-      if (created) {
-        defaultWh = created;
-        whByName.set(created.name.toLowerCase(), created.id);
-      }
-    }
+    let defaultWh: { id: string; name: string } | null =
+      (warehouses ?? []).find((w) => w.name) ?? null;
     let createdProducts = 0,
       updatedProducts = 0,
       createdItems = 0,
@@ -1181,7 +1248,18 @@ export const importStockCsv = createServerFn({ method: "POST" })
       errors = 0;
     const errorList: { row: number; reason: string }[] = [];
     for (let i = 0; i < data.rows.length; i++) {
-      const r = data.rows[i];
+      const parsed = ImportRow.safeParse(data.rows[i]);
+      const cisloRiadku = Number((data.rows[i] as any)?.riadok) || i + 1;
+      if (!parsed.success) {
+        errors++;
+        const iss = parsed.error.issues[0];
+        errorList.push({
+          row: cisloRiadku,
+          reason: `${iss?.path?.join(".") || "riadok"}: ${iss?.message ?? "neplatné údaje"}`,
+        });
+        continue;
+      }
+      const r: ImportRowT = parsed.data;
       try {
         // Find existing product by SKU on stock_items, or by code/name on products.
         let product: any = null;
@@ -1191,6 +1269,7 @@ export const importStockCsv = createServerFn({ method: "POST" })
             .select("product_id")
             .eq("company_id", cid)
             .eq("sku", r.sku)
+            .limit(1)
             .maybeSingle();
           if (si?.product_id) {
             const { data: p } = await supabase
@@ -1208,6 +1287,7 @@ export const importStockCsv = createServerFn({ method: "POST" })
             .eq("company_id", cid)
             .eq("code", r.sku)
             .is("deleted_at", null)
+            .limit(1)
             .maybeSingle();
           product = p;
         }
@@ -1216,25 +1296,39 @@ export const importStockCsv = createServerFn({ method: "POST" })
             .from("products")
             .select("*")
             .eq("company_id", cid)
-            .ilike("name", r.name)
+            .ilike("name", presnyIlike(r.name))
             .is("deleted_at", null)
+            .limit(1)
             .maybeSingle();
           product = p;
         }
+        // Neplatnú sadzbu nezapíšeme; tú istú, akú produkt už má, reimport neodmietne.
+        if (
+          r.vat_rate !== undefined &&
+          !platneSadzby.includes(r.vat_rate) &&
+          !(product && r.vat_rate === Number(product.vat_rate))
+        ) {
+          throw new Error(
+            `Sadzba DPH ${r.vat_rate} % v krajine firmy neplatí (platné: ${platneSadzby.join(", ")} %).`,
+          );
+        }
         if (product) {
-          await supabase
-            .from("products")
-            .update({
-              name: r.name,
-              code: r.sku ?? product.code,
-              unit: r.unit ?? product.unit,
-              unit_price: r.sale_price ?? product.unit_price,
-              vat_rate: r.vat_rate ?? product.vat_rate,
-            })
-            .eq("id", product.id);
+          // Len to, čo v súbore je — prázdna bunka hodnotu nemení.
+          const zmena: Record<string, any> = {};
+          if (r.name !== product.name) zmena.name = r.name;
+          if (r.sku && r.sku !== product.code) zmena.code = r.sku;
+          if (r.unit !== undefined && r.unit !== product.unit) zmena.unit = r.unit;
+          if (r.sale_price !== undefined && r.sale_price !== Number(product.unit_price))
+            zmena.unit_price = r.sale_price;
+          if (r.vat_rate !== undefined && r.vat_rate !== Number(product.vat_rate))
+            zmena.vat_rate = r.vat_rate;
+          if (Object.keys(zmena).length) {
+            const { error } = await supabase.from("products").update(zmena as any).eq("id", product.id);
+            if (error) throw new Error(error.message);
+          }
           updatedProducts++;
         } else {
-          const { data: np } = await supabase
+          const { data: np, error } = await supabase
             .from("products")
             .insert({
               company_id: cid,
@@ -1242,11 +1336,12 @@ export const importStockCsv = createServerFn({ method: "POST" })
               code: r.sku ?? null,
               unit: r.unit ?? "ks",
               unit_price: r.sale_price ?? 0,
-              vat_rate: r.vat_rate ?? 23,
+              vat_rate: r.vat_rate ?? predvolenaSadzba,
               active: true,
             })
             .select()
             .single();
+          if (error || !np) throw new Error(error?.message ?? "Produkt sa nepodarilo založiť.");
           product = np;
           createdProducts++;
         }
@@ -1256,23 +1351,31 @@ export const importStockCsv = createServerFn({ method: "POST" })
           .select("*")
           .eq("company_id", cid)
           .eq("product_id", product.id)
+          .limit(1)
           .maybeSingle();
         if (stockItem) {
-          await supabase
-            .from("stock_items")
-            .update({
-              sku: r.sku ?? stockItem.sku,
-              barcode: r.barcode ?? stockItem.barcode,
-              purchase_price: r.purchase_price ?? stockItem.purchase_price,
-              sale_price: r.sale_price ?? stockItem.sale_price,
-              vat_rate: r.vat_rate ?? stockItem.vat_rate,
-              unit: r.unit ?? stockItem.unit,
-              min_stock: r.min_stock ?? stockItem.min_stock,
-            })
-            .eq("id", stockItem.id);
+          const zmena: Record<string, any> = {};
+          if (r.sku && r.sku !== stockItem.sku) zmena.sku = r.sku;
+          if (r.barcode && r.barcode !== stockItem.barcode) zmena.barcode = r.barcode;
+          if (r.purchase_price !== undefined && r.purchase_price !== Number(stockItem.purchase_price))
+            zmena.purchase_price = r.purchase_price;
+          if (r.sale_price !== undefined && r.sale_price !== Number(stockItem.sale_price))
+            zmena.sale_price = r.sale_price;
+          if (r.vat_rate !== undefined && r.vat_rate !== Number(stockItem.vat_rate))
+            zmena.vat_rate = r.vat_rate;
+          if (r.unit !== undefined && r.unit !== stockItem.unit) zmena.unit = r.unit;
+          if (r.min_stock !== undefined && r.min_stock !== Number(stockItem.min_stock))
+            zmena.min_stock = r.min_stock;
+          if (Object.keys(zmena).length) {
+            const { error } = await supabase
+              .from("stock_items")
+              .update(zmena as any)
+              .eq("id", stockItem.id);
+            if (error) throw new Error(error.message);
+          }
           updatedItems++;
         } else {
-          const { data: ni } = await supabase
+          const { data: ni, error } = await supabase
             .from("stock_items")
             .insert({
               company_id: cid,
@@ -1280,14 +1383,15 @@ export const importStockCsv = createServerFn({ method: "POST" })
               sku: r.sku ?? null,
               barcode: r.barcode ?? null,
               purchase_price: r.purchase_price ?? 0,
-              sale_price: r.sale_price ?? 0,
-              vat_rate: r.vat_rate ?? 23,
-              unit: r.unit ?? "ks",
+              sale_price: r.sale_price ?? Number(product.unit_price ?? 0),
+              vat_rate: r.vat_rate ?? Number(product.vat_rate ?? predvolenaSadzba),
+              unit: r.unit ?? product.unit ?? "ks",
               min_stock: r.min_stock ?? 0,
               track_stock: true,
             })
             .select()
             .single();
+          if (error || !ni) throw new Error(error?.message ?? "Kartu sa nepodarilo založiť.");
           stockItem = ni;
           createdItems++;
         }
@@ -1295,25 +1399,45 @@ export const importStockCsv = createServerFn({ method: "POST" })
           let whId: string | null = null;
           if (r.warehouse_name && whByName.has(r.warehouse_name.toLowerCase()))
             whId = whByName.get(r.warehouse_name.toLowerCase())!;
-          else if (defaultWh) whId = defaultWh.id;
+          else {
+            // Sklad sa zakladá až pri prvom pohybe, nie pri každom importe cien.
+            if (!defaultWh) {
+              const { data: created } = await supabase
+                .from("warehouses")
+                .insert({
+                  company_id: cid,
+                  name: await nazovHlavnehoSkladuFirmy(supabase, cid),
+                  active: true,
+                })
+                .select("id, name")
+                .single();
+              if (created) {
+                defaultWh = created;
+                whByName.set(created.name.toLowerCase(), created.id);
+              }
+            }
+            if (defaultWh) whId = defaultWh.id;
+          }
           if (whId) {
-            await supabase.from("stock_movements").insert({
+            const cena = r.purchase_price ?? Number(stockItem.purchase_price ?? 0);
+            const { error } = await supabase.from("stock_movements").insert({
               company_id: cid,
               warehouse_id: whId,
               stock_item_id: stockItem.id,
               type: Number(r.initial_stock) > 0 ? "prijem" : "oprava",
               quantity: r.initial_stock,
-              unit_price: r.purchase_price ?? 0,
-              total_value: Math.abs(Number(r.initial_stock)) * Number(r.purchase_price ?? 0),
+              unit_price: cena,
+              total_value: Math.abs(Number(r.initial_stock)) * cena,
               note: "CSV import - počiatočný stav",
               created_by: userId,
             });
+            if (error) throw new Error(error.message);
             initialMovements++;
           }
         }
       } catch (e: any) {
         errors++;
-        errorList.push({ row: i + 1, reason: e?.message ?? "unknown" });
+        errorList.push({ row: cisloRiadku, reason: e?.message ?? "unknown" });
       }
     }
     await supabase.from("stock_audit_logs").insert({

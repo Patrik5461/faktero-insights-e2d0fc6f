@@ -157,7 +157,9 @@ function PurchaseOrdersPage() {
                     </td>
                     <td className="p-3">{o.supplier_name ?? "—"}</td>
                     <td className="p-3 text-muted-foreground">{datumNaDoklade(o.order_date)}</td>
-                    <td className="p-3 text-muted-foreground">{o.expected_date ?? "—"}</td>
+                    <td className="p-3 text-muted-foreground">
+                      {o.expected_date ? datumNaDoklade(o.expected_date) : "—"}
+                    </td>
                     <td className="p-3 text-right tabular-nums">{o.items_count}</td>
                     <td className="p-3 text-right tabular-nums">{suma(o.total, o.currency)}</td>
                     <td className="p-3">

@@ -46,6 +46,8 @@ export const SKUPINY = [
       "vykazy",
       "doklady",
       "sklad-zakazka",
+      "sklad-import",
+      "sklad-pod-minimom",
       "zauctovanie-kv",
       "odovzdanie-exportu",
       "odovzdanie-uctovania",

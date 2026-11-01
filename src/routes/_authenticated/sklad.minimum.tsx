@@ -123,6 +123,7 @@ function LowStockPage() {
                     <td className="p-3 text-right">
                       <Link
                         to="/sklad/prijem"
+                        search={{ polozka: r.stock_item_id }}
                         className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
                       >
                         <Plus className="h-3 w-3" /> {t("Vytvoriť príjem")}

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { cielovyStav, navrhniObjednavku, navrhniObjednavky } from "./stock-doobjednanie";
+import {
+  cielovyStav,
+  disponibilne,
+  navrhniObjednavku,
+  navrhniObjednavky,
+  podMinimom,
+} from "./stock-doobjednanie";
 
 const ZAKLAD = {
   stock_item_id: "a",
@@ -104,5 +110,28 @@ describe("navrhniObjednavky", () => {
       { ...ZAKLAD, stock_item_id: "nic", on_hand: 0 },
     ]);
     expect(out.map((n) => n.stock_item_id)).toEqual(["nic", "malo"]);
+  });
+});
+
+describe("podMinimom (SA-04) — jedno pravidlo pre Prehľad, filter aj stránku", () => {
+  it("rezervácie znižujú disponibilné množstvo", () => {
+    expect(podMinimom({ on_hand: 12, reserved: 5, min_stock: 10 })).toBe(true);
+    expect(podMinimom({ on_hand: 12, reserved: 0, min_stock: 10 })).toBe(false);
+  });
+  it("tovar na ceste zásobu z nedostatku vyťahuje", () => {
+    expect(podMinimom({ on_hand: 2, incoming: 20, min_stock: 10 })).toBe(false);
+    expect(disponibilne({ on_hand: 2, reserved: 1, incoming: 20 })).toBe(21);
+  });
+  it("bez minima nie je nič pod minimom", () => {
+    expect(podMinimom({ on_hand: 0, min_stock: 0 })).toBe(false);
+  });
+  it("zhoduje sa s návrhom objednávky", () => {
+    for (const z of [
+      { on_hand: 10, min_stock: 10, optimal_stock: 0 },
+      { on_hand: 10, min_stock: 10, optimal_stock: 40 },
+      { on_hand: 9, min_stock: 10, optimal_stock: 0 },
+    ]) {
+      expect(podMinimom(z)).toBe(navrhniObjednavku({ ...ZAKLAD, ...z }) !== null);
+    }
   });
 });

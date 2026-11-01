@@ -1,6 +1,12 @@
 import { formatujCislo, formatujJednotkovuCenu, formatujMenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { hodnotaPohybu, pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import {
+  hodnotaPohybu,
+  hodnotaZasoby,
+  nakladovaCenaPohybu,
+  pohybDelta,
+  pohybText,
+} from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -88,8 +94,9 @@ function ProductStockDetail() {
           new Date(m.created_at).toLocaleString("sk-SK"),
           t(TYPE_LABEL[m.type] ?? m.type),
           String(m.quantity),
-          Number(m.unit_price).toFixed(5),
-          Number(m.total_value).toFixed(2),
+          // Nákladová cena ako v tabuľke nižšie; `unit_price` je pri výdaji predajná (SA-06).
+          nakladovaCenaPohybu(m).toFixed(5),
+          hodnotaPohybu(m).toFixed(2),
           m.note ?? "",
         ]
           .map(csvBunka)
@@ -120,7 +127,8 @@ function ProductStockDetail() {
 
   const p = data.product;
   const si = data.stockItem;
-  const stockValue = si ? data.totalQuantity * Number(si.purchase_price ?? 0) : 0;
+  // Vážená nákupná cena, rovnako ako Prehľad skladu a Hodnota skladu (SA-05).
+  const stockValue = si ? hodnotaZasoby(data.totalQuantity, si) : 0;
 
   return (
     <>
@@ -129,10 +137,10 @@ function ProductStockDetail() {
         description={t("Kód {kod}", { kod: si?.sku ?? p.code ?? "—" })}
         action={
           <div className="flex flex-wrap gap-2">
-            {canManage && (
+            {canMutate && (
               <Link
                 to="/sklad/produkty/$id/upravit"
-                params={{ id }}
+                params={{ id: p.id }}
                 className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 <Pencil className="h-4 w-4" /> {t("Upraviť kartu")}
@@ -245,13 +253,17 @@ function ProductStockDetail() {
           </div>
         </div>
 
-        <div className="mt-4">
-          <ReservationsPanel
-            companyId={data.stockItem?.company_id ?? p.company_id}
-            stockItemId={si?.id ?? ""}
-            unit={si?.unit}
-          />
-        </div>
+        {/* Bez skladovej karty niet čo rezervovať (SA-09a). */}
+        {si && (
+          <div className="mt-4">
+            <ReservationsPanel
+              companyId={si.company_id ?? p.company_id}
+              stockItemId={si.id}
+              unit={si.unit}
+              canMutate={canMutate}
+            />
+          </div>
+        )}
 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -287,16 +299,18 @@ function ProductStockDetail() {
           )}
         </div>
 
-        {canMutate && (
+        {canMutate && si && (
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               to="/sklad/prijem"
+              search={{ polozka: si.id }}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               {t("Príjem")}
             </Link>
             <Link
               to="/sklad/vydaj"
+              search={{ polozka: si.id }}
               className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
             >
               {t("Výdaj")}

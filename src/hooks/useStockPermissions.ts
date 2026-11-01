@@ -1,31 +1,21 @@
-import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { getMyStockRole } from "@/lib/faktero/stock.functions";
-import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { useClenstvoFirmy } from "@/lib/faktero/use-opravnenia";
+import { opravneniaSkladu } from "@/lib/faktero/sklad-opravnenia";
 
-export type StockRole = "owner" | "admin" | "accountant" | "employee" | "viewer" | null;
+export type StockRole = "owner" | "admin" | "accountant" | "employee" | "custom" | "viewer" | null;
 
+/**
+ * Oprávnenia v sklade pre tlačidlá v UI — zrkadlo RLS
+ * (`firmy_s_pravom('sklad', true)`).
+ *
+ * - `canMutate`: pohyby, príjem/výdaj, rezervácie, inventúra aj úprava
+ *   a archivácia skladovej karty. Majiteľ, admin, účtovník, používateľ
+ *   a vlastný prístup s právom „Sklad a cenník: upravovať“. Rola custom tu
+ *   predtým chýbala úplne, takže nevidela Príjem/Výdaj ani s právom zápisu.
+ * - `canManage`: správa skladov (zakladať, rušiť) ostáva na administrácii.
+ *
+ * Kým sa rola nenačíta, je `loading` true a všetko `false`.
+ */
 export function useStockPermissions() {
-  const fetchRole = useServerFn(getMyStockRole);
-  const [role, setRole] = useState<StockRole>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const cid = getActiveCompanyId();
-    if (!cid) {
-      setLoading(false);
-      return;
-    }
-    fetchRole({ data: { company_id: cid } })
-      .then((r) => setRole((r?.role ?? null) as StockRole))
-      .finally(() => setLoading(false));
-  }, [fetchRole]);
-
-  const isAdmin = role === "owner" || role === "admin";
-  // Účtovník od 2026-08-16 sklad zapisuje tiež — inventúru a opravy pohybov
-  // robí práve on. Spravovať sklady (zakladať, rušiť) ostáva na administrácii.
-  const canMutate = isAdmin || role === "employee" || role === "accountant";
-  const canManage = isAdmin;
-  const canExport = role !== null;
-  return { role, loading, isAdmin, canMutate, canManage, canExport };
+  const { rola, opravnenia, nacitane } = useClenstvoFirmy();
+  return { role: (rola ?? null) as StockRole, ...opravneniaSkladu(rola, opravnenia, nacitane) };
 }

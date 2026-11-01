@@ -10,7 +10,9 @@ import {
 } from "@/lib/faktero/stock.functions";
 import {
   createPurchaseOrder,
+  getPurchaseOrder,
   listStockItemsForOrder,
+  updatePurchaseOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
@@ -25,6 +27,10 @@ import { preloz } from "@/lib/i18n/jazyk";
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/nova")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Nová objednávka — Faktero") }],
+  }),
+  /* `?id=` = úprava rozpracovanej objednávky (F-06). */
+  validateSearch: (s: Record<string, unknown>): { id?: string } => ({
+    id: typeof s.id === "string" && s.id ? s.id : undefined,
   }),
   component: NewPurchaseOrder,
 });
@@ -56,6 +62,10 @@ function NewPurchaseOrder() {
   const fetchWarehouses = useServerFn(listWarehousesForCompany);
   const fetchLow = useServerFn(getLowStockReport);
   const doCreate = useServerFn(createPurchaseOrder);
+  const doUpdate = useServerFn(updatePurchaseOrder);
+  const fetchOrder = useServerFn(getPurchaseOrder);
+  const { id: upravaId } = Route.useSearch();
+  const [cisloObjednavky, setCisloObjednavky] = useState<string | null>(null);
   const fetchZasoby = useServerFn(listStockItemsForOrder);
 
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
@@ -105,6 +115,37 @@ function NewPurchaseOrder() {
     });
     fetchZasoby({ data: { company_id: cid } }).then((z: any) => setZasoby(z ?? []));
   }, [cid, fetchSuppliers, fetchWarehouses, fetchZasoby]);
+
+  /* Úprava: načíta hlavičku a položky rozpracovanej objednávky. */
+  useEffect(() => {
+    if (!cid || !upravaId) return;
+    fetchOrder({ data: { company_id: cid, id: upravaId } })
+      .then((d: any) => {
+        const o = d.order;
+        if (o.status !== "draft") {
+          setError(t("Upraviť sa dá len rozpracovaná objednávka."));
+          return;
+        }
+        setCisloObjednavky(o.order_number ?? null);
+        setSupplierId(o.supplier_id ?? "");
+        setWarehouseId(o.warehouse_id ?? "");
+        setJobId(o.job_id ?? "");
+        setExpectedDate(o.expected_date ?? "");
+        setNote(o.note ?? "");
+        setItems(
+          (d.items ?? []).map((it: any) => ({
+            stock_item_id: it.stock_item_id ?? null,
+            name: it.name ?? "",
+            unit: it.unit ?? "ks",
+            quantity: Number(it.quantity) || 0,
+            unit_price: Number(it.unit_price) || 0,
+            vat_rate: Number(it.vat_rate) || 0,
+            _dph_rucne: true,
+          })),
+        );
+      })
+      .catch((e: any) => setError(e?.message ?? t("Objednávka nenájdená.")));
+  }, [cid, upravaId, fetchOrder]);
 
   /**
    * Popis v zozname je zároveň kľúč. Bez väzby na skladovú kartu sa objednávka
@@ -172,18 +213,18 @@ function NewPurchaseOrder() {
     setSaving(true);
     setError(null);
     try {
-      const res: any = await doCreate({
-        data: {
-          company_id: cid,
-          supplier_id: supplierId || null,
-          warehouse_id: warehouseId || null,
-          job_id: jobId || null,
-          expected_date: expectedDate || null,
-          note: note || null,
-          number_series_id: seriesId || null,
-          items: platne,
-        },
-      });
+      const hlavicka = {
+        company_id: cid,
+        supplier_id: supplierId || null,
+        warehouse_id: warehouseId || null,
+        job_id: jobId || null,
+        expected_date: expectedDate || null,
+        note: note || null,
+        items: platne.map(({ _dph_rucne: _r, ...it }) => it),
+      };
+      const res: any = upravaId
+        ? await doUpdate({ data: { ...hlavicka, id: upravaId } })
+        : await doCreate({ data: { ...hlavicka, number_series_id: seriesId || null } });
       nav({ to: "/sklad/objednavky/$id", params: { id: res.id } });
     } catch (err: any) {
       setError(err?.message ?? t("Uloženie zlyhalo"));
@@ -194,7 +235,11 @@ function NewPurchaseOrder() {
   return (
     <>
       <PageHeader
-        title={t("Nová objednávka u dodávateľa")}
+        title={
+          upravaId
+            ? t("Upraviť objednávku {cislo}", { cislo: cisloObjednavky ?? "" })
+            : t("Nová objednávka u dodávateľa")
+        }
         description={t(
           "Objednávka sa uloží ako rozpracovaná. Do návrhu doobjednania sa započíta až po odoslaní.",
         )}
@@ -260,12 +305,14 @@ function NewPurchaseOrder() {
                 placeholder={t("napr. dodať na stavbu")}
               />
             </label>
-            <VyberRadu
-              druh="purchase_order"
-              hodnota={seriesId}
-              onZmena={setSeriesId}
-              className="min-w-0 sm:col-span-2"
-            />
+            {!upravaId && (
+              <VyberRadu
+                druh="purchase_order"
+                hodnota={seriesId}
+                onZmena={setSeriesId}
+                className="min-w-0 sm:col-span-2"
+              />
+            )}
             {/* Zákazka je tu informatívna: naskladnenie ešte nie je náklad,
                 ten vznikne až výdajom tovaru na stavbu. */}
             <JobPicker value={jobId} onChange={setJobId} label={t("Zákazka")} />

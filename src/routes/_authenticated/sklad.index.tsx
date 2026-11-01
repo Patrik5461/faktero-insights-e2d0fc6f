@@ -85,16 +85,21 @@ function SkladDashboard() {
                   <ul className="divide-y divide-border text-sm">
                     {data.below_min_items.map((it: any) => (
                       <li key={it.id} className="flex items-center justify-between gap-3 py-2">
-                        <Link
-                          to="/sklad/produkty/$id"
-                          params={{ id: it.id }}
-                          className="min-w-0 truncate hover:text-primary hover:underline"
-                        >
-                          {it.name ?? it.sku ?? "—"}
-                          {it.name && it.sku && (
-                            <span className="ml-1 text-xs text-muted-foreground">{it.sku}</span>
-                          )}
-                        </Link>
+                        {/* Detail chce id produktu; karta bez produktu detail nemá. */}
+                        {it.product_id ? (
+                          <Link
+                            to="/sklad/produkty/$id"
+                            params={{ id: it.product_id }}
+                            className="min-w-0 truncate hover:text-primary hover:underline"
+                          >
+                            {it.name ?? it.sku ?? "—"}
+                            {it.name && it.sku && (
+                              <span className="ml-1 text-xs text-muted-foreground">{it.sku}</span>
+                            )}
+                          </Link>
+                        ) : (
+                          <span className="min-w-0 truncate">{it.name ?? it.sku ?? "—"}</span>
+                        )}
                         <span className="whitespace-nowrap tabular-nums text-amber-700">
                           {formatujCislo(it.current, 0, 2)} / {formatujCislo(it.min, 0, 2)}{" "}
                           {it.unit ?? ""}
@@ -104,10 +109,10 @@ function SkladDashboard() {
                   </ul>
                 )}
                 <Link
-                  to="/sklad/produkty"
+                  to="/sklad/minimum"
                   className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
                 >
-                  {t("Spravovať položky")} <ArrowRight className="h-3.5 w-3.5" />
+                  {t("Všetky pod minimom")} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </Card>
               <Card title="Posledné pohyby">

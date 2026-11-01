@@ -71,3 +71,62 @@ export function pohybText(typ: string | null | undefined, mnozstvo: unknown): st
   if (d < 0) return `−${cislo}`;
   return cislo;
 }
+
+/**
+ * Cena, ktorou sa oceňuje zásoba: vážená nákupná (`avg_purchase_price`), a kým
+ * karta priemer nemá (žiadny príjem), posledná nákupná.
+ *
+ * Jedno miesto pre Prehľad skladu, Hodnotu skladu, detail karty aj export.
+ * Detail karty a export predtým násobili poslednou nákupnou cenou, takže na
+ * 23 kartách ukazovali iné číslo než Prehľad.
+ */
+export function cenaOcenenia(karta: {
+  avg_purchase_price?: unknown;
+  purchase_price?: unknown;
+}): number {
+  const priemer = Number(karta.avg_purchase_price);
+  if (Number.isFinite(priemer) && priemer > 0) return priemer;
+  const nakup = Number(karta.purchase_price);
+  return Number.isFinite(nakup) && nakup > 0 ? nakup : 0;
+}
+
+/** Hodnota zásoby = množstvo × cena ocenenia. */
+export function hodnotaZasoby(
+  mnozstvo: unknown,
+  karta: { avg_purchase_price?: unknown; purchase_price?: unknown },
+): number {
+  const q = Number(mnozstvo);
+  return (Number.isFinite(q) ? q : 0) * cenaOcenenia(karta);
+}
+
+/**
+ * Jednotková cena pohybu v nákladovej cene — tá istá, z ktorej ráta
+ * `hodnotaPohybu`. `unit_price` je pri výdaji predajná cena.
+ */
+export function nakladovaCenaPohybu(p: { unit_cost?: unknown; unit_price?: unknown }): number {
+  const c = Number(p.unit_cost);
+  if (Number.isFinite(c) && c > 0) return c;
+  const u = Number(p.unit_price);
+  return Number.isFinite(u) ? u : 0;
+}
+
+/**
+ * Hranice filtra „Od – Do“ (RRRR-MM-DD) ako ISO časy v miestnom čase.
+ * `new Date("2026-11-01")` je polnoc UTC, teda 01:00/02:00 v Bratislave —
+ * pohyby z prvej hodiny dňa „Od“ z filtra vypadli (SA-16).
+ */
+export function hraniceDniPohybov(
+  od?: string | null,
+  po?: string | null,
+): { od: string | null; po: string | null } {
+  const den = (s: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    return m ? [Number(m[1]), Number(m[2]) - 1, Number(m[3])] : null;
+  };
+  const a = od ? den(od) : null;
+  const b = po ? den(po) : null;
+  return {
+    od: a ? new Date(a[0], a[1], a[2], 0, 0, 0, 0).toISOString() : null,
+    po: b ? new Date(b[0], b[1], b[2], 23, 59, 59, 999).toISOString() : null,
+  };
+}

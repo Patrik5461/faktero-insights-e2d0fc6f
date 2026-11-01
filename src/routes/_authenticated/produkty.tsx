@@ -20,7 +20,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stock.functions";
 
 import { useRezimDph, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
-import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { moznostiSadziebRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { colneUdajeNaZapis, jePlatnyColnyKod } from "@/lib/faktero/colny-kod";
 import { VyberColnehoKodu } from "@/components/faktero/VyberColnehoKodu";
 import { useT } from "@/lib/i18n/useT";
@@ -391,12 +391,22 @@ function ProductsPage() {
                 value={String(editing.unit_price)}
                 onChange={(v) => setEditing({ ...editing, unit_price: Number(v) })}
               />
-              <In
-                label="DPH %"
-                type="number"
-                value={String(editing.vat_rate)}
-                onChange={(v) => setEditing({ ...editing, vat_rate: Number(v) })}
-              />
+              {/* Sadzby krajiny firmy (a režimu platiteľa), nie voľné číslo (F-10).
+                  Sadzba, ktorú produkt už nesie, ostáva v zozname. */}
+              <label className="block">
+                <span className="text-sm font-medium">{t("DPH %")}</span>
+                <select
+                  value={String(editing.vat_rate)}
+                  onChange={(e) => setEditing({ ...editing, vat_rate: Number(e.target.value) })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {moznostiSadziebRezimu(rezim, editing.vat_rate).map((r) => (
+                    <option key={r} value={String(r)}>
+                      {formatujCislo(r, 0, 2)} %
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="sm:col-span-2 block">
                 <span className="text-sm font-medium">{t("Popis")}</span>
                 <textarea
