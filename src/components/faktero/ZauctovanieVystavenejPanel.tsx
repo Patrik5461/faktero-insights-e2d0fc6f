@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { MAX_UCTOVNEJ_POZNAMKY } from "@/lib/faktero/uctovna-poznamka";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -661,7 +662,7 @@ export function UctovnaPoznamkaVystavenej({ inv, z }: { inv: any; z: Zauctovanie
     <div>
       <textarea
         rows={2}
-        maxLength={240}
+        maxLength={MAX_UCTOVNEJ_POZNAMKY}
         disabled={Boolean(vPohode)}
         aria-label={t("Účtovná poznámka")}
         placeholder={t("Účtovná poznámka (ide do účtovníctva)")}

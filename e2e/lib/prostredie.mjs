@@ -29,7 +29,7 @@ export const FIRMY = {
 /** Cudzia firma (PALIERA) — len na overenie, že ju QA účet nevidí. */
 export const CUDZIA_FIRMA = "ee86eb5f-57b7-445a-9b3c-8e6058a905ca";
 
-function citajEnvSubor(cesta) {
+export function citajEnvSubor(cesta) {
   if (!existsSync(cesta)) return {};
   const von = {};
   for (const riadok of readFileSync(cesta, "utf8").split("\n")) {

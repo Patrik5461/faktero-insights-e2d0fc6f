@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
+import { maZuctovanuZalohu, zostavaPoUhradach, zostavaUhradit } from "./zaloha";
 
 describe("zostavaUhradit", () => {
   it("odpočíta zaplatenú zálohu", () => {
@@ -36,5 +36,20 @@ describe("maZuctovanuZalohu", () => {
   it("kladná záloha áno", () => {
     expect(maZuctovanuZalohu(246)).toBe(true);
     expect(maZuctovanuZalohu("246.00")).toBe(true);
+  });
+});
+
+describe("zostavaPoUhradach (AB-29)", () => {
+  it("odpočíta čiastočnú úhradu aj zálohu", () => {
+    expect(zostavaPoUhradach(492, 246, 100)).toBe(146);
+    expect(zostavaPoUhradach(123, null, 23)).toBe(100);
+  });
+  it("bez úhrad = predpis, preplatok nespraví záporné číslo", () => {
+    expect(zostavaPoUhradach(123, null, 0)).toBe(123);
+    expect(zostavaPoUhradach(123, null, null)).toBe(123);
+    expect(zostavaPoUhradach(123, null, 200)).toBe(0);
+  });
+  it("dobropis sa úhradami nemení", () => {
+    expect(zostavaPoUhradach(-45, null, 10)).toBe(-45);
   });
 });

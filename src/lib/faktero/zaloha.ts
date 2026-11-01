@@ -29,3 +29,15 @@ export function zostavaUhradit(total: unknown, zaloha: unknown): number {
 export function maZuctovanuZalohu(zaloha: unknown): boolean {
   return cislo(zaloha) > 0;
 }
+
+/**
+ * Čo ostáva uhradiť po odpočte zálohy aj po čiastočných úhradách
+ * (`payments`). Klasický aj kompaktný detail ukazujú to isté číslo; PDF
+ * faktúry sa tým nemení — tam ostáva predpis bez úhrad.
+ */
+export function zostavaPoUhradach(total: unknown, zaloha: unknown, uhradene: unknown): number {
+  const predpis = zostavaUhradit(total, zaloha);
+  const u = cislo(uhradene);
+  if (!(u > 0) || predpis <= 0) return predpis;
+  return Math.max(0, Math.round((predpis - u) * 100) / 100);
+}

@@ -23,6 +23,8 @@ import {
 } from "@/lib/faktero/parovanie.functions";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { potvrd as potvrdOkno } from "@/lib/potvrdenie";
+import { navrhyVoVybere } from "@/lib/faktero/akcie-faktury";
 
 export const Route = createFileRoute("/_authenticated/faktury/parovanie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Párovanie platieb — Faktero") }] }),
@@ -107,6 +109,22 @@ function ParovaniePage() {
       .filter((z) => vybrane.has(z.transactionId))
       .map((z) => ({ transactionId: z.transactionId, invoiceId: z.invoiceId, suma: z.suma }));
     if (pary.length === 0) return toast.info(t("Nie je vybraná žiadna platba."));
+    // Návrhy nie sú isté zhody — zápis úhrady sa nedá vziať späť jedným klikom.
+    const naRozhodnutie = navrhyVoVybere(
+      pary.map((p) => p.transactionId),
+      data?.navrhy ?? [],
+    );
+    if (
+      naRozhodnutie > 0 &&
+      !(await potvrdOkno(
+        t("Zapísať {n} úhrad, z toho {m} na rozhodnutie (nie istá zhoda)?", {
+          n: pary.length,
+          m: naRozhodnutie,
+        }),
+        { potvrdit: t("Zapísať úhrady"), nebezpecne: false },
+      ))
+    )
+      return;
     setBusy(true);
     try {
       const r = (await potvrd({ data: { companyId: cid, pary } })) as any;

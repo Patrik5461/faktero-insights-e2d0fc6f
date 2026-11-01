@@ -63,6 +63,7 @@ import {
   CreditCard,
   Copy,
   RotateCw,
+  RotateCcw,
   Send,
   CheckCircle2,
   XCircle,
@@ -104,7 +105,15 @@ import {
 import { jeChybaEfaktury, textStavuEfaktury } from "@/lib/faktero/efaktura/stav-efaktury-texty";
 import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
-import { maZuctovanuZalohu, zostavaUhradit } from "@/lib/faktero/zaloha";
+import { maZuctovanuZalohu, zostavaPoUhradach, zostavaUhradit } from "@/lib/faktero/zaloha";
+import {
+  dalsiaUpomienka,
+  povoleneAkcie,
+  smieZmenitStav,
+  sucetOdpocitanychZaloh,
+} from "@/lib/faktero/akcie-faktury";
+import { obnovZKosa } from "@/lib/faktero/obnova-z-kosa";
+import { textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { jeDobropisNaZobrazenie, polozkaNaZobrazenie, sumaNaZobrazenie } from "@/lib/faktero/dobropis-zobrazenie";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
 import { paymentMethodLabel } from "@/lib/faktero/payment-method";
@@ -213,7 +222,11 @@ function InvoiceDetail() {
   const syncPayFn = useServerFn(syncInvoicePayment);
   const [hasPayLink, setHasPayLink] = useState(false);
   const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
-  const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
+  /* Úhrady faktúry (aj čiastočné) — „Spolu k úhrade“ z nich odpočíta, čo už prišlo. */
+  const [uhradene, setUhradene] = useState(0);
+  /* História dokladu je prázdna — kompaktné rozloženie potom nekreslí prázdny rámček. */
+  const [pocetHistorie, setPocetHistorie] = useState<number | null>(null);
+  const [obnovujem, setObnovujem] = useState(false);
   /* Všetky zálohy odpočítané na tejto faktúre — pri etapovej dodávke ich je viac. */
   const [odpocitaneZalohy, setOdpocitaneZalohy] = useState<any[]>([]);
   /* Daňový doklad k prijatej platbe, ak už k tejto zálohe existuje. */
@@ -557,22 +570,32 @@ function InvoiceDetail() {
           ho nikdy neukázala a ponúkala „Vystaviť daňový doklad“ aj po vystavení.
         */
         setDokladKPlatbe(ddp ?? null);
-        setAdvanceProforma(null);
       } else {
         const { data: odpocty } = await supabase
           .from("invoice_advances")
           .select("advance_invoice_id, amount")
           .eq("invoice_id", data.id);
-        if (odpocty?.length) {
+        /*
+          Staršie faktúry majú odpočet len v `advance_amount` + `advance_invoice_id`
+          bez riadku v `invoice_advances` — inak by sa ich záloha v detaile
+          neukázala vôbec. Daňový doklad k platbe tiež nesie `advance_invoice_id`,
+          ale to nie je odpočet.
+        */
+        const riadky: { advance_invoice_id: string; amount: unknown }[] = odpocty?.length
+          ? (odpocty as any[])
+          : data.type === "regular" && data.advance_invoice_id && Number(data.advance_amount) > 0
+            ? [{ advance_invoice_id: data.advance_invoice_id, amount: data.advance_amount }]
+            : [];
+        if (riadky.length) {
           const { data: zalohy } = await supabase
             .from("invoices")
             .select("id, invoice_number, issue_date, currency")
             .in(
               "id",
-              odpocty.map((o: any) => o.advance_invoice_id),
+              riadky.map((o) => o.advance_invoice_id),
             );
           setOdpocitaneZalohy(
-            odpocty.map((o: any) => ({
+            riadky.map((o) => ({
               ...o,
               zaloha: (zalohy ?? []).find((z: any) => z.id === o.advance_invoice_id) ?? null,
             })),
@@ -580,7 +603,6 @@ function InvoiceDetail() {
         } else {
           setOdpocitaneZalohy([]);
         }
-        setAdvanceProforma(null);
         setSettledIn(null);
         setDokladKPlatbe(null);
       }
@@ -590,6 +612,11 @@ function InvoiceDetail() {
         .eq("invoice_id", id)
         .order("sent_at", { ascending: false });
       setReminders(rems ?? []);
+      const { data: platby } = await supabase
+        .from("payments")
+        .select("amount")
+        .eq("invoice_id", id);
+      setUhradene((platby ?? []).reduce((a: number, p: any) => a + (Number(p.amount) || 0), 0));
     }
   }
 
@@ -598,9 +625,16 @@ function InvoiceDetail() {
       const sentSet = new Set(
         reminders.filter((r) => r.status === "sent").map((r) => r.reminder_number),
       );
-      let next: 1 | 2 | 3 = 1;
-      if (sentSet.has(1)) next = 2;
-      if (sentSet.has(2)) next = 3;
+      let next = dalsiaUpomienka(sentSet as Set<number>);
+      if (next === null) {
+        // Po tretej sa ďalšia neponúka potichu — opakovanie tretej len vedome.
+        const znova = await potvrd(
+          t("Všetky upomienky (1., 2. aj 3.) už boli odoslané. Chcete poslať 3. upomienku znova?"),
+          { potvrdit: t("Poslať 3. upomienku znova"), nebezpecne: false },
+        );
+        if (!znova) return;
+        next = 3;
+      }
       const preview = await previewReminder({ data: { invoiceId: id, reminderNumber: next } });
       setReminderForm({
         reminderNumber: next,
@@ -663,6 +697,12 @@ function InvoiceDetail() {
     // Production-readiness checks
     if (status === "paid" && inv?.status === "cancelled")
       return toast.error(t("Stornovanú faktúru nemožno označiť ako uhradenú."));
+    // Koncept sa najprv vystavuje (DUZP, kontroly), storno sa už neodosiela ani neuhrádza.
+    if (inv?.deleted_at) return toast.error(t("Faktúra je v koši — najprv ju obnovte."));
+    if (status === "paid" && inv?.status === "draft")
+      return toast.error(t("Koncept najprv vystavte, potom ho môžete označiť ako uhradený."));
+    if (!smieZmenitStav(inv?.status, status))
+      return toast.error(t("V tomto stave faktúry sa táto zmena nedá urobiť."));
     if (
       status === "cancelled" &&
       inv?.exported_at &&
@@ -897,7 +937,7 @@ function InvoiceDetail() {
   const poHotovoRef = useRef(false);
   const openEmailRef = useRef<null | (() => Promise<void>)>(null);
   useEffect(() => {
-    if (!po || !inv || poHotovoRef.current) return;
+    if (!po || !inv || poHotovoRef.current || inv.deleted_at) return;
     poHotovoRef.current = true;
     navigate({ to: "/faktury/$id", params: { id }, search: {}, replace: true });
     if (po === "pdf") void handleDownload();
@@ -921,11 +961,33 @@ function InvoiceDetail() {
     );
   if (!inv) return <PageBody>{t("Načítavam…")}</PageBody>;
 
-  const isOverdue =
-    inv.status !== "paid" &&
-    inv.status !== "cancelled" &&
-    !!inv.due_date &&
-    new Date(inv.due_date) < new Date(new Date().toDateString());
+  /*
+    Čo sa s faktúrou v jej stave dá robiť — spoločné pre klasický aj
+    kompaktný detail. „Po splatnosti“ rovnako ako zoznam a Prehľad:
+    vystavená/odoslaná, neuhradená, splatnosť pred dneškom v Bratislave
+    (koncept nikdy).
+  */
+  const akcie = povoleneAkcie(inv, {
+    dnes: dnesBratislava(),
+    platitelDph: company ? company.vat_payer : null,
+    krajina,
+  });
+  const isOverdue = akcie.poSplatnosti;
+  // Dobropis sa neuhrádza — čiastočná úhrada má zmysel len pri kladnej faktúre.
+  const ciastocneUhradena = uhradene > 0.004 && !jeDobropisNaZobrazenie(inv);
+  async function obnovFakturu() {
+    if (!inv) return;
+    setObnovujem(true);
+    try {
+      await obnovZKosa("invoices", [inv.id], inv.company_id);
+      toast.success(t("Faktúra je obnovená z koša."));
+      await load();
+    } catch (e) {
+      toast.error(textChybyZapisu(e, t));
+    } finally {
+      setObnovujem(false);
+    }
+  }
 
   /*
    * Adresát: doklad si údaje odberateľa odkladá v okamihu vystavenia, takže
@@ -1137,7 +1199,7 @@ function InvoiceDetail() {
       <div>
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
           {t("Odberateľ")}
-          {inv.status !== "cancelled" && (
+          {inv.status !== "cancelled" && !inv.deleted_at && (
             <Link
               to="/faktury/$id/upravit"
               params={{ id }}
@@ -1238,7 +1300,12 @@ function InvoiceDetail() {
   );
   const kartaHistoria = (
     <>
-      <HistoriaDokladu companyId={inv.company_id} agenda="faktura" id={inv.id} />
+      <HistoriaDokladu
+        companyId={inv.company_id}
+        agenda="faktura"
+        id={inv.id}
+        onPocet={setPocetHistorie}
+      />
     </>
   );
   const kartaZasielkovna = (
@@ -1305,14 +1372,26 @@ function InvoiceDetail() {
             ? t("Uhradené")
             : jeDobropisNaZobrazenie(inv)
               ? t("Spolu")
-              : t("Spolu k úhrade")}
+              : ciastocneUhradena
+                ? t("Zostáva k úhrade")
+                : t("Spolu k úhrade")}
         </div>
         <div className="text-lg font-semibold tabular-nums">
           {formatujMenu(
-            sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)),
+            sumaNaZobrazenie(
+              inv,
+              inv.status === "paid"
+                ? zostavaUhradit(inv.total, inv.advance_amount)
+                : zostavaPoUhradach(inv.total, inv.advance_amount, uhradene),
+            ),
             inv.currency,
           )}
         </div>
+        {ciastocneUhradena && inv.status !== "paid" ? (
+          <div className="text-xs text-muted-foreground">
+            {t("Čiastočne uhradená — {suma}", { suma: formatujMenu(uhradene, inv.currency) })}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -1429,10 +1508,17 @@ function InvoiceDetail() {
           /* Pri náhľade PDF je suma na úhradu hneď nad platobnými údajmi. */
           <div className="mb-3 border-b border-border pb-3">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              {jeDobropisNaZobrazenie(inv) ? t("Spolu") : t("Spolu k úhrade")}
+              {jeDobropisNaZobrazenie(inv)
+                ? t("Spolu")
+                : ciastocneUhradena
+                  ? t("Zostáva k úhrade")
+                  : t("Spolu k úhrade")}
             </div>
             <div className="text-2xl font-semibold tabular-nums">
-              {formatujMenu(sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)), inv.currency)}
+              {formatujMenu(
+                sumaNaZobrazenie(inv, zostavaPoUhradach(inv.total, inv.advance_amount, uhradene)),
+                inv.currency,
+              )}
             </div>
           </div>
         ) : null}
@@ -1492,6 +1578,8 @@ function InvoiceDetail() {
             DPH musí do 15 dní vystaviť doklad k tejto platbe. Preto je
             ponuka priamo pri zálohovej faktúre, hneď ako je uhradená.
           */}
+          {/* Neplatiteľ DPH doklad k platbe nevystavuje — karta len pri už existujúcom doklade. */}
+          {(company?.vat_payer !== false || dokladKPlatbe) && (
           <div className="mt-4 border-t border-border pt-3">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
               {t("Daňový doklad k prijatej platbe")}
@@ -1509,7 +1597,7 @@ function InvoiceDetail() {
                   {datumNaDoklade(dokladKPlatbe.issue_date)} · {formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)} · {t("daň sa priznáva v tomto období")}
                 </div>
               </div>
-            ) : inv.status === "paid" ? (
+            ) : akcie.dokladKPlatbe ? (
               <div className="mt-2 space-y-2">
                 <p className="text-muted-foreground">
                   {t("Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej faktúre sa už znovu nepočíta.")}
@@ -1529,6 +1617,7 @@ function InvoiceDetail() {
               </p>
             )}
           </div>
+          )}
         </div>
       )}
       {odpocitaneZalohy.length > 0 && (
@@ -1553,41 +1642,15 @@ function InvoiceDetail() {
               </li>
             ))}
           </ul>
-          {odpocitaneZalohy.length > 1 && (
+          {/* Súčet len pri jednej mene — zálohy v inej mene ostávajú každá so svojou sumou. */}
+          {odpocitaneZalohy.length > 1 && sucetOdpocitanychZaloh(odpocitaneZalohy, inv.currency) !== null && (
             <div className="mt-2 text-xs text-muted-foreground">
               {t("Spolu odpočítané")}{" "}
               <strong>
-                {formatujMenu(
-                  odpocitaneZalohy.reduce((a: number, o: any) => a + Number(o.amount), 0),
-                  inv.currency,
-                )}
+                {formatujMenu(sucetOdpocitanychZaloh(odpocitaneZalohy, inv.currency) ?? 0, inv.currency)}
               </strong>
             </div>
           )}
-        </div>
-      )}
-      {advanceProforma && (
-        <div className="rounded-xl border border-border bg-card p-5 text-sm">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">
-            {t("Zúčtovaná záloha")}
-          </div>
-          <div className="mt-2 space-y-1">
-            <div>
-              {t("Zálohová faktúra:")}{" "}
-              <Link
-                to="/faktury/$id"
-                params={{ id: advanceProforma.id }}
-                className="font-medium text-primary hover:underline"
-              >
-                {advanceProforma.invoice_number}
-              </Link>
-            </div>
-            {inv.advance_amount != null && (
-              <div className="text-xs text-muted-foreground">
-                {t("Odpočítaná suma:")} {formatujMenu(inv.advance_amount, inv.currency)}
-              </div>
-            )}
-          </div>
         </div>
       )}
       {stockMoves.length > 0 && (
@@ -1806,7 +1869,12 @@ function InvoiceDetail() {
         </>
       }
       komentare={<KomentarePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} />}
-      historia={<ZbaleneK nadpis="História dokladu">{kartaHistoria}</ZbaleneK>}
+      historia={
+        /* Bez záznamov sa rámček nekreslí — história sa však načíta aj tak (skrytá). */
+        <div hidden={!pocetHistorie} data-historia-pocet={pocetHistorie ?? ""}>
+          <ZbaleneK nadpis="História dokladu">{kartaHistoria}</ZbaleneK>
+        </div>
+      }
       onUhradena={() => void setStatus("paid")}
       onNeuhradena={() => void oznacNeuhradenu()}
       onZmena={() => void load()}
@@ -1827,7 +1895,12 @@ function InvoiceDetail() {
         number={inv.invoice_number}
         status={
           <>
-            <StatusBadge status={inv.status} />
+            <StatusBadge status={akcie.odznak} />
+            {akcie.vymazana && (
+              <StavOdznak className="bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400">
+                <Trash2 className="h-3 w-3" /> {t("V koši")}
+              </StavOdznak>
+            )}
             {inv.approval_status === "pending" && (
               <StavOdznak className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
                 <ClockIcon className="h-3 w-3" /> {t("Čaká na schválenie")}
@@ -1878,13 +1951,22 @@ function InvoiceDetail() {
             Zálohová faktúra nie je daňový doklad — cez eFaktúru sa neposiela,
             preto pri nej je hlavný e-mail a eFaktúra ostane vypnutá s vysvetlením.
           */
-          inv.type === "proforma" ? (
-            <PrimarnaAkcia onClick={openEmail} disabled={inv.status === "cancelled"}>
+          akcie.vymazana ? (
+            <PrimarnaAkcia onClick={() => void obnovFakturu()} disabled={obnovujem}>
+              <RotateCcw className="h-4 w-4" />
+              {t("Obnoviť z koša")}
+            </PrimarnaAkcia>
+          ) : inv.type === "proforma" ? (
+            <PrimarnaAkcia onClick={openEmail} disabled={!akcie.email}>
               <Mail className="h-4 w-4" />
               {t("Odoslať e-mailom")}
             </PrimarnaAkcia>
           ) : (
-            <PrimarnaAkcia onClick={handleSendEfaktura} disabled={efakturaOkno}>
+            <PrimarnaAkcia
+              onClick={handleSendEfaktura}
+              disabled={efakturaOkno || !akcie.efaktura}
+              title={akcie.dovodBezEfaktury ? t(akcie.dovodBezEfaktury) : undefined}
+            >
               <Send className="h-4 w-4" />
               {stavEf?.stav === "zlyhala"
                 ? t("Odoslať eFaktúru znova")
@@ -1895,6 +1977,7 @@ function InvoiceDetail() {
           )
         }
         secondaryActions={
+          akcie.vymazana ? null : (
           <>
             {inv.type === "proforma" ? (
               <SekundarnaAkcia
@@ -1910,7 +1993,7 @@ function InvoiceDetail() {
                 label={t("E-mailom")}
                 title={t("Odoslať e-mailom")}
                 onClick={openEmail}
-                disabled={inv.status === "cancelled"}
+                disabled={!akcie.email}
               />
             )}
             <SekundarnaAkcia ikona={Eye} label={t("Náhľad")} onClick={handleNahlad} disabled={pdfBusy} />
@@ -1928,8 +2011,10 @@ function InvoiceDetail() {
               onOtvor={(dalsi) => navigate({ to: "/faktury/$id", params: { id: dalsi } })}
             />
           </>
+          )
         }
         menuActions={
+          akcie.vymazana ? null : (
           <>
             <MenuSkupina label={t("Úpravy a zaúčtovanie")}>
               {/*
@@ -1963,7 +2048,7 @@ function InvoiceDetail() {
                   {t(textPoslatOpravu(programOdovzdania), { program: programOdovzdania ?? "" })}
                 </MenuAkcia>
               )}
-              {inv.status !== "sent" && inv.status !== "paid" && (
+              {akcie.odoslaneInak && (
                 <MenuAkcia
                   ikona={Send}
                   onClick={() => setStatus("sent")}
@@ -1972,9 +2057,14 @@ function InvoiceDetail() {
                   {t("Odoslané iným spôsobom")}
                 </MenuAkcia>
               )}
-              {inv.status !== "paid" && (
+              {akcie.uhradena && (
                 <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("paid")}>
                   {t("Označiť ako uhradenú")}
+                </MenuAkcia>
+              )}
+              {akcie.neuhradena && (
+                <MenuAkcia ikona={Undo2} onClick={() => void oznacNeuhradenu()}>
+                  {t("Označiť ako neuhradenú")}
                 </MenuAkcia>
               )}
             </MenuSkupina>
@@ -2041,9 +2131,12 @@ function InvoiceDetail() {
               <MenuAkcia ikona={RefreshCw} onClick={handleGenerate} disabled={pdfBusy}>
                 {t("Pregenerovať PDF")}
               </MenuAkcia>
-              <MenuAkcia ikona={FileCode2} onClick={handlePohodaExport} disabled={exportBusy}>
-                {t("Export do Pohody XML")}
-              </MenuAkcia>
+              {/* Nemecká firma Pohodu nemá — panel zaúčtovania tlačidlo tiež skrýva. */}
+              {akcie.exportPohoda && (
+                <MenuAkcia ikona={FileCode2} onClick={handlePohodaExport} disabled={exportBusy}>
+                  {t("Export do Pohody XML")}
+                </MenuAkcia>
+              )}
               <MenuAkcia ikona={FileCheck2} onClick={handleGenerateXml} disabled={xmlBusy}>
                 {efakturaDoc ? t("Pregenerovať eFaktúru XML") : t("Vygenerovať eFaktúru XML")}
               </MenuAkcia>
@@ -2075,9 +2168,47 @@ function InvoiceDetail() {
               </MenuAkcia>
             </MenuSkupina>
           </>
+          )
         }
       />
       <PageBody>
+        {akcie.vymazana ? (
+          /*
+            Faktúra z koša sa neotvára ako živá: len na čítanie a s jediným
+            krokom — obnoviť. Akcie (úhrada, odoslanie, zaúčtovanie…) by inak
+            menili doklad, ktorý v zozname ani v súčtoch nie je.
+          */
+          <div className="space-y-4" data-faktura-v-kosi="">
+            <div
+              role="status"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 font-medium text-destructive">
+                  <Trash2 className="h-4 w-4" /> {t("Faktúra je v koši")}
+                </div>
+                <div className="mt-1 text-muted-foreground">
+                  {t("Vymazaná {datum}. Nepočíta sa do zoznamov ani súčtov a nedá sa meniť, kým ju neobnovíte.", {
+                    datum: datumNaDoklade(String(inv.deleted_at).slice(0, 10)),
+                  })}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void obnovFakturu()}
+                disabled={obnovujem}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                <RotateCcw className="h-4 w-4" /> {t("Obnoviť z koša")}
+              </button>
+            </div>
+            {kartaStrany}
+            {kartaUvod}
+            {kartaPolozky}
+            {kartaSumar}
+          </div>
+        ) : (
+        <>
         {kompaktne ? null : upozornenia}
         {kompaktnyDetail ? (
           kompaktnyDetail
@@ -2138,6 +2269,8 @@ function InvoiceDetail() {
         </div>
         )}
         </DetailSNahladom>
+        )}
+        </>
         )}
       </PageBody>
       {efakturaOkno && inv?.company_id && (
