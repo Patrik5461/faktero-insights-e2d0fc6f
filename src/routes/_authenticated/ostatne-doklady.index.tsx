@@ -37,6 +37,7 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import {
@@ -471,7 +472,7 @@ function OstatneDokladyPage() {
                     vybrane={selected.has(r.id)}
                     onVyber={() => toggle(r.id)}
                     vyberPopis={t("Označiť doklad")}
-                    onClick={() => navigate({ to: "/ostatne-doklady/novy", search: { id: r.id } })}
+                    ciel={{ to: "/ostatne-doklady/novy", search: { id: r.id } }}
                     title={
                       <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                         {r.sender || (
@@ -596,7 +597,11 @@ function OstatneDokladyPage() {
                           (a: any, b: any) => a.position - b.position,
                         );
                         return (
-                          <tr key={r.id} className="border-t border-border align-top">
+                          <KlikatelnyRiadok
+                            key={r.id}
+                            ciel={{ to: "/ostatne-doklady/novy", search: { id: r.id } }}
+                            className="border-t border-border align-top"
+                          >
                             <td className="px-3 py-2">
                               <input
                                 type="checkbox"
@@ -738,7 +743,7 @@ function OstatneDokladyPage() {
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </button>
                             </td>
-                          </tr>
+                          </KlikatelnyRiadok>
                         );
                       })}
                     </tbody>

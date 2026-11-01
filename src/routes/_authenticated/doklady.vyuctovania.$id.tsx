@@ -1,6 +1,7 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, Loader2, Plus, Trash2, X } from "lucide-react";
@@ -466,7 +467,15 @@ function Detail() {
                       {[...polozky]
                         .sort((a, b) => String(a.datum ?? "").localeCompare(String(b.datum ?? "")))
                         .map((p) => (
-                          <tr key={p.druh + p.id} className="border-t border-border">
+                          <KlikatelnyRiadok
+                            key={p.druh + p.id}
+                            ciel={
+                              p.druh === "prijata"
+                                ? { to: "/prijate-faktury/$id", params: { id: p.id } }
+                                : { to: "/doklady/novy", search: { id: p.id } as any }
+                            }
+                            className="border-t border-border"
+                          >
                             <td className="py-1.5 pr-2 whitespace-nowrap">
                               {datumNaDoklade(p.datum)}
                             </td>
@@ -510,7 +519,7 @@ function Detail() {
                                 <X className="h-4 w-4" />
                               </button>
                             </td>
-                          </tr>
+                          </KlikatelnyRiadok>
                         ))}
                     </tbody>
                   </table>

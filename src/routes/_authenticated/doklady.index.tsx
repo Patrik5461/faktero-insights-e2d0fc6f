@@ -67,6 +67,7 @@ import { MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
@@ -166,6 +167,7 @@ function DokladyPage() {
   const [menimStav, setMenimStav] = useState(false);
   // Naposledy otvorený doklad — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("doklady");
+  const klik = useKlikNaRiadok();
   // Mená kolegov pre stĺpec „Spracoval“ (profily číta server po overení členstva).
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [mena, setMena] = useState<Record<string, string>>({});
@@ -1096,6 +1098,7 @@ function DokladyPage() {
                   vybrane={selected.has(r.id)}
                   onVyber={() => toggle(r.id)}
                   vyberPopis={t("Vybrať riadok")}
+                  ciel={{ to: "/doklady/novy", search: { id: r.id } as any }}
                   onClick={() => {
                     posledny.zapamataj(r.id);
                     navigate({ to: "/doklady/novy", search: { id: r.id } as any });
@@ -1228,15 +1231,18 @@ function DokladyPage() {
                     key={r.id}
                     {...posledny.riadok(r.id)}
                     data-nahlad-id={r.id}
-                    className={`border-t border-border ${posledny.riadok(r.id).className} ${bocny.zapnuty ? "cursor-pointer" : ""} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
-                    onClick={(e) => {
-                      // Pri zapnutom náhľade vyberie riadok; tlačidlá a výbery v riadku robia ďalej svoje.
-                      if (!bocny.aktivny()) return;
-                      const ciel = e.target as HTMLElement;
-                      if (ciel.closest("button, a, input, select, textarea, label, [role='combobox'], [role='button']"))
-                        return;
-                      bocny.setVybrany(r.id);
-                    }}
+                    {...klik(
+                      { to: "/doklady/novy", search: { id: r.id } as any },
+                      {
+                        // Pri zapnutom náhľade vyberie riadok, inak otvorí detail; tlačidlá a výbery v riadku robia ďalej svoje.
+                        naKlik: () => {
+                          posledny.zapamataj(r.id);
+                          if (bocny.aktivny()) bocny.setVybrany(r.id);
+                          else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                        },
+                      },
+                    )}
+                    className={`${TRIEDA_KLIK_RIADKU} border-t border-border ${posledny.riadok(r.id).className} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
                   >
                     <td className="px-3 py-2">
                       <input

@@ -44,6 +44,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
+import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import {
@@ -160,6 +161,7 @@ function PurchaseInvoicesPage() {
   const navigate = useNavigate();
   // Naposledy otvorená faktúra — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("prijate-faktury");
+  const klik = useKlikNaRiadok();
   const [rows, setRows] = useState<any[]>([]);
   // Súčet úhrad (aj čiastočných) po faktúrach — pre stav „Čiastočne uhradená“.
   const [uhradene, setUhradene] = useState<Record<string, number>>({});
@@ -1171,6 +1173,7 @@ function PurchaseInvoicesPage() {
           emptyText={"Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra\"."}
           mobileCard={(r: any) => (
             <MobileListCard
+              ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
               onClick={() => {
                 posledny.zapamataj(r.id);
                 navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
@@ -1297,13 +1300,18 @@ function PurchaseInvoicesPage() {
                 <tr
                   key={r.id}
                   {...posledny.riadok(r.id)}
+                  {...klik(
+                    { to: "/prijate-faktury/$id", params: { id: r.id } },
+                    {
+                      naKlik: () => {
+                        posledny.zapamataj(r.id);
+                        if (bocny.aktivny()) bocny.setVybrany(r.id);
+                        else navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
+                      },
+                    },
+                  )}
                   data-nahlad-id={r.id}
-                  className={`cursor-pointer hover:bg-muted/30 ${posledny.riadok(r.id).className} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
-                  onClick={() => {
-                    posledny.zapamataj(r.id);
-                    if (bocny.aktivny()) bocny.setVybrany(r.id);
-                    else navigate({ to: "/prijate-faktury/$id", params: { id: r.id } });
-                  }}
+                  className={`${TRIEDA_KLIK_RIADKU} ${posledny.riadok(r.id).className} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
                   onDoubleClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
