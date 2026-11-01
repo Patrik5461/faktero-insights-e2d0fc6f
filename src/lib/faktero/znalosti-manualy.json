@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-31",
+ "vytvorene": "2026-11-01",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -1546,6 +1546,10 @@
     {
      "nadpis": "Lehoty, ktoré sa pripomínajú",
      "text": "<>\nKoniec pracovného pomeru, koniec skúšobnej doby, lekárska prehliadka a školenie BOZP —\nFaktero na ne upozorní vopred, aby sa nezmeškali. Pripomienky vidno v prehľade\nzamestnancov aj na zvončeku."
+    },
+    {
+     "nadpis": "Česká firma",
+     "text": "<>\nFirma so sídlom v Česku má ten istý modul, ale\npravidlá podľa českých predpisov — podľa krajiny firmy v nastaveniach,\nnie podľa jazyka.\n-\nZmluvy: pracovný pomer na dobu určitú alebo neurčitú, dohoda o provedení práce (DPP,\nnajviac 300 hodín za rok) a dohoda o pracovní činnosti (DPČ, v priemere najviac polovica\ntýždenného pracovného času). Brigádnická dohoda študenta je slovenská, česká firma ju\nnemá.\n-\nPri zmluve Faktero upozorní na skúšobnú dobu dlhšiu ako 4 mesiace (8 mesiacov len u\nvedúceho zamestnanca), mzdu pod minimálnou mzdou (2026: 22 400 Kč mesačne, 134,40 Kč za\nhodinu) a pripomenie dovolenku najmenej 4 týždne a výpovednú dobu najmenej 2 mesiace,\nktorá plynie odo dňa doručenia výpovede.\n-\nDPP zakladá účasť na poistení od odmeny 12 000 Kč za mesiac (2026), DPČ od 4 500 Kč.\nMzdy ani poistné Faktero nepočíta — upozornenie je len na kontrolu.\n-\nRodné číslo sa kontroluje (dátum a deliteľnosť 11), číslo účtu v tvare\n19-2000145399/0800 alebo IBAN, zdravotná poisťovňa sa vyberá zo siedmich českých (111\nVZP až 213 RBP).\n-\nŠablóny dokumentov sú po česky: pracovní smlouva, DPP, DPČ, výpověď a potvrzení o\npříjmu.\nPripomienky českej firmy:\n-\nRegistrácia zamestnanca na ČSSZ najneskôr pred nástupom (najskôr 8 dní\nvopred), aj pri dohodách.\n-\nZdravotná poisťovňa — nástup do 8 dní; kto má len DPP alebo DPČ, do 20.\ndňa nasledujúceho mesiaca.\n-\nPo skončení — odhlásenie z ČSSZ do 8 dní a oznámenie zdravotnej\npoisťovni do 8 dní (pri dohodách do 20. dňa nasledujúceho mesiaca). Na karte sa zapíše\ndátum, kedy ste to podali.\n- Koniec skúšobnej doby, koniec doby určitej, lekárska prehliadka a školenie BOZP.\nELDP sa nepripomína: od apríla 2026 ho zamestnávateľ nevyhotovuje, ČSSZ ho zostaví z\njednotného mesačného hlásenia, ktoré sa podáva do 20. dňa nasledujúceho mesiaca.\nPodrobnosti sú na\ncssz.gov.cz\n(https://www.cssz.gov.cz)\n."
     }
    ]
   }

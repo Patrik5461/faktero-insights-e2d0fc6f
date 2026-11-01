@@ -12823,6 +12823,7 @@ export type Database = {
         ]
       }
 
+
     }
     Views: {
       stock_items_with_availability: {
