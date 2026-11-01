@@ -190,9 +190,14 @@ export function NahratieVypisuKarty({
         <div className="mt-4 rounded-lg border border-amber-300 p-3 dark:border-amber-700">
           <p className="text-sm font-medium">{t("Priraďte stĺpce")}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {t(
-              "Stĺpce sa nepodarilo s istotou rozpoznať. Vyberte aspoň dátum, sumu a produkt alebo množstvo.",
-            )}
+            {/* Z-14: pri rozpoznaných stĺpcoch bez jediného nákupu iný text – nie dva protichodné bloky. */}
+            {nahlad.iste
+              ? t(
+                  "Stĺpce sme rozpoznali, ale žiaden riadok nemá dátum a sumu – skontrolujte priradenie.",
+                )
+              : t(
+                  "Stĺpce sa nepodarilo s istotou rozpoznať. Vyberte aspoň dátum, sumu a produkt alebo množstvo.",
+                )}
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {nahlad.hlavicka.map((h, i) => {
@@ -440,7 +445,7 @@ export function NahratieVypisuKarty({
         </div>
       )}
 
-      {nahlad && nahlad.iste && nahlad.riadky.length === 0 && (
+      {nahlad && nahlad.druh === "pdf" && nahlad.iste && nahlad.riadky.length === 0 && (
         <p className="mt-4 text-sm text-muted-foreground">
           {t("V súbore sa nenašiel ani jeden nákup s dátumom a sumou.")}
         </p>

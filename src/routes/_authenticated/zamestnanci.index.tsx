@@ -6,7 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listZamestnancov } from "@/lib/faktero/zamestnanci.functions";
 import { celeMeno, datumSk, DRUH_ZMLUVY, type DruhZmluvy, type Pripomienka } from "@/lib/faktero/zamestnanci";
-import { ChybaModulu, tlacidlo } from "@/components/faktero/zamestnanci/ui";
+import { ChybaModulu, FARBA_PRIPOMIENKY, TextPripomienky, tlacidlo } from "@/components/faktero/zamestnanci/ui";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
@@ -14,12 +14,6 @@ export const Route = createFileRoute("/_authenticated/zamestnanci/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zamestnanci — Faktero") }] }),
   component: ZamestnanciPage,
 });
-
-const FARBA: Record<Pripomienka["zavaznost"], string> = {
-  danger: "border-destructive/30 bg-destructive/10 text-destructive",
-  warning: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400",
-  info: "border-border bg-muted/40 text-foreground",
-};
 
 function ZamestnanciPage() {
   const { t } = useT();
@@ -68,12 +62,10 @@ function ZamestnanciPage() {
                     key={p.kluc}
                     to="/zamestnanci/$id"
                     params={{ id: p.employee_id }}
-                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm hover:opacity-90 ${FARBA[p.zavaznost]}`}
+                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm hover:opacity-90 ${FARBA_PRIPOMIENKY[p.zavaznost]}`}
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span className="min-w-0">
-                      <strong>{p.nadpis}</strong> — {p.text}
-                    </span>
+                    <TextPripomienky p={p} className="min-w-0" />
                   </Link>
                 ))}
               </section>

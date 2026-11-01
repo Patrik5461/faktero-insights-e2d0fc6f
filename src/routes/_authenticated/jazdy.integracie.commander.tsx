@@ -27,9 +27,12 @@ import {
 } from "@/lib/faktero/commander.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
+import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia";
+import { popisSynchronizacie } from "@/lib/faktero/vozidla-vyber";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/commander")({
-  head: () => ({ meta: [{ title: "Commander GPS — Faktero" }] }),
+  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Commander GPS — Faktero") }] }),
   component: CommanderPage,
 });
 
@@ -55,6 +58,9 @@ function popisStavuSync(s?: string | null) {
 
 function CommanderPage() {
   const { t } = useT();
+  // J-13: integráciu mení len majiteľ/administrátor (server: assertAdmin).
+  const admin = useJeAdminFirmy();
+  const clenstvo = useClenstvoFirmy();
   const cid = getActiveCompanyId();
   const _get = useServerFn(getCommanderStatus);
   const _save = useServerFn(saveCommanderConnection);
@@ -264,6 +270,11 @@ function CommanderPage() {
         description={t("Automatický import jázd z Commander GPS.")}
       />
       <PageBody>
+        {clenstvo.nacitane && !admin && (
+          <div className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {t("Integráciu spravuje majiteľ alebo administrátor firmy.")}
+          </div>
+        )}
         {(state.credentials_invalid || conn?.credentials_invalid || needsReauth) && (
           <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <div className="flex items-start gap-3">
@@ -366,14 +377,14 @@ function CommanderPage() {
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <button
-                  disabled={!!busy}
+                  disabled={!!busy || !admin}
                   onClick={onTest}
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
                   <TestTube2 className="h-4 w-4" /> {t("Otestovať pripojenie")}
                 </button>
                 <button
-                  disabled={!!busy}
+                  disabled={!!busy || !admin}
                   onClick={onSave}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
@@ -381,7 +392,7 @@ function CommanderPage() {
                 </button>
                 {conn && (
                   <button
-                    disabled={!!busy}
+                    disabled={!!busy || !admin}
                     onClick={onDisconnect}
                     className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
@@ -403,7 +414,7 @@ function CommanderPage() {
                   </div>
                 </div>
                 <button
-                  disabled={!conn || !!busy}
+                  disabled={!conn || !!busy || !admin}
                   onClick={onSyncVehicles}
                   className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-md sm:w-auto border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
                 >
@@ -433,6 +444,7 @@ function CommanderPage() {
                             <select
                               className="w-full max-w-xs rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                               value={l.faktero_vehicle_id ?? ""}
+                              disabled={!admin}
                               onChange={(e) => onLink(l.id, e.target.value || null)}
                             >
                               <option value="">{t("— neprepojené —")}</option>
@@ -493,14 +505,14 @@ function CommanderPage() {
                   </>
                 )}
                 <button
-                  disabled={!conn || !!busy}
+                  disabled={!conn || !!busy || !admin}
                   onClick={onSyncRides}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   <PlugZap className="h-4 w-4" /> {t("Synchronizovať jazdy")}
                 </button>
                 <button
-                  disabled={!conn || !!busy}
+                  disabled={!conn || !!busy || !admin}
                   onClick={onForceReimport}
                   title={t(
                     "Pre adminov: znovu skontroluje preskočené jazdy a importuje tie, ktoré ešte nie sú v knihe jázd.",
@@ -555,7 +567,7 @@ function CommanderPage() {
                   {state.logs.map((l: any) => (
                     <li key={l.id} className="rounded-md border border-border p-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{l.sync_type}</span>
+                        <span className="font-medium">{t(popisSynchronizacie(l.sync_type))}</span>
                         <span
                           className={l.status === "ok" ? "text-emerald-700" : "text-destructive"}
                         >

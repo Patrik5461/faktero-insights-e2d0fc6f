@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { useMozeUpravovat } from "@/lib/faktero/use-opravnenia";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Kniha jázd — Faktero") }] }),
@@ -79,6 +80,8 @@ const DAVKA = 500;
 
 function TripsPage() {
   const { t } = useT();
+  // J-14: rola s „Len čítať“ nevidí akcie, ktoré by RLS odmietla.
+  const smieUpravovat = useMozeUpravovat("jazdy");
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/" });
   const [rows, setRows] = useState<Trip[]>([]);
@@ -280,12 +283,14 @@ function TripsPage() {
         title={t("Kniha jázd")}
         description={t("Záznamy služobných ciest s automatickým výpočtom km.")}
         action={
-          <Link
-            to="/jazdy/nova"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> {t("Nová jazda")}
-          </Link>
+          smieUpravovat && (
+            <Link
+              to="/jazdy/nova"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> {t("Nová jazda")}
+            </Link>
+          )
         }
       />
       <PageBody>
@@ -315,40 +320,44 @@ function TripsPage() {
           <div className="rounded-xl border border-border bg-card p-10 text-center">
             <Car className="mx-auto h-10 w-10 text-muted-foreground" />
             <div className="mt-3 text-sm text-muted-foreground">{t("Zatiaľ žiadne jazdy.")}</div>
-            <Link
-              to="/jazdy/nova"
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            >
-              <Plus className="h-4 w-4" /> {t("Pridať prvú jazdu")}
-            </Link>
+            {smieUpravovat && (
+              <Link
+                to="/jazdy/nova"
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                <Plus className="h-4 w-4" /> {t("Pridať prvú jazdu")}
+              </Link>
+            )}
           </div>
         ) : (
           <>
-            <div className="mb-3">
-              <BulkBar
-                count={vybraneIds.length}
-                showDeleted={false}
-                onDelete={() => setPotvrdenie(true)}
-                onRestore={() => {}}
-                onClear={() => setVybrane({})}
-                akcie={
-                  <>
-                    <button
-                      onClick={() => nastavZaradenie("business")}
-                      className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
-                    >
-                      {t("Označiť ako služobné")}
-                    </button>
-                    <button
-                      onClick={() => nastavZaradenie("private")}
-                      className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
-                    >
-                      {t("Označiť ako súkromné")}
-                    </button>
-                  </>
-                }
-              />
-            </div>
+            {smieUpravovat && (
+              <div className="mb-3">
+                <BulkBar
+                  count={vybraneIds.length}
+                  showDeleted={false}
+                  onDelete={() => setPotvrdenie(true)}
+                  onRestore={() => {}}
+                  onClear={() => setVybrane({})}
+                  akcie={
+                    <>
+                      <button
+                        onClick={() => nastavZaradenie("business")}
+                        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+                      >
+                        {t("Označiť ako služobné")}
+                      </button>
+                      <button
+                        onClick={() => nastavZaradenie("private")}
+                        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+                      >
+                        {t("Označiť ako súkromné")}
+                      </button>
+                    </>
+                  }
+                />
+              </div>
+            )}
 
             {/* Desktop */}
             <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
@@ -470,21 +479,25 @@ function TripsPage() {
                             <MapIcon className="h-4 w-4" />
                           </button>
                         )}
-                        <Link
-                          to="/jazdy/nova"
-                          search={{ id: r.id }}
-                          title={t("Upraviť jazdu")}
-                          className="inline-block rounded p-1.5 text-muted-foreground hover:bg-muted"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => zmazJednu(r.id)}
-                          title={t("Vymazať jazdu")}
-                          className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {smieUpravovat && (
+                          <>
+                            <Link
+                              to="/jazdy/nova"
+                              search={{ id: r.id }}
+                              title={t("Upraviť jazdu")}
+                              className="inline-block rounded p-1.5 text-muted-foreground hover:bg-muted"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => zmazJednu(r.id)}
+                              title={t("Vymazať jazdu")}
+                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -556,21 +569,25 @@ function TripsPage() {
                           <MapIcon className="h-4 w-4" />
                         </button>
                       )}
-                      <Link
-                        to="/jazdy/nova"
-                        search={{ id: r.id }}
-                        aria-label={t("Upraviť jazdu")}
-                        className="mt-1 inline-block rounded p-1 text-muted-foreground"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                      <button
-                        onClick={() => zmazJednu(r.id)}
-                        aria-label={t("Vymazať jazdu")}
-                        className="mt-1 rounded p-1 text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {smieUpravovat && (
+                        <>
+                          <Link
+                            to="/jazdy/nova"
+                            search={{ id: r.id }}
+                            aria-label={t("Upraviť jazdu")}
+                            className="mt-1 inline-block rounded p-1 text-muted-foreground"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => zmazJednu(r.id)}
+                            aria-label={t("Vymazať jazdu")}
+                            className="mt-1 rounded p-1 text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

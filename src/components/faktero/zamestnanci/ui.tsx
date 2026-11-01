@@ -3,6 +3,75 @@
  */
 import { IdCard } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
+import {
+  datumSk,
+  DRUH_ZMLUVY,
+  type DruhPripomienky,
+  type Pripomienka,
+} from "@/lib/faktero/zamestnanci";
+
+/** Farba pripomienky podľa závažnosti – spoločná pre zoznam aj kartu (Z-07). */
+export const FARBA_PRIPOMIENKY: Record<Pripomienka["zavaznost"], string> = {
+  danger: "border-destructive/30 bg-destructive/10 text-destructive",
+  warning: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400",
+  info: "border-border bg-muted/40 text-foreground",
+};
+
+const NADPIS_PRIPOMIENKY: Record<DruhPripomienky, string> = {
+  sp_prihlaska: "Prihláška do Sociálnej poisťovne",
+  zp_prihlaska: "Oznámenie zdravotnej poisťovni",
+  lekarska_prehliadka: "Lekárska prehliadka",
+  bozp: "Školenie BOZP",
+  skusobna_doba: "Koniec skúšobnej doby",
+  koniec_zmluvy: "Koniec zmluvy na dobu určitú",
+};
+
+type Prekladac = (text: string, p?: Record<string, string | number>) => string;
+
+/**
+ * Z-09: nadpis a text pripomienky preložené cez `t()`. Server posiela aj
+ * slovenský `nadpis`/`text` (e-mail, zvonček) – ten sa tu nepoužíva.
+ */
+export function textPripomienky(p: Pripomienka, t: Prekladac): { nadpis: string; text: string } {
+  const nadpis = t(NADPIS_PRIPOMIENKY[p.druh] ?? p.nadpis);
+  let vec: string;
+  switch (p.druh) {
+    case "sp_prihlaska":
+      vec = t("{meno}: prihlásiť pred nástupom {datum}", {
+        meno: p.meno,
+        datum: datumSk(p.nastup ?? p.termin),
+      });
+      break;
+    case "zp_prihlaska":
+      vec = t("{meno}: oznámiť do 8 dní od nástupu", { meno: p.meno });
+      break;
+    case "lekarska_prehliadka":
+      vec = t("{meno}: preventívna prehliadka", { meno: p.meno });
+      break;
+    case "bozp":
+      vec = t("{meno}: školenie bezpečnosti a ochrany zdravia", { meno: p.meno });
+      break;
+    default:
+      vec = p.zmluva ? `${p.meno}: ${t(DRUH_ZMLUVY[p.zmluva])}` : p.meno;
+  }
+  const kedy =
+    p.zostava < 0
+      ? t("termín {datum} už uplynul", { datum: datumSk(p.termin) })
+      : p.zostava === 0
+        ? t("termín je dnes")
+        : t("do {datum}", { datum: datumSk(p.termin) });
+  return { nadpis, text: `${vec} — ${kedy}` };
+}
+
+export function TextPripomienky({ p, className }: { p: Pripomienka; className?: string }) {
+  const { t } = useT();
+  const { nadpis, text } = textPripomienky(p, t);
+  return (
+    <span className={className}>
+      <strong>{nadpis}</strong> — {text}
+    </span>
+  );
+}
 
 export const pole =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
@@ -25,7 +94,7 @@ export function ChybaModulu({ sprava }: { sprava: string }) {
       <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
         {vypnuty
           ? t(
-              "Evidencia zamestnancov sa zapína pre každú firmu zvlášť. Ak ju chcete používať, napíšte na servis@faktero.sk.",
+              "Evidencia zamestnancov je pre túto firmu vypnutá. Ak ju chcete znova zapnúť, napíšte na servis@faktero.sk.",
             )
           : t(sprava)}
       </p>

@@ -47,10 +47,13 @@ import {
   tlacidlo,
   tlacidloObrys,
   type UdajeZamestnanca,
+  FARBA_PRIPOMIENKY,
+  TextPripomienky,
 } from "@/components/faktero/zamestnanci/ui";
 import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
+import { citliveNaUlozenie } from "@/lib/faktero/zamestnanci-citlive";
 import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/$id")({
@@ -118,16 +121,10 @@ function KartaZamestnanca() {
                 {detail.pripomienky.map((p) => (
                   <div
                     key={p.kluc}
-                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
-                      p.zavaznost === "danger"
-                        ? "border-destructive/30 bg-destructive/10 text-destructive"
-                        : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
-                    }`}
+                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${FARBA_PRIPOMIENKY[p.zavaznost]}`}
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
-                      <strong>{p.nadpis}</strong> — {p.text}
-                    </span>
+                    <TextPripomienky p={p} />
                   </div>
                 ))}
               </section>
@@ -263,13 +260,18 @@ function CitliveUdaje({ cid, detail, obnov }: Vlastnosti) {
   }
 
   async function ulozit() {
+    // Z-01: posielať len zmenené polia – prázdne pole bez „Zobraziť“ údaj nemaže.
+    const zmeny = citliveNaUlozenie({ rodne_cislo: rc, op_cislo: op }, hodnoty);
+    if (Object.keys(zmeny).length === 0) {
+      setUpravuje(false);
+      return;
+    }
     try {
       await uloz({
         data: {
           company_id: cid,
           id: detail.zamestnanec.id,
-          rodne_cislo: rc,
-          op_cislo: op,
+          ...zmeny,
         },
       });
       toast.success(t("Citlivé údaje sú uložené."));
@@ -304,7 +306,11 @@ function CitliveUdaje({ cid, detail, obnov }: Vlastnosti) {
             <label className={popis} htmlFor="c-op">{t("Číslo občianskeho preukazu")}</label>
             <input id="c-op" className={pole} value={op} onChange={(e) => setOp(e.target.value)} autoComplete="off" />
           </div>
-          <p className="text-xs text-muted-foreground sm:col-span-2">{t("Prázdne pole údaj vymaže.")}</p>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            {hodnoty
+              ? t("Prázdne pole údaj vymaže.")
+              : t("Prázdne pole údaj nezmení. Ak ho chcete vymazať, najprv kliknite na „Zobraziť“.")}
+          </p>
           <div className="flex gap-2 sm:col-span-2">
             <button type="button" className={tlacidlo} onClick={ulozit}>
               {t("Uložiť")}
@@ -541,6 +547,7 @@ function Zmluvy({ cid, detail, obnov }: Vlastnosti) {
 
 function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
   const { t } = useT();
+  const menaFirmy = useMenaFirmy();
   const vyrob = useServerFn(vyrobDokument);
   const pridaj = useServerFn(pridajDokument);
   const odkaz = useServerFn(odkazNaDokument);
@@ -624,7 +631,7 @@ function Dokumenty({ cid, detail, obnov }: Vlastnosti) {
           {(DOPLNKY_SABLONY[sablona] ?? []).map((d) => (
             <div key={d.token}>
               <label className={popis} htmlFor={`d-${d.token}`}>
-                {t(d.popis)}
+                {t(d.popis, { mena: menaFirmy.symbol })}
               </label>
               <input
                 id={`d-${d.token}`}
@@ -799,6 +806,7 @@ function Nepritomnosti({ cid, detail, obnov }: Vlastnosti) {
                 aria-label={t("Zmazať neprítomnosť")}
                 className={`${tlacidloObrys} text-destructive`}
                 onClick={async () => {
+                  if (!(await potvrd(t("Zmazať neprítomnosť?")))) return;
                   try {
                     await zmaz({ data: { company_id: cid, id: n.id, tabulka: "employee_absences" } });
                     obnov();
@@ -893,6 +901,10 @@ function DochadzkaZalozka({ cid, employeeId }: { cid: string; employeeId: string
               ))}
             </select>
           </div>
+          <div className="sm:col-span-3">
+            <label className={popis} htmlFor="a-note">{t("Poznámka")}</label>
+            <input id="a-note" className={pole} value={forma.note} onChange={(e) => setForma({ ...forma, note: e.target.value })} />
+          </div>
         </div>
         <button type="submit" className={`${tlacidlo} mt-4`}>
           {t("Zapísať deň")}
@@ -925,6 +937,7 @@ function DochadzkaZalozka({ cid, employeeId }: { cid: string; employeeId: string
                     : ""}{" "}
                   · {String(hodinyZaznamu(z)).replace(".", ",")} h ·{" "}
                   {t(DRUH_DOCHADZKY[z.kind as DruhDochadzky] ?? z.kind)}
+                  {z.note ? ` · ${z.note}` : ""}
                 </span>
               </div>
               <button
@@ -932,6 +945,7 @@ function DochadzkaZalozka({ cid, employeeId }: { cid: string; employeeId: string
                 aria-label={t("Zmazať záznam dochádzky")}
                 className={`${tlacidloObrys} text-destructive`}
                 onClick={async () => {
+                  if (!(await potvrd(t("Zmazať záznam dochádzky?")))) return;
                   try {
                     await zmaz({ data: { company_id: cid, id: z.id, tabulka: "employee_attendance" } });
                     nacitaj();

@@ -110,6 +110,8 @@ export const SKUPINY = [
       "apka-jazdy",
       "gps-dozor",
       "gps-tachometer",
+      "jazdy-tachometer",
+      "zamestnanci-citlive",
       "karty-up",
       "transeu-pripojenie",
       "integracie-vstupy",

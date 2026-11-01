@@ -30,6 +30,8 @@ import {
   ulozPripojenieKartyFn,
 } from "@/lib/faktero/palivove-karty.functions";
 
+import { getActiveProduct, type ActiveProduct } from "@/lib/faktero/active-product";
+import { navratZPalivovychKariet } from "@/lib/faktero/vozidla-vyber";
 export const Route = createFileRoute("/_authenticated/vozovy-park/palivove-karty")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Palivové karty — Faktero") }],
@@ -63,6 +65,10 @@ function cas(ts?: string | null) {
 
 function PalivoveKarty() {
   const { t } = useT();
+  // Z-11: späť do produktu, z ktorého človek prišiel (localStorage až po načítaní).
+  const [produkt, setProdukt] = useState<ActiveProduct | null>(null);
+  useEffect(() => setProdukt(getActiveProduct()), []);
+  const navrat = navratZPalivovychKariet(produkt);
   const cid = getActiveCompanyId();
   const [pripojenia, setPripojenia] = useState<Pripojenie[] | null>(null);
   const [vazby, setVazby] = useState<any[]>([]);
@@ -208,8 +214,8 @@ function PalivoveKarty() {
           "Nákupy palivovými kartami: tankovania s tachometrom k vozidlám, náklady vozidiel a mesačná faktúra ako prijatá faktúra s rozpisom. Karty s API (Shell) sa načítajú samy, pri kartách bez API (Up Déjeuner) nahráte mesačný výpis.",
         )}
         action={
-          <Link to="/vozovy-park" className={TLACIDLO}>
-            {t("Späť na vozový park")}
+          <Link to={navrat.to} className={TLACIDLO}>
+            {t(navrat.text)}
           </Link>
         }
       />
