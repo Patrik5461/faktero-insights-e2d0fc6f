@@ -22,6 +22,8 @@ import { defineConfig as lovableKonfiguracia } from "@lovable.dev/vite-tanstack-
 const KOREN = resolve(import.meta.dirname);
 const PORT = Number(process.env.PREVIEW_PORT || 4317);
 const DEMO_ORIGIN = `http://127.0.0.1:${PORT}`;
+/** Verejná adresa za nginx s heslom (napr. ukazka.faktero.sk) — server stále počúva len na 127.0.0.1. */
+const VEREJNY_HOST = process.env.PREVIEW_VEREJNY_HOST?.trim() || "";
 
 /*
  * Prostredie servera — nastaví sa ešte pred načítaním čohokoľvek z `src/`.
@@ -56,7 +58,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' ws://127.0.0.1:${PORT} ws://localhost:${PORT}`,
+  `connect-src 'self' ws://127.0.0.1:${PORT} ws://localhost:${PORT}${VEREJNY_HOST ? ` wss://${VEREJNY_HOST}` : ""}`,
   "media-src 'self' data: blob:",
   "frame-src 'self' data: blob:",
   "worker-src 'self' blob:",
@@ -167,7 +169,9 @@ export default async (env: { command: "build" | "serve"; mode: string }) => {
       host: "127.0.0.1",
       port: PORT,
       strictPort: true,
-      hmr: { host: "127.0.0.1", port: PORT },
+      // Za verejnou adresou nginx netuneluje HMR — ukážka sa len prezerá, netreba ho.
+      hmr: VEREJNY_HOST ? false : { host: "127.0.0.1", port: PORT },
+      allowedHosts: VEREJNY_HOST ? [VEREJNY_HOST] : undefined,
       // node_modules je v worktree odkaz na hlavné repo — čítať z neho treba.
       fs: { allow: [KOREN, realpathSync(resolve(KOREN, "node_modules"))] },
     },

@@ -32,7 +32,7 @@ fi
 echo "Preview: http://127.0.0.1:${PORT}/dashboard  (len tento počítač; Ctrl+C ukončí)"
 exec env -i \
   PATH="$PATH" HOME="$HOME" TERM="${TERM:-xterm}" LANG="${LANG:-C.UTF-8}" \
-  PREVIEW_PORT="$PORT" NODE_ENV=development \
+  PREVIEW_PORT="$PORT" PREVIEW_VEREJNY_HOST="${PREVIEW_VEREJNY_HOST:-}" NODE_ENV=development \
   NODE_OPTIONS="--max-old-space-size=4096" \
   node node_modules/vite/bin/vite.js dev \
   --config vite.config.preview.ts --host 127.0.0.1 --port "$PORT" --strictPort
