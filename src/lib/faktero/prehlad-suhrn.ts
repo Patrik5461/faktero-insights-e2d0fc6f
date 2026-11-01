@@ -11,6 +11,17 @@
 
 export type KosVeku = { pocet: number; suma: number };
 
+/** Doklady v cudzej mene bez kurzu aj bez sumy v domácej mene — v súčtoch nie sú (S-02). */
+export type BezPrepoctu = {
+  faktury: number;
+  prijate: number;
+  blocky: number;
+  /** Neuhradené vystavené po menách, v pôvodnej mene. */
+  pohladavky: Map<string, number>;
+  /** Neuhradené prijaté po menách, v pôvodnej mene. */
+  zavazky: Map<string, number>;
+};
+
 export type PrehladSuhrn = {
   pocet_faktur: number;
   ma_zaplatenu: boolean;
@@ -21,6 +32,8 @@ export type PrehladSuhrn = {
   po_splatnosti_suma: number;
   po_splatnosti_pocet: number;
   dlznikov: number;
+  /** Odberatelia s faktúrou po splatnosti (karta „Po splatnosti“, S-03). */
+  dlznikov_po_splatnosti: number;
   priemer_dni_uhrady: number | null;
   dph_odvod: number;
   prijmy_rok: number;
@@ -35,7 +48,12 @@ export type PrehladSuhrn = {
   zavazky_po_splatnosti: number;
   zavazky_pocet: number;
   dph_odpocet: number;
+  /** Výdavky roka vrátane bločkov (S-11); časť z bločkov zvlášť. */
   vydavky_rok: number;
+  vydavky_blocky_rok: number;
+  /** Aspoň jeden doklad v cudzej mene sa do súčtov prepočítal kurzom. */
+  prepocitane: boolean;
+  bez_prepoctu: BezPrepoctu;
   sklad_pod_minimom: number;
   km_mesiac: number;
   api_dnes: number;
@@ -47,6 +65,16 @@ const n = (v: unknown): number => {
   const x = Number(v ?? 0);
   return Number.isFinite(x) ? x : 0;
 };
+
+function mapaMien(v: unknown): Map<string, number> {
+  const m = new Map<string, number>();
+  if (v && typeof v === "object" && !Array.isArray(v))
+    for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
+      const c = n(x);
+      if (c !== 0) m.set(k, c);
+    }
+  return m;
+}
 
 function kose(v: unknown): KosVeku[] {
   const pole = Array.isArray(v) ? v : [];
@@ -72,6 +100,7 @@ export function normalizujPrehlad(d: any): PrehladSuhrn {
     po_splatnosti_suma: n(x.po_splatnosti_suma),
     po_splatnosti_pocet: n(x.po_splatnosti_pocet),
     dlznikov: n(x.dlznikov),
+    dlznikov_po_splatnosti: n(x.dlznikov_po_splatnosti),
     priemer_dni_uhrady: x.priemer_dni_uhrady == null ? null : n(x.priemer_dni_uhrady),
     dph_odvod: n(x.dph_odvod),
     prijmy_rok: n(x.prijmy_rok),
@@ -93,6 +122,15 @@ export function normalizujPrehlad(d: any): PrehladSuhrn {
     zavazky_pocet: n(x.zavazky_pocet),
     dph_odpocet: n(x.dph_odpocet),
     vydavky_rok: n(x.vydavky_rok),
+    vydavky_blocky_rok: n(x.vydavky_blocky_rok),
+    prepocitane: !!x.prepocitane,
+    bez_prepoctu: {
+      faktury: n(x.bez_prepoctu?.faktury),
+      prijate: n(x.bez_prepoctu?.prijate),
+      blocky: n(x.bez_prepoctu?.blocky),
+      pohladavky: mapaMien(x.bez_prepoctu?.pohladavky),
+      zavazky: mapaMien(x.bez_prepoctu?.zavazky),
+    },
     sklad_pod_minimom: n(x.sklad_pod_minimom),
     km_mesiac: n(x.km_mesiac),
     api_dnes: n(x.api_dnes),
@@ -122,6 +160,7 @@ export function metrikyPrehladu(s: PrehladSuhrn) {
     cashflowDelta,
     receivables: s.neuhradene_suma,
     debtorCount: s.dlznikov,
+    overdueDebtorCount: s.dlznikov_po_splatnosti,
     avgPayDays: s.priemer_dni_uhrady,
     vatOut: s.dph_odvod,
     vatIn: s.dph_odpocet,
@@ -150,4 +189,55 @@ export function miestnyDatum(d = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const den = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${den}`;
+}
+
+/**
+ * Suma z prehľadu v tvare pre `<SumaVDomacejMene>` (rozhodnutie 1): domáca
+ * mena, značka „prepočítané“ a neuhradené doklady bez kurzu po menách.
+ * `bez` vyberá, ktorý zvyšok k sume patrí (pohľadávky / záväzky / nič).
+ */
+export function sucetPrehladu(
+  suma: number,
+  s: PrehladSuhrn,
+  domaca: "EUR" | "CZK",
+  bez: "pohladavky" | "zavazky" | null = null,
+): { domaca: "EUR" | "CZK"; suma: number; prepocitane: boolean; bezPrepoctu: Map<string, number> } {
+  return {
+    domaca,
+    suma,
+    prepocitane: s.prepocitane,
+    bezPrepoctu: bez ? s.bez_prepoctu[bez] : new Map(),
+  };
+}
+
+/** Koľko dokladov v cudzej mene ostalo mimo súčtov — do upozornenia na stránke. */
+export function pocetBezPrepoctu(s: PrehladSuhrn): number {
+  return s.bez_prepoctu.faktury + s.bez_prepoctu.prijate + s.bez_prepoctu.blocky;
+}
+
+export type UdalostFaktury = {
+  druh: "vytvorena" | "odoslana" | "zaplatena" | "stornovana";
+  cas: string;
+};
+
+/**
+ * Udalosti faktúry do „Poslednej aktivity“ — každá so svojím časom (S-07).
+ * Odoslanie a storno bez uloženého času sa vynechajú: čas vytvorenia by
+ * tvrdil niečo, čo sa nestalo.
+ */
+export function udalostiFaktury(i: {
+  status?: string | null;
+  created_at?: string | null;
+  sent_at?: string | null;
+  paid_at?: string | null;
+  cancelled_at?: string | null;
+}): UdalostFaktury[] {
+  const von: UdalostFaktury[] = [];
+  if (i.created_at) von.push({ druh: "vytvorena", cas: i.created_at });
+  if ((i.status === "sent" || i.status === "paid") && i.sent_at)
+    von.push({ druh: "odoslana", cas: i.sent_at });
+  if (i.status === "paid" && i.paid_at) von.push({ druh: "zaplatena", cas: i.paid_at });
+  if (i.status === "cancelled" && i.cancelled_at)
+    von.push({ druh: "stornovana", cas: i.cancelled_at });
+  return von;
 }

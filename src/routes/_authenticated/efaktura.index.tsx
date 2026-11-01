@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { stavIcDph } from "@/lib/faktero/efaktura-pripravenost";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -281,7 +282,7 @@ function EFakturaPage() {
       { label: "DIČ vyplnené", status: has(company?.dic) ? "done" : ("missing" as Status) },
       {
         label: "IČ DPH vyplnené, ak je firma platiteľ DPH",
-        status: has(company?.ic_dph) ? "done" : ("missing" as Status),
+        status: stavIcDph(company) as Status,
       },
       { label: "IBAN vyplnený", status: has(company?.iban) ? "done" : ("missing" as Status) },
       // Skutočný stav z profilu eFaktúry — predtým tu bolo natvrdo „Pripravujeme“.
@@ -366,7 +367,8 @@ function EFakturaPage() {
           </div>
         )}
         {/* Firmu „len odosielanie“ páruje onboarding u ePoštáka, nie IČO. */}
-        {!lenOdosielanie && !odosielanieBezi && (
+        {/* Až po načítaní profilu — inak sekcia blikne aj firme „len odosielanie“ (D-16). */}
+        {readinessQuery.data && !lenOdosielanie && !odosielanieBezi && (
           <SparovanieSPostakom companyId={companyId} profil={profil} />
         )}
         {/* Kam sa zaradí zaevidovaná prijatá eFaktúra — len pri vlastnom príjme. */}

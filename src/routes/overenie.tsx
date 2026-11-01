@@ -5,10 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/faktero/Logo";
 import { bezpecnyCiel } from "@/lib/faktero/auth-potvrdenie";
 import { overKod, potrebujeKod } from "@/lib/faktero/dvojfaktor";
+import { useT } from "@/lib/i18n/useT";
+import { preloz } from "@/lib/i18n/jazyk";
 
 export const Route = createFileRoute("/overenie")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Overenie — Faktero" }, { name: "robots", content: "noindex" }] }),
+  head: ({ match }) => ({
+    meta: [
+      { title: preloz(match.context.jazyk ?? "sk", "Overenie — Faktero") },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>): { next?: string } =>
     typeof s.next === "string" ? { next: s.next } : {},
   component: OvereniePage,
@@ -20,6 +27,7 @@ export const Route = createFileRoute("/overenie")({
  * zariadení až do odhlásenia.
  */
 function OvereniePage() {
+  const { t } = useT();
   const { next } = Route.useSearch();
   const navigate = useNavigate();
   const [kod, setKod] = useState("");
@@ -43,7 +51,7 @@ function OvereniePage() {
       await overKod(kod);
       window.location.replace(bezpecnyCiel(next, window.location.origin));
     } catch (err: any) {
-      setChyba(err?.message ?? "Overenie sa nepodarilo.");
+      setChyba(err?.message ? t(err.message) : t("Overenie sa nepodarilo."));
       setOverujem(false);
     }
   }
@@ -54,10 +62,10 @@ function OvereniePage() {
         <Logo variant="header" className="mb-6 h-8" />
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold tracking-tight">Dvojfaktorové overenie</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t("Dvojfaktorové overenie")}</h1>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Zadajte 6-miestny kód z overovacej appky (Google Authenticator, Microsoft Authenticator…).
+          {t("Zadajte 6-miestny kód z overovacej appky (Google Authenticator, Microsoft Authenticator…).")}
         </p>
         <form onSubmit={odosli} className="mt-5 space-y-3">
           <input
@@ -67,7 +75,7 @@ function OvereniePage() {
             maxLength={7}
             value={kod}
             onChange={(e) => setKod(e.target.value)}
-            aria-label="Kód z overovacej appky"
+            aria-label={t("Kód z overovacej appky")}
             placeholder="123 456"
             className="w-full rounded-md border border-input bg-background px-3 py-3 text-center font-mono text-2xl tracking-[0.3em] outline-none focus:ring-2 focus:ring-ring"
           />
@@ -77,12 +85,13 @@ function OvereniePage() {
             disabled={overujem}
             className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            {overujem ? "Overujem…" : "Overiť"}
+            {overujem ? t("Overujem…") : t("Overiť")}
           </button>
         </form>
         <p className="mt-4 text-xs text-muted-foreground">
-          Na tomto zariadení sa kód znova vypýta až po odhlásení. Stratili ste telefón s appkou?
-          Napíšte na servis@faktero.sk.
+          {t(
+            "Na tomto zariadení sa kód znova vypýta až po odhlásení. Stratili ste telefón s appkou? Napíšte na servis@faktero.sk.",
+          )}
         </p>
         <button
           onClick={async () => {
@@ -91,7 +100,7 @@ function OvereniePage() {
           }}
           className="mt-3 text-sm font-medium text-primary hover:underline"
         >
-          Prihlásiť sa iným účtom
+          {t("Prihlásiť sa iným účtom")}
         </button>
       </div>
     </div>

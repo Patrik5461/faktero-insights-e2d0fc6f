@@ -5,7 +5,10 @@ import {
   metrikyPrehladu,
   miestnyDatum,
   normalizujPrehlad,
+  pocetBezPrepoctu,
   PRAZDNY_PREHLAD,
+  sucetPrehladu,
+  udalostiFaktury,
 } from "./prehlad-suhrn";
 
 describe("prehľad zo súhrnu databázy", () => {
@@ -51,5 +54,70 @@ describe("prehľad zo súhrnu databázy", () => {
 
   it("dnešok je miestny dátum", () => {
     expect(miestnyDatum(new Date(2026, 0, 5, 23, 30))).toBe("2026-01-05");
+  });
+
+  it("S-03: dlžníci po splatnosti zvlášť od všetkých dlžníkov", () => {
+    const s = normalizujPrehlad({ dlznikov: 6, dlznikov_po_splatnosti: "5" });
+    expect(metrikyPrehladu(s).debtorCount).toBe(6);
+    expect(metrikyPrehladu(s).overdueDebtorCount).toBe(5);
+    expect(PRAZDNY_PREHLAD.dlznikov_po_splatnosti).toBe(0);
+  });
+
+  it("S-02: cudzia mena bez kurzu ostane mimo súčtu, po menách", () => {
+    const s = normalizujPrehlad({
+      neuhradene_suma: 100,
+      prepocitane: true,
+      bez_prepoctu: {
+        faktury: 1,
+        prijate: 2,
+        blocky: 0,
+        pohladavky: { USD: "30.5" },
+        zavazky: { PLN: 10, CZK: 0 },
+      },
+    });
+    expect(pocetBezPrepoctu(s)).toBe(3);
+    const p = sucetPrehladu(s.neuhradene_suma, s, "EUR", "pohladavky");
+    expect(p).toEqual({
+      domaca: "EUR",
+      suma: 100,
+      prepocitane: true,
+      bezPrepoctu: new Map([["USD", 30.5]]),
+    });
+    // Nulové meny sa vynechajú.
+    expect([...sucetPrehladu(1, s, "EUR", "zavazky").bezPrepoctu.keys()]).toEqual(["PLN"]);
+    expect(sucetPrehladu(1, s, "EUR").bezPrepoctu.size).toBe(0);
+    // Starý tvar odpovede (pred migráciou) nič nerozbije.
+    const stary = normalizujPrehlad({ neuhradene_suma: 5 });
+    expect(stary.prepocitane).toBe(false);
+    expect(pocetBezPrepoctu(stary)).toBe(0);
+  });
+
+  it("S-11: výdavky roka nesú aj bločky", () => {
+    const s = normalizujPrehlad({ vydavky_rok: "152702.34", vydavky_blocky_rok: 17856.24 });
+    expect(metrikyPrehladu(s).yearExpenses).toBe(152702.34);
+    expect(s.vydavky_blocky_rok).toBe(17856.24);
+  });
+
+  it("S-07: odoslanie a storno majú vlastný čas, bez neho sa neukážu", () => {
+    const c = "2026-10-01T08:00:00Z";
+    expect(
+      udalostiFaktury({ status: "sent", created_at: c, sent_at: "2026-10-02T09:00:00Z" }),
+    ).toEqual([
+      { druh: "vytvorena", cas: c },
+      { druh: "odoslana", cas: "2026-10-02T09:00:00Z" },
+    ]);
+    expect(
+      udalostiFaktury({ status: "sent", created_at: c, sent_at: null }).map((u) => u.druh),
+    ).toEqual(["vytvorena"]);
+    expect(
+      udalostiFaktury({
+        status: "cancelled",
+        created_at: c,
+        cancelled_at: "2026-10-05T10:00:00Z",
+      }).at(-1),
+    ).toEqual({ druh: "stornovana", cas: "2026-10-05T10:00:00Z" });
+    expect(udalostiFaktury({ status: "cancelled", created_at: c }).map((u) => u.druh)).toEqual([
+      "vytvorena",
+    ]);
   });
 });

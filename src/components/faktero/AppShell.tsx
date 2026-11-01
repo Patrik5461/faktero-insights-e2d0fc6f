@@ -48,8 +48,9 @@ import {
   nedostupneAgendy,
   ACCOUNT_API_LINKS,
   ACCOUNT_SETTINGS_LINKS,
-  activeChildKey,
+  aktivnaVListe,
   filterNav,
+  filtrujPolozky,
   type NavChild,
   type NavGroup,
   type ProductMode,
@@ -107,10 +108,6 @@ type Company = {
   /** Pri roli „custom“ oblasti, ku ktorým má človek prístup. */
   permissions?: Record<string, string> | null;
 };
-
-function isPathActive(pathname: string, group: Pick<NavGroup, "match" | "exact">) {
-  return group.match.some((m) => pathname === m || (!group.exact && pathname.startsWith(m + "/")));
-}
 
 /**
  * Resolve the *view* to render based on access (productMode) and the user's
@@ -173,8 +170,12 @@ export function AppShell({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        /* Pole hľadania nie je v Knihe jázd ani na mobile (skryté) — vtedy
+           skratku nechaj prehliadaču (J-15). */
+        const pole = searchRef.current;
+        if (!pole || pole.offsetParent === null) return;
         e.preventDefault();
-        searchRef.current?.focus();
+        pole.focus();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -195,6 +196,16 @@ export function AppShell({
     active?.role ?? null,
     active?.permissions ?? null,
   );
+  /* To isté pravidlo ako lišta (rola, oblasti, krajina) pre „Vytvoriť“ a avatar (S-14, S-19). */
+  const kontextMenu = {
+    isCompanyAdmin,
+    krajina,
+    rola: active?.role ?? null,
+    opravnenia: active?.permissions ?? null,
+  };
+  const rychleVytvorenie = filtrujPolozky(QUICK_CREATE, kontextMenu);
+  const odkazyNastaveni = filtrujPolozky(ACCOUNT_SETTINGS_LINKS, kontextMenu);
+  const odkazyApi = filtrujPolozky(ACCOUNT_API_LINKS, kontextMenu);
   const homePath = landingPathFor(view);
   // Nemecká firma knihu jázd nemá (Fahrtenbuch musí byť nemenné) — prepínač produktov by viedol do prázdna.
   const canSwitch = productMode === "both" && krajina !== "DE";
@@ -348,8 +359,7 @@ export function AppShell({
   }));
 
   const dizajn = useDizajn();
-  const activeGroup = nav.find((g) => isPathActive(pathname, g));
-  const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
+  const { skupina: activeGroup, polozka: activeKey } = aktivnaVListe(nav, pathname, locSearch);
 
   /*
     `scope: "local"` odhlási **toto** zariadenie, nie účet všade.
@@ -566,7 +576,7 @@ export function AppShell({
                     <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
                       <Sparkles className="h-3 w-3" /> {t("Rýchle vytvorenie")}
                     </DropdownMenuLabel>
-                    {QUICK_CREATE.map((c) => (
+                    {rychleVytvorenie.map((c) => (
                       <DropdownMenuItem key={c.to + c.label} asChild>
                         <Link to={c.to as any} search={c.search as any}>
                           {t(c.label)}
@@ -600,7 +610,7 @@ export function AppShell({
                   <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Settings className="h-3 w-3" /> {t("Nastavenia")}
                   </DropdownMenuLabel>
-                  {ACCOUNT_SETTINGS_LINKS.map((c) => (
+                  {odkazyNastaveni.map((c) => (
                     <DropdownMenuItem key={c.to + c.label} asChild>
                       <Link to={c.to as any}>{t(c.label)}</Link>
                     </DropdownMenuItem>
@@ -609,7 +619,7 @@ export function AppShell({
                   <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <KeyRound className="h-3 w-3" /> API
                   </DropdownMenuLabel>
-                  {ACCOUNT_API_LINKS.map((c) => (
+                  {odkazyApi.map((c) => (
                     <DropdownMenuItem key={c.to + c.label} asChild>
                       <Link to={c.to as any}>{t(c.label)}</Link>
                     </DropdownMenuItem>
@@ -827,11 +837,9 @@ function MobileNav({
               : undefined,
     })),
   }));
-  const aktivnaSekcia = nav.find((g) => isPathActive(pathname, g))?.key ?? null;
-  const aktivnaPolozka = (() => {
-    const g = nav.find((x) => isPathActive(pathname, x));
-    return g ? activeChildKey(g.children, pathname, locSearch) : null;
-  })();
+  const aktivna = aktivnaVListe(nav, pathname, locSearch);
+  const aktivnaSekcia = aktivna.skupina?.key ?? null;
+  const aktivnaPolozka = aktivna.polozka;
   const { otvorene, prepni } = useRozbalene(aktivnaSekcia);
 
   return (

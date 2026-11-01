@@ -22,7 +22,7 @@ import { preloz } from "@/lib/i18n/jazyk";
  */
 export const Route = createFileRoute("/_authenticated/uctovnictvo/konvertor")({
   head: ({ match }) => ({
-    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Konvertor do Pohody — Faktero") }],
+    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Konvertor Excel → Pohoda — Faktero") }],
   }),
   component: KonvertorPage,
 });
@@ -111,7 +111,7 @@ function KonvertorPage() {
   return (
     <>
       <PageHeader
-        title={t("Konvertor do Pohody")}
+        title={t("Konvertor Excel → Pohoda")}
         description={t(
           "Doklady z Excelu alebo CSV prevedie na dávku XML pre import do Pohody. Do Faktera sa nič neukladá.",
         )}

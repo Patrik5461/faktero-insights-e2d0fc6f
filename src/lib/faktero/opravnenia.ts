@@ -88,14 +88,19 @@ const CESTY: [string, Oblast][] = [
   ["/ciselne-rady", "faktury"],
   ["/doklady", "doklady"],
   ["/nespracovane", "doklady"],
+  // Schvaľujú sa prijaté doklady (B4).
+  ["/schvalovanie", "doklady"],
   ["/ostatne-doklady", "ostatne"],
   ["/faktury", "faktury"],
+  // Párovanie platieb číta pohyby banky — server chce banku aj faktúry (B-10).
+  ["/faktury/parovanie", "banka"],
   ["/zalohove", "faktury"],
   ["/ponuky", "faktury"],
   ["/objednavky", "faktury"],
   ["/opakovane", "faktury"],
   ["/efaktura", "faktury"],
   ["/odberatelia", "kontakty"],
+  ["/dodavatelia", "kontakty"],
   ["/zakazky", "zakazky"],
   ["/zamestnanci", "zamestnanci"],
   ["/sklad", "sklad"],
@@ -105,6 +110,8 @@ const CESTY: [string, Oblast][] = [
   ["/financovanie", "banka"],
   ["/pokladna", "pokladna"],
   ["/uctovnictvo", "uctovnictvo"],
+  // Návrhy zaúčtovania sú nad prijatými dokladmi — server overuje „doklady“ (E-26).
+  ["/uctovnictvo/na-kontrolu", "doklady"],
   ["/exporty", "uctovnictvo"],
   ["/importy", "uctovnictvo"],
   ["/jazdy", "jazdy"],
