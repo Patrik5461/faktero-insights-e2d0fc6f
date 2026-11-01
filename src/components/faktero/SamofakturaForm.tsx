@@ -518,14 +518,14 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       <PageBody>
         <form onSubmit={ulozit} className="mx-auto grid max-w-4xl gap-6">
           {stav === "caka" && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <div className="fk-oznam fk-oznam-pozor rounded-lg p-3 text-sm">
               {t(
                 "Faktúra čaká na odsúhlasenie. Po uložení zmien prestane platiť odkaz, ktorý dostal dodávateľ — treba mu ju poslať znova.",
               )}
             </div>
           )}
           <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-1 text-sm font-semibold text-muted-foreground">
               {t("Dodávateľ")}
             </h2>
             <p className="mb-4 text-xs text-muted-foreground">
@@ -544,7 +544,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               />
             </div>
             {chyba && (
-              <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
+              <div className="fk-oznam fk-oznam-chyba mt-3 rounded-md p-3 text-sm">
                 {t(chyba)}{" "}
                 <Link to="/odberatelia" className="font-medium underline">
                   {t("Otvoriť adresár")}
@@ -664,7 +664,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold text-muted-foreground">
               {t("Údaje faktúry")}
             </h2>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -779,7 +779,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
 
           {platitel && (
             <section className="rounded-xl border border-border bg-card p-5">
-              <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h2 className="mb-1 text-sm font-semibold text-muted-foreground">
                 {t("Režim DPH")}
               </h2>
               <p className="mb-4 text-xs text-muted-foreground">
@@ -853,7 +853,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           )}
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-4 text-sm font-semibold text-muted-foreground">
               {t("Položky")}
             </h2>
             <label className="mb-4 block">
@@ -1033,13 +1033,13 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               {zlava > 0 && (
                 <div className="flex justify-between gap-4 text-muted-foreground">
                   <span>{t("Zľava na faktúru")}</span>
-                  <span className="tabular-nums">− {mena(zlava)}</span>
+                  <span className="whitespace-nowrap tabular-nums">− {mena(zlava)}</span>
                 </div>
               )}
               {sumy.sadzby.map((s) => (
                 <div key={s.sadzba} className="flex justify-between gap-4 text-muted-foreground">
                   <span>{t("Základ {sadzba} % / DPH", { sadzba: s.sadzba })}</span>
-                  <span className="tabular-nums">
+                  <span className="whitespace-nowrap tabular-nums">
                     {mena(s.zaklad)} / {mena(s.dan)}
                   </span>
                 </div>
@@ -1054,12 +1054,12 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
               {zaloha && (
                 <div className="flex justify-between gap-4 text-muted-foreground">
                   <span>{t("Záloha {cislo}", { cislo: zaloha.invoice_number })}</span>
-                  <span className="tabular-nums">− {mena(zaloha.amount_total)}</span>
+                  <span className="whitespace-nowrap tabular-nums">− {mena(zaloha.amount_total)}</span>
                 </div>
               )}
               <div className="flex justify-between gap-4 border-t border-border pt-2 text-base font-semibold">
                 <span>{prenesenie || zaloha ? t("Na úhradu") : t("Spolu")}</span>
-                <span className="tabular-nums">{mena(naUhradu)}</span>
+                <span className="whitespace-nowrap tabular-nums">{mena(naUhradu)}</span>
               </div>
             </div>
           </section>

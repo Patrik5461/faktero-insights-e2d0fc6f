@@ -9,7 +9,9 @@ import { Plus, Play, Power, PowerOff, Repeat, Trash2, RotateCcw, Hash } from "lu
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { usePagedList } from "@/hooks/usePagedList";
-import { ListPagination, ConfirmDialog, BulkBar } from "@/components/faktero/ListControls";
+import { ListPagination, ConfirmDialog, BulkBar, EmptyState } from "@/components/faktero/ListControls";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -21,6 +23,12 @@ export const Route = createFileRoute("/_authenticated/opakovane/")({
   validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: RecurringList,
 });
+
+/* Tón odznaku šablóny: aktívna / pozastavená (Stav.tsx nemá mapu pre opakované). */
+const TON_OPAKOVANEJ: Record<"aktivna" | "pozastavena", TonStavu> = {
+  aktivna: "uspech",
+  pozastavena: "neutralny",
+};
 
 const FREQ_LABEL: Record<string, string> = {
   weekly: "Týždenne",
@@ -169,22 +177,22 @@ function RecurringList() {
           onClear={list.clearSelection}
         />
         {list.loading ? (
-          <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+          <NacitavanieStav className="mt-3 rounded-xl border border-border bg-card" />
         ) : list.rows.length === 0 && !list.search && !list.showDeleted && !behOd && !behDo ? (
-          <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
-              <Repeat className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-semibold">{t("Zatiaľ žiadne opakované faktúry")}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("Vytvorte šablónu a Faktero bude automaticky vystavovať faktúry pravidelne.")}
-            </p>
-            <Link
-              to="/opakovane/nova"
-              className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" /> {t("Vytvoriť šablónu")}
-            </Link>
+          <div className="mt-3 rounded-xl border border-border bg-card">
+            <EmptyState
+              icon={Repeat}
+              title="Zatiaľ žiadne opakované faktúry"
+              description="Vytvorte šablónu a Faktero bude automaticky vystavovať faktúry pravidelne."
+              action={
+                <Link
+                  to="/opakovane/nova"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+                >
+                  <Plus className="h-4 w-4" /> {t("Vytvoriť šablónu")}
+                </Link>
+              }
+            />
           </div>
         ) : (
           <ResponsiveTable
@@ -194,7 +202,7 @@ function RecurringList() {
             desktop={
               <div className="overflow-x-auto rounded-xl border border-border bg-card">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                     <tr>
                       <th className="w-10 p-3">
                         <input
@@ -232,25 +240,29 @@ function RecurringList() {
                             onChange={(e) => list.toggleSelect(r.id, e.target.checked)}
                           />
                         </td>
-                        <td className="p-3">
+                        <td className="max-w-[320px] p-3">
+                          {/* Dlhý názov šablóny sa skráti, celý je v title. */}
                           <Link
                             to="/opakovane/$id"
                             params={{ id: r.id }}
-                            className="font-medium hover:underline"
+                            title={r.name ?? undefined}
+                            className="block truncate font-medium hover:underline"
                           >
                             {r.name}
                           </Link>
                         </td>
-                        <td className="p-3">{r.customer_name ?? "—"}</td>
-                        <td className="p-3">{FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency}</td>
-                        <td className="p-3">{datumNaDoklade(r.next_run)}</td>
-                        <td className="p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
                         <td className="p-3">
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}`}
-                          >
-                            {r.active ? t("Aktívna") : t("Pozastavená")}
+                          <span className="block max-w-[240px] truncate" title={r.customer_name ?? undefined}>
+                            {r.customer_name ?? "—"}
                           </span>
+                        </td>
+                        <td className="whitespace-nowrap p-3">{FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency}</td>
+                        <td className="whitespace-nowrap p-3">{datumNaDoklade(r.next_run)}</td>
+                        <td className="suma whitespace-nowrap p-3 text-right">{formatujMenu(r.total, r.currency)}</td>
+                        <td className="whitespace-nowrap p-3">
+                          <StavOdznak ton={TON_OPAKOVANEJ[r.active ? "aktivna" : "pozastavena"]}>
+                            {r.active ? t("Aktívna") : t("Pozastavená")}
+                          </StavOdznak>
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex justify-end gap-1">
@@ -318,11 +330,9 @@ function RecurringList() {
                 title={r.name}
                 subtitle={r.customer_name ?? "—"}
                 status={
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs ${r.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}`}
-                  >
+                  <StavOdznak ton={TON_OPAKOVANEJ[r.active ? "aktivna" : "pozastavena"]}>
                     {r.active ? t("Aktívna") : t("Pozastavená")}
-                  </span>
+                  </StavOdznak>
                 }
                 meta={`${FREQ_LABEL[r.frequency] ? t(FREQ_LABEL[r.frequency]) : r.frequency} · ${t("Ďalší beh")} ${datumNaDoklade(r.next_run)}`}
                 amount={formatujMenu(r.total, r.currency)}

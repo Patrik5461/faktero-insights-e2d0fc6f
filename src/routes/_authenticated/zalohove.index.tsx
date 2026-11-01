@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { Plus, Trash2, RotateCcw, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -218,7 +219,7 @@ function ProformaListPage() {
           desktop={
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="p-3">{t("Číslo")}</th>
                     <th className="p-3">{t("Odberateľ")}</th>
@@ -262,11 +263,20 @@ function ProformaListPage() {
                         className="cursor-pointer hover:bg-muted/30"
                         onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
                       >
-                        <td className="p-3 font-medium">{i.invoice_number}</td>
-                        <td className="p-3">{i.customer_name ?? "—"}</td>
-                        <td className="p-3">{datumNaDoklade(i.issue_date)}</td>
-                        <td className="p-3">{datumNaDoklade(i.due_date)}</td>
-                        <td className="p-3 text-right">{formatujMenu(i.total, i.currency)}</td>
+                        <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">{i.invoice_number}</td>
+                        <td className="p-3">
+                          <span
+                            className="block max-w-[14rem] truncate 2xl:max-w-[22rem]"
+                            title={i.customer_name ?? undefined}
+                          >
+                            {i.customer_name ?? "—"}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap p-3">{datumNaDoklade(i.issue_date)}</td>
+                        <td className="whitespace-nowrap p-3">{datumNaDoklade(i.due_date)}</td>
+                        <td className="whitespace-nowrap p-3 text-right">
+                          <span className="suma">{formatujMenu(i.total, i.currency)}</span>
+                        </td>
                         <td className="p-3">
                           <ProformaStatus value={s} settled={link} />
                         </td>
@@ -275,7 +285,7 @@ function ProformaListPage() {
                             <Link
                               to="/faktury/$id"
                               params={{ id: link.id }}
-                              className="text-primary hover:underline"
+                              className="cislo-dokladu whitespace-nowrap text-primary hover:underline"
                             >
                               {link.invoice_number}
                             </Link>
@@ -354,9 +364,7 @@ function ProformaStatus({
   const { t } = useT();
   if (settled || value === "settled") {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-        {t("Zúčtovaná")}
-      </span>
+      <StavOdznak ton="uspech">{t("Zúčtovaná")}</StavOdznak>
     );
   }
   return <StatusBadge status={value} />;

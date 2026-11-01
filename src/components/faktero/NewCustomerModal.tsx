@@ -131,7 +131,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
         </div>
         <div className="space-y-4 p-5">
           {dup && (
-            <div className="rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="fk-oznam fk-oznam-pozor rounded-md px-3 py-2 text-xs">
               {t("Odberateľ s týmto IČO už existuje:")} <strong>{dup.name}</strong>.{" "}
               {t("Použite existujúceho odberateľa namiesto vytvárania duplikátu.")}
               <button

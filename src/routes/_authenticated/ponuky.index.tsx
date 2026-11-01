@@ -13,6 +13,7 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { filtrujObdobie } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/ponuky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové ponuky — Faktero") }] }),
@@ -28,13 +29,14 @@ const STATUS_LABEL: Record<string, string> = {
   expired: "Expirovaná",
   converted: "Konvertovaná",
 };
-const STATUS_CLS: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-secondary text-secondary-foreground",
-  accepted: "bg-primary/15 text-primary-hover",
-  rejected: "bg-destructive/15 text-destructive",
-  expired: "bg-muted text-muted-foreground",
-  converted: "bg-primary/15 text-primary-hover",
+/* Tón odznaku stavu ponuky (Stav.tsx nemá mapu pre ponuky). */
+const TON_PONUKY: Record<string, TonStavu> = {
+  draft: "neutralny",
+  sent: "priebeh",
+  accepted: "uspech",
+  rejected: "chyba",
+  expired: "neutralny",
+  converted: "uspech",
 };
 
 function QuotesPage() {
@@ -174,11 +176,9 @@ function QuotesPage() {
               title={q.quote_number}
               subtitle={q.customer_name ?? "—"}
               status={
-                <span
-                  className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
-                >
+                <StavOdznak ton={tonStavu(TON_PONUKY, q.status)}>
                   {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
-                </span>
+                </StavOdznak>
               }
               meta={`${datumNaDoklade(q.issue_date)}${q.valid_until ? ` · ${t("Platnosť do")} ${datumNaDoklade(q.valid_until)}` : ""}`}
               amount={formatujMenu(q.total, q.currency)}
@@ -213,7 +213,7 @@ function QuotesPage() {
           desktop={
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                   <tr>
                     <th className="w-10 p-3">
                       <input
@@ -268,17 +268,19 @@ function QuotesPage() {
                           onChange={(e) => list.toggleSelect(q.id, e.target.checked)}
                         />
                       </td>
-                      <td className="p-3 font-medium">{q.quote_number}</td>
-                      <td className="p-3">{q.customer_name ?? "—"}</td>
-                      <td className="p-3">{datumNaDoklade(q.issue_date)}</td>
-                      <td className="p-3">{q.valid_until ? datumNaDoklade(q.valid_until) : "—"}</td>
-                      <td className="p-3 text-right">{formatujMenu(q.total, q.currency)}</td>
+                      <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">{q.quote_number}</td>
                       <td className="p-3">
-                        <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[q.status] ?? "bg-muted"}`}
-                        >
-                          {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
+                        <span className="block max-w-[260px] truncate" title={q.customer_name ?? undefined}>
+                          {q.customer_name ?? "—"}
                         </span>
+                      </td>
+                      <td className="whitespace-nowrap p-3">{datumNaDoklade(q.issue_date)}</td>
+                      <td className="whitespace-nowrap p-3">{q.valid_until ? datumNaDoklade(q.valid_until) : "—"}</td>
+                      <td className="suma whitespace-nowrap p-3 text-right">{formatujMenu(q.total, q.currency)}</td>
+                      <td className="whitespace-nowrap p-3">
+                        <StavOdznak ton={tonStavu(TON_PONUKY, q.status)}>
+                          {STATUS_LABEL[q.status] ? t(STATUS_LABEL[q.status]) : q.status}
+                        </StavOdznak>
                       </td>
                       <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                         {list.showDeleted ? (

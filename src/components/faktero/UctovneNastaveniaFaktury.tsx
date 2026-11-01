@@ -136,7 +136,7 @@ export function UctovneNastaveniaFaktury({
     .join(" · ");
 
   return (
-    <section className="rounded-2xl border border-border bg-card">
+    <section className="rounded-xl border border-border bg-card">
       <button
         type="button"
         onClick={() => setOtvorene((v) => !v)}
@@ -145,7 +145,7 @@ export function UctovneNastaveniaFaktury({
       >
         <span className="flex min-w-0 items-center gap-2">
           <BookCheck className="h-4 w-4 shrink-0 text-primary" />
-          <span className="text-sm font-semibold uppercase tracking-wide">
+          <span className="text-sm font-semibold text-foreground">
             {t("Účtovné nastavenia")}
           </span>
         </span>
@@ -254,7 +254,7 @@ export function UctovneNastaveniaFaktury({
               </select>
               {/* A.1 pri občanovi (bez IČ DPH, IČO aj DIČ) — patrí do D.2 (kv-urcenie.ts). */}
               {odberatel && upozornenieA1({ kv: kody.kv, ...odberatel }) && (
-                <p role="alert" className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                <p role="alert" className="fk-text-pozor mt-1 text-xs">
                   {t(
                     "Odberateľ nemá IČ DPH, IČO ani DIČ — faktúra súkromnej osobe patrí do D.2, nie do A.1.",
                   )}
@@ -264,7 +264,7 @@ export function UctovneNastaveniaFaktury({
           </MriezkaDokladu>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             {pravidlo ? (
-              <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+              <span className="fk-text-pozor inline-flex items-center gap-1">
                 <Star className="h-3.5 w-3.5 fill-current" />
                 {t("Kódy doplní pravidlo „{nazov}“.", { nazov: pravidlo.nazov })}
               </span>

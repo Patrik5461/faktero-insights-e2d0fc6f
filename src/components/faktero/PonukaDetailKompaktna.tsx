@@ -46,7 +46,7 @@ export function PonukaDetailKompaktna({
   const zlava = Number(q.discount_total ?? 0);
   const pata = q.converted_invoice_id ? (
     <Link to="/faktury/$id" params={{ id: q.converted_invoice_id }} className={TLACIDLO_DRUHE}>
-      <ExternalLink className="h-4 w-4" /> {t("Otvoriť faktúru →")}
+      <ExternalLink className="h-4 w-4" /> {t("Otvoriť faktúru →").replace(/\s*→$/, "")}
     </Link>
   ) : null;
 
@@ -64,7 +64,9 @@ export function PonukaDetailKompaktna({
 
         <Sekcia nadpis="Základné údaje" akcia={stav}>
           <Hodnota popis="Typ dokladu">{t("Cenová ponuka")}</Hodnota>
-          <Hodnota popis="Číslo ponuky">{q.quote_number}</Hodnota>
+          <Hodnota popis="Číslo ponuky">
+            {q.quote_number ? <span className="cislo-dokladu">{q.quote_number}</span> : null}
+          </Hodnota>
           <div className="grid grid-cols-2 gap-3">
             <Hodnota popis="Dátum vystavenia">{datumNaDoklade(q.issue_date)}</Hodnota>
             <Hodnota popis="Platnosť do">
@@ -76,21 +78,21 @@ export function PonukaDetailKompaktna({
         <Sekcia nadpis="Čiastka a DPH">
           <div className="grid grid-cols-2 gap-3">
             <Hodnota popis="Celková suma">
-              <span className="tabular-nums">{formatujCislo(Number(q.total ?? 0), 2)}</span>
+              <span className="suma">{formatujCislo(Number(q.total ?? 0), 2)}</span>
             </Hodnota>
             <Hodnota popis="Mena">{mena}</Hodnota>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Hodnota popis="Bez DPH">
-              <span className="tabular-nums">{formatujCislo(Number(q.subtotal ?? 0), 2)}</span>
+              <span className="suma">{formatujCislo(Number(q.subtotal ?? 0), 2)}</span>
             </Hodnota>
             <Hodnota popis="DPH">
-              <span className="tabular-nums">{formatujCislo(Number(q.vat_total ?? 0), 2)}</span>
+              <span className="suma">{formatujCislo(Number(q.vat_total ?? 0), 2)}</span>
             </Hodnota>
           </div>
           {zlava > 0 ? (
             <Hodnota popis="Zľava">
-              <span className="tabular-nums">−{formatujCislo(zlava, 2)}</span>
+              <span className="suma">−{formatujCislo(zlava, 2)}</span>
             </Hodnota>
           ) : null}
         </Sekcia>

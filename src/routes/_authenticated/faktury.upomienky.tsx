@@ -1,5 +1,6 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { StavOdznak } from "@/components/faktero/web/Stav";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -134,16 +135,16 @@ function OdoslaneUpomienky() {
 
   function stavBunka(r: RiadokUpomienky) {
     return jeNeuspesna(r) ? (
-      <span className="text-xs text-destructive">
-        <span className="font-medium">{t("Chyba")}</span>
+      <span className="text-xs">
+        <StavOdznak ton="chyba" maly>{t("Chyba")}</StavOdznak>
         {r.error_message && (
-          <span className="block max-w-xs break-words text-muted-foreground">
+          <span className="mt-1 block max-w-xs break-words text-muted-foreground">
             {r.error_message}
           </span>
         )}
       </span>
     ) : (
-      <span className="text-xs font-medium text-primary">{t("Odoslané")}</span>
+      <StavOdznak ton="uspech" maly>{t("Odoslané")}</StavOdznak>
     );
   }
 
@@ -152,7 +153,7 @@ function OdoslaneUpomienky() {
       <Link
         to="/faktury/$id"
         params={{ id: r.invoice_id }}
-        className="font-medium text-primary hover:underline"
+        className="cislo-dokladu font-medium text-primary hover:underline"
       >
         {r.invoices?.invoice_number ?? t("Faktúra")}
       </Link>
@@ -165,7 +166,13 @@ function OdoslaneUpomienky() {
         <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
           {casOdoslania(r.sent_at)}
         </td>
-        {sKlientom && <td className="p-3">{nazovKlienta(r)}</td>}
+        {sKlientom && (
+          <td className="p-3">
+            <span className="block max-w-[14rem] truncate 2xl:max-w-[22rem]" title={nazovKlienta(r)}>
+              {nazovKlienta(r)}
+            </span>
+          </td>
+        )}
         <td className="break-all p-3 text-xs">{r.email_to}</td>
         <td className="whitespace-nowrap p-3">{fakturaOdkaz(r)}</td>
         <td className="whitespace-nowrap p-3 text-xs">{stupen(r.reminder_number)}</td>
@@ -176,7 +183,7 @@ function OdoslaneUpomienky() {
   }
 
   const hlavicka = (sKlientom = true) => (
-    <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+    <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
       <tr>
         <th className="p-3">{t("Dátum a čas")}</th>
         {sKlientom && <th className="p-3">{t("Klient")}</th>}
@@ -330,7 +337,7 @@ function OdoslaneUpomienky() {
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       <span>{t("Odoslané: {n}", { n: s.odoslanych })}</span>
                       {s.neuspesnych > 0 && (
-                        <span className="text-destructive">
+                        <span className="fk-text-chyba">
                           {t("Chyba: {n}", { n: s.neuspesnych })}
                         </span>
                       )}

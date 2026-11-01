@@ -77,7 +77,7 @@ export function ZauctovanieFakturOkno({
         role="dialog"
         aria-modal="true"
         aria-label={t("Zaúčtovať vybrané faktúry")}
-        className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-xl"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">
@@ -141,7 +141,7 @@ export function ZauctovanieFakturOkno({
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
           >
             {t("Zrušiť")}
           </button>

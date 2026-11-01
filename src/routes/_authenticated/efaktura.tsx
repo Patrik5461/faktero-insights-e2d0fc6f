@@ -30,7 +30,7 @@ function EfakturaLayout() {
                 to={tab.to}
                 className={`shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors ${
                   active
-                    ? "border-primary text-primary"
+                    ? "border-primary font-semibold text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >

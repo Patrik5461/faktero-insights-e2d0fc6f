@@ -11,8 +11,9 @@ import {
   MetaRiadok,
   PoTermine,
   PrimarnaAkcia,
-  StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
+import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
+import { ChybovyStav, NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -38,12 +39,13 @@ export const Route = createFileRoute("/_authenticated/objednavky/$id")({
   component: OrderDetail,
 });
 
-const FARBA: Record<StavPrijatejObjednavky, string> = {
-  draft: "bg-muted text-muted-foreground",
-  confirmed: "bg-blue-500/10 text-blue-600",
-  partially_invoiced: "bg-amber-500/10 text-amber-800",
-  completed: "bg-emerald-500/10 text-emerald-700",
-  cancelled: "bg-muted text-muted-foreground line-through",
+/* Tón odznaku stavu prijatej objednávky (Stav.tsx nemá mapu pre objednávky). */
+const TON_OBJEDNAVKY: Record<StavPrijatejObjednavky, TonStavu> = {
+  draft: "neutralny",
+  confirmed: "informacia",
+  partially_invoiced: "pozor",
+  completed: "uspech",
+  cancelled: "zruseny",
 };
 
 function suma(n: unknown) {
@@ -92,19 +94,22 @@ function OrderDetail() {
   if (loading) {
     return (
       <PageBody>
-        <div className="text-sm text-muted-foreground">{t("Načítavam…")}</div>
+        <NacitavanieStav />
       </PageBody>
     );
   }
   if (chyba || !o) {
     return (
       <PageBody>
-        <div className="rounded-xl border border-border bg-card p-6 text-sm">
-          {chyba ?? t("Objednávka sa nenašla.")}{" "}
-          <Link to="/objednavky" className="text-primary underline">
-            {t("Späť na zoznam")}
-          </Link>
-        </div>
+        <ChybovyStav
+          className="rounded-xl border border-border bg-card"
+          nadpis={chyba ?? "Objednávka sa nenašla."}
+          akcia={
+            <Link to="/objednavky" className="text-sm text-primary underline">
+              {t("Späť na zoznam")}
+            </Link>
+          }
+        />
       </PageBody>
     );
   }
@@ -132,7 +137,7 @@ function OrderDetail() {
       <DocumentDetailHeader
         title={t("Objednávka")}
         number={o.order_number}
-        status={<StavOdznak className={FARBA[stav]}>{t(STAV_POPIS[stav])}</StavOdznak>}
+        status={<StavOdznak ton={tonStavu(TON_OBJEDNAVKY, stav)}>{t(STAV_POPIS[stav])}</StavOdznak>}
         meta={
           <MetaRiadok
             polozky={[
@@ -212,13 +217,13 @@ function OrderDetail() {
           {/* Prehľad */}
           <div className="grid gap-3 sm:grid-cols-4">
             <Karta popis={t("Stav")}>
-              <span className={`rounded-full px-2 py-0.5 text-sm ${FARBA[stav]}`}>
-                {t(STAV_POPIS[stav])}
-              </span>
+              <StavOdznak ton={tonStavu(TON_OBJEDNAVKY, stav)}>{t(STAV_POPIS[stav])}</StavOdznak>
             </Karta>
-            <Karta popis={t("Hodnota objednávky")}>{suma(o.total)}</Karta>
+            <Karta popis={t("Hodnota objednávky")}>
+              <span className="suma">{suma(o.total)}</span>
+            </Karta>
             <Karta popis={t("Zostáva vyfakturovať")}>
-              <span className={o.zostava > 0 ? "" : "text-emerald-700"}>{suma(o.zostava)}</span>
+              <span className={o.zostava > 0 ? "suma" : "suma fk-text-uspech"}>{suma(o.zostava)}</span>
             </Karta>
             <Karta popis={t("Vybavené")}>
               <div className="flex items-center gap-2">
@@ -234,7 +239,7 @@ function OrderDetail() {
           </div>
 
           {meska && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="fk-oznam fk-oznam-chyba rounded-lg px-3 py-2 text-sm">
               {t("Požadovaný termín {datum} už uplynul a objednávka nie je vybavená.", { datum: datum(o.requested_date) })}
             </div>
           )}
@@ -276,14 +281,14 @@ function OrderDetail() {
           {/* Položky */}
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground">
+              <thead className="bg-muted/40 text-xs text-muted-foreground [&_th]:whitespace-nowrap">
                 <tr className="border-b border-border">
-                  <th className="px-4 py-2 text-left font-medium">{t("Položka")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Objednané")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Vyfakturované")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Zostáva")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Cena")}</th>
-                  <th className="px-4 py-2 text-right font-medium">{t("Spolu")}</th>
+                  <th className="px-4 py-2 text-left font-semibold">{t("Položka")}</th>
+                  <th className="px-4 py-2 text-right font-semibold">{t("Objednané")}</th>
+                  <th className="px-4 py-2 text-right font-semibold">{t("Vyfakturované")}</th>
+                  <th className="px-4 py-2 text-right font-semibold">{t("Zostáva")}</th>
+                  <th className="px-4 py-2 text-right font-semibold">{t("Cena")}</th>
+                  <th className="px-4 py-2 text-right font-semibold">{t("Spolu")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,19 +302,19 @@ function OrderDetail() {
                           <div className="text-xs text-muted-foreground">{p.description}</div>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
+                      <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
                         {formatujMnozstvo(p.quantity, lokalJazyka(jazyk))} {p.unit}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums">
+                      <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
                         {formatujMnozstvo(p.invoiced_quantity, lokalJazyka(jazyk))}
                       </td>
                       <td
-                        className={`px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "text-emerald-700"}`}
+                        className={`whitespace-nowrap px-4 py-2 text-right tabular-nums ${zostava > 0 ? "font-medium" : "fk-text-uspech"}`}
                       >
                         {zostava > 0 ? zostava : t("vybavené")}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums">{suma(p.unit_price)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">
+                      <td className="suma px-4 py-2 text-right">{suma(p.unit_price)}</td>
+                      <td className="suma px-4 py-2 text-right">
                         {suma(Number(p.quantity) * Number(p.unit_price))}
                       </td>
                     </tr>
@@ -321,7 +326,7 @@ function OrderDetail() {
 
           {/* Faktúry z objednávky */}
           <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 text-sm font-medium">{t("Faktúry z tejto objednávky")}</div>
+            <div className="mb-2 text-sm font-semibold">{t("Faktúry z tejto objednávky")}</div>
             {(o.faktury ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {t("Zatiaľ žiadna. Tlačidlo „Vyfakturovať\" prenesie do novej faktúry to, čo ešte zostáva.")}
@@ -329,16 +334,16 @@ function OrderDetail() {
             ) : (
               <ul className="space-y-1 text-sm">
                 {o.faktury.map((f: any) => (
-                  <li key={f.id} className="flex items-center justify-between">
+                  <li key={f.id} className="flex items-center justify-between gap-3">
                     <Link
                       to="/faktury/$id"
                       params={{ id: f.id }}
-                      className="text-primary hover:underline"
+                      className="cislo-dokladu text-primary hover:underline"
                     >
                       {f.invoice_number}
                     </Link>
-                    <span className="text-muted-foreground">
-                      {datum(f.issue_date)} · {suma(f.total)}
+                    <span className="whitespace-nowrap text-muted-foreground">
+                      {datum(f.issue_date)} · <span className="suma text-foreground">{suma(f.total)}</span>
                     </span>
                   </li>
                 ))}
@@ -357,7 +362,7 @@ function OrderDetail() {
 function Karta({ popis, children }: { popis: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{popis}</div>
+      <div className="text-sm font-semibold text-muted-foreground">{popis}</div>
       <div className="mt-1 text-lg font-medium tabular-nums">{children}</div>
     </div>
   );

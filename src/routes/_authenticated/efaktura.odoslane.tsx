@@ -25,6 +25,8 @@ import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkn
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { StavOdznak, TON_EFAKTURY, tonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Odoslané eFaktúry — Faktero") }] }),
@@ -110,13 +112,12 @@ function SentPage() {
     const d = dorucenia.get(row.id);
     if (!d) return <span className="text-xs text-muted-foreground">{t("Neodoslaná")}</span>;
     return (
-      <span
-        className={`text-xs ${d.status === "failed" || d.status === "rejected" ? "text-destructive" : "text-primary"}`}
-        title={d.error_message ?? undefined}
-      >
-        {t(stavDorucenia(d.status))}
+      <span className="inline-flex flex-col items-start gap-0.5 text-xs" title={d.error_message ?? undefined}>
+        <StavOdznak ton={tonStavu(TON_EFAKTURY, String(d.status ?? "").toLowerCase())} maly>
+          {t(stavDorucenia(d.status))}
+        </StavOdznak>
         {d.sent_at && (
-          <span className="block whitespace-nowrap text-muted-foreground">
+          <span className="block whitespace-nowrap text-muted-foreground tabular-nums">
             {kratkyCas(d.sent_at)}
           </span>
         )}
@@ -129,17 +130,17 @@ function SentPage() {
     return (
       <>
         {errs.length === 0 ? (
-          <span className="text-xs text-primary">OK</span>
+          <span className="fk-text-uspech text-xs font-semibold">OK</span>
         ) : (
           <button
             onClick={() => setOpenErrors(openErrors === row.id ? null : row.id)}
-            className="text-xs text-destructive underline"
+            className="fk-text-chyba text-xs font-semibold underline underline-offset-2"
           >
             {chyb(errs.length)}
           </button>
         )}
         {openErrors === row.id && (
-          <ul className="mt-2 space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs">
+          <ul className="fk-oznam fk-oznam-chyba mt-2 space-y-1 rounded-md p-2 text-xs">
             {errs.map((e: any, i: number) => (
               <li key={i}>
                 <span className="font-mono">{e.code}</span> — {e.message}
@@ -153,7 +154,7 @@ function SentPage() {
 
   function akcieBunka(row: any, className = "") {
     const btn =
-      "inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50";
+      "inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-input px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50";
     return (
       <div className={`flex flex-wrap gap-1 ${className}`}>
         {row.invoice_id && (
@@ -176,7 +177,7 @@ function SentPage() {
         </button>
         <button
           onClick={() => row.invoice_id && handleDownload(row.invoice_id)}
-          className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90"
+          className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
         >
           <Download className="h-3.5 w-3.5" /> XML
         </button>
@@ -214,9 +215,7 @@ function SentPage() {
         {/* Mobil: karty namiesto širokej tabuľky. */}
         <div className="space-y-3 md:hidden">
           {q.isLoading && (
-            <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-              {t("Načítavam…")}
-            </div>
+            <NacitavanieStav className="rounded-xl border border-border bg-card" />
           )}
           {q.data && q.data.length === 0 && (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
@@ -232,7 +231,7 @@ function SentPage() {
             <div key={row.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-medium">{cislo(row)}</div>
+                  <div className="cislo-dokladu">{cislo(row)}</div>
                   <div className="truncate text-sm text-muted-foreground">
                     {row.invoices?.customer_name ?? "—"}
                   </div>
@@ -256,7 +255,7 @@ function SentPage() {
 
         <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
                 <th className="p-3">{t("Faktúra")}</th>
                 <th className="p-3">{t("Odberateľ")}</th>
@@ -292,17 +291,24 @@ function SentPage() {
               )}
               {zobrazene.map((row: any) => (
                 <tr key={row.id} className="align-top">
-                  <td className="whitespace-nowrap p-3 font-medium">{cislo(row)}</td>
-                  <td className="p-3">{row.invoices?.customer_name ?? "—"}</td>
+                  <td className="cislo-dokladu whitespace-nowrap p-3">{cislo(row)}</td>
+                  <td className="p-3">
+                    <span
+                      className="block max-w-[220px] truncate"
+                      title={row.invoices?.customer_name ?? undefined}
+                    >
+                      {row.invoices?.customer_name ?? "—"}
+                    </span>
+                  </td>
                   <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
                     {t(typDokladuEfaktury(row.invoices?.type))}
                   </td>
-                  <td className="p-3">
+                  <td className="whitespace-nowrap p-3">
                     <EfakturaStatusBadge status={deriveEfakturaUiStatus(row)} />
                   </td>
                   <td className="p-3">{validaciaBunka(row)}</td>
                   <td className="p-3">{dorucenieBunka(row)}</td>
-                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground">
+                  <td className="whitespace-nowrap p-3 text-xs text-muted-foreground tabular-nums">
                     {kratkyCas(row.created_at)}
                   </td>
                   <td className="p-3">

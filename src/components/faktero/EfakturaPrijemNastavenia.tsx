@@ -72,7 +72,7 @@ export function EfakturaPrijemNastavenia({ companyId }: { companyId: string | nu
         onChange={() => setF({ ...f, ciel, stavId: ciel === "prijate" ? f.stavId : null })}
       />
       <span className="min-w-0">
-        <span className="block font-medium">{t(nazov)}</span>
+        <span className="block font-semibold">{t(nazov)}</span>
         <span className="block text-muted-foreground">{t(popis)}</span>
       </span>
     </label>
@@ -110,7 +110,7 @@ export function EfakturaPrijemNastavenia({ companyId }: { companyId: string | nu
 
           {f.ciel === "prijate" && stavy.length > 0 && (
             <label className="mt-4 block sm:max-w-xs">
-              <span className="mb-1 block text-sm font-medium">{t("Stav dokladu")}</span>
+              <span className="mb-1 block text-sm font-semibold">{t("Stav dokladu")}</span>
               <select
                 className="input w-full"
                 value={f.stavId ?? ""}
@@ -166,7 +166,7 @@ export function EfakturaPrijemNastavenia({ companyId }: { companyId: string | nu
             <button
               onClick={() => void uloz()}
               disabled={ukladam || !zmenene}
-              className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {ukladam && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("Uložiť")}

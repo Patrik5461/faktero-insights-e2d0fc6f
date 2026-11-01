@@ -11,8 +11,9 @@ import {
   MenuSkupina,
   PrimarnaAkcia,
   SekundarnaAkcia,
-  StavOdznak,
 } from "@/components/faktero/DocumentDetailHeader";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { useServerFn } from "@tanstack/react-start";
 import { runRecurringNow, toggleRecurring } from "@/lib/faktero/recurring.functions";
 import { Play, Save, Power, PowerOff, Plus, Trash2 } from "lucide-react";
@@ -26,6 +27,13 @@ export const Route = createFileRoute("/_authenticated/opakovane/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Opakovaná faktúra — Faktero") }] }),
   component: RecurringDetail,
 });
+
+/* Tón odznaku šablóny a behu (Stav.tsx nemá mapu pre opakované faktúry). */
+const TON_OPAKOVANEJ: Record<"aktivna" | "pozastavena", TonStavu> = {
+  aktivna: "uspech",
+  pozastavena: "neutralny",
+};
+const TON_BEHU: Record<string, TonStavu> = { success: "uspech" };
 
 const FREQ_LABEL: Record<string, string> = {
   weekly: "Týždenne",
@@ -167,14 +175,19 @@ function RecurringDetail() {
         </div>
       </PageBody>
     );
-  if (!rec) return <PageBody>{t("Načítavam…")}</PageBody>;
+  if (!rec)
+    return (
+      <PageBody>
+        <NacitavanieStav />
+      </PageBody>
+    );
 
   return (
     <>
       <DocumentDetailHeader
         title={rec.name}
         status={
-          <StavOdznak className={rec.active ? "bg-primary/15 text-primary-hover" : "bg-muted text-muted-foreground"}>
+          <StavOdznak ton={TON_OPAKOVANEJ[rec.active ? "aktivna" : "pozastavena"]}>
             {rec.active ? t("Aktívna") : t("Pozastavená")}
           </StavOdznak>
         }
@@ -280,7 +293,7 @@ function RecurringDetail() {
 
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold">{t("Položky")}</h3>
+              <h3 className="text-base font-semibold">{t("Položky")}</h3>
               <button
                 type="button"
                 onClick={() =>
@@ -295,7 +308,7 @@ function RecurringDetail() {
                     },
                   ])
                 }
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                className="inline-flex items-center gap-1 rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
               >
                 <Plus className="h-3.5 w-3.5" /> {t("Pridať")}
               </button>
@@ -332,7 +345,7 @@ function RecurringDetail() {
                     value={String(it.vat_rate)}
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
-                  <div className="text-right text-sm font-medium">
+                  <div className="suma text-right text-sm">
                     {formatujMenu(
                       it.quantity * it.unit_price * (1 + it.vat_rate / 100),
                       rec.currency,
@@ -351,36 +364,37 @@ function RecurringDetail() {
             <div className="mt-4 space-y-1 text-right text-sm">
               <div>
                 {t("Bez DPH:")}{" "}
-                <span className="font-medium">{formatujMenu(totals.subtotal, rec.currency)}</span>
+                <span className="suma">{formatujMenu(totals.subtotal, rec.currency)}</span>
               </div>
               <div>
                 {t("DPH:")}{" "}
-                <span className="font-medium">{formatujMenu(totals.vat_total, rec.currency)}</span>
+                <span className="suma">{formatujMenu(totals.vat_total, rec.currency)}</span>
               </div>
               <div className="text-lg font-semibold">
-                {t("Spolu:")} {formatujMenu(totals.total, rec.currency)}
+                {t("Spolu:")} <span className="suma">{formatujMenu(totals.total, rec.currency)}</span>
               </div>
             </div>
           </div>
 
           {rec.last_invoice_id && (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-card p-5 text-sm">
-              <span>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-5 text-sm">
+              <span className="min-w-0">
                 {t("Posledná vygenerovaná faktúra:")}{" "}
                 {rec.last_run_at ? new Date(rec.last_run_at).toLocaleString("sk-SK") : "—"}
               </span>
               <Link
                 to="/faktury/$id"
                 params={{ id: rec.last_invoice_id }}
-                className="text-primary hover:underline"
+                className="shrink-0 whitespace-nowrap text-primary hover:underline"
               >
-                {t("Otvoriť →")}
+                {/* Šípka za textom preč; kľúč prekladu ostáva rovnaký. */}
+                {t("Otvoriť →").replace(/\s*→$/, "")}
               </Link>
             </div>
           )}
 
           <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 font-semibold">{t("História behov")}</h3>
+            <h3 className="mb-3 text-base font-semibold">{t("História behov")}</h3>
             {logs.length === 0 ? (
               <div className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
                 {t("Zatiaľ žiadne behy.")}
@@ -388,30 +402,28 @@ function RecurringDetail() {
             ) : (
               <div className="divide-y divide-border text-sm">
                 {logs.map((l) => (
-                  <div key={l.id} className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${l.status === "success" ? "bg-primary/15 text-primary-hover" : "bg-destructive/15 text-destructive"}`}
-                      >
+                  <div key={l.id} className="flex items-center justify-between gap-3 py-2">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                      <StavOdznak ton={TON_BEHU[l.status] ?? "chyba"}>
                         {l.status === "success" ? t("Úspech") : t("Chyba")}
-                      </span>
+                      </StavOdznak>
                       <span className="text-muted-foreground">
                         {l.run_type === "manual" ? t("Manuálny") : t("Automatický")}
                       </span>
-                      <span className="text-muted-foreground">
+                      <span className="whitespace-nowrap text-muted-foreground tabular-nums">
                         {new Date(l.created_at).toLocaleString("sk-SK")}
                       </span>
                       {l.error_message && (
-                        <span className="text-destructive">{l.error_message}</span>
+                        <span className="min-w-0 break-words text-destructive">{l.error_message}</span>
                       )}
                     </div>
                     {l.invoice_id && (
                       <Link
                         to="/faktury/$id"
                         params={{ id: l.invoice_id }}
-                        className="text-primary hover:underline"
+                        className="shrink-0 whitespace-nowrap text-primary hover:underline"
                       >
-                        {t("Faktúra →")}
+                        {t("Faktúra →").replace(/\s*→$/, "")}
                       </Link>
                     )}
                   </div>
