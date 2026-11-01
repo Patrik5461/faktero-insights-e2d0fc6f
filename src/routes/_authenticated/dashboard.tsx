@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { StavOdznak, TON_DOKLADU, tonStavu } from "@/components/faktero/web/Stav";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -1019,16 +1020,7 @@ function MiniStat({ label, value, icon: Icon }: { label: string; value: string; 
 
 export function StatusBadge({ status }: { status: string }) {
   const { t } = useT();
-  const map: Record<string, string> = {
-    // Vystavená a odoslaná mali sivé pozadie splývajúce s plochou — v hlavičke
-    // detailu aj v zozname pôsobili ako holý text.
-    draft: "border border-border bg-muted text-muted-foreground",
-    issued: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
-    sent: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
-    paid: "bg-primary/15 text-primary-hover",
-    overdue: "bg-destructive/15 text-destructive",
-    cancelled: "bg-muted text-muted-foreground line-through",
-  };
+  // Tóny sú spoločné pre všetky stavy webu (components/faktero/web/Stav.tsx).
   const label: Record<string, string> = {
     draft: "Koncept",
     issued: "Vystavená",
@@ -1038,11 +1030,9 @@ export function StatusBadge({ status }: { status: string }) {
     cancelled: "Stornovaná",
   };
   return (
-    <span
-      className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? "bg-muted"}`}
-    >
+    <StavOdznak ton={tonStavu(TON_DOKLADU, status)}>
       {label[status] ? t(label[status]) : status}
-    </span>
+    </StavOdznak>
   );
 }
 

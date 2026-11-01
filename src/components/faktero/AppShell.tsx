@@ -80,6 +80,7 @@ import { POCTY_ZMENENE, trebaObnovitPocty } from "@/lib/faktero/pocty-menu";
 import { useServerFn } from "@tanstack/react-start";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
+import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
 import { PrepinacJazyka } from "@/components/faktero/PrepinacJazyka";
@@ -348,6 +349,9 @@ export function AppShell({
   }));
 
   const dizajn = useDizajn();
+  /* Vrstva vzhľadu webu (styles/web.css) — appka v telefóne ju mať nesmie. */
+  const nativna = useIsNative();
+  useWebRedizajn(!nativna);
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
   const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
@@ -377,7 +381,10 @@ export function AppShell({
       obsahom dva riadky navigácie a na notebooku z výšky okna ubrali skoro
       stovku bodov — pri hustých tabuľkách bolo vidieť o dva riadky menej.
     */
-    <div className="flex min-h-screen w-full bg-page text-foreground">
+    <div
+      data-web-redizajn={nativna ? undefined : ""}
+      className="flex min-h-screen w-full bg-page text-foreground"
+    >
       <BocnyPanel
         sekcie={sekcie}
         aktivnaSekcia={activeGroup?.key ?? null}
@@ -402,7 +409,7 @@ export function AppShell({
           Farba je na vnútornom riadku, nie na hlavičke — tá si pri rolovaní
           mení pozadie a zelená by sa s ňou prala.
         */}
-          <div className="flex h-14 items-center gap-2.5 px-4 max-md:bg-primary max-md:text-primary-foreground lg:px-6">
+          <div data-w-zelena-lista className="flex h-14 items-center gap-2.5 px-4 max-md:bg-primary max-md:text-primary-foreground lg:px-6">
             {/* Mobile menu trigger */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -453,7 +460,11 @@ export function AppShell({
               aria-label="Faktero"
             >
               <Logo variant="icon" className="h-7 w-7 shrink-0 md:hidden" />
-              <Logo className="hidden h-7 shrink-0 md:block" />
+              {/* Obal drží `hidden` — vnútorné `dark:block` svetlého loga by ho inak
+                  v tmavom motíve prebilo a na telefóne by sa logo kreslilo cez jazyk. */}
+              <span className="hidden shrink-0 md:block">
+                <Logo className="h-7" />
+              </span>
               {active && (
                 <span className="truncate text-[13px] font-semibold md:hidden">{active.name}</span>
               )}
@@ -581,7 +592,7 @@ export function AppShell({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   aria-label={t("Účet")}
-                  className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40 max-md:from-white/25 max-md:to-white/10 max-md:text-primary-foreground max-md:ring-white/40">
+                  className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-[12px] font-bold text-primary-hover ring-1 ring-primary/20 hover:ring-primary/45 max-md:bg-white/20 max-md:text-primary-foreground max-md:ring-white/40">
                   {(active?.name?.[0] ?? "U").toUpperCase()}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
@@ -665,11 +676,11 @@ export function AppShell({
                   sa zavrela pri prvom kliknutí a zmenu by nebolo vidieť.
                 */}
                   <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
-                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <div className="mb-1 text-xs font-semibold text-muted-foreground">
                       {t("Vzhľad")}
                     </div>
                     <PrepinacMotivu />
-                    <div className="mb-1 mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <div className="mb-1 mt-2 text-xs font-semibold text-muted-foreground">
                       {t("Dizajn")}
                     </div>
                     <PrepinacDizajnu />
@@ -702,12 +713,12 @@ export function AppShell({
                         to={c.to as any}
                         search={c.search as any}
                         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
-                          je ? "bg-primary/10 font-medium text-primary-hover" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          je ? "bg-primary/10 font-semibold text-primary-hover" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                         }`}
                       >
                         {t(c.label)}
                         {pocetPriPolozke(c.to) ? (
-                          <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
+                          <span data-w-pocet className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
                             {pocetPriPolozke(c.to)! > 99 ? "99+" : pocetPriPolozke(c.to)}
                           </span>
                         ) : null}
@@ -866,7 +877,7 @@ function MobileNav({
       )}
       {active && (
         <div className="border-b border-border px-4 py-3">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t("Firma")}</div>
+          <div className="text-xs font-semibold text-muted-foreground">{t("Firma")}</div>
           {/* Rovnaký zoznam ako v hlavičke na počítači — výber cez <select> sa pri
               desiatkach firiem nedal prehľadať. */}
           <div className="-mx-2 mt-1">
@@ -997,8 +1008,11 @@ export function PageHeader({
       Nadpis má minimálnu šírku 20rem – pri minmax(0,…) ho detail s veľa
       tlačidlami (cenová ponuka) zúžil až na „Ponuk…“; radšej sa zalomia tlačidlá.
     */
-    <div className={`mx-auto flex w-full ${sirka === "formular" ? "max-w-[calc(72rem+3rem)]" : "max-w-[1440px]"} flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(20rem,1fr)_minmax(0,auto)] lg:items-end lg:gap-4 lg:px-6`}>
-      <div className="min-w-0">
+    <div
+      data-w-hlavicka-stranky
+      className={`mx-auto flex w-full ${sirka === "formular" ? "max-w-[calc(72rem+3rem)]" : "max-w-[1440px]"} flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:gap-x-6 lg:gap-y-3 lg:px-6`}
+    >
+      <div className="min-w-0 lg:min-w-[min(100%,24rem)] lg:flex-[1_1_24rem]">
         <div className="flex items-center gap-2">
           {podstranka && (
             <button
@@ -1012,7 +1026,7 @@ export function PageHeader({
               <span className="hidden sm:inline">{t("Späť")}</span>
             </button>
           )}
-          <h1 className="min-w-0 break-words text-xl font-semibold tracking-tight sm:text-2xl">{t(title)}</h1>
+          <h1 data-w-nadpis-stranky className="min-w-0 break-words text-xl font-semibold tracking-tight sm:text-2xl">{t(title)}</h1>
           {manual && (
             <a
               href={manual}
@@ -1026,10 +1040,10 @@ export function PageHeader({
             </a>
           )}
         </div>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{t(description)}</p>}
+        {description && <p data-w-popis-stranky className="mt-1 text-sm text-muted-foreground">{t(description)}</p>}
       </div>
       {action && (
-        <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{action}</div>
+        <div className="flex w-full flex-wrap gap-2 lg:ml-auto lg:w-auto lg:max-w-full lg:justify-end">{action}</div>
       )}
     </div>
   );

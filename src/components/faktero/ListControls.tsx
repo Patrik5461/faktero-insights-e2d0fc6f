@@ -455,13 +455,13 @@ export function EmptyState({
 }) {
   const { t } = useT();
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+    <div data-w-prazdny-stav className="flex flex-col items-center justify-center px-6 py-14 text-center">
+      <div className="grid h-12 w-12 place-items-center rounded-xl border border-border bg-card text-primary shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
-      <div className="mt-4 text-sm font-semibold text-foreground">{t(title)}</div>
+      <div className="mt-4 text-[15px] font-semibold text-foreground">{t(title)}</div>
       {description && (
-        <div className="mt-1 max-w-sm text-xs text-muted-foreground">{t(description)}</div>
+        <div className="mt-1 max-w-sm text-sm text-muted-foreground">{t(description)}</div>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
