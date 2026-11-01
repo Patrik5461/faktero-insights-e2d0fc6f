@@ -127,7 +127,7 @@ export const Route = createFileRoute("/api/public/kontakt")({
 
         zapisPokus(ip);
 
-        const prijemca = process.env.CONTACT_TO_EMAIL || "info@faktero.sk";
+        const prijemca = process.env.CONTACT_TO_EMAIL || "podpora@faktero.sk";
         const odosielatel = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
 
         const text = [
