@@ -27,3 +27,35 @@ describe("oblasť stránky", () => {
     expect(oblastPodlaCesty("/firma")).toBeNull();
   });
 });
+
+import { jeAdminRola, mozeUpravovat } from "./opravnenia";
+
+describe("mozeUpravovat — zrkadlo firmy_s_pravom(oblast, true)", () => {
+  it("owner, admin, účtovník, zamestnanec smú všade", () => {
+    for (const rola of ["owner", "admin", "accountant", "employee"])
+      for (const o of ["faktury", "banka", "jazdy", "zamestnanci", "uctovnictvo"] as const)
+        expect(mozeUpravovat(rola, {}, o)).toBe(true);
+  });
+  it("custom len pri edit", () => {
+    const opr = { faktury: "edit", banka: "read", jazdy: "none" };
+    expect(mozeUpravovat("custom", opr, "faktury")).toBe(true);
+    expect(mozeUpravovat("custom", opr, "banka")).toBe(false);
+    expect(mozeUpravovat("custom", opr, "jazdy")).toBe(false);
+    expect(mozeUpravovat("custom", opr, "sklad")).toBe(false);
+    expect(mozeUpravovat("custom", null, "faktury")).toBe(false);
+  });
+  it("custom: kontakty cez edit na faktúrach, read na faktúrach nestačí", () => {
+    expect(mozeUpravovat("custom", { faktury: "edit" }, "kontakty")).toBe(true);
+    expect(mozeUpravovat("custom", { faktury: "read" }, "kontakty")).toBe(false);
+    expect(mozeUpravovat("custom", { kontakty: "edit" }, "kontakty")).toBe(true);
+  });
+  it("bez roly nič", () => {
+    expect(mozeUpravovat(null, {}, "faktury")).toBe(false);
+    expect(mozeUpravovat(undefined, { faktury: "edit" }, "faktury")).toBe(false);
+  });
+  it("jeAdminRola", () => {
+    expect(jeAdminRola("owner")).toBe(true);
+    expect(jeAdminRola("admin")).toBe(true);
+    for (const r of ["accountant", "employee", "custom", null]) expect(jeAdminRola(r)).toBe(false);
+  });
+});

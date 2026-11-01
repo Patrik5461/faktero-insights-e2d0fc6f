@@ -32,6 +32,40 @@ export function posunDni(iso: string, dni: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Prvý deň aktuálneho mesiaca v Bratislave (RRRR-MM-01). Náhrada za
+ * `new Date(y, m, 1).toISOString()`, ktoré v Bratislave vráti posledný deň
+ * predchádzajúceho mesiaca (polnoc miestneho času je v UTC ešte včera).
+ */
+export function prvyDenMesiacaBratislava(teraz: Date = new Date()): string {
+  return `${dnesBratislava(teraz).slice(0, 8)}01`;
+}
+
+/** Posledný deň aktuálneho mesiaca v Bratislave (RRRR-MM-DD). */
+export function poslednyDenMesiacaBratislava(teraz: Date = new Date()): string {
+  return posunDni(posunMesiac(prvyDenMesiacaBratislava(teraz), 1), -1);
+}
+
+/**
+ * Dátum RRRR-MM-DD posunutý o `mesiace` kalendárnych mesiacov. Deň sa oreže
+ * na koniec cieľového mesiaca (31. 1. + 1 mesiac = 28./29. 2., nie 3. 3.).
+ */
+export function posunMesiac(iso: string, mesiace: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ""));
+  if (!m) return iso;
+  const index = Number(m[1]) * 12 + (Number(m[2]) - 1) + mesiace;
+  const rok = Math.floor(index / 12);
+  const mesiac = index - rok * 12; // 0–11
+  const poslednyDen = new Date(Date.UTC(rok, mesiac + 1, 0)).getUTCDate();
+  const den = Math.min(Number(m[3]), poslednyDen);
+  return new Date(Date.UTC(rok, mesiac, den)).toISOString().slice(0, 10);
+}
+
+/** Dnešok v Bratislave posunutý o `mesiace` mesiacov (záporné = späť). */
+export function posunMesiacBratislava(mesiace: number, teraz: Date = new Date()): string {
+  return posunMesiac(dnesBratislava(teraz), mesiace);
+}
+
 /** Typy vydaných dokladov, ktoré sa odosielajú odberateľovi — všetky z `invoices`. */
 export const TYPY_S_KONTROLOU_DATUMU = [
   "regular",

@@ -120,3 +120,25 @@ export function oblastPodlaCesty(cesta: string): Oblast | null {
   }
   return najlepsia?.[1] ?? null;
 }
+
+/** Majiteľ alebo administrátor — správa používateľov, banky, bankových účtov, API (`is_company_admin`). */
+export function jeAdminRola(rola: string | null | undefined): boolean {
+  return rola === "owner" || rola === "admin";
+}
+
+/**
+ * Smie človek v oblasti zapisovať (zakladať, upravovať, mazať)? Zrkadlí
+ * `firmy_s_pravom(oblast, true)` v databáze:
+ * - owner, admin, accountant, employee — áno vo všetkých oblastiach
+ *   (účtovník vedie doklady v plnom rozsahu, pamäť „role a pozvánky“);
+ *   správcovské veci (bankové účty firmy, pripojenie banky, platby, API,
+ *   používatelia) navyše stráži `jeAdminRola` — tie nie sú oblasť;
+ * - custom — len pri úrovni „edit“; kontakty aj cez „edit“ na faktúrach;
+ * - bez roly (ešte nenačítané, nie člen) — nie.
+ */
+export function mozeUpravovat(rola: string | null | undefined, opr: unknown, oblast: Oblast): boolean {
+  if (!rola) return false;
+  if (rola !== "custom") return true;
+  if (uroven(opr, oblast) === "edit") return true;
+  return oblast === "kontakty" && uroven(opr, "faktury") === "edit";
+}
