@@ -25,6 +25,7 @@ import {
   LifeBuoy,
   Send,
   MailWarning,
+  Megaphone,
 } from "lucide-react";
 
 const NAV = [
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/admin/podpora", label: "Podpora", icon: LifeBuoy },
   { to: "/admin/efaktura", label: "eFaktúra", icon: Send },
   { to: "/admin/odosielanie", label: "Odosielanie e-mailov", icon: MailWarning },
+  { to: "/admin/oznamy", label: "Oznamy o aktualizácii", icon: Megaphone },
   { to: "/admin/health", label: "Health check", icon: HeartPulse },
   { to: "/admin/companies", label: "Firmy", icon: Building2 },
   { to: "/admin/users", label: "Používatelia", icon: Users },

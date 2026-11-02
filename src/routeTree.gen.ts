@@ -69,6 +69,7 @@ import { Route as AdminIntegrationsRouteImport } from './routes/admin.integratio
 import { Route as AdminKnihaJazdRouteImport } from './routes/admin.kniha-jazd'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminOdosielanieRouteImport } from './routes/admin.odosielanie'
+import { Route as AdminOznamyRouteImport } from './routes/admin.oznamy'
 import { Route as AdminPartneriRouteImport } from './routes/admin.partneri'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
@@ -703,6 +704,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
 const AdminOdosielanieRoute = AdminOdosielanieRouteImport.update({
   id: '/odosielanie',
   path: '/odosielanie',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOznamyRoute = AdminOznamyRouteImport.update({
+  id: '/oznamy',
+  path: '/oznamy',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPartneriRoute = AdminPartneriRouteImport.update({
@@ -2564,6 +2570,7 @@ export interface FileRoutesByFullPath {
   '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
+  '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
@@ -2943,6 +2950,7 @@ export interface FileRoutesByTo {
   '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
+  '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
@@ -3331,6 +3339,7 @@ export interface FileRoutesById {
   '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
+  '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
@@ -3720,6 +3729,7 @@ export interface FileRouteTypes {
     | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
+    | '/admin/oznamy'
     | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
@@ -4099,6 +4109,7 @@ export interface FileRouteTypes {
     | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
+    | '/admin/oznamy'
     | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
@@ -4486,6 +4497,7 @@ export interface FileRouteTypes {
     | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
+    | '/admin/oznamy'
     | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
@@ -5413,6 +5425,13 @@ declare module '@tanstack/react-router' {
       path: '/odosielanie'
       fullPath: '/admin/odosielanie'
       preLoaderRoute: typeof AdminOdosielanieRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/oznamy': {
+      id: '/admin/oznamy'
+      path: '/oznamy'
+      fullPath: '/admin/oznamy'
+      preLoaderRoute: typeof AdminOznamyRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/partneri': {
@@ -8080,6 +8099,7 @@ interface AdminRouteChildren {
   AdminKnihaJazdRoute: typeof AdminKnihaJazdRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminOdosielanieRoute: typeof AdminOdosielanieRoute
+  AdminOznamyRoute: typeof AdminOznamyRoute
   AdminPartneriRoute: typeof AdminPartneriRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
   AdminPlatformInvoicesRoute: typeof AdminPlatformInvoicesRoute
@@ -8107,6 +8127,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminKnihaJazdRoute: AdminKnihaJazdRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminOdosielanieRoute: AdminOdosielanieRoute,
+  AdminOznamyRoute: AdminOznamyRoute,
   AdminPartneriRoute: AdminPartneriRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
   AdminPlatformInvoicesRoute: AdminPlatformInvoicesRoute,

@@ -2472,6 +2472,13 @@
           "tabulka": "companies",
           "ciel": ["id"],
           "jedenNaJeden": false
+        },
+        {
+          "fk": "efaktura_received_documents_matched_supplier_invoice_id_fkey",
+          "stlpce": ["matched_supplier_invoice_id"],
+          "tabulka": "purchase_invoices",
+          "ciel": ["id"],
+          "jedenNaJeden": false
         }
       ]
     },
@@ -4876,6 +4883,32 @@
           "jedenNaJeden": false
         }
       ]
+    },
+    "platformove_oznamy": {
+      "pohlad": false,
+      "stlpce": {
+        "aktivny": { "druh": "boolean", "nullable": false, "volitelny": false, "povinny": false },
+        "created_at": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
+        "created_by": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
+        "len_pre_user_id": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
+        "plati_do": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "text": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "trvanie_min": {
+          "druh": "number",
+          "nullable": false,
+          "volitelny": false,
+          "povinny": false
+        },
+        "typ": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
+        "zaciatok": { "druh": "text", "nullable": false, "volitelny": false, "povinny": true }
+      },
+      "vztahy": []
     },
     "platform_admins": {
       "pohlad": false,
