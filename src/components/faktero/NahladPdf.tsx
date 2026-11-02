@@ -139,7 +139,11 @@ export function NahladPdf({
           </a>
         </div>
       )}
-      <div ref={box} className="max-h-[70vh] overflow-auto bg-muted/20">
+      {/*
+        Bez vlastného posuvníka a stropu výšky — roluje rodič (PanelNahladu,
+        okno, stránka). Posun na aktívne zvýraznenie hľadá rolovacieho predka sám.
+      */}
+      <div ref={box} className="bg-muted/20">
         {strany.map((s, i) => (
           <StranaPdf key={s.cislo} strana={s}>
             {zobrazit ? (

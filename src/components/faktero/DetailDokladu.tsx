@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, X } from "lucide-react";
 import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahladom";
+import { PanelNahladu } from "./PanelNahladu";
 import type { StranaNahladu } from "@/hooks/useStranaNahladu";
 import { useT } from "@/lib/i18n/useT";
 
@@ -49,10 +50,11 @@ export function RozlozenieDetailu({
 }
 
 /**
- * Karta s náhľadom dokladu. Na širokej obrazovke sa drží pri vrchu a roluje
- * sama; výška podľa obsahu (`self-start`), nie podľa stĺpca s údajmi — inak
- * pod krátkym PDF ostával prázdny pruh; pod náhľadom je odkaz na súbor, prepínač strany a voliteľne
- * „Skryť náhľad“.
+ * Karta s náhľadom dokladu (`PanelNahladu`). Na širokej obrazovke sa drží pri
+ * vrchu a má pevnú výšku z výrezu — dokument vyplní celú kartu a roluje sa
+ * len vnútri nej (jediný posuvník), pätička s odkazom na súbor, prepínačom
+ * strany a voliteľne „Skryť náhľad“ ostáva vždy dole. Na úzkej obrazovke
+ * pevnú výšku nemá: náhľad je v toku stránky a roluje stránka.
  *
  * `lenSiroka` — na úzkej obrazovke sa karta nekreslí (stránka tam má náhľad
  * po svojom, napr. bloček).
@@ -80,39 +82,46 @@ export function KartaNahladu({
     <aside
       aria-label={nazov ? `${t("Náhľad dokladu")} — ${nazov}` : t("Náhľad dokladu")}
       data-karta-nahladu=""
-      className={`min-w-0 max-h-[80vh] self-start overflow-auto rounded-xl border border-border bg-card p-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] ${lenSiroka ? "hidden lg:block" : ""}`}
+      className={`min-w-0 rounded-xl border border-border bg-card lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] ${lenSiroka ? "hidden lg:block" : ""}`}
     >
-      {children}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {odkaz ? (
-            <a
-              href={odkaz.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{odkaz.text}</span>
-            </a>
-          ) : null}
-          {akcie}
-        </div>
-        <div className="flex items-center gap-1">
-          <PrepinacStranyNahladu />
-          {onSkryt ? (
-            <button
-              type="button"
-              aria-label={t("Skryť náhľad")}
-              title={t("Skryť náhľad")}
-              onClick={onSkryt}
-              className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-      </div>
+      <PanelNahladu
+        className="h-auto lg:h-full"
+        obsahClassName="px-3 pt-3"
+        paticka={
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3 pt-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {odkaz ? (
+                <a
+                  href={odkaz.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{odkaz.text}</span>
+                </a>
+              ) : null}
+              {akcie}
+            </div>
+            <div className="flex items-center gap-1">
+              <PrepinacStranyNahladu />
+              {onSkryt ? (
+                <button
+                  type="button"
+                  aria-label={t("Skryť náhľad")}
+                  title={t("Skryť náhľad")}
+                  onClick={onSkryt}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+          </div>
+        }
+      >
+        {children}
+      </PanelNahladu>
     </aside>
   );
 }

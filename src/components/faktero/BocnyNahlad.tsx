@@ -6,6 +6,7 @@ import {
 } from "@/components/faktero/RozlozenieSNahladom";
 import { useStranaNahladu } from "@/hooks/useStranaNahladu";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
+import { PanelNahladu } from "@/components/faktero/PanelNahladu";
 import { KartaNahladu, RozlozenieDetailu } from "@/components/faktero/DetailDokladu";
 import { useT } from "@/lib/i18n/useT";
 
@@ -137,62 +138,64 @@ export function SNahladom({
       stlpceVlavo="lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
       stlpceVpravo="lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
       nahlad={
-        <aside
+        <PanelNahladu
+          role="complementary"
           aria-label={t("Náhľad dokladu")}
-          className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:flex"
+          className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 overflow-hidden rounded-xl border border-border bg-card lg:flex"
+          obsahClassName="bg-muted/30"
+          toolbar={
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {vybrany ? (nazov ?? t("Doklad")) : t("Náhľad dokladu")}
+              </span>
+              <PrepinacStranyNahladu />
+              {vybrany && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onOtvorit(vybrany)}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť detail")}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("Zavrieť náhľad")}
+                    onClick={onZavriet}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          }
         >
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">
-            <span className="min-w-0 flex-1 truncate font-medium">
-              {vybrany ? (nazov ?? t("Doklad")) : t("Náhľad dokladu")}
-            </span>
-            <PrepinacStranyNahladu />
-            {vybrany && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onOtvorit(vybrany)}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" /> {t("Otvoriť detail")}
-                </button>
-                <button
-                  type="button"
-                  aria-label={t("Zavrieť náhľad")}
-                  onClick={onZavriet}
-                  className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </>
-            )}
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto bg-muted/30">
-            {stav === "prazdny" && (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                {t(
-                  "Kliknite na doklad v zozname a ukáže sa tu. Šípkami hore a dole prejdete na ďalší.",
-                )}
-              </p>
-            )}
-            {stav === "citam" && (
-              <div className="flex justify-center p-6 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            )}
-            {stav === "chyba" && (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                {t("K dokladu nie je súbor na náhľad.")}
-              </p>
-            )}
-            {stav === "hotovo" && subor ? (
-              subor.obrazok ? (
-                <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
-              ) : (
-                <NahladPdf key={subor.url} url={subor.url} />
-              )
-            ) : null}
-          </div>
-        </aside>
+          {stav === "prazdny" && (
+            <p className="p-6 text-center text-sm text-muted-foreground">
+              {t(
+                "Kliknite na doklad v zozname a ukáže sa tu. Šípkami hore a dole prejdete na ďalší.",
+              )}
+            </p>
+          )}
+          {stav === "citam" && (
+            <div className="flex justify-center p-6 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          )}
+          {stav === "chyba" && (
+            <p className="p-6 text-center text-sm text-muted-foreground">
+              {t("K dokladu nie je súbor na náhľad.")}
+            </p>
+          )}
+          {stav === "hotovo" && subor ? (
+            subor.obrazok ? (
+              <img src={subor.url} alt={nazov ?? ""} className="mx-auto block max-w-full" />
+            ) : (
+              <NahladPdf key={subor.url} url={subor.url} />
+            )
+          ) : null}
+        </PanelNahladu>
       }
     >
       <div className="min-w-0">{children}</div>
@@ -302,7 +305,7 @@ export function DetailSNahladom({
               {t("K dokladu nie je súbor na náhľad.")}
             </p>
           ) : subor.obrazok ? (
-            <img src={subor.url} alt={nazov ?? ""} className="mx-auto max-w-full" />
+            <img src={subor.url} alt={nazov ?? ""} className="mx-auto block max-w-full" />
           ) : (
             <NahladPdf key={subor.url} url={subor.url} />
           )}
