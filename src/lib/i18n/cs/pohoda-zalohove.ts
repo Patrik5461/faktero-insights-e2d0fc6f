@@ -17,4 +17,6 @@ export default {
   "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy":
     "Vybrané (nebo bez výběru všechny zobrazené) zálohové faktury do Pohody (Přijaté zálohové faktury) — bez DPH a bez zaúčtování, kvůli úhradě a odpočtu zálohy",
   "XML pre Pohodu – vybrané ({n})": "XML do Pohody – vybrané ({n})",
+  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — kvôli úhrade a odpočtu zálohy":
+    "Vybrané (nebo bez výběru všechny zobrazené) zálohové faktury do Pohody (Vydané zálohové faktury) — kvůli úhradě a odpočtu zálohy",
 };

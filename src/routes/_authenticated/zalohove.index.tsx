@@ -7,7 +7,11 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { Plus, Trash2, RotateCcw, Hash } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash, Download } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { exportInvoicesFn } from "@/lib/faktero/export.functions";
+import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { ListPagination, ConfirmDialog } from "@/components/faktero/ListControls";
@@ -132,6 +136,43 @@ function ProformaListPage() {
     }
   }
 
+  /*
+    Zálohové faktúry do Pohody (Vydané zálohové faktúry, issuedAdvanceInvoice)
+    — kvôli úhrade a odpočtu zálohy na ostrej faktúre. Idú vybrané, bez
+    výberu všetky zobrazené na stránke (okrem konceptov a stornovaných).
+  */
+  const exportFn = useServerFn(exportInvoicesFn);
+  const program = useExportDoProgramu();
+  const [exportujem, setExportujem] = useState(false);
+  const exportovatelne = list.rows.filter(
+    (r: any) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled",
+  );
+  const vybraneIds = exportovatelne.filter((r: any) => list.selected[r.id]).map((r: any) => r.id);
+  const naExport = vybraneIds.length ? vybraneIds : exportovatelne.map((r: any) => r.id);
+  async function exportujDoPohody() {
+    const cid = getActiveCompanyId();
+    if (!cid || !naExport.length) return;
+    setExportujem(true);
+    try {
+      const r = await exportFn({ data: { companyId: cid, invoiceIds: naExport, format: "pohoda_xml" } });
+      const url = URL.createObjectURL(new Blob([r.content], { type: "application/xml;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(t("XML pre Pohodu: {n} zálohových faktúr", { n: r.invoiceCount }));
+      toastNeodovzdane(t, r.preskocene);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Export zlyhal"));
+    } finally {
+      setExportujem(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -139,6 +180,22 @@ function ProformaListPage() {
         description={t("Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre.")}
         action={
           <div className="flex flex-wrap gap-2">
+            {!list.showDeleted && !program.inyProgram && naExport.length ? (
+              <button
+                type="button"
+                disabled={exportujem}
+                onClick={() => void exportujDoPohody()}
+                title={t(
+                  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — kvôli úhrade a odpočtu zálohy",
+                )}
+                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />{" "}
+                {vybraneIds.length
+                  ? t("XML pre Pohodu – vybrané ({n})", { n: vybraneIds.length })
+                  : t("XML pre Pohodu")}
+              </button>
+            ) : null}
             <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
             <Link
               to="/faktury/nova"
@@ -182,6 +239,13 @@ function ProformaListPage() {
             return (
               <MobileListCard
                 ciel={{ to: "/faktury/$id", params: { id: i.id } }}
+                {...(!list.showDeleted
+                  ? {
+                      vybrane: !!list.selected[i.id],
+                      onVyber: (v: boolean) => list.toggleSelect(i.id, v),
+                      vyberPopis: t("Vybrať riadok"),
+                    }
+                  : {})}
                 title={i.invoice_number}
                 subtitle={i.customer_name ?? "—"}
                 status={<ProformaStatus value={s} settled={settledMap[i.id]} />}
@@ -221,6 +285,17 @@ function ProformaListPage() {
               <table className="w-full text-sm">
                 <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
+                    {!list.showDeleted ? (
+                      <th className="w-8 p-3">
+                        <input
+                          type="checkbox"
+                          aria-label={t("Vybrať všetky")}
+                          checked={list.allOnPageSelected}
+                          onChange={(e) => list.toggleAllOnPage(e.target.checked)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                      </th>
+                    ) : null}
                     <th className="p-3">{t("Číslo")}</th>
                     <th className="p-3">{t("Odberateľ")}</th>
                     <th className="p-3">{t("Vystavená")}</th>
@@ -234,14 +309,14 @@ function ProformaListPage() {
                 <tbody className="divide-y divide-border">
                   {list.loading && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={list.showDeleted ? 8 : 9} className="p-8 text-center text-muted-foreground">
                         {t("Načítavam…")}
                       </td>
                     </tr>
                   )}
                   {!list.loading && list.rows.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={list.showDeleted ? 8 : 9} className="p-8 text-center text-muted-foreground">
                         {list.showDeleted
                           ? t("Žiadne vymazané zálohové faktúry.")
                           : t("Žiadne zálohové faktúry.")}
@@ -259,6 +334,17 @@ function ProformaListPage() {
                         router; bunka s odkazom a akciami si kliknutie ponechá.
                       */
                       <KlikatelnyRiadok key={i.id} ciel={{ to: "/faktury/$id", params: { id: i.id } }}>
+                        {!list.showDeleted ? (
+                          <td className="w-8 p-3">
+                            <input
+                              type="checkbox"
+                              aria-label={t("Vybrať riadok")}
+                              checked={!!list.selected[i.id]}
+                              onChange={(e) => list.toggleSelect(i.id, e.target.checked)}
+                              className="h-4 w-4 accent-primary"
+                            />
+                          </td>
+                        ) : null}
                         <td className="whitespace-nowrap p-3 font-medium">
                           <Link
                             to="/faktury/$id"

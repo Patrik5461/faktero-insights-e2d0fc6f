@@ -17,4 +17,6 @@ export default {
   "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy":
     "Ausgewählte (ohne Auswahl alle angezeigten) Anzahlungsrechnungen nach Pohoda (Empfangene Anzahlungsrechnungen) — ohne USt und ohne Buchung, für Zahlung und Abzug der Anzahlung",
   "XML pre Pohodu – vybrané ({n})": "XML für Pohoda – ausgewählt ({n})",
+  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — kvôli úhrade a odpočtu zálohy":
+    "Ausgewählte (ohne Auswahl alle angezeigten) Anzahlungsrechnungen nach Pohoda (Ausgestellte Anzahlungsrechnungen) — für Zahlung und Abzug der Anzahlung",
 };
