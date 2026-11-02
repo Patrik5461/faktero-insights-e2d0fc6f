@@ -161,6 +161,8 @@ export const SKUPINY = [
       "audit-verejne-endpointy",
       // Klik B6: len číta, prepína firmu len v kontexte svojho prehliadača.
       "klik-b6",
+      // Oznam o aktualizácii: vlastný oznam len pre QA účet (servisným kľúčom), po toku zmazaný.
+      "oznam-aktualizacie",
     ],
   },
   {

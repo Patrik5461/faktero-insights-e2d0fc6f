@@ -75,6 +75,7 @@ import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { FloatingAIButton } from "@/components/faktero/FloatingAIButton";
 import { NotificationBell } from "@/components/faktero/NotificationBell";
 import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
+import { OznamAktualizacie } from "@/components/faktero/OznamAktualizacie";
 import { getMyAdminRole } from "@/lib/faktero/admin.functions";
 import { pocetMojichUlohFn } from "@/lib/faktero/moje-ulohy.functions";
 import { POCTY_ZMENENE, trebaObnovitPocty } from "@/lib/faktero/pocty-menu";
@@ -743,6 +744,8 @@ export function AppShell({
         </header>
 
         <main id="obsah" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
+          {/* Plánovaná aktualizácia (platformove_oznamy) — len web, appka má vlastné okná. */}
+          {!nativna && <OznamAktualizacie />}
           {nedostupne ? (
             /* Priamy vstup na agendu podľa slovenských predpisov (pokladňa, kniha
                jázd, zamestnanci) — nemecká firma dostane vysvetlenie, nie agendu. */

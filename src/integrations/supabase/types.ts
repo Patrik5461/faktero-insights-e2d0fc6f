@@ -6180,6 +6180,45 @@ export type Database = {
           },
         ]
       }
+      platformove_oznamy: {
+        Row: {
+          aktivny: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          len_pre_user_id: string | null
+          plati_do: string | null
+          text: string | null
+          trvanie_min: number
+          typ: string
+          zaciatok: string
+        }
+        Insert: {
+          aktivny?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          len_pre_user_id?: string | null
+          plati_do?: string | null
+          text?: string | null
+          trvanie_min?: number
+          typ?: string
+          zaciatok: string
+        }
+        Update: {
+          aktivny?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          len_pre_user_id?: string | null
+          plati_do?: string | null
+          text?: string | null
+          trvanie_min?: number
+          typ?: string
+          zaciatok?: string
+        }
+        Relationships: []
+      }
       platform_admins: {
         Row: {
           created_at: string
