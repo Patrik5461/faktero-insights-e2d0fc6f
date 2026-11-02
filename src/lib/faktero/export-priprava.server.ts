@@ -68,7 +68,6 @@ export async function pripravFaktury(
 
   // Odpočty záloh na vyúčtovacích faktúrach (väzba v `invoice_advances`).
   const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
-  const { odpoctyZapisatelne, suhrnOdpoctov } = await import("./zalohy-odpocty");
   const odpocty = await nacitajOdpocty(
     supabase,
     companyId,
@@ -95,22 +94,17 @@ export async function pripravFaktury(
 
   /*
     Pohoda berie odpočet ako jednu položku s jednou sadzbou — rovnako ako
-    konektor; zálohy v rôznych sadzbách sa vynechajú a ozvú sa.
+    konektor; zálohy v rôznych sadzbách sa vynechajú a ozvú sa. Nezdanená
+    záloha ide bez DPH s odkazom na zálohovú faktúru (`zalohaPrePohodu`).
   */
+  const { zalohaPrePohodu } = await import("./zalohy-odpocty");
   const zalohy: Record<
     string,
     { cislo: string | null; zaklad: number; dph: number; sadzba: number }
   > = {};
   for (const [id, zoz] of Object.entries(odpocty)) {
-    if (!odpoctyZapisatelne(zoz)) continue;
-    const s = suhrnOdpoctov(zoz);
-    if (s.length !== 1) continue;
-    zalohy[id] = {
-      cislo: zoz.length === 1 ? zoz[0].zaloha : null,
-      zaklad: s[0].zaklad,
-      dph: s[0].dph,
-      sadzba: s[0].sadzba,
-    };
+    const z = zalohaPrePohodu(zoz);
+    if (z) zalohy[id] = z;
   }
   return { bundle, zalohy };
 }

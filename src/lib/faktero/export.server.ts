@@ -1621,17 +1621,25 @@ export function polozkyDokladov(opts: {
       // Prijatá faktúra nesie `_typPohody`; bez neho je to bloček či výdavkový
       // doklad a ten má vlastné predvolené kódy (Predkontácie → Bloček).
       const blocek = !d?._typPohody;
-      const podlaKat = nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
-      const predkontaciaJedna =
-        String(d?.pohoda_predkontacia ?? "").trim() ||
-        podlaKat?.predkontacia ||
-        (blocek ? nastavenia?.predkontaciaDoklady : null) ||
-        nastavenia?.predkontaciaPrijata;
-      const clenenieJedno =
-        String(d?.pohoda_clenenie_dph ?? "").trim() ||
-        podlaKat?.clenenie ||
-        (blocek ? nastavenia?.clenenieDphDoklady : null) ||
-        nastavenia?.clenenieDphPrijata;
+      /*
+        Prijatá zálohová faktúra sa neúčtuje a do DPH nevstupuje: bez
+        predvolenej predkontácie (len vlastná, napr. „Bez“), bez členenia DPH
+        a KV — invoice.xsd: členenie „Nepoužívá se u typů … Zálohová faktura“.
+      */
+      const zalohovaPrijata = d?._typPohody === "receivedAdvanceInvoice";
+      const podlaKat = zalohovaPrijata ? null : nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+      const predkontaciaJedna = zalohovaPrijata
+        ? String(d?.pohoda_predkontacia ?? "").trim() || null
+        : String(d?.pohoda_predkontacia ?? "").trim() ||
+          podlaKat?.predkontacia ||
+          (blocek ? nastavenia?.predkontaciaDoklady : null) ||
+          nastavenia?.predkontaciaPrijata;
+      const clenenieJedno = zalohovaPrijata
+        ? null
+        : String(d?.pohoda_clenenie_dph ?? "").trim() ||
+          podlaKat?.clenenie ||
+          (blocek ? nastavenia?.clenenieDphDoklady : null) ||
+          nastavenia?.clenenieDphPrijata;
 
       /*
         Rozúčtovaný doklad: každý riadok ide ako položka s vlastnou
@@ -1774,7 +1782,7 @@ export function polozkyDokladov(opts: {
             dicOdberatela: d?.supplier_dic,
             clenenieDph: clenenie,
           });
-      const kvHlavicka = rozuctovany || cz ? "" : kvAuto;
+      const kvHlavicka = rozuctovany || cz || zalohovaPrijata ? "" : kvAuto;
 
       /*
         Položky bločku (voľba firmy): v cenách s DPH, ako sú na bločku. Pri
@@ -2013,7 +2021,7 @@ export function polozkyDokladov(opts: {
           ? ""
           : cz
             ? el(`${p}:dateKHDPH`, datumDph, "        ")
-            : p !== "vch" && d?._typPohody
+            : p !== "vch" && d?._typPohody && !zalohovaPrijata
               ? el(`${p}:dateDelivery`, datumDodania, "        ")
               : "") +
         /*
@@ -2052,9 +2060,12 @@ export function polozkyDokladov(opts: {
         Číselný rad Pohody (predpona) — doklad sa očísluje v správnom rade
         namiesto predvoleného. Vlastný rad dokladu má prednosť.
       */
+      // Zálohové faktúry majú v Pohode vlastný číselný rad — rad prijatých faktúr by nesedel.
       const rad =
         String(d?.pohoda_rad ?? "").trim() ||
-        (p === "vch"
+        (zalohovaPrijata
+          ? ""
+          : p === "vch"
           ? nastavenia?.radPokladna
           : p === "int"
             ? nastavenia?.radInterne

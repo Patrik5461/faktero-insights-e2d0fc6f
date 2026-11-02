@@ -75,7 +75,7 @@ export async function zastaveneDoklady(
         .is("exported_at", null)
         .gte("issue_date", odDna)
         .is("deleted_at", null)
-        .eq("type", "regular")
+        .in("type", ["regular", "proforma"])
         .not("status", "in", "(draft,cancelled)")
         .order("id")
         .range(z, k),

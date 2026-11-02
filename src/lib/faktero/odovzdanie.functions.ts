@@ -193,7 +193,7 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
           .gte("issue_date", od)
           .lt("issue_date", doDatumu)
           .is("deleted_at", null)
-          .eq("type", "regular")
+          .in("type", ["regular", "proforma"])
           .not("status", "in", "(draft,cancelled)")
           .order("id")
           .range(zac, kon),

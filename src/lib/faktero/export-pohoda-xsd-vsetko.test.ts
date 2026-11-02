@@ -990,3 +990,137 @@ describe("Pohoda — text z dokladu s &, <, ]]> a riadiacimi znakmi", () => {
     expect(x).toContain("A&amp;B &lt;script&gt;");
   });
 });
+
+/* ------------------------------------------------- zálohové faktúry */
+
+describe("Pohoda — zálohové faktúry (vydané aj prijaté)", () => {
+  it("prijatá zálohová: receivedAdvanceInvoice, celá suma bez DPH, bez členenia, KV a predvolenej predkontácie", () => {
+    const x = buildPohodaExpensesXml({
+      company: firmaSK,
+      nastavenia: { ...nastavenia, radPrijate: "PF", kvPrijata: "B2" },
+      doklady: [
+        prijataAkoDoklad(
+          prijata({
+            id: "pz-1",
+            type: "proforma",
+            invoice_number: "26ZF-00035",
+            variable_symbol: "2600035",
+            amount_without_vat: 0,
+            vat_amount: 0,
+            amount_total: 2566.7,
+            pohoda_predkontacia: null,
+            pohoda_clenenie_dph: null,
+            zauctovane_at: null,
+            items: [{ name: "Záloha na dodávku", quantity: 1, unit_price: 2566.7, total: 2566.7 }],
+          }),
+        ),
+      ],
+    });
+    uloz("30-prijata-zalohova", x);
+    expect(chybySchemy(x)).toEqual([]);
+    expect(hodnota(x, "inv:invoiceType")).toBe("receivedAdvanceInvoice");
+    expect(hodnota(x, "inv:originalDocument")).toBe("26ZF-00035");
+    expect(hodnota(x, "inv:symVar")).toBe("2600035");
+    expect(hodnota(x, "inv:date")).toBe("2026-10-05");
+    expect(hodnota(x, "inv:dateDue")).toBe("2026-10-19");
+    expect(hodnota(x, "typ:company")).toBe("Dodávateľ s.r.o.");
+    // Nie je daňový doklad: celá suma v „bez DPH“, nič v sadzbách.
+    expect(hodnota(x, "typ:priceNone")).toBe("2566.70");
+    expect(hodnota(x, "typ:priceHigh")).toBe("0.00");
+    expect(hodnota(x, "typ:priceHighVAT")).toBe("0.00");
+    expect(hodnota(x, "typ:priceRound")).toBe("0.00");
+    // Neúčtuje sa a do DPH ani KV nevstupuje.
+    expect(x).not.toContain("<inv:accounting>");
+    expect(x).not.toContain("<inv:classificationVAT>");
+    expect(x).not.toContain("<inv:classificationKVDPH>");
+    expect(x).not.toContain("<inv:dateDelivery>");
+    // Rad prijatých faktúr na zálohovú nepatrí (Pohoda má pre ňu vlastný).
+    expect(x).not.toContain("<typ:ids>PF</typ:ids>");
+    expect(x).not.toContain("<inv:invoiceDetail>");
+  });
+
+  it("prijatá zálohová s DPH na doklade dodávateľa ide tiež bez DPH; vlastná predkontácia („Bez“) ostane", () => {
+    const x = buildPohodaExpensesXml({
+      company: firmaSK,
+      nastavenia,
+      doklady: [
+        prijataAkoDoklad(
+          prijata({
+            id: "pz-2",
+            type: "proforma",
+            invoice_number: "26VZ00020",
+            amount_without_vat: 1220,
+            vat_amount: 280.6,
+            amount_total: 1500.6,
+            pohoda_predkontacia: "Bez",
+            pohoda_clenenie_dph: "PD",
+            kv_clenenie: "B2",
+          }),
+        ),
+      ],
+    });
+    expect(chybySchemy(x)).toEqual([]);
+    expect(hodnota(x, "inv:invoiceType")).toBe("receivedAdvanceInvoice");
+    expect(hodnota(x, "typ:priceNone")).toBe("1500.60");
+    expect(hodnota(x, "typ:priceHighVAT")).toBe("0.00");
+    expect(x).toContain("<inv:accounting><typ:ids>Bez</typ:ids></inv:accounting>");
+    expect(x).not.toContain("<inv:classificationVAT>");
+    expect(x).not.toContain("<inv:classificationKVDPH>");
+  });
+
+  it("prijatá zálohová prejde kontrolou pred exportom aj bez predkontácie a členenia", async () => {
+    const { prekazkaDokladu } = await import("./pohoda-kontrola");
+    const d = prijataAkoDoklad(
+      prijata({ type: "proforma", amount_without_vat: 0, vat_amount: 0, amount_total: 900, pohoda_predkontacia: null, pohoda_clenenie_dph: null }),
+    );
+    expect(prekazkaDokladu(d, firmaSK, {})).toBeNull();
+  });
+
+  it("vydaná zálohová: číslo z Faktera (numberRequested), na ňu odkáže odpočet nezdanenej zálohy bez DPH", async () => {
+    const { zalohaPrePohodu } = await import("./zalohy-odpocty");
+    const zaloha = zalohaPrePohodu([
+      { zaloha: "ZF2026001", doklad: null, vs: null, suma: 61.5, riadky: [] },
+    ]);
+    expect(zaloha).toEqual({ cislo: "ZF2026001", zaklad: 61.5, dph: 0, sadzba: 0 });
+    const zf = buildPohodaInvoiceXml({
+      company: firmaSK,
+      nastavenia,
+      invoices: [{ invoice: faktura({ id: "inv-z", type: "proforma", invoice_number: "ZF2026001" }), items: [polozka()] }],
+    });
+    expect(chybySchemy(zf)).toEqual([]);
+    expect(zf).toContain("<typ:numberRequested>ZF2026001</typ:numberRequested>");
+    const x = buildPohodaInvoiceXml({
+      company: firmaSK,
+      nastavenia,
+      zalohy: { "inv-v": zaloha! },
+      invoices: [{ invoice: faktura({ id: "inv-v", invoice_number: "FA2026002" }), items: [polozka()] }],
+    });
+    uloz("31-faktura-odpocet-nezdanenej-zalohy", x);
+    expect(chybySchemy(x)).toEqual([]);
+    const odpocet = /<inv:invoiceAdvancePaymentItem>[\s\S]*?<\/inv:invoiceAdvancePaymentItem>/.exec(x)?.[0] ?? "";
+    expect(odpocet).toContain("<typ:number>ZF2026001</typ:number>");
+    expect(hodnota(odpocet, "inv:rateVAT")).toBe("none");
+    expect(hodnota(odpocet, "typ:price")).toBe("-61.50");
+    expect(hodnota(odpocet, "typ:priceVAT")).toBe("0.00");
+    // Daň vyúčtovania ostáva celá — nezdanená záloha DPH neznižuje.
+    expect(hodnota(x, "typ:priceHigh")).toBe("100.00");
+    expect(hodnota(x, "typ:priceHighVAT")).toBe("23.00");
+    expect(hodnota(x, "typ:priceNone")).toBe("-61.50");
+  });
+
+  it("zalohaPrePohodu: zdanená po sadzbe, zmes zdanenej a nezdanenej sa nezapíše", async () => {
+    const { zalohaPrePohodu } = await import("./zalohy-odpocty");
+    expect(
+      zalohaPrePohodu([
+        { zaloha: "ZF1", doklad: "DP1", vs: null, suma: 123, riadky: [{ sadzba: 23, zaklad: 100, dph: 23 }] },
+      ]),
+    ).toEqual({ cislo: "ZF1", sadzba: 23, zaklad: 100, dph: 23 });
+    expect(
+      zalohaPrePohodu([
+        { zaloha: "ZF1", doklad: "DP1", vs: null, suma: 123, riadky: [{ sadzba: 23, zaklad: 100, dph: 23 }] },
+        { zaloha: "ZF2", doklad: null, vs: null, suma: 50, riadky: [] },
+      ]),
+    ).toBeNull();
+    expect(zalohaPrePohodu([])).toBeNull();
+  });
+});

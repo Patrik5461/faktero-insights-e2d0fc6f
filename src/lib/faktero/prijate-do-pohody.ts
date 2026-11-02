@@ -197,6 +197,36 @@ export function textPrijatej(p: any): string {
 /** Riadok `purchase_invoices` → doklad pre `polozkyDokladov`. */
 export function prijataAkoDoklad(p: any): Record<string, unknown> {
   const spolu = Number(p?.amount_total ?? 0);
+  const doklad = prijataAkoDokladZaklad(p, spolu);
+  return p?.type === "proforma" ? zalohovaAkoDoklad(doklad, spolu) : doklad;
+}
+
+/**
+ * Prijatá zálohová faktúra (`type = 'proforma'`) do Pohody ako „Prijatá
+ * zálohová faktúra“ (`receivedAdvanceInvoice`). Nie je daňový doklad: celá
+ * suma ide bez DPH (`priceNone`), bez členenia DPH a KV (invoice.xsd:
+ * „Nepoužívá se u typů Proforma a Zálohová faktura“), bez položiek a
+ * rozúčtovania. Eviduje sa kvôli úhrade a odpočtu zálohy na ostrej faktúre.
+ */
+function zalohovaAkoDoklad(d: Record<string, unknown>, spolu: number): Record<string, unknown> {
+  return {
+    ...d,
+    vat_breakdown: spolu ? [{ sadzba: 0, zaklad: r2(spolu), dph: 0 }] : [],
+    _polozkyPrijatej: null,
+    rozuctovanie: null,
+    vehicle_id: null,
+    pohoda_clenenie_dph: null,
+    kv_clenenie: null,
+    _pdp: false,
+    _rezim: null,
+    odpocet: null,
+    _datumDph: d.issue_date,
+    _typPohody: "receivedAdvanceInvoice",
+    _zalohova: true,
+  };
+}
+
+function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> {
   return {
     id: p.id,
     company_id: p.company_id,

@@ -136,3 +136,32 @@ export function polozkyOdpoctu(
     })),
   );
 }
+
+/**
+ * Odpočet zálohy pre Pohodu — jedna položka `invoiceAdvancePaymentItem`
+ * s jednou sadzbou a odkazom na zálohovú faktúru (`sourceDocument`, číslo
+ * zálohovej faktúry, ktoré Pohoda pri importe zálohovej dostala ako
+ * `numberRequested`).
+ *
+ *  - Zdanené zálohy (s dokladom k prijatej platbe): základ a daň dokladu
+ *    k platbe, ak majú jednu sadzbu.
+ *  - Nezdanené zálohy (bez dokladu k platbe): celá odpočítaná suma bez DPH
+ *    (`rateVAT none`) — daň z vyúčtovania ostáva celá, len sa zníži suma
+ *    na úhradu a Pohoda zálohu spáruje.
+ *  - Zmes zdanených a nezdanených alebo viac sadzieb: `null` (ručný odpočet).
+ */
+export function zalohaPrePohodu(
+  odpocty: OdpocetZalohy[] | null | undefined,
+): { cislo: string | null; zaklad: number; dph: number; sadzba: number } | null {
+  if (!odpocty?.length) return null;
+  const cislo = odpocty.length === 1 ? odpocty[0].zaloha || null : null;
+  if (odpoctyZapisatelne(odpocty)) {
+    const s = suhrnOdpoctov(odpocty);
+    return s.length === 1 ? { cislo, ...s[0] } : null;
+  }
+  if (odpocty.every((o) => !o.doklad)) {
+    const suma = sumaOdpoctov(odpocty);
+    return suma > 0 ? { cislo, zaklad: suma, dph: 0, sadzba: 0 } : null;
+  }
+  return null;
+}
