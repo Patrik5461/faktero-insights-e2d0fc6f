@@ -179,6 +179,8 @@ function NovyDokladPage() {
   } | null>(null);
   const [source, setSource] = useState<"photo" | "qr" | "upload" | "web">("photo");
   const [qrRaw, setQrRaw] = useState<string | null>(null);
+  // DIČ a adresa dodávateľa z eKasy — formulár ich neukazuje, idú do Pohody.
+  const dodavatelZBlocku = useRef<{ dic?: string; adresa?: string }>({});
   /* Položky a rozpis DPH z bločku — ukladajú sa k dokladu tak, ako prišli. */
   const [polozky, setPolozky] = useState<BlocekVysledok["items"]>([]);
   const [rozpisDph, setRozpisDph] = useState<BlocekVysledok["vat_breakdown"] | null>(null);
@@ -528,6 +530,7 @@ function NovyDokladPage() {
     if (r.supplier) updateForm("supplier_name", r.supplier);
     if (r.supplier_ico) updateForm("supplier_ico", r.supplier_ico);
     if (r.supplier_ic_dph) updateForm("supplier_ic_dph", r.supplier_ic_dph);
+    dodavatelZBlocku.current = { dic: r.supplier_dic, adresa: r.supplier_address };
     if (r.document_number) updateForm("document_number", r.document_number);
     if (r.date) updateForm("issue_date", r.date);
     if (r.currency) updateForm("currency", r.currency);
@@ -680,7 +683,14 @@ function NovyDokladPage() {
           naozaj uložil, nie predpokladom „nový = nespracovaný“.
         */
         idNovehoRef.current ??= crypto.randomUUID();
-        const novy: any = await createFn({ data: { ...payload, id: idNovehoRef.current } });
+        const novy: any = await createFn({
+          data: {
+            ...payload,
+            id: idNovehoRef.current,
+            supplier_dic: dodavatelZBlocku.current.dic || null,
+            supplier_address: dodavatelZBlocku.current.adresa || null,
+          },
+        });
         if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
       }
       const rovnoSpracovany = !search.id && stav === "processed";

@@ -90,6 +90,12 @@ const inputSchema = z.object({
   ai_raw: z.any().optional(),
   zdroj: z.literal(ZDROJ_APKY).optional(),
   zalohova: z.boolean().optional(),
+  /*
+    Dodávateľ z eKasy/QR — DIČ a adresa (jeden riadok ako z Finančnej správy).
+    Do DB ide len, keď tabuľka stĺpce má (migrácia `expense_documents_dodavatel_adresa`).
+  */
+  supplier_dic: z.string().max(20).nullable().optional(),
+  supplier_address: z.string().max(300).nullable().optional(),
   items: z
     .array(
       z.object({
@@ -185,7 +191,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
   .validator((data: ExpenseInput) => inputSchema.parse(data))
   .handler(async ({ data: vstup, context }) => {
     const { supabase, userId } = context;
-    const { zdroj, zalohova, ...data } = vstup;
+    const { zdroj, zalohova, supplier_dic, supplier_address, ...data } = vstup;
     const zAppky = zdroj === ZDROJ_APKY;
     /*
       Bloček z appky bez fotky sa neuloží. Appka má tlačidlo Uložiť dovtedy
@@ -312,6 +318,10 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
     if (!row) throw new Error("Doklad sa nepodarilo uložiť.");
+    // DIČ a adresa dodávateľa pre Pohodu — len doplnok, uloženie dokladu nezastaví.
+    await (await import("./blocek-dodavatel-ulozenie.server"))
+      .ulozDodavatelaBlocku(supabase, row.id, { dic: supplier_dic, adresa: supplier_address })
+      .catch(() => {});
     if (ciel === "presun-do-nespracovanych") {
       const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
       const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));

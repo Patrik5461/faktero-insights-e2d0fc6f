@@ -334,3 +334,11 @@ export async function searchCompaniesByName(queryInput: string): Promise<Registr
   nameCache.set(key, { at: Date.now(), value: data });
   return { status: "ok", provider: "finstat", data, cached: false };
 }
+
+/**
+ * Firma z registra bez dotazu na režim DPH (ten čaká až 8 s) — pre doplnenie
+ * adresy dodávateľa pri exporte bločkov (`blocek-pohoda.server.ts`).
+ */
+export function firmaZRegistraBezRezimu(icoInput: string): Promise<RegistryLookupResult> {
+  return lookupCompanyBezRezimu(icoInput);
+}

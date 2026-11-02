@@ -56,6 +56,15 @@ import {
   type NastaveniaExportu,
 } from "./export-nastavenia";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import {
+  clenenieBlockuPodlaZakona,
+  jeHotovostnyBlocek,
+  kodyPolozkyBlocku,
+  sAdresouDodavatela,
+  textBlocku,
+  type AdresaDodavatela,
+} from "./blocek-pohoda";
+import type { KodCiselnika } from "./auto-uctovanie";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -328,6 +337,10 @@ export type PohodaNastavenia = {
   partneriVPohode?: string[];
   /** Skratka bankového účtu v Pohode podľa id účtu firmy alebo IBAN-u (bez medzier). */
   bankaPodlaUctu?: Record<string, string>;
+  /** Adresa dodávateľa hotovostného bločku podľa IČO (`blocek-pohoda.server.ts`). */
+  adresyDodavatelov?: Record<string, AdresaDodavatela>;
+  /** Číselník členení DPH firmy (z Pohody) — pre členenie bločku podľa zákona. */
+  cleneniaDph?: KodCiselnika[];
 };
 
 /** Nastavenia exportu pre builder — z `nastavenia.export`, inak z firmy. */
@@ -1540,7 +1553,10 @@ export function polozkyDokladov(opts: {
         mínus — sumy ostávajú tak, ako sú v DB.
       */
       const dobropisPrijaty = d0?._typPohody === "receivedCreditNotice";
-      const d = dobropisPrijaty && !cz ? kladnyDobropis(d0) : d0;
+      const d1 = dobropisPrijaty && !cz ? kladnyDobropis(d0) : d0;
+      // Hotovostný bloček: adresa, DIČ a IČ DPH dodávateľa, ktoré bloček v DB nemá.
+      const hotovostnyBlocek = jeHotovostnyBlocek(d1);
+      const d = hotovostnyBlocek ? sAdresouDodavatela(d1, nastavenia?.adresyDodavatelov) : d1;
       const tab = sadzbyKuDnu(String(d?.issue_date ?? ""), krajinaDane(company.country));
       const rozpis = rozpisDokladu(d);
       const zaSadzbu = (p: Priehradka) =>
@@ -1631,7 +1647,11 @@ export function polozkyDokladov(opts: {
         String(d?.pohoda_clenenie_dph ?? "").trim() ||
         podlaKat?.clenenie ||
         (blocek ? nastavenia?.clenenieDphDoklady : null) ||
-        nastavenia?.clenenieDphPrijata;
+        nastavenia?.clenenieDphPrijata ||
+        // Hotovostný bloček bez kódu: členenie podľa zákona (bez neho nie je v priznaní ani v KV).
+        (hotovostnyBlocek
+          ? clenenieBlockuPodlaZakona({ company, doklad: d, dph: dan(rozpis), ciselnik: nastavenia?.cleneniaDph })
+          : null);
 
       /*
         Rozúčtovaný doklad: každý riadok ide ako položka s vlastnou
@@ -1715,7 +1735,8 @@ export function polozkyDokladov(opts: {
         dodávateľ s číslom a kategóriou); firma si môže zvoliť názov účtovnej
         položky (predkontácie), poznámku alebo dodávateľa s číslom dokladu.
       */
-      const textAuto = skrat(d?._text, 240) || popis || "Prijatý doklad";
+      const textAuto =
+        skrat(d?._text || (hotovostnyBlocek ? textBlocku(d) : ""), 240) || popis || "Prijatý doklad";
       const textDokladu =
         (prijatyDoklad && ex.textPrijate !== "auto"
           ? skrat(
@@ -1873,7 +1894,7 @@ export function polozkyDokladov(opts: {
           <${p}:payVAT>true</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(Number(it?.vat_rate ?? 0), tab)}</${p}:rateVAT>
           <${p}:${mb}>${elSuma("typ:unitPrice", Number(it?.unit_price ?? it?.total ?? 0), "            ")}
-          </${p}:${mb}>
+          </${p}:${mb}>${hotovostnyBlocek ? kodyPolozkyBlockuXml(p, it, predkontaciaJedna, clenenie, cz ? "" : kvAuto) : ""}
         </${p}:${koren}Item>`,
         )
         .join("")}
@@ -3496,4 +3517,23 @@ ${odsadenie}</SouhrnDPH>`;
   </SeznamFaktVyd>
 </MoneyData>`;
   return { xml, preskocene };
+}
+
+/**
+ * Predkontácia, členenie DPH a KV na položke hotovostného bločku — Pohoda
+ * si ich z hlavičky dokladu s položkami nevezme (pozri `blocek-pohoda.ts`).
+ */
+function kodyPolozkyBlockuXml(
+  p: string,
+  polozka: any,
+  predkontacia: string | null | undefined,
+  clenenie: string | null | undefined,
+  kv: string,
+): string {
+  const k = kodyPolozkyBlocku({ polozka, predkontacia, clenenie, kv });
+  return (
+    (k.predkontacia ? `\n          <${p}:accounting><typ:ids>${esc(k.predkontacia)}</typ:ids></${p}:accounting>` : "") +
+    (k.clenenie ? `\n          <${p}:classificationVAT><typ:ids>${esc(k.clenenie)}</typ:ids></${p}:classificationVAT>` : "") +
+    (k.kv ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(k.kv)}</typ:ids></${p}:classificationKVDPH>` : "")
+  );
 }
