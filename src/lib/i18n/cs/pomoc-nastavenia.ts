@@ -68,8 +68,8 @@ export default {
   "Prepnúť sa dá kedykoľvek a o dáta sa tým nepríde. Ceny sú na <0>cenníku</0>.":
     "Přepnout lze kdykoli a o data se tím nepřijde. Ceny jsou v <0>ceníku</0>.",
   "Kto smie nastavenia meniť": "Kdo smí nastavení měnit",
-  "Údaje firmy, vzhľad dokladu a číslovanie mení <0>majiteľ a administrátor</0>. Účtovník vedie doklady v plnom rozsahu, ale do nastavení firmy, bankových účtov ani API kľúčov nevidí.":
-    "Údaje firmy, vzhled dokladu a číslování mění <0>majitel a administrátor</0>. Účetní vede doklady v plném rozsahu, ale do nastavení firmy, bankovních účtů ani API klíčů nevidí.",
+  "Údaje firmy, vzhľad dokladu a číslovanie mení <0>majiteľ, administrátor a účtovník</0>. Účtovník má k firme plné práva ako administrátor; zamestnanec do nastavení firmy, bankových účtov ani API kľúčov nevidí.":
+    "Údaje firmy, vzhled dokladu a číslování mění <0>majitel, administrátor a účetní</0>. Účetní má k firmě plná práva jako administrátor; zaměstnanec do nastavení firmy, bankovních účtů ani API klíčů nevidí.",
   "Podrobne je to v manuáli <0>Role a prístupy</0>.":
     "Podrobně je to v manuálu <0>Role a přístupy</0>.",
   "Postavenie k DPH": "Postavení k DPH",

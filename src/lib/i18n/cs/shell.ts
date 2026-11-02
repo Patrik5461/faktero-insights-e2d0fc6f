@@ -23,9 +23,6 @@ export default {
   Vzhľad: "Vzhled",
   Dizajn: "Design",
   Odhlásiť: "Odhlásit",
-  "Ste vo firme": "Jste ve firmě",
-  "ako účtovník — doklady vediete v plnom rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ alebo administrátor.":
-    "jako účetní — doklady vedete v plném rozsahu. Napojení banky, platby, API klíče a správu uživatelů má na starosti vlastník nebo administrátor.",
   "Prepnúť na Knihu jázd": "Přepnout na Knihu jízd",
   "Prepnúť na Fakturáciu": "Přepnout na Fakturaci",
   "Otvoriť manuál v novom okne": "Otevřít manuál v novém okně",

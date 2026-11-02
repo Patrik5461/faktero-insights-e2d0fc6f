@@ -47,8 +47,10 @@ describe("schvaľovanie po úrovniach", () => {
   });
   it("zrušiť rozhodnutie smie správca alebo najvyššia úroveň", () => {
     expect(mozeZrusit(s, "u3", "employee")).toBe(true);
-    expect(mozeZrusit(s, "u1", "accountant")).toBe(false);
+    expect(mozeZrusit(s, "u1", "employee")).toBe(false);
     expect(mozeZrusit(s, "x", "admin")).toBe(true);
+    // Od 2026-11-02 má účtovník práva správcu.
+    expect(mozeZrusit(s, "u1", "accountant")).toBe(true);
   });
   it("odznak ako v Doklado", () => {
     expect(odznak({ ...s, schvalena_uroven: 2 })).toBe("2/3");

@@ -209,7 +209,7 @@ export async function smiePripojit(companyId: string, userId: string): Promise<b
     .eq("company_id", companyId)
     .eq("user_id", userId)
     .maybeSingle();
-  return Boolean(data && ["owner", "admin"].includes(String(data.role)));
+  return Boolean(data && ["owner", "admin", "accountant"].includes(String(data.role)));
 }
 
 /** Chyba prihlásenia pri napojení — ukáže sa v Nastavenia → Trans.eu. */

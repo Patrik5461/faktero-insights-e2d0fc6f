@@ -41,7 +41,7 @@ const req = (hlavicka?: string, query = "") =>
 
 describe("kľúč účtu", () => {
   const ucet = { id: "k", company_id: "f1", ucet_user_id: "u1", firmy: null };
-  it("smie len k firmám, kde je vlastník alebo admin", async () => {
+  it("smie len k firmám, kde je vlastník, admin alebo účtovník", async () => {
     expect((await firmyKluca(ucet)).map((f) => f.id).sort()).toEqual(["f1", "f2"]);
   });
   it("bez firmy pri viacerých firmách vráti company_required so zoznamom", async () => {

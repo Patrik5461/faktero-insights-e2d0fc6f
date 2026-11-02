@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-11-01",
+ "vytvorene": "2026-11-02",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -33,7 +33,7 @@
     },
     {
      "nadpis": "Kde nájdem API kľúč",
-     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia“).\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fk_live_… .\nViac firiem jedným kľúčom: v API kľúčoch zvoľte\nKľúč pre viac firiem . Platí pre všetky firmy, kde ste vlastník alebo admin (alebo\nlen pre vybrané) — firmu potom uvádzate v každej požiadavke hlavičkou\nX-Company (id alebo IČO). Zoznam firiem vráti\nGET /api/v1/companies ."
+     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia“).\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fk_live_… .\nViac firiem jedným kľúčom: v API kľúčoch zvoľte\nKľúč pre viac firiem . Platí pre všetky firmy, kde ste vlastník, admin alebo účtovník (alebo\nlen pre vybrané) — firmu potom uvádzate v každej požiadavke hlavičkou\nX-Company (id alebo IČO). Zoznam firiem vráti\nGET /api/v1/companies ."
     },
     {
      "nadpis": "Testovací a ostrý režim",
@@ -363,7 +363,7 @@
     },
     {
      "nadpis": "Za firmu to urobí účtovník",
-     "text": "<>\nAk na Portál finančnej správy prístup nemáte, výber poskytovateľa za vás urobí účtovník,\nktorý má od firmy splnomocnenie na zastupovanie (to isté, s ktorým podáva priznania).\n-\nPo prihlásení do Faktera sa ukáže okno\nPripravte sa na e-Faktúru s Fakterom . V karte\nNemám prístup na Finančnú správu kliknite na\nZapojiť účtovníka a zadajte jeho e-mail.\n-\nÚčtovník dostane odkaz na stránku s návodom a údajmi firmy (názov, IČO, DIČ, IČ DPH,\nadresa). Odkaz platí 30 dní a funguje bez prihlásenia do Faktera.\n-\nKeď účtovník na portáli Faktero vyberie, klikne na stránke na\nHotovo, vybral som Faktero — vy to uvidíte v podrobnostiach pozvánky.\n-\nKým aktivácia nie je dokončená, vidíte hore pás\nČakáme na aktiváciu e-fakturácie vaším účtovníkom . Cez\nPodrobnosti odkaz skopírujete, pozvánku zrušíte alebo zvolíte\nAktivujem sám .\n-\nKeď Finančná správa výber potvrdí, eFaktúra sa vo Fakteri zapne sama a pás zmizne.\nAk e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a\npošlete ho účtovníkovi sami. Zaškrtnutím Pozvať ho aj do Faktera ako účtovníka\ndostane účtovník aj prístup k dokladom firmy."
+     "text": "<>\nAk na Portál finančnej správy prístup nemáte, výber poskytovateľa za vás urobí účtovník,\nktorý má od firmy splnomocnenie na zastupovanie (to isté, s ktorým podáva priznania).\n-\nPo prihlásení do Faktera sa ukáže okno\nPripravte sa na e-Faktúru s Fakterom . V karte\nNemám prístup na Finančnú správu kliknite na\nZapojiť účtovníka a zadajte jeho e-mail.\n-\nÚčtovník dostane odkaz na stránku s návodom a údajmi firmy (názov, IČO, DIČ, IČ DPH,\nadresa). Odkaz platí 30 dní a funguje bez prihlásenia do Faktera.\n-\nKeď účtovník na portáli Faktero vyberie, klikne na stránke na\nHotovo, vybral som Faktero — vy to uvidíte v podrobnostiach pozvánky.\n-\nKým aktivácia nie je dokončená, vidíte hore pás\nČakáme na aktiváciu e-fakturácie vaším účtovníkom . Cez\nPodrobnosti odkaz skopírujete, pozvánku zrušíte alebo zvolíte\nAktivujem sám .\n-\nKeď Finančná správa výber potvrdí, eFaktúra sa vo Fakteri zapne sama a pás zmizne.\nAk e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a\npošlete ho účtovníkovi sami. Zaškrtnutím Pozvať ho aj do Faktera ako účtovníka\ndostane účtovník aj plné práva k firme vo Fakteri."
     },
     {
      "nadpis": "Prechod od iného poskytovateľa (migračný kód)",
@@ -673,7 +673,7 @@
     },
     {
      "nadpis": "Kto smie nastavenia meniť",
-     "text": "<>\nÚdaje firmy, vzhľad dokladu a číslovanie mení majiteľ a administrátor .\nÚčtovník vedie doklady v plnom rozsahu, ale do nastavení firmy, bankových účtov ani API\nkľúčov nevidí.\nPodrobne je to v manuáli\nRole a prístupy\n(/pomoc/role)\n."
+     "text": "<>\nÚdaje firmy, vzhľad dokladu a číslovanie mení\nmajiteľ, administrátor a účtovník . Účtovník má k firme plné práva ako\nadministrátor; zamestnanec do nastavení firmy, bankových účtov ani API kľúčov nevidí.\nPodrobne je to v manuáli\nRole a prístupy\n(/pomoc/role)\n."
     },
     {
      "nadpis": "Postavenie k DPH",
@@ -1235,7 +1235,7 @@
    "sekcie": [
     {
      "nadpis": "Vlastný prístup",
-     "text": "<>\nKeď nesedí ani jedna rola, zvoľte pri pozvaní alebo pri členovi rolu\nVlastný prístup a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry a\ndoklady, iné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd,\nzamestnanci, účtovníctvo a exporty. Pri každej zvolíte Bez prístupu ,\nLen čítať alebo Upravovať .\nObmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy\nodkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov\nfirmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi\na administrátorovi."
+     "text": "<>\nKeď nesedí ani jedna rola, zvoľte pri pozvaní alebo pri členovi rolu\nVlastný prístup a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry a\ndoklady, iné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd,\nzamestnanci, účtovníctvo a exporty. Pri každej zvolíte Bez prístupu ,\nLen čítať alebo Upravovať .\nObmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy\nodkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov\nfirmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi,\nadministrátorovi a účtovníkovi."
     },
     {
      "nadpis": "Kto čo smie",
@@ -1243,11 +1243,11 @@
     },
     {
      "nadpis": "Účtovník",
-     "text": "<>\nÚčtovník vedie doklady v plnom rozsahu — zaúčtuje, opraví, spáruje\nplatbu, uzavrie obdobie, urobí inventúru. Presne to, čo od účtovníka firma potrebuje.\nNedostane sa k správe firmy : k bankovému napojeniu, k odosielaniu\nplatieb, k API kľúčom ani k používateľom. Je to zámer — externý účtovník nemá mať možnosť\nzmeniť IBAN firmy ani odoslať platbu.\nPoznámka: do 15. augusta 2026 bol účtovník len na čítanie. Ak ste rolu\npriradili vtedy, teraz už doklady meniť môže — nič nemusíte prenastavovať."
+     "text": "<>\nÚčtovník má plné práva k firme — rovnaké ako administrátor. Vedie\ndoklady, robí exporty, pripája banku a mení bankové účty, posiela platby, spravuje API\nkľúče, webhooky, platobné brány, eFaktúru, používateľov, nastavenia firmy aj predplatné.\nMajiteľovi ostáva len zrušenie firmy a zmena či odobratie majiteľa. Firma\nmusí mať vždy aspoň jedného majiteľa — účtovník ho z firmy neodoberie.\nPoznámka: do 2. novembra 2026 sa účtovník nedostal k banke, API kľúčom\nani k používateľom (a do 15. augusta 2026 bol len na čítanie). Ak ste rolu priradili\nskôr, plné práva má už teraz — nič nemusíte prenastavovať."
     },
     {
      "nadpis": "Zamestnanec",
-     "text": "<>\nZamestnanec má na doklady rovnaké práva ako účtovník: fakturuje, skenuje bločky, zapisuje\njazdy a pracuje so skladom. Na správu firmy nesiaha.\nRozdiel oproti účtovníkovi je v praxi len v tom, komu rolu dáte a čo od neho čakáte —\nprístupovo sú si rovní."
+     "text": "<>\nZamestnanec vedie doklady v plnom rozsahu: fakturuje, skenuje bločky, zapisuje jazdy a\npracuje so skladom. Na správu firmy — banku, API kľúče, používateľov a predplatné —\nnesiaha."
     },
     {
      "nadpis": "Administrátor a majiteľ",

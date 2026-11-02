@@ -45,7 +45,7 @@ export type Opravnenia = Partial<Record<Oblast, Uroven>>;
 export const POPIS_ROLI: { rola: string; nazov: string; text: string }[] = [
   { rola: "owner", nazov: "Majiteľ", text: "Všetko vrátane predplatného, používateľov, banky, bankových účtov, API kľúčov a zrušenia firmy." },
   { rola: "admin", nazov: "Administrátor", text: "Všetko ako majiteľ okrem zrušenia firmy — spravuje používateľov, predplatné, banku aj nastavenia." },
-  { rola: "accountant", nazov: "Účtovník", text: "Vidí a vedie všetky doklady, faktúry, sklad aj knihu jázd. Nesmie pripájať banku, posielať platby, meniť bankové účty firmy ani spravovať používateľov." },
+  { rola: "accountant", nazov: "Účtovník", text: "Plné práva k firme ako administrátor — doklady, exporty, banka, API, používatelia, nastavenia aj predplatné. Majiteľa nemôže odobrať a firmu nezruší." },
   { rola: "employee", nazov: "Používateľ", text: "Pracuje so všetkými agendami (faktúry, doklady, sklad, jazdy…), ale nespravuje banku, bankové účty, API ani používateľov." },
   { rola: "custom", nazov: "Vlastný prístup", text: "Vidí a upravuje len oblasti, ktoré mu vyberiete. Nespravuje banku, bankové účty, API ani používateľov." },
 ];
@@ -128,9 +128,16 @@ export function oblastPodlaCesty(cesta: string): Oblast | null {
   return najlepsia?.[1] ?? null;
 }
 
-/** Majiteľ alebo administrátor — správa používateľov, banky, bankových účtov, API (`is_company_admin`). */
+/**
+ * Roly so správou firmy — používatelia, banka, bankové účty, API, nastavenia,
+ * predplatné. Zrkadlí `is_company_admin` v databáze. Od 2026-11-02 sem patrí
+ * aj účtovník (Patrikovo rozhodnutie: „účtovník musí mať plné práva k firme“).
+ */
+export const ROLY_SPRAVCU = ["owner", "admin", "accountant"] as const;
+
+/** Správca firmy: majiteľ, administrátor alebo účtovník (`is_company_admin`). */
 export function jeAdminRola(rola: string | null | undefined): boolean {
-  return rola === "owner" || rola === "admin";
+  return (ROLY_SPRAVCU as readonly string[]).includes(String(rola ?? ""));
 }
 
 /**

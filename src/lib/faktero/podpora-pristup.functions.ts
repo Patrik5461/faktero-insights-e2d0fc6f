@@ -26,7 +26,7 @@ export const pristupyPodporyFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const rola = await rolaVoFirme(context, data.company_id);
-    if (!["owner", "admin"].includes(String(rola)))
+    if (!["owner", "admin", "accountant"].includes(String(rola)))
       throw new Error("Na správu prístupov nemáte oprávnenie.");
     const { data: rows, error } = await (context.supabase as any)
       .from("podpora_pristupy")
@@ -99,7 +99,7 @@ export const odoberPristupPodporyFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const rola = await rolaVoFirme(context, data.company_id);
-    if (!["owner", "admin"].includes(String(rola)))
+    if (!["owner", "admin", "accountant"].includes(String(rola)))
       throw new Error("Na správu prístupov nemáte oprávnenie.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { odoberPristup } = await import("./podpora-pristup.server");

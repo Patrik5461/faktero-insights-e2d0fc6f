@@ -16,7 +16,7 @@ async function assertCompanyAdmin(supabase: any, companyId: string, userId: stri
     .eq("company_id", companyId)
     .eq("user_id", userId)
     .maybeSingle();
-  if (!data || !["owner", "admin"].includes(data.role)) {
+  if (!data || !["owner", "admin", "accountant"].includes(data.role)) {
     throw new Error("Forbidden");
   }
 }

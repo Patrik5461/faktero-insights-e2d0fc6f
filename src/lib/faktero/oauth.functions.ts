@@ -19,7 +19,7 @@ async function spravovaneFirmy(supabase: any, userId: string) {
     .from("company_users")
     .select("company_id, role, companies(name)")
     .eq("user_id", userId)
-    .in("role", ["owner", "admin"]);
+    .in("role", ["owner", "admin", "accountant"]);
   return ((data ?? []) as any[]).map((r) => ({
     id: r.company_id as string,
     nazov: (r.companies?.name as string) ?? "—",

@@ -12,8 +12,14 @@ describe("Upraviť/Pozvať v Správe firiem (S-17)", () => {
       prepnut: false,
     });
   });
-  it("účtovník, zamestnanec ani vlastný prístup tlačidlá nemajú", () => {
-    for (const role of ["accountant", "employee", "custom", null])
+  it("účtovník má tlačidlá ako admin", () => {
+    expect(akciaUpravyFirmy({ id: "a", role: "accountant" }, "a")).toEqual({
+      kam: "/firma",
+      prepnut: false,
+    });
+  });
+  it("zamestnanec ani vlastný prístup tlačidlá nemajú", () => {
+    for (const role of ["employee", "custom", null])
       expect(akciaUpravyFirmy({ id: "a", role }, "a")).toBeNull();
   });
 });

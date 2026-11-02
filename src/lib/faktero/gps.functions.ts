@@ -10,6 +10,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { jeAdminRola } from "./opravnenia";
 
 const Hodnoty = z.record(z.string(), z.string().max(4000));
 
@@ -130,7 +131,7 @@ export const gpsStav = createServerFn({ method: "POST" })
         vieTankovania: !!a.tankovania,
         vieZapis: !!a.oznacSukromnu,
       },
-      spravca: rola === "owner" || rola === "admin",
+      spravca: jeAdminRola(rola),
       pripojenia: (pripojenia ?? []).map((p: any) => ({
         ...p,
         prihlasenieNeplatne: neplatne.has(p.id),

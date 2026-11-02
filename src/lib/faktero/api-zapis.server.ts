@@ -1202,7 +1202,7 @@ const PozvankaVstup = z.object({
 
 /**
  * Pozvánka do firmy — rovnaká ako z aplikácie (e-mail s odkazom, 14 dní).
- * Len kľúč účtu, ktorého majiteľ je vo firme vlastník alebo admin: firemný
+ * Len kľúč účtu, ktorého majiteľ je vo firme vlastník, admin alebo účtovník: firemný
  * kľúč môže mať aj externý integrátor a ten si používateľov pridávať nemá.
  */
 export async function pozviDoFirmy(ctx: ApiCtx, id: string): Promise<Odpoved> {

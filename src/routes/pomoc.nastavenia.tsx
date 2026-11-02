@@ -251,9 +251,9 @@ const SEKCIE: HelpSection[] = [
     body: (
       <>
         <p>
-          Údaje firmy, vzhľad dokladu a číslovanie mení <strong>majiteľ a administrátor</strong>.
-          Účtovník vedie doklady v plnom rozsahu, ale do nastavení firmy, bankových účtov ani API
-          kľúčov nevidí.
+          Údaje firmy, vzhľad dokladu a číslovanie mení{" "}
+          <strong>majiteľ, administrátor a účtovník</strong>. Účtovník má k firme plné práva ako
+          administrátor; zamestnanec do nastavení firmy, bankových účtov ani API kľúčov nevidí.
         </p>
         <p className="mt-3">
           Podrobne je to v manuáli{" "}

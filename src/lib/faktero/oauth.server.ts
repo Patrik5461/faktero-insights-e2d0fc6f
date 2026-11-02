@@ -375,12 +375,12 @@ export async function vymenToken(f: Record<string, string>) {
     // Člen, ktorého z firmy odobrali alebo mu znížili rolu, si prístup obnoviť nesmie
     // (vydať ho smie len majiteľ alebo admin — rovnako pri obnove).
     const ucet = jeUcet(stary.scope);
-    // Kľúč účtu: stačí, že je ešte niekde vlastník alebo admin (ktoré firmy, rieši každá požiadavka).
+    // Kľúč účtu: stačí, že je ešte niekde vlastník, admin alebo účtovník (ktoré firmy, rieši každá požiadavka).
     let q = supabaseAdmin
       .from("company_users")
       .select("role, company_id")
       .eq("user_id", stary.user_id)
-      .in("role", ["owner", "admin"]);
+      .in("role", ["owner", "admin", "accountant"]);
     if (!ucet) q = q.eq("company_id", stary.company_id);
     const { data: clen } = await q.limit(1);
     if (!clen?.length) throw new OAuthChyba("invalid_grant", "Používateľ už k firme nemá prístup.");

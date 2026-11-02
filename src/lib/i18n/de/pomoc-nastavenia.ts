@@ -68,8 +68,8 @@ export default {
   "Prepnúť sa dá kedykoľvek a o dáta sa tým nepríde. Ceny sú na <0>cenníku</0>.":
     "Umschalten können Sie jederzeit, Daten gehen dabei nicht verloren. Die Preise stehen in der <0>Preisliste</0>.",
   "Kto smie nastavenia meniť": "Wer Einstellungen ändern darf",
-  "Údaje firmy, vzhľad dokladu a číslovanie mení <0>majiteľ a administrátor</0>. Účtovník vedie doklady v plnom rozsahu, ale do nastavení firmy, bankových účtov ani API kľúčov nevidí.":
-    "Unternehmensdaten, Beleglayout und Nummerierung ändern <0>Inhaber und Administrator</0>. Der Buchhalter führt die Belege in vollem Umfang, sieht aber weder die Unternehmenseinstellungen noch Bankkonten oder API-Schlüssel.",
+  "Údaje firmy, vzhľad dokladu a číslovanie mení <0>majiteľ, administrátor a účtovník</0>. Účtovník má k firme plné práva ako administrátor; zamestnanec do nastavení firmy, bankových účtov ani API kľúčov nevidí.":
+    "Unternehmensdaten, Beleglayout und Nummerierung ändern <0>Inhaber, Administrator und Buchhalter</0>. Der Buchhalter hat im Unternehmen volle Rechte wie ein Administrator; der Mitarbeiter sieht weder die Unternehmenseinstellungen noch Bankkonten oder API-Schlüssel.",
   "Podrobne je to v manuáli <0>Role a prístupy</0>.":
     "Ausführlich steht das im Handbuch <0>Rollen und Zugriffe</0>.",
   "Postavenie k DPH": "Umsatzsteuerlicher Status",

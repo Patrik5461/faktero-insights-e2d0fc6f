@@ -457,7 +457,7 @@ function FormularUctovnika({
           onChange={(e) => setAjDoFaktera(e.target.checked)}
           className="mt-0.5"
         />
-        <span>{t("Pozvať ho aj do Faktera ako účtovníka (uvidí doklady firmy)")}</span>
+        <span>{t("Pozvať ho aj do Faktera ako účtovníka (dostane plné práva k firme)")}</span>
       </label>
       {chyba && (
         <p role="alert" className="text-xs text-destructive">

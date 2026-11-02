@@ -830,7 +830,7 @@ export const NASTROJE: Nastroj[] = [
     name: "invite_user",
     title: "Pozvať používateľa",
     description:
-      "Pošle pozvánku do firmy e-mailom (rola admin, accountant = účtovník, employee). Len s kľúčom pre viac firiem a ak si vo firme vlastník alebo admin.",
+      "Pošle pozvánku do firmy e-mailom (rola admin, accountant = účtovník, employee). Len s kľúčom pre viac firiem a ak si vo firme vlastník, admin alebo účtovník.",
     inputSchema: {
       type: "object",
       properties: {

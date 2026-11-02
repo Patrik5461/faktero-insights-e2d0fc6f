@@ -48,8 +48,8 @@ export default {
   "Podrobný návod": "Podrobný návod",
   "Pokračovať na prepojenie": "Pokračovat na propojení",
   "Poslať pozvánku": "Poslat pozvánku",
-  "Pozvať ho aj do Faktera ako účtovníka (uvidí doklady firmy)":
-    "Pozvat ho i do Faktera jako účetního (uvidí doklady firmy)",
+  "Pozvať ho aj do Faktera ako účtovníka (dostane plné práva k firme)":
+    "Pozvat ho i do Faktera jako účetního (dostane plná práva k firmě)",
   "Pozvánka bola zrušená alebo neexistuje. Požiadajte firmu o novú.":
     "Pozvánka byla zrušena nebo neexistuje. Požádejte firmu o novou.",
   "Pozvánka odišla na {email}. Kým účtovník aktiváciu nedokončí, uvidíte hore pás s jej stavom.":

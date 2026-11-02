@@ -79,8 +79,8 @@ export default {
     "Alles einschließlich Abonnement, Benutzer, Bank, Bankkonten, API-Schlüssel und Auflösung des Unternehmens.",
   "Všetko ako majiteľ okrem zrušenia firmy — spravuje používateľov, predplatné, banku aj nastavenia.":
     "Alles wie der Inhaber außer der Auflösung des Unternehmens – verwaltet Benutzer, Abonnement, Bank und Einstellungen.",
-  "Vidí a vedie všetky doklady, faktúry, sklad aj knihu jázd. Nesmie pripájať banku, posielať platby, meniť bankové účty firmy ani spravovať používateľov.":
-    "Sieht und führt alle Belege, Rechnungen, das Lager und das Fahrtenbuch. Darf keine Bank verbinden, keine Zahlungen senden, keine Bankkonten des Unternehmens ändern und keine Benutzer verwalten.",
+  "Plné práva k firme ako administrátor — doklady, exporty, banka, API, používatelia, nastavenia aj predplatné. Majiteľa nemôže odobrať a firmu nezruší.":
+    "Volle Rechte im Unternehmen wie ein Administrator — Belege, Exporte, Bank, API, Benutzer, Einstellungen und Abonnement. Den Inhaber kann er nicht entfernen und das Unternehmen nicht auflösen.",
   "Pracuje so všetkými agendami (faktúry, doklady, sklad, jazdy…), ale nespravuje banku, bankové účty, API ani používateľov.":
     "Arbeitet mit allen Bereichen (Rechnungen, Belege, Lager, Fahrten…), verwaltet aber weder Bank, Bankkonten, API noch Benutzer.",
   "Vidí a upravuje len oblasti, ktoré mu vyberiete. Nespravuje banku, bankové účty, API ani používateľov.":

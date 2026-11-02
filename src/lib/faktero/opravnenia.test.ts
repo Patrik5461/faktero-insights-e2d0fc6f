@@ -56,6 +56,8 @@ describe("mozeUpravovat — zrkadlo firmy_s_pravom(oblast, true)", () => {
   it("jeAdminRola", () => {
     expect(jeAdminRola("owner")).toBe(true);
     expect(jeAdminRola("admin")).toBe(true);
-    for (const r of ["accountant", "employee", "custom", null]) expect(jeAdminRola(r)).toBe(false);
+    // Od 2026-11-02 má účtovník plné práva k firme ako admin.
+    expect(jeAdminRola("accountant")).toBe(true);
+    for (const r of ["employee", "custom", "viewer", null, undefined]) expect(jeAdminRola(r)).toBe(false);
   });
 });

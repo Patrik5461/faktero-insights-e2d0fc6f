@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /**
  * Firmy, ku ktorým API kľúč smie. Kľúč firmy vráti svoju firmu, kľúč účtu
- * všetky firmy, kde je jeho majiteľ vlastník alebo admin (prípadne len vybrané).
+ * všetky firmy, kde je jeho majiteľ vlastník, admin alebo účtovník (prípadne len vybrané).
  * Do ostatných požiadaviek sa firma posiela hlavičkou `X-Company` (id alebo IČO).
  */
 export const Route = createFileRoute("/api/v1/companies")({

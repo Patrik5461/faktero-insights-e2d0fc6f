@@ -98,6 +98,7 @@ import {
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
 import { CESTA_PRIJATYCH_EFAKTUR } from "@/lib/faktero/efaktura/upozornenie-prijatej";
+import { jeAdminRola } from "@/lib/faktero/opravnenia";
 type Company = {
   id: string;
   name: string;
@@ -188,7 +189,7 @@ export function AppShell({
      by po prepnutí na nemeckú firmu ostal v prázdnej lište s logom vedúcim na /jazdy. */
   const view =
     krajina === "DE" && productMode === "both" ? "invoicing" : resolveView(productMode, activeProduct);
-  const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
+  const isCompanyAdmin = jeAdminRola(active?.role);
   const nav = filterNav(
     view,
     isCompanyAdmin,
@@ -742,14 +743,6 @@ export function AppShell({
         </header>
 
         <main id="obsah" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
-          {/* Účtovník doklady zapisuje aj mení. Nedostane sa len k tomu, čo je
-            správa firmy — nech to vie skôr, než to začne hľadať. */}
-          {active?.role === "accountant" && (
-            <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-              {t("Ste vo firme")} <strong>{active.name}</strong>{" "}
-              {t("ako účtovník — doklady vediete v plnom rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ alebo administrátor.")}
-            </div>
-          )}
           {nedostupne ? (
             /* Priamy vstup na agendu podľa slovenských predpisov (pokladňa, kniha
                jázd, zamestnanci) — nemecká firma dostane vysvetlenie, nie agendu. */

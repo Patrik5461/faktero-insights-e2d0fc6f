@@ -3,9 +3,11 @@
   nemeníme — prehliadaču sa len podvrhne odpoveď `company_users` (rola
   a oprávnenia), z ktorej si ju berie menu aj stránka /firma. Databáza
   zápis stráži sama, tu sa overuje, čo UI ukáže:
-  - S-14: účtovník nemá pod avatarom API kľúče ani Webhooky;
+  - S-14: zamestnanec nemá pod avatarom API kľúče ani Webhooky, účtovník áno
+    (od 2. 11. 2026 má plné práva ako admin);
   - S-19: vlastný prístup len s dokladmi nemá v „Vytvoriť“ faktúru ani produkt;
-  - S-13: /firma je pre účtovníka len na čítanie (polia vypnuté, bez Uložiť);
+  - S-13: /firma je pre zamestnanca len na čítanie (polia vypnuté, bez Uložiť),
+    účtovník ju upravuje;
   - AB-08: Doklady → Vystavené faktúry svieti v Dokladoch;
   - S-17: /firmy „Upraviť“ pri neaktívnej firme otvorí tú firmu.
   Nič nezapisuje do databázy.
@@ -72,16 +74,37 @@ export default {
       await page.evaluate((id) => localStorage.setItem("faktero.active_company", id), t.firmy.test);
     });
 
-    await t.krok("účtovník: avatar bez API kľúčov a Webhookov (S-14)", async () => {
+    await t.krok("účtovník: avatar s API kľúčmi a Webhookmi ako admin (od 2. 11. 2026)", async () => {
       await podvrhniRolu(page, "accountant");
       await t.go("/dashboard");
       const polozky = await otvorPonuku(page, "Účet");
-      t.over(!polozky.includes("API kľúče"), "účtovník vidí API kľúče");
-      t.over(!polozky.includes("Webhooky"), "účtovník vidí Webhooky");
-      t.over(polozky.includes("Firma"), "účtovník nevidí Firmu (má ju vidieť na čítanie)");
+      t.over(polozky.includes("API kľúče"), `účtovník nevidí API kľúče: ${polozky.join(" | ")}`);
+      t.over(polozky.includes("Webhooky"), "účtovník nevidí Webhooky");
+      t.over(polozky.includes("Firma"), "účtovník nevidí Firmu");
     });
 
-    await t.krok("účtovník: /firma len na čítanie (S-13)", async () => {
+    await t.krok("účtovník: /firma upravuje ako admin", async () => {
+      await t.go("/firma");
+      await page.getByRole("button", { name: "Uložiť zmeny" }).first().waitFor({ timeout: 15000 });
+      t.over(
+        (await page.getByText("Vidíte ich len na čítanie.", { exact: false }).count()) === 0,
+        "účtovník má /firmu len na čítanie",
+      );
+      const pole = page.locator("main input").first();
+      t.over(!(await pole.isDisabled()), "polia firmy sú pre účtovníka vypnuté");
+    });
+
+    await t.krok("zamestnanec: avatar bez API kľúčov a Webhookov (S-14)", async () => {
+      await page.unroute("**/rest/v1/company_users?*");
+      await podvrhniRolu(page, "employee");
+      await t.go("/dashboard");
+      const polozky = await otvorPonuku(page, "Účet");
+      t.over(!polozky.includes("API kľúče"), "zamestnanec vidí API kľúče");
+      t.over(!polozky.includes("Webhooky"), "zamestnanec vidí Webhooky");
+      t.over(polozky.includes("Firma"), "zamestnanec nevidí Firmu (má ju vidieť na čítanie)");
+    });
+
+    await t.krok("zamestnanec: /firma len na čítanie (S-13)", async () => {
       await t.go("/firma");
       await page
         .getByText("Vidíte ich len na čítanie.", { exact: false })
@@ -94,7 +117,7 @@ export default {
       t.over(await pole.isDisabled(), "polia firmy nie sú vypnuté");
       t.over(
         (await page.getByRole("button", { name: "Pozvať používateľa" }).count()) === 0,
-        "účtovník môže pozývať",
+        "zamestnanec môže pozývať",
       );
     });
 

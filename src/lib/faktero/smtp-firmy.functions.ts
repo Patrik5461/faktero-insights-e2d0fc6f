@@ -15,7 +15,7 @@ async function overSpravcu(context: any, companyId: string) {
     .eq("company_id", companyId)
     .eq("user_id", context.userId)
     .maybeSingle();
-  if (!data || !["owner", "admin"].includes(data.role)) {
+  if (!data || !["owner", "admin", "accountant"].includes(data.role)) {
     throw new Error("Odosielanie e-mailov môže nastaviť len majiteľ alebo admin firmy.");
   }
 }

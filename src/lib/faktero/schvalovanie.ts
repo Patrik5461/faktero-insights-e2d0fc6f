@@ -246,7 +246,7 @@ export function mozeZrusit(
 ): boolean {
   const { prava, vyslovne } = pravaClena(rola, ulozenePrava);
   if (!prava.zrusit) return false;
-  if (["owner", "admin"].includes(String(rola ?? ""))) return true;
+  if (["owner", "admin", "accountant"].includes(String(rola ?? ""))) return true;
   if (!s.urovne.length) return ROLY_SCHVALOVATELOV.includes(String(rola ?? "")) || vyslovne;
   return urovenPouzivatela(s.urovne, userId) === s.urovne.length;
 }
