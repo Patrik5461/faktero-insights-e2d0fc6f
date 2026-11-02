@@ -14,6 +14,7 @@ export default {
     "Geht als Anzahlungsrechnung an Pohoda — wird nicht gebucht, nur für die Verrechnung der Anzahlung erfasst.",
   "XML pre Pohodu: {n} zálohových faktúr": "XML für Pohoda: {n} Anzahlungsrechnungen",
   "Prijaté zálohové faktúry do Pohody (XML)": "Erhaltene Anzahlungsrechnungen an Pohoda (XML)",
-  "Zobrazené zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy":
-    "Angezeigte Anzahlungsrechnungen an Pohoda (Erhaltene Anzahlungsrechnungen) — ohne USt. und ohne Buchung, für Zahlung und Verrechnung der Anzahlung",
+  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy":
+    "Ausgewählte (ohne Auswahl alle angezeigten) Anzahlungsrechnungen nach Pohoda (Empfangene Anzahlungsrechnungen) — ohne USt und ohne Buchung, für Zahlung und Abzug der Anzahlung",
+  "XML pre Pohodu – vybrané ({n})": "XML für Pohoda – ausgewählt ({n})",
 };

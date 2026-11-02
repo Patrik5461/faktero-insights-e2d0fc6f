@@ -156,7 +156,22 @@ function PrijateZalohovePage() {
   const [volbyExportu, setVolbyExportu] = useState(false);
   // Len pre Pohodu — iné programy zálohové faktúry neevidujú (Omega/Money si ich zadajú ručne).
   const program = useExportDoProgramu();
-  const naExport = zobrazene.filter((r) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled");
+  const exportovatelne = zobrazene.filter((r) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled");
+  /*
+    Výber riadkov: keď je niečo začiarknuté, do Pohody idú len vybrané
+    zálohové faktúry; bez výberu všetky zobrazené (filtre, obdobie).
+  */
+  const [vybrane, setVybrane] = useState<Set<string>>(new Set());
+  const prepniVyber = (id: string, zapnut: boolean) =>
+    setVybrane((pred) => {
+      const n = new Set(pred);
+      if (zapnut) n.add(id);
+      else n.delete(id);
+      return n;
+    });
+  const vybraneExport = exportovatelne.filter((r) => vybrane.has(r.id));
+  const naExport = vybraneExport.length ? vybraneExport : exportovatelne;
+  const vsetkyVybrane = exportovatelne.length > 0 && exportovatelne.every((r) => vybrane.has(r.id));
   async function exportujSVolbami(v: VolbyExportu) {
     const cid = getActiveCompanyId();
     if (!cid || !naExport.length) return;
@@ -179,6 +194,7 @@ function PrijateZalohovePage() {
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       }
       toastNeodovzdane(t, r.preskocene);
+      setVybrane(new Set());
       if (!r.preskocene.length)
         toast.success(
           t("XML pre Pohodu: {n} zálohových faktúr", { n: r.pocet }) +
@@ -279,11 +295,14 @@ function PrijateZalohovePage() {
                 type="button"
                 onClick={() => setVolbyExportu(true)}
                 title={t(
-                  "Zobrazené zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
+                  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
                 )}
                 className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
               >
-                <Download className="h-4 w-4" /> {t("XML pre Pohodu")}
+                <Download className="h-4 w-4" />{" "}
+                {vybraneExport.length
+                  ? t("XML pre Pohodu – vybrané ({n})", { n: vybraneExport.length })
+                  : t("XML pre Pohodu")}
               </button>
             ) : null}
             <NahratDoklad druh="proforma" label={t("Nahrať zálohovú faktúru")} />
@@ -360,6 +379,19 @@ function PrijateZalohovePage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="whitespace-nowrap border-b border-border text-left text-xs font-semibold text-muted-foreground">
+                        {!ajVymazane ? (
+                          <th className="w-8 p-3">
+                            <input
+                              type="checkbox"
+                              aria-label={t("Vybrať všetky")}
+                              checked={vsetkyVybrane}
+                              onChange={(e) =>
+                                setVybrane(e.target.checked ? new Set(exportovatelne.map((r) => r.id)) : new Set())
+                              }
+                              className="h-4 w-4 accent-primary"
+                            />
+                          </th>
+                        ) : null}
                         <th className="p-3">{t("Číslo")}</th>
                         <th className="p-3">{t("Dodávateľ")}</th>
                         <th className="p-3">{t("Vystavená")}</th>
@@ -376,6 +408,17 @@ function PrijateZalohovePage() {
                           ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
                           className="border-b border-border/60"
                         >
+                          {!ajVymazane ? (
+                            <td className="w-8 p-3">
+                              <input
+                                type="checkbox"
+                                aria-label={t("Vybrať riadok")}
+                                checked={vybrane.has(r.id)}
+                                onChange={(e) => prepniVyber(r.id, e.target.checked)}
+                                className="h-4 w-4 accent-primary"
+                              />
+                            </td>
+                          ) : null}
                           <td className="cislo-dokladu whitespace-nowrap p-3 font-medium">
                             <Link
                               to="/prijate-faktury/$id"
@@ -417,6 +460,13 @@ function PrijateZalohovePage() {
                 <MobileListCard
                   key={r.id}
                   ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
+                  {...(!ajVymazane
+                    ? {
+                        vybrane: vybrane.has(r.id),
+                        onVyber: (z: boolean) => prepniVyber(r.id, z),
+                        vyberPopis: t("Vybrať riadok"),
+                      }
+                    : {})}
                   title={r.invoice_number}
                   subtitle={r.supplier_name}
                   amount={formatujMenu(r.amount_total, r.currency)}
