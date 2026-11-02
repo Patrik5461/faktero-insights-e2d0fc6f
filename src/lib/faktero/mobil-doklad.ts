@@ -77,6 +77,9 @@ export function dokladNaZaznam(
     supplier_name: r.supplier ?? null,
     supplier_ico: r.supplier_ico ?? null,
     supplier_ic_dph: r.supplier_ic_dph ?? null,
+    // DIČ a adresa z eKasy — server ich uloží, keď na ne má stĺpce.
+    supplier_dic: r.supplier_dic ?? null,
+    supplier_address: r.supplier_address ?? null,
     document_number: r.document_number ?? null,
     issue_date: r.date ?? null,
     total_amount: spolu,

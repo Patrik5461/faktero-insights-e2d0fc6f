@@ -244,6 +244,16 @@ export async function nastaveniaDokladov(
     );
   }
 
+  /*
+    Hotovostný bloček do Pohody: adresa dodávateľa (bloček ju v DB nemá)
+    a číselník členení DPH pre členenie podľa zákona (`blocek-pohoda.server.ts`).
+  */
+  {
+    const b = await import("./blocek-pohoda.server");
+    out.adresyDodavatelov = await b.adresyDodavatelovBlockov(supabase, company.id, doklady);
+    out.cleneniaDph = await b.cleneniaDphFirmy(supabase, company.id);
+  }
+
   // Odkaz na sken do záložky Dokumenty — krátky, s náhodným tokenom.
   if (company.pohoda_odkaz_na_doklady !== false) {
     const zaklad = zakladnaAdresa();
