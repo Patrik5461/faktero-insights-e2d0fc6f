@@ -7,6 +7,7 @@ import {
   predkontaciaZPohody,
   sadzbaZPohody,
 } from "./pohoda-citanie";
+import { zoradPodlaSadzby } from "./vat-rates";
 /*
   Import prijatých dokladov z inej aplikácie (Doklado, Pohoda, tabuľka).
 
@@ -1054,7 +1055,7 @@ export function rozpisZPoloziek(z: PrijatyZaznam): Record<string, unknown> {
     x.dph = r2(x.dph + (p.dph ?? 0));
     po.set(p.vat_rate, x);
   }
-  const rozpis = [...po.values()].filter((x) => x.zaklad || x.dph);
+  const rozpis = zoradPodlaSadzby([...po.values()].filter((x) => x.zaklad || x.dph), "sadzba");
   if (!rozpis.length) return {};
   return { vat_breakdown: rozpis, ...(rozpis.length === 1 ? { vat_rate: rozpis[0]!.sadzba } : {}) };
 }

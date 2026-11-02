@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE, zoradSadzby } from "@/lib/faktero/vat-rates";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 import { friendlyError } from "@/lib/faktero/plan-error";
 
@@ -198,7 +198,7 @@ function QuickInvoicePage() {
                   }}
                   className={VSTUP_DOKLADU}
                 >
-                  {sadzbyRezimu(rezim).map((r) => (
+                  {zoradSadzby(sadzbyRezimu(rezim)).map((r) => (
                     <option key={r} value={r}>
                       {r} %
                     </option>

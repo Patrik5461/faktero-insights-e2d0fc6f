@@ -72,8 +72,8 @@ describe("Nemecko — sadzby DPH", () => {
   });
   it("historické sadzby na opravné doklady: 16 a 5 do 2020", () => {
     expect(historickeSadzby("DE", "2026-10-17")).toEqual([
-      { sadzba: 16, doRoku: 2020 },
       { sadzba: 5, doRoku: 2020 },
+      { sadzba: 16, doRoku: 2020 },
     ]);
   });
   it("dopočítaná sadzba sa prilepí k nemeckej", () => {

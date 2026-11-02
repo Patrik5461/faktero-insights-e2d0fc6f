@@ -6,6 +6,7 @@
  */
 
 import { sucetPoMenach } from "./mena-sucet";
+import { porovnajSadzby } from "./vat-rates";
 
 export type UhradaPrijatej = {
   id: string;
@@ -149,7 +150,7 @@ export function sumarPoSadzbach(
     po.set(k, r);
   }
   const riadky = [...po.values()].sort(
-    (a, b) => b.sadzba - a.sadzba || Number(!!a.pdp) - Number(!!b.pdp),
+    (a, b) => porovnajSadzby(a.sadzba, b.sadzba) || Number(!!a.pdp) - Number(!!b.pdp),
   );
   const zaklad = r2(riadky.reduce((s, r) => s + r.zaklad, 0));
   const dph = r2(riadky.reduce((s, r) => s + r.dph, 0));

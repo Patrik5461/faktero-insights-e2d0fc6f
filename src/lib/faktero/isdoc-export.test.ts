@@ -119,7 +119,7 @@ describe("ISDOC vývoz", () => {
     const d = parser.parse(XML);
     const sub = d.Invoice.TaxTotal.TaxSubTotal;
     expect(sub).toHaveLength(3);
-    expect(sub.map((s: any) => s.TaxCategory.Percent)).toEqual(["21.00", "12.00", "0.00"]);
+    expect(sub.map((s: any) => s.TaxCategory.Percent)).toEqual(["0.00", "12.00", "21.00"]);
   });
 
   /*

@@ -244,8 +244,8 @@ describe("prijatá faktúra so zápornými zľavami (Telekom)", () => {
 
   it("rozpis DPH po sadzbách — žiadna vymyslená sadzba 20,54 %", () => {
     expect(rozpisPrijatej(telekom)).toEqual([
-      { sadzba: 23, zaklad: 70.81, dph: 16.29 },
       { sadzba: 0, zaklad: 8.5, dph: 0 },
+      { sadzba: 23, zaklad: 70.81, dph: 16.29 },
     ]);
   });
 

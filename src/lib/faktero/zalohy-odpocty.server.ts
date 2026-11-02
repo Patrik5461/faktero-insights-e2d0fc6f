@@ -5,6 +5,7 @@
 
 import { riadkySoZlavou } from "./zlavy";
 import { riadkyOdpoctu, type OdpocetZalohy, type RiadokOdpoctu } from "./zalohy-odpocty";
+import { zoradPodlaSadzby } from "./vat-rates";
 
 type Klient = any;
 
@@ -20,6 +21,7 @@ function riadkyDokladu(doklad: any): RiadokOdpoctu[] {
     x.dph = r2(x.dph + Math.abs(Number(it.vat_amount ?? 0)));
     po.set(sadzba, x);
   }
+  // Od najvyššej: halier pri čiastočnom odpočte dorovnáva posledný riadok.
   return [...po.values()].filter((r) => r.zaklad || r.dph).sort((a, b) => b.sadzba - a.sadzba);
 }
 
@@ -83,7 +85,7 @@ export async function nacitajOdpocty(
       doklad: d ? String(d.invoice_number) : null,
       vs: z?.variable_symbol ? String(z.variable_symbol) : null,
       suma,
-      riadky: d ? riadkyOdpoctu(suma, riadkyDokladu(d)) : [],
+      riadky: d ? zoradPodlaSadzby(riadkyOdpoctu(suma, riadkyDokladu(d)), "sadzba") : [],
     });
     out[String(v.invoice_id)] = zoz;
   }

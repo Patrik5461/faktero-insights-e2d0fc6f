@@ -17,7 +17,7 @@ import {
   sumySamofaktury,
   zlavaDokladuSuma,
 } from "@/lib/faktero/samofakturacia";
-import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { krajinaDane, sadzbyKrajiny, zakladnaSadzba, zoradSadzby } from "@/lib/faktero/vat-rates";
 import { MENY, formatovacMeny, formatujMenu, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
 import { JAZYKY_DOKLADU, uvodOpravnehoDokladu } from "@/lib/faktero/faktura-jazyk";
@@ -946,7 +946,7 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                       onChange={(e) => upravRiadok(i, "vat_rate", e.target.value)}
                       className={vstup}
                     >
-                      {(platitel ? sadzby : [0]).map((s) => (
+                      {zoradSadzby(platitel ? sadzby : [0]).map((s) => (
                         <option key={s} value={String(s)}>
                           {s} %
                         </option>

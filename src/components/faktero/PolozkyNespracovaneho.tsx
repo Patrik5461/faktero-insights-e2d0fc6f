@@ -10,6 +10,7 @@ import {
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
 import { useT } from "@/lib/i18n/useT";
+import { zoradSadzby } from "@/lib/faktero/vat-rates";
 
 type Polozka = UdajeNespracovaneho["polozky"][number];
 
@@ -123,12 +124,12 @@ export function PolozkyNespracovaneho({
                       className="w-full rounded-md border border-input bg-background px-1 py-1 text-sm"
                     >
                       <option value="">—</option>
-                      {[
+                      {zoradSadzby([
                         ...new Set([
                           ...sadzby,
                           ...(p.vat_rate != null ? [Number(p.vat_rate)] : []),
                         ]),
-                      ].map((s) => (
+                      ]).map((s) => (
                         <option key={s} value={s}>
                           {s} %
                         </option>

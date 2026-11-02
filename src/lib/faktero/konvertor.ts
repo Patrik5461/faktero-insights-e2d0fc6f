@@ -1,3 +1,4 @@
+import { zoradPodlaSadzby } from "./vat-rates";
 /*
   Konvertor tabuľky (XLSX/CSV) na dávku XML Pohody.
 
@@ -350,7 +351,7 @@ export function prevedRiadky(
       chyby.push(zla);
       continue;
     }
-    const rozpis = [...po.values()].sort((a, b) => b.sadzba - a.sadzba);
+    const rozpis = zoradPodlaSadzby([...po.values()], "sadzba");
     const spolu = r2(rozpis.reduce((a, x) => a + x.zaklad + x.dph, 0));
     const spolocne = {
       id,

@@ -67,7 +67,7 @@ import { BlocekDetailKompaktny } from "@/components/faktero/BlocekDetailKompaktn
 import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
 import { RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
 import { SumarK } from "@/components/faktero/DetailDokladuKompaktny";
-import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import { sadzbyKrajiny, zoradPodlaSadzby } from "@/lib/faktero/vat-rates";
 import {
   DocumentDetailHeader,
   MenuAkcia,
@@ -1263,7 +1263,7 @@ function NovyDokladPage() {
               {rozpisDph && rozpisDph.length > 0 && (
                 <div className="border-t border-border bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
                   {t("Rozpis DPH:")}{" "}
-                  {rozpisDph
+                  {zoradPodlaSadzby(rozpisDph, "sadzba")
                     .map((s) =>
                       t("{sadzba} % — základ {zaklad}, daň {dph}", {
                         sadzba: s.sadzba,

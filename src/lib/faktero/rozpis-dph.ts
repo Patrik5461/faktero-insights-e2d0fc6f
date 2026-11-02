@@ -1,3 +1,4 @@
+import { porovnajSadzby } from "./vat-rates";
 /*
   Rozpis DPH podľa sadzieb — sadzba, základ dane a daň — pre súhrn dokladu
   na obrazovke (PDF má vlastný). Riadky sa zoskupia podľa sadzby; halier,
@@ -59,5 +60,9 @@ export function rozpisPodlaSadzieb(
         skupiny[ciel].dan = r2(skupiny[ciel].dan + rozdiel);
     }
   }
-  return skupiny;
+  // Dorovnanie hore ide v pôvodnom poradí (od najvyššej), aby sa halier
+  // pripísal tej istej skupine ako doteraz; zobrazuje sa vzostupne.
+  return skupiny.sort(
+    (a, b) => Number(a.prenesenie) - Number(b.prenesenie) || porovnajSadzby(a.sadzba, b.sadzba),
+  );
 }

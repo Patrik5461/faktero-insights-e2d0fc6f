@@ -1,5 +1,5 @@
 import { bezZakazanychXml } from "@/lib/bezpecny-text";
-import { krajinaDane } from "./vat-rates";
+import { krajinaDane, porovnajSadzby } from "./vat-rates";
 import { kodStatu } from "./company-autofill";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
@@ -160,7 +160,9 @@ function podlaSadzieb(items: Riadok[], dobropis: boolean) {
     r.dan += Math.abs(dan) * (zaklad < 0 ? -1 : 1);
     mapa.set(sadzba, r);
   }
-  return [...mapa.entries()].sort((a, b) => b[0] - a[0]).map(([sadzba, v]) => ({ sadzba, ...v }));
+  return [...mapa.entries()]
+    .sort((a, b) => porovnajSadzby(a[0], b[0]))
+    .map(([sadzba, v]) => ({ sadzba, ...v }));
 }
 
 /**

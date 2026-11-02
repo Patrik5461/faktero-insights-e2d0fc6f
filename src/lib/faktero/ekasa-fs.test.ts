@@ -211,6 +211,22 @@ describe("skutočný bloček z eKasy", () => {
     expect(Math.round((d.zaklad! + d.dph!) * 100) / 100).toBe(d.suma);
   });
 
+  it("rozpis z Finančnej správy v poradí 5, 23, 19 zoradí vzostupne, sumy nechá", () => {
+    const x = mapujFsDoklad({
+      ...odpoved,
+      vatSummary: [
+        { vatBase: 10, vatAmount: 0.5, vat: { vatRate: 5 } },
+        { vatBase: 100, vatAmount: 23, vat: { vatRate: 23 } },
+        { vatBase: 50, vatAmount: 9.5, vat: { vatRate: 19 } },
+      ],
+    });
+    expect(x.sadzby).toEqual([
+      { sadzba: 5, zaklad: 10, dph: 0.5 },
+      { sadzba: 19, zaklad: 50, dph: 9.5 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
+    ]);
+  });
+
   it("rozpis po sadzbách ostane celý", () => {
     expect(d.sadzby).toEqual([
       { sadzba: 5, zaklad: 1.42, dph: 0.07 },

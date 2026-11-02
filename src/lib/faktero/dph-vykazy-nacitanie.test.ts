@@ -62,7 +62,7 @@ describe("prijaté faktúry vo výkazoch", () => {
     const dp = priznanie(vstup);
     expect(dp.r19).toBe(46);
     expect(dp.r18a).toBe(1.5);
-    expect(kontrolnyVykaz(vstup).b2.map((r) => r.s)).toEqual([23, 5]);
+    expect(kontrolnyVykaz(vstup).b2.map((r) => r.s)).toEqual([5, 23]);
   });
 
   it("faktúra iného odberateľa (nepotvrdená) do odpočtu nejde, ozve sa výtkou", async () => {

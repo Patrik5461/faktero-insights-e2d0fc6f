@@ -43,8 +43,8 @@ describe("samofakturácia", () => {
       prepocitajPolozku({ name: "c", quantity: 2, unit_price: 50, vat_rate: 5 }, true),
     ]);
     expect(s.sadzby).toEqual([
-      { sadzba: 23, zaklad: 0.1, dan: 0.02 },
       { sadzba: 5, zaklad: 100, dan: 5 },
+      { sadzba: 23, zaklad: 0.1, dan: 0.02 },
     ]);
     expect(s).toMatchObject({ zaklad: 100.1, dan: 5.02, spolu: 105.12 });
   });
@@ -100,8 +100,8 @@ describe("samofakturácia", () => {
     expect(zlavaDokladuSuma(pol, null, 10)).toBe(0);
     const s = sumySamofaktury(pol, 15);
     expect(s.sadzby).toEqual([
-      { sadzba: 23, zaklad: 90, dan: 20.7 },
       { sadzba: 5, zaklad: 45, dan: 2.25 },
+      { sadzba: 23, zaklad: 90, dan: 20.7 },
     ]);
     expect(s).toMatchObject({ zaklad: 135, dan: 22.95, spolu: 157.95, zlava: 15 });
     // Zľava 1/3 — halier dorovná posledná sadzba, súčet sedí presne.

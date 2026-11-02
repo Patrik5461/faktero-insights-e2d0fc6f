@@ -64,6 +64,7 @@ import {
 } from "@/components/faktero/VlastnaFakturaUpozornenie";
 import { useHoverPola, useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
 import { POLIA_ZVYRAZNENIA } from "@/lib/faktero/zvyraznenie-vytazenych";
+import { zoradSadzby } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracovaný doklad — Faktero") }] }),
@@ -812,7 +813,7 @@ function Detail() {
                         <tr key={i}>
                           <td className="py-1 pr-2">
                             <select value={String(r.sadzba)} onChange={(e) => setRozpis(i, { sadzba: Number(e.target.value) })} className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                              {[...new Set([...sadzby, 0, Number(r.sadzba)])].map((x) => (
+                              {zoradSadzby([...new Set([...sadzby, 0, Number(r.sadzba)])]).map((x) => (
                                 <option key={x} value={x}>
                                   {x} %
                                 </option>

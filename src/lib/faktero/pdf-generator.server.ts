@@ -27,7 +27,7 @@ import {
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { pataFirmyDe } from "./firma-de";
-import { krajinaDane, sadzbyKrajiny } from "./vat-rates";
+import { krajinaDane, sadzbyKrajiny, porovnajSadzby } from "./vat-rates";
 import { popisColnychUdajov } from "./colny-kod";
 
 
@@ -747,7 +747,7 @@ async function vykresliFakturu(
       }
     }
     const zoradene = [...skupiny.values()].sort(
-      (a, b) => Number(a.pdp) - Number(b.pdp) || b.sadzba - a.sadzba,
+      (a, b) => Number(a.pdp) - Number(b.pdp) || porovnajSadzby(a.sadzba, b.sadzba),
     );
     /*
       Záloha zdanená dokladom k prijatej platbe: jej základ a daň sa v rozpise

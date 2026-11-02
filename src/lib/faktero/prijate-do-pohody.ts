@@ -7,7 +7,7 @@
   zaúčtovania, číslo faktúry dodávateľa ako `originalDocument`.
 */
 
-import { najblizsiaSadzba } from "./vat-rates";
+import { najblizsiaSadzba, zoradPodlaSadzby } from "./vat-rates";
 import { prepocitajPolozku, sumySamofaktury } from "./samofakturacia";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -173,7 +173,7 @@ export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: n
       r.dph = r2(r.dph + x.dph);
       po.set(k, r);
     }
-    return [...po.values()].sort((a, b) => b.sadzba - a.sadzba);
+    return zoradPodlaSadzby([...po.values()], "sadzba");
   }
   const zaklad = Number(p?.amount_without_vat ?? 0);
   const dph = Number(p?.vat_amount ?? 0);

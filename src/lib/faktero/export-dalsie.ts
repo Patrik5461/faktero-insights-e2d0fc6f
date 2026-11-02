@@ -27,6 +27,7 @@ import {
 } from "./zalohy-odpocty";
 import { riadkySoZlavou } from "./zlavy";
 import { kodStatu } from "./company-autofill";
+import { zoradSadzby } from "./vat-rates";
 
 export type RiadokFaktury = {
   invoice_number?: unknown;
@@ -122,11 +123,10 @@ const NAZOV_UHRADY: Record<string, string> = {
   card: "Karta",
 };
 
-/** Sadzby na doklade od najvyššej — do stĺpcov rekapitulácie. */
+/** Kladné sadzby na doklade — do stĺpcov rekapitulácie (zoradí `zoradSadzby`). */
 function sadzby(polozky: PolozkaFaktury[]): number[] {
   return [...new Set(polozky.map((p) => cislo(p.vat_rate)))]
-    .filter((r) => r > 0)
-    .sort((a, b) => b - a);
+    .filter((r) => r > 0);
 }
 
 function zaSadzbu(polozky: PolozkaFaktury[], sadzba: number, zn = 1) {
@@ -151,9 +151,9 @@ export function buildUniverzalCsv(opts: {
 }): string {
   const domaca = domacaMena(opts.krajina);
   /* Stĺpce sadzieb podľa toho, čo sa v dávke naozaj vyskytlo — prázdne by len zavadzali. */
-  const pouziteSadzby = [...new Set(opts.invoices.flatMap(({ items }) => sadzby(items)))].sort(
-    (a, b) => b - a,
-  );
+  const pouziteSadzby = zoradSadzby([
+    ...new Set(opts.invoices.flatMap(({ items }) => sadzby(items))),
+  ]);
 
   /* Stĺpce kurzu pribudnú len vtedy, keď je v dávke doklad v cudzej mene.
      Bez nich by si účtovníčka sčítala koruny s eurami do jedného súčtu. */
@@ -181,8 +181,9 @@ export function buildUniverzalCsv(opts: {
     "Konštantný symbol",
     "Špecifický symbol",
     "Forma úhrady",
-    ...pouziteSadzby.flatMap((r) => [`Základ ${r} %`, `DPH ${r} %`]),
+    // Sadzby vzostupne ako všade v aplikácii: 0 % pred kladnými.
     "Základ 0 %",
+    ...pouziteSadzby.flatMap((r) => [`Základ ${r} %`, `DPH ${r} %`]),
     "Zľava",
     "Základ spolu",
     "DPH spolu",
@@ -239,11 +240,11 @@ export function buildUniverzalCsv(opts: {
       text(invoice.constant_symbol),
       text(invoice.specific_symbol),
       NAZOV_UHRADY[text(invoice.payment_method)] ?? text(invoice.payment_method),
+      dveSk(nulova),
       ...pouziteSadzby.flatMap((r) => {
         const s = zaSadzbu(items, r, zn);
         return [dveSk(s.zaklad), dveSk(s.dan)];
       }),
-      dveSk(nulova),
       dveSk(zn * cislo(invoice.discount_total)),
       dveSk(zn * cislo(invoice.subtotal)),
       dveSk(zn * cislo(invoice.vat_total)),

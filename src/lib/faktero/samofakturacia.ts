@@ -1,3 +1,4 @@
+import { zoradPodlaSadzby } from "./vat-rates";
 /*
   Samofakturácia (§ 72 ods. 4 zákona o DPH, čl. 224 smernice 2006/112/ES).
 
@@ -146,7 +147,8 @@ export function sumySamofaktury(
   });
   const zaklad = r2(sadzby.reduce((s, x) => s + x.zaklad, 0));
   const dan = r2(sadzby.reduce((s, x) => s + x.dan, 0));
-  return { zaklad, dan, spolu: r2(zaklad + dan), sadzby, zlava };
+  /* Halier dorovnala najnižšia sadzba (výpočet ide od najvyššej); zobrazuje sa vzostupne. */
+  return { zaklad, dan, spolu: r2(zaklad + dan), sadzby: zoradPodlaSadzby(sadzby, "sadzba"), zlava };
 }
 
 /** Zľava na doklad v sume bez DPH — z percent alebo pevnej sumy. */

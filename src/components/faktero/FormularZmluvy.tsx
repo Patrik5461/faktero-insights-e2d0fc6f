@@ -15,7 +15,7 @@ import {
 } from "@/lib/faktero/kontokorent";
 import { kalendar, suhrn, type Zmluva } from "@/lib/faktero/financovanie";
 import { formatujSumu } from "@/lib/faktero/zostatky";
-import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import { sadzbyKrajiny, zoradSadzby } from "@/lib/faktero/vat-rates";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { domacaMena } from "@/lib/faktero/kurzy";
@@ -726,7 +726,7 @@ export function FormularZmluvy({
                   onChange={(e) => setVat(Number(e.target.value))}
                 >
                   <option value={0}>{t("bez DPH")}</option>
-                  {sadzbyKrajiny(krajina)
+                  {zoradSadzby(sadzbyKrajiny(krajina))
                     .filter((r) => r > 0)
                     .map((r) => (
                       <option key={r} value={r}>

@@ -80,9 +80,9 @@ describe("zostaneKUhrade", () => {
 describe("sumarPoSadzbach", () => {
   it("všetky sadzby krajiny aj nulové riadky", () => {
     const s = sumarPoSadzbach([{ sadzba: 23, zaklad: 80, dph: 18.4 }], [23, 19, 5]);
-    expect(s.riadky.map((r) => r.sadzba)).toEqual([23, 19, 5, 0]);
-    expect(s.riadky[0]).toMatchObject({ zaklad: 80, dph: 18.4, spolu: 98.4 });
-    expect(s.riadky[1]).toMatchObject({ zaklad: 0, dph: 0, spolu: 0 });
+    expect(s.riadky.map((r) => r.sadzba)).toEqual([0, 5, 19, 23]);
+    expect(s.riadky[3]).toMatchObject({ zaklad: 80, dph: 18.4, spolu: 98.4 });
+    expect(s.riadky[2]).toMatchObject({ zaklad: 0, dph: 0, spolu: 0 });
     expect(s).toMatchObject({ zaklad: 80, dph: 18.4, spolu: 98.4 });
   });
   it("české sadzby a neznáma stará sadzba", () => {
@@ -94,8 +94,8 @@ describe("sumarPoSadzbach", () => {
       ],
       [21, 12],
     );
-    expect(s.riadky.map((r) => r.sadzba)).toEqual([21, 20, 12, 0]);
-    expect(s.riadky[0]).toMatchObject({ zaklad: 150, dph: 31.5, spolu: 181.5 });
+    expect(s.riadky.map((r) => r.sadzba)).toEqual([0, 12, 20, 21]);
+    expect(s.riadky[3]).toMatchObject({ zaklad: 150, dph: 31.5, spolu: 181.5 });
     expect(s.spolu).toBe(193.5);
   });
   it("prenesenie daňovej povinnosti ide do vlastného riadku", () => {
