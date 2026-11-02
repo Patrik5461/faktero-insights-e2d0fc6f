@@ -58,7 +58,7 @@ describe("rozúčtovanie", () => {
 
   it("začiatok pri viacerých sadzbách dá riadok na sadzbu", () => {
     const z = zaciatokRozuctovania(rozpis, { predkontacia: "1Fp", clenenie: "PD" });
-    expect(z.map((x) => x.sadzba)).toEqual([23, 5]);
+    expect(z.map((x) => x.sadzba)).toEqual([5, 23]);
     expect(chybaRozuctovania(z, rozpis)).toBeNull();
   });
 

@@ -21,6 +21,7 @@ import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { zoradSadzby } from "@/lib/faktero/vat-rates";
 export const Route = createFileRoute("/_authenticated/objednavky/nova")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nová objednávka — Faktero") }] }),
   /**
@@ -492,7 +493,7 @@ function NewOrder() {
                         value={p.vat_rate}
                         onChange={(e) => nastavPolozku(i, { vat_rate: Number(e.target.value) })}
                       >
-                        {sadzbyRezimu(rezim).map((r) => (
+                        {zoradSadzby(sadzbyRezimu(rezim)).map((r) => (
                           <option key={r} value={r}>
                             {r} %
                           </option>
@@ -574,7 +575,7 @@ function NewOrder() {
                           value={p.vat_rate}
                           onChange={(e) => nastavPolozku(i, { vat_rate: Number(e.target.value) })}
                         >
-                          {sadzbyRezimu(rezim).map((r) => (
+                          {zoradSadzby(sadzbyRezimu(rezim)).map((r) => (
                             <option key={r} value={r}>
                               {r} %
                             </option>

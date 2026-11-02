@@ -7,6 +7,7 @@
   Pohoda zaúčtovala inú daň, než aká ide do priznania z Faktera.
 */
 import { kodClenenia } from "./auto-uctovanie";
+import { porovnajSadzby, zoradSadzby } from "./vat-rates";
 
 export type RiadokRozuctovania = {
   predkontacia: string | null;
@@ -46,7 +47,7 @@ function poSadzbach(r: RozpisSadzby[]): Map<number, { zaklad: number; dph: numbe
 export function zostava(riadky: RiadokRozuctovania[], rozpis: RozpisSadzby[]): RozpisSadzby[] {
   const dokl = poSadzbach(rozpis);
   const roz = poSadzbach(riadky);
-  const sadzby = [...new Set([...dokl.keys(), ...roz.keys()])].sort((a, b) => b - a);
+  const sadzby = zoradSadzby([...new Set([...dokl.keys(), ...roz.keys()])]);
   return sadzby.map((s) => ({
     sadzba: s,
     zaklad: r2((dokl.get(s)?.zaklad ?? 0) - (roz.get(s)?.zaklad ?? 0)),
@@ -98,7 +99,7 @@ export function zaciatokRozuctovania(
   kody: { predkontacia: string | null; clenenie: string | null },
 ): RiadokRozuctovania[] {
   const riadky = [...poSadzbach(rozpis).entries()]
-    .sort((a, b) => b[0] - a[0])
+    .sort((a, b) => porovnajSadzby(a[0], b[0]))
     .map(([sadzba, v]) => ({ ...kody, sadzba, zaklad: v.zaklad, dph: v.dph, text: "" }));
   // Jedna sadzba → rozdelí sa na dva riadky, nech je čo upravovať.
   if (riadky.length === 1) {
@@ -190,7 +191,8 @@ export function rozpisBlocku(d: any): RozpisSadzby[] {
         zaklad: Number(x?.zaklad ?? 0),
         dph: Number(x?.dph ?? 0),
       }))
-      .filter((x) => x.zaklad || x.dph);
+      .filter((x) => x.zaklad || x.dph)
+      .sort((a, b) => porovnajSadzby(a.sadzba, b.sadzba));
   }
   const zaklad = Number(d?.net_amount ?? 0);
   const dph = Number(d?.vat_amount ?? 0);

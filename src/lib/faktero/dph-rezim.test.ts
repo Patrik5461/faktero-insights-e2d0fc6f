@@ -76,7 +76,7 @@ describe("sadzby podľa režimu", () => {
   });
 
   it("staršia položka s daňou sa neplatiteľovi pri úprave ticho nevynuluje", () => {
-    expect(moznostiSadziebRezimu(neplatitel, 20)).toEqual([20, 0]);
+    expect(moznostiSadziebRezimu(neplatitel, 20)).toEqual([0, 20]);
     expect(moznostiSadziebRezimu(neplatitel, 0)).toEqual([0]);
   });
 });

@@ -9,6 +9,7 @@
 
 import { statEu, stavPrahu } from "./sadzby-eu";
 import { domacaMena } from "./kurzy";
+import { porovnajSadzby } from "./vat-rates";
 
 /** Výtka pre doklad, ktorý sa nedá vyjadriť v eurách. */
 export const VYTKA_BEZ_KURZU_OSS =
@@ -161,7 +162,7 @@ export function ossPrehlad(doklady: OssDoklad[]): OssPrehlad {
 
   const riadky = [...mapa.values()]
     .filter((r) => r.zaklad !== 0 || r.dan !== 0)
-    .sort((a, b) => a.stat.localeCompare(b.stat) || b.sadzba - a.sadzba);
+    .sort((a, b) => a.stat.localeCompare(b.stat) || porovnajSadzby(a.sadzba, b.sadzba));
 
   return {
     riadky,

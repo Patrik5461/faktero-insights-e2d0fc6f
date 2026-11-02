@@ -97,8 +97,8 @@ describe("suhrnVystavenych", () => {
     expect(s.meny.map((m) => m.mena)).toEqual(["EUR", "CZK"]);
     const eur = s.meny[0];
     expect(eur).toMatchObject({ pocet: 2, zaklad: 150, dph: 25.5, celkom: 175.5 });
-    expect(eur.sadzby.map((x) => x.sadzba)).toEqual([23, 5]);
-    expect(eur.sadzby[1]).toMatchObject({ zaklad: 50, dph: 2.5, celkom: 52.5 });
+    expect(eur.sadzby.map((x) => x.sadzba)).toEqual([5, 23]);
+    expect(eur.sadzby[0]).toMatchObject({ zaklad: 50, dph: 2.5, celkom: 52.5 });
     expect(maRozneSadzby(eur)).toBe(true);
     expect(maRozneSadzby(s.meny[1])).toBe(false);
     expect(s.meny[1]).toMatchObject({ zaklad: 1000, dph: 210, celkom: 1210 });
@@ -166,8 +166,8 @@ describe("normalizujSuhrn", () => {
     expect(s.pocet).toBe(3);
     expect(s.meny.map((m) => m.mena)).toEqual(["EUR", "USD"]);
     expect(s.meny[0].sadzby.map((x) => [x.sadzba, x.pdp])).toEqual([
-      [23, false],
       [5, false],
+      [23, false],
       [null, true],
     ]);
     expect(s.meny[1].zaklad).toBe(10);

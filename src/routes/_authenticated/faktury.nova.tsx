@@ -109,7 +109,7 @@ import {
   sedisNavrhom,
   type NavrhRezimu,
 } from "@/lib/faktero/rezim-odberatela";
-import { historickeSadzby } from "@/lib/faktero/vat-rates";
+import { historickeSadzby, zoradSadzby } from "@/lib/faktero/vat-rates";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { UpozornenieObjednavky } from "@/components/faktero/PovinnaObjednavka";
@@ -374,8 +374,9 @@ function NewInvoice() {
   }, [form, items, odkladat, submitting]);
 
   /* Pri predaji do EÚ cez OSS sa účtuje sadzbami štátu zákazníka. */
-  const sadzbyPolozky =
-    form.oss && form.oss_country ? sadzbyStatu(form.oss_country) : sadzbyRezimu(rezim);
+  const sadzbyPolozky = zoradSadzby(
+    form.oss && form.oss_country ? sadzbyStatu(form.oss_country) : sadzbyRezimu(rezim),
+  );
   /*
     Historické sadzby patria do zoznamu zvlášť: faktúra k zálohovej faktúre
     z minulého roka alebo dodávka spred zmeny zákona nesie sadzbu, ktorá vtedy

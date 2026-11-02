@@ -84,6 +84,46 @@ function dnes(): string {
   return dnesBratislava();
 }
 
+/*
+  Poradie sadzieb na obrazovke, v PDF, exportoch aj vo výstupe AI: vždy
+  numericky vzostupne (SK 0 → 5 → 19 → 23, CZ 0 → 12 → 21). Neznáma alebo
+  historická sadzba (10 %, 20 %) sa zaradí medzi ostatné podľa hodnoty — nie
+  je to pevný zoznam, takže funguje pre každú krajinu.
+
+  Mení sa len poradie zobrazenia. Hodnoty, väzba základ ↔ daň ↔ sadzba ani
+  uložené dáta sa nemenia; zoradenie vždy vracia novú kópiu a je stabilné
+  (riadky s rovnakou sadzbou, napr. bežný a PDP, ostanú v pôvodnom poradí).
+  Nečíselná sadzba (null, prázdna) ide na koniec.
+*/
+
+const cisloSadzby = (v: unknown): number | null => {
+  if (v == null || v === "") return null;
+  const n = Number(typeof v === "string" ? v.replace(",", ".") : v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** Komparátor pre `Array.sort` — vzostupne podľa hodnoty sadzby. */
+export function porovnajSadzby(a: unknown, b: unknown): number {
+  const x = cisloSadzby(a);
+  const y = cisloSadzby(b);
+  if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+  return x - y;
+}
+
+/** Zoradená kópia zoznamu sadzieb (čísla aj reťazce ako „19"). */
+export function zoradSadzby<T extends number | string>(sadzby: readonly T[]): T[] {
+  return [...sadzby].sort(porovnajSadzby);
+}
+
+/**
+ * Zoradená kópia riadkov podľa sadzby. `kluc` je názov poľa so sadzbou
+ * (`"sadzba"`, `"vat_rate"`, …) alebo funkcia, ktorá ju z riadku vytiahne.
+ */
+export function zoradPodlaSadzby<T>(pole: readonly T[], kluc: keyof T | ((x: T) => unknown)): T[] {
+  const sadzba = typeof kluc === "function" ? kluc : (x: T) => (x as any)?.[kluc];
+  return [...pole].sort((a, b) => porovnajSadzby(sadzba(a), sadzba(b)));
+}
+
 /** Sadzby platné v daný deň. Pohoda ich potrebuje ako priehradky, nie percentá. */
 export function sadzbyKuDnu(
   krajina: KrajinaDane,
@@ -95,7 +135,11 @@ export function sadzbyKuDnu(
   return { high: t.high, low: t.low, third: t.third };
 }
 
-/** Sadzby do výberu: platné v daný deň, od najvyššej, vrátane nuly. */
+/**
+ * Sadzby platné v daný deň, od najvyššej, vrátane nuly. Prvá je základná —
+ * na to sa spoliehajú volajúci (`[0]`). Na zobrazenie ich preveď cez
+ * `zoradSadzby`, alebo použi `vatRateOptions`.
+ */
 export function sadzbyKrajiny(krajina: KrajinaDane, den?: string | null): number[] {
   const t = sadzbyKuDnu(krajina, den);
   const s = [t.high, t.low, ...(t.third == null ? [] : [t.third]), 0];
@@ -146,16 +190,16 @@ export function vatBucketKey(rate: number | null | undefined): string {
 }
 
 /**
- * Poradie riadkov v prehľade DPH: najprv platné sadzby, potom sadzby, ktoré sa
- * naozaj vyskytli v dátach (historické alebo zahraničné), a nakoniec
- * oslobodené plnenia a prenos daňovej povinnosti.
+ * Poradie riadkov v prehľade DPH: platné sadzby spolu so sadzbami, ktoré sa
+ * naozaj vyskytli v dátach (historické alebo zahraničné), vzostupne podľa
+ * hodnoty, a nakoniec oslobodené plnenia a prenos daňovej povinnosti.
  */
 export function vatBucketOrder(seenKeys: Iterable<string>, krajina: KrajinaDane = "SK"): string[] {
   const zaklad = sadzbyKrajiny(krajina).map(String);
-  const navyse = [...new Set(seenKeys)]
-    .filter((k) => k !== "exempt" && k !== "pdp" && !zaklad.includes(k))
-    .sort((a, b) => Number(b) - Number(a));
-  return [...zaklad, ...navyse, "exempt", "pdp"];
+  const navyse = [...new Set(seenKeys)].filter(
+    (k) => k !== "exempt" && k !== "pdp" && !zaklad.includes(k),
+  );
+  return [...zoradSadzby([...zaklad, ...navyse]), "exempt", "pdp"];
 }
 
 export function vatBucketLabel(key: string, krajina: KrajinaDane = "SK"): string {
@@ -203,7 +247,8 @@ export function historickeSadzby(
       vysledok.push({ sadzba: r, doRoku });
     }
   });
-  return vysledok.sort((a, b) => b.sadzba - a.sadzba).slice(0, kolko);
+  /* Vyberú sa tri najvyššie (najnovšie), zobrazia sa vzostupne. */
+  return zoradPodlaSadzby(vysledok.sort((a, b) => b.sadzba - a.sadzba).slice(0, kolko), "sadzba");
 }
 
 /** Popis sadzby do zoznamu — historická nesie rok, dokedy platila. */
@@ -213,7 +258,7 @@ export function popisSadzby(sadzba: number, krajina: KrajinaDane, den?: string |
 }
 
 /**
- * Sadzby do rozbaľovacieho zoznamu.
+ * Sadzby do rozbaľovacieho zoznamu — vzostupne ako všade v aplikácii.
  * Sadzba, ktorú položka už nesie a dnes neplatí, sa pridá — inak by sa pri
  * úprave staršieho dokladu ticho prepla na inú.
  */
@@ -225,9 +270,9 @@ export function vatRateOptions(
   const base = sadzbyKrajiny(krajina, den);
   const cur = currentRate == null ? null : Number(currentRate);
   if (cur != null && Number.isFinite(cur) && !base.includes(cur)) {
-    return [...base, cur].sort((a, b) => b - a);
+    return zoradSadzby([...base, cur]);
   }
-  return base;
+  return zoradSadzby(base);
 }
 
 /* Ponechané pre miesta, ktoré firmu po ruke nemajú. Slovenské, ako doteraz. */

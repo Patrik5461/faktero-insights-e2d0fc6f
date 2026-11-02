@@ -16,6 +16,7 @@
 */
 import { znamienkoDokladu } from "./faktury-sumy";
 import { sumyPoMenach, jeMimoSuctu, type PolozkaSuhrnu } from "./suhrn-vyberu";
+import { porovnajSadzby } from "./vat-rates";
 
 export type SadzbaSuhrnu = {
   /** Sadzba DPH v percentách; `null` = prenesenie (pdp) alebo doklad bez položiek. */
@@ -123,12 +124,10 @@ export function rozpisDokladu(
   }));
 }
 
-/** Poradie sadzieb: najvyššia hore, prenesenie a doklady bez rozpisu na koniec. */
-function zoradSadzby(a: SadzbaSuhrnu, b: SadzbaSuhrnu): number {
+/** Poradie sadzieb: vzostupne, prenesenie a doklady bez rozpisu na koniec. */
+function poradieSadzieb(a: SadzbaSuhrnu, b: SadzbaSuhrnu): number {
   if (a.pdp !== b.pdp) return a.pdp ? 1 : -1;
-  if (a.sadzba == null) return b.sadzba == null ? 0 : 1;
-  if (b.sadzba == null) return -1;
-  return b.sadzba - a.sadzba;
+  return porovnajSadzby(a.sadzba, b.sadzba);
 }
 
 /** Poradie mien: EUR prvé, potom podľa počtu dokladov. */
@@ -195,7 +194,7 @@ export function suhrnVystavenych(
             dph: r2(s.dph),
             celkom: r2(s.zaklad + s.dph),
           }))
-          .sort(zoradSadzby),
+          .sort(poradieSadzieb),
       }))
       .sort(zoradMeny),
   };
@@ -223,7 +222,7 @@ export function normalizujSuhrn(json: unknown): SuhrnDph {
             dph: cislo(s?.dph),
             celkom: cislo(s?.celkom),
           }))
-          .sort(zoradSadzby),
+          .sort(poradieSadzieb),
       }))
       .sort(zoradMeny),
   };

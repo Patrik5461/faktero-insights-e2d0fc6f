@@ -279,7 +279,7 @@ export function moznostiSadziebRezimu(
 ): number[] {
   if (rezim.platitel) return vatRateOptions(rezim.krajina, aktualna, den);
   const a = aktualna == null ? null : Number(aktualna);
-  return a && a > 0 ? [a, 0] : [0];
+  return a && a > 0 ? [0, a] : [0];
 }
 
 /**

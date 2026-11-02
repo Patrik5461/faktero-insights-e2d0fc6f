@@ -12,7 +12,7 @@
 */
 
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
-import { najblizsiaSadzba } from "./vat-rates";
+import { najblizsiaSadzba, zoradPodlaSadzby } from "./vat-rates";
 import { datum as datumZAi } from "./mail-prijem";
 
 export type DruhNespracovaneho = "faktura" | "zalohova" | "dobropis" | "blocek" | "ostatny";
@@ -197,7 +197,7 @@ export function nacitajUdaje(v: unknown): UdajeNespracovaneho {
     dodavatel: { ...z.dodavatel, ...(u.dodavatel ?? {}) },
     ostatny: { ...z.ostatny, ...(u.ostatny ?? {}) },
     kody: { ...z.kody, ...(u.kody ?? {}) },
-    rozpis: Array.isArray(u.rozpis) ? u.rozpis : [],
+    rozpis: Array.isArray(u.rozpis) ? zoradPodlaSadzby(u.rozpis, "sadzba") : [],
     polozky: Array.isArray(u.polozky) ? u.polozky : [],
   };
 }
@@ -254,7 +254,8 @@ export function rozpisZAi(ai: Record<string, unknown> | null | undefined): Riado
       const posl = riadky[riadky.length - 1]!;
       posl.zaklad = r2(posl.zaklad + (z - sucet));
       if (d !== null) posl.dph = r2(posl.dph + (d - riadky.reduce((a, r) => a + r.dph, 0)));
-      return riadky;
+      // Centy idú (ako doteraz) najnižšej sadzbe; von ide pole zoradené vzostupne.
+      return zoradPodlaSadzby(riadky, "sadzba");
     }
   }
   if (z === null && d === null) return [];
@@ -557,7 +558,7 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   const dph = Math.abs(Number(p.vat_amount ?? 0));
   const rozpis = Array.isArray(p.vat_breakdown) ? p.vat_breakdown : null;
   u.rozpis = rozpis?.length
-    ? rozpis.map((r: any) => ({ sadzba: Number(r.sadzba) || 0, zaklad: Math.abs(Number(r.zaklad) || 0), dph: Math.abs(Number(r.dph) || 0) }))
+    ? zoradPodlaSadzby(rozpis.map((r: any) => ({ sadzba: Number(r.sadzba) || 0, zaklad: Math.abs(Number(r.zaklad) || 0), dph: Math.abs(Number(r.dph) || 0) })), "sadzba")
     : zaklad || dph
       ? [{ sadzba: zaklad ? najblizsiaSadzba((dph / zaklad) * 100, "SK") : 0, zaklad, dph }]
       : [];

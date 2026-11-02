@@ -69,6 +69,19 @@ describe("univerzálna súpiska v CSV", () => {
     expect(riadky[0]).not.toContain("Základ 19 %");
   });
 
+  it("stĺpce sadzieb idú vzostupne: 0 %, 5 %, 23 %", () => {
+    const h = riadky[0];
+    expect(h).toContain("Základ 0 %;Základ 5 %;DPH 5 %;Základ 23 %;DPH 23 %");
+    const hlavicka = h.split(";");
+    const b = riadky[1].split(";");
+    const bunka = (nazov: string) => b[hlavicka.indexOf(nazov)];
+    expect(bunka("Základ 0 %")).toBe("20,00");
+    expect(bunka("Základ 5 %")).toBe("50,00");
+    expect(bunka("DPH 5 %")).toBe("2,50");
+    expect(bunka("Základ 23 %")).toBe("100,00");
+    expect(bunka("DPH 23 %")).toBe("23,00");
+  });
+
   it("rozpíše sumy po sadzbách a použije slovenskú čiarku", () => {
     const b = riadky[1].split(";");
     expect(b).toContain("100,00"); // základ 23 %

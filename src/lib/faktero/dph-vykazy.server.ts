@@ -1,5 +1,5 @@
 import { vsetkoAkoData } from "./strankovanie";
-import { sadzbyKrajiny } from "./vat-rates";
+import { sadzbyKrajiny, zoradPodlaSadzby } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
 import { rozpisPrijatej } from "./prijate-do-pohody";
@@ -83,7 +83,7 @@ function riadkyZPoloziek(
     s.dan += dan;
     mapa.set(sadzba, s);
   }
-  return [...mapa.values()].map((s) => ({
+  return zoradPodlaSadzby([...mapa.values()], "sadzba").map((s) => ({
     sadzba: s.sadzba,
     zaklad: Math.round(s.zaklad * 100) / 100,
     dan: Math.round(s.dan * 100) / 100,

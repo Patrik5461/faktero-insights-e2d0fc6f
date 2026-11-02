@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { zoradPodlaSadzby } from "./vat-rates";
 /*
   Oprava základu dane pri nevymožiteľnej pohľadávke (§ 25a zákona o DPH).
 
@@ -61,7 +62,7 @@ function riadkyFaktury(f: any) {
   const zlava = Number(f.discount_total ?? 0);
   const zakladSpolu = [...mapa.values()].reduce((s, x) => s + x.zaklad, 0);
   const k = zlava > 0 && zakladSpolu > 0 ? (zakladSpolu - zlava) / zakladSpolu : 1;
-  return [...mapa.values()].map((x) => ({ sadzba: x.sadzba, zaklad: r2(x.zaklad * k), dan: r2(x.dan * k) }));
+  return zoradPodlaSadzby([...mapa.values()], "sadzba").map((x) => ({ sadzba: x.sadzba, zaklad: r2(x.zaklad * k), dan: r2(x.dan * k) }));
 }
 
 export type Stav25a = {

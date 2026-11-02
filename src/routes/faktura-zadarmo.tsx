@@ -44,7 +44,7 @@ import {
   type KrajinaZadarmo,
   type RezimZadarmo,
 } from "@/lib/faktero/faktura-zadarmo";
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { zakladnaSadzba, zoradSadzby } from "@/lib/faktero/vat-rates";
 import { SADZBY_EU } from "@/lib/faktero/sadzby-eu";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { lokalJazyka, preloz, type Jazyk } from "@/lib/i18n/jazyk";
@@ -183,7 +183,7 @@ function FakturaZadarmoStranka() {
       }),
     [f],
   );
-  const sadzby = sadzbyZadarmo(f);
+  const sadzby = zoradSadzby(sadzbyZadarmo(f));
   const bezDph = bezDane(f);
   const lokal = lokalJazyka(jazyk);
   const peniaze = (n: number) => formatujMenu(n, f.mena, lokal);

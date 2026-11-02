@@ -38,6 +38,7 @@ import { OznacenieDokladu, PoznamkaDokladu } from "./DokladOznacenie";
 import { FilterChips } from "./ui";
 import { PrijateFaktury } from "./PrijateFaktury";
 import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
+import { zoradPodlaSadzby } from "@/lib/faktero/vat-rates";
 /**
  * Prijaté doklady v mobilnej aplikácii.
  *
@@ -836,7 +837,9 @@ function DetailDokladu({
 
   const mena = doklad.currency ?? "EUR";
   const polozky = Array.isArray(doklad.items) ? (doklad.items as any[]) : [];
-  const rozpis = Array.isArray(doklad.vat_breakdown) ? (doklad.vat_breakdown as any[]) : [];
+  const rozpis = Array.isArray(doklad.vat_breakdown)
+    ? zoradPodlaSadzby(doklad.vat_breakdown as any[], "sadzba")
+    : [];
 
   useEffect(() => {
     if (!doklad.file_path) return;

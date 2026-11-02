@@ -12,6 +12,9 @@ import {
   vatRateOptions,
   historickeSadzby,
   popisSadzby,
+  porovnajSadzby,
+  zoradSadzby,
+  zoradPodlaSadzby,
 } from "./vat-rates";
 
 describe("sadzby platné v SR", () => {
@@ -24,7 +27,7 @@ describe("sadzby platné v SR", () => {
   });
 
   it("historickú sadzbu na doklade ponechá, ale neponúka ju nanovo", () => {
-    expect(vatRateOptions("SK", 20)).toEqual([23, 20, 19, 5, 0]);
+    expect(vatRateOptions("SK", 20)).toEqual([0, 5, 19, 20, 23]);
     expect(vatRateOptions("SK")).not.toContain(20);
   });
 });
@@ -63,7 +66,7 @@ describe("režim podľa krajiny firmy", () => {
   });
 
   it("prehľad DPH má české riadky pomenované po česky správne", () => {
-    expect(vatBucketOrder(["exempt"], "CZ")).toEqual(["21", "12", "0", "exempt", "pdp"]);
+    expect(vatBucketOrder(["exempt"], "CZ")).toEqual(["0", "12", "21", "exempt", "pdp"]);
     expect(vatBucketLabel("21", "CZ")).toBe("21 % (základná)");
     expect(vatBucketLabel("12", "CZ")).toBe("12 % (znížená)");
     // Slovenská sadzba je pre českú firmu historická, nie znížená.
@@ -124,17 +127,17 @@ describe("najblizsiaSadzba", () => {
 });
 
 describe("vatBucketOrder", () => {
-  it("platné sadzby idú prvé, oslobodené a PDP posledné", () => {
-    expect(vatBucketOrder(["exempt"])).toEqual(["23", "19", "5", "0", "exempt", "pdp"]);
+  it("platné sadzby idú vzostupne, oslobodené a PDP posledné", () => {
+    expect(vatBucketOrder(["exempt"])).toEqual(["0", "5", "19", "23", "exempt", "pdp"]);
   });
 
-  it("sadzbu, ktorá je v dátach navyše, zaradí podľa veľkosti pred oslobodené", () => {
+  it("sadzbu, ktorá je v dátach navyše, zaradí podľa veľkosti medzi ostatné", () => {
     expect(vatBucketOrder(["20", "23", "pdp"])).toEqual([
-      "23",
-      "19",
-      "5",
       "0",
+      "5",
+      "19",
       "20",
+      "23",
       "exempt",
       "pdp",
     ]);
@@ -163,14 +166,14 @@ describe("vatBucketLabel", () => {
 describe("historické sadzby", () => {
   it("SK ponúkne to, čo platilo pred rokom 2025", () => {
     expect(historickeSadzby("SK", "2026-09-29")).toEqual([
-      { sadzba: 20, doRoku: 2024 },
       { sadzba: 10, doRoku: 2024 },
+      { sadzba: 20, doRoku: 2024 },
     ]);
   });
   it("CZ ponúkne zrušené znížené sadzby", () => {
     expect(historickeSadzby("CZ", "2026-09-29")).toEqual([
-      { sadzba: 15, doRoku: 2023 },
       { sadzba: 10, doRoku: 2023 },
+      { sadzba: 15, doRoku: 2023 },
     ]);
   });
   it("sadzba, ktorá platí aj dnes, medzi historické nepatrí", () => {
@@ -187,5 +190,71 @@ describe("historické sadzby", () => {
   it("popis odlíši historickú sadzbu rokom", () => {
     expect(popisSadzby(23, "SK", "2026-09-29")).toBe("23 %");
     expect(popisSadzby(20, "SK", "2026-09-29")).toBe("20 % (do 2024)");
+  });
+});
+
+/*
+  Poradie sadzieb všade v aplikácii: numericky vzostupne. Nie je to pevný
+  zoznam — SK, CZ aj historické či zahraničné sadzby sa zoradia rovnako.
+*/
+describe("poradie sadzieb (zoradSadzby, zoradPodlaSadzby)", () => {
+  /* Len príklad pre slovenskú firmu, nie pevný zoznam. */
+  const VAT_RATES_ORDER = [0, 5, 19, 23];
+
+  it("SK 5, 23, 19, 0 → 0, 5, 19, 23", () => {
+    expect(zoradSadzby([5, 23, 19, 0])).toEqual(VAT_RATES_ORDER);
+    expect(zoradSadzby(sadzbyKrajiny("SK", "2026-11-02"))).toEqual(VAT_RATES_ORDER);
+  });
+
+  it("CZ 21 / 12 / 0 vzostupne", () => {
+    expect(zoradSadzby(sadzbyKrajiny("CZ", "2026-11-02"))).toEqual([0, 12, 21]);
+    expect(zoradSadzby([21, 0, 12])).toEqual([0, 12, 21]);
+  });
+
+  it("historické 10 % a 20 % zaradí numericky medzi ostatné", () => {
+    expect(zoradSadzby([23, 20, 5, 10, 19, 0])).toEqual([0, 5, 10, 19, 20, 23]);
+  });
+
+  it("zvládne reťazce, desatinné sadzby a nečíselné dá na koniec", () => {
+    expect(zoradSadzby(["23", "5", "19"])).toEqual(["5", "19", "23"]);
+    expect([7.7, 2.5, 8.1].sort(porovnajSadzby)).toEqual([2.5, 7.7, 8.1]);
+    expect([null, 23, undefined, 0].sort(porovnajSadzby)).toEqual([0, 23, null, undefined]);
+  });
+
+  it("riadky zoradí podľa sadzby, hodnoty a väzbu základ ↔ daň nechá", () => {
+    const rozpis = [
+      { sadzba: 5, zaklad: 10, dph: 0.5 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
+      { sadzba: 19, zaklad: 50, dph: 9.5 },
+    ];
+    const z = zoradPodlaSadzby(rozpis, "sadzba");
+    expect(z).toEqual([
+      { sadzba: 5, zaklad: 10, dph: 0.5 },
+      { sadzba: 19, zaklad: 50, dph: 9.5 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
+    ]);
+    // Vstup ostane nedotknutý (uložené dáta sa nemenia).
+    expect(rozpis.map((r) => r.sadzba)).toEqual([5, 23, 19]);
+  });
+
+  it("je stabilné — bežný a PDP riadok s rovnakou sadzbou ostanú v poradí", () => {
+    const z = zoradPodlaSadzby(
+      [
+        { sadzba: 23, pdp: false },
+        { sadzba: 0, pdp: false },
+        { sadzba: 23, pdp: true },
+      ],
+      (r) => r.sadzba,
+    );
+    expect(z).toEqual([
+      { sadzba: 0, pdp: false },
+      { sadzba: 23, pdp: false },
+      { sadzba: 23, pdp: true },
+    ]);
+  });
+
+  it("sadzbyKrajiny ostáva od základnej — volajúci berú [0] ako základnú", () => {
+    expect(sadzbyKrajiny("SK", "2026-11-02")[0]).toBe(23);
+    expect(sadzbyKrajiny("CZ", "2026-11-02")[0]).toBe(21);
   });
 });

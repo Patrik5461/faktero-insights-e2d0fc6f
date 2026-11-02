@@ -13,7 +13,7 @@
  * údaje zbierajú do `vytky` a obrazovka ich ukáže ešte pred odoslaním.
  */
 
-import { najblizsiaSadzba, sadzbyKuDnu } from "./vat-rates";
+import { najblizsiaSadzba, sadzbyKuDnu, zoradPodlaSadzby } from "./vat-rates";
 import type { Oprava53b } from "./dph-nezaplatene";
 import { kvPrijatehoDokladu, kvVystavenehoDokladu, upozornenieA1 } from "./kv-urcenie";
 
@@ -247,7 +247,7 @@ export function odpocitajZdanenuZalohu(
       podlaSadzby.set(z.sadzba, { sadzba: z.sadzba, zaklad: -z.zaklad, dan: -z.dan });
     }
   }
-  return [...podlaSadzby.values()]
+  return zoradPodlaSadzby([...podlaSadzby.values()], "sadzba")
     .map((r) => ({
       sadzba: r.sadzba,
       zaklad: Math.round(r.zaklad * 100) / 100,

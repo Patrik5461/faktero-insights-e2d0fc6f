@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { rozpisPodlaSadzieb } from "./rozpis-dph";
 
 describe("rozpisPodlaSadzieb", () => {
-  it("zoskupí riadky podľa sadzby, najvyššia prvá", () => {
+  it("zoskupí riadky podľa sadzby, vzostupne", () => {
     const r = rozpisPodlaSadzieb([
       { vat_rate: 23, subtotal: 800, vat_amount: 184 },
       { vat_rate: 19, subtotal: 54, vat_amount: 10.26 },
       { vat_rate: 23, subtotal: 100, vat_amount: 23 },
     ]);
     expect(r).toEqual([
-      { sadzba: 23, prenesenie: false, zaklad: 900, dan: 207 },
       { sadzba: 19, prenesenie: false, zaklad: 54, dan: 10.26 },
+      { sadzba: 23, prenesenie: false, zaklad: 900, dan: 207 },
     ]);
   });
 

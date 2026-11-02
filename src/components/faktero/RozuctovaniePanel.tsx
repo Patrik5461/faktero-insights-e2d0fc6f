@@ -19,6 +19,7 @@ import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
+import { zoradSadzby } from "@/lib/faktero/vat-rates";
 
 const f2 = (n: number) => formatujCislo(n, 2);
 
@@ -57,7 +58,7 @@ export function RozuctovaniePanel({
   useEffect(() => setRiadky(povodne), [povodne]);
 
   const sadzby = useMemo(
-    () => [...new Set(rozpis.map((x) => Number(x.sadzba) || 0))].sort((a, b) => b - a),
+    () => zoradSadzby([...new Set(rozpis.map((x) => Number(x.sadzba) || 0))]),
     [rozpis],
   );
   const zvysok = zostava(riadky, rozpis);

@@ -26,7 +26,12 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
-import { historickeSadzby, sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
+import {
+  historickeSadzby,
+  sadzbyKrajiny,
+  DEFAULT_VAT_RATE,
+  zoradSadzby,
+} from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
@@ -1292,7 +1297,7 @@ export function RiadokPolozky({
               onChange={(e) => onZmen({ vat_rate: Number(e.target.value) })}
               className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-2 py-2.5 text-[16px]"
             >
-              {sadzbyKrajiny(krajina).map((r) => (
+              {zoradSadzby(sadzbyKrajiny(krajina)).map((r) => (
                 <option key={r} value={r}>
                   {r} %
                 </option>

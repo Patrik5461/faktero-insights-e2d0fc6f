@@ -14,7 +14,13 @@
 */
 import { z } from "zod";
 import { cistyText } from "@/lib/bezpecny-text";
-import { krajinaDane, sadzbyKrajiny, zakladnaSadzba, type KrajinaDane } from "./vat-rates";
+import {
+  krajinaDane,
+  sadzbyKrajiny,
+  zakladnaSadzba,
+  type KrajinaDane,
+  porovnajSadzby,
+} from "./vat-rates";
 import { predvolenaSchema, type SchemaDph } from "./dph-rezim";
 import { skontrolujDatumy } from "./faktura-nalezitosti";
 import { ibanPlatny, normIban } from "./banka-notifikacie";
@@ -280,7 +286,7 @@ export function spocitajZadarmo(
     spolu: r2(zaklad + dan),
     riadky,
     podlaSadzby: [...mapa.entries()]
-      .sort((a, b) => b[0] - a[0])
+      .sort((a, b) => porovnajSadzby(a[0], b[0]))
       .map(([sadzba, s]) => ({ sadzba, zaklad: r2(s.zaklad), dan: r2(s.dan) })),
   };
 }

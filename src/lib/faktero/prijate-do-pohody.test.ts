@@ -37,8 +37,8 @@ describe("prijatá faktúra do Pohody", () => {
         ],
       }),
     ).toEqual([
-      { sadzba: 23, zaklad: 100, dph: 23 },
       { sadzba: 5, zaklad: 50, dph: 2.5 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
     ]);
   });
 

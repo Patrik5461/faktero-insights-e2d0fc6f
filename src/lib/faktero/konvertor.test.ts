@@ -135,8 +135,8 @@ describe("konvertor — prevod", () => {
     expect(r.chyby).toEqual([]);
     expect(r.doklady).toHaveLength(1);
     expect(r.doklady[0].vat_breakdown).toEqual([
-      { sadzba: 23, zaklad: 100, dph: 23 },
       { sadzba: 5, zaklad: 20, dph: 1 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
     ]);
     expect(r.doklady[0].total_amount).toBe(144);
     const xml = buildPohodaExpensesXml({

@@ -23,6 +23,38 @@ describe("nespracované doklady", () => {
     expect(navrhDruhu(null)).toBe("faktura");
   });
 
+  it("výstup AI s položkami 5, 23, 19 % je hneď zoradené pole, centy ostanú pri 5 %", () => {
+    const r = rozpisZAi({
+      amount_without_vat: 170.01,
+      vat_amount: 33.51,
+      amount_total: 203.52,
+      items: [
+        { name: "A", vat_rate: 5, total: 21 },
+        { name: "B", vat_rate: 23, total: 123 },
+        { name: "C", vat_rate: 19, total: 59.5 },
+      ],
+    });
+    expect(r.map((x) => x.sadzba)).toEqual([5, 19, 23]);
+    // Dorovnanie centov ide ako doteraz najnižšej sadzbe — hodnoty sa nemenia.
+    expect(r).toEqual([
+      { sadzba: 5, zaklad: 20.01, dph: 1.01 },
+      { sadzba: 19, zaklad: 50, dph: 9.5 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
+    ]);
+  });
+
+  it("uložený rozpis v ľubovoľnom poradí sa načíta zoradený", () => {
+    const { udaje: u } = udajeZPrijatej({
+      vat_breakdown: [
+        { sadzba: 5, zaklad: 10, dph: 0.5 },
+        { sadzba: 23, zaklad: 100, dph: 23 },
+        { sadzba: 19, zaklad: 50, dph: 9.5 },
+      ],
+    } as any);
+    expect(u.rozpis.map((x) => x.sadzba)).toEqual([5, 19, 23]);
+    expect(u.rozpis[2]).toEqual({ sadzba: 23, zaklad: 100, dph: 23 });
+  });
+
   it("rozpis po sadzbách z položiek, inak jeden riadok", () => {
     expect(
       rozpisZAi({
@@ -35,8 +67,8 @@ describe("nespracované doklady", () => {
         ],
       }),
     ).toEqual([
-      { sadzba: 23, zaklad: 100, dph: 23 },
       { sadzba: 5, zaklad: 20, dph: 1 },
+      { sadzba: 23, zaklad: 100, dph: 23 },
     ]);
     expect(rozpisZAi({ amount_without_vat: 100, vat_amount: 23, amount_total: 123 })).toEqual([
       { sadzba: 23, zaklad: 100, dph: 23 },

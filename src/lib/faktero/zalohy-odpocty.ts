@@ -1,3 +1,4 @@
+import { zoradPodlaSadzby } from "./vat-rates";
 /*
   Odpočet zálohy na vyúčtovacej faktúre — jeden tvar pre všetky exporty.
 
@@ -68,7 +69,7 @@ export function suhrnOdpoctov(odpocty: OdpocetZalohy[]): RiadokOdpoctu[] {
       x.dph = r2(x.dph + r.dph);
       po.set(r.sadzba, x);
     }
-  return [...po.values()].sort((a, b) => b.sadzba - a.sadzba);
+  return zoradPodlaSadzby([...po.values()], "sadzba");
 }
 
 /** Odpočítaná suma s DPH spolu. */

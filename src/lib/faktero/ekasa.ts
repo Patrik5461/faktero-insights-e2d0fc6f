@@ -1,3 +1,4 @@
+import { zoradPodlaSadzby } from "./vat-rates";
 /**
  * Čítanie údajov z eKasa dokladu (Finančná správa SR).
  *
@@ -307,13 +308,18 @@ export function mapujFsDoklad(r: FsDoklad): EkasaDecoded {
     suma: cislo(r.priceWithVat) ?? cislo(r.totalPrice),
     dph: dph > 0 ? Math.round(dph * 100) / 100 : undefined,
     zaklad: zakladZoSuhrnu > 0 ? Math.round(zakladZoSuhrnu * 100) / 100 : undefined,
-    sadzby: suhrn
-      .map((v) => ({
-        sadzba: sadzbaVPercentach(v?.vat?.vatRate ?? v?.vatRate) ?? 0,
-        zaklad: cislo(v?.vatBase) ?? 0,
-        dph: cislo(v?.vatAmount) ?? 0,
-      }))
-      .filter((v) => v.zaklad > 0 || v.dph > 0),
+    // Finančná správa posiela sadzby v ľubovoľnom poradí (5, 23, 19) — hneď
+    // po prečítaní sa zoradia vzostupne, hodnoty ostávajú.
+    sadzby: zoradPodlaSadzby(
+      suhrn
+        .map((v) => ({
+          sadzba: sadzbaVPercentach(v?.vat?.vatRate ?? v?.vatRate) ?? 0,
+          zaklad: cislo(v?.vatBase) ?? 0,
+          dph: cislo(v?.vatAmount) ?? 0,
+        }))
+        .filter((v) => v.zaklad > 0 || v.dph > 0),
+      "sadzba",
+    ),
     uhrada: sposobUhrady(r.payments),
     mena: r.currency ? String(r.currency) : "EUR",
     datum,

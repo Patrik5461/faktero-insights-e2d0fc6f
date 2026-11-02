@@ -35,6 +35,7 @@ import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
 import { NastavitPredvolene } from "./NastavitPredvolene";
+import { zoradSadzby } from "@/lib/faktero/vat-rates";
 
 /*
   Rozloženie nespracovaného dokladu kompaktné: veľký náhľad s
@@ -457,7 +458,7 @@ export function NespracovanyKompaktny({
                   onChange={(e) => setRozpis(i, { sadzba: Number(e.target.value) })}
                   className="h-10 rounded-lg border border-input bg-background px-1 text-xs"
                 >
-                  {[...new Set([...sadzby, 0, Number(r.sadzba)])].map((x) => (
+                  {zoradSadzby([...new Set([...sadzby, 0, Number(r.sadzba)])]).map((x) => (
                     <option key={x} value={x}>
                       {x} %
                     </option>
