@@ -22,6 +22,7 @@ import {
   tlacidlo,
   tukni,
   vystavVApke,
+  zalozka,
 } from "../lib/apka.mjs";
 
 const CISLO = /\b([A-Z]{0,4}\d{6,})\b/;
@@ -159,6 +160,10 @@ export default {
     await t.krok("zálohová faktúra: eFaktúrou nie", async () => {
       const r = await t.rest.patch(`invoices?id=eq.${fa.id}`, { type: "proforma" });
       t.over(r.status < 300, `typ sa nezmenil: ${r.status} ${r.text?.slice(0, 160)}`);
+      /* Zoznam faktúr sa načítal hneď po „Hotovo“ — súbežne s touto zmenou
+         typu, takže mohol niesť ešte bežnú faktúru (detail berie typ zo
+         zoznamu). Odchod na Prehľad a späť zoznam načíta nanovo. */
+      await zalozka(page, 0);
       await otvorFakturuVApke(page, fa.invoice_number);
       await page
         .getByText(/nie je daňový doklad/)
