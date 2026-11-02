@@ -6,10 +6,11 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Download, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Download, Plus, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
-import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
+import { exportPrijatychPohodaFn, vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
+import { potvrd } from "@/lib/potvrdenie";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { toast } from "sonner";
@@ -206,6 +207,36 @@ function PrijateZalohovePage() {
     }
   }
 
+  /*
+    Vrátenie z Pohody: odovzdaná zálohová faktúra je zamknutá; po vrátení sa
+    dá opraviť a poslať znova. V Pohode ostane, kým ju tam niekto nezmaže.
+  */
+  const vratZPohody = useServerFn(vratZPohodyFn);
+  const vybraneOdovzdane = zobrazene.filter((r) => vybrane.has(r.id) && r.exported_at);
+  async function vratitVybrane() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneOdovzdane.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Vrátiť {n} zálohových faktúr z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.",
+          { n: vybraneOdovzdane.length },
+        ),
+      ))
+    )
+      return;
+    try {
+      const r = await vratZPohody({
+        data: { company_id: cid, druh: "prijata", ids: vybraneOdovzdane.map((x) => x.id) },
+      });
+      toast.success(t("Vrátené z Pohody: {n}", { n: r.vratenych }));
+      setVybrane(new Set());
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    }
+  }
+
   async function zmaz() {
     if (!mazane) return;
     try {
@@ -303,6 +334,16 @@ function PrijateZalohovePage() {
                 {vybraneExport.length
                   ? t("XML pre Pohodu – vybrané ({n})", { n: vybraneExport.length })
                   : t("XML pre Pohodu")}
+              </button>
+            ) : null}
+            {vybraneOdovzdane.length ? (
+              <button
+                type="button"
+                onClick={() => void vratitVybrane()}
+                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                <Undo2 className="h-4 w-4" />{" "}
+                {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
               </button>
             ) : null}
             <NahratDoklad druh="proforma" label={t("Nahrať zálohovú faktúru")} />

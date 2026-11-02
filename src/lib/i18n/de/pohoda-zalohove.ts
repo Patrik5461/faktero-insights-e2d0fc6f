@@ -19,4 +19,8 @@ export default {
   "XML pre Pohodu – vybrané ({n})": "XML für Pohoda – ausgewählt ({n})",
   "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — kvôli úhrade a odpočtu zálohy":
     "Ausgewählte (ohne Auswahl alle angezeigten) Anzahlungsrechnungen nach Pohoda (Ausgestellte Anzahlungsrechnungen) — für Zahlung und Abzug der Anzahlung",
+  "Vrátiť {n} zálohových faktúr z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.":
+    "{n} Anzahlungsrechnungen aus Pohoda zurückholen? Sie werden zur Korrektur entsperrt und beim nächsten Export erneut übertragen. In Pohoda müssen sie manuell gelöscht werden, sonst sind sie doppelt vorhanden.",
+  "Vrátené z Pohody: {n}": "Aus Pohoda zurückgeholt: {n}",
+  "Vrátiť z Pohody ({n})": "Aus Pohoda zurückholen ({n})",
 };

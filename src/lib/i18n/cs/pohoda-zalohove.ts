@@ -19,4 +19,8 @@ export default {
   "XML pre Pohodu – vybrané ({n})": "XML do Pohody – vybrané ({n})",
   "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — kvôli úhrade a odpočtu zálohy":
     "Vybrané (nebo bez výběru všechny zobrazené) zálohové faktury do Pohody (Vydané zálohové faktury) — kvůli úhradě a odpočtu zálohy",
+  "Vrátiť {n} zálohových faktúr z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.":
+    "Vrátit {n} zálohových faktur z Pohody? Odemknou se k opravě a při dalším exportu půjdou znovu. V Pohodě je třeba je smazat ručně, jinak tam budou dvakrát.",
+  "Vrátené z Pohody: {n}": "Vráceno z Pohody: {n}",
+  "Vrátiť z Pohody ({n})": "Vrátit z Pohody ({n})",
 };
