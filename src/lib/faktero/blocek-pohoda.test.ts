@@ -181,7 +181,7 @@ describe("adresa dodávateľa z eKasy", () => {
     });
   });
 
-  it("z registra (company_cache) a len hotovostné bločky bez adresy", () => {
+  it("z registra (company_cache) a len bločky v hotovosti či kartou bez adresy", () => {
     expect(
       zRegistra({
         street: "Drevárska 23",
@@ -194,7 +194,7 @@ describe("adresa dodávateľa z eKasy", () => {
     expect(
       icaBezAdresy([
         blocekAction,
-        { ...blocekScaris, payment_method: "karta" },
+        { ...blocekScaris, payment_method: "prevod" },
         { ...blocekScaris, id: "x", supplier_street: "Hlavná 1" },
         { ...blocekAction, _typPohody: "receivedInvoice" },
       ]),
@@ -259,9 +259,10 @@ describe("text, členenie a položky", () => {
     ).toEqual({ predkontacia: "518", clenenie: "PN", kv: "" });
   });
 
-  it("hotovostný je len bloček v hotovosti (nie karta, faktúra ani vyúčtovanie)", () => {
+  it("doplnenie má bloček v hotovosti aj kartou (nie prevod, faktúra ani vyúčtovanie)", () => {
     expect(jeHotovostnyBlocek(blocekAction)).toBe(true);
-    expect(jeHotovostnyBlocek({ ...blocekAction, payment_method: "karta" })).toBe(false);
+    expect(jeHotovostnyBlocek({ ...blocekAction, payment_method: "karta" })).toBe(true);
+    expect(jeHotovostnyBlocek({ ...blocekAction, payment_method: "prevod" })).toBe(false);
     expect(jeHotovostnyBlocek({ ...blocekAction, _typPohody: "receivedInvoice" })).toBe(false);
     expect(jeHotovostnyBlocek({ ...blocekAction, vyuctovanie_id: "v1" })).toBe(false);
   });
@@ -339,14 +340,17 @@ describe("pokladničný doklad v Pohode (voucher.xsd)", () => {
     expect(x).toContain("<vch:classificationKVDPH><typ:ids>B2</typ:ids></vch:classificationKVDPH>");
   });
 
-  it("bloček kartou sa nemení (žiadne doplnené členenie ani adresa)", () => {
+  it("bloček kartou ide do Ostatných záväzkov s doplneným členením a adresou", () => {
     const x = buildPohodaExpensesXml({
       company: firma,
       nastavenia: { ...nastavenia, adresyDodavatelov: { "54527571": { street: "Karadžičova 2" } } },
       doklady: [{ ...blocekAction, payment_method: "karta" }],
     });
+    expect(chybySchemy(x, "inv", "invoice.xsd")).toEqual([]);
+    expect(x).toContain("<inv:invoice ");
     expect(x).not.toContain("<vch:voucher");
-    expect(x).not.toContain("classificationVAT");
-    expect(x).not.toContain("Karadžičova");
+    expect(x).toContain("<inv:invoiceType>commitment</inv:invoiceType>");
+    expect(x).toContain("<inv:classificationVAT>");
+    expect(x).toContain("Karadžičova");
   });
 });

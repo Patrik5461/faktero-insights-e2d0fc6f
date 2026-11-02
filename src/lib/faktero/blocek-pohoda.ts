@@ -164,15 +164,16 @@ export function kodyPolozkyBlocku(o: {
 }
 
 /**
- * Bloček zaplatený v hotovosti (nie prijatá faktúra ani daňový doklad
- * k platbe — tie nesú `_typPohody`). Bloček z vyúčtovania výdavkov zaplatil
- * zamestnanec, to nie je hotovosť firmy.
+ * Bloček zaplatený v hotovosti alebo kartou (nie prijatá faktúra ani daňový
+ * doklad k platbe — tie nesú `_typPohody`), ktorému export doplní adresu,
+ * text a členenie. Kartou ide do Ostatných záväzkov (od 2. 11. 2026), tam
+ * patrí rovnako úplný. Bloček z vyúčtovania výdavkov zaplatil zamestnanec.
  */
 export function jeHotovostnyBlocek(d: Record<string, any> | null | undefined): boolean {
   return (
     Boolean(d) &&
     !d!._typPohody &&
     !d!.vyuctovanie_id &&
-    String(d!.payment_method ?? "") === "hotovost"
+    ["hotovost", "karta"].includes(String(d!.payment_method ?? ""))
   );
 }
