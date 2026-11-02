@@ -38,13 +38,19 @@ function oznacBunku(riadok) {
   });
 }
 
+// Zoznam bez riadkov sa zistí raz — ďalšie kroky ho preskočia bez čakania.
+const prazdne = new Set();
+
 async function prvyRiadok(t, page, cesta, sel) {
+  const kluc = `${cesta}|${sel}`;
+  if (prazdne.has(kluc)) return null;
   await t.go(cesta, page);
   const r = page.locator(sel).first();
   const je = await r
-    .waitFor({ state: "visible", timeout: 20000 })
+    .waitFor({ state: "visible", timeout: 8000 })
     .then(() => true)
     .catch(() => false);
+  if (!je) prazdne.add(kluc);
   if (!je) t.upozornenia.push(`${cesta}: firma nemá riadky, klik sa neoveril`);
   return je ? r : null;
 }

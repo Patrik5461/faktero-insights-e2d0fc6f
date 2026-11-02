@@ -75,12 +75,13 @@ export const SKUPINY = [
       "ine-doklady-vyber",
       // Len číta (výber súborov bez nahratia, filter histórie importov).
       "importy-zdroj",
-      // Klik na riadok B1–B4: len čítajú zoznamy firmy Test.
-      "klik-b1",
-      "klik-b2",
-      "klik-b3",
-      "klik-b4",
     ],
+  },
+  {
+    // Klik na riadok B1–B4: len čítajú zoznamy firmy Test, preto smú bežať
+    // súbežne so skupinou „test“ (tá by s nimi nestihla limit behu).
+    meno: "klik",
+    toky: ["klik-b1", "klik-b2", "klik-b3", "klik-b4"],
   },
   {
     meno: "test2-cz",

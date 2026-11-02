@@ -509,7 +509,7 @@ const nakoniec = [
   ...bezSkupiny,
 ];
 // Koľko skupín beží naraz (každá vo vlastnom prehliadači); 1 = všetko za sebou.
-const SUBEZNE = Math.max(1, Math.min(3, Number(process.env.E2E_SUBEZNE ?? 3)));
+const SUBEZNE = Math.max(1, Math.min(4, Number(process.env.E2E_SUBEZNE ?? 4)));
 // (Skupina len z tokov bez prehliadača beží navyše — Chromium nepotrebuje.)
 
 const vysledky = [];
