@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { DesatinnePole } from "@/components/faktero/DesatinnePole";
 import { useT } from "@/lib/i18n/useT";
 import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -832,13 +833,12 @@ function Detail() {
                             </select>
                           </td>
                           <td className="py-1 pr-2">
-                            <input inputMode="decimal" value={String(r.zaklad)} onChange={(e) => {
-                              const z = Number(e.target.value.replace(",", ".")) || 0;
+                            <DesatinnePole hodnota={r.zaklad} naZmenu={(z) => {
                               setRozpis(i, { zaklad: z, dph: Math.round(z * Number(r.sadzba)) / 100 });
                             }} className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
                           </td>
                           <td className="py-1 pr-2">
-                            <input inputMode="decimal" value={String(r.dph)} onChange={(e) => setRozpis(i, { dph: Number(e.target.value.replace(",", ".")) || 0 })} className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
+                            <DesatinnePole hodnota={r.dph} naZmenu={(v) => setRozpis(i, { dph: v })} className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
                           </td>
                           <td className="py-1 text-right">
                             <button type="button" aria-label={t("Odstrániť sadzbu")} onClick={() => set({ rozpis: u.rozpis.filter((_, j) => j !== i), celkom: null })} className="rounded p-1 text-muted-foreground hover:bg-secondary">
@@ -855,7 +855,7 @@ function Detail() {
                     </span>
                     <label className="inline-flex items-center gap-2 font-medium">
                       {t("Spolu")}
-                      <input aria-label={t("Suma spolu")} inputMode="decimal" value={u.celkom ?? s.celkom} onChange={(e) => set({ celkom: Number(e.target.value.replace(",", ".")) || 0 })} className={`w-28 rounded-md border bg-background px-2 py-1.5 text-right tabular-nums ${ram("celkom")}`} />
+                      <DesatinnePole aria-label={t("Suma spolu")} hodnota={u.celkom ?? s.celkom} naZmenu={(v) => set({ celkom: v })} className={`w-28 rounded-md border bg-background px-2 py-1.5 text-right tabular-nums ${ram("celkom")}`} />
                       {u.mena}
                     </label>
                   </div>

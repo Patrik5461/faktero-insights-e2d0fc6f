@@ -1828,10 +1828,20 @@ function Field({
   return (
     <label className="block">
       <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
+      {/*
+        Sumy: textové pole s desatinnou klávesnicou namiesto type="number" —
+        to v slovenskom prostredí čiarku nevzalo a sumu sa nedalo prepísať.
+        Čiarka sa hneď zmení na bodku, aby ostatné výpočty (Number) sedeli.
+      */}
       <input
-        type={type}
+        type={type === "number" ? "text" : type}
+        inputMode={type === "number" ? "decimal" : undefined}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          if (type !== "number") return onChange(e.target.value);
+          const v = e.target.value.replace(/\s/g, "").replace(",", ".");
+          if (/^-?\d*\.?\d*$/.test(v)) onChange(v);
+        }}
         placeholder={placeholder}
         className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
       />

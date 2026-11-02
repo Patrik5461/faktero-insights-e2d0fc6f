@@ -1,4 +1,5 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
+import { DesatinnePole } from "@/components/faktero/DesatinnePole";
 import { UpozornenieObjednavky } from "./PovinnaObjednavka";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
@@ -429,11 +430,10 @@ export function NespracovanyKompaktny({
           <Sekcia nadpis="Čiastka a DPH" ok={sumaSedi}>
             <div className="grid grid-cols-2 gap-3">
               <Pole popis="Celková suma" chyba={zle("celkom")}>
-                <input
+                <DesatinnePole
                   aria-label={t("Suma spolu")}
-                  inputMode="decimal"
-                  value={u.celkom ?? sucty.celkom}
-                  onChange={(e) => set({ celkom: Number(e.target.value.replace(",", ".")) || 0 })}
+                  hodnota={u.celkom ?? sucty.celkom}
+                  naZmenu={(v) => set({ celkom: v })}
                   className={ram("celkom")}
                 />
               </Pole>
@@ -449,23 +449,18 @@ export function NespracovanyKompaktny({
             {u.rozpis.map((r, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-center gap-3">
                 <Pole popis={t("Základ dane {sadzba} %", { sadzba: r.sadzba })}>
-                  <input
-                    inputMode="decimal"
-                    value={String(r.zaklad)}
-                    onChange={(e) => {
-                      const z = Number(e.target.value.replace(",", ".")) || 0;
+                  <DesatinnePole
+                    hodnota={r.zaklad}
+                    naZmenu={(z) => {
                       setRozpis(i, { zaklad: z, dph: Math.round(z * Number(r.sadzba)) / 100 });
                     }}
                     className={ram("")}
                   />
                 </Pole>
                 <Pole popis={t("Daň {sadzba} %", { sadzba: r.sadzba })}>
-                  <input
-                    inputMode="decimal"
-                    value={String(r.dph)}
-                    onChange={(e) =>
-                      setRozpis(i, { dph: Number(e.target.value.replace(",", ".")) || 0 })
-                    }
+                  <DesatinnePole
+                    hodnota={r.dph}
+                    naZmenu={(v) => setRozpis(i, { dph: v })}
                     className={ram("")}
                   />
                 </Pole>
