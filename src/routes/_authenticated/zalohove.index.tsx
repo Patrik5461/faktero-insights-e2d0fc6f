@@ -7,7 +7,9 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { Plus, Trash2, RotateCcw, Hash, Download } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash, Download, Undo2 } from "lucide-react";
+import { vratVystavenuZPohodyFn } from "@/lib/faktero/zauctovanie.functions";
+import { potvrd } from "@/lib/potvrdenie";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
@@ -173,6 +175,41 @@ function ProformaListPage() {
     }
   }
 
+  /*
+    Vrátenie z Pohody — odovzdané vybrané zálohové sa odomknú a pri ďalšom
+    exporte pôjdu znova. V Pohode ich treba zmazať ručne.
+  */
+  const vratFn = useServerFn(vratVystavenuZPohodyFn);
+  const vybraneOdovzdane = list.rows.filter((r: any) => list.selected[r.id] && r.exported_at);
+  async function vratitVybrane() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneOdovzdane.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Vrátiť {n} zálohových faktúr z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.",
+          { n: vybraneOdovzdane.length },
+        ),
+      ))
+    )
+      return;
+    setExportujem(true);
+    let ok = 0;
+    try {
+      for (const r of vybraneOdovzdane) {
+        await vratFn({ data: { company_id: cid, id: r.id } });
+        ok++;
+      }
+      toast.success(t("Vrátené z Pohody: {n}", { n: ok }));
+    } catch (e: any) {
+      toast.error((ok ? t("Vrátené z Pohody: {n}", { n: ok }) + " — " : "") + (e?.message ?? t("Nepodarilo sa")));
+    } finally {
+      setExportujem(false);
+      list.clearSelection();
+      list.reload();
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -194,6 +231,17 @@ function ProformaListPage() {
                 {vybraneIds.length
                   ? t("XML pre Pohodu – vybrané ({n})", { n: vybraneIds.length })
                   : t("XML pre Pohodu")}
+              </button>
+            ) : null}
+            {vybraneOdovzdane.length ? (
+              <button
+                type="button"
+                disabled={exportujem}
+                onClick={() => void vratitVybrane()}
+                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                <Undo2 className="h-4 w-4" />{" "}
+                {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
               </button>
             ) : null}
             <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
@@ -353,6 +401,11 @@ function ProformaListPage() {
                           >
                             {i.invoice_number}
                           </Link>
+                          {i.exported_at ? (
+                            <StavOdznak ton="uspech" maly className="ml-2 align-middle">
+                              {t("V Pohode")}
+                            </StavOdznak>
+                          ) : null}
                         </td>
                         <td className="p-3">
                           <span
