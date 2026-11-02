@@ -351,7 +351,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     features: [
       "Viac firiem pod jedným prihlásením",
       "Pozvánky e-mailom (odkaz platí 14 dní)",
-      "Rola majiteľ a účtovník; účtovník nevidí banku ani kľúče",
+      "Roly majiteľ, administrátor, účtovník (plné práva k firme) a zamestnanec",
       "Vlastný prístup: po oblastiach sa vyklikne, kto čo vidí a smie meniť",
       "Dobrovoľné dvojfaktorové overenie kódom z aplikácie a dôveryhodné zariadenia",
       "Stiahnutie všetkých dát firmy v ZIP (CSV agend a PDF faktúr)",

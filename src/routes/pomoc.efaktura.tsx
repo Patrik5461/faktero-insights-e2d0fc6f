@@ -174,7 +174,7 @@ const sections: HelpSection[] = [
         <p>
           Ak e-mail s pozvánkou neodíde, pozvánka platí ďalej — odkaz sa zobrazí priamo v okne a
           pošlete ho účtovníkovi sami. Zaškrtnutím <em>Pozvať ho aj do Faktera ako účtovníka</em>{" "}
-          dostane účtovník aj prístup k dokladom firmy.
+          dostane účtovník aj plné práva k firme vo Fakteri.
         </p>
       </>
     ),

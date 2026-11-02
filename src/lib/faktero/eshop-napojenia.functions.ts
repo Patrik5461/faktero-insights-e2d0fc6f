@@ -20,7 +20,7 @@ async function overClena(
     .eq("user_id", context.userId)
     .maybeSingle();
   if (!data) throw new Error("K tejto firme nemáte prístup.");
-  if (len === "spravca" && !["owner", "admin"].includes(data.role))
+  if (len === "spravca" && !["owner", "admin", "accountant"].includes(data.role))
     throw new Error("Napojenie môže nastaviť len majiteľ alebo admin firmy.");
   /*
     Vlastná rola (custom) má práva po oblastiach. Objednávky a zásielky čítame

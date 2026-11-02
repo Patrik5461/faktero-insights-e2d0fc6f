@@ -9,13 +9,13 @@ describe("opravneniaSkladu (SA-11b, SA-17)", () => {
     expect(opravneniaSkladu("custom", { sklad: "read" }, true).canMutate).toBe(false);
     expect(opravneniaSkladu("custom", { faktury: "edit" }, true).canMutate).toBe(false);
   });
-  it("účtovník a používateľ zapisujú, správa skladov len admin", () => {
-    for (const r of ["accountant", "employee"]) {
-      const o = opravneniaSkladu(r, {}, true);
-      expect(o.canMutate).toBe(true);
-      expect(o.canManage).toBe(false);
+  it("používateľ zapisuje, správa skladov len majiteľ, admin a účtovník", () => {
+    const o = opravneniaSkladu("employee", {}, true);
+    expect(o.canMutate).toBe(true);
+    expect(o.canManage).toBe(false);
+    for (const r of ["owner", "admin", "accountant"]) {
+      expect(opravneniaSkladu(r, {}, true)).toMatchObject({ canMutate: true, canManage: true });
     }
-    expect(opravneniaSkladu("owner", {}, true).canManage).toBe(true);
   });
   it("kým sa rola načítava, nič nesmie a hlási loading", () => {
     const o = opravneniaSkladu("owner", {}, false);

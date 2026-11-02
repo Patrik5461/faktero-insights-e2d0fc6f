@@ -16,6 +16,7 @@ import { agendaPreKrajinu } from "./agendy-krajiny";
 import { krajinaDane } from "./vat-rates";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { jeAdminRola } from "./opravnenia";
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
 const MarkInput = z.object({
@@ -559,11 +560,10 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
   const preKrajinu = zoznam.filter(
     (n) =>
       agendaPreKrajinu(String(n.to ?? "").split("?")[0]!, krajina) &&
-      // Webhooky spravuje len majiteľ a správca (rovnako ako RLS denníka doručení).
+      // Webhooky spravuje len majiteľ, správca a účtovník (rovnako ako RLS denníka doručení).
       // Neodoslanú či zamietnutú eFaktúru hlási zvonček tiež majiteľovi a správcovi.
       (!/^(webhook_vzdane|efaktura_zlyhala|efaktura_zamietnuta):/.test(n.key) ||
-        clen?.role === "owner" ||
-        clen?.role === "admin"),
+        jeAdminRola(clen?.role)),
   );
   if (clen?.role !== "custom") return preKrajinu;
   const { oblastPodlaCesty, vidiOblast } = await import("./opravnenia");

@@ -85,7 +85,7 @@ export const ulozNastavenieSchvalovaniaFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const rola = await rolaVoFirme(context.supabase, data.company_id, context.userId);
-    if (!["owner", "admin"].includes(String(rola))) throw new Error("Schvaľovanie nastavuje majiteľ alebo správca firmy.");
+    if (!["owner", "admin", "accountant"].includes(String(rola))) throw new Error("Schvaľovanie nastavuje majiteľ alebo správca firmy.");
     const a = await admin();
     const { data: f } = await a.from("companies").select("schvalovanie_zapnute").eq("id", data.company_id).single();
     const { error } = await a
@@ -134,7 +134,7 @@ export const ulozPravaSchvalovaniaFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const rola = await rolaVoFirme(context.supabase, data.company_id, context.userId);
-    if (!["owner", "admin"].includes(String(rola)))
+    if (!["owner", "admin", "accountant"].includes(String(rola)))
       throw new Error("Povolenia nastavuje majiteľ alebo správca firmy.");
     const a = await admin();
     const { data: clenovia } = await a
@@ -183,7 +183,7 @@ export const ulozCestuFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const rola = await rolaVoFirme(context.supabase, data.company_id, context.userId);
-    if (!["owner", "admin"].includes(String(rola))) throw new Error("Cesty nastavuje majiteľ alebo správca firmy.");
+    if (!["owner", "admin", "accountant"].includes(String(rola))) throw new Error("Cesty nastavuje majiteľ alebo správca firmy.");
     // Ten istý schvaľovateľ nesmie byť na dvoch úrovniach (ako v Doklado).
     const vsetci = data.urovne.flat();
     if (new Set(vsetci).size !== vsetci.length)
@@ -215,7 +215,7 @@ export const zmazCestuFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ company_id: z.string().uuid(), id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const rola = await rolaVoFirme(context.supabase, data.company_id, context.userId);
-    if (!["owner", "admin"].includes(String(rola))) throw new Error("Cesty nastavuje majiteľ alebo správca firmy.");
+    if (!["owner", "admin", "accountant"].includes(String(rola))) throw new Error("Cesty nastavuje majiteľ alebo správca firmy.");
     const a = await admin();
     const { error } = await a.from("schvalovacie_cesty").delete().eq("id", data.id).eq("company_id", data.company_id);
     if (error) throw new Error(error.message);

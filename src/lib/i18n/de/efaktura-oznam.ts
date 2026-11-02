@@ -50,8 +50,8 @@ export default {
   "Podrobný návod": "Ausführliche Anleitung",
   "Pokračovať na prepojenie": "Weiter zur Verbindung",
   "Poslať pozvánku": "Einladung senden",
-  "Pozvať ho aj do Faktera ako účtovníka (uvidí doklady firmy)":
-    "Auch zu Faktero als Buchhalter einladen (sieht die Belege des Unternehmens)",
+  "Pozvať ho aj do Faktera ako účtovníka (dostane plné práva k firme)":
+    "Auch zu Faktero als Buchhalter einladen (erhält volle Rechte im Unternehmen)",
   "Pozvánka bola zrušená alebo neexistuje. Požiadajte firmu o novú.":
     "Die Einladung wurde widerrufen oder existiert nicht. Bitten Sie das Unternehmen um eine neue.",
   "Pozvánka odišla na {email}. Kým účtovník aktiváciu nedokončí, uvidíte hore pás s jej stavom.":

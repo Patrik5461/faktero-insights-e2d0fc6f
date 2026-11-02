@@ -7,12 +7,12 @@ export default {
     "Wer im Unternehmen was darf: Inhaber, Administrator, Buchhalter, Mitarbeiter.",
   "Pomoc · Role a prístupy": "Hilfe · Rollen und Zugriffe",
   "Kto vo firme čo smie": "Wer im Unternehmen was darf",
-  "Faktero pozná štyri role: majiteľ, administrátor, účtovník a zamestnanec. Doklady vedú všetci, správu firmy má majiteľ s administrátorom.":
-    "Faktero kennt vier Rollen: Inhaber, Administrator, Buchhalter und Mitarbeiter. Belege führen alle, die Verwaltung des Unternehmens liegt beim Inhaber und beim Administrator.",
+  "Faktero pozná štyri role: majiteľ, administrátor, účtovník a zamestnanec. Doklady vedú všetci, správu firmy má majiteľ, administrátor a účtovník.":
+    "Faktero kennt vier Rollen: Inhaber, Administrator, Buchhalter und Mitarbeiter. Belege führen alle, die Verwaltung des Unternehmens liegt beim Inhaber, beim Administrator und beim Buchhalter.",
   "Keď nesedí ani jedna rola, zvoľte pri pozvaní alebo pri členovi rolu <0>Vlastný prístup</0> a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry a doklady, iné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd, zamestnanci, účtovníctvo a exporty. Pri každej zvolíte <1>Bez prístupu</1>, <2>Len čítať</2> alebo <3>Upravovať</3>.":
     "Passt keine der Rollen, wählen Sie beim Einladen oder beim Mitglied die Rolle <0>Individueller Zugriff</0> und klicken Sie die Bereiche an: Rechnungen und Angebote, Eingangsrechnungen und Belege, Sonstige Belege, Kontakte, Bank, Kasse, Lager und Preisliste, Projekte, Fahrtenbuch, Mitarbeiter, Buchhaltung und Exporte. Für jeden wählen Sie <1>Kein Zugriff</1>, <2>Nur lesen</2> oder <3>Bearbeiten</3>.",
-  "Obmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy odkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov firmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi a administrátorovi.":
-    "Die Einschränkung sichert die Datenbank ab, nicht nur das Menü — ein Bereich ohne Zugriff wird auch über einen direkten Link nicht angezeigt. Wer Rechnungen darf, sieht auch die Kunden. Bankanbindung, Änderung der Bankkonten des Unternehmens, API-Schlüssel und Benutzerverwaltung bleiben beim individuellen Zugriff immer dem Inhaber und dem Administrator vorbehalten.",
+  "Obmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy odkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov firmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi, administrátorovi a účtovníkovi.":
+    "Die Einschränkung sichert die Datenbank ab, nicht nur das Menü — ein Bereich ohne Zugriff wird auch über einen direkten Link nicht angezeigt. Wer Rechnungen darf, sieht auch die Kunden. Bankanbindung, Änderung der Bankkonten des Unternehmens, API-Schlüssel und Benutzerverwaltung bleiben beim individuellen Zugriff immer dem Inhaber, dem Administrator und dem Buchhalter vorbehalten.",
   "Kto čo smie": "Wer was darf",
   "Rolu priradíte pri pozvaní a kedykoľvek zmeníte v <0>Nastaveniach firmy</0>, sekcia <1>Používatelia a pozvánky</1>.":
     "Die Rolle weisen Sie beim Einladen zu und ändern sie jederzeit in den <0>Unternehmenseinstellungen</0>, Abschnitt <1>Benutzer und Einladungen</1>.",
@@ -32,16 +32,14 @@ export default {
   "Pozývať a odoberať používateľov": "Benutzer einladen und entfernen",
   "Predplatné a fakturačné údaje": "Abonnement und Rechnungsdaten",
   "Zrušiť firmu alebo účet": "Unternehmen oder Konto löschen",
-  "Účtovník vedie <0>doklady v plnom rozsahu</0> — zaúčtuje, opraví, spáruje platbu, uzavrie obdobie, urobí inventúru. Presne to, čo od účtovníka firma potrebuje.":
-    "Der Buchhalter führt <0>Belege in vollem Umfang</0> — er verbucht, korrigiert, gleicht Zahlungen ab, schließt Perioden ab und führt die Inventur durch. Genau das, was ein Unternehmen vom Buchhalter braucht.",
-  "Nedostane sa k <0>správe firmy</0>: k bankovému napojeniu, k odosielaniu platieb, k API kľúčom ani k používateľom. Je to zámer — externý účtovník nemá mať možnosť zmeniť IBAN firmy ani odoslať platbu.":
-    "Keinen Zugang hat er zur <0>Unternehmensverwaltung</0>: zur Bankanbindung, zum Senden von Zahlungen, zu API-Schlüsseln oder zu den Benutzern. Das ist Absicht — ein externer Buchhalter soll weder die IBAN des Unternehmens ändern noch eine Zahlung senden können.",
-  "<0>Poznámka:</0> do 15. augusta 2026 bol účtovník len na čítanie. Ak ste rolu priradili vtedy, teraz už doklady meniť môže — nič nemusíte prenastavovať.":
-    "<0>Hinweis:</0> Bis zum 15. August 2026 hatte der Buchhalter nur Lesezugriff. Wenn Sie die Rolle damals zugewiesen haben, kann er Belege jetzt bereits ändern — Sie müssen nichts umstellen.",
-  "Zamestnanec má na doklady rovnaké práva ako účtovník: fakturuje, skenuje bločky, zapisuje jazdy a pracuje so skladom. Na správu firmy nesiaha.":
-    "Der Mitarbeiter hat bei Belegen dieselben Rechte wie der Buchhalter: Er stellt Rechnungen aus, scannt Kassenbons, erfasst Fahrten und arbeitet mit dem Lager. Die Unternehmensverwaltung berührt er nicht.",
-  "Rozdiel oproti účtovníkovi je v praxi len v tom, komu rolu dáte a čo od neho čakáte — prístupovo sú si rovní.":
-    "Der Unterschied zum Buchhalter liegt in der Praxis nur darin, wem Sie die Rolle geben und was Sie von ihm erwarten — beim Zugriff sind beide gleichgestellt.",
+  "Účtovník má <0>plné práva k firme</0> — rovnaké ako administrátor. Vedie doklady, robí exporty, pripája banku a mení bankové účty, posiela platby, spravuje API kľúče, webhooky, platobné brány, eFaktúru, používateľov, nastavenia firmy aj predplatné.":
+    "Der Buchhalter hat <0>volle Rechte im Unternehmen</0> — dieselben wie der Administrator. Er führt Belege, erstellt Exporte, bindet die Bank an und ändert Bankkonten, sendet Zahlungen, verwaltet API-Schlüssel, Webhooks, Zahlungsanbieter, eFaktúra, Benutzer, Unternehmenseinstellungen und das Abonnement.",
+  "Majiteľovi ostáva len <0>zrušenie firmy</0> a zmena či odobratie majiteľa. Firma musí mať vždy aspoň jedného majiteľa — účtovník ho z firmy neodoberie.":
+    "Dem Inhaber bleiben nur die <0>Auflösung des Unternehmens</0> sowie das Ändern oder Entfernen des Inhabers. Ein Unternehmen muss immer mindestens einen Inhaber haben — der Buchhalter kann ihn nicht entfernen.",
+  "<0>Poznámka:</0> do 2. novembra 2026 sa účtovník nedostal k banke, API kľúčom ani k používateľom (a do 15. augusta 2026 bol len na čítanie). Ak ste rolu priradili skôr, plné práva má už teraz — nič nemusíte prenastavovať.":
+    "<0>Hinweis:</0> Bis zum 2. November 2026 hatte der Buchhalter keinen Zugriff auf Bank, API-Schlüssel und Benutzer (und bis zum 15. August 2026 nur Lesezugriff). Wenn Sie die Rolle früher zugewiesen haben, hat er die vollen Rechte bereits jetzt — Sie müssen nichts umstellen.",
+  "Zamestnanec vedie doklady v plnom rozsahu: fakturuje, skenuje bločky, zapisuje jazdy a pracuje so skladom. Na správu firmy — banku, API kľúče, používateľov a predplatné — nesiaha.":
+    "Der Mitarbeiter führt Belege in vollem Umfang: Er stellt Rechnungen aus, scannt Kassenbons, erfasst Fahrten und arbeitet mit dem Lager. Die Unternehmensverwaltung — Bank, API-Schlüssel, Benutzer und Abonnement — berührt er nicht.",
   "Administrátor a majiteľ": "Administrator und Inhaber",
   "<0>Administrátor</0> zvládne všetko okrem zrušenia firmy: spravuje používateľov, predplatné, bankové napojenie, API kľúče aj platobnú bránu.":
     "Der <0>Administrator</0> kann alles außer dem Löschen des Unternehmens: Er verwaltet Benutzer, Abonnement, Bankanbindung, API-Schlüssel und das Zahlungsgateway.",

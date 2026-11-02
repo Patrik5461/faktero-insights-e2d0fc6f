@@ -13,6 +13,7 @@ import {
   NAV,
   QUICK_CREATE,
 } from "./nav";
+import { jeAdminRola } from "@/lib/faktero/opravnenia";
 
 const cesty = (p: { to: string }[]) => p.map((c) => c.to);
 
@@ -37,6 +38,15 @@ describe("ponuka pod avatarom (S-14)", () => {
     expect(filtrujPolozky(ACCOUNT_SETTINGS_LINKS, majitel)).toHaveLength(
       ACCOUNT_SETTINGS_LINKS.length,
     );
+  });
+
+  it("účtovník vidí v ponuke to isté ako admin (od 2026-11-02)", () => {
+    const uctovnik = { isCompanyAdmin: jeAdminRola("accountant"), rola: "accountant" };
+    expect(filtrujPolozky(ACCOUNT_API_LINKS, uctovnik)).toHaveLength(ACCOUNT_API_LINKS.length);
+    expect(filtrujPolozky(ACCOUNT_SETTINGS_LINKS, uctovnik)).toHaveLength(
+      ACCOUNT_SETTINGS_LINKS.length,
+    );
+    expect(jeAdminRola("employee")).toBe(false);
   });
 
   it("číselné rady vlastnému prístupu bez faktúr nie", () => {

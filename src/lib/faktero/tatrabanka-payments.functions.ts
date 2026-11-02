@@ -22,7 +22,7 @@ async function assertAdmin(supabase: any, userId: string, companyId: string) {
     .maybeSingle();
   if (!data) throw new Error("Forbidden");
   // Platba hýbe peniazmi — na rozdiel od čítania ju bežný člen spustiť nemôže.
-  if (!["owner", "admin"].includes(data.role)) throw new Error("Forbidden");
+  if (!["owner", "admin", "accountant"].includes(data.role)) throw new Error("Forbidden");
   return data.role as string;
 }
 

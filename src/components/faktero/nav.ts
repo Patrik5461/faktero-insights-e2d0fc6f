@@ -30,7 +30,7 @@ import { nedostupneAgendy } from "@/lib/faktero/agendy-krajiny";
  * v `INVOICING_KEYS`. Oboje odhalí test nad týmito dátami.
  */
 
-export /** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta owner/adminovi
+export /** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta majiteľovi, adminovi a účtovníkovi
  *  vydá a členovi nie, takže položka by im aj tak skončila chybou. */
 type NavChild = {
   to: string;
@@ -316,7 +316,7 @@ export const NAV: NavGroup[] = [
 
 /** API a Nastavenia sa presunuli z hlavnej lišty do menu pod avatarom. */
 export const ACCOUNT_API_LINKS: NavChild[] = [
-  /* Kľúče, webhooky a ich logy vydá databáza len majiteľovi a adminovi
+  /* Kľúče, webhooky a ich logy vydá databáza len majiteľovi, adminovi a účtovníkovi
      (`is_company_admin`) — ostatným by stránka ostala prázdna (S-14). */
   { to: "/api-kluce", label: "API kľúče", companyAdminOnly: true },
   { to: "/api-dokumentacia", label: "API dokumentácia" },
@@ -330,7 +330,7 @@ export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/firma", label: "Firma" },
   { to: "/ciselne-rady", label: "Číselné rady" },
   { to: "/nastavenia/schvalovanie", label: "Schvaľovanie dokladov" },
-  // Ukladá sa do `companies` — upraviť ju smie len majiteľ alebo admin.
+  // Ukladá sa do `companies` — upraviť ju smie len majiteľ, admin alebo účtovník.
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry", companyAdminOnly: true },
   { to: "/nastavenia/email-sablony", label: "E-mailové šablóny" },
   { to: "/nastavenia/poznamky", label: "Preddefinované poznámky" },
@@ -437,8 +437,8 @@ export type KontextMenu = {
 
 /**
  * Jedna položka mimo bočnej lišty (rýchle „Vytvoriť“, ponuka pod avatarom)
- * podľa toho istého pravidla ako `filterNav`: správcovské len majiteľovi
- * a adminovi, oblasti podľa vlastného prístupu, agendy podľa krajiny (S-14, S-19).
+ * podľa toho istého pravidla ako `filterNav`: správcovské len majiteľovi,
+ * adminovi a účtovníkovi, oblasti podľa vlastného prístupu, agendy podľa krajiny (S-14, S-19).
  */
 export function vidiPolozku(
   c: { to: string; companyAdminOnly?: boolean },

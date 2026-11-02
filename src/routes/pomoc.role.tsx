@@ -104,28 +104,28 @@ const RIADKY: {
     co: "Pripojiť banku, meniť IBAN, odosielať platby",
     owner: true,
     admin: true,
-    uctovnik: false,
+    uctovnik: true,
     zamestnanec: false,
   },
   {
     co: "API kľúče, webhooky, platobná brána",
     owner: true,
     admin: true,
-    uctovnik: false,
+    uctovnik: true,
     zamestnanec: false,
   },
   {
     co: "Pozývať a odoberať používateľov",
     owner: true,
     admin: true,
-    uctovnik: false,
+    uctovnik: true,
     zamestnanec: false,
   },
   {
     co: "Predplatné a fakturačné údaje",
     owner: true,
     admin: true,
-    uctovnik: false,
+    uctovnik: true,
     zamestnanec: false,
   },
   { co: "Zrušiť firmu alebo účet", owner: true, admin: false, uctovnik: false, zamestnanec: false },
@@ -147,8 +147,8 @@ const sections: HelpSection[] = [
         <p>
           Obmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy
           odkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov
-          firmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi
-          a administrátorovi.
+          firmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi,
+          administrátorovi a účtovníkovi.
         </p>
       </>
     ),
@@ -209,17 +209,18 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Účtovník vedie <strong>doklady v plnom rozsahu</strong> — zaúčtuje, opraví, spáruje
-          platbu, uzavrie obdobie, urobí inventúru. Presne to, čo od účtovníka firma potrebuje.
+          Účtovník má <strong>plné práva k firme</strong> — rovnaké ako administrátor. Vedie
+          doklady, robí exporty, pripája banku a mení bankové účty, posiela platby, spravuje API
+          kľúče, webhooky, platobné brány, eFaktúru, používateľov, nastavenia firmy aj predplatné.
         </p>
         <p>
-          Nedostane sa k <strong>správe firmy</strong>: k bankovému napojeniu, k odosielaniu
-          platieb, k API kľúčom ani k používateľom. Je to zámer — externý účtovník nemá mať možnosť
-          zmeniť IBAN firmy ani odoslať platbu.
+          Majiteľovi ostáva len <strong>zrušenie firmy</strong> a zmena či odobratie majiteľa. Firma
+          musí mať vždy aspoň jedného majiteľa — účtovník ho z firmy neodoberie.
         </p>
         <p>
-          <strong>Poznámka:</strong> do 15. augusta 2026 bol účtovník len na čítanie. Ak ste rolu
-          priradili vtedy, teraz už doklady meniť môže — nič nemusíte prenastavovať.
+          <strong>Poznámka:</strong> do 2. novembra 2026 sa účtovník nedostal k banke, API kľúčom
+          ani k používateľom (a do 15. augusta 2026 bol len na čítanie). Ak ste rolu priradili
+          skôr, plné práva má už teraz — nič nemusíte prenastavovať.
         </p>
       </>
     ),
@@ -230,12 +231,9 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Zamestnanec má na doklady rovnaké práva ako účtovník: fakturuje, skenuje bločky, zapisuje
-          jazdy a pracuje so skladom. Na správu firmy nesiaha.
-        </p>
-        <p>
-          Rozdiel oproti účtovníkovi je v praxi len v tom, komu rolu dáte a čo od neho čakáte —
-          prístupovo sú si rovní.
+          Zamestnanec vedie doklady v plnom rozsahu: fakturuje, skenuje bločky, zapisuje jazdy a
+          pracuje so skladom. Na správu firmy — banku, API kľúče, používateľov a predplatné —
+          nesiaha.
         </p>
       </>
     ),
@@ -326,7 +324,7 @@ function Page() {
       intro={
         <p>
           Faktero pozná štyri role: majiteľ, administrátor, účtovník a zamestnanec. Doklady vedú
-          všetci, správu firmy má majiteľ s administrátorom.
+          všetci, správu firmy má majiteľ, administrátor a účtovník.
         </p>
       }
       sections={sections}

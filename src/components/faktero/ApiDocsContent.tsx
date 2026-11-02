@@ -323,7 +323,7 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             <h3 className="mt-6 font-semibold">{t("Kľúč pre viac firiem")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {t(
-                "Účtovná kancelária či integrátor nepotrebuje kľúč za každú firmu. Kľúč pre viac firiem (API kľúče → Kľúč pre viac firiem) platí pre všetky firmy, kde ste vlastník alebo admin, alebo len pre vybrané. Firmu vyberiete v každej požiadavke hlavičkou",
+                "Účtovná kancelária či integrátor nepotrebuje kľúč za každú firmu. Kľúč pre viac firiem (API kľúče → Kľúč pre viac firiem) platí pre všetky firmy, kde ste vlastník, admin alebo účtovník, alebo len pre vybrané. Firmu vyberiete v každej požiadavke hlavičkou",
               )}{" "}
               <code className="font-mono">X-Company</code>{" "}
               {t("(id firmy alebo IČO) alebo parametrom")}{" "}
@@ -1041,7 +1041,7 @@ curl https://faktero.sk/api/v1/invoices \\
             </ul>
             <p className="mt-3 text-sm text-muted-foreground">
               {t(
-                "Pre účtovné kancelárie a integrátorov: kľúčom pre viac firiem založíte firmu nového klienta (stanete sa jej vlastníkom a kľúč k nej hneď smie) a pozvete do nej používateľov — účtovníka (accountant), admina alebo zamestnanca. Pozvánka príde e-mailom a platí 14 dní; v odpovedi je aj odkaz na prijatie. Firmu zakladať a pozývať smie len kľúč pre viac firiem, ktorého majiteľ je vo firme vlastník alebo admin — obyčajný firemný kľúč nie.",
+                "Pre účtovné kancelárie a integrátorov: kľúčom pre viac firiem založíte firmu nového klienta (stanete sa jej vlastníkom a kľúč k nej hneď smie) a pozvete do nej používateľov — účtovníka (accountant), admina alebo zamestnanca. Pozvánka príde e-mailom a platí 14 dní; v odpovedi je aj odkaz na prijatie. Firmu zakladať a pozývať smie len kľúč pre viac firiem, ktorého majiteľ je vo firme vlastník, admin alebo účtovník — obyčajný firemný kľúč nie.",
               )}
             </p>
             <div className="mt-3">

@@ -77,8 +77,8 @@ export default {
     "Vše včetně předplatného, uživatelů, banky, bankovních účtů, API klíčů a zrušení firmy.",
   "Všetko ako majiteľ okrem zrušenia firmy — spravuje používateľov, predplatné, banku aj nastavenia.":
     "Vše jako vlastník kromě zrušení firmy — spravuje uživatele, předplatné, banku i nastavení.",
-  "Vidí a vedie všetky doklady, faktúry, sklad aj knihu jázd. Nesmie pripájať banku, posielať platby, meniť bankové účty firmy ani spravovať používateľov.":
-    "Vidí a vede všechny doklady, faktury, sklad i knihu jízd. Nesmí připojovat banku, odesílat platby, měnit bankovní účty firmy ani spravovat uživatele.",
+  "Plné práva k firme ako administrátor — doklady, exporty, banka, API, používatelia, nastavenia aj predplatné. Majiteľa nemôže odobrať a firmu nezruší.":
+    "Plná práva k firmě jako administrátor — doklady, exporty, banka, API, uživatelé, nastavení i předplatné. Vlastníka nemůže odebrat a firmu nezruší.",
   "Pracuje so všetkými agendami (faktúry, doklady, sklad, jazdy…), ale nespravuje banku, bankové účty, API ani používateľov.":
     "Pracuje se všemi agendami (faktury, doklady, sklad, jízdy…), ale nespravuje banku, bankovní účty, API ani uživatele.",
   "Vidí a upravuje len oblasti, ktoré mu vyberiete. Nespravuje banku, bankové účty, API ani používateľov.":

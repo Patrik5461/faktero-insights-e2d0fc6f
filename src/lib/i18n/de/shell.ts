@@ -24,9 +24,6 @@ export default {
   Vzhľad: "Erscheinungsbild",
   Dizajn: "Design",
   Odhlásiť: "Abmelden",
-  "Ste vo firme": "Sie arbeiten im Unternehmen",
-  "ako účtovník — doklady vediete v plnom rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ alebo administrátor.":
-    "als Buchhalter – Sie führen die Belege in vollem Umfang. Bankanbindung, Zahlungen, API-Schlüssel und Benutzerverwaltung liegen beim Inhaber oder Administrator.",
   "Prepnúť na Knihu jázd": "Zum Fahrtenbuch wechseln",
   "Prepnúť na Fakturáciu": "Zur Fakturierung wechseln",
   "Otvoriť manuál v novom okne": "Handbuch in neuem Fenster öffnen",

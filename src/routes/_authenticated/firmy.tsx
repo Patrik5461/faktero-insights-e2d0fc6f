@@ -43,6 +43,7 @@ import {
   type StavFirmy,
   type Ton,
 } from "@/lib/faktero/prehlad-firiem";
+import { jeAdminRola } from "@/lib/faktero/opravnenia";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
   head: ({ match }) => ({
@@ -289,8 +290,8 @@ function CompanyManagementPage() {
         {sb.ton === "chyba" && sb.text ? (
           <span className="text-xs text-destructive">{t(sb.text)}</span>
         ) : null}
-        {/* Napojiť banku smie len správa firmy — účtovník k banke prístup nemá. */}
-        {sb.ton !== "ok" && (r.role === "owner" || r.role === "admin") ? (
+        {/* Napojiť banku smie len správa firmy (majiteľ, admin, účtovník). */}
+        {sb.ton !== "ok" && jeAdminRola(r.role) ? (
           <button
             type="button"
             onClick={() => switchTo(r.id, ODKAZY_PREHLADU.pripojitBanku)}

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { jeAdminRola } from "./opravnenia";
 
 const IdInput = z.object({ id: z.string().uuid() });
 
@@ -118,13 +119,13 @@ export const getRecurringWidgetStats = createServerFn({ method: "GET" })
 export const getRecurringDiagnostics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // Caller must be owner/admin of at least one company.
+    // Caller must be owner/admin/accountant of at least one company.
     const { data: memberships } = await context.supabase
       .from("company_users")
       .select("company_id, role")
       .eq("user_id", context.userId);
     const adminCompanies = (memberships ?? []).filter(
-      (m: any) => m.role === "owner" || m.role === "admin",
+      (m: any) => jeAdminRola(m.role),
     );
     if (!adminCompanies.length) throw new Error("Forbidden");
     const companyIds = adminCompanies.map((m: any) => m.company_id);

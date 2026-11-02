@@ -100,7 +100,7 @@ export const startBankConnect = createServerFn({ method: "POST" })
   .validator((d: unknown) => CompanyInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
-    if (!["owner", "admin"].includes(role))
+    if (!["owner", "admin", "accountant"].includes(role))
       throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
@@ -154,7 +154,7 @@ export const renewBankConsent = createServerFn({ method: "POST" })
   .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
-    if (!["owner", "admin"].includes(role))
+    if (!["owner", "admin", "accountant"].includes(role))
       throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
@@ -374,7 +374,7 @@ export const disconnectBank = createServerFn({ method: "POST" })
   .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
-    if (!["owner", "admin"].includes(role))
+    if (!["owner", "admin", "accountant"].includes(role))
       throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin

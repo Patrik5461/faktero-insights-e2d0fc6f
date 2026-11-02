@@ -52,7 +52,7 @@ export type FirmaKluca = {
 
 /**
  * Firmy, ku ktorým kľúč smie. Kľúč firmy = jedna firma. Kľúč účtu = firmy,
- * kde je jeho majiteľ vlastník alebo admin (správa API je len pre nich),
+ * kde je jeho majiteľ vlastník, admin alebo účtovník (správa API je len pre nich),
  * prípadne zúžené zoznamom `firmy`.
  */
 export async function firmyKluca(k: RiadokKluca): Promise<FirmaKluca[]> {
@@ -68,7 +68,7 @@ export async function firmyKluca(k: RiadokKluca): Promise<FirmaKluca[]> {
     .from("company_users")
     .select("company_id")
     .eq("user_id", k.ucet_user_id)
-    .in("role", ["owner", "admin"]);
+    .in("role", ["owner", "admin", "accountant"]);
   let ids = ((clen ?? []) as any[]).map((r) => String(r.company_id));
   if (Array.isArray(k.firmy) && k.firmy.length) ids = ids.filter((id) => k.firmy!.includes(id));
   if (!ids.length) return [];
@@ -138,7 +138,7 @@ export async function vyberFirmu(k: RiadokKluca, request: Request): Promise<Vybe
       ok: false,
       status: 403,
       code: "company_forbidden",
-      message: "K tejto firme kľúč nemá prístup (musíte byť jej vlastník alebo admin).",
+      message: "K tejto firme kľúč nemá prístup (musíte byť jej vlastník, admin alebo účtovník).",
     };
   return { ok: true, company_id: f.id, ucet: true };
 }

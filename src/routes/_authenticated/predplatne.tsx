@@ -39,6 +39,7 @@ import { useT } from "@/lib/i18n/useT";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StavOdznak, triedaStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { jeAdminRola } from "@/lib/faktero/opravnenia";
 
 type ProductMode = "invoicing" | "logbook" | "both";
 type ProductTab = "invoicing" | "logbook";
@@ -321,7 +322,7 @@ function PredplatnePage() {
   }
 
   const plan = billing?.plan;
-  const isAdminLike = billing?.role === "owner" || billing?.role === "admin";
+  const isAdminLike = jeAdminRola(billing?.role);
 
   return (
     <>

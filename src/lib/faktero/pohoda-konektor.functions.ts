@@ -8,6 +8,7 @@ import {
 } from "./pohoda-konektor.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { zakladnaAdresa } from "./pohoda-konektor.server";
+import { jeAdminRola } from "./opravnenia";
 
 /**
  * Vyrobí kľúč a stiahnuteľný balíček pre účtovníčku.
@@ -37,7 +38,7 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
     if (mErr) throw new Error(mErr.message);
 
     const firmy = (clenstva ?? [])
-      .filter((r: { role: string }) => r.role === "owner" || r.role === "admin")
+      .filter((r: { role: string }) => jeAdminRola(r.role))
       .map(
         (r: { company: unknown }) => r.company as { id: string; name: string; ico: string | null },
       )
@@ -77,7 +78,7 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
         .from("company_users")
         .select("company_id")
         .eq("user_id", userId)
-        .in("role", ["owner", "admin"]);
+        .in("role", ["owner", "admin", "accountant"]);
       const moje = new Set((vsetkyMoje ?? []).map((r: { company_id: string }) => r.company_id));
       // Kto vybral všetky svoje firmy, dostane kľúč aj pre tie, čo pribudnú.
       const vsetky = firmy.length >= moje.size && firmy.every((f) => moje.has(f.id));

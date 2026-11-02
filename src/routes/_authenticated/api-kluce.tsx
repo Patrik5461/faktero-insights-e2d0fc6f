@@ -214,7 +214,7 @@ function ApiKeysPage() {
           <div className="font-semibold">{t("Kľúč pre viac firiem")}</div>
           <p className="mt-1 max-w-[75ch] text-muted-foreground">
             {t(
-              "Jeden kľúč pre všetky firmy, ktoré spravujete (ste vlastník alebo admin) — napríklad pre účtovnú kanceláriu. Firmu vyberiete v každej požiadavke hlavičkou",
+              "Jeden kľúč pre všetky firmy, ktoré spravujete (ste vlastník, admin alebo účtovník) — napríklad pre účtovnú kanceláriu. Firmu vyberiete v každej požiadavke hlavičkou",
             )}{" "}
             <code className="font-mono text-foreground">X-Company</code>{" "}
             {t("(id alebo IČO); zoznam firiem vráti")}{" "}
@@ -301,7 +301,7 @@ function KlucUctuOkno({
           {t("Kľúč pre viac firiem")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {t("Kľúč platí pre firmy, kde ste vlastník alebo admin. Firmu vyberiete v každej požiadavke hlavičkou X-Company.")}
+          {t("Kľúč platí pre firmy, kde ste vlastník, admin alebo účtovník. Firmu vyberiete v každej požiadavke hlavičkou X-Company.")}
         </p>
         <fieldset className="mt-4 space-y-2 text-sm">
           <legend className="sr-only">{t("Pre ktoré firmy")}</legend>

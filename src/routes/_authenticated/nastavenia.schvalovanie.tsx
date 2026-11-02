@@ -97,7 +97,7 @@ function Stranka() {
       </>
     );
 
-  const spravca = ["owner", "admin"].includes(d.mojaRola);
+  const spravca = ["owner", "admin", "accountant"].includes(d.mojaRola);
   /** Otvorí formulár cesty nad zoznamom a presunie naň fokus (ceruzka aj klik na riadok). */
   const upravCestu = (c: any) => {
     setForm({

@@ -5,11 +5,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /*
   Kľúč účtu — jeden API kľúč pre viac firiem (ako Doklado). Vyrába sa na
   serveri: patrí prihlásenému (`ucet_user_id`), platí pre firmy, kde je
-  vlastník alebo admin, prípadne len pre vybrané. Firma sa potom vyberá
+  vlastník, admin alebo účtovník, prípadne len pre vybrané. Firma sa potom vyberá
   v každej požiadavke hlavičkou X-Company.
 */
 
-/** Firmy, kde je prihlásený vlastník alebo admin — ponuka pre kľúč účtu. */
+/** Firmy, kde je prihlásený vlastník, admin alebo účtovník — ponuka pre kľúč účtu. */
 export const firmyPreKlucUctuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -18,7 +18,7 @@ export const firmyPreKlucUctuFn = createServerFn({ method: "POST" })
       .from("company_users")
       .select("company_id, role")
       .eq("user_id", context.userId)
-      .in("role", ["owner", "admin"]);
+      .in("role", ["owner", "admin", "accountant"]);
     const ids = (clen ?? []).map((r: any) => r.company_id);
     if (!ids.length) return { firmy: [] as { id: string; name: string; ico: string | null }[] };
     const { data } = await supabaseAdmin
@@ -36,7 +36,7 @@ export const vytvorKlucUctuFn = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         mode: z.enum(["test", "live"]),
-        /** Prázdne/null = všetky firmy, kde som vlastník alebo admin (aj budúce). */
+        /** Prázdne/null = všetky firmy, kde som vlastník, admin alebo účtovník (aj budúce). */
         firmy: z.array(z.string().uuid()).max(500).nullable(),
         nazov: z.string().trim().max(80).optional(),
       })
@@ -53,12 +53,12 @@ export const vytvorKlucUctuFn = createServerFn({ method: "POST" })
         .from("company_users")
         .select("company_id")
         .eq("user_id", context.userId)
-        .in("role", ["owner", "admin"])
+        .in("role", ["owner", "admin", "accountant"])
         .in("company_id", data.firmy);
       firmy = [...new Set((clen ?? []).map((r: any) => String(r.company_id)))];
       if (firmy.length !== new Set(data.firmy).size)
         throw new Error(
-          "Niektorú z vybraných firiem nespravujete (treba byť vlastník alebo admin).",
+          "Niektorú z vybraných firiem nespravujete (treba byť vlastník, admin alebo účtovník).",
         );
     }
     const { randomBytes, createHash } = await import("crypto");

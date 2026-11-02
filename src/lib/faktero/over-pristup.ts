@@ -6,7 +6,7 @@
   nestačí: človek s vlastným prístupom bez Banky by inak cez serverovú funkciu
   pripojil banku alebo spároval platbu. Každá taká funkcia sa má pýtať tu.
 */
-import type { Oblast } from "./opravnenia";
+import { jeAdminRola, type Oblast } from "./opravnenia";
 
 type Kontext = { supabase: any; userId: string };
 
@@ -15,7 +15,7 @@ export type Poziadavka = {
   oblast?: Oblast;
   /** Akcia mení dáta — vlastný prístup musí mať „Upravovať". */
   zapis?: boolean;
-  /** Len majiteľ alebo admin firmy (napojenia, kľúče, nastavenia). */
+  /** Len správa firmy — majiteľ, admin alebo účtovník (napojenia, kľúče, nastavenia). */
   spravca?: boolean;
 };
 
@@ -34,8 +34,8 @@ export async function overPristup(
     .maybeSingle();
   if (!data) throw new Error("K tejto firme nemáte prístup.");
   const rola = data.role as string;
-  if (p.spravca && rola !== "owner" && rola !== "admin")
-    throw new Error("Túto akciu môže urobiť len majiteľ alebo admin firmy.");
+  if (p.spravca && !jeAdminRola(rola))
+    throw new Error("Túto akciu môže urobiť len majiteľ, admin alebo účtovník firmy.");
   if (p.oblast) {
     const { data: firmy } = await ctx.supabase.rpc("firmy_s_pravom", {
       _oblast: p.oblast,

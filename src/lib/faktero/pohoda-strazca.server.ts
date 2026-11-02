@@ -127,7 +127,7 @@ export async function runStrazcaKonektora(vstup?: {
     ),
   ];
   // Kľúč pre viac firiem stráži všetky svoje firmy (bez zoznamu = všetky,
-  // kde je jeho majiteľ vlastník alebo admin).
+  // kde je jeho majiteľ vlastník, admin alebo účtovník).
   for (const k of (kluce ?? []) as Riadok[]) {
     if (!k.ucet_user_id || k.revoked_at) continue;
     if (Array.isArray(k.firmy)) firmyIds.push(...k.firmy.map(String));
@@ -136,7 +136,7 @@ export async function runStrazcaKonektora(vstup?: {
         .from("company_users")
         .select("company_id")
         .eq("user_id", k.ucet_user_id)
-        .in("role", ["owner", "admin"]);
+        .in("role", ["owner", "admin", "accountant"]);
       firmyIds.push(...(clen ?? []).map((r: Riadok) => String(r.company_id)));
     }
   }
