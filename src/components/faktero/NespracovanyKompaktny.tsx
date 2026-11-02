@@ -34,6 +34,7 @@ import {
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
+import { DatumPrijatiaInfo } from "./DatumPrijatiaInfo";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 
 /*
@@ -297,6 +298,27 @@ export function NespracovanyKompaktny({
                   />
                 </Pole>
               ) : null}
+              {faktura ? (
+                // Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný.
+                <Pole popis="Dátum prijatia">
+                  <input
+                    type="date"
+                    aria-label={t("Dátum prijatia")}
+                    value={u.datumPrijatia ?? ""}
+                    onChange={(e) => set({ datumPrijatia: e.target.value })}
+                    className={ram("")}
+                  />
+                  <DatumPrijatiaInfo
+                    kompaktne
+                    vystavenie={u.datumVystavenia}
+                    dodanie={u.datumDodania}
+                    prijatie={u.datumPrijatia}
+                    dobropis={druh === "dobropis"}
+                    samozdanenie={Boolean(u.prenesenie)}
+                    bezOdpoctu={druh === "zalohova"}
+                  />
+                </Pole>
+              ) : null}
               {druh === "dobropis" ? (
                 <Pole popis="Opravuje faktúru č." chyba={zle("opravuje")}>
                   <input
@@ -307,17 +329,6 @@ export function NespracovanyKompaktny({
                 </Pole>
               ) : null}
               <Rozsirene>
-                {faktura ? (
-                  <Pole popis="Dátum prijatia">
-                    <input
-                      type="date"
-                      aria-label={t("Dátum prijatia")}
-                      value={u.datumPrijatia ?? ""}
-                      onChange={(e) => set({ datumPrijatia: e.target.value })}
-                      className={ram("")}
-                    />
-                  </Pole>
-                ) : null}
                 <Pole popis="Interné číslo">
                   <input
                     aria-label={t("Interné číslo")}

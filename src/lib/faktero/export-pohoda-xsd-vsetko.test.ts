@@ -607,7 +607,8 @@ describe("Pohoda — prijaté doklady proti invoice/voucher/intDoc.xsd", () => {
     expect(hodnota(x, "inv:symVar")).toBe("2026778");
     expect(hodnota(x, "inv:symConst")).toBe("0308");
     expect(hodnota(x, "inv:date")).toBe("2026-10-05");
-    expect(hodnota(x, "inv:dateTax")).toBe("2026-10-03");
+    // Dátum odpočtu = neskorší z dodania (3. 10.) a prijatia (6. 10.).
+    expect(hodnota(x, "inv:dateTax")).toBe("2026-10-06");
     // SK: dátum dodania tovaru je samostatné pole prijatej faktúry.
     expect(hodnota(x, "inv:dateDelivery")).toBe("2026-10-03");
     expect(hodnota(x, "inv:dateDue")).toBe("2026-10-19");
@@ -738,7 +739,8 @@ describe("Pohoda — prijaté doklady proti invoice/voucher/intDoc.xsd", () => {
     uloz("25-cz-prijate", x);
     expect(chybySchemy(x)).toEqual([]);
     const [f, d] = x.split("<dat:dataPackItem").slice(1);
-    expect(hodnota(f, "inv:dateKHDPH")).toBe("2026-10-03");
+    // CZ: obdobie KH = obdobie odpočtu (neskorší z DUZP 3. 10. a prijatia 6. 10.).
+    expect(hodnota(f, "inv:dateKHDPH")).toBe("2026-10-06");
     expect(f).not.toContain("dateDelivery");
     expect(hodnota(d, "inv:invoiceType")).toBe("receivedCorrectiveTax");
     expect(hodnota(d, "typ:priceHigh")).toBe("-100.00");

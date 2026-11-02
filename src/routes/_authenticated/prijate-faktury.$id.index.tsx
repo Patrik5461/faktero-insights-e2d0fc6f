@@ -1,4 +1,5 @@
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { obdobieOdpoctu, prijatieSkorNezVystavenie } from "@/lib/faktero/datum-prijatia";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -904,6 +905,15 @@ function PurchaseInvoiceDetail() {
           }
         />
         <Row label={t("Prijatie")} value={datumNaDoklade(row.received_date)} />
+        {/* Obdobie odpočtu DPH — neskorší z DUZP a prijatia (ako výkazy a Pohoda). */}
+        {row.type !== "proforma" && obdobieOdpoctu(row) ? (
+          <Row label={t("Odpočet DPH")} value={obdobieOdpoctu(row) ?? ""} />
+        ) : null}
+        {prijatieSkorNezVystavenie(row.received_date, row.issue_date) ? (
+          <div role="alert" className="dk-pozor mt-1 rounded-md border px-2 py-1 text-xs">
+            {t("Dátum prijatia je skôr než dátum vystavenia — skontrolujte ho.")}
+          </div>
+        ) : null}
         <Row label={t("Splatnosť")} value={popisSplatnosti(row)} />
         {row.payment_date && <Row label={t("Úhrada")} value={datumNaDoklade(row.payment_date)} />}
         {sVazbou && vazbaUhrady}

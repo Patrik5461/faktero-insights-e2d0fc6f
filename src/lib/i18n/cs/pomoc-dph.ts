@@ -68,4 +68,6 @@ export default {
     "Ze stejných dokladů se v <0>Účetnictví → Výkazy k DPH</0> sestaví přiznání, kontrolní výkaz (KV DPH) i souhrnný výkaz a stáhnou se v XML pro eDane. Podrobně to popisuje <1>manuál k výkazům</1>.",
   "Predaj spotrebiteľom v EÚ cez <0>režim OSS</0> do priznania ani do kontrolného výkazu nevstupuje — má vlastné priznanie.":
     "Prodej spotřebitelům v EU přes <0>režim OSS</0> do přiznání ani do kontrolního výkazu nevstupuje — má vlastní přiznání.",
+  "Pri prijatej faktúre sa DPH odpočíta v období neskoršieho z dátumu dodania a <0>dátumu prijatia</0> — faktúra dodaná 28. 8. a prijatá 3. 9. patrí do odpočtu (priznanie aj kontrolný výkaz) za september. Obdobie odpočtu vidíte pod poľom Dátum prijatia. Samozdanenie (prenesenie, nadobudnutie z EÚ) a dobropis sa riadia vlastnými pravidlami.":
+    "U přijaté faktury se DPH odečte v období pozdějšího z data dodání a <0>data přijetí</0> — faktura dodaná 28. 8. a přijatá 3. 9. patří do odpočtu (přiznání i kontrolní hlášení) za září. Období odpočtu vidíte pod polem Datum přijetí. Samovyměření (přenesení, pořízení z EU) a dobropis se řídí vlastními pravidly.",
 } satisfies Record<string, string>;

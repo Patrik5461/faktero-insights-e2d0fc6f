@@ -19,6 +19,7 @@ import {
 import { zdrojZauctovaniaPriVytvoreni } from "./nespracovane-nastavenia";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { predvolenyDatumPrijatia } from "./datum-prijatia";
 type Klient = any;
 export const KOS_NESPRACOVANYCH = "nespracovane";
 
@@ -90,6 +91,27 @@ export function priponaSuboru(nazov: string | null | undefined, mime: string | n
 }
 
 /**
+ * Predvolený dátum prijatia nespracovaného dokladu (Europe/Bratislava):
+ * doklad z e-mailu — kedy mail prišiel (`inbox_messages.received_at`),
+ * nahratý — kedy bol nahratý (`created_at`).
+ */
+export async function predvolenePrijatie(
+  supabase: Klient,
+  r: { created_at?: string | null; inbox_message_id?: string | null },
+): Promise<string> {
+  let mailPrijaty: string | null = null;
+  if (r.inbox_message_id) {
+    const { data: m } = await supabase
+      .from("inbox_messages")
+      .select("received_at")
+      .eq("id", r.inbox_message_id)
+      .maybeSingle();
+    mailPrijaty = (m as any)?.received_at ?? null;
+  }
+  return predvolenyDatumPrijatia({ mailPrijaty, nahrane: r.created_at ?? null });
+}
+
+/**
  * Založí nespracovaný doklad so súborom. `ai` (už prečítané, napr. z mailu)
  * ho rovno vyťaží; bez neho ostane v stave „číta sa" a vyťaží ho `vytazNespracovany`.
  */
@@ -110,6 +132,8 @@ export async function zalozNespracovany(
     predvolby?: PredvolbySkenu | null;
     /** Do firmy ho zaradil rozdeľovač (osobná adresa alebo nahratie bez výberu firmy). */
     cezRozdelovac?: boolean;
+    /** Kedy doklad naozaj prišiel (napr. do rozdeľovača) — inak mail alebo teraz. */
+    prijate?: string | null;
   },
 ): Promise<{ id: string; udaje: UdajeNespracovaneho | null }> {
   const id = crypto.randomUUID();
@@ -121,6 +145,11 @@ export async function zalozNespracovany(
   const dnes = dnesBratislava();
   const vytazene = args.ai !== undefined;
   let udaje = vytazene ? udajeZAi(args.ai, dnes) : null;
+  // Dátum prijatia: mail → kedy prišiel, nahratie → dnes (človek ho môže prepísať).
+  const prijatie = args.prijate
+    ? predvolenyDatumPrijatia({ nahrane: args.prijate })
+    : await predvolenePrijatie(supabase, { inbox_message_id: args.inboxMessageId, created_at: new Date().toISOString() });
+  if (udaje && !udaje.datumPrijatia) udaje.datumPrijatia = prijatie;
   if (udaje && args.poznamka) udaje.poznamka = [udaje.poznamka, args.poznamka].filter(Boolean).join("\n");
   const druh = args.druh ?? (vytazene ? navrhDruhu(args.ai, args.nazov) : null);
   // Čo človek pri tomto dodávateľovi volil naposledy — len do prázdnych polí.
@@ -150,7 +179,7 @@ export async function zalozNespracovany(
     file_mime: args.mime,
     file_size: args.bajty.length,
     ai: args.ai ?? null,
-    udaje: udaje ?? (predvolby ? { predvolby } : {}),
+    udaje: udaje ?? { ...(predvolby ? { predvolby } : {}), datumPrijatia: prijatie },
     inbox_message_id: args.inboxMessageId ?? null,
     cez_rozdelovac: !!args.cezRozdelovac,
   });
@@ -166,7 +195,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: r } = await supabaseAdmin
     .from("nespracovane_doklady")
-    .select("id, company_id, created_by, inbox_message_id, file_path, file_mime, file_name, druh, udaje, ai")
+    .select("id, company_id, created_by, created_at, inbox_message_id, file_path, file_mime, file_name, druh, udaje, ai")
     .eq("id", id)
     .maybeSingle();
   if (!r?.file_path) return;
@@ -202,6 +231,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
       // Nastavenia firmy a nastavenie zo skenera (uložené pri nahratí).
       udaje = await poNastaveniach(supabaseAdmin, r.company_id, druh as DruhNespracovaneho | null, udaje, povodne.predvolby, ai);
     }
+    if (!udaje.datumPrijatia) udaje.datumPrijatia = povodne.datumPrijatia || (await predvolenePrijatie(supabaseAdmin, r));
     await supabaseAdmin
       .from("nespracovane_doklady")
       .update({
@@ -337,7 +367,7 @@ export async function vytvorDoklad(
       const up = await supabase.storage.from("purchase-invoices").upload(cesta, bajty, { contentType: mime });
       if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
     }
-    const zakl = prijataZUdajov(druh, u, dnes);
+    const zakl = prijataZUdajov(druh, { ...u, datumPrijatia: u.datumPrijatia || (await predvolenePrijatie(supabase, r)) }, dnes);
     /*
       Odberateľ na doklade je iná firma — faktúra vznikne (človek zvolil
       „Uložiť aj tak“) s príznakom a nezaúčtuje sa, kým nepotvrdí, že patrí

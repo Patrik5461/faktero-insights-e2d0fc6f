@@ -7,6 +7,7 @@
   zaúčtovania, číslo faktúry dodávateľa ako `originalDocument`.
 */
 
+import { jeSamozdanenie } from "./datum-prijatia";
 import { najblizsiaSadzba } from "./vat-rates";
 import { prepocitajPolozku, sumySamofaktury } from "./samofakturacia";
 
@@ -251,6 +252,10 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     _datumDph: p.delivery_date || p.issue_date,
     // Kedy faktúra do firmy prišla — pre voľbu dátumu zápisu a odpočtu.
     _datumDorucenia: p.received_date || String(p.created_at ?? "").slice(0, 10) || null,
+    // Skutočný dátum prijatia — odpočet DPH nebude skôr (neskorší z DUZP a prijatia).
+    _datumPrijatia: p.received_date || null,
+    // Samozdanenie: odpočet aj daň v období dodania, prijatie ho neposúva.
+    _samozdanenie: jeSamozdanenie(p) || Boolean(celaPdp(p)),
     // Partner v adresári — pre párovanie s kartou v Pohode (voľba firmy).
     customer_id: p.customer_id ?? null,
     _splatnost: p.due_date,

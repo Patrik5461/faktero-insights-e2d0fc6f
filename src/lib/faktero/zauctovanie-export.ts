@@ -13,6 +13,7 @@
   kód druhu dokladu. Čisté funkcie bez databázy.
 */
 
+import { jeSamozdanenie } from "./datum-prijatia";
 import { riadkyDokladu, rozpisBlocku, type OdpocetVozidla, type RozpisSadzby } from "./rozuctovanie";
 import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
@@ -208,7 +209,7 @@ export function datumPoUzavierke(datum: unknown, zamknuteDo: unknown): string | 
  * `dateTax`); do uzamknutého obdobia sa nezapíše — posunie sa za uzávierku.
  */
 export function datumOdpoctuPrijateho(
-  d: { vystavenie: unknown; dodanie: unknown; dorucenie: unknown },
+  d: { vystavenie: unknown; dodanie: unknown; dorucenie: unknown; prijatie?: unknown; samozdanenie?: boolean },
   nast: NastaveniaUctovania,
 ): string | null {
   const n = {
@@ -474,7 +475,13 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     datumSplatnosti: t(p?.due_date),
     datumPrijatia: t(p?.received_date) ?? t(p?.issue_date),
     datumOdpoctu: datumOdpoctuPrijateho(
-      { vystavenie: p?.issue_date, dodanie, dorucenie: p?.received_date },
+      {
+        vystavenie: p?.issue_date,
+        dodanie,
+        dorucenie: p?.received_date,
+        prijatie: p?.received_date,
+        samozdanenie: jeSamozdanenie(p ?? {}),
+      },
       nast,
     ),
     datumZauctovania: datumPoUzavierke(dodanie, nast.zamknuteDo),

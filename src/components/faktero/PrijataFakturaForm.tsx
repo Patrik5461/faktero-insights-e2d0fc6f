@@ -25,6 +25,7 @@ import { useT } from "@/lib/i18n/useT";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
+import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
 import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
 
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
@@ -772,6 +773,14 @@ export function PrijataFakturaForm({
           value={form.received_date}
           onChange={(e) => set("received_date", e.target.value)}
           className="input"
+        />
+        <DatumPrijatiaInfo
+          vystavenie={form.issue_date}
+          dodanie={form.delivery_date}
+          prijatie={form.received_date}
+          dobropis={Boolean(form.opravuje_cislo.trim())}
+          samozdanenie={form.dph_rezim === "samozdanenie" || form.dph_rezim === "nadobudnutie"}
+          bezOdpoctu={form.type === "proforma"}
         />
       </Field>
       <Field label="Dátum splatnosti">

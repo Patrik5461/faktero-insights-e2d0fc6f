@@ -122,11 +122,12 @@ describe("Pohoda — dátum zaúčtovania z okna exportu", () => {
     expect(hodnota(x, "inv:dateDue")).toBe("2026-02-26");
   });
 
-  it("bez dátumu zaúčtovania ostáva doterajšie správanie (zápis = vystavenie, odpočet = dodanie)", () => {
+  it("bez dátumu zaúčtovania: zápis = vystavenie, odpočet = neskorší z dodania a prijatia", () => {
     const x = buildPohodaExpensesXml({ company: firma, nastavenia: zaklad, doklady: [prijataAkoDoklad(prijata())] });
     expect(chybySchemy(x)).toEqual([]);
     expect(hodnota(x, "inv:date")).toBe("2026-02-12");
-    expect(hodnota(x, "inv:dateTax")).toBe("2026-02-10");
+    // Dodanie 10. 2., prijatie 14. 2. (pravidlo od 2. 11. 2026, ako výkazy DPH).
+    expect(hodnota(x, "inv:dateTax")).toBe("2026-02-14");
     expect(x).not.toContain("dateAccounting");
   });
 
@@ -191,7 +192,7 @@ describe("Pohoda — dátum zaúčtovania z okna exportu", () => {
     }
   });
 
-  it("dátum zaúčtovania pred dodaním neposunie odpočet pred dodanie", () => {
+  it("dátum zaúčtovania pred dodaním neposunie odpočet pred dodanie ani prijatie", () => {
     const x = buildPohodaExpensesXml({
       company: firma,
       nastavenia: { ...zaklad, datumZauctovaniaPevny: "2026-01-31" },
@@ -199,7 +200,7 @@ describe("Pohoda — dátum zaúčtovania z okna exportu", () => {
     });
     expect(chybySchemy(x)).toEqual([]);
     expect(hodnota(x, "inv:date")).toBe("2026-01-31");
-    expect(hodnota(x, "inv:dateTax")).toBe("2026-02-10");
+    expect(hodnota(x, "inv:dateTax")).toBe("2026-02-14");
   });
 
   it("vystavená faktúra: len dátum účtovania, vystavenie a DPH podľa dodania ostávajú", () => {

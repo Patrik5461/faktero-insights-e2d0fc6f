@@ -1599,20 +1599,26 @@ export function polozkyDokladov(opts: {
               ex,
             ).zapis || String(d?.issue_date ?? "")
           : String(d?.issue_date ?? "");
-      const datumOdpoctu =
-        pevny && (!datumDph || pevny >= datumDph)
-          ? pevny
-          : prijatyDoklad && ex.datumOdpoctu !== "dodanie"
-          ? datumyPrijateho(
-              {
-                vystavenie: d?.issue_date,
-                dodanie: d?._datumDph,
-                dorucenie: d?._datumDorucenia || d?.received_date || String(d?.created_at ?? "").slice(0, 10),
-                zauctovanie: zamknutieZ(datumZapisu),
-              },
-              ex,
-            ).odpocet || datumDph
-          : datumDph;
+      /*
+        Dátum odpočtu prijatého dokladu (Pohoda `dateTax`, CZ aj `dateKHDPH`)
+        nikdy nie skôr než neskorší z DUZP a dátumu prijatia faktúry — ako
+        výkazy DPH vo Fakteri (`denOdpoctu`). Samozdanenie ostáva na DUZP.
+        Zadaný dátum zaúčtovania platí, len ak tú hranicu nepredbehne.
+      */
+      const zakladOdpoctu = prijatyDoklad
+        ? datumyPrijateho(
+            {
+              vystavenie: d?.issue_date,
+              dodanie: d?._datumDph,
+              dorucenie: d?._datumDorucenia || d?.received_date || String(d?.created_at ?? "").slice(0, 10),
+              zauctovanie: zamknutieZ(datumZapisu),
+              prijatie: d?._datumPrijatia,
+              samozdanenie: Boolean(d?._samozdanenie),
+            },
+            ex,
+          ).odpocet || datumDph
+        : datumDph;
+      const datumOdpoctu = pevny && pevny >= zakladOdpoctu ? pevny : zakladOdpoctu;
       const popis = skrat(
         [
           d?.supplier_name,
@@ -2022,7 +2028,8 @@ export function polozkyDokladov(opts: {
         (!prijatyDoklad
           ? ""
           : cz
-            ? el(`${p}:dateKHDPH`, datumDph, "        ")
+            ? // Obdobie kontrolného hlásenia = obdobie odpočtu (neskorší z DUZP a prijatia).
+              el(`${p}:dateKHDPH`, datumOdpoctu, "        ")
             : p !== "vch" && d?._typPohody
               ? el(`${p}:dateDelivery`, datumDodania, "        ")
               : "") +

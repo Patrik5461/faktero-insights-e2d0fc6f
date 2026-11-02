@@ -405,8 +405,9 @@ describe("MRP-K/S — prijaté faktúry a bločky", () => {
     expect(f.OriginalDocumentNumber).toBe("FA-2026/0815");
     expect(f.VariableSymbol).toBe("20260815");
     expect(f.TaxCode).toBe("40");
-    // Odpočet predvolene podľa dodania (ako Pohoda), nie podľa doručenia.
-    expect(f.TaxPointDate).toBe("2026-09-27");
+    // Odpočet = neskorší z dodania (27. 9.) a prijatia (30. 9.) — ako výkazy DPH a Pohoda.
+    expect(f.TaxPointDate).toBe("2026-09-30");
+    // TaxPointDate2 = DUZP.
     expect(f.TaxPointDate2).toBe("2026-09-27");
     expect(f.DoubleEntryBookkeepingCode).toBe("501.000");
     expect(f.BaseTaxRateAmount).toBe("200.00");
@@ -713,13 +714,14 @@ describe("MRP-K/S — položky prijatej faktúry, záporné riadky a dátum odpo
       amount_without_vat: 200,
       vat_amount: 46,
     };
-    expect(prijataNaUctovanie(p, nast).datumOdpoctu).toBe("2026-09-27");
+    // Od 2. 11. 2026 aj predvolená voľba: neskorší z dodania a prijatia.
+    expect(prijataNaUctovanie(p, nast).datumOdpoctu).toBe("2026-10-02");
     expect(prijataNaUctovanie(p, { ...nast, datumOdpoctu: "neskorsi" }).datumOdpoctu).toBe(
       "2026-10-02",
     );
-    // September uzamknutý — odpočet nemôže ísť do podaného obdobia.
+    // September uzamknutý — odpočet nemôže ísť do podaného obdobia (a nie pred prijatie 2. 10.).
     expect(prijataNaUctovanie(p, { ...nast, zamknuteDo: "2026-09-30" }).datumOdpoctu).toBe(
-      "2026-10-01",
+      "2026-10-02",
     );
   });
 });

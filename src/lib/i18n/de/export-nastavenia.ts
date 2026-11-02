@@ -115,10 +115,8 @@ export default {
   "Export partnera do adresára Pohody": "Export des Partners in das Pohoda-Adressbuch",
   "Pri párovaní ide karta partnera z adresára Faktera do Pohody pred dokladom a doklad sa na ňu odvolá. Celý adresár naraz sa zapína v Prepojení s Pohodou.":
     "Beim Verknüpfen wird die Partnerkarte aus dem Faktero-Adressbuch vor dem Beleg an Pohoda gesendet und der Beleg verweist darauf. Das gesamte Adressbuch auf einmal schalten Sie in der Verbindung mit Pohoda ein.",
-  "Keď faktúra príde až v neskoršom mesiaci než dodanie, odpočet DPH patrí až do obdobia doručenia — taký doklad v účtovnom programe skontrolujte, alebo zvoľte „neskorší z dátumu dodania a doručenia“.":
-    "Kommt die Rechnung erst in einem späteren Monat als die Lieferung, gehört der Vorsteuerabzug erst in den Zeitraum des Eingangs — prüfen Sie einen solchen Beleg in der Buchhaltungssoftware oder wählen Sie „das spätere aus Liefer- und Eingangsdatum“.",
-  "Dátum zaúčtovania nesmie byť skorší než doručenie faktúry — inak by sa DPH odpočítala skôr, než to zákon dovoľuje.":
-    "Das Buchungsdatum darf nicht vor dem Eingang der Rechnung liegen — sonst würde die Vorsteuer früher abgezogen, als es das Gesetz erlaubt.",
+  "Dátum odpočtu bude dátum zaúčtovania, najskôr však neskorší z dátumu dodania a prijatia faktúry — skôr to zákon nedovoľuje.":
+    "Das Abzugsdatum ist das Buchungsdatum, frühestens jedoch das spätere aus Liefer- und Eingangsdatum der Rechnung — früher erlaubt es das Gesetz nicht.",
   "Faktura a číslo faktúry (Faktura 2026001)": "Faktura und Rechnungsnummer (Faktura 2026001)",
   "Len číslo faktúry": "Nur die Rechnungsnummer",
   "Variabilný symbol (VS 2026001)": "Variables Symbol (VS 2026001)",

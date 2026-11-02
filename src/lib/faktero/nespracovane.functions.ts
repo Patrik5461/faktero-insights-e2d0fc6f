@@ -148,6 +148,11 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const dnes = dnesBratislava();
     const ulozene = nacitajUdaje(r.udaje);
     const udaje = ulozene.dodavatel.nazov || ulozene.cislo || !r.ai ? ulozene : udajeZAi(r.ai, dnes);
+    // Starší doklad bez dátumu prijatia: kedy prišiel mail, inak kedy bol nahratý.
+    if (!udaje.datumPrijatia) {
+      const { predvolenePrijatie } = await import("./nespracovane.server");
+      udaje.datumPrijatia = await predvolenePrijatie(supabase, r);
+    }
     let url: string | null = null;
     if (r.file_path) {
       const { data: s } = await supabase.storage.from("nespracovane").createSignedUrl(r.file_path, 3600);

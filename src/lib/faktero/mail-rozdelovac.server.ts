@@ -257,6 +257,7 @@ async function doFirmy(
     file_name: string | null;
     file_mime: string | null;
     ai: any;
+    received_at?: string | null;
   },
   companyId: string,
   poznamka: string,
@@ -281,6 +282,8 @@ async function doFirmy(
     ...(r.ai ? { ai: r.ai } : {}),
     poznamka: r.ai ? poznamka : null,
     cezRozdelovac: true,
+    // Dátum prijatia = kedy súbor prišiel do rozdeľovača, nie kedy ho niekto zaradil.
+    prijate: r.received_at ?? null,
   });
   if (!r.ai) void vytazNespracovany(n.id);
   await supabaseAdmin.storage.from(KOS_ROZDELOVACA).remove([r.file_path]);
@@ -299,7 +302,7 @@ export async function rozdelNahraty(id: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: r } = await supabaseAdmin
     .from("mail_nepriradene")
-    .select("id, user_id, file_path, file_name, file_mime, ai")
+    .select("id, user_id, file_path, file_name, file_mime, ai, received_at")
     .eq("id", id)
     .eq("zdroj", "nahratie")
     .maybeSingle();
@@ -373,7 +376,7 @@ export async function priradNahraty(
   await overFirmuRozdelovaca(supabaseAdmin, userId, companyId);
   const { data: r } = await supabaseAdmin
     .from("mail_nepriradene")
-    .select("id, user_id, file_path, file_name, file_mime, ai")
+    .select("id, user_id, file_path, file_name, file_mime, ai, received_at")
     .eq("id", id)
     .eq("user_id", userId)
     .eq("zdroj", "nahratie")
