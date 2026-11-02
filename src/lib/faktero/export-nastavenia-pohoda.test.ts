@@ -50,6 +50,9 @@ function chybySchemy(xml: string): string[] {
   }
   return chyby;
 }
+/** N-tý doklad z balíka (bloček kartou je tiež `inv:invoice` — Ostatné záväzky). */
+const doklad = (xml: string, i: number) =>
+  [...xml.matchAll(/<dat:dataPackItem\b[\s\S]*?<\/dat:dataPackItem>/g)][i]?.[0] ?? "";
 const hodnota = (xml: string, el: string) =>
   new RegExp(`<${el}(?:\\s[^>]*)?>([^<]*)</${el}>`).exec(xml)?.[1] ?? null;
 
@@ -204,8 +207,9 @@ describe("zmenené nastavenia", () => {
     });
     expect(hodnota(x, "inv:date")).toBe("2026-10-03");
     expect(hodnota(x, "inv:dateTax")).toBe("2026-10-03");
-    // Bloček (interný doklad) — doručenie = dátum uloženia.
-    expect(hodnota(x, "int:date")).toBe("2026-10-02");
+    // Bloček kartou (Ostatné záväzky) — doručenie = dátum uloženia.
+    expect(hodnota(doklad(x, 1), "inv:invoiceType")).toBe("commitment");
+    expect(hodnota(doklad(x, 1), "inv:date")).toBe("2026-10-02");
     // Dátum dodania tovaru ostáva dátumom dodania.
     expect(hodnota(x, "inv:dateDelivery")).toBe("2026-09-25");
     expect(chybySchemy(x)).toEqual([]);
@@ -233,16 +237,16 @@ describe("zmenené nastavenia", () => {
     });
     expect(hodnota(x, "inv:text")).toBe("Nákup materiálu");
     expect(hodnota(x, "inv:intNote")).toBe("kontrola · Materiál");
-    expect(hodnota(x, "int:intNote")).toBe("OMV č. B55");
+    expect(hodnota(doklad(x, 1), "inv:intNote")).toBe("OMV č. B55");
     // Bloček bez vlastnej predkontácie berie kód prijatých dokladov — aj jeho popis.
-    expect(hodnota(x, "int:text")).toBe("Nákup materiálu");
+    expect(hodnota(doklad(x, 1), "inv:text")).toBe("Nákup materiálu");
     // Bez popisu predkontácie ide predvolený text.
     const z = buildPohodaExpensesXml({
       company: firmaS({ textPrijate: "polozka" }),
       doklady: [blocek],
       nastavenia,
     });
-    expect(hodnota(z, "int:text")).toBe("OMV č. B55");
+    expect(hodnota(z, "inv:text")).toBe("OMV č. B55");
     const y = buildPohodaExpensesXml({
       company: firmaS({ textPrijate: "dodavatel_cislo" }),
       doklady: [prijata],
@@ -282,8 +286,8 @@ describe("zmenené nastavenia", () => {
       doklady: [prijata, blocek],
       nastavenia,
     });
-    expect(x).toContain("<inv:invoiceDetail>");
-    expect(x).toContain("<int:intDocDetail>");
+    expect(doklad(x, 0)).toContain("<inv:invoiceDetail>");
+    expect(doklad(x, 1)).toContain("<inv:invoiceDetail>");
     expect(x).toMatch(
       /<inv:invoiceItem>[\s\S]*?<inv:rateVAT>high<\/inv:rateVAT>[\s\S]*?<inv:homeCurrency>/,
     );

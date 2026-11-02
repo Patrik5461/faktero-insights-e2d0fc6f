@@ -370,7 +370,13 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
       if (jeStorno(f, "invoiceHeader")) continue;
       const h = uzol(f, "invoiceHeader") ?? {};
       const typ = hodnota(h, "invoiceType").toLowerCase();
-      if (!(typ in TYPY_PRIJATYCH)) continue;
+      /*
+        Ostatný záväzok zaplatený kartou je bloček — tak ho do Pohody vyváža
+        Faktero (bločky podľa platby). Ostatné záväzky (leasing, odvody) nie.
+      */
+      const blocekKartou =
+        typ === "commitment" && uhradaZTextu(hodnota(h, "paymentType", "paymentType")) === "karta";
+      if (!(typ in TYPY_PRIJATYCH) && !blocekKartou) continue;
       const zahranicna = uzol(f, "invoiceSummary", "foreignCurrency");
       // Bez cudzej meny je doklad v domácej mene firmy — doplní ju `naplanuj` (CZ firma CZK).
       const mena = hodnota(zahranicna, "currency", "ids");
@@ -396,7 +402,7 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
       const zaloha = r2(-odpocty.reduce((a, p) => a + sumaRiadku(p, cudzia), 0));
       const s = sumyDokladu(f, "invoiceSummary", polozky, cudzia);
       const zaznam: PrijatyZaznam = {
-        typ: "faktura",
+        typ: blocekKartou ? "blocek" : "faktura",
         zdroj: "Pohoda XML",
         cislo: alebo(hodnota(h, "originalDocument") || hodnota(h, "number", "numberRequested") || hodnota(h, "symVar")),
         ...partner(h),
@@ -422,6 +428,9 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
         zaznam.dph = r2(polozky.reduce((a, p) => a + (p.dph ?? 0), 0));
         zaznam.spolu = r2(zaznam.zaklad + zaznam.dph);
       }
+      // Bloček bez položiek: rozpis DPH zo súhrnu (ako interný doklad nižšie).
+      if (blocekKartou && !polozky.length && !cudzia)
+        zaznam.polozky = polozkyZoSuhrnu(uzol(f, "invoiceSummary", "homeCurrency") ?? {}, kraj, den);
       if (typ === "receivedcorrectivetax")
         zaznam.druh = (zaznam.spolu ?? 0) < 0 ? "Dobropis" : "Ťarchopis";
       if (hodnota(h, "storno") === "cancelledDocument") zaznam.stornovany = true;

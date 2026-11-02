@@ -40,8 +40,8 @@ export default {
   "Podľa čísla dokladu": "Podle čísla dokladu",
   "Podľa poradia nahratia": "Podle pořadí nahrání",
   "Exportovať položky dokladu": "Exportovat položky dokladu",
-  "Bloček pôjde do Pohody po položkách, nie jedným riadkom podľa sadzieb DPH.":
-    "Účtenka půjde do Pohody po položkách, ne jedním řádkem podle sazeb DPH.",
+  "Bloček pôjde do Pohody po položkách s cenou bez DPH, sadzbou a členením DPH, nie jedným riadkom podľa sadzieb DPH.":
+    "Účtenka půjde do Pohody po položkách s cenou bez DPH, sazbou a členěním DPH, ne jedním řádkem podle sazeb DPH.",
 
   // Manuály (Pomoc)
   "Kam sa čo uloží:": "Kam se co uloží:",

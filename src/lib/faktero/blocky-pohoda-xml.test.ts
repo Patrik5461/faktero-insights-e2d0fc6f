@@ -226,7 +226,7 @@ describe("pohodaXmlBlockov", () => {
       expect(chybySchemy(xml)).toEqual([]);
     });
 
-    it("kartou ako interný doklad aj s položkami z bločku, prejde schémou", () => {
+    it("kartou do Ostatných záväzkov aj s položkami z bločku, prejde schémou", () => {
       const nastavenia = { blockyPodlaPlatby: true, polozkyBlockov: true };
       const sPolozkami = {
         ...czk,
@@ -240,9 +240,14 @@ describe("pohodaXmlBlockov", () => {
       });
       expect(preskocene).toEqual([]);
       const xml = subory[0].xml;
-      expect(xml).toMatch(/<int:intDoc\b/);
+      expect(xml).not.toMatch(/<int:intDoc\b/);
+      expect(xml).toContain("<inv:invoiceType>commitment</inv:invoiceType>");
       expect(kurzVSuhrne(xml)).toBe(true);
-      expect(xml).not.toMatch(/<int:homeCurrency>/);
+      expect(xml).not.toMatch(/<inv:homeCurrency>/);
+      // Položka v mene dokladu: 10 × 100 CZK bez DPH, sadzba 23 %.
+      expect(xml).toMatch(
+        /<inv:invoiceItem>[\s\S]*?<inv:text>Nafta<\/inv:text>[\s\S]*?<inv:quantity>10<\/inv:quantity>[\s\S]*?<inv:rateVAT>high<\/inv:rateVAT>[\s\S]*?<inv:foreignCurrency>[\s\S]*?<typ:unitPrice>100(\.00)?<\/typ:unitPrice>/,
+      );
       expect(chybySchemy(xml)).toEqual([]);
     });
 

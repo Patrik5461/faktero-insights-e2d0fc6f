@@ -27,17 +27,17 @@ export default {
   "Členenie DPH — {nazov}": "MwSt.-Kennzeichen — {nazov}",
   "Bločky do Pohody": "Kassenbons an Pohoda",
   "Podľa spôsobu platby": "Nach Zahlungsart",
-  "Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako prijatá faktúra.":
-    "Bar als Kassenausgangsbeleg, Karte als interner Beleg, Überweisung als Eingangsrechnung.",
+  "Hotovosť ako výdavkový pokladničný doklad, karta do Ostatných záväzkov, prevod ako prijatá faktúra.":
+    "Bar als Kassenausgangsbeleg, Karte als sonstige Verbindlichkeit, Überweisung als Eingangsrechnung.",
   "Skratka pokladne v Pohode": "Kassenkürzel in Pohoda",
   "Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu zatiaľ ako prijaté faktúry.":
     "Ohne Kassenkürzel legt Pohoda keinen Kassenbeleg an — Bar-Kassenbons werden vorerst als Eingangsrechnungen übertragen.",
   "Všetky ako prijaté faktúry": "Alle als Eingangsrechnungen",
   "Doklad sa zaúčtuje ako záväzok a úhradu spáruje účtovníčka.":
     "Der Beleg wird als Verbindlichkeit verbucht, die Zahlung gleicht die Buchhaltung ab.",
-  "Posielať aj položky bločku": "Auch Positionen des Kassenbons senden",
-  "Inak ide len súhrn po sadzbách DPH. Položky idú v cenách s DPH, tak ako sú na bločku. Doklad s ďalšími pokladňami vyberiete v záložke Pokladne v číselníku nižšie.":
-    "Sonst wird nur eine Summe je MwSt.-Satz übertragen. Positionen gehen mit Bruttopreisen, so wie sie auf dem Kassenbon stehen. Weitere Kassen wählen Sie im Reiter Kassen im Verzeichnis unten.",
+  "Posielať aj položky dokladu": "Auch Belegpositionen senden",
+  "Inak ide len súhrn po sadzbách DPH. Každá položka bločku ide s textom, množstvom, cenou bez DPH, sadzbou, predkontáciou a členením DPH. Keď položky so sumou dokladu nesedia, doklad ide súhrnom. Prijaté a vystavené faktúry idú s položkami vždy.":
+    "Sonst wird nur eine Summe je MwSt.-Satz übertragen. Jede Position des Kassenbons geht mit Text, Menge, Nettopreis, Steuersatz, Vorkontierung und MwSt.-Gliederung. Passen die Positionen nicht zur Belegsumme, geht der Beleg als Summe. Eingangs- und Ausgangsrechnungen gehen immer mit Positionen.",
   "Export a spracovanie dokladov": "Export und Belegverarbeitung",
   "Párovací symbol v Pohode": "Abgleichsymbol in Pohoda",
   "Variabilný symbol": "Verwendungszweck (VS)",

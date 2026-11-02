@@ -62,8 +62,9 @@ export function agendyDokladu(
       : ["receivedInvoice", "commitment"];
   // Bloček: podľa toho, ako ide do účtovníctva.
   if (d.forma === "pokladna") return ["cashPaid", "receivedInvoice", "internalDocument"];
-  if (d.forma === "interny") return ["internalDocument", "receivedInvoice", "cashPaid"];
-  return ["receivedInvoice", "internalDocument", "cashPaid", "commitment"];
+  // Bloček kartou ide do Pohody do Ostatných záväzkov (export.server.ts).
+  if (d.forma === "interny") return ["commitment", "internalDocument", "receivedInvoice", "cashPaid"];
+  return ["receivedInvoice", "commitment", "internalDocument", "cashPaid"];
 }
 
 /** Agendy na strane výstupu (vystavené doklady). */

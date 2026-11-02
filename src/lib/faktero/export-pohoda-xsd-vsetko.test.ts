@@ -771,7 +771,7 @@ describe("Pohoda — prijaté doklady proti invoice/voucher/intDoc.xsd", () => {
     ...o,
   });
 
-  it("bloček: hotovosť do pokladne (voucher), karta ako interný doklad, prevod ako prijatá faktúra", () => {
+  it("bloček: hotovosť do pokladne (voucher), karta do Ostatných záväzkov, prevod ako prijatá faktúra", () => {
     const x = buildPohodaExpensesXml({
       company: firmaSK,
       nastavenia,
@@ -785,7 +785,8 @@ describe("Pohoda — prijaté doklady proti invoice/voucher/intDoc.xsd", () => {
     expect(chybySchemy(x)).toEqual([]);
     expect(x).toContain("<vch:voucherType>expense</vch:voucherType>");
     expect(x).toContain("<vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>");
-    expect(x).toContain('<int:intDoc version="2.0">');
+    expect(x).not.toContain("<int:intDoc");
+    expect(x).toContain("<inv:invoiceType>commitment</inv:invoiceType>");
     expect(x).toContain("<inv:invoiceType>receivedInvoice</inv:invoiceType>");
     expect(hodnota(x, "typ:priceHighVAT")).toBe("11.50");
   });

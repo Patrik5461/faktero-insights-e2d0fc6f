@@ -149,7 +149,7 @@ describe("konvertor — prevod", () => {
     expect(chybySchemy(xml)).toEqual([]);
   });
 
-  it("bločky: hotovosť ide do pokladne, karta ako interný doklad", () => {
+  it("bločky: hotovosť ide do pokladne, karta do Ostatných záväzkov", () => {
     const r = prevedRiadky("blocky", [
       riadok("blocky", {
         vystavenie: "2026-10-01",
@@ -175,7 +175,7 @@ describe("konvertor — prevod", () => {
       doklady: r.doklady as any,
       nastavenia: { blockyPodlaPlatby: true, pokladna: "HP" } as any,
     });
-    expect(xml).toContain("<int:intDoc");
+    expect(xml).toContain("<inv:invoiceType>commitment</inv:invoiceType>");
     expect(xml).toContain("<vch:voucher");
     expect(chybySchemy(xml)).toEqual([]);
   });

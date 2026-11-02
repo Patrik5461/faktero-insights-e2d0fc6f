@@ -159,7 +159,7 @@ export async function povolenePre(k: KontextFirmy, druh: DruhUcenia): Promise<Po
   return povoleneKody({
     ciselnik: k.ciselnik,
     agendy: blocek
-      ? ["receivedInvoice", "cashPaid", "internalDocument"]
+      ? ["receivedInvoice", "cashPaid", "commitment", "internalDocument"]
       : druh === "zalohova"
         ? ["receivedAdvanceInvoice", "receivedInvoice"]
         : ["receivedInvoice"],

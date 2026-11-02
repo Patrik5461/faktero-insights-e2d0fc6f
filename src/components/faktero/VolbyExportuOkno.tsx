@@ -157,7 +157,7 @@ export function VolbyExportuOkno({
               <span>
                 {t("Exportovať položky dokladu")}
                 <span className="block text-xs text-muted-foreground">
-                  {t("Bloček pôjde do Pohody po položkách, nie jedným riadkom podľa sadzieb DPH.")}
+                  {t("Bloček pôjde do Pohody po položkách s cenou bez DPH, sadzbou a členením DPH, nie jedným riadkom podľa sadzieb DPH.")}
                 </span>
               </span>
             </label>
