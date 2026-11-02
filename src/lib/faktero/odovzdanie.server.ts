@@ -236,7 +236,8 @@ export async function zostavBalik(
       .gte("issue_date", od)
       .lt("issue_date", doDatumu)
       .is("deleted_at", null)
-      .eq("type", "regular")
+      // Aj prijaté zálohové — v Pohode sa evidujú kvôli odpočtu zálohy (bez DPH, neúčtujú sa).
+      .in("type", ["regular", "proforma"])
       .not("status", "in", "(draft,cancelled)")
       .order("issue_date")
       .order("id")
@@ -542,6 +543,7 @@ export async function zostavBalik(
           "predkontacia",
           "clenenie_dph",
           "zauctovana",
+          "typ",
         ],
         prijate.map((p: Riadok) => [
           p.invoice_number,
@@ -558,6 +560,7 @@ export async function zostavBalik(
           p.pohoda_predkontacia ?? "",
           p.pohoda_clenenie_dph ?? "",
           p.zauctovane_at ? "áno" : "nie",
+          p.type === "proforma" ? "zálohová" : "faktúra",
         ]),
       ),
     );

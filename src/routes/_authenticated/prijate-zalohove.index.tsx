@@ -6,7 +6,12 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Download, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
+import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
+import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
@@ -38,6 +43,7 @@ type Riadok = {
   payment_date: string | null;
   status: string;
   deleted_at: string | null;
+  exported_at: string | null;
 };
 
 /**
@@ -71,7 +77,7 @@ function PrijateZalohovePage() {
         let q = supabase
           .from("purchase_invoices")
           .select(
-            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status, deleted_at",
+            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status, deleted_at, exported_at",
           )
           .eq("company_id", cid)
           .eq("type", "proforma");
@@ -140,6 +146,49 @@ function PrijateZalohovePage() {
     () => suctyPrijatychZaloh(zobrazene, zuctovane, domaca),
     [zobrazene, zuctovane, domaca],
   );
+
+  /*
+    Zálohové faktúry do Pohody (agenda Prijaté zálohové faktúry): neúčtujú
+    sa, ale Pohoda ich potrebuje kvôli úhrade a odpočtu zálohy na ostrej
+    faktúre. Ide to, čo je práve zobrazené (filtre, obdobie).
+  */
+  const exportujXml = useServerFn(exportPrijatychPohodaFn);
+  const [volbyExportu, setVolbyExportu] = useState(false);
+  // Len pre Pohodu — iné programy zálohové faktúry neevidujú (Omega/Money si ich zadajú ručne).
+  const program = useExportDoProgramu();
+  const naExport = zobrazene.filter((r) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled");
+  async function exportujSVolbami(v: VolbyExportu) {
+    const cid = getActiveCompanyId();
+    if (!cid || !naExport.length) return;
+    try {
+      const r = await exportujXml({
+        data: {
+          company_id: cid,
+          ids: naExport.map((x) => x.id),
+          oznacit: v.oznacit,
+          datum_zauctovania: v.datumZauctovania,
+          aj_odovzdane: v.ajOdovzdane,
+          radenie: v.radenie,
+        },
+      });
+      for (const f of r.subory) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([f.xml], { type: "text/xml;charset=utf-8" }));
+        a.download = f.fileName;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
+      toastNeodovzdane(t, r.preskocene);
+      if (!r.preskocene.length)
+        toast.success(
+          t("XML pre Pohodu: {n} zálohových faktúr", { n: r.pocet }) +
+            (v.oznacit ? t(", označené ako odovzdané") : ""),
+        );
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    }
+  }
 
   async function zmaz() {
     if (!mazane) return;
@@ -212,11 +261,31 @@ function PrijateZalohovePage() {
 
   return (
     <>
+      {volbyExportu ? (
+        <VolbyExportuOkno
+          pocet={naExport.length}
+          nazov={t("Prijaté zálohové faktúry do Pohody (XML)")}
+          onClose={() => setVolbyExportu(false)}
+          onExport={exportujSVolbami}
+        />
+      ) : null}
       <PageHeader
         title={t("Prijaté zálohové faktúry")}
         description={t("Zálohy, ktoré vám vystavili dodávatelia. Platia sa, daň prinesie až ostrá faktúra.")}
         action={
           <div className="flex flex-wrap gap-2">
+            {!ajVymazane && !program.inyProgram && naExport.length ? (
+              <button
+                type="button"
+                onClick={() => setVolbyExportu(true)}
+                title={t(
+                  "Zobrazené zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
+                )}
+                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                <Download className="h-4 w-4" /> {t("XML pre Pohodu")}
+              </button>
+            ) : null}
             <NahratDoklad druh="proforma" label={t("Nahrať zálohovú faktúru")} />
             <Link
               to="/prijate-faktury/nova"
@@ -315,6 +384,11 @@ function PrijateZalohovePage() {
                             >
                               {r.invoice_number}
                             </Link>
+                            {r.exported_at ? (
+                              <StavOdznak ton="uspech" maly className="ml-2 align-middle">
+                                {t("V Pohode")}
+                              </StavOdznak>
+                            ) : null}
                           </td>
                           <td className="p-3">
                             <span

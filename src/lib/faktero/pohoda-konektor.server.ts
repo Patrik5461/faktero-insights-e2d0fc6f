@@ -272,10 +272,11 @@ export async function zostavDavku(
     .select("*")
     .eq("company_id", vstup.companyId)
     .gte("issue_date", od)
-    .not("zauctovane_at", "is", null)
+    // Zálohová sa neúčtuje — ide aj bez zaúčtovania (do Pohody bez DPH, kvôli odpočtu zálohy).
+    .or("zauctovane_at.not.is.null,type.eq.proforma")
     .is("exported_at", null)
     .is("deleted_at", null)
-    .eq("type", "regular")
+    .in("type", ["regular", "proforma"])
     .order("issue_date")
     .limit(STROP_DAVKY);
   const { zapocitatelna } = await import("./samofakturacia");
@@ -298,7 +299,12 @@ export async function zostavDavku(
     supabase,
     vstup.companyId,
     "prijata",
-    (prijateRiadky ?? []).filter((p: Riadok) => zapocitatelna(p)),
+    (prijateRiadky ?? []).filter(
+      (p: Riadok) =>
+        zapocitatelna(p) &&
+        // Nezaúčtovaná zálohová ide sama — koncept ani stornovaná nie.
+        !(p.type === "proforma" && (p.status === "draft" || p.status === "cancelled")),
+    ),
   );
   const prijate = vCasti(prijateSch, "issue_date");
 
@@ -685,6 +691,24 @@ export async function nacitajVazby(
         .in("id", potrebne)
     : { data: [] };
   const podlaId = new Map<string, Riadok>((suvisiace ?? []).map((f: Riadok) => [String(f.id), f]));
+  /*
+    Zdanená záloha má doklad k prijatej platbe. Bez neho je nezdanená a jej
+    odpočet ide bez DPH (sadzba „none“) — daň z vyúčtovania sa neznižuje.
+  */
+  const { data: kPlatbe } = zalohoveIds.length
+    ? await supabase
+        .from("invoices")
+        .select("advance_invoice_id, status")
+        .eq("company_id", companyId)
+        .eq("type", "advance_payment")
+        .is("deleted_at", null)
+        .in("advance_invoice_id", [...new Set(zalohoveIds)])
+    : { data: [] as any[] };
+  const zdanene = new Set(
+    (kPlatbe ?? [])
+      .filter((d: Riadok) => d.status !== "draft" && d.status !== "cancelled")
+      .map((d: Riadok) => String(d.advance_invoice_id)),
+  );
 
   for (const f of faktury) {
     const odpocty = odpoctyPodlaFaktury.get(String(f.id)) ?? [];
@@ -694,7 +718,7 @@ export async function nacitajVazby(
       const cislaZaloh: string[] = [];
       for (const o of odpocty) {
         const zalohova = podlaId.get(o.zaloha);
-        const sadzba = sadzbaZalohy(zalohova);
+        const sadzba = !zalohova ? null : zdanene.has(o.zaloha) ? sadzbaZalohy(zalohova) : 0;
         if (sadzba === null) continue;
         sadzby.add(sadzba);
         suma += o.suma;

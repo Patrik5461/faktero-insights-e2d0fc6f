@@ -104,6 +104,14 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
   },
 ];
 
+/** Odznak druhu dokladu v zozname exportu (bežná faktúra odznak nemá). */
+const DRUH_DOKLADU_EXPORTU: Record<string, string> = {
+  proforma: "Zálohová",
+  advance_payment: "Doklad k platbe",
+  credit_note: "Dobropis",
+  debit_note: "Ťarchopis",
+};
+
 function ExportsPage() {
   const { t } = useT();
   const [format, setFormat] = useState<ExportFormat>("pohoda_xml");
@@ -114,6 +122,8 @@ function ExportsPage() {
   const [dateTo, setDateTo] = useState(dnesBratislava());
   const [podla, setPodla] = useState<DatumObdobia>("vystavenie");
   const [lenNeexportovane, setLenNeexportovane] = useState(false);
+  /** Druh dokladu — zálohové faktúry sa dajú vybrať samostatne (do Pohody ako zálohová, neúčtuje sa). */
+  const [typDokladu, setTypDokladu] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [efOdoslane, setEfOdoslane] = useState<Record<string, string>>({});
   /** Formát posledného odovzdania faktúry (`export_jobs.format`) — „V Pohode“ len pri Pohode. */
@@ -152,7 +162,7 @@ function ExportsPage() {
           supabase
             .from("invoices")
             .select(
-              "id, company_id, invoice_number, customer_name, issue_date, delivery_date, total, currency, status, exported_at",
+              "id, company_id, invoice_number, customer_name, issue_date, delivery_date, total, currency, status, exported_at, type",
             )
             .eq("company_id", cid),
           podla,
@@ -164,6 +174,7 @@ function ExportsPage() {
           // Zmazaná faktúra sa do účtovníctva posielať nesmie.
           .is("deleted_at", null);
         if (lenNeexportovane) q = q.is("exported_at", null);
+        if (typDokladu) q = q.eq("type", typDokladu as any);
         return q
           .order(podla === "dodanie" ? "delivery_date" : "issue_date", {
             ascending: false,
@@ -227,7 +238,7 @@ function ExportsPage() {
   }
   useEffect(() => {
     load();
-  }, [dateFrom, dateTo, podla, lenNeexportovane]);
+  }, [dateFrom, dateTo, podla, lenNeexportovane, typDokladu]);
 
   const selectedIds = Object.entries(picked)
     .filter(([, v]) => v)
@@ -322,6 +333,26 @@ function ExportsPage() {
                     <option value="dodanie">{t("dátumu dodania")}</option>
                   </select>
                 </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground" htmlFor="exp-typ">
+                    {t("Druh dokladu")}
+                  </label>
+                  <select
+                    id="exp-typ"
+                    value={typDokladu}
+                    onChange={(e) => {
+                      setTypDokladu(e.target.value);
+                      setPicked({});
+                    }}
+                    className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">{t("Všetky doklady")}</option>
+                    <option value="regular">{t("Faktúry")}</option>
+                    <option value="proforma">{t("Zálohové faktúry")}</option>
+                    <option value="advance_payment">{t("Doklady k prijatej platbe")}</option>
+                    <option value="credit_note">{t("Dobropisy")}</option>
+                  </select>
+                </div>
                 <label className="flex items-center gap-2 pb-2 text-sm">
                   <input
                     type="checkbox"
@@ -384,6 +415,20 @@ function ExportsPage() {
                         </td>
                         <td className="p-3 font-medium">
                           <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
+                          {DRUH_DOKLADU_EXPORTU[String(i.type ?? "")] ? (
+                            <StavOdznak
+                              ton="neutralny"
+                              maly
+                              className="ml-2 align-middle"
+                              title={
+                                i.type === "proforma"
+                                  ? t("Do Pohody ide ako zálohová faktúra — neúčtuje sa, eviduje sa kvôli odpočtu zálohy.")
+                                  : undefined
+                              }
+                            >
+                              {t(DRUH_DOKLADU_EXPORTU[String(i.type)])}
+                            </StavOdznak>
+                          ) : null}
                           {efOdoslane[i.id] ? (
                             <StavOdznak
                               ton="priebeh"

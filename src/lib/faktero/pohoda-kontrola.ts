@@ -381,6 +381,12 @@ export function prekazkaDokladu(
         : `${cislo} — doklad v mene ${mena} nemá kurz`;
   }
 
+  /*
+    Prijatá zálohová faktúra nie je daňový doklad — ide bez DPH, členenia,
+    KV aj predvolenej predkontácie, takže kontroly zaúčtovania sa jej netýkajú.
+  */
+  if (d?._typPohody === "receivedAdvanceInvoice") return null;
+
   const krajina = krajinaDane(company?.country);
   const rozpis: { sadzba: number; zaklad: number; dph: number; pdp?: boolean }[] = Array.isArray(
     d?.vat_breakdown,
