@@ -41,6 +41,13 @@
     "other_documents": {
       "pohlad": false,
       "stlpce": {
+        "nahrane_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "odosielatel_mailu": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
         "id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
         "company_id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": true },
         "kind": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
@@ -2847,6 +2854,19 @@
     "expense_documents": {
       "pohlad": false,
       "stlpce": {
+        "nahrane_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "naposledy_zauctoval": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
+        "naposledy_zauctovane_at": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
         "processed_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "processed_by": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "mimo_pokladne": {
@@ -4255,6 +4275,18 @@
     "invoices": {
       "pohlad": false,
       "stlpce": {
+        "naposledy_zauctoval": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
+        "naposledy_zauctovane_at": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
         "exchange_rate_source": {
           "druh": "text",
           "nullable": true,
@@ -5328,6 +5360,19 @@
     "purchase_invoices": {
       "pohlad": false,
       "stlpce": {
+        "nahrane_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "naposledy_zauctoval": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
+        "naposledy_zauctovane_at": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
         "exchange_rate_source": {
           "druh": "text",
           "nullable": true,

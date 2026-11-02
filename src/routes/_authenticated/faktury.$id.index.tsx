@@ -84,6 +84,7 @@ import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPoho
 import { useProgramOdovzdaniaFaktury } from "@/components/faktero/OdovzdanieDokladu";
 import { popisPoslatOpravu, textPoslatOpravu } from "@/lib/faktero/stav-odovzdania";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { KtoKedyDokladu } from "@/components/faktero/KtoKedyDokladu";
 import { requestInvoiceApproval } from "@/lib/faktero/invoice-approval.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import {
@@ -1310,6 +1311,8 @@ function InvoiceDetail() {
       onStiahnut={handlePohodaExport}
     />
   );
+  // Kto faktúru vytvoril a zaúčtoval a kedy — nenápadný riadok nad históriou.
+  const kartaKtoKedy = <KtoKedyDokladu companyId={inv.company_id} agenda="faktura" row={inv} />;
   const kartaHistoria = (
     <>
       <HistoriaDokladu
@@ -2277,6 +2280,7 @@ function InvoiceDetail() {
                 {kartaPoznamka}
               </div>
             </ZbaleneK>
+            {kartaKtoKedy}
             {kartaHistoria}
           </div>
         ) : (
@@ -2288,6 +2292,7 @@ function InvoiceDetail() {
             {kartaPoznamka}
             {kartaPrilohy}
             {kartaZauctovanie}
+            {kartaKtoKedy}
             {kartaHistoria}
           </div>
 

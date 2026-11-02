@@ -97,6 +97,8 @@ export type Database = {
       }
       other_documents: {
         Row: {
+          nahrane_at: string | null
+          odosielatel_mailu: string | null
           id: string
           company_id: string
           kind: string
@@ -121,6 +123,8 @@ export type Database = {
           stitky: string[]
         }
         Insert: {
+          nahrane_at?: string | null
+          odosielatel_mailu?: string | null
           id?: string
           company_id: string
           kind?: string
@@ -145,6 +149,8 @@ export type Database = {
           stitky?: string[]
         }
         Update: {
+          nahrane_at?: string | null
+          odosielatel_mailu?: string | null
           id?: string
           company_id?: string
           kind?: string
@@ -3528,6 +3534,9 @@ export type Database = {
       }
       expense_documents: {
         Row: {
+          nahrane_at: string | null
+          naposledy_zauctoval: string | null
+          naposledy_zauctovane_at: string | null
           processed_at: string | null
           processed_by: string | null
           mimo_pokladne: boolean
@@ -3604,6 +3613,9 @@ export type Database = {
           exchange_rate_source: string | null
         }
         Insert: {
+          nahrane_at?: string | null
+          naposledy_zauctoval?: string | null
+          naposledy_zauctovane_at?: string | null
           processed_at?: string | null
           processed_by?: string | null
           mimo_pokladne?: boolean
@@ -3680,6 +3692,9 @@ export type Database = {
           exchange_rate_source?: string | null
         }
         Update: {
+          nahrane_at?: string | null
+          naposledy_zauctoval?: string | null
+          naposledy_zauctovane_at?: string | null
           processed_at?: string | null
           processed_by?: string | null
           mimo_pokladne?: boolean
@@ -5479,6 +5494,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          naposledy_zauctoval: string | null
+          naposledy_zauctovane_at: string | null
           exchange_rate_source: string | null
           advance_amount: number | null
           advance_invoice_id: string | null
@@ -5598,6 +5615,8 @@ export type Database = {
           oprava_zauctovania_povodne: Json | null
         }
         Insert: {
+          naposledy_zauctoval?: string | null
+          naposledy_zauctovane_at?: string | null
           exchange_rate_source?: string | null
           advance_amount?: number | null
           advance_invoice_id?: string | null
@@ -5717,6 +5736,8 @@ export type Database = {
           oprava_zauctovania_povodne?: Json | null
         }
         Update: {
+          naposledy_zauctoval?: string | null
+          naposledy_zauctovane_at?: string | null
           exchange_rate_source?: string | null
           advance_amount?: number | null
           advance_invoice_id?: string | null
@@ -6859,6 +6880,9 @@ export type Database = {
       }
       purchase_invoices: {
         Row: {
+          nahrane_at: string | null
+          naposledy_zauctoval: string | null
+          naposledy_zauctovane_at: string | null
           exchange_rate_source: string | null
           polozky_vypnute: Json | null
           amount_total: number
@@ -6982,6 +7006,9 @@ export type Database = {
           odberatel_potvrdil: string | null
         }
         Insert: {
+          nahrane_at?: string | null
+          naposledy_zauctoval?: string | null
+          naposledy_zauctovane_at?: string | null
           exchange_rate_source?: string | null
           polozky_vypnute?: Json | null
           amount_total?: number
@@ -7105,6 +7132,9 @@ export type Database = {
           odberatel_potvrdil?: string | null
         }
         Update: {
+          nahrane_at?: string | null
+          naposledy_zauctoval?: string | null
+          naposledy_zauctovane_at?: string | null
           exchange_rate_source?: string | null
           polozky_vypnute?: Json | null
           amount_total?: number

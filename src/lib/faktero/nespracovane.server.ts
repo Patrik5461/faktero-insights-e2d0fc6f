@@ -17,6 +17,7 @@ import {
   type UdajeNespracovaneho,
 } from "./nespracovane";
 import { zdrojZauctovaniaPriVytvoreni } from "./nespracovane-nastavenia";
+import { prenosNahratia } from "./kto-kedy";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 type Klient = any;
@@ -264,7 +265,13 @@ export async function vytvorDoklad(
     const { data: m } = await supabase.from("inbox_messages").select("subject").eq("id", r.inbox_message_id).maybeSingle();
     predmetMailu = m?.subject ?? null;
   }
-  const autor = r.created_by ?? userId;
+  const autor = prenosNahratia(r, userId).created_by ?? userId;
+  /*
+    Kedy bol doklad nahratý — vytvorený doklad si nesie čas nahratia
+    nespracovaného, nie čas, keď niekto klikol Vytvoriť (ten je `spracovane_at`
+    / `processed_at`). Kto ho nahral, nesie `created_by` (autor).
+  */
+  const nahraneAt = prenosNahratia(r).nahrane_at;
 
   /*
     Učenie z opráv: naučené hodnoty, ktoré človek nechal tak, v poliach
@@ -357,6 +364,7 @@ export async function vytvorDoklad(
         ...(await zPravidla(zakl)),
         company_id: r.company_id,
         created_by: autor,
+        nahrane_at: nahraneAt,
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
         // Zaúčtovaná faktúra je „booked“ ako po zaúčtovaní v paneli.
@@ -461,6 +469,7 @@ export async function vytvorDoklad(
         inbox_message_id: r.inbox_message_id ?? null,
         company_id: r.company_id,
         created_by: autor,
+        nahrane_at: nahraneAt,
         // Človek ho práve skontroloval — je spracovaný.
         status: "processed",
         processed_at: teraz,
@@ -503,7 +512,9 @@ export async function vytvorDoklad(
       ...ostatnyZUdajov(u, dnes),
       inbox_message_id: r.inbox_message_id ?? null,
       company_id: r.company_id,
-      created_by: userId,
+      // Ako pri faktúre a bločku: kto doklad nahral, nie kto klikol Vytvoriť.
+      created_by: autor,
+      nahrane_at: nahraneAt,
       status: "new",
     });
     if (error) throw new Error(error.message);

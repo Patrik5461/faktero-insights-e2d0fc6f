@@ -34,6 +34,7 @@ import { CheckCircle2, Loader2, Paperclip, Save, Sparkles, Trash2, Upload, X } f
 import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
+import { KtoKedyDokladu } from "@/components/faktero/KtoKedyDokladu";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
@@ -153,6 +154,8 @@ function OstatnyDokladPage() {
   const [nove, setNove] = useState<File[]>([]);
   const [nacitavam, setNacitavam] = useState(!novy);
   const [stitky, setStitky] = useState<string[]>([]);
+  // Uložený riadok — kto doklad nahral a spracoval.
+  const [riadok, setRiadok] = useState<Record<string, any> | null>(null);
   const [ukladam, setUkladam] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +179,7 @@ function OstatnyDokladPage() {
         });
         setStav(d.status);
         setStitky(d.stitky ?? []);
+        setRiadok(d);
         setUlozene(
           [...(d.other_document_files ?? [])].sort((a: any, b: any) => a.position - b.position),
         );
@@ -413,6 +417,11 @@ function OstatnyDokladPage() {
                   <strong>{t(STAV_DOKLADU_NAZOV[stav as keyof typeof STAV_DOKLADU_NAZOV] ?? stav)}</strong>
                 </div>
               )}
+              {!novy && riadok ? (
+                <div className="mb-4">
+                  <KtoKedyDokladu companyId={cid} agenda="ostatny" row={riadok} />
+                </div>
+              ) : null}
               {!novy ? (
                 <div className="mb-4">
                   <StitkyDokladu

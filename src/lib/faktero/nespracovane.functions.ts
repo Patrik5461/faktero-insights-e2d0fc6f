@@ -234,6 +234,8 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       dalsiId: nastavenia.dalsi ? ((dalsi?.[0]?.id as string | undefined) ?? null) : null,
       /** Kto doklad nahral a predmet mailu — podľa nich vyberajú pravidlá účtovania. */
       createdBy: (r.created_by ?? null) as string | null,
+      /** Kedy bol doklad nahratý — „Nahraté: …“ v detaile. */
+      vytvorene: (r.created_at ?? null) as string | null,
       predmetMailu,
       /** Odosielateľ mailu a krajina firmy — tiež podmienky pravidiel. */
       odosielatelMailu,

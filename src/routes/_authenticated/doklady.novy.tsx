@@ -3,7 +3,7 @@ import { AutoZauctovanieOdznak } from "@/components/faktero/AutoZauctovanieOdzna
 import { useT } from "@/lib/i18n/useT";
 import { zdrojVydavku } from "@/lib/faktero/zdroj-vydavku";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
-import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
+import { KtoKedyDokladu } from "@/components/faktero/KtoKedyDokladu";
 import { jePalivo } from "@/lib/faktero/palivo";
 import { jeQrPokladnice } from "@/lib/faktero/blocek-z-appky";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
@@ -1386,7 +1386,7 @@ function NovyDokladPage() {
                     <KomentarePanel companyId={cid} agenda="doklad" id={search.id} />
                   </div>
                   <div className="mt-3">
-                    <SpracovalDokladu companyId={cid} agenda="doklad" row={ulozeny} />
+                    <KtoKedyDokladu companyId={cid} agenda="doklad" row={ulozeny} />
                   </div>
                   <div className="mt-3">
                     <HistoriaDokladu companyId={cid} agenda="doklad" id={search.id} />
