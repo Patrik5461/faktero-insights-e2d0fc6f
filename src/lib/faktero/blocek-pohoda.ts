@@ -15,6 +15,7 @@
 
   Čisté funkcie (bez siete a DB), testy v `blocek-pohoda.test.ts`.
 */
+import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
 import { odvodClenenia, type KodCiselnika } from "./auto-uctovanie";
 import { jeNeplatitel, jeNezahrnovat } from "./uctovanie-agenda";
 
@@ -101,6 +102,8 @@ export function sAdresouDodavatela<T extends Record<string, any>>(
  */
 export function textBlocku(d: { items?: unknown } | null | undefined): string {
   const polozky = (Array.isArray(d?.items) ? d!.items : [])
+    // Zaokrúhlenie nie je tovar — do textu dokladu nepatrí.
+    .filter((x: any) => !jePolozkaZaokruhlenia(x))
     .map((x: any) =>
       t(x?.name)
         // eKasa: kód tovaru a hviezdička pred názvom („* 3 03     OMV Diesel“).
