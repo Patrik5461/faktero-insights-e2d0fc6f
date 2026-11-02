@@ -137,6 +137,9 @@ pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací 
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
 Pri bločku pridaj "payment_method": "hotovost" (hotovosť, v hotovosti, cash), "karta" (karta,
 platobná karta, kartou, Visa, Mastercard) alebo "prevod"; keď na doklade nie je, null.
+Pri bločku pridaj aj "rounding": zaokrúhlenie sumy na úhradu tak, ako je na doklade
+(„Zaokrúhlenie", napr. -0.02 alebo 0.01); "amount_total" je potom suma po zaokrúhlení.
+Keď zaokrúhlenie na doklade nie je, null.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.

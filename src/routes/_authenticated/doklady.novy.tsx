@@ -79,6 +79,8 @@ import {
 import { ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { kontrolaSumyBlocku, nastavZaokruhlenie, zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
+import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { blocekJeUzamknuty, formatujDatum, HLASKA_ZAMKNUTY_BLOCEK, jeChybaUzamknutia } from "@/lib/faktero/uzavierka";
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nový doklad — Faktero") }] }),
@@ -376,6 +378,8 @@ function NovyDokladPage() {
    * ostal s prázdnym „Celkom“ — a doklad bez sumy nevstúpi ani do pokladne,
    * ani do súčtov pre účtovníka.
    */
+  // Zaokrúhlenie (hotovosť na 5 centov) je samostatná položka bločku bez DPH.
+  const zaokruhlenie = zaokruhlenieZPoloziek(polozky);
   useEffect(() => {
     if (celkomRucne.current) return;
     const zaklad = form.net_amount === "" ? null : Number(form.net_amount);
@@ -383,10 +387,27 @@ function NovyDokladPage() {
     if (zaklad == null && dph == null) return;
     const suma =
       (Number.isFinite(zaklad as number) ? (zaklad as number) : 0) +
-      (Number.isFinite(dph as number) ? (dph as number) : 0);
+      (Number.isFinite(dph as number) ? (dph as number) : 0) +
+      zaokruhlenie;
     const nova = suma.toFixed(2);
     setForm((f) => (f.total_amount === nova ? f : { ...f, total_amount: nova }));
-  }, [form.net_amount, form.vat_amount]);
+  }, [form.net_amount, form.vat_amount, zaokruhlenie]);
+  /*
+    Základ + DPH + zaokrúhlenie musí sedieť so sumou bločku. Rozpis DPH
+    podľa sadzieb (z bločku) ide do Pohody namiesto polí základ/DPH — keď
+    ho človek prepísal len v poliach, kontroluje sa aj rozpis.
+  */
+  const rozpisNesedi =
+    (rozpisDph?.length ?? 0) > 1 &&
+    (Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.zaklad) || 0), 0) - (Number(form.net_amount) || 0)) >= 0.005 ||
+      Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.dph) || 0), 0) - (Number(form.vat_amount) || 0)) >= 0.005);
+  const kontrolaSumy = kontrolaSumyBlocku({
+    celkom: form.total_amount,
+    zaklad: form.net_amount,
+    dph: form.vat_amount,
+    zaokruhlenie,
+    platba: form.payment_method,
+  });
 
   /* Bloček prečítaný v skeneri — prevezme sa raz, pri otvorení stránky. */
   useEffect(() => {
@@ -538,13 +559,16 @@ function NovyDokladPage() {
     }
 
     const total = r.total ?? 0;
+    // Zaokrúhlenie bločku nepatrí do základu dane — ide ako vlastná položka.
+    const zaokrBlocku = zaokruhlenieZPoloziek(r.items);
     if (r.vat_amount != null) {
       updateForm("vat_amount", r.vat_amount.toFixed(2));
-      if (total > 0) updateForm("net_amount", (total - r.vat_amount).toFixed(2));
+      if (r.net_amount != null) updateForm("net_amount", r.net_amount.toFixed(2));
+      else if (total > 0) updateForm("net_amount", (total - zaokrBlocku - r.vat_amount).toFixed(2));
     } else if (total > 0 && r.vat_rate) {
-      const net = total / (1 + r.vat_rate / 100);
+      const net = (total - zaokrBlocku) / (1 + r.vat_rate / 100);
       updateForm("net_amount", net.toFixed(2));
-      updateForm("vat_amount", (total - net).toFixed(2));
+      updateForm("vat_amount", (total - zaokrBlocku - net).toFixed(2));
     }
 
     if (r.payment_method) updateForm("payment_method", r.payment_method);
@@ -632,6 +656,19 @@ function NovyDokladPage() {
       toast.error(t("Vyberte spôsob úhrady — hotovosť uberá zo stavu pokladne."));
       return;
     }
+    // Súčet, ktorý nesedí so sumou bločku, sa uloží len po potvrdení.
+    if (!(await potvrdRozdielSumy(kontrolaSumy, form.currency || "EUR", t))) return;
+    if (
+      kontrolaSumy.sedi &&
+      rozpisNesedi &&
+      !(await potvrd(
+        t("Rozpis DPH podľa sadzieb nesedí so základom a DPH") +
+          "\n" +
+          t("Do Pohody pôjde rozpis z bločku, nie sumy v poliach. Uložiť aj tak?"),
+        { potvrdit: t("Uložiť aj tak"), zrusit: t("Späť") },
+      ))
+    )
+      return;
     setSaving(true);
     try {
       const payload = {
@@ -669,7 +706,13 @@ function NovyDokladPage() {
         // Položky a rozpis DPH z bločku sa ukladajú tak, ako prišli — z nich
         // je vidieť, za čo sa platilo, aj keď je doklad len jedna suma.
         items: polozky.length ? polozky : null,
-        vat_breakdown: rozpisDph?.length ? rozpisDph : null,
+        // Rozpis s jednou sadzbou nasleduje polia základ/DPH — inak by export vzal starú sumu.
+        vat_breakdown:
+          rozpisDph?.length === 1
+            ? [{ ...rozpisDph[0]!, zaklad: Number(form.net_amount) || 0, dph: Number(form.vat_amount) || 0 }]
+            : rozpisDph?.length
+              ? rozpisDph
+              : null,
       };
       let stav = search.id ? stavDokladu : "new";
       if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
@@ -1285,6 +1328,14 @@ function NovyDokladPage() {
                 value={form.vat_amount}
                 onChange={(v) => updateForm("vat_amount", v)}
               />
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">{t("Zaokrúhlenie (bez DPH)")}</span>
+                <VstupZaokruhlenia
+                  value={zaokruhlenie || null}
+                  onChange={(v) => setPolozky(nastavZaokruhlenie(polozky, v) as BlocekVysledok["items"])}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
               <Field
                 label={t("Celkom")}
                 type="number"
@@ -1300,6 +1351,20 @@ function NovyDokladPage() {
                 value={form.vat_rate}
                 onChange={(v) => updateForm("vat_rate", v)}
               />
+              {!kontrolaSumy.sedi || rozpisNesedi ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <KontrolaSumyBlocku
+                    kontrola={kontrolaSumy}
+                    mena={form.currency || "EUR"}
+                    onZaokruhlenie={(z) => setPolozky(nastavZaokruhlenie(polozky, z) as BlocekVysledok["items"])}
+                  />
+                  {rozpisNesedi ? (
+                    <p role="alert" className="dk-pozor rounded-md border p-2.5 text-xs">
+                      {t("Rozpis DPH podľa sadzieb z bločku nesedí so základom a DPH v poliach — do Pohody ide rozpis. Opravte základ a DPH podľa bločku.")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {/*
                 Výber, nie voľný text. Neplatný kód meny sa zapíše do databázy
                 a formátovanie súm ho potom dostane rovno odtiaľ — presne tak

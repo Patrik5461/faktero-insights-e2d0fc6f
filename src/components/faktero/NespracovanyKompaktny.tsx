@@ -28,6 +28,7 @@ import { oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
+  kontrolaSumy,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
@@ -35,6 +36,7 @@ import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
 import { NastavitPredvolene } from "./NastavitPredvolene";
+import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
 
 /*
   Rozloženie nespracovaného dokladu kompaktné: veľký náhľad s
@@ -116,7 +118,11 @@ export function NespracovanyKompaktny({
     setU({ ...u, dodavatel: { ...u.dodavatel, ...z } });
   const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
     set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null });
-  const sumaSedi = sucty.celkom > 0 && Math.abs(sucty.zaklad + sucty.dph - sucty.celkom) < 0.015;
+  // Bloček: základ + DPH + zaokrúhlenie musí sedieť so sumou na cent.
+  const kontrola = kontrolaSumy(u);
+  const sumaSedi = blocek
+    ? sucty.celkom > 0 && kontrola.sedi
+    : sucty.celkom > 0 && Math.abs(sucty.zaklad + sucty.dph - sucty.celkom) < 0.015;
   const ibanOk = Boolean(u.dodavatel.iban && upravIban(u.dodavatel.iban));
 
   const pata = (
@@ -488,6 +494,22 @@ export function NespracovanyKompaktny({
                 </button>
               ) : null}
             </div>
+            {blocek ? (
+              <>
+                <Pole popis="Zaokrúhlenie (bez DPH)">
+                  <VstupZaokruhlenia
+                    value={u.zaokruhlenie}
+                    onChange={(v) => set({ zaokruhlenie: v })}
+                    className={ram("")}
+                  />
+                </Pole>
+                <KontrolaSumyBlocku
+                  kontrola={kontrola}
+                  mena={u.mena || "EUR"}
+                  onZaokruhlenie={(z) => set({ zaokruhlenie: z })}
+                />
+              </>
+            ) : null}
             {druh === "dobropis" ? (
               <p className="text-xs text-muted-foreground">
                 {t("Sumy zadajte kladne — dobropis ich odpočíta sám.")}

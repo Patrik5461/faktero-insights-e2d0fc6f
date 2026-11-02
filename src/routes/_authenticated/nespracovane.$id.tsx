@@ -43,6 +43,7 @@ import {
   NAZVY_POLI,
   chybajuce,
   rozdielPoloziek,
+  kontrolaSumy,
   sucty,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
@@ -50,6 +51,7 @@ import {
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
 import { potvrd } from "@/lib/potvrdenie";
+import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
 import { nesediZChyby } from "@/lib/faktero/cudzia-faktura";
 import { CudziaFakturaUpozornenie, textCudzejFaktury } from "@/components/faktero/CudziaFaktura";
@@ -273,6 +275,13 @@ function Detail() {
       );
       return;
     }
+    /*
+      Bloček: základ + DPH + zaokrúhlenie musí sedieť so sumou. Prepísanú
+      sumu, ktorá nesedí, pustí len vedomé potvrdenie (pri opakovaní kvôli
+      duplicite či cudzej firme už prebehlo).
+    */
+    if (u && druh === "blocek" && !ajDuplicitu && !ajCudziu && !(await potvrdRozdielSumy(kontrolaSumy(u), u.mena || "EUR", t)))
+      return;
     // Pri opakovaní kvôli duplicite už človek vlastnú faktúru potvrdil.
     if (vlastnyUcet && !ajDuplicitu) {
       const ano = await potvrd(
@@ -838,6 +847,27 @@ function Detail() {
                       {u.mena}
                     </label>
                   </div>
+                  {blocek ? (
+                    <>
+                      <div className="mt-2 flex flex-wrap items-center justify-end gap-3 text-sm">
+                        <label className="inline-flex items-center gap-2">
+                          <span className="text-muted-foreground">{t("Zaokrúhlenie (bez DPH)")}</span>
+                          <VstupZaokruhlenia
+                            value={u.zaokruhlenie}
+                            onChange={(v) => set({ zaokruhlenie: v })}
+                            className="w-28 rounded-md border border-input bg-background px-2 py-1.5 text-right tabular-nums"
+                          />
+                          {u.mena}
+                        </label>
+                      </div>
+                      <KontrolaSumyBlocku
+                        className="mt-2"
+                        kontrola={kontrolaSumy(u)}
+                        mena={u.mena || "EUR"}
+                        onZaokruhlenie={(z) => set({ zaokruhlenie: z })}
+                      />
+                    </>
+                  ) : null}
                   {druh === "dobropis" && <p className="mt-1 text-xs text-muted-foreground">{t("Sumy zadajte kladne — dobropis ich odpočíta sám.")}</p>}
                 </section>
 

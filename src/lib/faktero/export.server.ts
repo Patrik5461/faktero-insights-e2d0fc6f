@@ -28,6 +28,7 @@ import {
 } from "./rozuctovanie";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodyZaokruhlenia } from "./predkontacie";
+import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 import { statEu } from "./sadzby-eu";
@@ -1781,7 +1782,10 @@ export function polozkyDokladov(opts: {
         rozúčtovaní majú prednosť riadky rozúčtovania.
       */
       const polozkyBlocku: any[] =
-        nastavenia?.polozkyBlockov && blocek && Array.isArray(d?.items) ? d.items : [];
+        nastavenia?.polozkyBlockov && blocek && Array.isArray(d?.items)
+          ? // Zaokrúhlenie nie je položka v 0 % — ide do `round` alebo ako položka zaokrúhlenia nižšie.
+            d.items.filter((it: any) => !jePolozkaZaokruhlenia(it))
+          : [];
       const xmlPolozkyFaktury = polozkyFaktury.length
         ? `
       <${p}:${koren}Detail>${polozkyFaktury
