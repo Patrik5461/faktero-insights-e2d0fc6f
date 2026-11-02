@@ -68,4 +68,6 @@ export default {
     "Aus denselben Belegen werden unter <0>Buchhaltung → MwSt.-Meldungen</0> die Steuererklärung, die Kontrollmeldung (KV DPH) und die Zusammenfassende Meldung erstellt und als XML für eDane heruntergeladen. Ausführlich beschreibt das das <1>Handbuch zu den Meldungen</1>.",
   "Predaj spotrebiteľom v EÚ cez <0>režim OSS</0> do priznania ani do kontrolného výkazu nevstupuje — má vlastné priznanie.":
     "Verkäufe an Verbraucher in der EU über das <0>OSS-Verfahren</0> fließen weder in die Steuererklärung noch in die Kontrollmeldung ein — dafür gibt es eine eigene Erklärung.",
+  "Pri prijatej faktúre sa DPH odpočíta v období neskoršieho z dátumu dodania a <0>dátumu prijatia</0> — faktúra dodaná 28. 8. a prijatá 3. 9. patrí do odpočtu (priznanie aj kontrolný výkaz) za september. Obdobie odpočtu vidíte pod poľom Dátum prijatia. Samozdanenie (prenesenie, nadobudnutie z EÚ) a dobropis sa riadia vlastnými pravidlami.":
+    "Bei einer Eingangsrechnung wird die Vorsteuer im Zeitraum des späteren aus Lieferdatum und <0>Eingangsdatum</0> abgezogen — eine am 28. 8. gelieferte und am 3. 9. eingegangene Rechnung gehört in den Vorsteuerabzug für September. Den Abzugszeitraum sehen Sie unter dem Feld Eingangsdatum. Reverse-Charge, innergemeinschaftlicher Erwerb und Gutschriften folgen eigenen Regeln.",
 } satisfies Record<string, string>;

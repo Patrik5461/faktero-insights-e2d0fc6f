@@ -128,7 +128,8 @@ describe("dátum odpočtu DPH vo Flexi a v súpiske CSV", () => {
       },
     );
     const { xml } = buildFlexiUctovanie({ firma, doklady: [z], kody: {} });
-    expect(xml).toContain("<duzpUcto>2026-10-01</duzpUcto>");
+    // Prijatá 3. 10. — odpočet nie skôr než prijatie (neskorší z DUZP a prijatia), aj po uzávierke.
+    expect(xml).toContain("<duzpUcto>2026-10-03</duzpUcto>");
   });
 
   it("CSV: stĺpce dátum prijatia a odpočtu na konci", () => {

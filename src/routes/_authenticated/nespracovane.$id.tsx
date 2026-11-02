@@ -1,5 +1,6 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu";
@@ -746,6 +747,19 @@ function Detail() {
                           <span className="text-xs text-muted-foreground">{t("Dátum dodania (DUZP)")}</span>
                           <input type="date" value={u.datumDodania} onChange={(e) => set({ datumDodania: e.target.value })} className={`${vstup} border-input`} />
                         </label>
+                        {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
+                        <label className="block text-sm">
+                          <span className="text-xs text-muted-foreground">{t("Dátum prijatia")}</span>
+                          <input type="date" aria-label={t("Dátum prijatia")} value={u.datumPrijatia ?? ""} onChange={(e) => set({ datumPrijatia: e.target.value })} className={`${vstup} border-input`} />
+                          <DatumPrijatiaInfo
+                            vystavenie={u.datumVystavenia}
+                            dodanie={u.datumDodania}
+                            prijatie={u.datumPrijatia}
+                            dobropis={druh === "dobropis"}
+                            samozdanenie={Boolean(u.prenesenie)}
+                            bezOdpoctu={druh === "zalohova"}
+                          />
+                        </label>
                         <label className="block text-sm">
                           <span className="text-xs text-muted-foreground">{t("Splatnosť")}</span>
                           <input type="date" aria-label={t("Splatnosť")} value={u.splatnost} onChange={(e) => set({ splatnost: e.target.value })} className={`${vstup} ${ram("splatnost")}`} />
@@ -775,12 +789,6 @@ function Detail() {
                       <input value={u.mena} maxLength={3} onChange={(e) => set({ mena: e.target.value.toUpperCase() })} className={`${vstup} border-input`} />
                     </label>
                     <ZobrazitViac>
-                      {faktura && (
-                        <label className="block text-sm">
-                          <span className="text-xs text-muted-foreground">{t("Dátum prijatia")}</span>
-                          <input type="date" aria-label={t("Dátum prijatia")} value={u.datumPrijatia ?? ""} onChange={(e) => set({ datumPrijatia: e.target.value })} className={`${vstup} border-input`} />
-                        </label>
-                      )}
                       <label className="block text-sm">
                         <span className="text-xs text-muted-foreground">{t("Interné číslo")}</span>
                         <input aria-label={t("Interné číslo")} maxLength={40} value={u.interneCislo ?? ""} onChange={(e) => set({ interneCislo: e.target.value })} className={`${vstup} border-input`} />

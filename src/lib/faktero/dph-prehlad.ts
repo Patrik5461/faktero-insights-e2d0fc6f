@@ -23,6 +23,7 @@
   používa aj `dph-vykazy.server.ts`, aby prehľad a priznanie za rovnaký
   mesiac dali rovnaké sumy. Dovtedy prehľad bral dátum vystavenia.
 */
+import { denOdpoctu, type PrijatyNaOdpocet } from "./datum-prijatia";
 import { znamienkoDokladu } from "./faktury-sumy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
 import { najblizsiaSadzba, vatBucketKey, type KrajinaDane } from "./vat-rates";
@@ -73,23 +74,14 @@ export function denDaneVystavenej(f: {
 }
 
 /**
- * Deň, ktorým prijatá faktúra vstupuje do odpočtu: dátum dodania, bez neho
- * vystavenia. Prijatý dobropis opraví odpočet v období, keď ho firma dostala
- * (§ 53 ods. 2) — dátum prijatia, inak vyhotovenia.
+ * Deň, ktorým prijatá faktúra vstupuje do odpočtu: neskorší z dátumu dodania
+ * (bez neho vystavenia) a dátumu prijatia — odpočet sa uplatní najskôr
+ * v období, keď firma faktúru má (§ 51 ods. 1). Samozdanenie ostáva na dni
+ * dodania, prijatý dobropis opraví odpočet v období prijatia (§ 53 ods. 2).
+ * Pravidlo je v `datum-prijatia.ts`.
  */
-export function denOdpoctuPrijatej(p: {
-  issue_date?: string | null;
-  delivery_date?: string | null;
-  received_date?: string | null;
-  opravuje_cislo?: string | null;
-  amount_total?: number | string | null;
-}): string | null {
-  const dobropis = Boolean(p.opravuje_cislo) || Number(p.amount_total ?? 0) < 0;
-  return (
-    (dobropis
-      ? p.received_date || p.issue_date || p.delivery_date
-      : p.delivery_date || p.issue_date) || null
-  );
+export function denOdpoctuPrijatej(p: PrijatyNaOdpocet): string | null {
+  return denOdpoctu(p);
 }
 
 /** Je deň v období `od`–`do` (ISO dátumy, vrátane hraníc)? */

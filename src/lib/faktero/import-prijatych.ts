@@ -325,7 +325,8 @@ function kodyZPohody(h: any, prvaPolozka: any, rate: string, amount: string) {
   const kv = kvZPohody(kodPohody(h, "classificationKVDPH") || (prvaPolozka ? kodPohody(prvaPolozka, "classificationKVDPH") : ""));
   const bezOdpoctu = /bez n[áa]roku na odpo[čc]et/i.test(hodnota(h, "note"));
   return {
-    dodanie: datumZTextu(hodnota(h, "dateTax")),
+    // SK prijatá faktúra: `dateDelivery` = dodanie, `dateTax` = dátum odpočtu (môže byť neskôr).
+    dodanie: datumZTextu(hodnota(h, "dateDelivery")) ?? datumZTextu(hodnota(h, "dateTax")),
     kurz: rate ? kurzZPohody(rate, amount) : null,
     kv,
     predkontacia: predkontaciaZPohody(kodPohody(h, "accounting")),

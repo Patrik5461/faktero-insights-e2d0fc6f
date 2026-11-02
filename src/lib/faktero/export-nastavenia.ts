@@ -14,8 +14,9 @@
 export type DatumZapisu = "vyhotovenie" | "dodanie" | "dorucenie";
 /**
  * Ktorý dátum ide do „Dátumu odpočtu" prijatého dokladu (Pohoda `dateTax`).
- * `neskorsi` = neskorší z dátumu dodania a doručenia — podľa § 51 zákona
- * o DPH sa odpočet dá uplatniť najskôr v období, keď platiteľ faktúru má.
+ * Od 2. 11. 2026 nikdy nie skôr než neskorší z dátumu dodania a prijatia
+ * (§ 51 zákona o DPH: odpočet najskôr v období, keď platiteľ faktúru má) —
+ * `dodanie`, `dorucenie` aj `neskorsi` preto dajú ten istý deň.
  */
 export type DatumOdpoctu = "dodanie" | "zauctovanie" | "dorucenie" | "neskorsi";
 /** Text prijatého dokladu (Pohoda `text`). */
@@ -111,9 +112,23 @@ const den = (v: unknown): string => {
  *   dátum uloženia); bez neho dátum vystavenia,
  * - `zauctovanie` — dátum zaúčtovania z exportu (uzávierka či pevný dátum),
  *   bez neho dátum zápisu.
+ *
+ * Dátum odpočtu nikdy nepredbehne neskorší z dátumu dodania a prijatia
+ * (§ 51 ods. 1, CZ § 73, DE § 15 UStG) — rovnako ako výkazy DPH vo Fakteri
+ * (`denOdpoctu` v `datum-prijatia.ts`). Pri samozdanení (`samozdanenie`)
+ * ostáva odpočet na dni dodania, kde vznikla aj daň.
  */
 export function datumyPrijateho(
-  d: { vystavenie: unknown; dodanie: unknown; dorucenie: unknown; zauctovanie?: unknown },
+  d: {
+    vystavenie: unknown;
+    dodanie: unknown;
+    dorucenie: unknown;
+    zauctovanie?: unknown;
+    /** Skutočný dátum prijatia faktúry (`received_date`) — odpočet nebude skôr. Bloček ho nemá. */
+    prijatie?: unknown;
+    /** Samozdanenie (prenesenie, nadobudnutie z EÚ) — odpočet ostáva na dni dodania. */
+    samozdanenie?: boolean;
+  },
   n: Pick<NastaveniaExportu, "datumZapisu" | "datumOdpoctu">,
 ): { zapis: string; odpocet: string } {
   const vystavenie = den(d.vystavenie);
@@ -121,7 +136,7 @@ export function datumyPrijateho(
   const dorucenie = den(d.dorucenie) || vystavenie;
   const zapis =
     n.datumZapisu === "dodanie" ? dodanie : n.datumZapisu === "dorucenie" ? dorucenie : vystavenie;
-  const odpocet =
+  const zvoleny =
     n.datumOdpoctu === "dorucenie"
       ? dorucenie
       : n.datumOdpoctu === "zauctovanie"
@@ -129,6 +144,11 @@ export function datumyPrijateho(
         : n.datumOdpoctu === "neskorsi"
           ? ([dodanie, dorucenie].filter(Boolean).sort().at(-1) ?? "")
           : dodanie;
+  const najskor = d.samozdanenie ? dodanie : ([dodanie, den(d.prijatie)].filter(Boolean).sort().at(-1) ?? "");
+  const odpocet =
+    d.samozdanenie && n.datumOdpoctu !== "zauctovanie"
+      ? dodanie
+      : ([zvoleny, najskor].filter(Boolean).sort().at(-1) ?? "");
   return { zapis, odpocet };
 }
 
@@ -139,10 +159,8 @@ export function datumyPrijateho(
 export function upozornenieOdpoctu(
   n: Pick<NastaveniaExportu, "datumOdpoctu" | "datumZapisu">,
 ): string | null {
-  if (n.datumOdpoctu === "dodanie")
-    return "Keď faktúra príde až v neskoršom mesiaci než dodanie, odpočet DPH patrí až do obdobia doručenia — taký doklad v účtovnom programe skontrolujte, alebo zvoľte „neskorší z dátumu dodania a doručenia“.";
   if (n.datumOdpoctu === "zauctovanie")
-    return "Dátum zaúčtovania nesmie byť skorší než doručenie faktúry — inak by sa DPH odpočítala skôr, než to zákon dovoľuje.";
+    return "Dátum odpočtu bude dátum zaúčtovania, najskôr však neskorší z dátumu dodania a prijatia faktúry — skôr to zákon nedovoľuje.";
   return null;
 }
 

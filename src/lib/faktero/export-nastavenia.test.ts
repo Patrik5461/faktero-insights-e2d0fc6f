@@ -100,12 +100,10 @@ describe("dátum zápisu a odpočtu", () => {
       ).odpocet,
     ).toBe("2026-10-03");
   });
-  it("nápoveda k zákonu pri dodaní a zaúčtovaní, nie pri doručení", () => {
-    expect(upozornenieOdpoctu({ datumOdpoctu: "dodanie", datumZapisu: "vyhotovenie" })).toMatch(
-      /doručenia/,
-    );
+  it("nápoveda k zákonu len pri zaúčtovaní (ostatné voľby odpočet nepustia pred prijatie)", () => {
+    expect(upozornenieOdpoctu({ datumOdpoctu: "dodanie", datumZapisu: "vyhotovenie" })).toBeNull();
     expect(upozornenieOdpoctu({ datumOdpoctu: "zauctovanie", datumZapisu: "vyhotovenie" })).toMatch(
-      /skorší/,
+      /neskorší/,
     );
     expect(
       upozornenieOdpoctu({ datumOdpoctu: "dorucenie", datumZapisu: "vyhotovenie" }),

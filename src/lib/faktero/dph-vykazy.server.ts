@@ -126,7 +126,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
         )
         .eq("company_id", companyId)
         /*
@@ -539,8 +539,13 @@ export async function nacitajVstup(
       (§ 53 ods. 2) — dátum prijatia, inak vyhotovenia.
     */
     const dobropisP = Boolean(p.opravuje_cislo) || Number(p.amount_total ?? 0) < 0;
-    const den = denOdpoctuPrijatej(p) ?? "";
-    if (!vDobe(den)) continue;
+    let den = denOdpoctuPrijatej(p) ?? "";
+    /*
+      Prenesená časť zmiešanej faktúry sa samozdaní v období dodania, tuzemská
+      časť ide do odpočtu až v období prijatia (neskorší z DUZP a prijatia).
+    */
+    const denPrenesenej = denOdpoctuPrijatej({ ...p, dph_rezim: "samozdanenie" }) ?? "";
+    if (!vDobe(den) && !vDobe(denPrenesenej)) continue;
     /*
       Samofaktúra je daňový doklad až po odsúhlasení dodávateľom. Dovtedy sa
       z nej daň odpočítať nedá — pripomenie sa, aby sa na ňu nezabudlo.
@@ -584,14 +589,14 @@ export async function nacitajVstup(
     */
     const rozpisP = cudziaP ? [] : rozpisPrijatej(p);
     const prenesene = rozpisP.filter((x) => x.pdp);
-    if (prenesene.length && !p.opravuje_cislo) {
-      const zakladna = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(den))[0] ?? 23;
+    if (prenesene.length && !p.opravuje_cislo && vDobe(denPrenesenej)) {
+      const zakladna = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(denPrenesenej))[0] ?? 23;
       prijate.push({
         cislo: String(p.invoice_number ?? ""),
         dodavatelNazov: p.supplier_name,
         dodavatelIcDph: p.supplier_ic_dph,
         dodavatelDic: p.supplier_dic,
-        datumDodania: String(den),
+        datumDodania: String(denPrenesenej),
         rezim: "samozdanenie",
         odpocet: p.odpocet !== false,
         opravujeCislo: null,
@@ -615,6 +620,9 @@ export async function nacitajVstup(
     }
     // Celá prenesená faktúra už ide vyššie; druhý, prázdny záznam by KV zdvojil.
     if (tuzemske && !tuzemske.length) continue;
+    // Samozdanenie odvodené z IČ DPH dodávateľa (služba z EÚ) ostáva na dni dodania.
+    if (!tuzemske && (rezimP === "samozdanenie" || rezimP === "nadobudnutie") && !dobropisP) den = denPrenesenej;
+    if (!vDobe(den)) continue;
     const rozbor = rozborPrijateho(
       p,
       rozpisPrijatej(p).map((x) => ({ sadzba: x.sadzba, zaklad: Math.abs(x.zaklad), dph: Math.abs(x.dph) })),

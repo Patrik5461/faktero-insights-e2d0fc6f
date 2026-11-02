@@ -54,6 +54,13 @@ const sections: HelpSection[] = [
           vypĺňajte ho vždy, keď sa líši od dátumu vystavenia.
         </p>
         <p>
+          <strong>Dátum prijatia</strong> sa predvyplní dňom, keď faktúra prišla e-mailom alebo bola
+          nahratá, a dá sa prepísať. Odpočet DPH patrí do obdobia neskoršieho z dátumu dodania
+          a prijatia — formulár ho ukáže pod poľom (napríklad „Odpočet DPH: 09/2026“) a upozorní,
+          keď je dátum prijatia skôr než dátum vystavenia. Rovnaký dátum odpočtu dostane aj export
+          do Pohody.
+        </p>
+        <p>
           Faktúru priraďte na <strong>zákazku</strong>, ak patrí ku konkrétnej práci. Ide to aj
           dodatočne, keď je obdobie už uzamknuté.
         </p>

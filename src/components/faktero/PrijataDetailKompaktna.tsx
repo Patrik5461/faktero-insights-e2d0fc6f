@@ -34,6 +34,8 @@ import { KomentarePanel } from "./KomentarePanel";
 import { KomentarDokladu } from "./StavDokladu";
 import { HromadnyPrikaz } from "./HromadnyPrikaz";
 import { PravidloZDokladu } from "./PravidloZDokladu";
+import { DatumPrijatiaInfo } from "./DatumPrijatiaInfo";
+import { jeSamozdanenie } from "@/lib/faktero/datum-prijatia";
 
 /**
  * Detail prijatej faktúry v kompaktnom rozložení — ten istý vzhľad ako
@@ -199,6 +201,17 @@ export function PrijataDetailKompaktna({
           <Hodnota popis="Dátum dodania (DUZP)">
             {datumNaDoklade(row.delivery_date ?? row.issue_date)}
           </Hodnota>
+          {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
+          <Hodnota popis="Dátum prijatia">{row.received_date ? datumNaDoklade(row.received_date) : null}</Hodnota>
+          <DatumPrijatiaInfo
+            kompaktne
+            vystavenie={row.issue_date}
+            dodanie={row.delivery_date}
+            prijatie={row.received_date}
+            dobropis={Boolean(row.opravuje_cislo) || Number(row.amount_total ?? 0) < 0}
+            samozdanenie={jeSamozdanenie(row)}
+            bezOdpoctu={row.type === "proforma"}
+          />
           <Rozsirene>
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">

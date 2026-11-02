@@ -108,10 +108,8 @@ export default {
   "Export partnera do adresára Pohody": "Export partnera do adresáře Pohody",
   "Pri párovaní ide karta partnera z adresára Faktera do Pohody pred dokladom a doklad sa na ňu odvolá. Celý adresár naraz sa zapína v Prepojení s Pohodou.":
     "Při párování jde karta partnera z adresáře Faktera do Pohody před dokladem a doklad se na ni odvolá. Celý adresář najednou se zapíná v Propojení s Pohodou.",
-  "Keď faktúra príde až v neskoršom mesiaci než dodanie, odpočet DPH patrí až do obdobia doručenia — taký doklad v účtovnom programe skontrolujte, alebo zvoľte „neskorší z dátumu dodania a doručenia“.":
-    "Když faktura přijde až v pozdějším měsíci než dodání, odpočet DPH patří až do období doručení — takový doklad v účetním programu zkontrolujte, nebo zvolte „pozdější z data dodání a doručení“.",
-  "Dátum zaúčtovania nesmie byť skorší než doručenie faktúry — inak by sa DPH odpočítala skôr, než to zákon dovoľuje.":
-    "Datum zaúčtování nesmí být dřívější než doručení faktury — jinak by se DPH odečetla dříve, než to zákon dovoluje.",
+  "Dátum odpočtu bude dátum zaúčtovania, najskôr však neskorší z dátumu dodania a prijatia faktúry — skôr to zákon nedovoľuje.":
+    "Datum odpočtu bude datum zaúčtování, nejdříve však pozdější z data dodání a přijetí faktury — dříve to zákon nedovoluje.",
   "Faktura a číslo faktúry (Faktura 2026001)": "Faktura a číslo faktury (Faktura 2026001)",
   "Len číslo faktúry": "Jen číslo faktury",
   "Variabilný symbol (VS 2026001)": "Variabilní symbol (VS 2026001)",

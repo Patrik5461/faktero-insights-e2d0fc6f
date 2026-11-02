@@ -129,6 +129,13 @@ const sections: HelpSection[] = [
           dodania nevyplníte, Faktero použije dátum vystavenia.
         </p>
         <p>
+          Pri prijatej faktúre sa DPH odpočíta v období neskoršieho z dátumu dodania a{" "}
+          <strong>dátumu prijatia</strong> — faktúra dodaná 28. 8. a prijatá 3. 9. patrí do odpočtu
+          (priznanie aj kontrolný výkaz) za september. Obdobie odpočtu vidíte pod poľom Dátum
+          prijatia. Samozdanenie (prenesenie, nadobudnutie z EÚ) a dobropis sa riadia vlastnými
+          pravidlami.
+        </p>
+        <p>
           Preto sa oplatí dátum dodania vypĺňať vždy, keď sa líši — inak sa doklad ocitne v zlom
           mesiaci DPH.
         </p>

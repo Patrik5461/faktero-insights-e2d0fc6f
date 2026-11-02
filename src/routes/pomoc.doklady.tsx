@@ -136,7 +136,8 @@ const sections: HelpSection[] = [
           <strong>Členenie DPH</strong> a <strong>Členenie KV</strong>. Prázdne pole znamená kód
           dokladu — aj ten, ktorý doplní pravidlo automatického účtovania alebo návrh AI. Po stlačení Vytvoriť sa
           kódy prenesú s položkami do prijatej faktúry či bločku a export do účtovníctva doklad podľa
-          nich rozúčtuje. Menej používané polia (dátum prijatia, interné číslo, adresa, krajina a
+          nich rozúčtuje. Dátum prijatia je hneď pri dátumoch dokladu, lebo
+          rozhoduje o období odpočtu DPH. Menej používané polia (interné číslo, adresa, krajina a
           e-mail dodávateľa) sú pod <strong>Zobraziť viac</strong>.
         </p>
         <p>

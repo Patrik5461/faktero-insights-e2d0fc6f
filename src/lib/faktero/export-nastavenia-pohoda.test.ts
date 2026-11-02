@@ -191,7 +191,8 @@ describe("predvolené nastavenia = súbor ako doteraz", () => {
       }),
     ).toBe(zaklad);
     expect(hodnota(zaklad, "inv:date")).toBe("2026-09-28");
-    expect(hodnota(zaklad, "inv:dateTax")).toBe("2026-09-25");
+    // Odpočet = neskorší z dodania (25. 9.) a prijatia (3. 10.) — pravidlo od 2. 11. 2026.
+    expect(hodnota(zaklad, "inv:dateTax")).toBe("2026-10-03");
     expect(hodnota(zaklad, "inv:intNote")).toBe("kontrola");
     expect(zaklad).not.toContain("<typ:extId>");
     expect(chybySchemy(zaklad)).toEqual([]);
@@ -222,7 +223,8 @@ describe("zmenené nastavenia", () => {
       nastavenia: { ...nastavenia, zamknuteDo: "2026-09-30" },
     });
     expect(hodnota(x, "inv:dateAccounting")).toBe("2026-10-01");
-    expect(hodnota(x, "inv:dateTax")).toBe("2026-10-01");
+    // Zaúčtovanie 1. 10. by predbehlo prijatie 3. 10. — odpočet ostane na prijatí.
+    expect(hodnota(x, "inv:dateTax")).toBe("2026-10-03");
   });
 
   it("text dokladu a interná poznámka podľa voľby", () => {
