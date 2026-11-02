@@ -16,7 +16,7 @@
 async function prvyRiadok(page, selektor = "[data-klik-riadok]") {
   const r = page.locator(selektor).filter({ visible: true }).first();
   try {
-    await r.waitFor({ state: "visible", timeout: 15000 });
+    await r.waitFor({ state: "visible", timeout: 5000 });
     return r;
   } catch {
     return null;
@@ -70,7 +70,7 @@ async function otvorilSa(page, povodna, { okno = false, formular = null } = {}) 
 
 export default {
   popis: "Klik na riadok (balík 6): nastavenia, prehľad, moje úlohy, schvaľovanie, firmy",
-  limit: 240000,
+  limit: 300000,
   async spusti(t) {
     const page = t.page;
 

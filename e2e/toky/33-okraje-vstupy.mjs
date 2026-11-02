@@ -167,7 +167,7 @@ export default {
     async function exportuj(format, meno) {
       await t.go("/exporty");
       const sekcia = page
-        .locator("div.rounded-2xl")
+        .locator("div.rounded-xl.bg-card")
         .filter({ has: page.getByRole("button", { name: "Vybrať všetko", exact: true }) })
         .last();
       const datumy = sekcia.locator('input[type="date"]');

@@ -1777,7 +1777,7 @@ function StatCard({
         : "border-border bg-card";
   return (
     <div className={`min-w-0 rounded-xl border p-4 ${toneCls}`}>
-      <div className="text-xs font-semibold opacity-80">{label}</div>
+      <div className="text-xs font-semibold">{label}</div>
       <div className="suma mt-1 min-w-0 text-2xl">{value}</div>
     </div>
   );

@@ -63,7 +63,7 @@ export default {
     await t.krok("predvolené Od a Do v Účtovných exportoch", async () => {
       await t.go("/exporty");
       const sekcia = page
-        .locator("div.rounded-2xl")
+        .locator("div.rounded-xl.bg-card")
         .filter({ has: page.getByRole("button", { name: "Vybrať všetko", exact: true }) })
         .last();
       const datumy = sekcia.locator('input[type="date"]');
@@ -75,7 +75,7 @@ export default {
     });
 
     const blok = page
-      .locator("div.rounded-2xl")
+      .locator("div.rounded-xl.bg-card")
       .filter({ has: page.getByLabel("Odovzdať za mesiac") })
       .first();
 

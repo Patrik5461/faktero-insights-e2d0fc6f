@@ -93,7 +93,7 @@ export default {
     });
 
     const sekcia = page
-      .locator("div.rounded-2xl")
+      .locator("div.rounded-xl.bg-card")
       .filter({ has: page.getByRole("combobox", { name: "Účtovný program" }) })
       .first();
     const oznacit = sekcia.getByLabel(/Označiť ako odovzdané/);

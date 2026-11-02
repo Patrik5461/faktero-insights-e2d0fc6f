@@ -62,7 +62,7 @@ export default {
     });
 
     const sekcia = page
-      .locator("div.rounded-2xl")
+      .locator("div.rounded-xl.bg-card")
       .filter({ has: page.getByRole("button", { name: "Vybrať všetko", exact: true }) })
       .last();
     const oznacit = sekcia.getByLabel(/Označiť ako odovzdané/);

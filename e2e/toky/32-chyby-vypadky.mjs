@@ -217,7 +217,7 @@ export default {
         const zac = new Date().toISOString();
         await t.go("/exporty");
         const sekcia = page
-          .locator("div.rounded-2xl")
+          .locator("div.rounded-xl.bg-card")
           .filter({ has: page.getByRole("button", { name: "Vybrať všetko", exact: true }) })
           .last();
         await sekcia.getByRole("button", { name: "Exportovať", exact: true }).waitFor();
