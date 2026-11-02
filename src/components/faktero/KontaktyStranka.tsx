@@ -466,13 +466,29 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
                   onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
                 />
                 <div className="min-w-0 flex-1">
-                  <button
-                    onClick={() => setEditing(c)}
-                    className="break-words text-left font-semibold hover:text-primary hover:underline"
-                    title={t(T.karta)}
-                  >
-                    {c.name}
-                  </button>
+                  {/*
+                    Kartu otvára klik kdekoľvek na ňu, takže meno je obyčajný
+                    text. Ako tlačidlo bolo jediným textom karty (odberateľ bez
+                    IČO, DIČ a e-mailu) a na „klik mimo ovládacích prvkov“
+                    neostalo nič. Z klávesnice kartu otvorí ceruzka Upraviť.
+                    Pri vymazaných je karta vypnutá, tam tlačidlo ostáva.
+                  */}
+                  {list.showDeleted ? (
+                    <button
+                      onClick={() => setEditing(c)}
+                      className="break-words text-left font-semibold hover:text-primary hover:underline"
+                      title={t(T.karta)}
+                    >
+                      {c.name}
+                    </button>
+                  ) : (
+                    <span
+                      className="break-words text-left font-semibold hover:text-primary hover:underline"
+                      title={t(T.karta)}
+                    >
+                      {c.name}
+                    </span>
+                  )}
                   {jeFyzicka(c) && (
                     <span className="ml-2 inline-block whitespace-nowrap rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                       {t("fyzická osoba")}
