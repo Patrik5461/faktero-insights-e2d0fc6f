@@ -648,6 +648,32 @@ export function naplnDoklady(db: DemoDb) {
     });
   });
 
+  /* Kto doklad nahral, uložil a zaúčtoval (stĺpec „Nahral / Zaúčtoval“, riadok v detaile):
+     nahratie pred zápisom (prenos z Nespracovaných), mail s odosielateľom,
+     zaúčtovanie automatom a neskoršia oprava kódov iným človekom. */
+  prijate.forEach((r, i) => {
+    const vytvorene = String(r.created_at);
+    r.nahrane_at = new Date(Date.parse(vytvorene) - 40 * 60 * 1000).toISOString();
+    if (r.source === "mail") {
+      r.odosielatel_mailu = "faktury@dodavatel.example";
+      r.created_by = MAJITEL;
+    }
+    if (r.source !== "rucne" && r.source !== "samofakturacia") {
+      r.spracoval = UCTOVNIK;
+      r.spracovane_at = vytvorene;
+    }
+    if (r.zauctovane_at && i % 4 === 1) {
+      // Automat (pravidlo) — bez človeka.
+      r.zauctoval = null;
+      r.zauctovanie_zdroj = "pravidlo";
+      r.zauctovanie_istota = 100;
+    }
+    if (r.zauctovane_at && i % 4 === 2) {
+      // Po prvom zaúčtovaní niekto zmenil predkontáciu — posledné zaúčtovanie.
+      r.naposledy_zauctoval = MAJITEL;
+      r.naposledy_zauctovane_at = new Date(Date.parse(String(r.zauctovane_at)) + 26 * 3600 * 1000).toISOString();
+    }
+  });
   db.vloz("purchase_invoices", prijate);
   db.vloz("purchase_invoice_payments", uhrady);
   PRIJATE.push(...prijate);
@@ -958,6 +984,11 @@ export function naplnDoklady(db: DemoDb) {
   if (drobna) drobna.vyuctovanie_id = vyuct[1].id;
 
   db.vloz("vyuctovania_vydavkov", vyuct);
+  // Bločky: nahratie pred spracovaním, jeden prišiel e-mailom.
+  blocky.forEach((r, i) => {
+    if (r.created_at) r.nahrane_at = new Date(Date.parse(String(r.created_at)) - 25 * 60 * 1000).toISOString();
+    if (i === 2) r.odosielatel_mailu = "pokladna@obchod.example";
+  });
   db.vloz("expense_documents", blocky);
   BLOCKY.push(...blocky);
 

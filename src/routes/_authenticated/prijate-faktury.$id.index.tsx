@@ -70,7 +70,7 @@ import { useProgramOdovzdania } from "@/components/faktero/OdovzdanieDokladu";
 import { popisPoslatOpravu, textPoslatOpravu } from "@/lib/faktero/stav-odovzdania";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
-import { SpracovalDokladu } from "@/components/faktero/SpracovalDokladu";
+import { KtoKedyDokladu } from "@/components/faktero/KtoKedyDokladu";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { DokladPoradie } from "@/components/faktero/DokladPoradie";
@@ -1236,7 +1236,7 @@ function PurchaseInvoiceDetail() {
             )}
             {kartaPrilohy}
             {kartaKomentare}
-            {!navrh && <SpracovalDokladu companyId={row.company_id} agenda="prijata" row={row} />}
+            {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
             <ZbaleneK nadpis="Údaje faktúry">
               <div className="space-y-4">
                 {kartaStrany(false)}
@@ -1258,7 +1258,7 @@ function PurchaseInvoiceDetail() {
             )}
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             {kartaKomentare}
-            {!navrh && <SpracovalDokladu companyId={row.company_id} agenda="prijata" row={row} />}
+            {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
             {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
             {kartaPrilohy}
 

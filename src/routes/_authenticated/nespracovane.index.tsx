@@ -32,6 +32,8 @@ import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
 import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok, type CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { nahralDokladu } from "@/lib/faktero/spracoval";
+import { casUdalosti } from "@/lib/faktero/kto-kedy";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { StavOdznak } from "@/components/faktero/web/Stav";
@@ -70,7 +72,7 @@ function naBase64(f: File): Promise<string> {
  * údaje, zaúčtuje a vytvorí.
  */
 function Stranka() {
-  const { t } = useT();
+  const { t, jazyk } = useT();
   const navigate = useNavigate();
   const nacitaj = useServerFn(nespracovaneFn);
   const nahraj = useServerFn(nahrajNespracovaneFn);
@@ -276,6 +278,10 @@ function Stranka() {
       {t(ZDROJ[r.zdroj] ?? r.zdroj)}
       {nahralDokladu(r.zdroj, r.nahral, mena) ? (
         <span className="text-foreground/80">· {nahralDokladu(r.zdroj, r.nahral, mena)}</span>
+      ) : null}
+      {/* Kedy bol doklad nahratý — pri prenose do agendy sa prenesie s ním. */}
+      {casUdalosti(r.vytvorene ?? null, lokalJazyka(jazyk)) ? (
+        <span className="whitespace-nowrap">· {casUdalosti(r.vytvorene ?? null, lokalJazyka(jazyk))}</span>
       ) : null}
       {r.typ === "nespracovany" ? (
         <ZdrojovyMailTlacidlo druh="nespracovany" id={r.id} inboxMessageId={r.inboxMessageId} ikona />

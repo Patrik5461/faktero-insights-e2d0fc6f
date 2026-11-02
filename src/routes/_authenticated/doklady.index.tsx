@@ -71,6 +71,7 @@ import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { KtoKedyBunka } from "@/components/faktero/KtoKedyDokladu";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
@@ -131,6 +132,7 @@ const STLPCE_DOKLADOV: StlpecZoznamu[] = [
   { kluc: "stav", nazov: "Stav", povinny: true },
   { kluc: "zdroj", nazov: "Zdroj" },
   { kluc: "spracoval", nazov: "Spracoval" },
+  { kluc: "ktoKedy", nazov: "Nahral / Zaúčtoval", predvoleny: false },
   { kluc: "uhrada", nazov: "Úhrada z účtu" },
 ];
 
@@ -1221,6 +1223,7 @@ function DokladyPage() {
                   <th className="px-3 py-2 text-left">{rad.hlavicka("stav", t("Stav"))}</th>
                   {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", t("Zdroj"))}</th>}
                   {je("spracoval") && <th className="hidden px-3 py-2 text-left md:table-cell">{t("Spracoval")}</th>}
+                  {je("ktoKedy") && <th className="px-3 py-2 text-left">{t("Nahral / Zaúčtoval")}</th>}
                   {je("uhrada") && <th className="px-3 py-2 text-left">{t("Úhrada z účtu")}</th>}
                   <th className="px-3 py-2"><span className="sr-only">{t("Akcie")}</span></th>
                 </tr>
@@ -1472,6 +1475,11 @@ function DokladyPage() {
                             </span>
                           );
                         })()}
+                      </td>
+                    )}
+                    {je("ktoKedy") && (
+                      <td className="min-w-[12rem] px-3 py-2">
+                        <KtoKedyBunka row={r} agenda="doklad" mena={mena} />
                       </td>
                     )}
                     {je("uhrada") && (

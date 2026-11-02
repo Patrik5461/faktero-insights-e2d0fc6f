@@ -2,6 +2,8 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
+import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu";
+import { nahranieDokladu } from "@/lib/faktero/kto-kedy";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
@@ -391,6 +393,7 @@ function Detail() {
   // Prepínač rozloženia — voľba sa pamätá v účte používateľa.
   const prepinac = (
     <div className="flex flex-wrap items-center gap-2">
+      <NahraleNespracovane d={d} />
       <ZdrojovyMailTlacidlo druh="nespracovany" id={d.id} inboxMessageId={d.inboxMessageId} />
       {d.subor.url && d.stav !== "cita" ? (
         <button
@@ -1046,4 +1049,24 @@ function zakladPravidla(
     kv: u.kody.kv,
     kategoria: u.kategoria,
   };
+}
+
+/** „Nahraté: Jana Nováková 2. 11. 2026 9:14“ / „Nahraté: e-mailom z …“ — kto a kedy doklad nahral. */
+function NahraleNespracovane({
+  d,
+}: {
+  d: { companyId: string; zdroj: string; createdBy: string | null; vytvorene?: string | null; odosielatelMailu: string | null };
+}) {
+  const { t } = useT();
+  const u = nahranieDokladu(
+    { zdroj: d.zdroj, created_by: d.createdBy, created_at: d.vytvorene, odosielatel_mailu: d.odosielatelMailu },
+    "nespracovany",
+  );
+  const mena = useMenaClenov(d.companyId, u?.kto.typ === "clovek" && Boolean(u.kto.id));
+  if (!u) return null;
+  return (
+    <span className="text-xs text-muted-foreground" data-testid="kto-kedy-nespracovany">
+      {t("Nahraté")}: <UdalostText u={u} mena={mena} kompaktne />
+    </span>
+  );
 }

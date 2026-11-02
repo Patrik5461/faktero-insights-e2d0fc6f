@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { KtoKedyBunka } from "@/components/faktero/KtoKedyDokladu";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
 import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
@@ -152,6 +153,7 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "stavDokladu", nazov: "Stav dokladu" },
   { kluc: "zapisal", nazov: "Zapísal" },
   { kluc: "spracoval", nazov: "Spracoval" },
+  { kluc: "ktoKedy", nazov: "Nahral / Zaúčtoval", predvoleny: false },
   { kluc: "stav", nazov: "Stav" },
 ];
 
@@ -1266,6 +1268,7 @@ function PurchaseInvoicesPage() {
                 {stlpecStavDokladu && <th className="p-3">{t("Stav dokladu")}</th>}
                 {je("zapisal") && <th className="p-3">{t("Zapísal")}</th>}
                 {stlpecSpracoval && <th className="hidden p-3 md:table-cell">{t("Spracoval")}</th>}
+                {je("ktoKedy") && <th className="p-3">{t("Nahral / Zaúčtoval")}</th>}
                 {je("stav") && <th className="p-3">{rad.hlavicka("stav", t("Stav"))}</th>}
               </tr>
             </thead>
@@ -1457,6 +1460,11 @@ function PurchaseInvoicesPage() {
                   {stlpecSpracoval && (
                     <td className="hidden p-3 text-xs md:table-cell">
                       <Spracoval s={spracovanieDokladu(r, "prijata")} mena={mena} loc={lokalJazyka(jazyk)} />
+                    </td>
+                  )}
+                  {je("ktoKedy") && (
+                    <td className="min-w-[12rem] p-3">
+                      <KtoKedyBunka row={r} agenda="prijata" mena={mena} />
                     </td>
                   )}
                   {je("stav") && (
