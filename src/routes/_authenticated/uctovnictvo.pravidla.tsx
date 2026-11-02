@@ -80,7 +80,7 @@ const text = (v: unknown) =>
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/pravidla")({
   head: ({ match }) => ({
-    meta: [{ title: preloz(match.context.jazyk, "Pravidlá účtovania — Faktero") }],
+    meta: [{ title: preloz(match.context.jazyk, "Automatické účtovanie — Faktero") }],
   }),
   validateSearch: (s: Record<string, unknown>): Hladanie => ({
     novy: text(s.novy),
@@ -415,7 +415,7 @@ function PravidlaPage() {
   return (
     <>
       <PageHeader
-        title={t("Pravidlá účtovania")}
+        title={t("Automatické účtovanie")}
         description={t(
           "Automatické účtovanie: bloček, prijatá aj vystavená faktúra či pohyb v banke dostane predkontáciu, členenie DPH a KV sám — hneď, ako vznikne.",
         )}

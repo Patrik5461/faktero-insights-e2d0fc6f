@@ -18,7 +18,7 @@ export type ZakladPravidla = {
 };
 
 /**
- * Pravidlá účtovania pri doklade (ako „Aplikovať automatické účtovanie"
+ * Automatické účtovanie pri doklade (ako „Aplikovať automatické účtovanie"
  * v Doklado). Spúšťač v databáze doplní prvé zhodné pravidlo sám; keď ich
  * dodávateľ má viac, tu si človek vyberie iné. Hviezdička ukazuje, že kódy
  * doplnilo pravidlo.
@@ -103,7 +103,7 @@ export function VyberPravidla({
       {pouzite ? (
         <span
           className="inline-flex items-center gap-1 text-amber-700"
-          title={t("Kódy doplnilo pravidlo účtovania")}
+          title={t("Kódy doplnilo pravidlo automatického účtovania")}
         >
           <Star className="h-3.5 w-3.5 fill-current" />{" "}
           {t("Pravidlo „{nazov}“", { nazov: pouzite.nazov })}
@@ -112,7 +112,7 @@ export function VyberPravidla({
       {zhodne.some((p) => p.id !== pouzite?.id) ? (
         <>
           <select
-            aria-label={t("Pravidlo účtovania")}
+            aria-label={t("Pravidlo automatického účtovania")}
             value={vybrane}
             onChange={(e) => setVybrane(e.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs"
@@ -172,7 +172,7 @@ export function VyberPravidla({
       ) : null}
       {/* Samotné „pravidlá“ viselo osamote bez súvislosti — povedz, kam odkaz vedie. */}
       <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-        {t("Pravidlá účtovania →")}
+        {t("Automatické účtovanie →")}
       </Link>
     </div>
   );

@@ -204,8 +204,8 @@ export default {
   "Digitálny poštár": "Digitálny poštár",
   "Pre účtovníkov": "Pro účetní",
   "jedným klikom": "jedním kliknutím",
-  "Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.":
-    "Konektor i XML pro Pohodu, šest formátů exportu, výkazy k DPH, pravidla účtování a výpisy z platebních bran — připraveno pro desítky klientů bez ručního přepisování.",
+  "Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, automatické účtovanie a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.":
+    "Konektor i XML pro Pohodu, šest formátů exportu, výkazy k DPH, automatické účtování a výpisy z platebních bran — připraveno pro desítky klientů bez ručního přepisování.",
   "Vyskúšať pre účtovnícku firmu": "Vyzkoušet pro účetní firmu",
   "Jednoduchý cenník. 30 dní zdarma.": "Jednoduchý ceník. 30 dní zdarma.",
   "Začnite zdarma, prejdite na platený plán až keď vám Faktero ušetrí čas.":

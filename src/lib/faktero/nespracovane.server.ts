@@ -297,7 +297,7 @@ export async function vytvorDoklad(
   }
 
   /*
-    Pravidlo účtovania zvolené pri spracovaní (alebo doplnené podľa
+    Pravidlo automatického účtovania zvolené pri spracovaní (alebo doplnené podľa
     dodávateľa). Doklad ho dostane rovno — spúšťač by inak vzal prvé zhodné
     pravidlo, nie to, ktoré človek vybral. Odpočet a poznámku pravidla
     doplníme tu, ako by to urobil spúšťač.

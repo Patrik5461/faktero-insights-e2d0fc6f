@@ -9,7 +9,7 @@
   s riadkami zaúčtovania po sadzbách a kódoch.
 
   Poradie kódov je rovnaké ako pri Pohode: kód na doklade (alebo na položke
-  či riadku rozúčtovania), pravidlo účtovania, kategória nákladu, predvolený
+  či riadku rozúčtovania), pravidlo automatického účtovania, kategória nákladu, predvolený
   kód druhu dokladu. Čisté funkcie bez databázy.
 */
 

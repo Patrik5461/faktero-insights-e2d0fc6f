@@ -19,14 +19,14 @@ export type OznaceniaNavrhu = Partial<
   Record<PoleNavrhu, Extract<ZdrojNavrhu, "ai" | "navyk" | "pravidlo">>
 >;
 
-/** Štítok pri poli: „Návrh AI", „naučené" alebo hviezdička pravidla účtovania. */
+/** Štítok pri poli: „Návrh AI", „naučené" alebo hviezdička pravidla automatického účtovania. */
 export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" }) {
   const { t } = useT();
   if (zdroj === "pravidlo")
     return (
       <span
         className="dk-pozor ml-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] font-semibold"
-        title={t("Doplnilo pravidlo účtovania podľa dodávateľa.")}
+        title={t("Doplnilo pravidlo automatického účtovania podľa dodávateľa.")}
       >
         <Star className="h-2.5 w-2.5 fill-current" /> {t("pravidlo")}
       </span>

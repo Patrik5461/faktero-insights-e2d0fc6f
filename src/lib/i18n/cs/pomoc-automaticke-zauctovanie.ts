@@ -19,8 +19,8 @@ export default {
     "<0>Bezpečný</0> (výchozí) — samo zaúčtuje doklady, které sedí na pravidlo nebo na ustálený zvyk s jistotou alespoň 95 %. Návrhy od AI čekají na vás.",
   "<0>Plný</0> — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":
     "<0>Plný</0> — navíc zaúčtuje i návrhy od AI s jistotou alespoň 90 %.",
-  "Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke <0>Zaúčtovanie na kontrolu</0> alebo pri pravidlách účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
-    "Režim a limit částky nastaví vlastník nebo admin firmy na stránce <0>Zaúčtování ke kontrole</0> nebo u pravidel účtování. Po zapnutí se týká jen nových dokladů — staré se samy nezaúčtují.",
+  "Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke <0>Zaúčtovanie na kontrolu</0> alebo pri pravidlách automatického účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
+    "Režim a limit částky nastaví vlastník nebo admin firmy na stránce <0>Zaúčtování ke kontrole</0> nebo u pravidel automatického účtování. Po zapnutí se týká jen nových dokladů — staré se samy nezaúčtují.",
   "Kedy doklad čaká na vás": "Kdy doklad čeká na vás",
   "Doklad sa nezaúčtuje sám nikdy, keď:": "Doklad se nikdy nezaúčtuje sám, když:",
   "súčet položiek alebo základ s DPH nesedí so sumou dokladu,":
@@ -47,8 +47,8 @@ export default {
   "Keď rovnakú opravu u toho istého partnera urobíte druhýkrát, Faktero ponúkne <0>vytvoriť pravidlo</0> s predvyplnenými podmienkami. Každá oprava sa zapíše do histórie dokladu.":
     "Když stejnou opravu u stejného partnera uděláte podruhé, Faktero nabídne <0>vytvořit pravidlo</0> s předvyplněnými podmínkami. Každá oprava se zapíše do historie dokladu.",
   "Bankové pohyby": "Bankovní pohyby",
-  "<0>Pravidlo účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Pravidlá účtovania</1>.":
-    "<0>Pravidlo účtování</0> (jistota 100 %) — podle partnera, textu, způsobu úhrady, předmětu či odesílatele e-mailu, země, variabilního symbolu nebo typu dokladu. Pravidla spravujete v <1>Účetnictví → Pravidla účtování</1>.",
+  "<0>Pravidlo automatického účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Automatické účtovanie</1>.":
+    "<0>Pravidlo automatického účtování</0> (jistota 100 %) — podle partnera, textu, způsobu úhrady, předmětu či odesílatele e-mailu, země, variabilního symbolu nebo typu dokladu. Pravidla spravujete v <1>Účetnictví → Automatické účtování</1>.",
   "Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných pohyboch sa AI nepýta. Pravidlo pre banku s výsledkom <0>Spárované bez dokladu</0> (poplatky, mzdy, odvody) vybaví pohyb hneď, ako príde z banky alebo z nahratého výpisu — pozri <1>Banka</1>.":
     "Pohyby se zaúčtují při exportu výpisu do Pohody: pravidlo pro banku (účet, směr, protistrana) má přednost, spárovaný pohyb dostane výchozí předkontaci pro banku. U nespárovaných pohybů se AI neptá. Pravidlo pro banku s výsledkem <0>Spárováno bez dokladu</0> (poplatky, mzdy, odvody) vyřídí pohyb hned, jak přijde z banky nebo z nahraného výpisu — viz <1>Banka</1>.",
 };

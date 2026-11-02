@@ -69,8 +69,8 @@ export default {
     "Soubor se kontroluje jen ve vašem prohlížeči, nikam se neposílá",
   "Bez prihlásenia na verejnej stránke, vo Fakteri v eFaktúra → Kontrola XML":
     "Bez přihlášení na veřejné stránce, ve Fakteru v eFaktura → Kontrola XML",
-  "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
-    "Export do Pohody i konektor, sedm formátů exportu včetně DATEV, pravidla účtování, konvertor z Excelu, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
+  "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, automatické účtovanie, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
+    "Export do Pohody i konektor, sedm formátů exportu včetně DATEV, automatické účtování, konvertor z Excelu, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
   "Nastavenia exportu pre firmu: dátum zápisu a odpočtu DPH, text dokladu, interná poznámka, partner do adresára":
     "Nastavení exportu pro firmu: datum zápisu a odpočtu DPH, text dokladu, interní poznámka, partner do adresáře",
   "Zaokrúhlenie zvlášť kladné a záporné, s vlastnou predkontáciou a členením":

@@ -11,7 +11,7 @@ export default {
   "Predvolené podľa druhu dokladu": "Výchozí podle druhu dokladu",
   "Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá":
     "Použije se, když doklad nemá vlastní předkontaci — tu mu dá",
-  "pravidlo účtovania": "pravidlo účtování",
+  "pravidlo automatického účtovania": "pravidlo automatického účtování",
   "alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.":
     "nebo člověk při zaúčtování. Prázdné pole = Pohoda doklad nechá nezaúčtovaný.",
   Doklad: "Doklad",
@@ -291,13 +291,14 @@ export default {
     "Zkratka účtu říká, do kterého bankovního účtu v Pohodě doklady patří; bez ní je Pohoda přiřadí sama a účetní je přepisuje ručně.",
   "Výpis je k účtu {ucet}.": "Výpis je k účtu {ucet}.",
   "Pozor, výpis je v mene {mena}.": "Pozor, výpis je v měně {mena}.",
-  "Pravidlá účtovania pre banku dajú predkontáciu": "Pravidla účtování pro banku dají předkontaci",
+  "Pravidlá automatického účtovania pre banku dajú predkontáciu":
+    "Pravidla automatického účtování pro banku dají předkontaci",
   "{a} z {b}": "{a} z {b}",
   "pohybov — majú prednosť pred predkontáciami nižšie.":
     "pohybů — mají přednost před předkontacemi níže.",
   "Predkontáciu podľa účtu, smeru a protistrany vedia dávať aj":
     "Předkontaci podle účtu, směru a protistrany umějí dávat i",
-  "pravidlá účtovania": "pravidla účtování",
+  "pravidlá automatického účtovania": "pravidla automatického účtování",
   "Predkontácie podľa označenia platby": "Předkontace podle označení platby",
   "Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne, dostane spoločnú predkontáciu vyššie.":
     "Poplatek, daň a úhrada faktury se účtují každý jinam. Když sem napíšete předkontace z Pohody, doklad přijde rovnou zaúčtovaný; co necháte prázdné, dostane společnou předkontaci výše.",

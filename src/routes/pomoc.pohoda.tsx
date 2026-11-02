@@ -88,8 +88,8 @@ const sections: HelpSection[] = [
           tak dostane PHM bez klikania. Kód (v zoznamoch sa volá aj <strong>účtovná položka</strong>
           ) môže mať <strong>typ dokladu</strong> (faktúra, bloček) a <strong>typ platby</strong>{" "}
           (hotovosť, karta, prevod) — doklad, ktorý na ne sedí, ho má v ponuke navrchu. V ponuke je
-          najprv názov, potom kód a účty. Poradie: kód na doklade, pravidlo účtovania, kategória,
-          predvolený kód druhu dokladu. Doklad sa dá aj{" "}
+          najprv názov, potom kód a účty. Poradie: kód na doklade, pravidlo automatického účtovania,
+          kategória, predvolený kód druhu dokladu. Doklad sa dá aj{" "}
           <strong>rozúčtovať na viac predkontácií a členení</strong>; v Pohode má potom hlavičku
           „Rozúčtovať“ a kódy nesú položky.
         </p>
@@ -449,13 +449,13 @@ const sections: HelpSection[] = [
   },
   {
     id: "pravidla",
-    title: "Pravidlá účtovania (automatické účtovanie)",
+    title: "Automatické účtovanie",
     body: (
       <>
         <p>
-          <Link to="/uctovnictvo/pravidla">Účtovníctvo → Pravidlá účtovania</Link>: napríklad „keď
-          dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a predkontáciu PHM“ alebo
-          „platené kartou v reštaurácii → bez odpočtu DPH“.
+          <Link to="/uctovnictvo/pravidla">Účtovníctvo → Automatické účtovanie</Link>: napríklad
+          „keď dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a predkontáciu PHM“
+          alebo „platené kartou v reštaurácii → bez odpočtu DPH“.
         </p>
         <ul>
           <li>
@@ -517,9 +517,9 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Keď doklad nemá predkontáciu či členenie DPH a nevyplní ich ani pravidlo účtovania, ani
-          naučená voľba pri dodávateľovi, navrhne ich AI — podľa dodávateľa, položiek, sumy, sadzieb
-          DPH, prenesenia daňovej povinnosti a druhu dokladu.
+          Keď doklad nemá predkontáciu či členenie DPH a nevyplní ich ani pravidlo automatického
+          účtovania, ani naučená voľba pri dodávateľovi, navrhne ich AI — podľa dodávateľa,
+          položiek, sumy, sadzieb DPH, prenesenia daňovej povinnosti a druhu dokladu.
         </p>
         <ul>
           <li>
@@ -528,7 +528,7 @@ const sections: HelpSection[] = [
             ukáže odkaz na <Link to="/uctovnictvo/predkontacie">nastavenie predkontácií</Link>.
           </li>
           <li>
-            Poradie je vždy: <strong>pravidlo účtovania</strong>, potom{" "}
+            Poradie je vždy: <strong>pravidlo automatického účtovania</strong>, potom{" "}
             <strong>naučená voľba</strong> dodávateľa a až potom AI.
           </li>
           <li>

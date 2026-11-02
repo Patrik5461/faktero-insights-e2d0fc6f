@@ -12,7 +12,7 @@ import { useT } from "@/lib/i18n/useT";
 
 /**
  * „Vytvoriť pravidlo z tohto dokladu" (v Doklado „Vytvoriť automatické
- * účtovanie"): otvorí Pravidlá účtovania s predvyplneným dodávateľom,
+ * účtovanie"): otvorí Automatické účtovanie s predvyplneným dodávateľom,
  * e-mailom, VS a kódmi. Keď podobné pravidlo už je, otvorí to — nezdvojí ho.
  */
 export function PravidloZDokladu({

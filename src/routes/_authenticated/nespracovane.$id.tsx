@@ -997,7 +997,7 @@ function ZobrazitViac({ children }: { children: ReactNode }) {
   );
 }
 
-/** Čo z nespracovaného dokladu predvyplní nové pravidlo účtovania. */
+/** Čo z nespracovaného dokladu predvyplní nové pravidlo automatického účtovania. */
 function zakladPravidla(
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,

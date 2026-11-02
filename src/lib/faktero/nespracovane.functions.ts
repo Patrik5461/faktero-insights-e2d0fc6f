@@ -232,7 +232,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       subor: { url, nazov: r.file_name as string | null, mime: r.file_mime as string | null },
       udaje,
       dalsiId: nastavenia.dalsi ? ((dalsi?.[0]?.id as string | undefined) ?? null) : null,
-      /** Kto doklad nahral a predmet mailu — podľa nich vyberajú pravidlá účtovania. */
+      /** Kto doklad nahral a predmet mailu — podľa nich vyberajú pravidlá automatického účtovania. */
       createdBy: (r.created_by ?? null) as string | null,
       predmetMailu,
       /** Odosielateľ mailu a krajina firmy — tiež podmienky pravidiel. */

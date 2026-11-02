@@ -111,7 +111,7 @@ export default {
   "Bankový výpis do Pohody": "Bankovní výpis do Pohody",
   "Výpis z platobnej brány": "Výpis z platební brány",
   "Predkontácie a členenie DPH": "Předkontace a členění DPH",
-  "Pravidlá účtovania": "Pravidla účtování",
+  "Automatické účtovanie": "Automatické účtování",
   "Nová jazda": "Nová jízda",
   Export: "Export",
   "Vozidlá a tankovanie": "Vozidla a tankování",

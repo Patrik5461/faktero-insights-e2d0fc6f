@@ -136,10 +136,10 @@ const sections: HelpSection[] = [
           Keď má vozidlo <strong>odpočet DPH 50 %</strong>, doklad s ním sa rozúčtuje sám: polovica
           DPH sa odpočíta, druhá ide so základom do nákladu (v dani z príjmov je to nedaňový
           výdavok). Takto ide do priznania DPH, kontrolného výkazu aj do exportu do Pohody, Omegy,
-          Money a ABRA Flexi. Vlastné rozúčtovanie dokladu, pravidlo účtovania alebo predkontácia s
-          pomerom majú prednosť. Kódy pre neodpočítateľnú časť sa berú z predkontácie s pomerom „DPH
-          50/50“ v <Link to="/uctovnictvo/predkontacie">Predkontáciách</Link>; bez nej ostane
-          predkontácia dokladu s členením bez nároku na odpočet.
+          Money a ABRA Flexi. Vlastné rozúčtovanie dokladu, pravidlo automatického účtovania alebo
+          predkontácia s pomerom majú prednosť. Kódy pre neodpočítateľnú časť sa berú z predkontácie
+          s pomerom „DPH 50/50“ v <Link to="/uctovnictvo/predkontacie">Predkontáciách</Link>; bez
+          nej ostane predkontácia dokladu s členením bez nároku na odpočet.
         </p>
         <p>
           Daň z príjmov je samostatná vec: kto nevedie knihu jázd, uplatní si PHM do výdavkov len

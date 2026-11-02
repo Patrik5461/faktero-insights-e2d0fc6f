@@ -330,7 +330,7 @@ describe("návrh v nespracovanom doklade", () => {
   });
 });
 
-describe("oznaceniaZUdajov — pravidlo účtovania", () => {
+describe("oznaceniaZUdajov — pravidlo automatického účtovania", () => {
   it("hodnota z pravidla má hviezdičku pred naučenou aj AI, po zmene zmizne", () => {
     const u = prazdneUdaje();
     u.kody.predkontacia = "518";

@@ -1,5 +1,5 @@
 /*
-  Pravidlo účtovania pre dodávateľa E2E. Spúšťač v databáze z neho doplní
+  Pravidlo automatického účtovania pre dodávateľa E2E. Spúšťač v databáze z neho doplní
   predkontáciu a členenie hneď pri zápise dokladu — vďaka tomu ani detail
   dokladu, ani automatické zaúčtovanie nepýta návrh od AI (stojí peniaze).
 */
@@ -16,7 +16,7 @@ export async function pravidloPreDodavatela(t, nazovDodavatela, firma = "test") 
     clenenie_dph: CLENENIE_PRAVIDLA,
     kv_clenenie: "B2",
   });
-  t.uprac("pravidlo účtovania", async () => {
+  t.uprac("pravidlo automatického účtovania", async () => {
     const r = await t.rest.delete(`pravidla_uctovania?id=eq.${p.id}`);
     if (r.status >= 300) throw new Error(`${r.status} ${r.text.slice(0, 200)}`);
   });

@@ -36,10 +36,10 @@ const sections: HelpSection[] = [
         <p>Predkontácia sa hľadá v tomto poradí — prvý zdroj, ktorý zaberie, vyhráva:</p>
         <ol>
           <li>
-            <strong>Pravidlo účtovania</strong> (istota 100 %) — podľa partnera, textu, spôsobu
-            úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu
-            dokladu. Pravidlá spravujete v{" "}
-            <Link to="/uctovnictvo/pravidla">Účtovníctvo → Pravidlá účtovania</Link>.
+            <strong>Pravidlo automatického účtovania</strong> (istota 100 %) — podľa partnera,
+            textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu
+            alebo typu dokladu. Pravidlá spravujete v{" "}
+            <Link to="/uctovnictvo/pravidla">Účtovníctvo → Automatické účtovanie</Link>.
           </li>
           <li>
             <strong>Zvyk partnera</strong> — keď ste aspoň tri z posledných desiatich dokladov od
@@ -78,7 +78,7 @@ const sections: HelpSection[] = [
           s odpočtom, 30 % bez odpočtu) — sumy sa dopočítajú pri odovzdaní z rozpisu DPH.
         </p>
         <p>
-          <strong>Predloha</strong> (záložka Predlohy v Pravidlách účtovania) je pomenované
+          <strong>Predloha</strong> (záložka Predlohy v Automatickom účtovaní) je pomenované
           zaúčtovanie bez podmienky, napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije — pri
           doklade ju vyberiete cez „Použiť predlohu…“ a doplní kódy, pokladňu, rad aj poznámku
           naraz.
@@ -112,7 +112,8 @@ const sections: HelpSection[] = [
         <p>
           Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke{" "}
           <Link to="/uctovnictvo/na-kontrolu">Zaúčtovanie na kontrolu</Link> alebo pri pravidlách
-          účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.
+          automatického účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé
+          nezaúčtujú.
         </p>
       </>
     ),

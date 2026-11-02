@@ -31,7 +31,7 @@ export default {
   Akcie: "Aktionen",
   "ako doklad": "wie Beleg",
   alebo: "oder",
-  "alebo z pravidla účtovania.": "oder aus der Buchungsregel.",
+  "alebo z pravidla automatického účtovania.": "oder aus der Regel der automatischen Buchung.",
   appka: "App",
   Apr: "Apr",
   "Aspoň jedna faktúra vystavená": "Mindestens eine Rechnung ausgestellt",

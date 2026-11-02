@@ -1298,7 +1298,7 @@ export const uctovnici: HubContent = {
   hubTitle: "Pre účtovníkov",
   hubHeadline: "Účtovné podklady jedným klikom",
   hubDescription:
-    "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
+    "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, automatické účtovanie, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
   hubLead:
     "Spolupracujte so svojimi klientmi efektívnejšie. Faktero generuje účtovné podklady jedným klikom.",
   items: [

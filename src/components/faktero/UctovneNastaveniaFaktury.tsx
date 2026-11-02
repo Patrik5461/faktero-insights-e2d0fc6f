@@ -24,7 +24,7 @@ export type UctovneKody = { predkontacia: string; clenenie: string; kv: string }
  *
  * Kódy idú do tých istých stĺpcov ako panel Zaúčtovanie v detaile
  * (`invoices.pohoda_predkontacia`, `pohoda_clenenie_dph`, `kv_clenenie`).
- * Prázdne pole znamená „predvolené“: pri uložení ho doplní pravidlo účtovania
+ * Prázdne pole znamená „predvolené“: pri uložení ho doplní pravidlo automatického účtovania
  * (spúšťač v databáze), inak sa pri exporte vezme predvolený kód firmy. Čo
  * sa takto použije, ukazuje prvá voľba („predvolené: 3Fv“) — nič sa
  * neuloží natvrdo, kým to človek sám nezmení.

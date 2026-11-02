@@ -2,7 +2,7 @@
   Automatické zaúčtovanie — čisté funkcie (bez databázy a modelu).
 
   Motor (`auto-uctovanie.server.ts`) skladá návrh z troch zdrojov v pevnom
-  poradí: pravidlo účtovania → zvyk dodávateľa → AI. Členenie DPH a KV sa
+  poradí: pravidlo automatického účtovania → zvyk dodávateľa → AI. Členenie DPH a KV sa
   nikdy nepýta modelu — odvodí ho `odvodClenenia` z režimu dane na doklade,
   lebo tam rozhoduje zákon, nie podobnosť textu.
 

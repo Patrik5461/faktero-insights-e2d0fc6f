@@ -19,8 +19,8 @@ export default {
     "<0>Sicher</0> (Standard) — kontiert selbst Belege, die zu einer Regel oder einer festen Gewohnheit mit einer Sicherheit von mindestens 95 % passen. KI-Vorschläge warten auf Sie.",
   "<0>Plný</0> — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":
     "<0>Voll</0> — kontiert zusätzlich KI-Vorschläge mit einer Sicherheit von mindestens 90 %.",
-  "Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke <0>Zaúčtovanie na kontrolu</0> alebo pri pravidlách účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
-    "Modus und Betragslimit stellt der Inhaber oder Admin des Unternehmens auf der Seite <0>Kontierung zur Prüfung</0> oder bei den Kontierungsregeln ein. Nach dem Einschalten betrifft es nur neue Belege — alte werden nicht von selbst kontiert.",
+  "Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke <0>Zaúčtovanie na kontrolu</0> alebo pri pravidlách automatického účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
+    "Modus und Betragslimit stellt der Inhaber oder Admin des Unternehmens auf der Seite <0>Kontierung zur Prüfung</0> oder bei den Regeln der automatischen Buchung ein. Nach dem Einschalten betrifft es nur neue Belege — alte werden nicht von selbst kontiert.",
   "Kedy doklad čaká na vás": "Wann ein Beleg auf Sie wartet",
   "Doklad sa nezaúčtuje sám nikdy, keď:": "Ein Beleg wird nie von selbst kontiert, wenn:",
   "súčet položiek alebo základ s DPH nesedí so sumou dokladu,":
@@ -47,8 +47,8 @@ export default {
   "Keď rovnakú opravu u toho istého partnera urobíte druhýkrát, Faktero ponúkne <0>vytvoriť pravidlo</0> s predvyplnenými podmienkami. Každá oprava sa zapíše do histórie dokladu.":
     "Wenn Sie dieselbe Korrektur beim selben Partner zum zweiten Mal vornehmen, bietet Faktero an, <0>eine Regel anzulegen</0> — mit vorausgefüllten Bedingungen. Jede Korrektur wird in der Belegchronik festgehalten.",
   "Bankové pohyby": "Bankbewegungen",
-  "<0>Pravidlo účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Pravidlá účtovania</1>.":
-    "<0>Buchungsregel</0> (Sicherheit 100 %) — nach Partner, Text, Zahlungsart, Betreff oder Absender der E-Mail, Land, variablem Symbol oder Belegtyp. Regeln verwalten Sie unter <1>Buchhaltung → Buchungsregeln</1>.",
+  "<0>Pravidlo automatického účtovania</0> (istota 100 %) — podľa partnera, textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu alebo typu dokladu. Pravidlá spravujete v <1>Účtovníctvo → Automatické účtovanie</1>.":
+    "<0>Regel der automatischen Buchung</0> (Sicherheit 100 %) — nach Partner, Text, Zahlungsart, Betreff oder Absender der E-Mail, Land, variablem Symbol oder Belegtyp. Regeln verwalten Sie unter <1>Buchhaltung → Automatische Buchung</1>.",
   "Pohyby sa zaúčtujú pri vývoze výpisu do Pohody: pravidlo pre banku (účet, smer, protistrana) má prednosť, spárovaný pohyb dostane predvolenú predkontáciu pre banku. Pri nespárovaných pohyboch sa AI nepýta. Pravidlo pre banku s výsledkom <0>Spárované bez dokladu</0> (poplatky, mzdy, odvody) vybaví pohyb hneď, ako príde z banky alebo z nahratého výpisu — pozri <1>Banka</1>.":
     "Bankbewegungen werden beim Export des Kontoauszugs nach Pohoda gebucht: Die Bankregel (Konto, Richtung, Gegenpartei) hat Vorrang, eine zugeordnete Bewegung erhält die Standard-Vorkontierung für die Bank. Bei nicht zugeordneten Bewegungen wird die KI nicht gefragt. Eine Bankregel mit dem Ergebnis <0>Ohne Beleg zugeordnet</0> (Gebühren, Löhne, Abgaben) erledigt die Bewegung sofort, wenn sie von der Bank oder aus einem hochgeladenen Kontoauszug kommt — siehe <1>Bank</1>.",
 };

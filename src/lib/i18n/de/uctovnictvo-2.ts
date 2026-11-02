@@ -12,7 +12,7 @@ export default {
   "Predvolené podľa druhu dokladu": "Standardwerte nach Belegart",
   "Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá":
     "Wird verwendet, wenn der Beleg keine eigene Vorkontierung hat — diese vergibt",
-  "pravidlo účtovania": "eine Buchungsregel",
+  "pravidlo automatického účtovania": "eine Regel der automatischen Buchung",
   "alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.":
     "oder ein Mensch beim Verbuchen. Leeres Feld = Pohoda lässt den Beleg unverbucht.",
   Doklad: "Beleg",
@@ -303,14 +303,14 @@ export default {
     "Das Kontokürzel bestimmt, zu welchem Bankkonto in Pohoda die Belege gehören; ohne es ordnet Pohoda sie selbst zu und der Buchhalter muss sie manuell ändern.",
   "Výpis je k účtu {ucet}.": "Der Kontoauszug gehört zum Konto {ucet}.",
   "Pozor, výpis je v mene {mena}.": "Achtung, der Kontoauszug ist in der Währung {mena}.",
-  "Pravidlá účtovania pre banku dajú predkontáciu":
-    "Die Buchungsregeln für die Bank vergeben eine Vorkontierung für",
+  "Pravidlá automatického účtovania pre banku dajú predkontáciu":
+    "Die Regeln der automatischen Buchung für die Bank vergeben eine Vorkontierung für",
   "{a} z {b}": "{a} von {b}",
   "pohybov — majú prednosť pred predkontáciami nižšie.":
     "Bewegungen — sie haben Vorrang vor den Vorkontierungen unten.",
   "Predkontáciu podľa účtu, smeru a protistrany vedia dávať aj":
     "Eine Vorkontierung nach Konto, Richtung und Gegenpartei vergeben auch die",
-  "pravidlá účtovania": "Buchungsregeln",
+  "pravidlá automatického účtovania": "Regeln der automatischen Buchung",
   "Predkontácie podľa označenia platby": "Vorkontierungen nach Zahlungskennzeichnung",
   "Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne, dostane spoločnú predkontáciu vyššie.":
     "Gebühr, Steuer und Rechnungszahlung werden jeweils anders verbucht. Wenn Sie hier Vorkontierungen aus Pohoda eintragen, kommt der Beleg direkt verbucht an; was Sie leer lassen, erhält die gemeinsame Vorkontierung oben.",

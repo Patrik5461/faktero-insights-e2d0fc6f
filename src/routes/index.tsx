@@ -1303,7 +1303,7 @@ function AccountingSection() {
             </h2>
             <p className="mt-5 max-w-md text-muted-foreground">
               {t(
-                "Pohoda konektor aj XML, sedem formátov exportu vrátane DATEV, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.",
+                "Pohoda konektor aj XML, sedem formátov exportu vrátane DATEV, výkazy k DPH, automatické účtovanie a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.",
               )}
             </p>
             <Link

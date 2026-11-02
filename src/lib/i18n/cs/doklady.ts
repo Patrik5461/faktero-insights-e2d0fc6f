@@ -30,7 +30,7 @@ export default {
   Akcie: "Akce",
   "ako doklad": "jako doklad",
   alebo: "nebo",
-  "alebo z pravidla účtovania.": "nebo z pravidla účtování.",
+  "alebo z pravidla automatického účtovania.": "nebo z pravidla automatického účtování.",
   appka: "aplikace",
   Apr: "Dub",
   "Aspoň jedna faktúra vystavená": "Alespoň jedna faktura vystavena",

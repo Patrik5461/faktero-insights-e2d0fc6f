@@ -1,4 +1,4 @@
-// Pravidlá účtovania (e-mail, krajina, VS, pokladňa, rozúčtovanie), predlohy zaúčtovania, účtovné položky a zaokrúhlenie.
+// Automatické účtovanie (e-mail, krajina, VS, pokladňa, rozúčtovanie), predlohy zaúčtovania, účtovné položky a zaokrúhlenie.
 export default {
   "E-mail odosielateľa obsahuje": "E-mail odesílatele obsahuje",
   "Variabilný symbol (stály, napr. zmluva)": "Variabilní symbol (stálý, např. smlouva)",
@@ -67,8 +67,8 @@ export default {
   "Pravidlá, predlohy a pravidlo z dokladu": "Pravidla, předlohy a pravidlo z dokladu",
   "Pravidlo platí, keď na doklad sedia všetky vyplnené podmienky: dodávateľ (IČO alebo časť názvu), typ faktúry, spôsob úhrady, kto doklad nahral, predmet e-mailu, <0>e-mail odosielateľa</0> (napr. <1>@telekom.sk</1>), <2>krajina dodávateľa</2> (bez nej na doklade platí krajina vašej firmy) a pri prijatej faktúre <3>stály variabilný symbol</3> — zmluva s operátorom či energiami. Pravidlo podľa partnera alebo VS má prednosť pred ostatnými.":
     "Pravidlo platí, když na doklad sedí všechny vyplněné podmínky: dodavatel (IČO nebo část názvu), typ faktury, způsob úhrady, kdo doklad nahrál, předmět e-mailu, <0>e-mail odesílatele</0> (např. <1>@telekom.sk</1>), <2>země dodavatele</2> (bez ní na dokladu platí země vaší firmy) a u přijaté faktury <3>stálý variabilní symbol</3> — smlouva s operátorem či energiemi. Pravidlo podle partnera nebo VS má přednost před ostatními.",
-  "<0>Predloha</0> (záložka Predlohy v Pravidlách účtovania) je pomenované zaúčtovanie bez podmienky, napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije — pri doklade ju vyberiete cez „Použiť predlohu…“ a doplní kódy, pokladňu, rad aj poznámku naraz.":
-    "<0>Předloha</0> (záložka Předlohy v Pravidlech účtování) je pojmenované zaúčtování bez podmínky, například „Nákup PHM – platba kartou“. Sama se nepoužije — u dokladu ji vyberete přes „Použít předlohu…“ a doplní kódy, pokladnu, řadu i poznámku najednou.",
+  "<0>Predloha</0> (záložka Predlohy v Automatickom účtovaní) je pomenované zaúčtovanie bez podmienky, napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije — pri doklade ju vyberiete cez „Použiť predlohu…“ a doplní kódy, pokladňu, rad aj poznámku naraz.":
+    "<0>Předloha</0> (záložka Předlohy v Automatickém účtování) je pojmenované zaúčtování bez podmínky, například „Nákup PHM – platba kartou“. Sama se nepoužije — u dokladu ji vyberete přes „Použít předlohu…“ a doplní kódy, pokladnu, řadu i poznámku najednou.",
   "V Nespracovaných dokladoch (vedľa tlačidla Vytvoriť) a pri zaúčtovaní prijatej faktúry či bločku je <0>Vytvoriť pravidlo z tohto dokladu</0>: predvyplní dodávateľa, kódy a ponúkne e-mail a VS z dokladu. Keď podobné pravidlo už máte, otvorí sa to — nevznikne druhé.":
     "V Nezpracovaných dokladech (vedle tlačítka Vytvořit) a při zaúčtování přijaté faktury či účtenky je <0>Vytvořit pravidlo z tohoto dokladu</0>: předvyplní dodavatele, kódy a nabídne e-mail a VS z dokladu. Když podobné pravidlo už máte, otevře se to — nevznikne druhé.",
 };

@@ -16,7 +16,7 @@ import { PouzitPredlohu } from "./PouzitPredlohu";
 type PravidloSId = Pravidlo & { id: string };
 
 /**
- * Pravidlo účtovania pri spracovaní dokladu. Keď doklad spĺňa podmienky
+ * Pravidlo automatického účtovania pri spracovaní dokladu. Keď doklad spĺňa podmienky
  * pravidla, jeho kódy sa doplnia samy (hviezdička pri poli); po zmene
  * dodávateľa sa pravidlo vyhodnotí znova. Keď sedí viac pravidiel, človek
  * vyberie iné. Bez pravidla ponúkne jeho vytvorenie pre tohto dodávateľa.
@@ -132,7 +132,7 @@ export function PravidloNespracovaneho({
       {pouzite ? (
         <span
           className="dk-text-pozor inline-flex items-center gap-1 font-medium"
-          title={t("Kódy doplnilo pravidlo účtovania")}
+          title={t("Kódy doplnilo pravidlo automatického účtovania")}
         >
           <Star className="h-3.5 w-3.5 fill-current" />{" "}
           {t("Pravidlo „{nazov}“", { nazov: pouzite.nazov })}
@@ -141,7 +141,7 @@ export function PravidloNespracovaneho({
       {ine.length ? (
         <>
           <select
-            aria-label={t("Pravidlo účtovania")}
+            aria-label={t("Pravidlo automatického účtovania")}
             value={vybrane}
             onChange={(e) => setVybrane(e.target.value)}
             className="rounded-md border border-input bg-background px-2 py-1 text-xs"

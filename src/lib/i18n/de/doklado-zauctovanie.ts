@@ -25,8 +25,8 @@ export default {
   "Faktúra je už uhradená": "Rechnung ist bereits bezahlt",
   "Položky nesedia so sumou o {rozdiel} — doplní sa vyrovnávacia položka.":
     "Die Positionen weichen um {rozdiel} vom Betrag ab — eine Ausgleichsposition wird ergänzt.",
-  "Doplnilo pravidlo účtovania podľa dodávateľa.":
-    "Von der Buchungsregel anhand des Lieferanten ergänzt.",
+  "Doplnilo pravidlo automatického účtovania podľa dodávateľa.":
+    "Von der Regel der automatischen Buchung anhand des Lieferanten ergänzt.",
   pravidlo: "Regel",
   "Vyplňte aspoň jedno pole, ktoré sa má zmeniť.":
     "Füllen Sie mindestens ein Feld aus, das geändert werden soll.",
@@ -48,8 +48,8 @@ export default {
 
   // Manuály (Pomoc)
   "Kam sa čo uloží:": "Wohin was gespeichert wird:",
-  "Rovno <0>zaúčtujte</0>: predkontácia, členenie DPH a kontrolného výkazu, stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí <1>pravidlo účtovania</1>, jeho kódy sa doplnia samy a pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí viac pravidiel, iné vyberiete cez <2>Použiť pravidlo</2>.":
-    "<0>Verbuchen</0> Sie direkt: Vorkontierung, MwSt.-Kennzeichen und Kennzeichen der Kontrollmeldung (KV DPH), Kostenstelle, Tätigkeit, Projekt, Kategorie. Passt eine <1>Buchungsregel</1> auf den Lieferanten, werden ihre Codes automatisch ergänzt und am Feld leuchtet ein Stern. Nach einer Änderung des Lieferanten wird die Regel neu ausgewertet; passen mehrere Regeln, wählen Sie über <2>Regel anwenden</2> eine andere.",
+  "Rovno <0>zaúčtujte</0>: predkontácia, členenie DPH a kontrolného výkazu, stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí <1>pravidlo automatického účtovania</1>, jeho kódy sa doplnia samy a pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí viac pravidiel, iné vyberiete cez <2>Použiť pravidlo</2>.":
+    "<0>Verbuchen</0> Sie direkt: Vorkontierung, MwSt.-Kennzeichen und Kennzeichen der Kontrollmeldung (KV DPH), Kostenstelle, Tätigkeit, Projekt, Kategorie. Passt eine <1>Regel der automatischen Buchung</1> auf den Lieferanten, werden ihre Codes automatisch ergänzt und am Feld leuchtet ein Stern. Nach einer Änderung des Lieferanten wird die Regel neu ausgewertet; passen mehrere Regeln, wählen Sie über <2>Regel anwenden</2> eine andere.",
   "Kliknite na <0>Vytvoriť</0> — doklad sa presunie medzi prijaté faktúry, doklady alebo iné doklady a otvorí sa ďalší nespracovaný. <1>Uložiť zmeny</1> ho nechá rozpracovaný na neskôr.":
     "Klicken Sie auf <0>Erstellen</0> — der Beleg wird in die Eingangsrechnungen, Belege oder Sonstigen Belege verschoben und der nächste unverarbeitete Beleg öffnet sich. <1>Änderungen speichern</1> lässt ihn für später in Verarbeitung.",
   "Vytvorený doklad je <0>skontrolovaný a pripravený na export</0>. Bloček je spracovaný, prijatá faktúra zaúčtovaná — keď sa pre ňu dá určiť predkontácia aj členenie DPH (z dokladu, z pravidla, z kategórie alebo predvolené v <1>Predkontáciách</1>). Bez nich čaká medzi prijatými faktúrami na zaúčtovanie. Zaplatenú faktúru označíte voľbou <2>Faktúra je už uhradená</2>.":

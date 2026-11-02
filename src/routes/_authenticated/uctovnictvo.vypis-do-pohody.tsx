@@ -372,7 +372,7 @@ function VypisDoPohodyPage() {
     (o) => pocetPodlaOznacenia(o.kod) > 0 || nastavenia.predkontacie[o.kod],
   );
 
-  /* Pravidlá účtovania pre banku — v XML majú prednosť pred predkontáciou podľa označenia. */
+  /* Pravidlá automatického účtovania pre banku — v XML majú prednosť pred predkontáciou podľa označenia. */
   const [pravidlaBanky, setPravidlaBanky] = useState<Pravidlo[]>([]);
   useEffect(() => {
     if (!cid) return;
@@ -590,7 +590,7 @@ function VypisDoPohodyPage() {
                 <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-4">
                   {pravidlaBanky.length ? (
                     <>
-                      {t("Pravidlá účtovania pre banku dajú predkontáciu")}{" "}
+                      {t("Pravidlá automatického účtovania pre banku dajú predkontáciu")}{" "}
                       <strong>
                         {t("{a} z {b}", { a: sPravidlom, b: vybrane.length })}
                       </strong>{" "}
@@ -600,7 +600,7 @@ function VypisDoPohodyPage() {
                     <>{t("Predkontáciu podľa účtu, smeru a protistrany vedia dávať aj")} </>
                   )}
                   <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
-                    {t("pravidlá účtovania")}
+                    {t("pravidlá automatického účtovania")}
                   </Link>
                   .
                 </p>

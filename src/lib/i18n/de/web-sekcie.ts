@@ -550,8 +550,8 @@ export default {
   "Digitálny poštár": "Digitaler Postbote",
   "Pre účtovníkov": "Für Buchhalter",
   "Účtovné podklady jedným klikom": "Buchhaltungsunterlagen mit einem Klick",
-  "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
-    "Pohoda-Export und Konnektor, sechs Exportformate, Buchungsregeln, Auszüge von Zahlungsanbietern und monatliche Unterlagen — Faktero bereitet alles vor, was Sie brauchen.",
+  "Pohoda export aj konektor, šesť formátov exportu, automatické účtovanie, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
+    "Pohoda-Export und Konnektor, sechs Exportformate, automatische Buchung, Auszüge von Zahlungsanbietern und monatliche Unterlagen — Faktero bereitet alles vor, was Sie brauchen.",
   "Spolupracujte so svojimi klientmi efektívnejšie. Faktero generuje účtovné podklady jedným klikom.":
     "Arbeiten Sie effizienter mit Ihren Mandanten zusammen. Faktero erstellt Buchhaltungsunterlagen mit einem Klick.",
   "Pohoda export": "Pohoda-Export",

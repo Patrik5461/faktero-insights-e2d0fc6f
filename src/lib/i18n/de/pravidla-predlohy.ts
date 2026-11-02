@@ -1,4 +1,4 @@
-// Pravidlá účtovania (e-mail, krajina, VS, pokladňa, rozúčtovanie), predlohy zaúčtovania, účtovné položky a zaokrúhlenie.
+// Automatické účtovanie (e-mail, krajina, VS, pokladňa, rozúčtovanie), predlohy zaúčtovania, účtovné položky a zaokrúhlenie.
 export default {
   "E-mail odosielateľa obsahuje": "E-Mail des Absenders enthält",
   "Variabilný symbol (stály, napr. zmluva)": "Verwendungszweck/VS (fest, z. B. Vertrag)",
@@ -68,8 +68,8 @@ export default {
   "Pravidlá, predlohy a pravidlo z dokladu": "Regeln, Vorlagen und Regel aus dem Beleg",
   "Pravidlo platí, keď na doklad sedia všetky vyplnené podmienky: dodávateľ (IČO alebo časť názvu), typ faktúry, spôsob úhrady, kto doklad nahral, predmet e-mailu, <0>e-mail odosielateľa</0> (napr. <1>@telekom.sk</1>), <2>krajina dodávateľa</2> (bez nej na doklade platí krajina vašej firmy) a pri prijatej faktúre <3>stály variabilný symbol</3> — zmluva s operátorom či energiami. Pravidlo podľa partnera alebo VS má prednosť pred ostatnými.":
     "Eine Regel gilt, wenn auf den Beleg alle ausgefüllten Bedingungen zutreffen: Lieferant (IČO oder Teil des Namens), Rechnungsart, Zahlungsart, wer den Beleg hochgeladen hat, E-Mail-Betreff, <0>E-Mail des Absenders</0> (z. B. <1>@telekom.sk</1>), <2>Land des Lieferanten</2> (ohne Angabe auf dem Beleg gilt das Land Ihrer Firma) und bei Eingangsrechnungen ein <3>fester Verwendungszweck (VS)</3> — Vertrag mit Telefon- oder Energieanbieter. Eine Regel nach Partner oder VS hat Vorrang vor den übrigen.",
-  "<0>Predloha</0> (záložka Predlohy v Pravidlách účtovania) je pomenované zaúčtovanie bez podmienky, napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije — pri doklade ju vyberiete cez „Použiť predlohu…“ a doplní kódy, pokladňu, rad aj poznámku naraz.":
-    "Eine <0>Vorlage</0> (Reiter Vorlagen in den Kontierungsregeln) ist eine benannte Kontierung ohne Bedingung, z. B. „Tanken – Kartenzahlung“. Sie wird nie automatisch angewendet — beim Beleg wählen Sie sie über „Vorlage anwenden…“ und sie füllt Codes, Kasse, Nummernkreis und Notiz auf einmal aus.",
+  "<0>Predloha</0> (záložka Predlohy v Automatickom účtovaní) je pomenované zaúčtovanie bez podmienky, napríklad „Nákup PHM – platba kartou“. Sama sa nepoužije — pri doklade ju vyberiete cez „Použiť predlohu…“ a doplní kódy, pokladňu, rad aj poznámku naraz.":
+    "Eine <0>Vorlage</0> (Reiter Vorlagen in den Regeln der automatischen Buchung) ist eine benannte Kontierung ohne Bedingung, z. B. „Tanken – Kartenzahlung“. Sie wird nie automatisch angewendet — beim Beleg wählen Sie sie über „Vorlage anwenden…“ und sie füllt Codes, Kasse, Nummernkreis und Notiz auf einmal aus.",
   "V Nespracovaných dokladoch (vedľa tlačidla Vytvoriť) a pri zaúčtovaní prijatej faktúry či bločku je <0>Vytvoriť pravidlo z tohto dokladu</0>: predvyplní dodávateľa, kódy a ponúkne e-mail a VS z dokladu. Keď podobné pravidlo už máte, otvorí sa to — nevznikne druhé.":
     "In den unverarbeiteten Belegen (neben der Schaltfläche Erstellen) und beim Kontieren einer Eingangsrechnung oder eines Kassenbons gibt es <0>Regel aus diesem Beleg erstellen</0>: Sie füllt Lieferant und Codes vor und bietet E-Mail und VS aus dem Beleg an. Gibt es schon eine ähnliche Regel, wird diese geöffnet — es entsteht keine zweite.",
 };

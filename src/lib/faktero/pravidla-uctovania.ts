@@ -567,7 +567,7 @@ export function podobnePravidlo<T extends Pravidlo>(pravidla: T[], z: ZakladPrav
 }
 
 /**
- * Parametre odkazu na stránku Pravidlá účtovania, ktoré predvyplnia nové
+ * Parametre odkazu na stránku Automatické účtovanie, ktoré predvyplnia nové
  * pravidlo z dokladu — alebo otvoria podobné existujúce (`upravit`).
  */
 export function hladaniePravidlaZDokladu(

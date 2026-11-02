@@ -10,8 +10,8 @@ export default {
   "UStVA pre nemecké firmy": "UStVA pro německé firmy",
   "Kennzahlen za mesiac či štvrťrok zostavené z dokladov — v CSV a PDF na prepis do ELSTER.":
     "Kennzahlen za měsíc či čtvrtletí sestavené z dokladů — v CSV a PDF k přepisu do ELSTER.",
-  "Pohoda konektor aj XML, sedem formátov exportu vrátane DATEV, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.":
-    "Konektor i XML pro Pohodu, sedm formátů exportu včetně DATEV, výkazy k DPH, pravidla účtování a výpisy z platebních bran — připraveno pro desítky klientů bez ručního přepisování.",
+  "Pohoda konektor aj XML, sedem formátov exportu vrátane DATEV, výkazy k DPH, automatické účtovanie a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.":
+    "Konektor i XML pro Pohodu, sedm formátů exportu včetně DATEV, výkazy k DPH, automatické účtování a výpisy z platebních bran — připraveno pro desítky klientů bez ručního přepisování.",
   "Nemecká faktúra, ZUGFeRD a XRechnung, export do DATEV a prehľad UStVA pre firmy so sídlom v Nemecku.":
     "Německá faktura, ZUGFeRD a XRechnung, export do DATEV a přehled UStVA pro firmy se sídlem v Německu.",
   "Pri založení firmy vyberiete krajinu Nemecko a Faktero sa prispôsobí: sadzby 19 % a 7 %, Steuernummer a USt-IdNr. namiesto DIČ a IČ DPH a doklady po nemecky.":
@@ -49,8 +49,8 @@ export default {
   Odoslanie: "Odeslání",
   "Faktero nemecké e-faktúry nevysiela cez Peppol ani na portály úradov. PDF so ZUGFeRD pošlete e-mailom ako doteraz, XRechnung odošlete alebo nahráte sami.":
     "Faktero německé e-faktury neodesílá přes Peppol ani na portály úřadů. PDF se ZUGFeRD pošlete e-mailem jako dosud, XRechnung odešlete nebo nahrajete sami.",
-  "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
-    "Export i konektor pro Pohodu, sedm formátů exportu včetně DATEV, pravidla účtování, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
+  "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, automatické účtovanie, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
+    "Export i konektor pro Pohodu, sedm formátů exportu včetně DATEV, automatické účtování, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
   "Osem účtovných exportov": "Osm účetních exportů",
   "Pohoda, Omega, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV — vyberiete program a stiahnete.":
     "Pohoda, Omega, Money S3, ABRA Flexi, MRP, DATEV, ISDOC a CSV — zvolíte program a stáhnete.",

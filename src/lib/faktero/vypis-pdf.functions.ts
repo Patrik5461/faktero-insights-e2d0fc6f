@@ -479,7 +479,7 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
     }
 
     /*
-      Pravidlá účtovania pre banku (účet, smer, typ pohybu, protistrana) —
+      Pravidlá automatického účtovania pre banku (účet, smer, typ pohybu, protistrana) —
       predkontácia z pravidla má prednosť pred nastavením podľa označenia.
     */
     const { pravidloPohybu } = await import("./pravidla-uctovania");

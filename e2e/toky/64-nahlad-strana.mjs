@@ -98,7 +98,7 @@ export default {
     const firma = t.firmy.test;
     const png = await fotkaBlocku({ riadky: [`${t.znacka} Obchod`, "Spolu 12,30 EUR"], uhol: 0 });
 
-    // Bloček so súborom (pravidlo účtovania, aby automat nepýtal AI).
+    // Bloček so súborom (pravidlo automatického účtovania, aby automat nepýtal AI).
     const dodavatel = `${t.znacka} Obchod s.r.o.`;
     await pravidloPreDodavatela(t, dodavatel);
     const cestaB = `${firma}/${t.znacka}-nahlad.png`;
