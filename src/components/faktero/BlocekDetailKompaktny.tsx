@@ -9,6 +9,8 @@ import { menoSpracovatela, nahralDokladu, spracovanieDokladu } from "@/lib/fakte
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
+import { kontrolaUlozenehoBlocku, zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
+import { KontrolaSumyBlocku, potvrdRozdielSumy } from "./KontrolaSumyBlocku";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import type { PoleZauctovaniaDokladu } from "@/lib/faktero/zauctovanie-dokladu";
@@ -166,6 +168,8 @@ export function BlocekDetailKompaktny({
       toast.error(t("Vyberte predkontáciu"));
       return;
     }
+    // Bloček, ktorého súčet nesedí so sumou, sa zaúčtuje len po potvrdení.
+    if (!(await potvrdRozdielSumy(kontrolaSumy, menaDokladu, t))) return;
     const data: Record<string, unknown> = {
       company_id: row.company_id,
       ids: [row.id],
@@ -212,9 +216,10 @@ export function BlocekDetailKompaktny({
   const polozky = Array.isArray(row.items) ? row.items : [];
   const rozpis = rozpisBlocku(row);
   const celkom = Number(row.total_amount ?? 0);
-  const sumaSedi =
-    Math.abs(celkom) > 0 &&
-    Math.abs(Number(row.net_amount ?? 0) + Number(row.vat_amount ?? 0) - celkom) < 0.015;
+  // Základ + DPH (rozpis, ten ide do Pohody) + zaokrúhlenie musí sedieť so sumou bločku.
+  const kontrolaSumy = kontrolaUlozenehoBlocku(row);
+  const zaokruhlenie = zaokruhlenieZPoloziek(row.items);
+  const sumaSedi = Math.abs(celkom) > 0 && kontrolaSumy.sedi;
   const nazovSuboru = `${row.document_number || t("Bloček")}.${
     String(row.file_path ?? "")
       .split(".")
@@ -465,6 +470,14 @@ export function BlocekDetailKompaktny({
               </Hodnota>
             </div>
           ))}
+          {zaokruhlenie ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Hodnota popis="Zaokrúhlenie (bez DPH)">
+                <span className="tabular-nums">{formatujCislo(zaokruhlenie, 2)}</span>
+              </Hodnota>
+            </div>
+          ) : null}
+          <KontrolaSumyBlocku kontrola={kontrolaSumy} mena={menaDokladu} />
         </Sekcia>
 
         <Sekcia nadpis="Obchodník">

@@ -288,7 +288,11 @@ export function mapujFsDoklad(r: FsDoklad): EkasaDecoded {
    */
   const suhrn: any[] = Array.isArray(r.vatSummary) ? r.vatSummary : [];
   const dphZoSuhrnu = suhrn.reduce((s, v) => s + (cislo(v?.vatAmount) ?? 0), 0);
-  const zakladZoSuhrnu = suhrn.reduce((s, v) => s + (cislo(v?.vatBase) ?? 0), 0);
+  /*
+    Záporný základ v súhrne (zaokrúhlenie hotovosti v 0 %) do základu nepatrí —
+    zaokrúhlenie je samostatná položka bločku a rozpis sadzieb ho tiež nemá.
+  */
+  const zakladZoSuhrnu = suhrn.reduce((s, v) => s + Math.max(0, cislo(v?.vatBase) ?? 0), 0);
   const dph = suhrn.length
     ? dphZoSuhrnu
     : (cislo(r.vatAmountBasic) ?? 0) +

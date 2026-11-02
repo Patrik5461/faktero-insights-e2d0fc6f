@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { nastavZaokruhlenie, zaokruhlenieZPoloziek } from "./zaokruhlenie-blocku";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { jeEetQr, parseEetQr } from "./eet-cz";
@@ -38,6 +39,8 @@ export type BlocekPolozka = {
   /** Predkontácia položky; prázdna = predkontácia dokladu. */
   predkontacia?: string | null;
   clenenie?: string | null;
+  /** Položka je zaokrúhlenie sumy (hotovosť na 5 centov), nie plnenie v 0 %. */
+  zaokruhlenie?: boolean;
 };
 
 export type BlocekVysledok = {
@@ -170,8 +173,12 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           supplier_address: d.adresa,
           total: d.suma,
           vat_amount: d.dph,
+          // Základ bez zaokrúhlenia — to je samostatná položka bločku.
           net_amount:
-            d.zaklad ?? (d.suma != null && d.dph != null ? round2(d.suma - d.dph) : undefined),
+            d.zaklad ??
+            (d.suma != null && d.dph != null
+              ? round2(d.suma - d.dph - zaokruhlenieZPoloziek(items))
+              : undefined),
           // Do hlavičky ide sadzba s najvyšším základom; celý rozpis ide vedľa,
           // lebo bloček býva zmiešaný a jedna sadzba ho nepopíše.
           vat_rate: d.sadzby?.length
@@ -248,7 +255,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       };
     }
 
-    const items: BlocekPolozka[] = (ocr.items ?? []).map((p: any) => {
+    const precitane: BlocekPolozka[] = (ocr.items ?? []).map((p: any) => {
       const mnozstvo = Number(p?.quantity) || 1;
       const cena = Number(p?.unit_price) || 0;
       return {
@@ -261,6 +268,17 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
         total: Math.round(mnozstvo * cena * 100) / 100,
       };
     });
+    /*
+      Zaokrúhlenie (hotovosť na 5 centov) ide ako samostatná položka bez DPH —
+      z poľa „rounding“ alebo z riadku „Zaokrúhlenie“, ak ho čítanie dalo medzi
+      položky. Suma bločku je po zaokrúhlení, rozpis DPH bez neho.
+    */
+    const zaokrOcr = Number(ocr.rounding);
+    const zaokr =
+      Number.isFinite(zaokrOcr) && zaokrOcr && Math.abs(zaokrOcr) <= 0.05
+        ? round2(zaokrOcr)
+        : zaokruhlenieZPoloziek(precitane);
+    const items = nastavZaokruhlenie(precitane, zaokr) as BlocekPolozka[];
 
     const vysledok: BlocekVysledok = {
       zdroj: "foto",
@@ -272,7 +290,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       supplier_ic_dph: ocr.ic_dph ?? undefined,
       total: ocr.total ?? undefined,
       vat_amount: ocr.vat_amount ?? undefined,
-      vat_rate: ocr.vat_rate ?? prevazujucaSadzba(items),
+      vat_rate: ocr.vat_rate ?? prevazujucaSadzba(items.filter((p) => !p.zaokruhlenie)),
       currency: ocr.currency ?? "EUR",
       date: ocr.date ?? undefined,
       document_number: ocr.document_number ?? undefined,

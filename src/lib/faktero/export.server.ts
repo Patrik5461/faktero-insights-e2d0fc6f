@@ -28,6 +28,7 @@ import {
 } from "./rozuctovanie";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodyZaokruhlenia } from "./predkontacie";
+import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 import { statEu } from "./sadzby-eu";
@@ -3576,7 +3577,7 @@ export function polozkyBlockuPrePohodu(
 ): PolozkaPrijatej[] {
   const jedinaSadzba = rozpis.length === 1 ? Number(rozpis[0].sadzba) : null;
   const items = (Array.isArray(d?.items) ? d.items : [])
-    .filter((x: any) => String(x?.name ?? "").trim() && !/^\s*zaokr[uú]hl/i.test(String(x.name)))
+    .filter((x: any) => String(x?.name ?? "").trim() && !jePolozkaZaokruhlenia(x) && !/^\s*zaokr[uú]hl/i.test(String(x.name)))
     .map((x: any) =>
       // Bloček s jedinou sadzbou: položka bez sadzby má sadzbu dokladu.
       (x?.vat_rate === null || x?.vat_rate === undefined || x?.vat_rate === "") && jedinaSadzba !== null

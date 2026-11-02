@@ -14,6 +14,14 @@
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 import { najblizsiaSadzba } from "./vat-rates";
 import { datum as datumZAi } from "./mail-prijem";
+import {
+  bezZaokruhlenia,
+  jePolozkaZaokruhlenia,
+  kontrolaSumyBlocku,
+  nastavZaokruhlenie,
+  zaokruhlenieZPoloziek,
+  type KontrolaSumy,
+} from "./zaokruhlenie-blocku";
 
 export type DruhNespracovaneho = "faktura" | "zalohova" | "dobropis" | "blocek" | "ostatny";
 
@@ -60,6 +68,12 @@ export type UdajeNespracovaneho = {
   mena: string;
   rozpis: RiadokRozpisu[];
   celkom: number | null;
+  /**
+   * Zaokrúhlenie (hotovosť na 5 centov, bez DPH) — samostatný riadok:
+   * základ + DPH + zaokrúhlenie = suma. Do bločku ide ako položka
+   * „Zaokrúhlenie“ (`zaokruhlenie-blocku.ts`).
+   */
+  zaokruhlenie?: number | null;
   platba: string;
   kategoria: string;
   opravuje: string;
@@ -198,8 +212,21 @@ export function nacitajUdaje(v: unknown): UdajeNespracovaneho {
     ostatny: { ...z.ostatny, ...(u.ostatny ?? {}) },
     kody: { ...z.kody, ...(u.kody ?? {}) },
     rozpis: Array.isArray(u.rozpis) ? u.rozpis : [],
-    polozky: Array.isArray(u.polozky) ? u.polozky : [],
+    ...zaokruhlenieOddelene(Array.isArray(u.polozky) ? u.polozky : [], u.zaokruhlenie),
   };
+}
+
+/**
+ * Položka „Zaokrúhlenie“ (z bločku, z čítania) sa vyberie zo zoznamu položiek
+ * do vlastného riadku — inak by bola položkou v sadzbe 0 %.
+ */
+function zaokruhlenieOddelene(
+  polozky: UdajeNespracovaneho["polozky"],
+  zaokruhlenie: number | null | undefined,
+): { polozky: UdajeNespracovaneho["polozky"]; zaokruhlenie?: number | null } {
+  if (!polozky.some((p) => jePolozkaZaokruhlenia(p))) return zaokruhlenie == null ? { polozky } : { polozky, zaokruhlenie };
+  const zPoloziek = zaokruhlenieZPoloziek(polozky);
+  return { polozky: bezZaokruhlenia(polozky), zaokruhlenie: zaokruhlenie ?? zPoloziek };
 }
 
 /** Druh dokladu podľa toho, čo prečítala AI; človek ho môže zmeniť. */
@@ -233,6 +260,8 @@ export function rozpisZAi(ai: Record<string, unknown> | null | undefined): Riado
   if (polozky.length && z !== null) {
     const po: Record<string, RiadokRozpisu> = {};
     for (const p of polozky) {
+      // Zaokrúhlenie nie je plnenie v sadzbe 0 % — do rozpisu DPH nepatrí.
+      if (jePolozkaZaokruhlenia(p)) continue;
       const s = num(p?.vat_rate);
       const celk = num(p?.total);
       if (s === null || celk === null) {
@@ -355,6 +384,14 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
       total: num(p.total),
       ...(p.reverse_charge === true ? { pdp: true } : {}),
     }));
+  // Zaokrúhlenie z bločku ide do vlastného riadku, nie medzi položky.
+  if (u.polozky.some((p) => jePolozkaZaokruhlenia(p))) {
+    u.zaokruhlenie = zaokruhlenieZPoloziek(u.polozky);
+    u.polozky = bezZaokruhlenia(u.polozky);
+  } else {
+    const z = num(ai.rounding);
+    if (z && Math.abs(z) <= 0.05) u.zaokruhlenie = r2(z);
+  }
   u.prenesenie = jePrenesenieZAi(ai, u.polozky);
   /*
     Sumy vyťažené v domácej mene, ceny položiek v inej (uprednostnená domáca
@@ -366,6 +403,15 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
   // Spôsob platby z bločku („KARTA“, „HOTOVOSŤ“) — bez neho sa bloček neuloží.
   const platba = t(ai.payment_method, 10).toLowerCase();
   if (platba === "hotovost" || platba === "karta" || platba === "prevod") u.platba = platba;
+  /*
+    Bloček v hotovosti, na ktorom čítanie zaokrúhlenie neuviedlo: rozdiel
+    sumy oproti základu s DPH do 2 centov je zaokrúhlenie na 5 centov.
+  */
+  if (u.zaokruhlenie == null && u.platba === "hotovost" && u.celkom != null && u.rozpis.length) {
+    const s = sucty({ ...u, celkom: null });
+    const rozdiel = r2(u.celkom - s.zaklad - s.dph);
+    if (rozdiel && Math.abs(rozdiel) <= 0.02) u.zaokruhlenie = rozdiel;
+  }
   u.ostatny = {
     druh: t(ai.other_kind, 30) || "ine",
     predmet: t(ai.other_subject, 500),
@@ -379,8 +425,24 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
 export function sucty(u: UdajeNespracovaneho): { zaklad: number; dph: number; celkom: number } {
   const zaklad = r2(u.rozpis.reduce((a, r) => a + (Number(r.zaklad) || 0), 0));
   const dph = r2(u.rozpis.reduce((a, r) => a + (Number(r.dph) || 0), 0));
-  const celkom = u.celkom != null && u.celkom !== ("" as unknown) ? r2(Number(u.celkom)) : r2(zaklad + dph);
+  const celkom =
+    u.celkom != null && u.celkom !== ("" as unknown) ? r2(Number(u.celkom)) : r2(zaklad + dph + (Number(u.zaokruhlenie) || 0));
   return { zaklad, dph, celkom };
+}
+
+/**
+ * Sedí základ + DPH + zaokrúhlenie so sumou dokladu? Pri ručne prepísanej
+ * sume ukáže rozdiel; doklad sa bez potvrdenia nevytvorí.
+ */
+export function kontrolaSumy(u: UdajeNespracovaneho): KontrolaSumy {
+  const s = sucty(u);
+  return kontrolaSumyBlocku({
+    celkom: u.celkom == null ? null : s.celkom,
+    zaklad: s.zaklad,
+    dph: s.dph,
+    zaokruhlenie: u.zaokruhlenie,
+    platba: u.platba,
+  });
 }
 
 /** Názov vyrovnávacej položky — podľa neho ju export spozná. */
@@ -404,11 +466,13 @@ export function rozdielPoloziek(
   );
   const s = sucty(u);
   if (!s.celkom) return null;
-  if (Math.abs(sucet - s.celkom) < 0.005) return null;
+  // Zaokrúhlenie je vlastný riadok — položky sa porovnávajú so sumou pred ním.
+  const celkom = r2(s.celkom - (Number(u.zaokruhlenie) || 0));
+  if (Math.abs(sucet - celkom) < 0.005) return null;
   if (s.zaklad && Math.abs(sucet - s.zaklad) < 0.005) return null;
   // Bližšie k základu = položky sú bez DPH, rozdiel sa ráta voči základu.
-  const netto = s.zaklad > 0 && Math.abs(sucet - s.zaklad) < Math.abs(sucet - s.celkom);
-  return { sucet, rozdiel: r2((netto ? s.zaklad : s.celkom) - sucet), netto };
+  const netto = s.zaklad > 0 && Math.abs(sucet - s.zaklad) < Math.abs(sucet - celkom);
+  return { sucet, rozdiel: r2((netto ? s.zaklad : celkom) - sucet), netto };
 }
 
 /** Doplní vyrovnávaciu položku tak, aby súčet položiek sedel s dokladom. */
@@ -670,7 +734,7 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     payment_method: u.platba || "karta",
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
-    items: u.polozky.length && !u.polozkyVypnute ? polozkyNaZapis(u.polozky) : null,
+    items: polozkyBlocku(u),
     job_id: prazdne(u.jobId),
     vehicle_id: prazdne(u.vehicleId ?? ""),
     pohoda_predkontacia: prazdne(u.kody.predkontacia),
@@ -682,6 +746,13 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     int_poznamka: prazdne(u.kody.intPoznamka),
     komentar: prazdne(u.komentar ?? ""),
   };
+}
+
+/** Položky bločku na zápis — zaokrúhlenie ako samostatná položka bez DPH (aj pri vypnutých položkách). */
+function polozkyBlocku(u: UdajeNespracovaneho) {
+  const ine = u.polozky.length && !u.polozkyVypnute ? polozkyNaZapis(bezZaokruhlenia(u.polozky)) : [];
+  const p = nastavZaokruhlenie(ine, u.zaokruhlenie);
+  return p.length ? p : null;
 }
 
 /** Riadok `other_documents` z údajov (iný doklad). */

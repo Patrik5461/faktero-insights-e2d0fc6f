@@ -7,6 +7,7 @@
   Pohoda zaúčtovala inú daň, než aká ide do priznania z Faktera.
 */
 import { kodClenenia } from "./auto-uctovanie";
+import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
 
 export type RiadokRozuctovania = {
   predkontacia: string | null;
@@ -359,7 +360,8 @@ export function rozuctovaniePolozkami(
   predkontacia: string | null,
   clenenie: string | null,
 ): RiadokRozuctovania[] {
-  const zoznam = Array.isArray(polozky) ? polozky : [];
+  // Zaokrúhlenie bločku nie je plnenie v 0 % — rieši ho export (priceRound), nie rozúčtovanie.
+  const zoznam = (Array.isArray(polozky) ? polozky : []).filter((p) => !jePolozkaZaokruhlenia(p));
   if (!zoznam.some((p) => kod(p.predkontacia) || kod(p.clenenie) || kod(p.kv))) return [];
   const out: RiadokRozuctovania[] = [];
   for (const s of rozpis) {
