@@ -52,6 +52,10 @@ export type ExpenseInput = {
   zdroj?: typeof ZDROJ_APKY;
   /** Čítanie bločku v appke ho rozpoznalo ako zálohovú faktúru. Nie je stĺpec. */
   zalohova?: boolean;
+  /** DIČ dodávateľa z eKasy/QR (stĺpec až po migrácii). */
+  supplier_dic?: string | null;
+  /** Adresa dodávateľa z eKasy ako jeden riadok. Nie je stĺpec. */
+  supplier_address?: string | null;
 };
 
 const inputSchema = z.object({
