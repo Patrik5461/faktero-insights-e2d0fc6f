@@ -198,6 +198,26 @@ async function vyrezObrazka(bitmapa: ImageBitmap, r: Obdlznik): Promise<string> 
   return naBase64(platno);
 }
 
+/** Najbližší predok, ktorý roluje zvisle (panel náhľadu), inak dokument. */
+function rolovaciPredok(el: HTMLElement): HTMLElement {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if ((o === "auto" || o === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return (document.scrollingElement as HTMLElement) ?? document.documentElement;
+}
+
+/** Pri ťahu blízko horného/dolného okraja rolovacej časti ju posunie. */
+function posunPriOkraji(el: HTMLElement, y: number) {
+  const pred = rolovaciPredok(el);
+  const jeDokument = pred === document.scrollingElement || pred === document.documentElement;
+  const hore = jeDokument ? 0 : pred.getBoundingClientRect().top;
+  const dole = jeDokument ? window.innerHeight : pred.getBoundingClientRect().bottom;
+  const OKRAJ = 32;
+  if (y > dole - OKRAJ) pred.scrollBy(0, Math.min(24, y - (dole - OKRAJ)));
+  else if (y < hore + OKRAJ) pred.scrollBy(0, -Math.min(24, hore + OKRAJ - y));
+}
+
 /* ------------------------------------------------------- komponent */
 
 export function NahladSVyberom(props: Props) {
@@ -262,6 +282,8 @@ function Vyber({
   const pdfStrany = useRef<any[]>([]);
   const bitmapa = useRef<Promise<ImageBitmap> | null>(null);
   const obal = useRef<HTMLDivElement>(null);
+  /** Strana a posledná poloha myši počas ťahu — pri rolovaní sa z nich prepočíta koniec. */
+  const tahBod = useRef<{ el: HTMLElement; x: number; y: number } | null>(null);
 
   const maText = strany.some((s) => s.slova.length > 0);
   // Zvýraznenie vyťažených údajov — z tých istých slov, ktoré slúžia na výber.
@@ -348,6 +370,23 @@ function Vyber({
   useEffect(() => {
     if (pole) setOznacene(null);
   }, [pole]);
+
+  // Ťah pokračuje aj pri rolovaní panela (koliesko, automatický posun pri
+  // okraji): koniec obdĺžnika sa prepočíta z polohy myši voči posunutej strane.
+  const tahAktivny = tah !== null;
+  useEffect(() => {
+    if (!tahAktivny) return;
+    const prepocitaj = () => {
+      const b = tahBod.current;
+      if (!b) return;
+      const r = b.el.getBoundingClientRect();
+      const bx = (b.x - r.left) / r.width;
+      const by = (b.y - r.top) / r.height;
+      setTah((t) => (t ? { ...t, bx, by } : t));
+    };
+    window.addEventListener("scroll", prepocitaj, { capture: true, passive: true });
+    return () => window.removeEventListener("scroll", prepocitaj, { capture: true });
+  }, [tahAktivny]);
 
   function bodVStrane(e: ReactPointerEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect();
@@ -442,6 +481,7 @@ function Vyber({
     if (e.button !== 0 || citamVyrez) return;
     const b = bodVStrane(e);
     e.currentTarget.setPointerCapture(e.pointerId);
+    tahBod.current = { el: e.currentTarget, x: e.clientX, y: e.clientY };
     setTah({
       strana,
       ax: b.x,
@@ -458,6 +498,8 @@ function Vyber({
   function pohyb(e: ReactPointerEvent<HTMLDivElement>, strana: number) {
     const b = bodVStrane(e);
     if (tah && tah.strana === strana) {
+      tahBod.current = { el: e.currentTarget, x: e.clientX, y: e.clientY };
+      posunPriOkraji(e.currentTarget, e.clientY);
       const tahane = tah.tahane || Math.hypot(e.clientX - tah.px, e.clientY - tah.py) > PRAH_TAHU;
       setTah({ ...tah, bx: b.x, by: b.y, tahane });
       return;
@@ -471,6 +513,7 @@ function Vyber({
     if (!tah || tah.strana !== strana) return;
     const ta = tah;
     setTah(null);
+    tahBod.current = null;
     if (ta.tahane) {
       const r = obdlznikZBodov(ta.ax, ta.ay, ta.bx, ta.by);
       if (r.w > 0.003 && r.h > 0.003) void dokonciOblast(strana, r);
@@ -514,75 +557,77 @@ function Vyber({
 
   return (
     <div>
-      {/* Lišta výberu */}
-      {pole ? (
-        <div
-          role="status"
-          className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm"
-        >
-          <Crosshair className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            {t("Vyberte text pre pole")} <strong>{nazovPola}</strong> —{" "}
-            {maText
-              ? t("kliknite na text v doklade alebo označte oblasť ťahaním.")
-              : t("označte oblasť ťahaním, prečíta ju AI.")}
-          </span>
-          {citamVyrez && (
-            <Loader2 className="h-4 w-4 animate-spin" aria-label={t("Čítam označenú oblasť")} />
-          )}
-          {onPrepniZvyraznenie && (maText || zvyraznenia.length > 0) ? (
-            <PrepinacZvyraznenia
-              zap={zobrazitZvyraznenie}
-              onPrepni={onPrepniZvyraznenie}
-              className="rounded-md border border-border bg-background p-1 hover:bg-secondary"
-            />
-          ) : null}
-          <button
-            type="button"
-            onClick={onZrus}
-            aria-label={t("Zrušiť výber z dokladu (Esc)")}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
+      {/* Lišta výberu — pri rolovaní dokladu ostáva hore v paneli */}
+      <div className="sticky top-0 z-20 bg-card pb-2">
+        {pole ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm"
           >
-            <X className="h-3.5 w-3.5" /> {t("Zrušiť (Esc)")}
-          </button>
-        </div>
-      ) : (
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>{t("Opraviť pole z dokladu:")}</span>
-          <select
-            aria-label={t("Pole, ktoré sa vyberie z dokladu")}
-            value={volbaPola}
-            onChange={(e) => setVolbaPola(e.target.value as KlucPola)}
-            className="rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
-          >
-            <option value="">{t("— pole —")}</option>
-            {moznosti.map((p) => (
-              <option key={p.kluc} value={p.kluc}>
-                {t(p.nazov)}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={!volbaPola}
-            onClick={() => volbaPola && onVyberPola(volbaPola)}
-            aria-label={t("Vybrať hodnotu poľa z dokladu")}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-secondary disabled:opacity-50"
-          >
-            <Crosshair className="h-3.5 w-3.5" /> {t("Vybrať z dokladu")}
-          </button>
-          {onPrepniZvyraznenie && (maText || zvyraznenia.length > 0) ? (
-            <PrepinacZvyraznenia
-              zap={zobrazitZvyraznenie}
-              onPrepni={onPrepniZvyraznenie}
-              className="ml-auto rounded-md border border-border p-1 hover:bg-secondary"
-            />
-          ) : null}
-          <span className="basis-full">
-            {t("alebo kliknite do poľa vo formulári a potom na text v doklade.")}
-          </span>
-        </div>
-      )}
+            <Crosshair className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              {t("Vyberte text pre pole")} <strong>{nazovPola}</strong> —{" "}
+              {maText
+                ? t("kliknite na text v doklade alebo označte oblasť ťahaním.")
+                : t("označte oblasť ťahaním, prečíta ju AI.")}
+            </span>
+            {citamVyrez && (
+              <Loader2 className="h-4 w-4 animate-spin" aria-label={t("Čítam označenú oblasť")} />
+            )}
+            {onPrepniZvyraznenie && (maText || zvyraznenia.length > 0) ? (
+              <PrepinacZvyraznenia
+                zap={zobrazitZvyraznenie}
+                onPrepni={onPrepniZvyraznenie}
+                className="rounded-md border border-border bg-background p-1 hover:bg-secondary"
+              />
+            ) : null}
+            <button
+              type="button"
+              onClick={onZrus}
+              aria-label={t("Zrušiť výber z dokladu (Esc)")}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
+            >
+              <X className="h-3.5 w-3.5" /> {t("Zrušiť (Esc)")}
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>{t("Opraviť pole z dokladu:")}</span>
+            <select
+              aria-label={t("Pole, ktoré sa vyberie z dokladu")}
+              value={volbaPola}
+              onChange={(e) => setVolbaPola(e.target.value as KlucPola)}
+              className="rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+            >
+              <option value="">{t("— pole —")}</option>
+              {moznosti.map((p) => (
+                <option key={p.kluc} value={p.kluc}>
+                  {t(p.nazov)}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!volbaPola}
+              onClick={() => volbaPola && onVyberPola(volbaPola)}
+              aria-label={t("Vybrať hodnotu poľa z dokladu")}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-secondary disabled:opacity-50"
+            >
+              <Crosshair className="h-3.5 w-3.5" /> {t("Vybrať z dokladu")}
+            </button>
+            {onPrepniZvyraznenie && (maText || zvyraznenia.length > 0) ? (
+              <PrepinacZvyraznenia
+                zap={zobrazitZvyraznenie}
+                onPrepni={onPrepniZvyraznenie}
+                className="ml-auto rounded-md border border-border p-1 hover:bg-secondary"
+              />
+            ) : null}
+            <span className="basis-full">
+              {t("alebo kliknite do poľa vo formulári a potom na text v doklade.")}
+            </span>
+          </div>
+        )}
+      </div>
 
       {stav === "citam" && jePdf && strany.length === 0 && (
         <div className="p-8 text-center text-sm text-muted-foreground">
@@ -814,7 +859,11 @@ function StranaNahladu({
         {slovo && obdlznik(slovo, "rounded-sm bg-primary/25 ring-2 ring-primary")}
         {tah && obdlznik(tah, "border-2 border-dashed border-primary bg-primary/10")}
         {oznacene && obdlznik(oznacene, "border-2 border-primary bg-primary/15")}
-        {hotovo && obdlznik(hotovo, "rounded-sm bg-[color-mix(in_oklch,var(--stav-uspech-bod)_25%,transparent)] ring-2 ring-[var(--stav-uspech-bod)]")}
+        {hotovo &&
+          obdlznik(
+            hotovo,
+            "rounded-sm bg-[color-mix(in_oklch,var(--stav-uspech-bod)_25%,transparent)] ring-2 ring-[var(--stav-uspech-bod)]",
+          )}
       </div>
     </div>
   );
