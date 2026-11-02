@@ -24,7 +24,8 @@ export default {
   "Faktúra je už uhradená": "Faktura je už uhrazená",
   "Položky nesedia so sumou o {rozdiel} — doplní sa vyrovnávacia položka.":
     "Položky nesedí s částkou o {rozdiel} — doplní se vyrovnávací položka.",
-  "Doplnilo pravidlo účtovania podľa dodávateľa.": "Doplnilo pravidlo účtování podle dodavatele.",
+  "Doplnilo pravidlo automatického účtovania podľa dodávateľa.":
+    "Doplnilo pravidlo automatického účtování podle dodavatele.",
   pravidlo: "pravidlo",
   "Vyplňte aspoň jedno pole, ktoré sa má zmeniť.":
     "Vyplňte alespoň jedno pole, které se má změnit.",
@@ -45,8 +46,8 @@ export default {
 
   // Manuály (Pomoc)
   "Kam sa čo uloží:": "Kam se co uloží:",
-  "Rovno <0>zaúčtujte</0>: predkontácia, členenie DPH a kontrolného výkazu, stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí <1>pravidlo účtovania</1>, jeho kódy sa doplnia samy a pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí viac pravidiel, iné vyberiete cez <2>Použiť pravidlo</2>.":
-    "Rovnou <0>zaúčtujte</0>: předkontace, členění DPH a kontrolního výkazu, středisko, činnost, zakázka, kategorie. Když na dodavatele sedí <1>pravidlo účtování</1>, jeho kódy se doplní samy a u pole svítí hvězdička. Po změně dodavatele se pravidlo vyhodnotí znovu; když sedí více pravidel, jiné vyberete přes <2>Použít pravidlo</2>.",
+  "Rovno <0>zaúčtujte</0>: predkontácia, členenie DPH a kontrolného výkazu, stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí <1>pravidlo automatického účtovania</1>, jeho kódy sa doplnia samy a pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí viac pravidiel, iné vyberiete cez <2>Použiť pravidlo</2>.":
+    "Rovnou <0>zaúčtujte</0>: předkontace, členění DPH a kontrolního výkazu, středisko, činnost, zakázka, kategorie. Když na dodavatele sedí <1>pravidlo automatického účtování</1>, jeho kódy se doplní samy a u pole svítí hvězdička. Po změně dodavatele se pravidlo vyhodnotí znovu; když sedí více pravidel, jiné vyberete přes <2>Použít pravidlo</2>.",
   "Kliknite na <0>Vytvoriť</0> — doklad sa presunie medzi prijaté faktúry, doklady alebo iné doklady a otvorí sa ďalší nespracovaný. <1>Uložiť zmeny</1> ho nechá rozpracovaný na neskôr.":
     "Klikněte na <0>Vytvořit</0> — doklad se přesune mezi přijaté faktury, doklady nebo jiné doklady a otevře se další nezpracovaný. <1>Uložit změny</1> ho nechá rozpracovaný na později.",
   "Vytvorený doklad je <0>skontrolovaný a pripravený na export</0>. Bloček je spracovaný, prijatá faktúra zaúčtovaná — keď sa pre ňu dá určiť predkontácia aj členenie DPH (z dokladu, z pravidla, z kategórie alebo predvolené v <1>Predkontáciách</1>). Bez nich čaká medzi prijatými faktúrami na zaúčtovanie. Zaplatenú faktúru označíte voľbou <2>Faktúra je už uhradená</2>.":

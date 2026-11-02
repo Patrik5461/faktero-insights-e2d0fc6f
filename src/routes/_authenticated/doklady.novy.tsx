@@ -1704,7 +1704,7 @@ function NovyDokladPage() {
                   <Link to="/uctovnictvo/predkontacie" className="underline">
                     {t("nastavení predkontácií")}
                   </Link>{" "}
-                  {t("alebo z pravidla účtovania.")}
+                  {t("alebo z pravidla automatického účtovania.")}
                 </p>
                 {search.id && ulozeny && cid ? (
                   <RozuctovaniePanel

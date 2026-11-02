@@ -335,7 +335,7 @@ function krajinaNavrhu(k: KontextFirmy): Krajina | null {
   return k.krajina === "SK" || k.krajina === "CZ" ? k.krajina : null;
 }
 
-/** Pravidlo účtovania, ktoré na prijatú faktúru sedí ako prvé. */
+/** Pravidlo automatického účtovania, ktoré na prijatú faktúru sedí ako prvé. */
 function pravidloPrijatej(row: Record<string, any>, kontext: KontextFirmy) {
   return prvePravidlo(kontext.pravidla, {
     supplier_ico: row.supplier_ico ?? null,

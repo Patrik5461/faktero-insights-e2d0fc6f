@@ -1,4 +1,4 @@
-// Účtovníctvo: DPH prehľad, OSS, výkazy k DPH, pravidlá účtovania, uzávierka, prepojenie s Pohodou.
+// Účtovníctvo: DPH prehľad, OSS, výkazy k DPH, automatické účtovanie, uzávierka, prepojenie s Pohodou.
 export default {
   // uctovnictvo.dph
   "DPH prehľad — Faktero": "MwSt.-Übersicht — Faktero",
@@ -439,7 +439,7 @@ export default {
   "r31 Daň vrátená cestujúcim (§ 60)": "r31 An Reisende erstattete Steuer (§ 60)",
   "r34 Nadmerný odpočet z predchádzajúceho obdobia": "r34 Vorsteuerüberhang aus dem Vorzeitraum",
   // uctovnictvo.pravidla
-  "Pravidlá účtovania — Faktero": "Buchungsregeln — Faktero",
+  "Automatické účtovanie — Faktero": "Automatische Buchung — Faktero",
   "Pravidlo zmazané. Doklady, ktoré už doplnilo, ostávajú, ako sú.":
     "Regel gelöscht. Belege, die sie bereits ergänzt hat, bleiben unverändert.",
   "Žiadny neodovzdaný doklad bez pravidla na pravidlá nesedí.":
@@ -450,7 +450,7 @@ export default {
     "Die Regeln haben {n} Belege ergänzt (Kassenbons, Eingangs- und Ausgangsrechnungen).",
   "Pravidlá doplnili {n} dokladov (bločky, prijaté aj vystavené faktúry).":
     "Die Regeln haben {n} Belege ergänzt (Kassenbons, Eingangs- und Ausgangsrechnungen).",
-  "Pravidlá účtovania": "Buchungsregeln",
+  "Automatické účtovanie": "Automatische Buchung",
   "Automatické účtovanie: bloček, prijatá aj vystavená faktúra či pohyb v banke dostane predkontáciu, členenie DPH a KV sám — hneď, ako vznikne.":
     "Automatische Buchung: Kassenbon, Eingangs- und Ausgangsrechnung oder Bankbewegung erhalten Vorkontierung, MwSt.-Kennzeichen und KV-Gliederung automatisch — sobald sie entstehen.",
   "Nové pravidlo": "Neue Regel",

@@ -204,8 +204,8 @@ export default {
   "Digitálny poštár": "Digitaler Postbote",
   "Pre účtovníkov": "Für Buchhalter",
   "jedným klikom": "mit einem Klick",
-  "Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, pravidlá účtovania a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.":
-    "Pohoda-Konnektor und XML, sechs Exportformate, MwSt.-Meldungen, Buchungsregeln und Auszüge von Zahlungsanbietern — vorbereitet für Dutzende Mandanten ohne manuelles Abtippen.",
+  "Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, automatické účtovanie a výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.":
+    "Pohoda-Konnektor und XML, sechs Exportformate, MwSt.-Meldungen, automatische Buchung und Auszüge von Zahlungsanbietern — vorbereitet für Dutzende Mandanten ohne manuelles Abtippen.",
   "Vyskúšať pre účtovnícku firmu": "Für Ihre Buchhaltungskanzlei testen",
   "Jednoduchý cenník. 30 dní zdarma.": "Einfache Preise. 30 Tage kostenlos.",
   "Začnite zdarma, prejdite na platený plán až keď vám Faktero ušetrí čas.":

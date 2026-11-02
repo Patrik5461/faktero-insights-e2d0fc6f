@@ -101,7 +101,7 @@ const sections: HelpSection[] = [
         <p>
           Zbalená časť <strong>Účtovné nastavenia</strong> na konci formulára má dátum daňovej
           povinnosti, typ platby, účtovnú položku (predkontáciu), členenie DPH a KV DPH. Prázdne
-          pole znamená predvolené — kód z pravidla účtovania, inak z nastavení firmy — takže
+          pole znamená predvolené — kód z pravidla automatického účtovania, inak z nastavení firmy — takže
           účtovník faktúru po vystavení nemusí otvárať zvlášť.
         </p>
       </>

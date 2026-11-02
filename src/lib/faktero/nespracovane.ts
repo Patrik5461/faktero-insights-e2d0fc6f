@@ -134,7 +134,7 @@ export type UdajeNespracovaneho = {
   /** Krátke zdôvodnenie návrhu AI („telekomunikačné služby → 518"). */
   navrhAiDovod?: string;
   /**
-   * Pravidlo účtovania, ktoré doklad zaúčtovalo (doplnené samo podľa
+   * Pravidlo automatického účtovania, ktoré doklad zaúčtovalo (doplnené samo podľa
    * dodávateľa, alebo vybrané človekom). Vytvorený doklad ho dostane ako
    * `pravidlo_id` — spúšťač potom iné pravidlo nepoužije.
    */

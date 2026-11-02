@@ -543,8 +543,8 @@ export default {
   "Digitálny poštár": "Digitálny poštár",
   "Pre účtovníkov": "Pro účetní",
   "Účtovné podklady jedným klikom": "Účetní podklady jedním kliknutím",
-  "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
-    "Export i konektor pro Pohodu, šest formátů exportu, pravidla účtování, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
+  "Pohoda export aj konektor, šesť formátov exportu, automatické účtovanie, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
+    "Export i konektor pro Pohodu, šest formátů exportu, automatické účtování, výpisy z platebních bran a měsíční podklady — Faktero připraví vše, co potřebujete.",
   "Spolupracujte so svojimi klientmi efektívnejšie. Faktero generuje účtovné podklady jedným klikom.":
     "Spolupracujte se svými klienty efektivněji. Faktero generuje účetní podklady jedním kliknutím.",
   "Pohoda export": "Export do Pohody",

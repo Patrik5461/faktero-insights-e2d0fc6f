@@ -252,7 +252,7 @@ export const NAV: NavGroup[] = [
       { to: "/uctovnictvo/konvertor", label: "Konvertor Excel → Pohoda" }, // rovnaký nadpis má stránka (E-19)
       { to: "/uctovnictvo/predkontacie", label: "Predkontácie a členenie DPH" },
       { to: "/uctovnictvo/na-kontrolu", label: "Zaúčtovanie na kontrolu" },
-      { to: "/uctovnictvo/pravidla", label: "Pravidlá účtovania" },
+      { to: "/uctovnictvo/pravidla", label: "Automatické účtovanie" },
     ],
   },
   {

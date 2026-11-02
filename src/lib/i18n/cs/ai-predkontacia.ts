@@ -21,8 +21,8 @@ export default {
   "bez oprávnenia": "bez oprávnění",
   "Kódy uložené na {n} faktúrach": "Kódy uloženy u {n} faktur",
   "Návrhy AI pre vybrané faktúry": "Návrhy AI pro vybrané faktury",
-  "AI vyberá len z vášho číselníka predkontácií a z kódov, ktoré už používate. Pravidlo účtovania a naučené voľby dodávateľa majú prednosť. Nič sa nezaúčtuje, kým to nepotvrdíte.":
-    "AI vybírá jen z vašeho číselníku předkontací a z kódů, které už používáte. Pravidlo účtování a naučené volby dodavatele mají přednost. Nic se nezaúčtuje, dokud to nepotvrdíte.",
+  "AI vyberá len z vášho číselníka predkontácií a z kódov, ktoré už používate. Pravidlo automatického účtovania a naučené voľby dodávateľa majú prednosť. Nič sa nezaúčtuje, kým to nepotvrdíte.":
+    "AI vybírá jen z vašeho číselníku předkontací a z kódů, které už používáte. Pravidlo automatického účtování a naučené volby dodavatele mají přednost. Nic se nezaúčtuje, dokud to nepotvrdíte.",
   "Navrhujem… {hotove} z {spolu}": "Navrhuji… {hotove} z {spolu}",
   Označiť: "Označit",
   "S návrhom: {n} · označené: {m}": "S návrhem: {n} · označeno: {m}",
@@ -33,5 +33,5 @@ export default {
   "Navrhnúť AI pre vybrané": "Navrhnout AI pro vybrané",
   "Na zaúčtovanie dokladov nemáte v tejto firme oprávnenie.":
     "K zaúčtování dokladů nemáte v této firmě oprávnění.",
-  "kódy z pravidla účtovania": "kódy z pravidla zaúčtování",
+  "kódy z pravidla automatického účtovania": "kódy z pravidla automatického účtování",
 } satisfies Record<string, string>;

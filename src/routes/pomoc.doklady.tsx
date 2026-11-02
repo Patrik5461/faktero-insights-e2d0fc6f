@@ -71,7 +71,7 @@ const sections: HelpSection[] = [
           <li>
             Rovno <strong>zaúčtujte</strong>: predkontácia, členenie DPH a kontrolného výkazu,
             stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí{" "}
-            <Link to="/uctovnictvo/pravidla">pravidlo účtovania</Link>, jeho kódy sa doplnia samy a
+            <Link to="/uctovnictvo/pravidla">pravidlo automatického účtovania</Link>, jeho kódy sa doplnia samy a
             pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí
             viac pravidiel, iné vyberiete cez <em>Použiť pravidlo</em>.
           </li>
@@ -134,7 +134,7 @@ const sections: HelpSection[] = [
         <p>
           Pri každej položke je aj jej zaúčtovanie: <strong>Predkontácia</strong>,{" "}
           <strong>Členenie DPH</strong> a <strong>Členenie KV</strong>. Prázdne pole znamená kód
-          dokladu — aj ten, ktorý doplní pravidlo účtovania alebo návrh AI. Po stlačení Vytvoriť sa
+          dokladu — aj ten, ktorý doplní pravidlo automatického účtovania alebo návrh AI. Po stlačení Vytvoriť sa
           kódy prenesú s položkami do prijatej faktúry či bločku a export do účtovníctva doklad podľa
           nich rozúčtuje. Menej používané polia (dátum prijatia, interné číslo, adresa, krajina a
           e-mail dodávateľa) sú pod <strong>Zobraziť viac</strong>.
@@ -741,7 +741,7 @@ const sections: HelpSection[] = [
           vystavenej faktúre — pôvodný záznam ide do koša.
         </p>
         <p>
-          <strong>Pravidlo účtovania</strong> doplní kódy samo; doklad, ktorý ich má z pravidla, má
+          <strong>Pravidlo automatického účtovania</strong> doplní kódy samo; doklad, ktorý ich má z pravidla, má
           pri zaúčtovaní hviezdičku. Keď má dodávateľ pravidiel viac, vyberiete iné cez{" "}
           <em>Použiť pravidlo</em>. Zoznam sa dá zoradiť kliknutím na hlavičku stĺpca a stiahnuť do
           Excelu.

@@ -298,7 +298,7 @@ function NewInvoice() {
     dodaci_list: false,
     /* Pečiatka a podpis v PDF; null = podľa nastavenia firmy. */
     zobrazit_peciatku: null as boolean | null,
-    /* Účtovné nastavenia — prázdne = predvolené (pravidlo účtovania, inak kód firmy). */
+    /* Účtovné nastavenia — prázdne = predvolené (pravidlo automatického účtovania, inak kód firmy). */
     predkontacia: "",
     clenenie: "",
     kv: "",
@@ -1275,7 +1275,7 @@ function NewInvoice() {
           // Dodacím listom môže byť len bežná faktúra.
           dodaci_list: form.type === "regular" && form.dodaci_list,
           zobrazit_peciatku: form.zobrazit_peciatku,
-          // Prázdne kódy doplní pravidlo účtovania (spúšťač), inak predvolené firmy pri exporte.
+          // Prázdne kódy doplní pravidlo automatického účtovania (spúšťač), inak predvolené firmy pri exporte.
           pohoda_predkontacia: form.predkontacia.trim() || null,
           pohoda_clenenie_dph: form.clenenie.trim() || null,
           kv_clenenie: form.kv || null,

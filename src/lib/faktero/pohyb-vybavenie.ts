@@ -145,7 +145,7 @@ export function pokrytiePohybu(
   return { spolu, z, zostava, uplne: Math.abs(zostava) < 0.005 && inaMena === 0, inaMena };
 }
 
-/** Parametre odkazu „Vytvoriť pravidlo z tohto pohybu“ na stránku Pravidlá účtovania. */
+/** Parametre odkazu „Vytvoriť pravidlo z tohto pohybu“ na stránku Automatické účtovanie. */
 export function hladaniePravidlaZPohybu(p: {
   suma: number;
   protistrana?: string | null;

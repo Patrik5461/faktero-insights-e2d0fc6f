@@ -1267,7 +1267,7 @@ export type VypisPohyb = {
   ss?: string | null;
   /** Čím ten pohyb je — poplatok, daň, úhrada faktúry… Viď `vypis-oznacenie.ts`. */
   oznacenie?: KodOznacenia | null;
-  /** Predkontácia z pravidla účtovania pre banku — má prednosť pred všetkým. */
+  /** Predkontácia z pravidla automatického účtovania pre banku — má prednosť pred všetkým. */
   predkontacia?: string | null;
 };
 
@@ -1648,7 +1648,7 @@ export function polozkyDokladov(opts: {
       );
 
       /*
-        Vlastná predkontácia a členenie dokladu (doplní ich pravidlo účtovania
+        Vlastná predkontácia a členenie dokladu (doplní ich pravidlo automatického účtovania
         alebo človek) prebíjajú nastavenie firmy pre všetky prijaté doklady.
       */
       // Prijatá faktúra nesie `_typPohody`; bez neho je to bloček či výdavkový

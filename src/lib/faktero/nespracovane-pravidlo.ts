@@ -1,5 +1,5 @@
 /*
-  Pravidlo účtovania pri spracovaní nespracovaného dokladu.
+  Pravidlo automatického účtovania pri spracovaní nespracovaného dokladu.
 
   Keď doklad spĺňa podmienky pravidla (dodávateľ, používateľ, predmet mailu,
   spôsob úhrady, typ), jeho kódy sa doplnia rovno do formulára a pri poli

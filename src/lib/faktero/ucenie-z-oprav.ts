@@ -7,7 +7,7 @@
   dokladu, v ňom posledných niekoľko volieb pre každé pole. Pri ďalšom
   doklade od toho istého dodávateľa sa návrh doplní do prázdnych polí.
 
-  Ručné pravidlá účtovania majú vždy prednosť: spúšťač v databáze dopĺňa
+  Ručné pravidlá automatického účtovania majú vždy prednosť: spúšťač v databáze dopĺňa
   len PRÁZDNE polia, takže naučená hodnota v `udaje` by pravidlo potichu
   prebila. Polia, ktoré pravidlo vypĺňa, sa preto učením nedopĺňajú vôbec
   (`chranene`), a pri vytvorení dokladu sa naučená hodnota v takom poli

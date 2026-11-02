@@ -510,7 +510,7 @@ export function riadkyDokladu(
 ): RiadokRozuctovania[] {
   const rucne = nacitajRozuctovanie(d?.rozuctovanie);
   /*
-    Pravidlo účtovania ukladá rozúčtovanie ako pomer (nie sumy) — rozdelí sa
+    Pravidlo automatického účtovania ukladá rozúčtovanie ako pomer (nie sumy) — rozdelí sa
     každý riadok dokladu, sumy idú z rozpisu, aby sedeli na cent.
   */
   const pomerDokladu = Array.isArray(d?.rozuctovanie) ? null : nacitajPomer(d?.rozuctovanie);

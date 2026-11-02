@@ -120,7 +120,7 @@ export default {
   "Bankový výpis do Pohody": "Kontoauszug an Pohoda",
   "Výpis z platobnej brány": "Auszug vom Zahlungsanbieter",
   "Predkontácie a členenie DPH": "Vorkontierungen und MwSt.-Kennzeichen",
-  "Pravidlá účtovania": "Buchungsregeln",
+  "Automatické účtovanie": "Automatische Buchung",
   "Nová jazda": "Neue Fahrt",
   Export: "Export",
   "Vozidlá a tankovanie": "Fahrzeuge und Tanken",

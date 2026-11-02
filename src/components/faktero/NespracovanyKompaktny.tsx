@@ -91,7 +91,7 @@ export function NespracovanyKompaktny({
   onUloz: () => void;
   onZmaz: () => void;
   companyId?: string;
-  /** Pravidlo účtovania (výber a hviezdička) — v sekcii Zaúčtovanie. */
+  /** Pravidlo automatického účtovania (výber a hviezdička) — v sekcii Zaúčtovanie. */
   pravidlo?: ReactNode;
   /** „Vytvoriť pravidlo z tohto dokladu" — pod tlačidlom Vytvoriť. */
   pravidloZDokladu?: ReactNode;

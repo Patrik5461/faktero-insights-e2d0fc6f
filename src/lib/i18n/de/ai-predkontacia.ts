@@ -22,8 +22,8 @@ export default {
   "bez oprávnenia": "ohne Berechtigung",
   "Kódy uložené na {n} faktúrach": "Codes bei {n} Rechnungen gespeichert",
   "Návrhy AI pre vybrané faktúry": "KI-Vorschläge für die ausgewählten Rechnungen",
-  "AI vyberá len z vášho číselníka predkontácií a z kódov, ktoré už používate. Pravidlo účtovania a naučené voľby dodávateľa majú prednosť. Nič sa nezaúčtuje, kým to nepotvrdíte.":
-    "Die KI wählt nur aus Ihrer Liste der Vorkontierungen und aus Codes, die Sie bereits verwenden. Buchungsregeln und gelernte Auswahlen beim Lieferanten haben Vorrang. Nichts wird verbucht, bevor Sie es bestätigen.",
+  "AI vyberá len z vášho číselníka predkontácií a z kódov, ktoré už používate. Pravidlo automatického účtovania a naučené voľby dodávateľa majú prednosť. Nič sa nezaúčtuje, kým to nepotvrdíte.":
+    "Die KI wählt nur aus Ihrer Liste der Vorkontierungen und aus Codes, die Sie bereits verwenden. Regeln der automatischen Buchung und gelernte Auswahlen beim Lieferanten haben Vorrang. Nichts wird verbucht, bevor Sie es bestätigen.",
   "Navrhujem… {hotove} z {spolu}": "Vorschläge werden erstellt… {hotove} von {spolu}",
   Označiť: "Markieren",
   "S návrhom: {n} · označené: {m}": "Mit Vorschlag: {n} · markiert: {m}",
@@ -34,5 +34,5 @@ export default {
   "Navrhnúť AI pre vybrané": "KI-Vorschlag für Ausgewählte",
   "Na zaúčtovanie dokladov nemáte v tejto firme oprávnenie.":
     "Sie haben in diesem Unternehmen keine Berechtigung, Belege zu verbuchen.",
-  "kódy z pravidla účtovania": "Codes aus der Kontierungsregel",
+  "kódy z pravidla automatického účtovania": "Codes aus der Regel der automatischen Buchung",
 } satisfies Record<string, string>;

@@ -70,8 +70,8 @@ export default {
     "Die Datei wird nur in Ihrem Browser geprüft und nirgendwohin gesendet",
   "Bez prihlásenia na verejnej stránke, vo Fakteri v eFaktúra → Kontrola XML":
     "Ohne Anmeldung auf der öffentlichen Seite, in Faktero unter E-Rechnung → XML-Prüfung",
-  "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, pravidlá účtovania, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
-    "Pohoda-Export und Konnektor, sieben Exportformate einschließlich DATEV, Buchungsregeln, Konverter aus Excel, Auszüge aus Zahlungsgateways und Monatsunterlagen — Faktero bereitet alles vor, was Sie brauchen.",
+  "Pohoda export aj konektor, sedem formátov exportu vrátane DATEV, automatické účtovanie, konvertor z Excelu, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.":
+    "Pohoda-Export und Konnektor, sieben Exportformate einschließlich DATEV, automatische Buchung, Konverter aus Excel, Auszüge aus Zahlungsgateways und Monatsunterlagen — Faktero bereitet alles vor, was Sie brauchen.",
   "Nastavenia exportu pre firmu: dátum zápisu a odpočtu DPH, text dokladu, interná poznámka, partner do adresára":
     "Exporteinstellungen für die Firma: Buchungs- und Vorsteuerabzugsdatum, Belegtext, interne Notiz, Partner ins Adressbuch",
   "Zaokrúhlenie zvlášť kladné a záporné, s vlastnou predkontáciou a členením":

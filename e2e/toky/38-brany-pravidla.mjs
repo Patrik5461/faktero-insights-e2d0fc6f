@@ -1,5 +1,5 @@
 /*
-  Pravidlá účtovania a fronta webhookov v databáze (QA firma test2), bez prehliadača:
+  Automatické účtovanie a fronta webhookov v databáze (QA firma test2), bez prehliadača:
   - spúšťače: bloček, prijatá faktúra, vystavená faktúra, bankový pohyb „bez dokladu“
     a transakčná daň; druh `null` platí pre bločky aj prijaté, nie pre vystavené,
   - priorita: pravidlo podľa partnera (IČO, názov, VS) má prednosť pred pravidlom podľa
@@ -16,7 +16,8 @@ import { zmazFakturuNatvrdo } from "../lib/doklady.mjs";
 const WEBHOOK_URL = "https://www.faktero.sk/api/public/e2e-webhook-neexistuje";
 
 export default {
-  popis: "pravidlá účtovania (spúšťače, priorita, VS z čísla, banka) a fronta webhookov",
+  popis:
+    "pravidlá automatického účtovania (spúšťače, priorita, VS z čísla, banka) a fronta webhookov",
   limit: 240000,
   firma: "test2",
   bezPrehliadaca: true,

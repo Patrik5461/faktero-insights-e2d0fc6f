@@ -27,8 +27,8 @@ const POPIS_STAVU: Record<string, string> = {
   nedostupny: "AI teraz neodpovedá — skúste neskôr",
   nepodporovane: "pre túto krajinu firmy sa návrh nerobí",
   bez_prava: "bez oprávnenia",
-  // Návrh bez AI a návyku — kódy dáva pravidlo účtovania, ktoré na doklad ešte nedobehlo.
-  navrh: "kódy z pravidla účtovania",
+  // Návrh bez AI a návyku — kódy dáva pravidlo automatického účtovania, ktoré na doklad ešte nedobehlo.
+  navrh: "kódy z pravidla automatického účtovania",
 };
 
 const maNavrh = (r: Riadok) =>
@@ -181,7 +181,7 @@ export function NavrhyAiOkno({
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {t(
-            "AI vyberá len z vášho číselníka predkontácií a z kódov, ktoré už používate. Pravidlo účtovania a naučené voľby dodávateľa majú prednosť. Nič sa nezaúčtuje, kým to nepotvrdíte.",
+            "AI vyberá len z vášho číselníka predkontácií a z kódov, ktoré už používate. Pravidlo automatického účtovania a naučené voľby dodávateľa majú prednosť. Nič sa nezaúčtuje, kým to nepotvrdíte.",
           )}
         </p>
         {pocita && (

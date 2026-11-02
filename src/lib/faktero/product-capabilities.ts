@@ -199,7 +199,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Povolení odosielatelia pre e-mailovú adresu, upozornenie na doklad vystavený na iného odberateľa, zobrazenie pôvodného e-mailu",
       "Výber stĺpcov a uložené filtre v zoznamoch Doklady a Prijaté faktúry (pre jednu alebo všetky firmy), zoraďovanie kliknutím na stĺpec, export zoznamu do Excelu (doklady aj položky)",
       "Prílohy k prijatým faktúram a bločkom; presun nahratého dokladu medzi prílohy iného dokladu",
-      "Pri doklade výber z viacerých pravidiel účtovania, doplnené kódy označené hviezdičkou",
+      "Pri doklade výber z viacerých pravidiel automatického účtovania, doplnené kódy označené hviezdičkou",
     ],
     routes: [
       "/nespracovane",
@@ -290,7 +290,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Zaúčtované doklady (vystavené, prijaté faktúry aj bločky) aj do iných programov: KROS Omega (účtovné doklady EUD s účtami MD/Dal a typmi súm), Money S3 (faktúry, pokladničné a interné doklady s predkontáciou a členením), ABRA Flexi (predpis zaúčtovania, členenie DPH), MRP-K/S (XML MRP-K/S 2.0 s predkontáciou a typom DPH, slovenská aj česká verzia) a zaúčtovaná súpiska CSV pre Helios či Premier; účtovný program si firma vyberie v Účtovné exporty",
       "Kopírovanie číselníka predkontácií a predvolených kódov do ďalších firiem (účtovné kancelárie)",
       "Predkontácia (účtovná položka) s typom dokladu a typom platby — v ponuke sa ukáže navrchu; zaokrúhlenie zvlášť kladné a záporné s členením DPH a KV",
-      "Pravidlá účtovania s podmienkami e-mail odosielateľa, krajina dodávateľa a stály VS; výstupy pokladňa a rozúčtovanie pomerom; Predlohy (pomenované zaúčtovanie bez podmienky, Použiť predlohu…); Vytvoriť pravidlo z tohto dokladu",
+      "Automatické účtovanie — pravidlá s podmienkami e-mail odosielateľa, krajina dodávateľa a stály VS; výstupy pokladňa a rozúčtovanie pomerom; Predlohy (pomenované zaúčtovanie bez podmienky, Použiť predlohu…); Vytvoriť pravidlo z tohto dokladu",
       "Nastavenia exportu do Pohody: dátum zápisu a odpočtu DPH, text dokladu, interná poznámka, partner do adresára, daňový doklad k platbe ako interný alebo vydaná faktúra, položky z rozpisu DPH, názov odpočtu zálohy; partner bez IČO dostane náhradný identifikátor z mena",
       "Konvertor Excel → Pohoda (Účtovníctvo → Konvertor): šablóny pre vydané, prijaté faktúry a bločky, výstup XML dávka, nič sa neukladá",
     ],

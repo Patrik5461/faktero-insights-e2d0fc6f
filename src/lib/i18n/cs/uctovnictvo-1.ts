@@ -1,4 +1,4 @@
-// Účtovníctvo: DPH prehľad, OSS, výkazy k DPH, pravidlá účtovania, uzávierka, prepojenie s Pohodou.
+// Účtovníctvo: DPH prehľad, OSS, výkazy k DPH, automatické účtovanie, uzávierka, prepojenie s Pohodou.
 export default {
   "DPH prehľad — Faktero": "Přehled DPH — Faktero",
   "Informatívny prehľad DPH na výstupe a vstupe za zvolené obdobie.":
@@ -405,7 +405,7 @@ export default {
   "r30 Odpočet dane pri registrácii (§ 55)": "r30 Odpočet daně při registraci (§ 55)",
   "r31 Daň vrátená cestujúcim (§ 60)": "r31 Daň vrácená cestujícím (§ 60)",
   "r34 Nadmerný odpočet z predchádzajúceho obdobia": "r34 Nadměrný odpočet z předchozího období",
-  "Pravidlá účtovania — Faktero": "Pravidla účtování — Faktero",
+  "Automatické účtovanie — Faktero": "Automatické účtování — Faktero",
   "Pravidlo zmazané. Doklady, ktoré už doplnilo, ostávajú, ako sú.":
     "Pravidlo smazáno. Doklady, které již doplnilo, zůstávají, jak jsou.",
   "Žiadny neodovzdaný doklad bez pravidla na pravidlá nesedí.":
@@ -416,7 +416,7 @@ export default {
     "Pravidla doplnila {n} doklady (účtenky, přijaté i vystavené faktury).",
   "Pravidlá doplnili {n} dokladov (bločky, prijaté aj vystavené faktúry).":
     "Pravidla doplnila {n} dokladů (účtenky, přijaté i vystavené faktury).",
-  "Pravidlá účtovania": "Pravidla účtování",
+  "Automatické účtovanie": "Automatické účtování",
   "Automatické účtovanie: bloček, prijatá aj vystavená faktúra či pohyb v banke dostane predkontáciu, členenie DPH a KV sám — hneď, ako vznikne.":
     "Automatické účtování: účtenka, přijatá i vystavená faktura či pohyb v bance dostane předkontaci, členění DPH a KV sám — hned, jak vznikne.",
   "Nové pravidlo": "Nové pravidlo",

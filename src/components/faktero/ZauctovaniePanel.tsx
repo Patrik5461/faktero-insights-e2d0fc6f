@@ -1034,7 +1034,7 @@ export function ZauctovaniePanel({
             <Link to="/uctovnictvo/predkontacie" className="underline">
               {t("nastavení predkontácií")}
             </Link>
-            {row.pravidlo_id ? ` · ${t("doplnené pravidlom účtovania")}` : ""}.
+            {row.pravidlo_id ? ` · ${t("doplnené pravidlom automatického účtovania")}` : ""}.
           </p>
           {vPaneli.pata ? createPortal(tlacidla, vPaneli.pata) : null}
           {vPaneli.poznamka ? createPortal(poznamka, vPaneli.poznamka) : null}
@@ -1390,7 +1390,7 @@ export function ZauctovaniePanel({
               <Link to="/uctovnictvo/predkontacie" className="underline">
                 {t("nastavení predkontácií")}
               </Link>
-              {row.pravidlo_id ? ` · ${t("doplnené pravidlom účtovania")}` : ""}.
+              {row.pravidlo_id ? ` · ${t("doplnené pravidlom automatického účtovania")}` : ""}.
             </p>
             {!row.samofakturacia && row.type === "regular" && row.source !== "efaktura" ? (
               <button type="button" onClick={doDokladov} disabled={busy} className={male}>
@@ -1517,7 +1517,7 @@ export function ZauctovaniePanel({
               onPredloha={(p) => setH(uplatniPredlohu(h, p))}
             />
             <NapovedaPredkontacii>
-              {row.pravidlo_id ? ` · ${t("doplnené pravidlom účtovania")}` : ""}.{" "}
+              {row.pravidlo_id ? ` · ${t("doplnené pravidlom automatického účtovania")}` : ""}.{" "}
               {navrhy?.maCiselnik === false ? (
                 <>
                   {t("Číselník je prázdny —")}{" "}

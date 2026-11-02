@@ -273,7 +273,7 @@ function Predvolene({
       <p className="mt-1 text-xs text-muted-foreground">
         {t("Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá")}{" "}
         <Link to="/uctovnictvo/pravidla" className="underline">
-          {t("pravidlo účtovania")}
+          {t("pravidlo automatického účtovania")}
         </Link>{" "}
         {t("alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.")}
       </p>
