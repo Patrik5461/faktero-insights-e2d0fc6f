@@ -971,11 +971,14 @@ function NovyDokladPage() {
         {pasZamku}
         <RozlozenieSNahladom
           className={nahladVedla ? "grid grid-cols-1 gap-5" : "mx-auto max-w-3xl"}
-          stlpceVlavo="lg:grid-cols-[minmax(0,1fr)_minmax(0,48rem)]"
-          stlpceVpravo="lg:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]"
+          /* Na lg (1024 so sidebarom) sa 48rem formulára nezmestí a stĺpec náhľadu by
+             spadol na nulu — tam idú polovice, pevná šírka formulára až od xl. */
+          stlpceVlavo="lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,48rem)]"
+          stlpceVpravo="lg:grid-cols-2 xl:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]"
           nahlad={
             nahladVedla ? (
-              <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+              /* Na lg+ pevná výška z výrezu — náhľad ju vyplní a roluje sa len v ňom. */
+              <div className="min-w-0 lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:self-start">
                 <NahladDokladuNastroje
                   url={preview}
                   mime={nahladJePdf ? "application/pdf" : uploadedFile?.mime ?? "image/jpeg"}
