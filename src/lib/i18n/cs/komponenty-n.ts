@@ -207,8 +207,8 @@ export default {
   "Export do účtovníctva": "Export do účetnictví",
   "Exportovať ({pocet})": "Exportovat ({pocet})",
   "Dátum zaúčtovania": "Datum zaúčtování",
-  "Pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).":
-    "Pro doklady z již uzavřeného období. Prázdné = datum dokladu (doklady z uzávěrky dostanou samy první den po ní).",
+  "Pre doklady z už uzavretého obdobia. Prijatý doklad ho dostane aj ako dátum zápisu a odpočtu DPH (odpočet nie skôr ako dodanie). Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).":
+    "Pro doklady z již uzavřeného období. Přijatý doklad ho dostane i jako datum zápisu a odpočtu DPH (odpočet ne dříve než dodání). Prázdné = datum dokladu (doklady z uzávěrky dostanou samy první den po ní).",
   "Exportovať aj už odovzdané doklady": "Exportovat i již předané doklady",
   "Len keď ste ich v účtovnom programe zmazali — inak by tam boli dvakrát.":
     "Jen pokud jste je v účetním programu smazali — jinak by tam byly dvakrát.",

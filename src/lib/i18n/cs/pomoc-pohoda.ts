@@ -167,8 +167,8 @@ export default {
   "Voľby exportu a nastavenia prenosu": "Volby exportu a nastavení přenosu",
   "Pri exporte prijatých faktúr a bločkov sa otvorí okno s voľbami:":
     "Při exportu přijatých faktur a účtenek se otevře okno s volbami:",
-  "<0>Dátum zaúčtovania</0> — pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu.":
-    "<0>Datum zaúčtování</0> — pro doklady z již uzavřeného období. Prázdné = datum dokladu.",
+  "<0>Dátum zaúčtovania</0> — pre doklady z už uzavretého obdobia. Prijatá faktúra, záväzok a bloček ho dostanú aj ako dátum zápisu a dátum odpočtu DPH (odpočet nie skôr ako dátum dodania; pokladničný doklad si dátum platby nechá). Vystavená faktúra dostane len dátum účtovania. Prázdne = dátum dokladu.":
+    "<0>Datum zaúčtování</0> — pro doklady z již uzavřeného období. Přijatá faktura, závazek a účtenka ho dostanou i jako datum zápisu a datum odpočtu DPH (odpočet ne dříve než datum dodání; pokladní doklad si datum platby ponechá). Vydaná faktura dostane jen datum účtování. Prázdné = datum dokladu.",
   "<0>Exportovať aj už odovzdané</0> — len keď ste ich v Pohode zmazali; inak sa odovzdané vynechajú, aby v Pohode neboli dvakrát.":
     "<0>Exportovat i již odevzdané</0> — jen když jste je v Pohodě smazali; jinak se odevzdané vynechají, aby v Pohodě nebyly dvakrát.",
   "<0>Prelom rokov</0> — doklady z dvoch rokov idú do dvoch súborov, každý naimportujte do svojho roka.":

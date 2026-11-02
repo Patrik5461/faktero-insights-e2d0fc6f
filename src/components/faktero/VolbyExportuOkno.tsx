@@ -124,7 +124,7 @@ export function VolbyExportuOkno({
             />
             <span className="mt-1 block text-xs text-muted-foreground">
               {t(
-                "Pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).",
+                "Pre doklady z už uzavretého obdobia. Prijatý doklad ho dostane aj ako dátum zápisu a odpočtu DPH (odpočet nie skôr ako dodanie). Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).",
               )}
             </span>
           </label>

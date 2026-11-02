@@ -167,8 +167,8 @@ export default {
   "Voľby exportu a nastavenia prenosu": "Exportoptionen und Übertragungseinstellungen",
   "Pri exporte prijatých faktúr a bločkov sa otvorí okno s voľbami:":
     "Beim Export von Eingangsrechnungen und Kassenbons öffnet sich ein Fenster mit Optionen:",
-  "<0>Dátum zaúčtovania</0> — pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu.":
-    "<0>Buchungsdatum</0> — für Belege aus einer bereits abgeschlossenen Periode. Leer = Belegdatum.",
+  "<0>Dátum zaúčtovania</0> — pre doklady z už uzavretého obdobia. Prijatá faktúra, záväzok a bloček ho dostanú aj ako dátum zápisu a dátum odpočtu DPH (odpočet nie skôr ako dátum dodania; pokladničný doklad si dátum platby nechá). Vystavená faktúra dostane len dátum účtovania. Prázdne = dátum dokladu.":
+    "<0>Buchungsdatum</0> — für Belege aus einer bereits abgeschlossenen Periode. Eingangsrechnung, Verbindlichkeit und Kassenbon erhalten es auch als Erfassungs- und Vorsteuerabzugsdatum (Vorsteuerabzug nicht vor dem Lieferdatum; ein Kassenbeleg behält sein Zahlungsdatum). Eine Ausgangsrechnung erhält nur das Buchungsdatum. Leer = Belegdatum.",
   "<0>Exportovať aj už odovzdané</0> — len keď ste ich v Pohode zmazali; inak sa odovzdané vynechajú, aby v Pohode neboli dvakrát.":
     "<0>Auch bereits übergebene exportieren</0> — nur wenn Sie sie in Pohoda gelöscht haben; sonst werden übergebene ausgelassen, damit sie in Pohoda nicht doppelt sind.",
   "<0>Prelom rokov</0> — doklady z dvoch rokov idú do dvoch súborov, každý naimportujte do svojho roka.":

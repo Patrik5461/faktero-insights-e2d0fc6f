@@ -1580,6 +1580,14 @@ export function polozkyDokladov(opts: {
       */
       const zamknutieZ = (den: unknown) =>
         nastavenia?.datumZauctovaniaPevny || datumZauctovania(den, nastavenia?.zamknuteDo);
+      /*
+        Dátum zaúčtovania zadaný pri exporte (napr. faktúra z februára účtovaná
+        30. 10.) platí pre prijatý doklad aj ako dátum zápisu a dátum odpočtu
+        DPH — účtovníčka ho tak čaká v Pohode vo všetkých troch poliach.
+        Pokladničný doklad si dátum nechá (je to deň pohybu v pokladni) a
+        odpočet nikdy nepredbehne dátum dodania. Vystavených sa to netýka.
+      */
+      const pevny = pevnyDatumPrijateho(prijatyDoklad, nastavenia?.datumZauctovaniaPevny);
       const datumZapisu =
         prijatyDoklad && ex.datumZapisu !== "vyhotovenie"
           ? datumyPrijateho(
@@ -1592,7 +1600,9 @@ export function polozkyDokladov(opts: {
             ).zapis || String(d?.issue_date ?? "")
           : String(d?.issue_date ?? "");
       const datumOdpoctu =
-        prijatyDoklad && ex.datumOdpoctu !== "dodanie"
+        pevny && (!datumDph || pevny >= datumDph)
+          ? pevny
+          : prijatyDoklad && ex.datumOdpoctu !== "dodanie"
           ? datumyPrijateho(
               {
                 vystavenie: d?.issue_date,
@@ -2022,7 +2032,7 @@ export function polozkyDokladov(opts: {
           (invoice.xsd `dateApplicationVAT`, § 53 ods. 2), ako vo výkazoch Faktera.
         */
         (dobropisPrijaty && p === "inv"
-          ? el("inv:dateApplicationVAT", d?._datumUplatnenia || d?.issue_date, "        ")
+          ? el("inv:dateApplicationVAT", (pevny && datumOdpoctu === pevny ? pevny : "") || d?._datumUplatnenia || d?.issue_date, "        ")
           : "");
       // Bez nároku na odpočet (Faktero ho nezapočíta do DPH): Pohoda to z čísel
       // nespozná — členenie si účtovník musí vybrať, poznámka ho na to upozorní.
@@ -2103,7 +2113,7 @@ export function polozkyDokladov(opts: {
           povodne,
           "        ",
         )}${el(`${p}:originalDocumentNumber`, opravujeCislo, "        ")}
-        <${p}:date>${esc(datumZapisu)}</${p}:date>
+        <${p}:date>${esc(pevny && p !== "vch" ? pevny : datumZapisu)}</${p}:date>
         <${p}:dateTax>${esc(datumOdpoctu)}</${p}:dateTax>${datumyVerzie}${
           p === "inv" ? el("inv:dateDue", d?._splatnost, "        ") : ""
         }${
@@ -3496,4 +3506,14 @@ ${odsadenie}</SouhrnDPH>`;
   </SeznamFaktVyd>
 </MoneyData>`;
   return { xml, preskocene };
+}
+
+/**
+ * Pevný dátum zaúčtovania z okna exportu pre prijatý doklad — ten istý deň
+ * ide do dátumu zápisu, odpočtu aj účtovania. Pre vystavený doklad (daňový
+ * doklad k platbe) a neplatný dátum `null`: tam ostáva len `dateAccounting`.
+ */
+export function pevnyDatumPrijateho(prijatyDoklad: boolean, datum: unknown): string | null {
+  const d = String(datum ?? "").trim();
+  return prijatyDoklad && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
 }

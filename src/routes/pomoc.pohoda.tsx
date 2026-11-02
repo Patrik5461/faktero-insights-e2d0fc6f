@@ -571,8 +571,10 @@ const sections: HelpSection[] = [
             tlačidlá sú aj priamo nad zoznamom Bločkov a v ponuke Hromadná akcia.
           </li>
           <li>
-            <strong>Dátum zaúčtovania</strong> — pre doklady z už uzavretého obdobia. Prázdne =
-            dátum dokladu.
+            <strong>Dátum zaúčtovania</strong> — pre doklady z už uzavretého obdobia. Prijatá
+            faktúra, záväzok a bloček ho dostanú aj ako dátum zápisu a dátum odpočtu DPH (odpočet
+            nie skôr ako dátum dodania; pokladničný doklad si dátum platby nechá). Vystavená faktúra
+            dostane len dátum účtovania. Prázdne = dátum dokladu.
           </li>
           <li>
             <strong>Radenie dokladov v dávke</strong> — podľa dátumu, čísla dokladu alebo poradia

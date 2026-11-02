@@ -212,8 +212,8 @@ export default {
   "Export do účtovníctva": "Export an die Buchhaltung",
   "Exportovať ({pocet})": "Exportieren ({pocet})",
   "Dátum zaúčtovania": "Buchungsdatum",
-  "Pre doklady z už uzavretého obdobia. Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).":
-    "Für Belege aus einer bereits abgeschlossenen Periode. Leer = Belegdatum (Belege aus dem Abschluss erhalten automatisch den ersten Tag danach).",
+  "Pre doklady z už uzavretého obdobia. Prijatý doklad ho dostane aj ako dátum zápisu a odpočtu DPH (odpočet nie skôr ako dodanie). Prázdne = dátum dokladu (doklady z uzávierky dostanú prvý deň po nej samy).":
+    "Für Belege aus einer bereits abgeschlossenen Periode. Eingangsbelege erhalten es auch als Erfassungs- und Vorsteuerabzugsdatum (Vorsteuerabzug nicht vor der Lieferung). Leer = Belegdatum (Belege aus dem Abschluss erhalten automatisch den ersten Tag danach).",
   "Exportovať aj už odovzdané doklady": "Auch bereits übergebene Belege exportieren",
   "Len keď ste ich v účtovnom programe zmazali — inak by tam boli dvakrát.":
     "Nur wenn Sie sie im Buchhaltungsprogramm gelöscht haben – sonst wären sie doppelt vorhanden.",
