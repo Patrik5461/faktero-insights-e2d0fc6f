@@ -525,7 +525,7 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(inv.invoiceHeader.accounting.ids).toBe("5Fp");
   });
 
-  it("bloček podľa platby: hotovosť do pokladne, karta interný doklad, prevod faktúra", () => {
+  it("bloček podľa platby: hotovosť do pokladne, karta do Ostatných záväzkov, prevod faktúra", () => {
     const nast = { blockyPodlaPlatby: true, pokladna: "HOT", predkontaciaDoklady: "1Pv" };
     const x = posli(
       [
@@ -542,9 +542,14 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(v.classificationKVDPH.ids).toBe("B3");
     expect(String(v.originalDocument)).toBe("2516");
     expect(Number(x[0].voucher.voucherSummary.homeCurrency.priceHigh)).toBe(18.77);
-    const i = x[1].intDoc.intDocHeader;
+    // Karta: Ostatné záväzky (invoice.xsd invoiceType „commitment"), nie interný doklad.
+    expect(x[1].intDoc).toBeUndefined();
+    const i = x[1].invoice.invoiceHeader;
+    expect(i.invoiceType).toBe("commitment");
     expect(String(i.symVar)).toBe("2516");
+    expect(String(i.originalDocument)).toBe("2516");
     expect(i.accounting.ids).toBe("1Pv");
+    expect(i.paymentType.paymentType).toBe("creditcard");
     expect(x[2].invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
   });
 
@@ -592,10 +597,10 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(v.voucherHeader.intNote).toBe("kontrola");
     expect(String(v.voucherHeader.symPar)).toBe("2516");
     expect(v.attachments.urlAddress.url).toContain("/api/public/doklad/");
-    const i = x[1].intDoc.intDocHeader;
+    const i = x[1].invoice.invoiceHeader;
+    expect(i.invoiceType).toBe("commitment");
     expect(i.number.ids).toBe("VLASTNY");
     expect(i.centre.ids).toBe("KE");
-    expect(x[1].intDoc.attachments).toBeUndefined();
     expect(x[2].invoice.invoiceHeader.number.ids).toBe("26FPB");
   });
 
@@ -629,11 +634,9 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(x[0].invoice.invoiceHeader.invoiceType).toBe("commitment");
     expect(x[0].invoice.invoiceHeader.dateAccounting).toBe("2026-09-01");
     expect(x[1].voucher.voucherHeader.cashAccount.ids).toBe("HP2");
-    expect(x[1].voucher.voucherDetail.voucherItem).toMatchObject({
-      text: "Nafta",
-      payVAT: true,
-      rateVAT: "high",
-    });
+    // Položka (20 € s DPH) nesedí s rozpisom bločku (3 sadzby, 24,57 €) — ide súhrn.
+    expect(x[1].voucher.voucherDetail).toBeUndefined();
+    expect(Number(x[1].voucher.voucherSummary.homeCurrency.priceHigh)).toBe(18.77);
   });
 
   it("predkontácia s pomerom rozúčtuje doklad sama", () => {

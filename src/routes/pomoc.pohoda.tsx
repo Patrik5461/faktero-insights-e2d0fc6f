@@ -95,8 +95,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Bločky do Pohody</strong> idú buď všetky ako prijaté faktúry, alebo{" "}
-          <em>podľa spôsobu platby</em>: hotovosť ako výdavkový pokladničný doklad, karta ako
-          interný doklad, prevod ako prijatá faktúra. Prepína sa to na stránke Predkontácie. Na
+          <em>podľa spôsobu platby</em>: hotovosť ako výdavkový pokladničný doklad, karta do
+          Ostatných záväzkov, prevod ako prijatá faktúra. Prepína sa to na stránke Predkontácie. Na
           doklade sa dá vybrať aj <strong>členenie kontrolného výkazu</strong> (B1, B2, B3, C2 alebo
           „nezahŕňať“); bloček označený B2 ide aj vo Fakteri do časti B.2 s číslom a IČ DPH
           dodávateľa.
@@ -126,7 +126,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Doklad z <strong>uzamknutého obdobia</strong> dostane v Pohode dátum zaúčtovania prvý deň
-          po uzávierke. Viac pokladní (záložka Pokladne) a voľbu posielať aj položky bločku nájdete
+          po uzávierke. Viac pokladní (záložka Pokladne) a voľbu posielať aj položky dokladu nájdete
           tiež na stránke Predkontácie.
         </p>
         <p>

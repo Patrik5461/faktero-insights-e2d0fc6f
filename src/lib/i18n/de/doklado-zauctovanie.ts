@@ -43,8 +43,8 @@ export default {
   "Podľa čísla dokladu": "Nach Belegnummer",
   "Podľa poradia nahratia": "Nach Reihenfolge des Hochladens",
   "Exportovať položky dokladu": "Belegpositionen exportieren",
-  "Bloček pôjde do Pohody po položkách, nie jedným riadkom podľa sadzieb DPH.":
-    "Der Kassenbon geht positionsweise an Pohoda, nicht als eine Zeile je MwSt.-Satz.",
+  "Bloček pôjde do Pohody po položkách s cenou bez DPH, sadzbou a členením DPH, nie jedným riadkom podľa sadzieb DPH.":
+    "Der Kassenbon geht positionsweise mit Nettopreis, Steuersatz und MwSt.-Gliederung an Pohoda, nicht als eine Zeile je MwSt.-Satz.",
 
   // Manuály (Pomoc)
   "Kam sa čo uloží:": "Wohin was gespeichert wird:",

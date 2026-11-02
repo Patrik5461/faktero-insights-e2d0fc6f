@@ -136,7 +136,8 @@ export const PREDVOLENE: {
     predkontacia: "pohoda_predkontacia_doklady",
     clenenie: "pohoda_clenenie_dph_doklady",
     kv: "kv_clenenie_doklady",
-    agendy: ["receivedInvoice", "cashPaid", "internalDocument"],
+    // Bloček kartou ide do Ostatných záväzkov, hotovosť do pokladne, prevod ako prijatá faktúra.
+    agendy: ["receivedInvoice", "cashPaid", "commitment", "internalDocument"],
     smer: "vstup",
   },
   {

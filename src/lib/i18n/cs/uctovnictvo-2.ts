@@ -26,17 +26,17 @@ export default {
   "Členenie DPH — {nazov}": "Členění DPH — {nazov}",
   "Bločky do Pohody": "Účtenky do Pohody",
   "Podľa spôsobu platby": "Podle způsobu platby",
-  "Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako prijatá faktúra.":
-    "Hotovost jako výdajový pokladní doklad, karta jako interní doklad, převod jako přijatá faktura.",
+  "Hotovosť ako výdavkový pokladničný doklad, karta do Ostatných záväzkov, prevod ako prijatá faktúra.":
+    "Hotovost jako výdajový pokladní doklad, karta do Ostatních závazků, převod jako přijatá faktura.",
   "Skratka pokladne v Pohode": "Zkratka pokladny v Pohodě",
   "Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu zatiaľ ako prijaté faktúry.":
     "Bez zkratky pokladny Pohoda pokladní doklad nezaloží — hotovostní účtenky půjdou zatím jako přijaté faktury.",
   "Všetky ako prijaté faktúry": "Všechny jako přijaté faktury",
   "Doklad sa zaúčtuje ako záväzok a úhradu spáruje účtovníčka.":
     "Doklad se zaúčtuje jako závazek a úhradu spáruje účetní.",
-  "Posielať aj položky bločku": "Posílat i položky účtenky",
-  "Inak ide len súhrn po sadzbách DPH. Položky idú v cenách s DPH, tak ako sú na bločku. Doklad s ďalšími pokladňami vyberiete v záložke Pokladne v číselníku nižšie.":
-    "Jinak jde jen souhrn po sazbách DPH. Položky jdou v cenách s DPH, tak jak jsou na účtence. Doklad s dalšími pokladnami vyberete v záložce Pokladny v číselníku níže.",
+  "Posielať aj položky dokladu": "Posílat i položky dokladu",
+  "Inak ide len súhrn po sadzbách DPH. Každá položka bločku ide s textom, množstvom, cenou bez DPH, sadzbou, predkontáciou a členením DPH. Keď položky so sumou dokladu nesedia, doklad ide súhrnom. Prijaté a vystavené faktúry idú s položkami vždy.":
+    "Jinak jde jen souhrn po sazbách DPH. Každá položka účtenky jde s textem, množstvím, cenou bez DPH, sazbou, předkontací a členěním DPH. Když položky nesedí se součtem dokladu, doklad jde souhrnem. Přijaté a vydané faktury jdou s položkami vždy.",
   "Export a spracovanie dokladov": "Export a zpracování dokladů",
   "Párovací symbol v Pohode": "Párovací symbol v Pohodě",
   "Variabilný symbol": "Variabilní symbol",

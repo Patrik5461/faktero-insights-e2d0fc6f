@@ -949,7 +949,7 @@ describe("spätný chod — prijaté doklady", () => {
     ...o,
   });
 
-  it("bloček: hotovosť (pokladňa), karta (interný doklad), prevod (faktúra) — všetky späť na cent", () => {
+  it("bloček: hotovosť (pokladňa), karta (Ostatné záväzky), prevod (faktúra) — všetky späť na cent", () => {
     const x = prijate(
       firmaSK,
       [
@@ -969,6 +969,8 @@ describe("spätný chod — prijaté doklady", () => {
     const karta = zaznamy.find((z) => z.cislo === "O-124")!;
     expect(hotovost.uhrada).toBe("hotovost");
     expect(karta.uhrada).toBe("karta");
+    // Ostatný záväzok zaplatený kartou sa vráti ako bloček, nie ako prijatá faktúra.
+    expect(karta.typ).toBe("blocek");
     expect(ulozBlocek(karta)).toMatchObject({
       vat_breakdown: [{ sadzba: 23, zaklad: 50, dph: 11.5 }],
     });

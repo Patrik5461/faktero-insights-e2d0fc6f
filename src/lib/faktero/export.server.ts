@@ -56,6 +56,7 @@ import {
   type NastaveniaExportu,
 } from "./export-nastavenia";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { polozkyPrijatej, type PolozkaPrijatej } from "./prijate-do-pohody";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -256,8 +257,9 @@ export type PohodaNastavenia = {
   /** Kódy podľa kategórie nákladu (Predkontácie → kategória), keď doklad nemá vlastné. */
   podlaKategorie?: Record<string, { predkontacia?: string | null; clenenie?: string | null }>;
   /**
-   * Bločky ako v Doklado: hotovosť ako pokladničný doklad, karta ako interný
-   * doklad. Bez toho idú ako prijaté faktúry (Ostatné záväzky).
+   * Bločky podľa platby: hotovosť ako pokladničný doklad, karta do Ostatných
+   * záväzkov (faktúra `commitment`), prevod ako prijatá faktúra. Bez toho
+   * idú všetky ako prijaté faktúry.
    */
   blockyPodlaPlatby?: boolean;
   /** Predvolené stredisko Pohody pre všetky doklady. */
@@ -289,7 +291,11 @@ export type PohodaNastavenia = {
   zavazkovePredkontacie?: string[];
   /** Predkontácie, ktoré Pohoda v agende Prijaté faktúry pozná (prázdne = číselník nenačítaný). */
   predkontaciePrijatych?: string[];
-  /** Bločky aj s položkami (inak len súhrn po sadzbách). */
+  /**
+   * Bločky aj s položkami (inak len súhrn po sadzbách). Položky idú s textom,
+   * množstvom, jednotkovou cenou bez DPH, sadzbou, predkontáciou a členením
+   * DPH — len keď sedia s rozpisom DPH dokladu na cent.
+   */
   polozkyBlockov?: boolean;
   /** Účtovanie pomerom podľa kódu predkontácie (napr. auto 50/50). */
   pomeryPredkontacii?: Record<string, unknown>;
@@ -1679,8 +1685,18 @@ export function polozkyDokladov(opts: {
         po položkách — so sadzbou DPH pri každej a prenesené položky
         (§ 69 ods. 12) s vlastným členením DPH a KV B1.
       */
-      const polozkyFaktury: any[] =
-        !rozuctovany && Array.isArray(d?._polozkyPrijatej) ? d._polozkyPrijatej : [];
+      /*
+        Bloček s voľbou „Posielať aj položky dokladu“ ide tou istou cestou ako
+        prijatá faktúra: položky prepočítané na základ a daň, ktoré sedia
+        s rozpisom DPH na cent (inak súhrn ako doteraz).
+      */
+      const polozkyFaktury: any[] = rozuctovany
+        ? []
+        : Array.isArray(d?._polozkyPrijatej)
+          ? d._polozkyPrijatej
+          : blocek && nastavenia?.polozkyBlockov
+            ? polozkyBlockuPrePohodu(d, rozpis, predkontaciaJedna ?? null, clenenieJedno ?? null)
+            : [];
       const kodPolozky = (x: any) => x.predkontacia || predkontaciaJedna || "";
       const rozuctovanePolozky =
         polozkyFaktury.length > 0 && new Set(polozkyFaktury.map(kodPolozky)).size > 1;
@@ -1701,12 +1717,23 @@ export function polozkyDokladov(opts: {
           : clenenieJedno;
 
       /*
-        Agenda v Pohode. Prijatá faktúra ide vždy ako faktúra. Bloček ako
-        v Doklado podľa platby: hotovosť ako pokladničný doklad (výdaj z
-        pokladne), karta ako interný doklad, prevod ako prijatá faktúra —
-        ak si to firma zapla; inak ako doteraz prijatá faktúra.
+        Agenda v Pohode. Prijatá faktúra ide vždy ako faktúra. Bloček podľa
+        platby: hotovosť ako pokladničný doklad (výdaj z pokladne), karta do
+        Ostatných záväzkov, prevod ako prijatá faktúra — ak si to firma
+        zapla; inak ako doteraz prijatá faktúra.
       */
       const platba = String(d?.payment_method ?? "");
+      /*
+        Bloček zaplatený kartou ide do Ostatných záväzkov (faktúra typu
+        `commitment`), nie do Interných dokladov — tak ho chce účtovníčka
+        (2. 11. 2026); úhradu z banky v Pohode spáruje na záväzok.
+      */
+      const blocekKartou =
+        blocek &&
+        Boolean(nastavenia?.blockyPodlaPlatby) &&
+        !d?.vyuctovanie_id &&
+        d?._agenda !== "int" &&
+        platba === "karta";
       const p: "inv" | "vch" | "int" =
         d?._agenda === "int"
           ? "int"
@@ -1723,9 +1750,7 @@ export function polozkyDokladov(opts: {
               String(d?.pohoda_pokladna ?? "").trim() || nastavenia?.pokladna?.trim()
               ? "vch"
               : "inv"
-            : platba === "karta"
-              ? "int"
-              : "inv"
+            : "inv"
           : "inv";
       const koren = p === "inv" ? "invoice" : p === "vch" ? "voucher" : "intDoc";
       /*
@@ -1794,12 +1819,6 @@ export function polozkyDokladov(opts: {
           });
       const kvHlavicka = rozuctovany || cz || zalohovaPrijata ? "" : kvAuto;
 
-      /*
-        Položky bločku (voľba firmy): v cenách s DPH, ako sú na bločku. Pri
-        rozúčtovaní majú prednosť riadky rozúčtovania.
-      */
-      const polozkyBlocku: any[] =
-        nastavenia?.polozkyBlockov && blocek && Array.isArray(d?.items) ? d.items : [];
       const xmlPolozkyFaktury = polozkyFaktury.length
         ? `
       <${p}:${koren}Detail>${polozkyFaktury
@@ -1881,22 +1900,7 @@ export function polozkyDokladov(opts: {
         })
         .join("")}
       </${p}:${koren}Detail>`
-        : polozkyBlocku.length
-          ? `
-      <${p}:${koren}Detail>${polozkyBlocku
-        .map(
-          (it: any) => `
-        <${p}:${koren}Item>${el(`${p}:text`, skrat(it?.name || "Položka", 90), "          ")}
-          <${p}:quantity>${mnozstvoPohody(Number(it?.quantity ?? 1) || 1)}</${p}:quantity>
-          <${p}:payVAT>true</${p}:payVAT>
-          <${p}:rateVAT>${kodSadzby(Number(it?.vat_rate ?? 0), tab)}</${p}:rateVAT>
-          <${p}:${mb}>${elSuma("typ:unitPrice", Number(it?.unit_price ?? it?.total ?? 0), "            ")}
-          </${p}:${mb}>
-        </${p}:${koren}Item>`,
-        )
-        .join("")}
-      </${p}:${koren}Detail>`
-          : "";
+        : "";
 
       /*
         Faktúra v cudzej mene bez položiek: súhrn v cudzej mene nesie len
@@ -2049,8 +2053,9 @@ export function polozkyDokladov(opts: {
         .filter(Boolean)
         .join(" · ");
       // Predkontácia s agendou „Ostatné záväzky" → doklad ide ako záväzok.
-      const typFaktury =
-        typPohody === "receivedInvoice" &&
+      const typFaktury = blocekKartou
+        ? "commitment"
+        : typPohody === "receivedInvoice" &&
         predkontaciaJedna &&
         nastavenia?.zavazkovePredkontacie?.includes(String(predkontaciaJedna))
           ? "commitment"
@@ -2073,7 +2078,11 @@ export function polozkyDokladov(opts: {
       // Zálohové faktúry majú v Pohode vlastný číselný rad — rad prijatých faktúr by nesedel.
       const rad =
         String(d?.pohoda_rad ?? "").trim() ||
-        (zalohovaPrijata
+        /*
+          Rad prijatých faktúr v Ostatných záväzkoch Pohoda nepozná — bloček
+          kartou dostane predvolený rad agendy, kým nemá vlastný.
+        */
+        (zalohovaPrijata || blocekKartou
           ? ""
           : p === "vch"
           ? nastavenia?.radPokladna
@@ -3527,4 +3536,56 @@ ${odsadenie}</SouhrnDPH>`;
 export function pevnyDatumPrijateho(prijatyDoklad: boolean, datum: unknown): string | null {
   const d = String(datum ?? "").trim();
   return prijatyDoklad && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+}
+
+/**
+ * Položky bločku pre Pohodu v tvare položiek prijatej faktúry: základ, daň
+ * a jednotková cena bez DPH, ktoré po sadzbách sedia s rozpisom DPH dokladu
+ * na cent. Riadok zaokrúhlenia z bločku sa vynechá (zaokrúhlenie nesie súhrn
+ * alebo vlastná položka). Položka bez vlastného kódu dostane predkontáciu
+ * a členenie DPH dokladu — Pohoda ich do položiek z hlavičky sama nedoplní.
+ * Keď položky s rozpisom nesedia, vráti prázdne pole a doklad ide súhrnom.
+ */
+export function polozkyBlockuPrePohodu(
+  d: any,
+  rozpis: RozpisDph[],
+  predkontacia: string | null,
+  clenenie: string | null,
+): PolozkaPrijatej[] {
+  const jedinaSadzba = rozpis.length === 1 ? Number(rozpis[0].sadzba) : null;
+  const items = (Array.isArray(d?.items) ? d.items : [])
+    .filter((x: any) => String(x?.name ?? "").trim() && !/^\s*zaokr[uú]hl/i.test(String(x.name)))
+    .map((x: any) =>
+      // Bloček s jedinou sadzbou: položka bez sadzby má sadzbu dokladu.
+      (x?.vat_rate === null || x?.vat_rate === undefined || x?.vat_rate === "") && jedinaSadzba !== null
+        ? { ...x, vat_rate: jedinaSadzba }
+        : x,
+    );
+  if (!items.length || !rozpis.length) return [];
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const zaklad = r2(rozpis.reduce((a, x) => a + Number(x.zaklad ?? 0), 0));
+  const dph = r2(rozpis.reduce((a, x) => a + Number(x.dph ?? 0), 0));
+  const polozky = polozkyPrijatej({
+    items,
+    amount_without_vat: zaklad,
+    vat_amount: dph,
+    amount_total: r2(zaklad + dph),
+  });
+  if (!polozky?.length) return [];
+  // Po sadzbách musia sedieť s rozpisom — inak by Pohoda zaúčtovala inú daň.
+  const sadzby = new Set([...rozpis.map((x) => Number(x.sadzba)), ...polozky.map((x) => x.sadzba)]);
+  for (const s of sadzby) {
+    const r = rozpis.filter((x) => Number(x.sadzba) === s);
+    const p = polozky.filter((x) => x.sadzba === s);
+    if (
+      Math.abs(r.reduce((a, x) => a + Number(x.zaklad ?? 0), 0) - p.reduce((a, x) => a + x.zaklad, 0)) > 0.005 ||
+      Math.abs(r.reduce((a, x) => a + Number(x.dph ?? 0), 0) - p.reduce((a, x) => a + x.dph, 0)) > 0.005
+    )
+      return [];
+  }
+  return polozky.map((x) => ({
+    ...x,
+    predkontacia: x.predkontacia || predkontacia,
+    clenenie: x.clenenie || clenenie,
+  }));
 }

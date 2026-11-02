@@ -404,7 +404,7 @@ function Predvolene({
             {t("Podľa spôsobu platby")}
             <span className="block text-xs text-muted-foreground">
               {t(
-                "Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako prijatá faktúra.",
+                "Hotovosť ako výdavkový pokladničný doklad, karta do Ostatných záväzkov, prevod ako prijatá faktúra.",
               )}
             </span>
           </span>
@@ -453,10 +453,10 @@ function Predvolene({
             className="mt-1"
           />
           <span>
-            {t("Posielať aj položky bločku")}
+            {t("Posielať aj položky dokladu")}
             <span className="block text-xs text-muted-foreground">
               {t(
-                "Inak ide len súhrn po sadzbách DPH. Položky idú v cenách s DPH, tak ako sú na bločku. Doklad s ďalšími pokladňami vyberiete v záložke Pokladne v číselníku nižšie.",
+                "Inak ide len súhrn po sadzbách DPH. Každá položka bločku ide s textom, množstvom, cenou bez DPH, sadzbou, predkontáciou a členením DPH. Keď položky so sumou dokladu nesedia, doklad ide súhrnom. Prijaté a vystavené faktúry idú s položkami vždy.",
               )}
             </span>
           </span>

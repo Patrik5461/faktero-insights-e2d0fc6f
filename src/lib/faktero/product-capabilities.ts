@@ -284,7 +284,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Mesačné podklady pre účtovníčku",
       "Číselník predkontácií a členení DPH načítaný z Pohody (konektorom, XML súborom alebo tabuľkou), predvolené kódy podľa druhu dokladu a kategórie nákladu",
       "Strediská, činnosti a číselné rady z Pohody; predvolený rad a stredisko",
-      "Bločky do Pohody ako prijaté faktúry, alebo podľa platby: hotovosť ako pokladničný doklad, karta ako interný doklad",
+      "Bločky do Pohody ako prijaté faktúry, alebo podľa platby: hotovosť ako pokladničný doklad, karta do Ostatných záväzkov",
       "Konektor unesie viac firiem naraz a na prelome rokov posiela doklady minulého roka do databázy minulého roka",
       "Doklad z uzamknutého obdobia dostane v Pohode dátum zaúčtovania po uzávierke",
       "Zaúčtované doklady (vystavené, prijaté faktúry aj bločky) aj do iných programov: KROS Omega (účtovné doklady EUD s účtami MD/Dal a typmi súm), Money S3 (faktúry, pokladničné a interné doklady s predkontáciou a členením), ABRA Flexi (predpis zaúčtovania, členenie DPH), MRP-K/S (XML MRP-K/S 2.0 s predkontáciou a typom DPH, slovenská aj česká verzia) a zaúčtovaná súpiska CSV pre Helios či Premier; účtovný program si firma vyberie v Účtovné exporty",

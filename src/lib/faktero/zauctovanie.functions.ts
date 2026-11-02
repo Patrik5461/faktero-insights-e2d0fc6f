@@ -103,7 +103,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         ? ["issuedAdvanceInvoice", "issuedInvoice"]
         : ["issuedInvoice"]
       : doklad
-        ? ["receivedInvoice", "cashPaid", "internalDocument"]
+        ? ["receivedInvoice", "cashPaid", "commitment", "internalDocument"]
         : ["receivedInvoice"];
     const kluc = vystavena
       ? data.typ === "proforma"
