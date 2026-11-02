@@ -70,7 +70,10 @@ describe("NahladKompaktny", () => {
     expect(h).toContain("data-prepinac-strany-nahladu");
     expect(h).toContain('data-pdf="https://x/fa.pdf"');
     expect(h).toContain('href="https://x/fa.pdf"');
-    expect(h).toContain("lg:max-h-[calc(100vh-11rem)]");
+    // Výška panela z výrezu, rolovacia je len časť s dokladom — žiadny strop max-h.
+    expect(h).toContain("lg:h-[calc(100vh-6rem)]");
+    expect(h).toContain("data-nahlad-obsah");
+    expect(h).not.toContain("lg:max-h-");
   });
 
   it("kôš len pri onZmaz (nespracovaný), Skryť náhľad len pri onSkryt (faktúra)", () => {

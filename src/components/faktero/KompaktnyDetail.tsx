@@ -1,4 +1,4 @@
-import { useState, type HTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import {
   AlertCircle,
   Check,
@@ -14,6 +14,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { NahladPdf } from "./NahladPdf";
+import { PanelNahladu } from "./PanelNahladu";
 import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahladom";
 import {
   ObrazokSoZvyraznenim,
@@ -169,7 +170,8 @@ export type SuborKompaktny = {
 
 /**
  * Náhľad dokladu s nástrojmi — otočiť, priblížiť, zvýraznenie vyťažených
- * údajov, stiahnuť, zmazať, prepínač strany. Na širokej obrazovke roluje sám.
+ * údajov, stiahnuť, zmazať, prepínač strany. Na širokej obrazovke má výšku
+ * výrezu a roluje len jeho obsah (nástroje ostávajú hore).
  */
 export function NahladKompaktny({
   subor,
@@ -200,118 +202,201 @@ export function NahladKompaktny({
   const pdf = String(subor?.mime ?? "").includes("pdf");
   const zv = zvyraznenie ? { ...zvyraznenie, aktivne: aktivnePole } : undefined;
   return (
-    <div
-      className="min-w-0 rounded-2xl border border-border bg-card"
+    <PanelNahladu
+      className={NAHLAD_PANEL}
+      obsahClassName="p-4"
       data-nahlad-kompaktny=""
       aria-label={subor?.nazov ? `${t("Náhľad dokladu")} — ${subor.nazov}` : t("Náhľad dokladu")}
       role="region"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-        <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
-          {t("Náhľad")}
-        </span>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          {[
-            {
-              ikona: RotateCcw,
-              popis: "Otočiť doľava",
-              akcia: () => setOtocenie((o) => o - 90),
-            },
-            {
-              ikona: RotateCw,
-              popis: "Otočiť doprava",
-              akcia: () => setOtocenie((o) => o + 90),
-            },
-            {
-              ikona: ZoomIn,
-              popis: "Priblížiť",
-              akcia: () => setZvacsenie((z) => Math.min(3, z + 0.25)),
-            },
-            {
-              ikona: ZoomOut,
-              popis: "Oddialiť",
-              akcia: () => setZvacsenie((z) => Math.max(0.5, z - 0.25)),
-            },
-          ].map(({ ikona: I, popis, akcia }) => (
-            <button
-              key={popis}
-              type="button"
-              title={t(popis)}
-              aria-label={t(popis)}
-              onClick={akcia}
-              className="rounded-md p-2 hover:bg-secondary"
-            >
-              <I className="h-4 w-4" />
-            </button>
-          ))}
-          {(pdf || Boolean(zvyraznenie?.polohy?.length)) && zvyraznenie && onPrepniZvyraznenie ? (
-            <PrepinacZvyraznenia zap={zvyraznenie.zobrazit} onPrepni={onPrepniZvyraznenie} />
-          ) : null}
-          {url ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              title={t("Stiahnuť")}
-              aria-label={t("Stiahnuť")}
-              className="rounded-md p-2 hover:bg-secondary"
-            >
-              <Download className="h-4 w-4" />
-            </a>
-          ) : null}
-          {onZmaz ? (
-            <button
-              type="button"
-              title={t("Zmazať do koša")}
-              aria-label={t("Zmazať do koša")}
-              onClick={onZmaz}
-              disabled={busy}
-              className="rounded-md p-2 hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          ) : null}
-          <PrepinacStranyNahladu className="p-2" />
-          {onSkryt ? (
-            <button
-              type="button"
-              title={t("Skryť náhľad")}
-              aria-label={t("Skryť náhľad")}
-              onClick={onSkryt}
-              className="rounded-md p-2 hover:bg-secondary"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
+      toolbar={
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+          <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
+            {t("Náhľad")}
+          </span>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            {[
+              {
+                ikona: RotateCcw,
+                popis: "Otočiť doľava",
+                akcia: () => setOtocenie((o) => o - 90),
+              },
+              {
+                ikona: RotateCw,
+                popis: "Otočiť doprava",
+                akcia: () => setOtocenie((o) => o + 90),
+              },
+              {
+                ikona: ZoomIn,
+                popis: "Priblížiť",
+                akcia: () => setZvacsenie((z) => Math.min(3, z + 0.25)),
+              },
+              {
+                ikona: ZoomOut,
+                popis: "Oddialiť",
+                akcia: () => setZvacsenie((z) => Math.max(0.5, z - 0.25)),
+              },
+            ].map(({ ikona: I, popis, akcia }) => (
+              <button
+                key={popis}
+                type="button"
+                title={t(popis)}
+                aria-label={t(popis)}
+                onClick={akcia}
+                className="rounded-md p-2 hover:bg-secondary"
+              >
+                <I className="h-4 w-4" />
+              </button>
+            ))}
+            {(pdf || Boolean(zvyraznenie?.polohy?.length)) && zvyraznenie && onPrepniZvyraznenie ? (
+              <PrepinacZvyraznenia zap={zvyraznenie.zobrazit} onPrepni={onPrepniZvyraznenie} />
+            ) : null}
+            {url ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                title={t("Stiahnuť")}
+                aria-label={t("Stiahnuť")}
+                className="rounded-md p-2 hover:bg-secondary"
+              >
+                <Download className="h-4 w-4" />
+              </a>
+            ) : null}
+            {onZmaz ? (
+              <button
+                type="button"
+                title={t("Zmazať do koša")}
+                aria-label={t("Zmazať do koša")}
+                onClick={onZmaz}
+                disabled={busy}
+                className="rounded-md p-2 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            ) : null}
+            <PrepinacStranyNahladu className="p-2" />
+            {onSkryt ? (
+              <button
+                type="button"
+                title={t("Skryť náhľad")}
+                aria-label={t("Skryť náhľad")}
+                onClick={onSkryt}
+                className="rounded-md p-2 hover:bg-secondary"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
-      <div className="overflow-auto p-4 lg:max-h-[calc(100vh-11rem)]">
-        {subor === undefined ? (
-          <div className="flex justify-center p-6 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-          </div>
-        ) : url ? (
-          <div
-            style={{
-              transform: `rotate(${otocenie}deg) scale(${zvacsenie})`,
-              transformOrigin: "top center",
-            }}
-            className="transition-transform"
-          >
-            {pdf ? (
-              <NahladPdf key={url} url={url} zvyraznenie={zv} />
-            ) : (
-              <ObrazokSoZvyraznenim
-                url={url}
-                alt={subor?.nazov ?? t("Doklad")}
-                className="mx-auto max-w-full rounded-md"
-                zvyraznenie={zv}
-              />
-            )}
-          </div>
-        ) : (
-          <p className="p-6 text-sm text-muted-foreground">{t(prazdne)}</p>
-        )}
+      }
+    >
+      {subor === undefined ? (
+        <div className="flex justify-center p-6 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+      ) : url ? (
+        <OtocenyPriblizeny otocenie={otocenie} zvacsenie={zvacsenie}>
+          {pdf ? (
+            <NahladPdf key={url} url={url} zvyraznenie={zv} />
+          ) : (
+            <ObrazokSoZvyraznenim
+              url={url}
+              alt={subor?.nazov ?? t("Doklad")}
+              className="w-full rounded-md"
+              zvyraznenie={zv}
+            />
+          )}
+        </OtocenyPriblizeny>
+      ) : (
+        <p className="p-6 text-sm text-muted-foreground">{t(prazdne)}</p>
+      )}
+    </PanelNahladu>
+  );
+}
+
+/**
+ * Obal panela náhľadu v kompaktnom rozložení: na širokej obrazovke drží pri
+ * vrchu a má výšku výrezu (ako panel s údajmi), na úzkej je v toku stránky.
+ */
+export const NAHLAD_PANEL =
+  "h-auto min-w-0 overflow-hidden rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:self-start";
+
+/**
+ * Otočenie a priblíženie dokladu tak, aby ostal v rolovacej časti panela.
+ * Priblíženie mení šírku (nie `scale`) — zväčšený doklad potom roluje
+ * do všetkých strán, nič nevylezie doľava ani mimo panel. Pri otočení
+ * o 90°/270° má miesto, ktoré obsah zaberie v toku, prehodené rozmery.
+ */
+export function OtocenyPriblizeny({
+  otocenie,
+  zvacsenie,
+  children,
+}: {
+  otocenie: number;
+  zvacsenie: number;
+  children: ReactNode;
+}) {
+  const ram = useRef<HTMLDivElement>(null);
+  const obsah = useRef<HTMLDivElement>(null);
+  const [sirka, setSirka] = useState(0);
+  const [pomer, setPomer] = useState(0);
+  useEffect(() => {
+    const r = ram.current;
+    const o = obsah.current;
+    if (!r || !o || typeof ResizeObserver === "undefined") return;
+    const zmeraj = () => {
+      setSirka(r.clientWidth);
+      if (o.offsetWidth > 0 && o.offsetHeight > 0) setPomer(o.offsetHeight / o.offsetWidth);
+    };
+    zmeraj();
+    const ro = new ResizeObserver(zmeraj);
+    ro.observe(r);
+    ro.observe(o);
+    return () => ro.disconnect();
+  }, []);
+  const bokom = ((otocenie % 360) + 360) % 180 !== 0;
+  // Kým nie je zmerané (server, prvé vykreslenie), šírka v percentách.
+  const w = sirka ? sirka * zvacsenie : null;
+  const naBok = bokom && w !== null && pomer > 0;
+  // Šírka pred otočením = výška po otočení. Jedna strana (pomer A4 a menší)
+  // vyplní po otočení šírku panela; dlhší obsah (viac strán PDF pod sebou)
+  // sa nezmenší pod veľkosť jednej strany — strany idú vedľa seba a roluje sa.
+  const vnutri = naBok ? w / Math.min(pomer, 1.5) : 0;
+  // Po otočení na začiatok dokladu: pri 90° doprava je prvá strana vpravo.
+  const uhol = ((otocenie % 360) + 360) % 360;
+  useEffect(() => {
+    const rol = ram.current?.parentElement;
+    if (!rol) return;
+    rol.scrollTop = 0;
+    rol.scrollLeft = uhol === 90 ? rol.scrollWidth : 0;
+  }, [uhol, naBok]);
+  return (
+    <div ref={ram} className="w-full">
+      <div
+        className="relative mx-auto"
+        style={{
+          width: naBok ? `${vnutri * pomer}px` : w !== null ? `${w}px` : `${zvacsenie * 100}%`,
+          height: naBok ? `${vnutri}px` : undefined,
+        }}
+      >
+        <div
+          ref={obsah}
+          data-otoceny-priblizeny=""
+          style={
+            naBok
+              ? {
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: `${vnutri}px`,
+                  transform: `translate(-50%, -50%) rotate(${otocenie}deg)`,
+                }
+              : { transform: otocenie ? `rotate(${otocenie}deg)` : undefined }
+          }
+          className="transition-transform"
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

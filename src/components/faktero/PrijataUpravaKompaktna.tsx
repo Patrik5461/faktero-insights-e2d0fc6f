@@ -7,6 +7,8 @@ import { NahladPdf } from "./NahladPdf";
 import { PolozkyK, type PolozkaK } from "./DetailDokladuKompaktny";
 import { useT } from "@/lib/i18n/useT";
 import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahladom";
+import { PanelNahladu } from "./PanelNahladu";
+import { NAHLAD_PANEL, OtocenyPriblizeny } from "./KompaktnyDetail";
 
 /**
  * Náhľad dokladu s nástrojmi (otáčanie, priblíženie, stiahnutie) — tvarom
@@ -38,60 +40,57 @@ export function NahladDokladuNastroje({
     },
   ];
   return (
-    <div className="min-w-0 rounded-2xl border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-        <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
-          {t("Náhľad")}
-        </span>
-        <div className="flex flex-wrap items-center gap-1 text-muted-foreground">
-          {nastroje.map(({ ikona: I, popis, akcia }) => (
-            <button
-              key={popis}
-              type="button"
-              title={t(popis)}
-              aria-label={t(popis)}
-              onClick={akcia}
-              className="rounded-md p-2 hover:bg-secondary"
-            >
-              <I className="h-4 w-4" />
-            </button>
-          ))}
-          {url ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              title={t("Stiahnuť")}
-              aria-label={t("Stiahnuť")}
-              className="rounded-md p-2 hover:bg-secondary"
-            >
-              <Download className="h-4 w-4" />
-            </a>
-          ) : null}
-          {akcie}
-          <PrepinacStranyNahladu className="p-2" />
-        </div>
-      </div>
-      <div className="overflow-auto p-4 lg:max-h-[calc(100vh-11rem)]">
-        {url ? (
-          <div
-            style={{
-              transform: `rotate(${otocenie}deg) scale(${zvacsenie})`,
-              transformOrigin: "top center",
-            }}
-            className="transition-transform"
-          >
-            {pdf ? (
-              <NahladPdf url={url} />
-            ) : (
-              <img src={url} alt={nazov ?? t("Doklad")} className="mx-auto max-w-full rounded-md" />
-            )}
+    <PanelNahladu
+      className={NAHLAD_PANEL}
+      obsahClassName="p-4"
+      toolbar={
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+          <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary-hover">
+            {t("Náhľad")}
+          </span>
+          <div className="flex flex-wrap items-center gap-1 text-muted-foreground">
+            {nastroje.map(({ ikona: I, popis, akcia }) => (
+              <button
+                key={popis}
+                type="button"
+                title={t(popis)}
+                aria-label={t(popis)}
+                onClick={akcia}
+                className="rounded-md p-2 hover:bg-secondary"
+              >
+                <I className="h-4 w-4" />
+              </button>
+            ))}
+            {url ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                title={t("Stiahnuť")}
+                aria-label={t("Stiahnuť")}
+                className="rounded-md p-2 hover:bg-secondary"
+              >
+                <Download className="h-4 w-4" />
+              </a>
+            ) : null}
+            {akcie}
+            <PrepinacStranyNahladu className="p-2" />
           </div>
-        ) : (
-          <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>
-        )}
-      </div>
-    </div>
+        </div>
+      }
+    >
+      {url ? (
+        <OtocenyPriblizeny otocenie={otocenie} zvacsenie={zvacsenie}>
+          {pdf ? (
+            <NahladPdf url={url} />
+          ) : (
+            <img src={url} alt={nazov ?? t("Doklad")} className="block w-full rounded-md" />
+          )}
+        </OtocenyPriblizeny>
+      ) : (
+        <p className="p-6 text-sm text-muted-foreground">{t("Doklad nemá súbor.")}</p>
+      )}
+    </PanelNahladu>
   );
 }
 
