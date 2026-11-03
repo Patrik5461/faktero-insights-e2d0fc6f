@@ -114,6 +114,9 @@ export default {
           currency: "EUR",
           payment_method: "karta",
         });
+      // Spúšťač faktero_strazca_duplicity_blocku odmietne bloček s rovnakým dodávateľom, dňom
+      // a sumou (výplň je celá po 1,23 €) — každý dostane vlastný kód, potom sa porovnáva len ten.
+      for (const r of riadky) r.qr_raw = `QR-${r.document_number}`;
       // PostgREST chce pri hromadnom vložení v každom riadku tie isté kľúče.
       const kluce = [...new Set(riadky.flatMap((r) => Object.keys(r)))];
       for (const r of riadky) for (const k of kluce) if (!(k in r)) r[k] = null;
