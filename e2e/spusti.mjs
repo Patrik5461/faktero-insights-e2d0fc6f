@@ -194,6 +194,29 @@ async function prihlas(prehliadac) {
   }
 }
 
+/**
+  Okno „Pripravte sa na e-Faktúru" (EfakturaOznam) sa majiteľovi SK firmy bez eFaktúry
+  vráti 7 dní po zatvorení a prekryje stránku — toky potom nenájdu tlačidlá.
+  Pred behom sa preto pre QA používateľa vo všetkých QA firmách zapíše zatvorenie
+  (to isté, čo urobí server po kliknutí na krížik, pozri efaktura-oznam.functions.ts).
+  Píše sa jeho vlastnou reláciou (RLS pustí len jeho riadok), iných ľudí sa to netýka.
+*/
+async function odlozOznamEfaktury(klient, jwt) {
+  const userId = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).sub;
+  const teraz = new Date().toISOString();
+  for (const [meno, company_id] of Object.entries(FIRMY)) {
+    const r = await klient.post(
+      "efaktura_oznam?on_conflict=company_id,user_id",
+      { company_id, user_id: userId, dismissed_at: teraz, updated_at: teraz },
+      { hlavicky: { Prefer: "resolution=merge-duplicates,return=minimal" } },
+    );
+    if (r.status >= 300)
+      log(
+        `! oznam e-Faktúry vo firme ${meno} sa nedá odložiť: ${r.status} ${r.text.slice(0, 200)}`,
+      );
+  }
+}
+
 /** Nastavenia QA účtu (user_metadata) z /auth/v1/user. */
 async function nacitajNastaveniaUctu(jwt) {
   const r = await fetch(`${SUPABASE.url}/auth/v1/user`, {
@@ -391,6 +414,13 @@ function vytvorKontext(tok, pokus, prehliadac) {
     async go(cesta, page = t.page) {
       await page.goto(`${BASE}${cesta}`, { waitUntil: "domcontentloaded" });
       await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      // Poistka k odlozOznamEfaktury: keby sa okno o e-Faktúre predsa ukázalo, zavrie sa.
+      const oznam = page.getByRole("dialog").filter({ hasText: "Pripravte sa na e-Faktúru" });
+      if (await oznam.isVisible().catch(() => false)) {
+        log(`  ! ${tok.meno}: okno o e-Faktúre prekrylo ${cesta}, zatváram ho`);
+        await page.keyboard.press("Escape").catch(() => {});
+        await oznam.waitFor({ state: "hidden", timeout: 3000 }).catch(() => {});
+      }
     },
     /** Klikne a uloží stiahnutý súbor; vráti cestu. */
     async stiahni(klik, meno, page = t.page) {
@@ -537,6 +567,7 @@ try {
     log(`! nastavenia účtu sa nedajú prečítať (${e.message}) — toky ich uvidia skutočné`);
     return null;
   });
+  await odlozOznamEfaktury(rest, jwt).catch((e) => log(`! oznam e-Faktúry: ${e.message}`));
 } catch (e) {
   chybaPrihlasenia = `prihlásenie zlyhalo: ${String(e?.message ?? e).slice(0, 300)}`;
   log(chybaPrihlasenia);
