@@ -63,6 +63,7 @@ import {
 import type { PoleNavrhu } from "@/lib/faktero/ai-predkontacia";
 import { chybaClenenie, ucinneClenenie } from "@/lib/faktero/clenenie-zauctovania";
 import { jeCudzia } from "@/lib/faktero/cudzia-faktura";
+import { UpozornenieDuplicity, useDuplicitaDokladu } from "./DuplicitaDokladu";
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 
 export type Navrhy = {
@@ -589,6 +590,12 @@ export function ZauctovaniePanel({
         rozuctovanie: Array.isArray(row.rozuctovanie) ? row.rozuctovanie : null,
       }),
     );
+  // Duplicitný doklad (ten istý dvakrát v evidencii) sa nezaúčtuje — server ho aj tak vynechá.
+  const duplicity = useDuplicitaDokladu("prijata", row);
+  const duplicitny = duplicity.length > 0;
+  const upozornenieDuplicity = duplicitny ? (
+    <UpozornenieDuplicity druh="prijata" druhe={duplicity} className="mt-2" />
+  ) : null;
   const upozornenieClenenia = bezClenenia ? (
     <p
       role="alert"
@@ -799,7 +806,8 @@ export function ZauctovaniePanel({
               type="button"
               onClick={() => uloz(false)}
               // Cudzia faktúra sa zaúčtuje až po potvrdení „patrí tejto firme“ (server ju aj tak vynechá).
-              disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row)}
+              disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row) || duplicitny}
+              title={duplicitny ? t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže.") : undefined}
               className={TLACIDLO_HLAVNE}
             >
               {busy ? (
@@ -969,7 +977,7 @@ export function ZauctovaniePanel({
           </fieldset>
           {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
           {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
-          {!odovzdana && !zauctovana && upozornenieClenenia}
+          {!odovzdana && !zauctovana && (<>{upozornenieDuplicity}{upozornenieClenenia}</>)}
           {!zamknutaUprava ? (
             <Rozsirene>
               <VyberPravidla
@@ -1204,14 +1212,15 @@ export function ZauctovaniePanel({
         {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
         {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
 
-        {!odovzdana && !zauctovana && upozornenieClenenia}
+        {!odovzdana && !zauctovana && (<>{upozornenieDuplicity}{upozornenieClenenia}</>)}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {!odovzdana && !zauctovana ? (
             <button
               type="button"
               onClick={() => uloz(false)}
               // Cudzia faktúra sa zaúčtuje až po potvrdení „patrí tejto firme“ (server ju aj tak vynechá).
-              disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row)}
+              disabled={busy || Boolean(row.locked_at) || bezClenenia || jeCudzia(row) || duplicitny}
+              title={duplicitny ? t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže.") : undefined}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {busy ? (
@@ -1558,12 +1567,13 @@ export function ZauctovaniePanel({
               }}
               onZmena={onZmena}
             />
-            {!zauctovana && upozornenieClenenia}
+            {!zauctovana && (<>{upozornenieDuplicity}{upozornenieClenenia}</>)}
             <div className="mt-3 flex flex-wrap gap-2">
               {!zauctovana && (
                 <button
                   onClick={() => uloz(false)}
-                  disabled={busy || bezClenenia || jeCudzia(row)}
+                  disabled={busy || bezClenenia || jeCudzia(row) || duplicitny}
+                  title={duplicitny ? t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže.") : undefined}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}

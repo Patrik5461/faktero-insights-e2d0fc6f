@@ -57,6 +57,7 @@ import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
 import { potvrd } from "@/lib/potvrdenie";
 import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { rozlozChybuBlocku } from "@/lib/faktero/duplicita-zauctovania";
 import { nesediZChyby } from "@/lib/faktero/cudzia-faktura";
 import { CudziaFakturaUpozornenie, textCudzejFaktury } from "@/components/faktero/CudziaFaktura";
 import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
@@ -304,7 +305,9 @@ function Detail() {
         data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu, ajCudziu },
       });
       const kam =
-        r.agenda === "prijata" && r.cudzia
+        r.agenda === "prijata" && r.duplicita
+          ? t("Faktúra je vytvorená, ale nezaúčtovaná — rovnaká faktúra už v evidencii je. Jednu z nich zmažte.")
+          : r.agenda === "prijata" && r.cudzia
           ? t("Faktúra je uložená medzi prijatými faktúrami s červeným výkričníkom — nepatrí tejto firme a nedá sa zaúčtovať, kým to nepotvrdíte")
           : r.agenda === "prijata" && r.zauctovana === false
           ? t("Faktúra je vytvorená medzi prijatými faktúrami — čaká na zaúčtovanie (chýba predkontácia alebo členenie DPH)")
@@ -357,6 +360,16 @@ function Detail() {
           )
         )
           await vytvorDoklad(ajDuplicitu, true);
+        return;
+      }
+      // Ten istý bloček už v Bločkoch je — druhýkrát sa neuloží (odkaz na uložený).
+      const uz = rozlozChybuBlocku(sprava);
+      if (uz) {
+        toast.error(t("Tento bloček už je uložený: {popis}", { popis: uz.popis }), {
+          action: uz.id
+            ? { label: t("Otvoriť"), onClick: () => navigate({ to: "/doklady/novy", search: { id: uz.id } as any }) }
+            : undefined,
+        });
         return;
       }
       toast.error(sprava || t("Doklad sa nepodarilo vytvoriť"));

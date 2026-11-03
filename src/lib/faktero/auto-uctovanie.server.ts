@@ -524,8 +524,10 @@ export async function navrhPreRiadok(
   const zakladStlpec =
     typ === "prijata" ? "amount_without_vat" : typ === "blocek" ? "net_amount" : "subtotal";
   const dphStlpec = typ === "vystavena" ? "vat_total" : "vat_amount";
+  const duplicitne = typ === "vystavena" ? null : await duplicitaRiadku(sb, typ, row);
   const bl = blokatory({
     cudziOdberatel: typ === "prijata" && Boolean(row.odberatel_nesedi),
+    duplicita: Boolean(duplicitne),
     polozkyNesedia:
       typ !== "vystavena" &&
       !(Array.isArray(row.polozky_vypnute) && row.polozky_vypnute.length) &&
@@ -554,7 +556,7 @@ export async function navrhPreRiadok(
     istota,
     pravidloId: zdroj === "pravidlo" ? (pravidlo?.id ?? null) : null,
     pravidloNazov: zdroj === "pravidlo" ? (pravidlo?.nazov ?? null) : null,
-    zdovodnenie: [zdovodnenie, rezimText].filter(Boolean).join(" · "),
+    zdovodnenie: [duplicitne, zdovodnenie, rezimText].filter(Boolean).join(" · "),
     blokatory: bl,
     rezimDph: clen.rezim,
     kedy,
@@ -692,6 +694,8 @@ export async function potvrdNavrh(
   if (jeUzavrety(row)) return false;
   // Faktúra inej firmy (iný odberateľ) sa nezaúčtuje — ani ručným potvrdením návrhu.
   if (typ === "prijata" && row.odberatel_nesedi) return false;
+  // Duplicitný doklad sa nezaúčtuje — automat ho nechá Na kontrolu.
+  if (typ !== "vystavena" && (await duplicitaRiadku(sb, typ, row))) return false;
   const zmena: Riadok = {
     zauctovane_at: new Date().toISOString(),
     zauctoval: args.automat ? null : (args.userId ?? null),
@@ -732,6 +736,21 @@ export async function potvrdNavrh(
       .eq("id", row.id)
       .eq("status", "received");
   return true;
+}
+
+/**
+ * Text duplicity prijatej faktúry či bločku (null = nie je duplicitný).
+ * Pravidlo v `duplicita-zauctovania.ts`.
+ */
+export async function duplicitaRiadku(
+  sb: Klient,
+  typ: Exclude<TypDokladu, "vystavena">,
+  row: Riadok,
+): Promise<string | null> {
+  const { duplicityDokladov } = await import("./duplicita-zauctovania.server");
+  const { textDuplicity } = await import("./duplicita-zauctovania");
+  const mapa = await duplicityDokladov(sb, row.company_id, typ === "prijata" ? "prijata" : "blocek", [row]);
+  return textDuplicity(mapa.get(String(row.id)) ?? []);
 }
 
 /** Doklad, ktorý fronta (aj ručné potvrdenie) smie zaúčtovať. */

@@ -284,6 +284,25 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
   return { riadok: r, sumy: s };
 }
 
+/**
+ * Zaúčtovanie duplicitného dokladu cez API — 409 s odkazom na druhý doklad
+ * (pravidlo v duplicita-zauctovania.ts). null = smie sa zaúčtovať.
+ */
+async function strazDuplicity(
+  ctx: ApiCtx,
+  druh: "prijata" | "blocek",
+  riadok: Record<string, unknown>,
+): Promise<Odpoved | null> {
+  const { duplicityDokladov } = await import("./duplicita-zauctovania.server");
+  const { textDuplicity } = await import("./duplicita-zauctovania");
+  const r = { ...riadok, id: riadok.id ?? "novy-doklad" };
+  const druhe = (await duplicityDokladov(ctx.supabase as any, ctx.company_id, druh, [r])).get(String(r.id)) ?? [];
+  if (!druhe.length) return null;
+  return err("duplicate_document", `${textDuplicity(druhe)}.`, 409, {
+    duplicates: druhe.map((d) => ({ id: d.id, number: d.cislo, booked: d.zauctovany })),
+  });
+}
+
 const STL_PRIJATEJ =
   "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at, odberatel_nesedi";
 
@@ -321,6 +340,15 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
       .limit(1)
       .maybeSingle();
     if (dup) return err("duplicate", "Táto prijatá faktúra už existuje.", 409, { id: dup.id });
+  }
+  // Zaúčtovanie (`accounting.booked`) duplicitnej faktúry sa nepustí.
+  if (riadok.zauctovane_at) {
+    const dup = await strazDuplicity(ctx, "prijata", {
+      ...riadok,
+      type: riadok.type ?? "regular",
+      status: riadok.status ?? "received",
+    });
+    if (dup) return dup;
   }
   let subor = {};
   if (d.file) {
@@ -399,6 +427,10 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
       `${n ? `${textNesedi(n)} ` : ""}Kým vo Fakteri nepotvrdíte, že faktúra patrí tejto firme, nedá sa zaúčtovať.`,
       409,
     );
+  }
+  if (riadok.zauctovane_at && !stary.zauctovane_at) {
+    const dup = await strazDuplicity(ctx, "prijata", { ...stary, ...riadok });
+    if (dup) return dup;
   }
   if (v.data.file) {
     try {
@@ -530,6 +562,13 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
   if (!zn.ok) return zn.odpoved;
   const teraz = new Date().toISOString();
   const blocek = riadokBlocku(d, teraz);
+  // Ten istý bloček (QR z eKasy, alebo dodávateľ + deň + suma) sa druhýkrát neuloží.
+  {
+    const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
+    const { chybaUlozenehoBlocku } = await import("./duplicita-zauctovania");
+    const uz = await najdiUlozenyBlocek(db, ctx.company_id, blocek);
+    if (uz) return err("duplicate", chybaUlozenehoBlocku(uz), 409, { id: uz.id });
+  }
   const kurz = await (await import("./kurz-dokladu.server")).doplnovacKurzov(ctx.company_id)(
     "expense_documents",
     blocek,
@@ -572,6 +611,10 @@ export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
   }
   const zamok = strazZamku("expense_documents", stary, riadok);
   if (zamok) return zamok;
+  if (riadok.zauctovane_at && !stary.zauctovane_at) {
+    const dup = await strazDuplicity(ctx, "blocek", { ...stary, ...riadok });
+    if (dup) return dup;
+  }
   if (v.data.file) {
     try {
       Object.assign(riadok, await ulozSubor(ctx, "expense-receipts", v.data.file));

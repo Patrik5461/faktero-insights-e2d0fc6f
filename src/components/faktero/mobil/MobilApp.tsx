@@ -255,6 +255,8 @@ type NajdenyDoklad = {
   total_amount: number | null;
   currency: string | null;
   supplier_name: string | null;
+  /** „blocky“ = uložený bloček — druhýkrát sa neuloží (server ho odmietne). */
+  kde?: "blocky" | "nespracovane";
 };
 
 /**
@@ -2022,6 +2024,11 @@ function ZachytDokladu({
   async function ulozDoklad() {
     // Bez fotky a úhrady sa bloček neuloží; tlačidlo je dovtedy neaktívne.
     if (!vysledok || !uhrada || coChybaBlocku({ foto, uhrada })) return;
+    // Uložený bloček druhýkrát neuložíme — server by ho aj tak odmietol.
+    if (duplikat?.kde === "blocky") {
+      toast.error(t("app.dokladUzMate"));
+      return;
+    }
     if (await ulozZalohovuFakturu()) return;
     const { isOnline } = await import("@/lib/mobile/offline-queue");
     const online = await isOnline();
@@ -2212,14 +2219,16 @@ export function Potvrdenie({
       subtitle={vysledok.zdroj === "ekasa" ? t("pd.zFinancnejSpravy") : t("app.precitaneZDokladu")}
       onBack={onSpat}
       footer={
-        <HlavneTlacidlo onClick={onUloz} disabled={chyba !== null}>
+        <HlavneTlacidlo onClick={onUloz} disabled={chyba !== null || duplikat?.kde === "blocky"}>
           {chyba === "foto" ? (
             <span className="inline-flex items-center gap-1.5" data-chyba-fotka>
               <Camera className="h-4 w-4" /> {t("app.najprvOdfotte")}
             </span>
           ) : uhrada ? (
             /* Pri známom duplikáte sa tlačidlo prizná, čo sa stane. */
-            duplikat ? (
+            duplikat?.kde === "blocky" ? (
+              t("app.dokladUzMate")
+            ) : duplikat ? (
               t("app.ulozitAjTak")
             ) : (
               t("app.ulozitDoklad")

@@ -359,6 +359,8 @@ export function prekazkaDokladu(
   const cislo = d?._povodneCislo || d?.document_number || (blocek ? "bloček" : "?");
   // Faktúra inej firmy (iný odberateľ) — kým človek nepotvrdí, že patrí tejto firme.
   if (d?._odberatelNesedi) return `${cislo} — ${DOVOD_CUDZIA}`;
+  // Duplicitný doklad (ten istý dvakrát v evidencii) — `oznacDuplicity` v duplicita-zauctovania.server.ts.
+  if (d?._duplicita) return `${cislo} — ${String(d._duplicita)}`;
   {
     const dovod = prekazkaPoliPrijateho(d);
     if (dovod) return dovod;

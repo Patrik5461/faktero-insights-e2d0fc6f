@@ -304,5 +304,7 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     _zauctovane: Boolean(p.zauctovane_at),
     // Odberateľ na doklade je iná firma — do Pohody nejde, kým to človek nepotvrdí.
     _odberatelNesedi: Boolean(p.odberatel_nesedi),
+    // Duplicitná faktúra (doplní `oznacDuplicity`) — do Pohody nejde.
+    _duplicita: p._duplicita ?? null,
   };
 }

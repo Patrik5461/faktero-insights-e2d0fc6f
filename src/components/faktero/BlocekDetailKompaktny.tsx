@@ -38,6 +38,7 @@ import { HistoriaOdovzdania, OpravitZauctovanie, useProgramOdovzdania } from "./
 import { ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { KomentarDokladu } from "./StavDokladu";
 import { PrilohyFaktury } from "./PrilohyFaktury";
+import { UpozornenieDuplicity, useDuplicitaDokladu } from "./DuplicitaDokladu";
 import { HistoriaDokladu } from "./HistoriaDokladu";
 import { KomentarePanel } from "./KomentarePanel";
 import { PravidloZDokladu } from "./PravidloZDokladu";
@@ -156,6 +157,9 @@ export function BlocekDetailKompaktny({
     (x) => k[x].trim() !== povodne[x].trim(),
   );
   const zauctovany = Boolean(row.zauctovane_at);
+  // Ten istý bloček v evidencii viackrát — nezaúčtuje sa (server ho aj tak vynechá).
+  const duplicity = useDuplicitaDokladu("blocek", row);
+  const duplicitny = !zauctovany && duplicity.length > 0;
 
   /**
    * Zaúčtovanie — tá istá serverová funkcia ako hromadné zaúčtovanie bločkov.
@@ -187,7 +191,9 @@ export function BlocekDetailKompaktny({
     setUkladam(true);
     try {
       const r = await zauctuj({ data: data as any });
-      if (r.preskocenych) toast.error(t("Doklad je odovzdaný do Pohody — zmena sa neuložila."));
+      if (r.duplicity?.length)
+        toast.error(t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže."));
+      else if (r.preskocenych) toast.error(t("Doklad je odovzdaný do Pohody — zmena sa neuložila."));
       else {
         ponukaPravidlaToast(r.ponukaPravidla, t, navigate);
         toast.success(t("Zaúčtované"));
@@ -257,7 +263,12 @@ export function BlocekDetailKompaktny({
       <button
         type="button"
         onClick={() => void ulozZauctovanie()}
-        disabled={ukladam || (zauctovany && !zmenene.length)}
+        disabled={ukladam || (zauctovany && !zmenene.length) || duplicitny}
+        title={
+          duplicitny
+            ? t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže.")
+            : undefined
+        }
         className={TLACIDLO_HLAVNE}
       >
         {ukladam ? (
@@ -306,6 +317,7 @@ export function BlocekDetailKompaktny({
             </p>
           ) : null}
           <HistoriaOdovzdania row={row} druh="doklad" onZmena={onZmena} />
+          {duplicitny ? <UpozornenieDuplicity druh="blocek" druhe={duplicity} /> : null}
           {/* Zaúčtovanie hneď za typom dokladu — ako pri nespracovanom doklade. */}
           <fieldset disabled={zamknute} className="min-w-0 space-y-3.5">
             <PoliaZauctovania

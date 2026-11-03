@@ -242,6 +242,11 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
       ...(await nastaveniaDokladov(supabase, firma, schvalene.map(prijataAkoDoklad))),
       datumZauctovaniaPevny: data.datum_zauctovania ?? null,
     };
+    // Duplicitná faktúra (to isté číslo od toho istého dodávateľa) do Pohody nejde.
+    {
+      const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
+      await oznacDuplicity(supabase, data.company_id, "prijata", schvalene.filter((p: any) => !p.exported_at));
+    }
     // Kontrola pred odovzdaním — zle zaúčtovateľná faktúra do súboru nejde.
     const { prekazkaDokladu } = await import("./pohoda-kontrola");
     const { zoradNaExport } = await import("./export-radenie");

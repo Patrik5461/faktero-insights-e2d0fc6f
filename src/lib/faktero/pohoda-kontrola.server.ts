@@ -105,6 +105,12 @@ export async function zastaveneDoklady(
         out.push({ druh: "faktura", id: invoice.id, cislo: invoice.invoice_number, dovod });
     }
   }
+  // Duplicity (ten istý doklad dvakrát) kontrola zastaví ako ostatné prekážky.
+  {
+    const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
+    await oznacDuplicity(supabase, companyId, "prijata", prijate.data ?? []);
+    await oznacDuplicity(supabase, companyId, "blocek", doklady.data ?? []);
+  }
   const vsetkyDoklady = [...(doklady.data ?? []), ...(prijate.data ?? []).map(prijataAkoDoklad)];
   if (vsetkyDoklady.length) {
     const nast = await nastaveniaDokladovPohody(supabase, bezOdkazov(company), vsetkyDoklady);

@@ -169,6 +169,11 @@ export const potvrdNavrhyFn = createServerFn({ method: "POST" })
         preskocene.push(`${meno}: chýba predkontácia`);
         continue;
       }
+      const duplicita = p.typ === "vystavena" ? null : await srv.duplicitaRiadku(sb, p.typ, row);
+      if (duplicita) {
+        preskocene.push(`${meno}: ${duplicita}`);
+        continue;
+      }
       if (await srv.potvrdNavrh(sb, p.typ, row, n, { automat: false, userId: context.userId }))
         zauctovanych++;
       else preskocene.push(`${meno}: medzitým sa zmenil`);
