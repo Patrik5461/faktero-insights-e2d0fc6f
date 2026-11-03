@@ -44,7 +44,9 @@ export const navrhniParovanieDokladov = createServerFn({ method: "POST" })
         .limit(300),
       supabase
         .from("bank_transactions")
-        .select("id, booking_date, amount, currency, variable_symbol, counterparty, description")
+        .select(
+          "id, booking_date, amount, currency, variable_symbol, counterparty, description, bank_account_id",
+        )
         .eq("company_id", data.company_id)
         .gte("booking_date", od)
         // Pohyb, ktorý už niečo uhrádza, nemá čo uhrádzať druhýkrát.
@@ -90,14 +92,45 @@ export const navrhniParovanieDokladov = createServerFn({ method: "POST" })
     const dokladPodlaId = new Map(vydavky.map((v) => [v.id, v]));
     const pohybPodlaId = new Map(((pohyby as unknown as Pohyb[]) ?? []).map((p) => [p.id, p]));
 
+    /*
+      Názov účtu do okienka pri ikonke platby — a zároveň odpoveď na otázku,
+      či firma vôbec nejaký účet má. Bez účtu sa „platba sa nenašla“ nehlási:
+      nebolo by kde ju hľadať.
+    */
+    const ucty = await nazvyUctov(supabase, data.company_id);
+
     return {
-      zhody: zhody.map((z) => ({
-        ...z,
-        doklad: dokladPodlaId.get(z.expenseId) ?? null,
-        pohyb: pohybPodlaId.get(z.transactionId) ?? null,
-      })),
+      maUcet: ucty.size > 0,
+      /** Staršie doklady sa nehľadajú — „platba sa nenašla“ sa pri nich nehlási. */
+      hladaneOd: od,
+      zhody: zhody.map((z) => {
+        const p = pohybPodlaId.get(z.transactionId) as
+          | (Pohyb & { bank_account_id?: string | null })
+          | undefined;
+        return {
+          ...z,
+          doklad: dokladPodlaId.get(z.expenseId) ?? null,
+          pohyb: p ? { ...p, ucet: p.bank_account_id ? (ucty.get(p.bank_account_id) ?? null) : null } : null,
+        };
+      }),
     };
   });
+
+/** Názvy bankových účtov firmy (RLS) — názov, inak IBAN. */
+async function nazvyUctov(
+  supabase: { from: (t: "bank_accounts") => any },
+  companyId: string,
+): Promise<Map<string, string>> {
+  const { data } = await supabase
+    .from("bank_accounts")
+    .select("id, account_name, iban")
+    .eq("company_id", companyId);
+  return new Map(
+    ((data as { id: string; account_name: string | null; iban: string | null }[]) ?? []).map(
+      (u) => [u.id, u.account_name || u.iban || ""],
+    ),
+  );
+}
 
 export const potvrdParovanieDokladu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -106,6 +139,40 @@ export const potvrdParovanieDokladu = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
+    /*
+      Doklad aj pohyb musia patriť tej istej firme. RLS pustí len vlastné
+      riadky, ale každý zvlášť — bez tejto kontroly by sa na pohyb jednej
+      firmy dal priviazať doklad inej firmy toho istého človeka. Hotovosť sa
+      v banke neobjaví, tak ju nepáruje ani klik.
+    */
+    const [{ data: doklad }, { data: pohyb }] = await Promise.all([
+      supabase
+        .from("expense_documents")
+        .select("id, company_id, payment_method")
+        .eq("id", data.expense_id)
+        .maybeSingle(),
+      supabase
+        .from("bank_transactions")
+        .select("id, company_id, amount")
+        .eq("id", data.transaction_id)
+        .maybeSingle(),
+    ]);
+    if (!doklad || !pohyb) throw new Error("Doklad alebo pohyb sa nenašiel.");
+    if (doklad.company_id !== pohyb.company_id) {
+      throw new Error("Doklad a pohyb nepatria tej istej firme.");
+    }
+    if (doklad.payment_method === "hotovost") {
+      throw new Error("Doklad platený v hotovosti sa s pohybom na účte nepáruje.");
+    }
+    if (Number(pohyb.amount) >= 0) throw new Error("K dokladu patrí len odchádzajúca platba.");
+    // Doklad už uhradený iným pohybom sa druhýkrát neuhrádza.
+    const { data: inyPohyb } = await supabase
+      .from("bank_transactions")
+      .select("id")
+      .eq("matched_expense_id", data.expense_id)
+      .neq("id", data.transaction_id)
+      .limit(1);
+    if (inyPohyb?.length) throw new Error("Doklad je už spárovaný s iným pohybom.");
     /*
       Podmienka `is null` je tu naschvál: keby medzitým ten istý pohyb spároval
       niekto iný (alebo druhé ťuknutie), zápis neprepíše hotovú väzbu, ale
@@ -116,6 +183,7 @@ export const potvrdParovanieDokladu = createServerFn({ method: "POST" })
       .update({ matched_expense_id: data.expense_id })
       .eq("id", data.transaction_id)
       .is("matched_expense_id", null)
+      .is("matched_invoice_id", null)
       .select("id");
     if (error) throw new Error(error.message);
     if (!zmenene?.length) throw new Error("Tento pohyb je už spárovaný s iným dokladom.");
@@ -124,15 +192,39 @@ export const potvrdParovanieDokladu = createServerFn({ method: "POST" })
 
 export const zrusParovanieDokladu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) => z.object({ transaction_id: z.string().uuid() }).parse(input))
+  .validator((input) =>
+    z
+      .object({
+        transaction_id: z.string().uuid(),
+        /** Keď príde, zruší sa väzba len ak pohyb stále uhrádza práve tento doklad. */
+        expense_id: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
+    let q = context.supabase
       .from("bank_transactions")
       .update({ matched_expense_id: null })
       .eq("id", data.transaction_id);
+    if (data.expense_id) q = q.eq("matched_expense_id", data.expense_id);
+    const { data: zmenene, error } = await q.select("id");
     if (error) throw new Error(error.message);
+    if (data.expense_id && !zmenene?.length) {
+      throw new Error("Tento pohyb už doklad neuhrádza — obnovte zoznam.");
+    }
     return { ok: true };
   });
+
+export type UhradaDokladu = {
+  datum: string;
+  transactionId: string;
+  suma?: number;
+  mena?: string | null;
+  vs?: string | null;
+  protistrana?: string | null;
+  bankAccountId?: string | null;
+  ucet?: string | null;
+};
 
 /**
  * Ktoré doklady zo zoznamu sú uhradené z účtu.
@@ -149,17 +241,41 @@ export const uhradyDokladov = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     if (!data.ids.length) {
-      return { uhrady: {} as Record<string, { datum: string; transactionId: string }> };
+      return { uhrady: {} as Record<string, UhradaDokladu> };
     }
     const { data: rows } = await context.supabase
       .from("bank_transactions")
-      .select("id, matched_expense_id, booking_date")
+      .select(
+        "id, matched_expense_id, booking_date, amount, currency, variable_symbol, counterparty, bank_account_id",
+      )
       .eq("company_id", data.company_id)
       .in("matched_expense_id", data.ids);
-    const uhrady: Record<string, { datum: string; transactionId: string }> = {};
-    for (const r of (rows as { id: string; matched_expense_id: string; booking_date: string }[]) ??
-      []) {
-      uhrady[r.matched_expense_id] = { datum: r.booking_date, transactionId: r.id };
+    const zoznam =
+      (rows as {
+        id: string;
+        matched_expense_id: string;
+        booking_date: string;
+        amount: number | string;
+        currency: string | null;
+        variable_symbol: string | null;
+        counterparty: string | null;
+        bank_account_id: string | null;
+      }[]) ?? [];
+    const ucty = zoznam.length
+      ? await nazvyUctov(context.supabase, data.company_id)
+      : new Map<string, string>();
+    const uhrady: Record<string, UhradaDokladu> = {};
+    for (const r of zoznam) {
+      uhrady[r.matched_expense_id] = {
+        datum: r.booking_date,
+        transactionId: r.id,
+        suma: Number(r.amount),
+        mena: r.currency,
+        vs: r.variable_symbol,
+        protistrana: r.counterparty,
+        bankAccountId: r.bank_account_id,
+        ucet: r.bank_account_id ? (ucty.get(r.bank_account_id) ?? null) : null,
+      };
     }
     return { uhrady };
   });

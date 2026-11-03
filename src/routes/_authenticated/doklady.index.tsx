@@ -27,7 +27,17 @@ import {
   potvrdParovanieDokladu,
   uhradyDokladov,
   zrusParovanieDokladu,
+  type UhradaDokladu,
 } from "@/lib/faktero/doklad-parovanie.functions";
+import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
+import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
+import {
+  FILTER_STAVU_PLATBY,
+  odkazNaPohyb,
+  pohybZNavrhu,
+  pohybZUhrady,
+  stavPlatbyDokladu,
+} from "@/lib/faktero/doklad-stav-platby";
 import {
   deleteExpenseFn,
   exportExpensesZipFn,
@@ -182,10 +192,17 @@ function DokladyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /** Ktorý doklad je uhradený z účtu, kedy a ktorým pohybom. */
-  const [uhrady, setUhrady] = useState<Record<string, { datum: string; transactionId: string }>>(
-    {},
-  );
+  const [uhrady, setUhrady] = useState<Record<string, UhradaDokladu>>({});
   const [navrhy, setNavrhy] = useState<any[]>([]);
+  /** Odkedy sa platby hľadajú a či má firma účet — bez toho sa „nenájdená“ nehlási. */
+  const [hladanie, setHladanie] = useState<{ maUcet: boolean; od: string | null }>({
+    maUcet: false,
+    od: null,
+  });
+  const navrhPodlaDokladu = useMemo(
+    () => new Map(navrhy.map((z: any) => [z.expenseId as string, z])),
+    [navrhy],
+  );
   const [parujem, setParujem] = useState<string | null>(null);
   const [vsetkyRiadky, setRows] = useState<any[]>([]);
   // Hľadanie a filtre sú v adrese — odkaz sa dá poslať a prežije obnovenie stránky.
@@ -195,18 +212,67 @@ function DokladyPage() {
   const platba = lf.filter("platba");
   const stavFiltra = lf.filter("stavDokladu");
   const stitokFiltra = lf.filter("stitok");
+  /** Ikonka platby v riadku: spárovaná / nájdená / nenájdená (len doklady platené prevodom). */
+  const stavRiadku = (r: any) =>
+    stavPlatbyDokladu(r, {
+      uhrada: uhrady[r.id],
+      navrh: navrhPodlaDokladu.get(r.id),
+      maUcet: hladanie.maUcet,
+      hladaneOd: hladanie.od,
+    });
+  const stavPlatbyFiltra = lf.filter("stavPlatby");
   const rows = useMemo(() => {
     const h = hladaj.trim().toLowerCase();
     return vsetkyRiadky.filter(
       (r) =>
         (!platba || r.payment_method === platba) &&
+        (!stavPlatbyFiltra || stavRiadku(r) === stavPlatbyFiltra) &&
         splnaStavAStitok(r, stavFiltra, stitokFiltra) &&
         (!h ||
           [r.supplier_name, r.supplier_ico, r.document_number, r.note, r.komentar, r.int_poznamka, ...(r.stitky ?? [])]
             .filter(Boolean)
             .some((x) => String(x).toLowerCase().includes(h))),
     );
-  }, [vsetkyRiadky, hladaj, platba, stavFiltra, stitokFiltra]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vsetkyRiadky, hladaj, platba, stavFiltra, stitokFiltra, stavPlatbyFiltra, uhrady, navrhPodlaDokladu, hladanie]);
+  /*
+    Návrhy k dokladom plateným prevodom ukazuje ikonka v riadku a pás nad
+    zoznamom. Ostatné (karta, neuvedená úhrada) ostávajú v zozname návrhov —
+    ikonku nemajú, ale spárovať sa dajú aj tak.
+  */
+  const navrhyPrevodom = useMemo(
+    () =>
+      vsetkyRiadky
+        .filter((r) => stavRiadku(r) === "navrh")
+        .map((r) => navrhPodlaDokladu.get(r.id))
+        .filter(Boolean) as any[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vsetkyRiadky, uhrady, navrhPodlaDokladu, hladanie],
+  );
+  const ostatneNavrhy = useMemo(() => {
+    const prevodom = new Set(navrhyPrevodom.map((z: any) => z.transactionId));
+    return navrhy.filter((z: any) => !prevodom.has(z.transactionId) && z.doklad?.payment_method !== "prevod");
+  }, [navrhy, navrhyPrevodom]);
+  /** Ikonka platby — v riadku tabuľky aj na mobilnej karte. */
+  function ikonaPlatby(r: any) {
+    const stav = stavRiadku(r);
+    if (!stav) return null;
+    const u = uhrady[r.id];
+    const z: any = navrhPodlaDokladu.get(r.id);
+    return (
+      <IkonaPlatby
+        stav={stav}
+        pohyb={stav === "sparovana" && u ? pohybZUhrady(u) : stav === "navrh" && z ? pohybZNavrhu(z) : null}
+        dovody={stav === "navrh" && z ? z.dovody.map((x: string) => t(x)) : undefined}
+        ista={z?.istota === "auto"}
+        zaneprazdnene={!!z && parujem === z.transactionId}
+        onSparuj={z ? async () => void (await sparuj(z)) : undefined}
+        onNie={z ? () => setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId)) : undefined}
+        onZrus={u ? () => rozparuj(r.id, u.transactionId, true) : undefined}
+        odkazRucne={odkazNaPohyb(null)}
+      />
+    );
+  }
   const zobrazenie = useNastaveniaZoznamu("doklady", STLPCE_DOKLADOV);
   const je = zobrazenie.je;
   // Číselník predkontácií sa načíta raz (len keď je stĺpec zapnutý), stavy a uzávierka vždy.
@@ -350,26 +416,55 @@ function DokladyPage() {
   const [exporting, setExporting] = useState(false);
   const cid = getActiveCompanyId();
 
-  async function sparuj(z: any) {
+  /** Potvrdí jednu dvojicu. `ticho` = bez toastu (hromadné párovanie hlási súhrn). */
+  async function sparuj(z: any, ticho = false): Promise<boolean> {
     setParujem(z.transactionId);
     try {
       await sparujFn({ data: { transaction_id: z.transactionId, expense_id: z.expenseId } });
       setUhrady((u) => ({
         ...u,
-        [z.expenseId]: { datum: z.pohyb?.booking_date, transactionId: z.transactionId },
+        [z.expenseId]: {
+          datum: z.pohyb?.booking_date,
+          transactionId: z.transactionId,
+          suma: z.pohyb?.amount,
+          mena: z.pohyb?.currency,
+          vs: z.pohyb?.variable_symbol,
+          protistrana: z.pohyb?.counterparty,
+          bankAccountId: z.pohyb?.bank_account_id,
+          ucet: z.pohyb?.ucet,
+        },
       }));
       setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
-      toast.success(t("Doklad označený za uhradený z účtu."));
+      if (!ticho) toast.success(t("Doklad označený za uhradený z účtu."));
+      return true;
     } catch (e: any) {
-      toast.error(e?.message ?? t("Spárovať sa to nepodarilo."));
+      if (!ticho) toast.error(e?.message ?? t("Spárovať sa to nepodarilo."));
+      return false;
     } finally {
       setParujem(null);
     }
   }
 
-  async function rozparuj(expenseId: string, transactionId: string) {
+  /** „Spárovať všetky isté“ — jeden po druhom, výsledok jedným toastom. */
+  async function sparujIste() {
+    const iste = navrhyPrevodom.filter((z: any) => z.istota === "auto");
+    let ok = 0;
+    for (const z of iste) if (await sparuj(z, true)) ok++;
+    if (ok) toast.success(t("Spárované doklady: {n}", { n: ok }));
+    if (ok < iste.length)
+      toast.warning(t("Nespárované: {n} — skúste ich jednotlivo.", { n: iste.length - ok }));
+  }
+
+  /** Filter „Platba“ v adrese — pás návrhov ho len zapína a vypína. */
+  function nastavFilterPlatby(hodnota: string) {
+    lf.setFilter("stavPlatby", hodnota);
+  }
+
+  /** `potvrdene` — okienko pri ikonke sa už opýtalo samo. */
+  async function rozparuj(expenseId: string, transactionId: string, potvrdene = false) {
+    if (!potvrdene && !(await potvrd(t("Zrušiť väzbu dokladu na platbu z účtu? Doklad prestane byť uhradený z účtu.")))) return;
     try {
-      await rozparujFn({ data: { transaction_id: transactionId } });
+      await rozparujFn({ data: { transaction_id: transactionId, expense_id: expenseId } });
       setUhrady((u) => {
         const kopia = { ...u };
         delete kopia[expenseId];
@@ -432,11 +527,18 @@ function DokladyPage() {
       })();
       void (async () => {
         try {
-          const ids = (data ?? []).map((r: any) => r.id).slice(0, 200);
-          const u: any = await uhradyFn({ data: { company_id: cid, ids } });
-          setUhrady(u?.uhrady ?? {});
+          // Server berie najviac 200 id naraz — dlhý zoznam po dávkach, inak by
+          // doklady za dvestovkou vyzerali ako nespárované.
+          const ids = (data ?? []).map((r: any) => r.id as string);
+          const davky: string[][] = [];
+          for (let i = 0; i < ids.length; i += 200) davky.push(ids.slice(i, i + 200));
+          const vysledky: any[] = await Promise.all(
+            davky.map((d) => uhradyFn({ data: { company_id: cid, ids: d } })),
+          );
+          setUhrady(Object.assign({}, ...vysledky.map((u) => u?.uhrady ?? {})));
           const n: any = await navrhyFn({ data: { company_id: cid } });
           setNavrhy(n?.zhody ?? []);
+          setHladanie({ maUcet: !!n?.maUcet, od: n?.hladaneOd ?? null });
         } catch {
           /* bez párovania zoznam funguje ďalej */
         }
@@ -827,6 +929,12 @@ function DokladyPage() {
                 { value: "prevod", label: "Prevod" },
               ],
             },
+            {
+              key: "stavPlatby",
+              label: "Platba",
+              type: "select",
+              options: FILTER_STAVU_PLATBY,
+            },
             ...filtreStavuAStitkov(cis.stavy, cis.stitky),
           ]}
           extra={
@@ -963,12 +1071,21 @@ function DokladyPage() {
           v banke sa neobjaví. Nič sa nepáruje potichu, aj istá dvojica čaká na
           potvrdenie: zle priradený náklad sa v účtovníctve hľadá ťažko.
         */}
-        {navrhy.length > 0 && (
+        <PasNavrhovPlatieb
+          pocet={navrhyPrevodom.length}
+          istych={navrhyPrevodom.filter((z: any) => z.istota === "auto").length}
+          lenTieto={stavPlatbyFiltra === "navrh"}
+          onLenTieto={(zapnut) => nastavFilterPlatby(zapnut ? "navrh" : "")}
+          onSparujIste={sparujIste}
+          nazovDokladov={t("dokladov")}
+        />
+        {/* Platby kartou a doklady bez uvedenej úhrady — bez ikonky v riadku, preto tu. */}
+        {ostatneNavrhy.length > 0 && (
           <div className="mb-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/5">
             <div className="px-4 py-3 text-sm font-medium">
-              {t("Našli sme platby k dokladom")} ({navrhy.length})
+              {t("Našli sme platby kartou k bločkom")} ({ostatneNavrhy.length})
             </div>
-            {navrhy.map((z) => (
+            {ostatneNavrhy.map((z) => (
               <div
                 key={z.transactionId}
                 className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"
@@ -1123,9 +1240,13 @@ function DokladyPage() {
                   }
                   status={
                     <span className="flex flex-col items-end gap-1">
-                      <StavOdznak ton={tonStavu(STATUS_TON, r.status)}>
-                        {t(STATUS_LABEL[r.status] ?? r.status)}
-                      </StavOdznak>
+                      {/* Ikonka platby mimo nadpisu — nadpis je odkaz na detail a klik by ho otvoril. */}
+                      <span className="inline-flex items-center gap-1">
+                        {ikonaPlatby(r)}
+                        <StavOdznak ton={tonStavu(STATUS_TON, r.status)}>
+                          {t(STATUS_LABEL[r.status] ?? r.status)}
+                        </StavOdznak>
+                      </span>
                       <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
                     </span>
                   }
@@ -1274,8 +1395,9 @@ function DokladyPage() {
                           <span className="text-muted-foreground italic">{t("bez názvu")}</span>
                         )}
                       </button>
-                      <span className="ml-1.5 inline-flex align-middle">
+                      <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
                         <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
+                        {ikonaPlatby(r)}
                       </span>
                       {r.supplier_ico ? (
                         <div className="text-xs text-muted-foreground">
