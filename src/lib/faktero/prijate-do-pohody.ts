@@ -27,6 +27,8 @@ export type PolozkaPrijatej = {
   pdp: boolean;
   predkontacia: string | null;
   clenenie: string | null;
+  /** Ručne zvolené členenie KV DPH položky (`kv`, staršie `kv_clenenie`). */
+  kv?: string | null;
 };
 
 /**
@@ -104,6 +106,7 @@ export function polozkyPrijatej(p: any): PolozkaPrijatej[] | null {
     pdp,
     predkontacia: x?.predkontacia ? String(x.predkontacia) : null,
     clenenie: x?.clenenie ? String(x.clenenie) : null,
+    kv: String(x?.kv ?? x?.kv_clenenie ?? "").trim() || null,
   }));
   // Súčet základov za sadzbu = zaokrúhlený nezaokrúhlený súčet.
   const skupiny = new Map<string, number[]>();

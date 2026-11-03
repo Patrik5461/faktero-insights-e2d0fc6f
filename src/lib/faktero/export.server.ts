@@ -1612,7 +1612,16 @@ export function polozkyDokladov(opts: {
       const zRozpisu =
         zaklad(s0) + zaklad(s3) + zaklad(sLow) + zaklad(sHigh) + dan(s3) + dan(sLow) + dan(sHigh);
       const celkom = Number(d?.total_amount ?? 0) || zRozpisu;
-      const zaokruhlenie = Math.round((celkom - zRozpisu) * 100) / 100;
+      const rozdielSuctu = Math.round((celkom - zRozpisu) * 100) / 100;
+      /*
+        Rozdiel medzi sumou dokladu a rozpisom DPH nad pol eura nie je
+        zaokrúhlenie, ale časť bez DPH (doklad bez rozpisu — len suma spolu,
+        poplatok či prepitné mimo DPH). Ide ako základ v nulovej sadzbe
+        (`priceNone`, pri položkách vlastná položka), nie do `priceRound` —
+        tam by Pohoda zaúčtovala celú sumu ako zaokrúhlenie bez základu.
+      */
+      const bezDph = Math.abs(rozdielSuctu) > 0.5 ? rozdielSuctu : 0;
+      const zaokruhlenie = bezDph ? 0 : rozdielSuctu;
 
       // Variabilný symbol je číselný; z čísla dokladu sa berú len číslice.
       // Prijatá faktúra má vlastný VS od dodávateľa — ten má prednosť.
@@ -1878,15 +1887,48 @@ export function polozkyDokladov(opts: {
             dicOdberatela: d?.supplier_dic,
             clenenieDph: clenenie,
           });
-      const kvHlavicka = rozuctovany || cz || zalohovaPrijata ? "" : kvAuto;
+      /*
+        Členenie KV DPH položky (len SK, nie zálohová). Pohoda ho z hlavičky do
+        položiek nevezme, tak ho nesie každá položka s daňou:
+        ručne zvolené na položke > „X“ (nezahŕňať) zvolené na doklade >
+        prenesenie (B1) > členenie dokladu (ručné, inak predvolené či podľa
+        zákona — B2, B3, C2…). Položka bez dane a „nezahŕňať do priznania“
+        (UN/PN) členenie nedostanú.
+      */
+      const rucneDokladu = String(d?.kv_clenenie ?? "").trim();
+      const kvPolozky = (x: { kv?: unknown; pdp?: unknown; dph?: unknown }, cl: string | null | undefined): string => {
+        if (cz || zalohovaPrijata) return "";
+        const vlastne = String(x?.kv ?? "").trim();
+        if (vlastne) return kv(vlastne);
+        if (rucneDokladu === "X") return "";
+        if (x?.pdp) return "B1";
+        if (Math.abs(Number(x?.dph ?? 0)) < 0.005) return "";
+        if (jeNezahrnovat(cl)) return "";
+        return kvAuto;
+      };
+      /*
+        Rozúčtovaný doklad: hlavička nesie členenie KV, keď ho majú všetky
+        riadky s daňou rovnaké (inak by hlavička klamala — rozhodujú riadky).
+      */
+      const kvRiadkovRozuct = rozuctovany
+        ? [
+            ...new Set(
+              rozuct
+                .map((r) => kvPolozky(r, r.clenenie || clenenieJedno))
+                .filter(Boolean),
+            ),
+          ]
+        : [];
+      const kvHlavicka =
+        cz || zalohovaPrijata ? "" : rozuctovany ? (kvRiadkovRozuct.length === 1 ? kvRiadkovRozuct[0] : "") : kvAuto;
 
       const xmlPolozkyFaktury = polozkyFaktury.length
         ? `
       <${p}:${koren}Detail>${polozkyFaktury
         .map((x: any) => {
           const cl = x.pdp ? clenenieprijatejPdp(nastavenia, cz) || x.clenenie : x.clenenie;
-          // Bloček s položkami: KV na položke s DPH — Pohoda ho z hlavičky do položiek nevezme.
-          const kvx = x.pdp && !cz ? "B1" : blocek && !cz && Number(x.sadzba) > 0 && !zalohovaPrijata ? kvAuto : "";
+          // KV na položke s DPH — Pohoda ho z hlavičky do položiek nevezme (aj prijatá faktúra).
+          const kvx = kvPolozky(x, cl);
           const pk = rozuctovanePolozky ? kodPolozky(x) : x.predkontacia;
           return `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(x.nazov, 90), "          ")}
@@ -1924,15 +1966,8 @@ export function polozkyDokladov(opts: {
         .map((r) => {
           const pk = r.predkontacia || predkontaciaJedna;
           const cl = r.clenenie || clenenieJedno;
-          // Riadok bez vlastného KV dostane členenie dokladu (hlavička rozúčtovaného ho nemá).
-          const kvRiadku = String(r.kv ?? "").trim();
-          const kvr = cz
-            ? ""
-            : kvRiadku
-              ? kv(kvRiadku)
-              : Math.abs(Number(r.dph ?? 0)) >= 0.005 && !jeNezahrnovat(cl)
-                ? kvAuto
-                : "";
+          // Riadok bez vlastného KV dostane členenie dokladu.
+          const kvr = kvPolozky(r, cl);
           return `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(r.text || popis || "Prijatý doklad", 90), "          ")}
           <${p}:quantity>1</${p}:quantity>
@@ -1984,7 +2019,8 @@ export function polozkyDokladov(opts: {
               ? clenenieprijatejPdp(nastavenia, cz) || clenenie
               : clenenie
             : clenenieJedno;
-          const kvr = domace && r.pdp && !cz ? "B1" : "";
+          // Členenie KV aj v cudzej mene — inak by doklad v Pohode z KV vypadol.
+          const kvr = kvPolozky(r, cl);
           return `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(popis || "Prijatý doklad", 90), "          ")}
           <${p}:quantity>1</${p}:quantity>
@@ -2011,7 +2047,7 @@ export function polozkyDokladov(opts: {
       const xmlZRozpisu =
         xmlPolozkyFaktury || polozkyRozuct
           ? ""
-          : cudziaD
+          : cudziaD && rozpis.length
             ? polozkyZRozpisu("foreignCurrency")
             : ex.polozkyZRozpisu && prijatyDoklad && rozpis.length
               ? polozkyZRozpisu("homeCurrency")
@@ -2035,6 +2071,32 @@ export function polozkyDokladov(opts: {
       const zaokrPolozkou = Boolean(
         pkZaokr && zaokruhlenie && !cudziaD && (xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu),
       );
+      /*
+        Časť bez DPH (pozri `bezDph`) ako vlastná položka v nulovej sadzbe —
+        pri doklade s položkami by ju inak súhrn mal a položky nie. Cudzia mena
+        bez položiek dostane detail len s ňou (súhrn v cudzej mene sadzby nemá).
+      */
+      const polozkaBezDph = bezDph
+        ? `
+        <${p}:${koren}Item>
+          <${p}:text>Bez DPH</${p}:text>
+          <${p}:quantity>1</${p}:quantity>
+          <${p}:payVAT>false</${p}:payVAT>
+          <${p}:rateVAT>none</${p}:rateVAT>
+          <${p}:${mb}>${elSuma("typ:unitPrice", bezDph, "            ")}${elSuma("typ:price", bezDph, "            ")}${elSuma("typ:priceSum", bezDph, "            ")}
+          </${p}:${mb}>${
+            predkontaciaJedna ? `\n          <${p}:accounting><typ:ids>${esc(predkontaciaJedna)}</typ:ids></${p}:accounting>` : ""
+          }
+        </${p}:${koren}Item>`
+        : "";
+      const vlozBezDph = (detail: string) =>
+        !polozkaBezDph
+          ? detail
+          : detail
+            ? detail.replace(`\n      </${p}:${koren}Detail>`, `${polozkaBezDph}\n      </${p}:${koren}Detail>`)
+            : cudziaD
+              ? `\n      <${p}:${koren}Detail>${polozkaBezDph}\n      </${p}:${koren}Detail>`
+              : "";
       const vlozZaokruhlenie = (detail: string) =>
         zaokrPolozkou
           ? detail.replace(
@@ -2238,13 +2300,13 @@ export function polozkyDokladov(opts: {
             ? `\n        <inv:paymentAccount><typ:accountNo>${esc(ucetDodavatela.cislo)}</typ:accountNo><typ:bankCode>${esc(ucetDodavatela.kodBanky)}</typ:bankCode></inv:paymentAccount>`
             : ""
         }
-      </${p}:${koren}Header>${vlozZaokruhlenie(xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu)}
+      </${p}:${koren}Header>${vlozZaokruhlenie(vlozBezDph(xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu))}
       <${p}:${koren}Summary>${
         zaokruhlenie && !zaokrPolozkou ? "" : `\n        <${p}:roundingDocument>none</${p}:roundingDocument>`
       }
         <${p}:roundingVAT>none</${p}:roundingVAT>${cudziaD ? cudziaMenaSuhrn(
 menaDokladu, kurzDokladu(d), celkom, zaokruhlenie, "        ", (company as any)?.country).replace(/inv:foreignCurrency/g, `${p}:foreignCurrency`) : `
-        <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
+        <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0) + bezDph, "          ")}${elSuma(
           "typ:price3",
           zaklad(s3),
           "          ",
