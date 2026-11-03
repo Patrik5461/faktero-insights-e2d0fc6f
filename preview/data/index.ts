@@ -13,6 +13,7 @@ import { naplnSklad } from "./sklad";
 import { naplnZakazky } from "./zakazky";
 import { naplnDoklady } from "./doklady";
 import { naplnBanka } from "./banka";
+import { naplnPlatbaDoklady } from "./platba-doklady";
 import { naplnJazdy } from "./jazdy";
 import { naplnZamestnanci } from "./zamestnanci";
 import { naplnUctovnictvo } from "./uctovnictvo";
@@ -28,6 +29,7 @@ const MODULY: [string, (db: DemoDb) => void][] = [
   ["zákazky", naplnZakazky],
   ["doklady", naplnDoklady],
   ["banka a pokladňa", naplnBanka],
+  ["platba bločkov prevodom", naplnPlatbaDoklady],
   ["kniha jázd a vozový park", naplnJazdy],
   ["zamestnanci", naplnZamestnanci],
   ["účtovníctvo", naplnUctovnictvo],
