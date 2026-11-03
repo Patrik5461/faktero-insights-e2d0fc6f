@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-11-02",
+ "vytvorene": "2026-11-03",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -1030,6 +1030,10 @@
     {
      "nadpis": "Priebeh a zostatok",
      "text": "<>\nTabuľka ukazuje pohyby vybraného mesiaca a pri každom priebežný zostatok .\nNad ňou je zostatok na začiatku obdobia, aby stav sedel aj pri prezeraní starších\nmesiacov.\nV rámci jedného dňa idú príjmy pred výdavkami . Inak by sa mohlo stať, že\nbloček zoradený pred vklad ukáže v ten deň mínus, hoci v pokladni nikdy nechýbalo.\nZáporná pokladňa je vždy chyba v evidencii — v hotovosti sa do mínusu ísť\nnedá. Faktero na ňu upozorní; hľadajte chýbajúci vklad alebo doklad označený zlým spôsobom\nplatby."
+    },
+    {
+     "nadpis": "Viac pokladní",
+     "text": "<>\nFirma môže mať viac hotovostných pokladní — napríklad pokladňu v eurách a\ndruhú v korunách, alebo jednu na predajňu a druhú v kancelárii. Spravujú sa tlačidlom\nPokladne na stránke Pokladňa (/pokladna): názov, mena,\nskratka pokladne v Pohode, predvolená pokladňa a archivovanie. Zmazať sa dá len pokladňa\nbez pohybov; s pohybmi ju archivujte.\nKaždá pokladňa má vlastný zostatok a pokladničnú knihu . Nad tabuľkou si\nvyberiete pokladňu alebo Všetky pokladne — vtedy sú súčty po menách,\neurá a koruny sa nesčítavajú.\nPri novom pokladničnom doklade aj pri doklade platenom hotovosťou sa\npredvolená pokladňa vyplní sama . Výber pokladne sa ukáže, až keď má firma\nviac ako jednu — s jednou pokladňou sa nič nemení. Doklady z appky, z e-mailu či cez API\nidú do predvolenej, ak pokladňu neurčia.\nDo Pohody ide pokladničný doklad do tej pokladne, ktorej skratku má pokladňa dokladu.\nPokladňa v cudzej mene ide so sumou v jej mene a kurz doplní Pohoda z kurzového lístka.\nSkratka zvolená ručne pri zaúčtovaní dokladu má prednosť."
     },
     {
      "nadpis": "Načítanie bločku z eKasa QR kódu",

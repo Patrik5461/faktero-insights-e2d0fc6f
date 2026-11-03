@@ -45,6 +45,8 @@ export type ExpenseInput = {
   pohoda_rad?: string | null;
   int_poznamka?: string | null;
   pohoda_pokladna?: string | null;
+  /** Pokladňa Faktera pri hotovosti; prázdne = predvolená (doplní DB). */
+  pokladna_id?: string | null;
   /**
    * Volanie z mobilnej aplikácie. Nie je to stĺpec — rozhoduje len o tom, že
    * bloček musí mať fotku a ide rovno do Bločkov (`blocek-z-appky.ts`).
@@ -86,6 +88,7 @@ const inputSchema = z.object({
   pohoda_rad: z.string().max(30).nullable().optional(),
   int_poznamka: z.string().max(240).nullable().optional(),
   pohoda_pokladna: z.string().max(20).nullable().optional(),
+  pokladna_id: z.string().uuid().nullable().optional(),
   note: z.string().nullable().optional(),
   file_path: z.string().nullable().optional(),
   file_mime: z.string().nullable().optional(),
@@ -807,6 +810,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat,
       blockyPodlaPlatby: (firma as any)?.pohoda_blocky_agenda === "podla_platby",
       pokladna: (firma as any)?.pohoda_pokladna,
+      ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, data.company_id, (firma as any)?.pohoda_pokladna)),
       ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
         supabase,
         { ...(firma ?? {}), id: data.company_id },

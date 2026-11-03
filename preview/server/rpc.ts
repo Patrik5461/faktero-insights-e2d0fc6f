@@ -222,6 +222,7 @@ function dalsieCislo(
     quote: ["quotes", "quote_number"],
     sales_order: ["sales_orders", "order_number"],
     purchase_order: ["purchase_orders", "order_number"],
+    cash: ["cash_entries", "entry_number"],
   };
   const [tab, stlpec] = tabulky[druh] ?? ["invoices", "invoice_number"];
   const existujuce = new Set(

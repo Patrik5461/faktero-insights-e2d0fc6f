@@ -1206,7 +1206,42 @@ export function naplnBanka(db: DemoDb) {
     minimum = Math.min(minimum, stav);
   }
   if (minimum < 0) pokladna[0].suma = r2(pokladna[0].suma - minimum + 100);
+  /*
+    Dve pokladne (viac pokladní): predvolená v eurách so skratkou HP a druhá
+    v korunách. Doterajšie pohyby a hotovostné bločky patria predvolenej.
+  */
+  const POKLADNA_EUR = uid("pokladna:eur");
+  const POKLADNA_CZK = uid("pokladna:czk");
+  db.vloz("pokladne", [
+    { id: POKLADNA_EUR, company_id: FIRMA, nazov: "Pokladňa", mena: "EUR", kod_pohoda: "HP", predvolena: true, aktivna: true, poradie: 0 },
+    { id: POKLADNA_CZK, company_id: FIRMA, nazov: "Pokladňa CZK", mena: "CZK", kod_pohoda: "HPCZ", predvolena: false, aktivna: true, poradie: 1 },
+  ]);
+  for (const e of db.tabulka("expense_documents"))
+    if (e.company_id === FIRMA && e.payment_method === "hotovost" && !e.vyuctovanie_id) e.pokladna_id = POKLADNA_EUR;
   const pocitadlo = new Map<string, number>();
+  const korunove = [
+    { datum: den(-60), typ: "prijem" as const, suma: 8000, popis: "Vklad korún do pokladne", kategoria: "Vklad" },
+    { datum: den(-41), typ: "vydaj" as const, suma: 1250, popis: "Diaľničná známka ČR", kategoria: "Cestovné" },
+    { datum: den(-12), typ: "vydaj" as const, suma: 486, popis: "Parkovné Brno", kategoria: "Cestovné" },
+    { datum: den(0), typ: "prijem" as const, suma: 2300, popis: "Tržba v korunách – veľtrh Brno", kategoria: "Tržby" },
+  ];
+  db.vloz(
+    "cash_entries",
+    korunove.map((p, i) => ({
+      id: uid(`pokladna-czk:${i}`),
+      company_id: FIRMA,
+      pokladna_id: POKLADNA_CZK,
+      // Bez radu — počítadlo radu „PD“ by inak preskočilo na obsadené číslo.
+      entry_number: `PK${p.datum.slice(0, 4)}${String(i + 1).padStart(3, "0")}`,
+      entry_date: p.datum,
+      type: p.typ,
+      amount: p.suma,
+      description: p.popis,
+      category: p.kategoria,
+      created_by: MAJITEL,
+      created_at: p.datum + "T12:00:00Z",
+    })),
+  );
   db.vloz(
     "cash_entries",
     pokladna.map((p, i) => {
@@ -1216,6 +1251,7 @@ export function naplnBanka(db: DemoDb) {
       return {
         id: uid(`pokladna:${i}`),
         company_id: FIRMA,
+        pokladna_id: POKLADNA_EUR,
         entry_number: `PD${rok}${String(nn).padStart(3, "0")}`,
         number_series_id: uid("rad:cash"),
         entry_date: p.datum,

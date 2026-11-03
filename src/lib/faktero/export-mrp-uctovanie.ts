@@ -520,7 +520,7 @@ ${o}  <ImportParams>
 ${o}    <ReCalcTotals>1</ReCalcTotals>
 ${o}  </ImportParams>${el("DocumentNumberPrefix", skrat(prefix, 10), `${o}  `)}${
     pokladna
-      ? `${el("CashRegisterIdentif", skrat(nast.pokladna, 20), `${o}  `)}
+      ? `${el("CashRegisterIdentif", skrat(d.pokladna || nast.pokladna, 20), `${o}  `)}
 ${o}  <CashVoucherType>V</CashVoucherType>
 ${o}  <CashVoucherSubType>0</CashVoucherSubType>
 ${o}  <Description>${esc(skrat(d.text, 50) || "Výdaj")}</Description>
@@ -659,7 +659,7 @@ export function buildMrpUctovanie(opts: {
     };
     if (d.agenda === "vystavena") vydane.push(doklad(d, m, typ.typ, nast, verzia, false, "    "));
     // Pokladničný doklad len s identifikátorom pokladne MRP — inak ide bloček ako faktúra prijatá.
-    else if (d.agenda === "doklad" && d.forma === "pokladna" && String(nast.pokladna ?? "").trim())
+    else if (d.agenda === "doklad" && d.forma === "pokladna" && String(d.pokladna || nast.pokladna || "").trim())
       pokladna.push(doklad(d, m, typ.typ, nast, verzia, true, "    "));
     else prijate.push(doklad(d, m, typ.typ, nast, verzia, false, "    "));
   }

@@ -62,6 +62,7 @@ export async function nastaveniaUctovania(
     radPokladna: company.pohoda_rad_pokladna,
     radInterne: company.pohoda_rad_interne,
     pokladna: company.pohoda_pokladna,
+    ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, company.id, company.pohoda_pokladna)),
     zamknuteDo: company.locked_until ?? null,
     // Dátum odpočtu prijatých dokladov ako v Pohode (Predkontácie → Export).
     ...(() => {

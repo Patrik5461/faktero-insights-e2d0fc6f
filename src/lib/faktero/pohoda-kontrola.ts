@@ -15,6 +15,7 @@ import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
 */
 
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
+import { kodPokladneDokladu } from "./pokladne";
 import { kvPrijatehoDokladu } from "./kv-urcenie";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { rozpisBlocku } from "./rozuctovanie";
@@ -487,8 +488,7 @@ export function prekazkaDokladu(
     nastavenia?.blockyPodlaPlatby &&
     String(d?.payment_method ?? "") === "hotovost" &&
     !d?.vyuctovanie_id &&
-    !kod(d?.pohoda_pokladna) &&
-    !kod(nastavenia?.pokladna)
+    !kodPokladneDokladu(d, nastavenia as any)
   ) {
     return `${cislo} — hotovostný bloček bez pokladne pre Pohodu — nastavte skratku pokladne v Účtovníctvo → Prepojenie s Pohodou`;
   }

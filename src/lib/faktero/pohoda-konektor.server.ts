@@ -289,12 +289,18 @@ export async function zostavDavku(
     nevyplní, pohyby ostávajú vo fronte (neoznačia sa) a povie sa to.
   */
   const pokladnicaVCasti = vCasti(pokladnicaVsetko ?? [], "entry_date");
-  const pokladnaChyba = String(company.pohoda_pokladna ?? "").trim()
-    ? null
-    : pokladnicaVCasti.length
-      ? `Pokladňa (${pokladnicaVCasti.length}) — chýba skratka pokladne pre Pohodu, pohyby počkajú — nastavte ju v Účtovníctvo → Prepojenie s Pohodou`
-      : null;
-  const pokladnica = pokladnaChyba ? [] : pokladnicaVCasti;
+  // Viac pokladní: skratka podľa pokladne pohybu, inak predvolená/firma.
+  const nastPokladni = await (await import("./pokladne.server")).nastaveniaPokladniFirmy(
+    supabase,
+    vstup.companyId,
+    company.pohoda_pokladna,
+  );
+  const { pohybyBezPokladne } = await import("./export.server");
+  const bezSkratky = new Set(pohybyBezPokladne(pokladnicaVCasti, nastPokladni).map((p: Riadok) => p.id));
+  const pokladnaChyba = bezSkratky.size
+    ? `Pokladňa (${bezSkratky.size}) — chýba skratka pokladne pre Pohodu, pohyby počkajú — doplňte ju v Pokladňa → Pokladne alebo v Účtovníctvo → Prepojenie s Pohodou`
+    : null;
+  const pokladnica = pokladnicaVCasti.filter((p: Riadok) => !bezSkratky.has(p.id));
   const { ok: prijateSch } = await lenSchvalene(
     supabase,
     vstup.companyId,
@@ -451,6 +457,7 @@ export async function zostavDavku(
     blockyPodlaPlatby: company.pohoda_blocky_agenda === "podla_platby",
     podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, vstup.companyId),
     pokladna: company.pohoda_pokladna,
+    ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, vstup.companyId, company.pohoda_pokladna)),
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
   };

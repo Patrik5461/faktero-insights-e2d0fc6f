@@ -57,6 +57,8 @@ import {
 } from "@/lib/faktero/expenses.functions";
 import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
+import { usePokladne, VyberPokladne } from "@/components/faktero/Pokladne";
+import { pokladnaDoFormulara } from "@/lib/faktero/pokladne";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY, formatujMenu, formatujCislo, formatujMnozstvo } from "@/lib/faktero/mena";
@@ -119,6 +121,8 @@ type Form = {
   pohoda_rad: string;
   int_poznamka: string;
   pohoda_pokladna: string;
+  /** Pokladňa Faktera pri hotovosti; prázdne = predvolená. */
+  pokladna_id: string;
   note: string;
 };
 
@@ -151,6 +155,7 @@ const EMPTY: Form = {
   pohoda_rad: "",
   int_poznamka: "",
   pohoda_pokladna: "",
+  pokladna_id: "",
   note: "",
 };
 
@@ -197,9 +202,12 @@ function NovyDokladPage() {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cid = getActiveCompanyId();
+  const { pokladne } = usePokladne(cid);
   // Vlastné stavy dokladov firmy (Účtovníctvo → Predkontácie) — kódy tu netreba.
   const ciselnikyFirmy = useCiselnikyDokladov(cid, null, false);
   const [ulozeny, setUlozeny] = useState<any>(null);
+  // Predvolená pokladňa sa vyplní sama; pri jednej pokladni sa výber neukazuje.
+  const pokladnaDokladu = pokladnaDoFormulara(pokladne, form.pokladna_id || null);
   /*
     Kompaktné rozloženie: uložený doklad sa otvorí ako detail s účtovaním
     priamo na stránke; ceruzka prepne na tento formulár.
@@ -326,6 +334,7 @@ function NovyDokladPage() {
         pohoda_rad: (data as any).pohoda_rad ?? "",
         int_poznamka: (data as any).int_poznamka ?? "",
         pohoda_pokladna: (data as any).pohoda_pokladna ?? "",
+        pokladna_id: (data as any).pokladna_id ?? "",
         note: data.note ?? "",
       });
       setUlozeny(data);
@@ -700,6 +709,8 @@ function NovyDokladPage() {
         pohoda_rad: form.pohoda_rad.trim() || null,
         int_poznamka: form.int_poznamka.trim() || null,
         pohoda_pokladna: form.pohoda_pokladna.trim() || null,
+        // Len pri hotovosti; prázdna = predvolená pokladňa (doplní databáza).
+        ...(uhrada === "hotovost" ? { pokladna_id: pokladnaDokladu || null } : {}),
         note: form.note || null,
         file_path: uploadedFile?.path ?? null,
         file_mime: uploadedFile?.mime ?? null,
@@ -1424,6 +1435,14 @@ function NovyDokladPage() {
                   </p>
                 )}
               </div>
+              {form.payment_method === "hotovost" && (
+                <VyberPokladne
+                  pokladne={pokladne}
+                  value={pokladnaDokladu}
+                  onChange={(id) => updateForm("pokladna_id", id)}
+                  disabled={Boolean(ulozeny?.exported_at)}
+                />
+              )}
               {search.id && cid ? (
                 <div className="sm:col-span-2">
                   {ulozeny ? (

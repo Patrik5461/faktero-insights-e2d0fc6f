@@ -855,6 +855,7 @@
     "cash_entries": {
       "pohlad": false,
       "stlpce": {
+        "pokladna_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "amount": { "druh": "number", "nullable": false, "volitelny": false, "povinny": true },
         "category": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "company_id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": true },
@@ -2854,6 +2855,7 @@
     "expense_documents": {
       "pohlad": false,
       "stlpce": {
+        "pokladna_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "nahrane_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "naposledy_zauctoval": {
           "druh": "text",
@@ -3385,6 +3387,35 @@
           "fk": "financing_rate_periods_contract_id_fkey",
           "stlpce": ["contract_id"],
           "tabulka": "financing_contracts",
+          "ciel": ["id"],
+          "jedenNaJeden": false
+        }
+      ]
+    },
+    "pokladne": {
+      "pohlad": false,
+      "stlpce": {
+        "aktivna": { "druh": "boolean", "nullable": false, "volitelny": false, "povinny": false },
+        "company_id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": true },
+        "created_at": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
+        "id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
+        "kod_pohoda": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "mena": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
+        "nazov": { "druh": "text", "nullable": false, "volitelny": false, "povinny": true },
+        "poradie": { "druh": "number", "nullable": false, "volitelny": false, "povinny": false },
+        "predvolena": {
+          "druh": "boolean",
+          "nullable": false,
+          "volitelny": false,
+          "povinny": false
+        },
+        "updated_at": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false }
+      },
+      "vztahy": [
+        {
+          "fk": "pokladne_company_id_fkey",
+          "stlpce": ["company_id"],
+          "tabulka": "companies",
           "ciel": ["id"],
           "jedenNaJeden": false
         }
@@ -4275,6 +4306,7 @@
     "invoices": {
       "pohlad": false,
       "stlpce": {
+        "pokladna_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "naposledy_zauctoval": {
           "druh": "text",
           "nullable": true,
@@ -5360,6 +5392,7 @@
     "purchase_invoices": {
       "pohlad": false,
       "stlpce": {
+        "pokladna_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "nahrane_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "naposledy_zauctoval": {
           "druh": "text",

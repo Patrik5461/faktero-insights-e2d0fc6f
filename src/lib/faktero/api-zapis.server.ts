@@ -179,6 +179,8 @@ const PrijataVstup = z.object({
   constant_symbol: z.string().max(10).nullish(),
   specific_symbol: z.string().max(20).nullish(),
   payment_method: z.string().max(20).nullish(),
+  /** Pokladňa pri úhrade v hotovosti (id z `pokladne`); bez nej predvolená. */
+  pokladna_id: z.string().uuid().nullish(),
   items: z.array(PolozkaPrijatej).max(500).optional(),
   amount_without_vat: z.number().nullish(),
   vat_amount: z.number().nullish(),
@@ -243,6 +245,8 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
   nastav("constant_symbol", d.constant_symbol);
   nastav("specific_symbol", d.specific_symbol);
   if (d.payment_method !== undefined) nastav("payment_method", uhrada(d.payment_method));
+  // Cudziu pokladňu odmietne spúšťač `pokladna_dokladu` v DB.
+  nastav("pokladna_id", d.pokladna_id);
   if (d.items || d.amount_total != null || d.amount_without_vat != null || d.vat_amount != null) {
     r.amount_without_vat = s.zaklad ?? 0;
     r.vat_amount = s.dph ?? 0;
@@ -438,6 +442,8 @@ const BlocekVstup = z.object({
   payment_method: z.string().max(20).default("karta"),
   /** Hotovosť sa započíta do pokladne; false = mimo pokladne. */
   cash_register: z.boolean().default(true),
+  /** Pokladňa pri hotovosti (id z `pokladne`); bez nej predvolená. */
+  pokladna_id: z.string().uuid().nullish(),
   category: z.string().max(60).nullish(),
   note: z.string().max(4000).nullish(),
   accounting: Zauctovanie.optional(),
@@ -483,6 +489,8 @@ function riadokBlocku(d: Partial<z.infer<typeof BlocekVstup>>, teraz: string) {
     r.payment_method = u;
     r.mimo_pokladne = u === "hotovost" && d.cash_register === false;
   }
+  // Cudziu pokladňu odmietne spúšťač `pokladna_dokladu` v DB.
+  nastav("pokladna_id", d.pokladna_id);
   nastav("category", d.category);
   nastav("note", d.note);
   if (d.accounting) {
@@ -502,7 +510,7 @@ function riadokBlocku(d: Partial<z.infer<typeof BlocekVstup>>, teraz: string) {
 }
 
 const STL_BLOCKU =
-  "id, external_id, document_number, status, supplier_name, supplier_ico, issue_date, currency, total_amount, vat_amount, net_amount, vat_breakdown, payment_method, mimo_pokladne, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at";
+  "id, external_id, document_number, status, supplier_name, supplier_ico, issue_date, currency, total_amount, vat_amount, net_amount, vat_breakdown, payment_method, mimo_pokladne, pokladna_id, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at";
 
 export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
   const v = BlocekVstup.safeParse(ctx.requestBody);

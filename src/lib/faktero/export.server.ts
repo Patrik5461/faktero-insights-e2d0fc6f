@@ -48,6 +48,7 @@ import {
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { kvPrijatehoPrePohodu, kvVystavenehoPrePohodu } from "./pohoda-kv";
 import { jeNezahrnovat } from "./uctovanie-agenda";
+import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
 import {
   datumyPrijateho,
   internaPoznamka,
@@ -311,8 +312,15 @@ export type PohodaNastavenia = {
   pomeryPredkontacii?: Record<string, unknown>;
   /** Vozidlo → krátený odpočet DPH (zmiešané použitie 50 %), pre doklady s `vehicle_id`. */
   odpocetVozidiel?: Record<string, OdpocetVozidla>;
-  /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
+  /**
+   * Skratka pokladne v Pohode pre pohyb bez vlastnej pokladne (predvolená
+   * pokladňa, inak doterajšie nastavenie firmy).
+   */
   pokladna?: string | null;
+  /** id pokladne Faktera → skratka v Pohode (viac pokladní, `pokladne.ts`). */
+  pokladneKody?: Record<string, string>;
+  /** id pokladne Faktera → mena pokladne (pohyby v nej sú v tejto mene). */
+  pokladneMeny?: Record<string, string>;
   /** Predkontácia pre pokladničný doklad. */
   predkontaciaPokladna?: string | null;
   /** Členenie skladu v Pohode (`storage`); bez neho sa skladová karta nezaloží. */
@@ -1189,6 +1197,14 @@ export function buildPohodaCashXml(opts: {
   });
 }
 
+/**
+ * Pohyby, ktoré do Pohody ísť nemôžu, lebo ich pokladňa (ani predvolená)
+ * nemá skratku pokladne v Pohode.
+ */
+export function pohybyBezPokladne<T>(pohyby: readonly T[], nastavenia?: PohodaNastavenia | null): T[] {
+  return (pohyby ?? []).filter((p) => !kodPokladneDokladu(p as any, nastavenia));
+}
+
 /** Položky `dataPackItem` s pokladničnými dokladmi — bez obálky. */
 export function polozkyPokladne(opts: {
   company: CompanyRow;
@@ -1196,12 +1212,19 @@ export function polozkyPokladne(opts: {
   nastavenia?: PohodaNastavenia;
 }): string {
   const { pohyby, nastavenia } = opts;
-  // Bez pokladne Pohoda doklad nezaloží (voucher.xsd: `cashAccount` je
-  // „vyžadován při vytvoření dokladu“) — volajúci to ohlási.
-  if (!String(nastavenia?.pokladna ?? "").trim()) return "";
+  const domaca = domacaMenaFirmy(opts.company);
 
   return pohyby
     .map((p, idx) => {
+      /*
+        Skratka podľa pokladne pohybu (viac pokladní), inak predvolená. Bez
+        skratky Pohoda doklad nezaloží (voucher.xsd: `cashAccount` je
+        „vyžadován při vytvoření dokladu“) — pohyb sa vynechá, volajúci to
+        ohlási (`pohybyBezPokladne`).
+      */
+      const kod = kodPokladneDokladu(p as any, nastavenia);
+      if (!kod) return "";
+      const mena = String(menaPokladneDokladu(p as any, nastavenia) ?? domaca).toUpperCase();
       // `prijem` = príjmový doklad, čokoľvek iné je výdavok.
       const druh = String(p?.type ?? "") === "prijem" ? "receipt" : "expense";
       const suma = Math.abs(Number(p?.amount ?? 0));
@@ -1214,11 +1237,8 @@ export function polozkyPokladne(opts: {
   <dat:dataPackItem id="${esc(p?.id ?? `POK${idx + 1}`)}" version="2.0">
     <vch:voucher version="2.0">
       <vch:voucherHeader>
-        <vch:voucherType>${druh}</vch:voucherType>${
-          nastavenia?.pokladna
-            ? `\n        <vch:cashAccount><typ:ids>${esc(nastavenia.pokladna)}</typ:ids></vch:cashAccount>`
-            : ""
-        }
+        <vch:voucherType>${druh}</vch:voucherType>
+        <vch:cashAccount><typ:ids>${esc(kod)}</typ:ids></vch:cashAccount>
         <vch:date>${esc(p?.entry_date ?? "")}</vch:date>
         <vch:dateTax>${esc(p?.entry_date ?? "")}</vch:dateTax>${
           nastavenia?.predkontaciaPokladna
@@ -1230,11 +1250,24 @@ export function polozkyPokladne(opts: {
           "        ",
         )}
       </vch:voucherHeader>
-      <vch:voucherSummary>
+      <vch:voucherSummary>${
+        mena !== domaca
+          ? /*
+              Valutová pokladňa: suma je v mene pokladne. Kurz Faktero pri
+              pohybe nemá — Pohoda ho doplní z kurzového lístka ku dňu
+              dokladu (`typ:rate` je v typeCurrencyForeign nepovinný).
+            */
+            `
+        <vch:foreignCurrency>
+          <typ:currency><typ:ids>${esc(mena)}</typ:ids></typ:currency>
+          <typ:priceSum>${fixed2(suma)}</typ:priceSum>
+        </vch:foreignCurrency>`
+          : `
         <vch:homeCurrency>
           <typ:priceNone>${fixed2(suma)}</typ:priceNone>
           <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
-        </vch:homeCurrency>
+        </vch:homeCurrency>`
+      }
       </vch:voucherSummary>
     </vch:voucher>
   </dat:dataPackItem>`;
@@ -1774,7 +1807,7 @@ export function polozkyDokladov(opts: {
           ? platba === "hotovost"
             ? // Pokladničný doklad bez pokladne Pohoda nezaloží — kým firma
               // skratku pokladne nevyplní, ide bloček ako prijatá faktúra.
-              String(d?.pohoda_pokladna ?? "").trim() || nastavenia?.pokladna?.trim()
+              kodPokladneDokladu(d, nastavenia)
               ? "vch"
               : "inv"
             : "inv"
@@ -2096,7 +2129,7 @@ export function polozkyDokladov(opts: {
           : p === "vch"
             ? `\n        <vch:voucherType>expense</vch:voucherType>${odkazIds(
                 "vch:cashAccount",
-                String(d?.pohoda_pokladna ?? "").trim() || nastavenia?.pokladna,
+                kodPokladneDokladu(d, nastavenia),
                 "        ",
               )}`
             : "";

@@ -39,6 +39,7 @@
       "provider": "'gopay'::text"
     },
     "cash_entries": { "entry_date": "DNES" },
+    "pokladne": { "predvolena": "false", "aktivna": "true", "poradie": "0" },
     "colne_kody": { "rok": "2026" },
     "commander_connections": { "enabled": "false", "auto_sync_daily": "false" },
     "companies": {
@@ -554,6 +555,7 @@
     "billing_payments": [["id"], ["provider", "provider_payment_id"]],
     "blokovane_domeny": [["domena"]],
     "cash_entries": [["id"], ["company_id", "entry_number"]],
+    "pokladne": [["id"]],
     "colne_kody": [["kod"]],
     "commander_connections": [["id"], ["company_id"]],
     "commander_vehicle_links": [["id"], ["company_id", "commander_vehicle_id"]],
