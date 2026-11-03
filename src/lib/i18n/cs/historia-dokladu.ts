@@ -31,4 +31,7 @@ export default {
   "{n} riadok": "{n} řádek",
   "{n} riadky": "{n} řádky",
   "{n} riadkov": "{n} řádků",
+  prijatá: "přijatá",
+  zaúčtovaná: "zaúčtovaná",
+  vystavená: "vystavená",
 };

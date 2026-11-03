@@ -128,7 +128,7 @@ export function KtoKedyBunka({
   const k = ktoKedyDokladu(row, agenda);
   const druhy = k.zauctovane
     ? (["Zaúčtované", k.zauctovane] as const)
-    : k.ulozene
+    : k.ulozene && !k.ulozeneVytvorenim
       ? (["Uložené", k.ulozene] as const)
       : null;
   if (!k.nahrane && !druhy) return <span className="text-muted-foreground">—</span>;

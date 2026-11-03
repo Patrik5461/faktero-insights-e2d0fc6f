@@ -124,6 +124,56 @@ describe("ktoKedyDokladu", () => {
   });
 });
 
+describe("uloženie ručne zapísaného dokladu", () => {
+  it("prijatá faktúra zadaná ručne: Uložené = kto ju vytvoril a kedy", () => {
+    const k = ktoKedyDokladu(
+      {
+        created_by: "u1",
+        created_at: "2026-11-03T10:15:00Z",
+        nahrane_at: "2026-11-03T10:15:00Z",
+        source: "manual",
+        zauctoval: "u1",
+        zauctovane_at: "2026-11-03T10:15:01Z",
+      },
+      "prijata",
+    );
+    expect(k.ulozene).toEqual({ kto: { typ: "clovek", id: "u1" }, kedy: "2026-11-03T10:15:00Z" });
+    expect(k.ulozeneVytvorenim).toBe(true);
+  });
+  it("bloček a ostatný doklad bez processed_* tiež", () => {
+    expect(ktoKedyDokladu({ created_by: "u2", created_at: "2026-11-03T08:00:00Z" }, "doklad").ulozene?.kto).toEqual({
+      typ: "clovek",
+      id: "u2",
+    });
+    expect(ktoKedyDokladu({ created_by: "u2", created_at: "2026-11-03T08:00:00Z" }, "ostatny").ulozene?.kedy).toBe(
+      "2026-11-03T08:00:00Z",
+    );
+  });
+  it("starý doklad bez autora ukáže aspoň čas", () => {
+    expect(ktoKedyDokladu({ created_at: "2025-01-01T08:00:00Z" }, "prijata").ulozene).toEqual({
+      kto: { typ: "clovek", id: null },
+      kedy: "2025-01-01T08:00:00Z",
+    });
+  });
+  it("doklad z mailu bez spracovania uložil server, API ostane API", () => {
+    expect(
+      ktoKedyDokladu({ created_by: "u1", created_at: "2026-11-03T08:00:00Z", source: "mail" }, "prijata").ulozene?.kto,
+    ).toEqual({ typ: "system" });
+    expect(ktoKedyDokladu({ created_at: "2026-11-03T08:00:00Z", source: "api" }, "prijata").ulozene?.kto.typ).toBe("api");
+  });
+  it("výslovné uloženie (z Nespracovaných) má prednosť a nie je odvodené", () => {
+    const k = ktoKedyDokladu(
+      { created_by: "u1", created_at: "2026-11-03T09:00:00Z", spracoval: "u2", spracovane_at: "2026-11-03T09:00:00Z" },
+      "prijata",
+    );
+    expect(k.ulozene?.kto).toEqual({ typ: "clovek", id: "u2" });
+    expect(k.ulozeneVytvorenim).toBeUndefined();
+  });
+  it("vystavená faktúra má Vytvorené, Uložené nie", () => {
+    expect(ktoKedyDokladu({ created_by: "u1", created_at: "2026-11-03T09:00:00Z" }, "faktura").ulozene).toBeNull();
+  });
+});
+
 describe("prenos z Nespracovaných", () => {
   it("vytvorený doklad dostane pôvodného nahrávajúceho a čas nahratia", () => {
     expect(prenosNahratia({ created_by: "u1", created_at: "2026-11-02T08:14:00Z" }, "u2")).toEqual({

@@ -31,4 +31,7 @@ export default {
   "{n} riadok": "{n} Zeile",
   "{n} riadky": "{n} Zeilen",
   "{n} riadkov": "{n} Zeilen",
+  prijatá: "empfangen",
+  zaúčtovaná: "kontiert",
+  vystavená: "ausgestellt",
 };
