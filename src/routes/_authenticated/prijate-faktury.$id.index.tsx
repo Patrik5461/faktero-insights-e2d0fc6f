@@ -1254,7 +1254,7 @@ function PurchaseInvoiceDetail() {
                 {kartaPoznamka}
               </div>
             </ZbaleneK>
-            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
+            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} row={row} />}
           </div>
         ) : (
         /* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */
@@ -1269,7 +1269,7 @@ function PurchaseInvoiceDetail() {
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             {kartaKomentare}
             {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
-            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
+            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} row={row} />}
             {kartaPrilohy}
 
             {kartaPolozky}

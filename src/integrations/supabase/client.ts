@@ -130,6 +130,12 @@ function createSupabaseClient() {
       autoRefreshToken: true,
       lock: jeVTelefone() ? processLock : zamokSoStropom,
     },
+    /*
+      Appka sa v hlavičke X-Client-Info ohlási ako „faktero-appka“ — história
+      dokladov (spúšťač `zapis_historiu_dokladu`) podľa nej zapíše „z appky“.
+      Vlastná hlavička by neprešla CORS pri Edge funkciách, X-Client-Info áno.
+    */
+    ...(jeVTelefone() ? { global: { headers: { "X-Client-Info": "supabase-js-web faktero-appka" } } } : {}),
   });
 }
 

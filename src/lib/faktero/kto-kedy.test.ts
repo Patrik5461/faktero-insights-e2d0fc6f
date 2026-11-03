@@ -85,7 +85,7 @@ describe("zauctovanieDokladu", () => {
 });
 
 describe("ktoKedyDokladu", () => {
-  it("uloženie zakryje zaúčtovanie toho istého človeka v tú istú chvíľu", () => {
+  it("uloženie sa ukáže vždy — aj keď ho ten istý človek hneď zaúčtoval", () => {
     const k = ktoKedyDokladu(
       {
         created_by: "u1",
@@ -97,7 +97,7 @@ describe("ktoKedyDokladu", () => {
       },
       "prijata",
     );
-    expect(k.ulozene).toBeNull();
+    expect(k.ulozene).toEqual({ kto: { typ: "clovek", id: "u2" }, kedy: "2026-11-02T09:02:00Z" });
     expect(k.nahrane?.kto).toEqual({ typ: "clovek", id: "u1" });
     expect(k.zauctovane?.kto).toEqual({ typ: "clovek", id: "u2" });
   });
@@ -115,12 +115,12 @@ describe("ktoKedyDokladu", () => {
     );
     expect(k.ulozene).toEqual({ kto: { typ: "clovek", id: "u1" }, kedy: "2026-11-02T09:00:00Z" });
   });
-  it("ručne zapísaný a hneď spracovaný bloček — uloženie = nahratie", () => {
+  it("ručne zapísaný a hneď spracovaný bloček — uloženie sa ukáže tiež", () => {
     const k = ktoKedyDokladu(
       { created_by: "u1", created_at: "2026-11-02T09:00:00Z", processed_by: "u1", processed_at: "2026-11-02T09:00:00Z" },
       "doklad",
     );
-    expect(k.ulozene).toBeNull();
+    expect(k.ulozene?.kto).toEqual({ typ: "clovek", id: "u1" });
   });
 });
 

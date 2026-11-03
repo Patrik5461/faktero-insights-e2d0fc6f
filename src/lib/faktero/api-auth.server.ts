@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { adminPreApiKluc } from "@/integrations/supabase/admin-zdroj.server";
 
 export type ApiCtx = {
   supabase: typeof supabaseAdmin;
@@ -337,7 +338,8 @@ export async function handleApi(
   let result: { status: number; body: any };
   try {
     result = await fn({
-      supabase: supabaseAdmin,
+      // História dokladov zapíše „API kľúč <názov>“ (hlavička x-faktero-zdroj).
+      supabase: adminPreApiKluc(keyRow.id),
       company_id: firmaPoziadavky,
       ucet: jeUcet,
       api_key_id: keyRow.id,

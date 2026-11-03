@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { KtoKedyDokladu } from "@/components/faktero/KtoKedyDokladu";
+import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
@@ -713,6 +714,11 @@ function OstatnyDokladPage() {
                 {t("Uložiť")}
               </button>
             </div>
+            {!novy && riadok && cid ? (
+              <div className="min-w-0 lg:col-span-2">
+                <HistoriaDokladu companyId={cid} agenda="ostatny" id={id} row={riadok} />
+              </div>
+            ) : null}
           </div>
         )}
       </PageBody>

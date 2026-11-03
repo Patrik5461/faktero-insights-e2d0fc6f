@@ -8038,6 +8038,8 @@
         "pred": { "druh": "json", "nullable": true, "volitelny": false, "povinny": false },
         "po": { "druh": "json", "nullable": true, "volitelny": false, "povinny": false },
         "kto": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "kto_popis": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "kto_typ": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "kedy": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false }
       },
       "vztahy": [

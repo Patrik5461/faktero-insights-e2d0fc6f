@@ -207,7 +207,9 @@ export const potvrdParovanie = createServerFn({ method: "POST" })
   .validator((d: unknown) => ZapisSchema.parse(d))
   .handler(async ({ data, context }) => {
     await overClena(context, data.companyId, true);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // História dokladov zapíše spárovanie na meno toho, kto klikol.
+    const { adminZaCloveka } = await import("@/integrations/supabase/admin-zdroj.server");
+    const supabaseAdmin = adminZaCloveka(context.userId);
 
     let zapisanych = 0;
     let uhradenych = 0;
@@ -303,7 +305,8 @@ export const sparujAutomaticky = createServerFn({ method: "POST" })
     const auto = await lenOdAutoParovania(context.supabase, data.companyId, vysledok.auto, pohyby);
     if (auto.length === 0) return { zapisanych: 0, uhradenych: 0, navrhov: navrhy.length };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { adminZaCloveka } = await import("@/integrations/supabase/admin-zdroj.server");
+    const supabaseAdmin = adminZaCloveka(context.userId);
     let zapisanych = 0;
     let uhradenych = 0;
 
@@ -351,7 +354,9 @@ export const zrusParovanie = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.companyId, true);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // História dokladov zapíše spárovanie na meno toho, kto klikol.
+    const { adminZaCloveka } = await import("@/integrations/supabase/admin-zdroj.server");
+    const supabaseAdmin = adminZaCloveka(context.userId);
 
     const { data: tx } = await supabaseAdmin
       .from("bank_transactions")

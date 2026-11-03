@@ -36,6 +36,7 @@ import { HromadnyPrikaz } from "./HromadnyPrikaz";
 import { PravidloZDokladu } from "./PravidloZDokladu";
 import { DatumPrijatiaInfo } from "./DatumPrijatiaInfo";
 import { jeSamozdanenie } from "@/lib/faktero/datum-prijatia";
+import { KtoKedyDokladu } from "./KtoKedyDokladu";
 
 /**
  * Detail prijatej faktúry v kompaktnom rozložení — ten istý vzhľad ako
@@ -212,6 +213,10 @@ export function PrijataDetailKompaktna({
             samozdanenie={jeSamozdanenie(row)}
             bezOdpoctu={row.type === "proforma"}
           />
+          {/* Kto doklad nahral, uložil a zaúčtoval — viditeľne, s dátumom a časom. */}
+          <div className="mt-2">
+            <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} bezRamu />
+          </div>
           <Rozsirene>
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
@@ -399,7 +404,7 @@ export function PrijataDetailKompaktna({
         {!navrh ? (
           <div className={BEZ_RAMU}>
             <ZbaleneK nadpis="História dokladu">
-              <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />
+              <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} row={row} />
             </ZbaleneK>
           </div>
         ) : null}
