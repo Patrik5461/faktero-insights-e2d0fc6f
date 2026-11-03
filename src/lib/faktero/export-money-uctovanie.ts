@@ -335,7 +335,8 @@ ${o}</NormPolozka>`;
 }
 
 function pokladnicny(d: DokladUctovania, m: Mena, nast: NastaveniaMoney, o: string): string {
-  const pokl = skrat(nast.pokladna ?? d.pokladna, 10);
+  // Pokladňa dokladu (viac pokladní) pred nastavením firmy.
+  const pokl = skrat(d.pokladna || nast.pokladna, 10);
   const datum = d.datumVystavenia;
   const h = hladiny(d.riadky);
   const pk = d.rozuctovany ? "" : (d.riadky[0]?.predkontacia ?? d.predkontacia);
@@ -488,7 +489,7 @@ export function buildMoneyS3Uctovanie(opts: {
     if (d.agenda === "vystavena") vydane.push(faktura(d, m, nast, "    "));
     // Pokladničný doklad bez pokladne Money nezaloží — kým firma zkratku
     // pokladne nevyplní, ide bloček ako faktúra prijatá (rovnako ako pri Pohode).
-    else if (d.agenda === "doklad" && d.forma === "pokladna" && String(nast.pokladna ?? d.pokladna ?? "").trim())
+    else if (d.agenda === "doklad" && d.forma === "pokladna" && String(d.pokladna || nast.pokladna || "").trim())
       pokladna.push(pokladnicny(d, m, nast, "    "));
     else if (d.agenda === "doklad" && d.forma === "interny") {
       const r = interny(d, m, nast, opts.kody, "    ");

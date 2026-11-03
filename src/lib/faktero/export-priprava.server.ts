@@ -131,6 +131,7 @@ export async function nastaveniaDokladovPohody(
     kvDoklady: company?.kv_clenenie_doklady,
     blockyPodlaPlatby: company?.pohoda_blocky_agenda === "podla_platby",
     pokladna: company?.pohoda_pokladna,
+    ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, String(company?.id ?? ""), company?.pohoda_pokladna)),
     predkontaciaPokladna: company?.pohoda_predkontacia_pokladna,
     sklad: company?.pohoda_sklad,
   } as PohodaNastavenia;

@@ -1242,6 +1242,7 @@ export type Database = {
       }
       cash_entries: {
         Row: {
+          pokladna_id: string | null
           amount: number
           category: string | null
           company_id: string
@@ -1260,6 +1261,7 @@ export type Database = {
           number_series_id: string | null
         }
         Insert: {
+          pokladna_id?: string | null
           amount: number
           category?: string | null
           company_id: string
@@ -1278,6 +1280,7 @@ export type Database = {
           number_series_id?: string | null
         }
         Update: {
+          pokladna_id?: string | null
           amount?: number
           category?: string | null
           company_id?: string
@@ -3534,6 +3537,7 @@ export type Database = {
       }
       expense_documents: {
         Row: {
+          pokladna_id: string | null
           nahrane_at: string | null
           naposledy_zauctoval: string | null
           naposledy_zauctovane_at: string | null
@@ -3613,6 +3617,7 @@ export type Database = {
           exchange_rate_source: string | null
         }
         Insert: {
+          pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
           naposledy_zauctovane_at?: string | null
@@ -3692,6 +3697,7 @@ export type Database = {
           exchange_rate_source?: string | null
         }
         Update: {
+          pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
           naposledy_zauctovane_at?: string | null
@@ -4212,6 +4218,53 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "financing_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokladne: {
+        Row: {
+          aktivna: boolean
+          company_id: string
+          created_at: string
+          id: string
+          kod_pohoda: string | null
+          mena: string
+          nazov: string
+          poradie: number
+          predvolena: boolean
+          updated_at: string
+        }
+        Insert: {
+          aktivna?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          kod_pohoda?: string | null
+          mena?: string
+          nazov: string
+          poradie?: number
+          predvolena?: boolean
+          updated_at?: string
+        }
+        Update: {
+          aktivna?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          kod_pohoda?: string | null
+          mena?: string
+          nazov?: string
+          poradie?: number
+          predvolena?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokladne_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -5494,6 +5547,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          pokladna_id: string | null
           naposledy_zauctoval: string | null
           naposledy_zauctovane_at: string | null
           exchange_rate_source: string | null
@@ -5615,6 +5669,7 @@ export type Database = {
           oprava_zauctovania_povodne: Json | null
         }
         Insert: {
+          pokladna_id?: string | null
           naposledy_zauctoval?: string | null
           naposledy_zauctovane_at?: string | null
           exchange_rate_source?: string | null
@@ -5736,6 +5791,7 @@ export type Database = {
           oprava_zauctovania_povodne?: Json | null
         }
         Update: {
+          pokladna_id?: string | null
           naposledy_zauctoval?: string | null
           naposledy_zauctovane_at?: string | null
           exchange_rate_source?: string | null
@@ -6880,6 +6936,7 @@ export type Database = {
       }
       purchase_invoices: {
         Row: {
+          pokladna_id: string | null
           nahrane_at: string | null
           naposledy_zauctoval: string | null
           naposledy_zauctovane_at: string | null
@@ -7006,6 +7063,7 @@ export type Database = {
           odberatel_potvrdil: string | null
         }
         Insert: {
+          pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
           naposledy_zauctovane_at?: string | null
@@ -7132,6 +7190,7 @@ export type Database = {
           odberatel_potvrdil?: string | null
         }
         Update: {
+          pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
           naposledy_zauctovane_at?: string | null

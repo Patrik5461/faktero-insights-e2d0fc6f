@@ -60,4 +60,15 @@ export default {
     "Při platbě v hotovosti se celková částka zaokrouhluje na <0>pět centů</0> — tak to od 1. 7. 2022 ukládá slovenský zákon o cenách, protože jedno- a dvoucentové mince se už nevydávají. Když na faktuře vyberete hotovost, Faktero přepne zaokrouhlení samo a rozdíl (nejvýše dva centy) je vidět v součtech.",
   "Platba v hotovosti nad <0>5 000 €</0> je medzi podnikateľmi zakázaná (zákon č. 394/2012 Z. z.) — pri takej sume sa objaví upozornenie.":
     "Platba v hotovosti nad <0>5 000 €</0> je mezi podnikateli zakázaná (zákon č. 394/2012 Z. z.) — při takové částce se objeví upozornění.",
+  // Viac pokladní (2026-11-03).
+  "Viac pokladní":
+    "Více pokladen",
+  "Firma môže mať <0>viac hotovostných pokladní</0> — napríklad pokladňu v eurách a druhú v korunách, alebo jednu na predajňu a druhú v kancelárii. Spravujú sa tlačidlom <1>Pokladne</1> na stránke <2>Pokladňa</2>: názov, mena, skratka pokladne v Pohode, predvolená pokladňa a archivovanie. Zmazať sa dá len pokladňa bez pohybov; s pohybmi ju archivujte.":
+    "Firma může mít <0>více hotovostních pokladen</0> — například pokladnu v korunách a druhou v eurech, nebo jednu na prodejně a druhou v kanceláři. Spravují se tlačítkem <1>Pokladny</1> na stránce <2>Pokladna</2>: název, měna, zkratka pokladny v Pohodě, výchozí pokladna a archivace. Smazat lze jen pokladnu bez pohybů; s pohyby ji archivujte.",
+  "Každá pokladňa má <0>vlastný zostatok a pokladničnú knihu</0>. Nad tabuľkou si vyberiete pokladňu alebo <1>Všetky pokladne</1> — vtedy sú súčty po menách, eurá a koruny sa nesčítavajú.":
+    "Každá pokladna má <0>vlastní zůstatek a pokladní knihu</0>. Nad tabulkou si vyberete pokladnu nebo <1>Všechny pokladny</1> — pak jsou součty po měnách, koruny a eura se nesčítají.",
+  "Pri novom pokladničnom doklade aj pri doklade platenom hotovosťou sa <0>predvolená pokladňa vyplní sama</0>. Výber pokladne sa ukáže, až keď má firma viac ako jednu — s jednou pokladňou sa nič nemení. Doklady z appky, z e-mailu či cez API idú do predvolenej, ak pokladňu neurčia.":
+    "U nového pokladního dokladu i u dokladu placeného hotově se <0>výchozí pokladna vyplní sama</0>. Výběr pokladny se ukáže, až když má firma více než jednu — s jednou pokladnou se nic nemění. Doklady z aplikace, z e-mailu či přes API jdou do výchozí, pokud pokladnu neurčí.",
+  "Do Pohody ide pokladničný doklad do tej pokladne, ktorej skratku má pokladňa dokladu. Pokladňa v cudzej mene ide so sumou v jej mene a kurz doplní Pohoda z kurzového lístka. Skratka zvolená ručne pri zaúčtovaní dokladu má prednosť.":
+    "Do Pohody jde pokladní doklad do té pokladny, jejíž zkratku má pokladna dokladu. Pokladna v cizí měně jde s částkou v její měně a kurz doplní Pohoda z kurzovního lístku. Zkratka zvolená ručně při zaúčtování dokladu má přednost.",
 } satisfies Record<string, string>;

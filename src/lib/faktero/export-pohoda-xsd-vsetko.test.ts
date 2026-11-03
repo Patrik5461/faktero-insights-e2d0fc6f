@@ -827,6 +827,84 @@ describe("Pohoda — pokladňa, banka a číselníky", () => {
     expect(hodnota(x, "typ:priceNone")).toBe("200.00");
   });
 
+  it("viac pokladní: skratka podľa pokladne pohybu, valutová pokladňa v jej mene (voucher.xsd)", () => {
+    const nastPokladni = {
+      ...nastavenia,
+      pokladna: "HP",
+      pokladneKody: { "p-eur": "HP", "p-czk": "HPCZ" },
+      pokladneMeny: { "p-eur": "EUR", "p-czk": "CZK", "p-bez": "EUR" },
+    };
+    const x = buildPohodaCashXml({
+      company: firmaSK,
+      nastavenia: nastPokladni,
+      pohyby: [
+        { id: "c-1", type: "prijem", amount: 100, entry_date: "2026-10-01", entry_number: "PD1", description: "Vklad EUR", pokladna_id: "p-eur" },
+        { id: "c-2", type: "prijem", amount: 5000, entry_date: "2026-10-01", entry_number: "PD2", description: "Vklad CZK", pokladna_id: "p-czk" },
+        // Pokladňa bez vlastnej skratky → predvolená skratka.
+        { id: "c-3", type: "vydaj", amount: 12, entry_date: "2026-10-02", entry_number: "PD3", description: "Známky", pokladna_id: "p-bez" },
+        // Starý pohyb bez pokladne → predvolená.
+        { id: "c-4", type: "vydaj", amount: 3, entry_date: "2026-10-03", entry_number: "PD4", description: "Parkovné" },
+      ],
+    });
+    uloz("17b-pokladne-viac", x);
+    expect(chybySchemy(x)).toEqual([]);
+    const polozky = [...x.matchAll(/<dat:dataPackItem id="([^"]+)"[\s\S]*?<\/dat:dataPackItem>/g)];
+    const kod = (id: string) =>
+      /<vch:cashAccount><typ:ids>([^<]+)<\/typ:ids>/.exec(polozky.find((m) => m[1] === id)![0])?.[1];
+    expect(kod("c-1")).toBe("HP");
+    expect(kod("c-2")).toBe("HPCZ");
+    expect(kod("c-3")).toBe("HP");
+    expect(kod("c-4")).toBe("HP");
+    const czk = polozky.find((m) => m[1] === "c-2")![0];
+    expect(czk).toContain("<vch:foreignCurrency>");
+    expect(czk).toContain("<typ:ids>CZK</typ:ids>");
+    expect(hodnota(czk, "typ:priceSum")).toBe("5000.00");
+    expect(czk).not.toContain("<vch:homeCurrency>");
+  });
+
+  it("viac pokladní: pohyb bez skratky sa vynechá, ostatné idú", () => {
+    const x = buildPohodaCashXml({
+      company: firmaSK,
+      nastavenia: { ...nastavenia, pokladna: null, pokladneKody: { "p-czk": "HPCZ" } },
+      pohyby: [
+        { id: "c-1", type: "prijem", amount: 100, entry_date: "2026-10-01", entry_number: "PD1", description: "Bez skratky" },
+        { id: "c-2", type: "prijem", amount: 50, entry_date: "2026-10-01", entry_number: "PD2", description: "S pokladňou", pokladna_id: "p-czk" },
+      ],
+    });
+    expect(chybySchemy(x)).toEqual([]);
+    expect(x).not.toContain('id="c-1"');
+    expect(x).toContain("<typ:ids>HPCZ</typ:ids>");
+  });
+
+  it("viac pokladní: hotovostný bloček ide do pokladne svojho dokladu (voucher.xsd)", () => {
+    const x = buildPohodaExpensesXml({
+      company: firmaSK,
+      nastavenia: {
+        ...nastavenia,
+        blockyPodlaPlatby: true,
+        pokladna: "HP",
+        pokladneKody: { "p-2": "HP2" },
+      } as any,
+      doklady: [
+        {
+          id: "b-1",
+          supplier_name: "Papiernictvo",
+          document_number: "BL-1",
+          issue_date: "2026-10-05",
+          total_amount: 12.3,
+          net_amount: 10,
+          vat_amount: 2.3,
+          vat_rate: 23,
+          currency: "EUR",
+          payment_method: "hotovost",
+          pokladna_id: "p-2",
+        },
+      ] as any,
+    });
+    expect(chybySchemy(x)).toEqual([]);
+    expect(x).toContain("<vch:cashAccount><typ:ids>HP2</typ:ids></vch:cashAccount>");
+  });
+
   it("bankový výpis (bank.xsd): účet, číslo výpisu, symboly, protiúčet", () => {
     const x = buildPohodaBankXml({
       company: firmaSK,

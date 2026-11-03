@@ -295,6 +295,7 @@ export async function zostavBalik(
     blockyPodlaPlatby: company.pohoda_blocky_agenda === "podla_platby",
     podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, company.id),
     pokladna: company.pohoda_pokladna,
+    ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, company.id, company.pohoda_pokladna)),
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
     // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
@@ -304,6 +305,7 @@ export async function zostavBalik(
   const {
     EXPORT_STRATEGIES,
     buildPohodaCashXml,
+    pohybyBezPokladne,
     buildPohodaExpensesXml,
     buildPohodaAddressbookXml,
     buildPohodaStockXml,
@@ -579,14 +581,16 @@ export async function zostavBalik(
       `cashAccount` je „vyžadován při vytvoření dokladu“) — XML sa bez skratky
       pokladne nevyrobí, pohyby ostanú v súpiske a povie sa to.
     */
-    if (String(company.pohoda_pokladna ?? "").trim())
+    // Viac pokladní: skratka podľa pokladne pohybu, inak predvolená/firma.
+    const bezSkratky = pohybyBezPokladne(pokladnica, nastavenia);
+    if (bezSkratky.length < pokladnica.length)
       zip.file(
         "pohoda-pokladna.xml",
         buildPohodaCashXml({ company, pohyby: pokladnica, nastavenia }),
       );
-    else
+    if (bezSkratky.length)
       preskocene.push(
-        `Pokladňa (${pokladnica.length}) — chýba skratka pokladne pre Pohodu — nastavte ju v Účtovníctvo → Prepojenie s Pohodou`,
+        `Pokladňa (${bezSkratky.length}) — chýba skratka pokladne pre Pohodu — doplňte ju v Pokladňa → Pokladne alebo v Účtovníctvo → Prepojenie s Pohodou`,
       );
     zip.file(
       "pokladna.csv",

@@ -108,6 +108,37 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "viac-pokladni",
+    title: "Viac pokladní",
+    body: (
+      <>
+        <p>
+          Firma môže mať <strong>viac hotovostných pokladní</strong> — napríklad pokladňu v eurách a
+          druhú v korunách, alebo jednu na predajňu a druhú v kancelárii. Spravujú sa tlačidlom{" "}
+          <strong>Pokladne</strong> na stránke <Link to="/pokladna">Pokladňa</Link>: názov, mena,
+          skratka pokladne v Pohode, predvolená pokladňa a archivovanie. Zmazať sa dá len pokladňa
+          bez pohybov; s pohybmi ju archivujte.
+        </p>
+        <p>
+          Každá pokladňa má <strong>vlastný zostatok a pokladničnú knihu</strong>. Nad tabuľkou si
+          vyberiete pokladňu alebo <strong>Všetky pokladne</strong> — vtedy sú súčty po menách,
+          eurá a koruny sa nesčítavajú.
+        </p>
+        <p>
+          Pri novom pokladničnom doklade aj pri doklade platenom hotovosťou sa{" "}
+          <strong>predvolená pokladňa vyplní sama</strong>. Výber pokladne sa ukáže, až keď má firma
+          viac ako jednu — s jednou pokladňou sa nič nemení. Doklady z appky, z e-mailu či cez API
+          idú do predvolenej, ak pokladňu neurčia.
+        </p>
+        <p>
+          Do Pohody ide pokladničný doklad do tej pokladne, ktorej skratku má pokladňa dokladu.
+          Pokladňa v cudzej mene ide so sumou v jej mene a kurz doplní Pohoda z kurzového lístka.
+          Skratka zvolená ručne pri zaúčtovaní dokladu má prednosť.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "ekasa",
     title: "Načítanie bločku z eKasa QR kódu",
     body: (

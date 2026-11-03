@@ -60,4 +60,15 @@ export default {
     "Bei Barzahlung wird der Gesamtbetrag auf <0>fünf Cent</0> gerundet — so schreibt es seit dem 1. 7. 2022 das slowakische Preisgesetz (zákon o cenách) vor, weil Ein- und Zwei-Cent-Münzen nicht mehr ausgegeben werden. Wenn Sie auf der Rechnung Barzahlung wählen, stellt Faktero die Rundung selbst um, und die Differenz (höchstens zwei Cent) ist in den Summen sichtbar.",
   "Platba v hotovosti nad <0>5 000 €</0> je medzi podnikateľmi zakázaná (zákon č. 394/2012 Z. z.) — pri takej sume sa objaví upozornenie.":
     "Barzahlungen über <0>5 000 €</0> sind zwischen Unternehmern verboten (Gesetz Nr. 394/2012 Z. z.) — bei einem solchen Betrag erscheint ein Hinweis.",
+  // Viac pokladní (2026-11-03).
+  "Viac pokladní":
+    "Mehrere Kassen",
+  "Firma môže mať <0>viac hotovostných pokladní</0> — napríklad pokladňu v eurách a druhú v korunách, alebo jednu na predajňu a druhú v kancelárii. Spravujú sa tlačidlom <1>Pokladne</1> na stránke <2>Pokladňa</2>: názov, mena, skratka pokladne v Pohode, predvolená pokladňa a archivovanie. Zmazať sa dá len pokladňa bez pohybov; s pohybmi ju archivujte.":
+    "Eine Firma kann <0>mehrere Bargeldkassen</0> haben — etwa eine Kasse in Euro und eine zweite in Kronen, oder eine im Laden und eine im Büro. Verwaltet werden sie über die Schaltfläche <1>Kassen</1> auf der Seite <2>Kasse</2>: Name, Währung, Kürzel der Kasse in Pohoda, Standardkasse und Archivierung. Löschen lässt sich nur eine Kasse ohne Buchungen; mit Buchungen archivieren Sie sie.",
+  "Každá pokladňa má <0>vlastný zostatok a pokladničnú knihu</0>. Nad tabuľkou si vyberiete pokladňu alebo <1>Všetky pokladne</1> — vtedy sú súčty po menách, eurá a koruny sa nesčítavajú.":
+    "Jede Kasse hat <0>ihren eigenen Bestand und ihr eigenes Kassenbuch</0>. Über der Tabelle wählen Sie eine Kasse oder <1>Alle Kassen</1> — dann gibt es Summen je Währung, Euro und Kronen werden nicht addiert.",
+  "Pri novom pokladničnom doklade aj pri doklade platenom hotovosťou sa <0>predvolená pokladňa vyplní sama</0>. Výber pokladne sa ukáže, až keď má firma viac ako jednu — s jednou pokladňou sa nič nemení. Doklady z appky, z e-mailu či cez API idú do predvolenej, ak pokladňu neurčia.":
+    "Bei einem neuen Kassenbeleg und bei einem bar bezahlten Beleg wird <0>die Standardkasse automatisch eingetragen</0>. Die Kassenauswahl erscheint erst, wenn die Firma mehr als eine Kasse hat — mit einer Kasse ändert sich nichts. Belege aus der App, per E-Mail oder über die API gehen in die Standardkasse, wenn sie keine Kasse angeben.",
+  "Do Pohody ide pokladničný doklad do tej pokladne, ktorej skratku má pokladňa dokladu. Pokladňa v cudzej mene ide so sumou v jej mene a kurz doplní Pohoda z kurzového lístka. Skratka zvolená ručne pri zaúčtovaní dokladu má prednosť.":
+    "In Pohoda geht der Kassenbeleg in die Kasse, deren Kürzel die Kasse des Belegs trägt. Eine Fremdwährungskasse geht mit dem Betrag in ihrer Währung, den Kurs ergänzt Pohoda aus der Kurstabelle. Ein bei der Kontierung manuell gewähltes Kürzel hat Vorrang.",
 } satisfies Record<string, string>;

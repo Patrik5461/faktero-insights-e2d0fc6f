@@ -19,6 +19,7 @@ import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodStatu } from "./company-autofill";
 import { polozkyPrijatej, rozpisPrijatej } from "./prijate-do-pohody";
+import { kodPokladneDokladu } from "./pokladne";
 import { datumyPrijateho, type DatumOdpoctu, type DatumZapisu } from "./export-nastavenia";
 import {
   odpoctyZapisatelne,
@@ -181,6 +182,9 @@ export type NastaveniaUctovania = {
   radPokladna?: string | null;
   radInterne?: string | null;
   pokladna?: string | null;
+  /** id pokladne → skratka (viac pokladní); doklad nesie `pokladna_id`. */
+  pokladneKody?: Record<string, string>;
+  pokladneMeny?: Record<string, string>;
   zamknuteDo?: string | null;
   /** Voľby „Dátum zápisu" a „Dátum odpočtu" z nastavení exportu (predvolene vyhotovenie a dodanie). */
   datumZapisu?: DatumZapisu;
@@ -404,7 +408,8 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
         : forma === "interny"
           ? t(nast.radInterne)
           : t(nast.radDoklady)),
-    pokladna: forma === "pokladna" ? (t(d?.pohoda_pokladna) ?? t(nast.pokladna)) : null,
+    // Ručne zvolená na doklade → pokladňa dokladu → predvolená (pokladne.ts).
+    pokladna: forma === "pokladna" ? (kodPokladneDokladu(d, nast) || null) : null,
     text:
       [t(d?.supplier_name), t(d?.document_number) ? `č. ${d.document_number}` : null]
         .filter(Boolean)
