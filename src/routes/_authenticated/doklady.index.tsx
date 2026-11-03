@@ -1353,7 +1353,7 @@ function DokladyPage() {
                 {postupne.viditelne.map((r) => (
                   <tr
                     key={r.id}
-                    {...posledny.riadok(r.id)}
+                    {...posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null)}
                     data-nahlad-id={r.id}
                     {...klik(
                       { to: "/doklady/novy", search: { id: r.id } as any },
@@ -1366,7 +1366,7 @@ function DokladyPage() {
                         },
                       },
                     )}
-                    className={`${TRIEDA_KLIK_RIADKU} border-t border-border ${posledny.riadok(r.id).className} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
+                    className={`${TRIEDA_KLIK_RIADKU} border-t border-border ${posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null).className}`}
                   >
                     <td className="px-3 py-2">
                       <input

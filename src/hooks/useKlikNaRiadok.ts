@@ -160,7 +160,7 @@ export interface PropsRiadku {
 
 /** Vzhľad klikateľného riadku — len kurzor, jemný hover a viditeľné zameranie. */
 export const TRIEDA_KLIK_RIADKU =
-  "cursor-pointer hover:bg-muted/30 focus-visible:outline-none focus-visible:bg-muted/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
+  "cursor-pointer [@media(hover:hover)]:hover:bg-muted/30 focus-visible:outline-none focus-visible:bg-muted/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
 
 export interface RouterPreRiadok {
   navigate: (o: NavigateOptions) => unknown;
