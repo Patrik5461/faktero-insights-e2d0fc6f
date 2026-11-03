@@ -35,6 +35,7 @@ import {
   useZauctovanieVystavenej,
 } from "./ZauctovanieVystavenejPanel";
 import { KomentarDokladu } from "./StavDokladu";
+import { KtoKedyDokladu } from "./KtoKedyDokladu";
 
 type Platba = {
   id: string;
@@ -270,6 +271,10 @@ export function VystavenaDetailKompaktna({
           <Hodnota popis="Dátum dodania (DUZP)" title={lenCitanie}>
             {datumNaDoklade(inv.delivery_date ?? inv.issue_date)}
           </Hodnota>
+          {/* Kto doklad nahral, uložil a zaúčtoval — viditeľne, s dátumom a časom. */}
+          <div className="mt-2">
+            <KtoKedyDokladu companyId={inv.company_id} agenda="faktura" row={inv} bezRamu />
+          </div>
           <Rozsirene>
             <Hodnota popis="Interné číslo">{z.vPohode?.cislo ?? null}</Hodnota>
             <Hodnota popis="Vystavil">

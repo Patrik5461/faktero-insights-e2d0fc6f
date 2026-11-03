@@ -43,6 +43,7 @@ import { KomentarePanel } from "./KomentarePanel";
 import { PravidloZDokladu } from "./PravidloZDokladu";
 import { PouzitPredlohu } from "./PouzitPredlohu";
 import { NastavitPredvolene } from "./NastavitPredvolene";
+import { KtoKedyDokladu } from "./KtoKedyDokladu";
 
 const PLATBY: Record<string, string> = {
   hotovost: "Hotovosťou",
@@ -429,6 +430,10 @@ export function BlocekDetailKompaktny({
               </select>
             </Pole>
           </fieldset>
+          {/* Kto doklad nahral, uložil a zaúčtoval — viditeľne, s dátumom a časom. */}
+          <div className="mt-2">
+            <KtoKedyDokladu companyId={row.company_id} agenda="doklad" row={row} bezRamu />
+          </div>
           <Rozsirene>
             <Hodnota popis="Uložil">{ulozil}</Hodnota>
             {spracovanie ? <Hodnota popis="Spracoval">{spracoval ?? t("kolega")}</Hodnota> : null}
@@ -569,7 +574,7 @@ export function BlocekDetailKompaktny({
         </div>
         <div className={BEZ_RAMU}>
           <ZbaleneK nadpis="História dokladu">
-            <HistoriaDokladu companyId={row.company_id} agenda="doklad" id={row.id} />
+            <HistoriaDokladu companyId={row.company_id} agenda="doklad" id={row.id} row={row} />
           </ZbaleneK>
         </div>
       </PanelKompaktny>

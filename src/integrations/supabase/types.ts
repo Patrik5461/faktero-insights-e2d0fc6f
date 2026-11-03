@@ -10084,6 +10084,8 @@ export type Database = {
           pred: Json | null
           po: Json | null
           kto: string | null
+          kto_popis: string | null
+          kto_typ: string | null
           kedy: string
         }
         Insert: {
@@ -10095,6 +10097,8 @@ export type Database = {
           pred?: Json | null
           po?: Json | null
           kto?: string | null
+          kto_popis?: string | null
+          kto_typ?: string | null
           kedy?: string
         }
         Update: {
@@ -10106,6 +10110,8 @@ export type Database = {
           pred?: Json | null
           po?: Json | null
           kto?: string | null
+          kto_popis?: string | null
+          kto_typ?: string | null
           kedy?: string
         }
         Relationships: [

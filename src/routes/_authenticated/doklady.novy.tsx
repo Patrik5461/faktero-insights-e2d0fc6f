@@ -1464,7 +1464,7 @@ function NovyDokladPage() {
                     <KtoKedyDokladu companyId={cid} agenda="doklad" row={ulozeny} />
                   </div>
                   <div className="mt-3">
-                    <HistoriaDokladu companyId={cid} agenda="doklad" id={search.id} />
+                    <HistoriaDokladu companyId={cid} agenda="doklad" id={search.id} row={ulozeny} />
                   </div>
                   <div className="mt-3">
                     <PrilohyFaktury

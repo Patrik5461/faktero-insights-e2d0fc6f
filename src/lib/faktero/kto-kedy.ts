@@ -17,12 +17,20 @@
 export type AgendaKtoKedy = "prijata" | "doklad" | "ostatny" | "faktura" | "nespracovany";
 
 export type Kto =
-  | { typ: "clovek"; id: string | null }
+  /** `cez` — zaúčtovanie pri zápise človeka urobilo pravidlo / zvyk / AI. */
+  | { typ: "clovek"; id: string | null; cez?: "pravidlo" | "zvyk" | "ai" }
+  /** Prihlásený člen z mobilnej appky (história dokladu). */
+  | { typ: "appka"; id: string | null }
   | { typ: "mail"; adresa: string | null }
-  | { typ: "api" }
+  /** `nazov` — názov API kľúča, ak ho história pozná. */
+  | { typ: "api"; nazov?: string | null }
   | { typ: "import" }
   | { typ: "efaktura" }
-  | { typ: "automat"; zdroj: "pravidlo" | "zvyk" | "ai" };
+  | { typ: "automat"; zdroj: "pravidlo" | "zvyk" | "ai" }
+  /** Zmena prenesená z Doklada (účet, ktorý ju tam urobil). */
+  | { typ: "doklado"; ucet: string | null }
+  /** Server bez človeka (napr. Pohoda konektor, nočné párovanie). */
+  | { typ: "system" };
 
 export type Udalost = { kto: Kto; kedy: string | null };
 
@@ -86,28 +94,21 @@ export function ulozenieDokladu(
   return { kto: { typ: "clovek", id }, kedy };
 }
 
-const ROVNAKO_MS = 2 * 60 * 1000;
-const tenIstyCas = (a: string | null, b: string | null) =>
+/** Dve udalosti „v tú istú chvíľu“ — do 2 minút. */
+export const ROVNAKO_MS = 2 * 60 * 1000;
+export const tenIstyCas = (a: string | null, b: string | null) =>
   a != null && b != null && Math.abs(Date.parse(a) - Date.parse(b)) <= ROVNAKO_MS;
-const tenIstyClovek = (a: Kto, b: Kto) =>
-  a.typ === "clovek" && b.typ === "clovek" && a.id === b.id;
 
-/**
- * Všetky tri udalosti dokladu. Uloženie sa vynechá, keď ho zakryje
- * zaúčtovanie (ten istý človek v tú istú chvíľu — Vytvoriť s predkontáciou)
- * alebo nahratie (bloček zapísaný ručne a hneď spracovaný).
- */
+/** Všetky tri udalosti dokladu: nahratie, uloženie (ak bolo) a posledné zaúčtovanie. */
 export function ktoKedyDokladu(
   r: Record<string, any> | null | undefined,
   agenda: AgendaKtoKedy,
 ): KtoKedy {
   const nahrane = nahranieDokladu(r, agenda);
   const zauctovane = zauctovanieDokladu(r, agenda);
-  let ulozene = ulozenieDokladu(r, agenda);
-  if (ulozene && zauctovane && tenIstyClovek(ulozene.kto, zauctovane.kto) && tenIstyCas(ulozene.kedy, zauctovane.kedy))
-    ulozene = null;
-  if (ulozene && nahrane && tenIstyClovek(ulozene.kto, nahrane.kto) && tenIstyCas(ulozene.kedy, nahrane.kedy))
-    ulozene = null;
+  // Uloženie sa ukazuje vždy — aj keď ho ten istý človek hneď zaúčtoval
+  // (požiadavka 2026-11-03: „kto doklad uložil, dátum a čas“).
+  const ulozene = ulozenieDokladu(r, agenda);
   return { nahrane, ulozene, zauctovane };
 }
 
@@ -118,12 +119,16 @@ export function ktoKedyDokladu(
 export function textKto(
   kto: Kto,
   mena: Record<string, string>,
-): { kluc: string; premenne?: Record<string, string>; meno?: string } {
+): { kluc: string; premenne?: Record<string, string>; meno?: string; pripona?: string } {
   switch (kto.typ) {
     case "mail":
       return kto.adresa ? { kluc: "e-mailom z {adresa}", premenne: { adresa: kto.adresa } } : { kluc: "e-mailom" };
     case "api":
-      return { kluc: "cez API" };
+      return kto.nazov ? { kluc: "API kľúč {nazov}", premenne: { nazov: kto.nazov } } : { kluc: "cez API" };
+    case "doklado":
+      return kto.ucet ? { kluc: "Doklado ({ucet})", premenne: { ucet: kto.ucet } } : { kluc: "Doklado" };
+    case "system":
+      return { kluc: "automaticky" };
     case "import":
       return { kluc: "importom" };
     case "efaktura":
@@ -137,11 +142,23 @@ export function textKto(
               ? "automaticky (podľa zvyku)"
               : "automaticky (AI)",
       };
-    case "clovek": {
+    case "clovek":
+    case "appka": {
       // Člen, ktorý z firmy odišiel, alebo ešte nenačítané mená — „kolega“.
       const meno = kto.id ? mena[kto.id] : null;
+      const pripona =
+        kto.typ === "appka"
+          ? "z appky"
+          : kto.cez === "pravidlo"
+            ? "pravidlom"
+            : kto.cez === "zvyk"
+              ? "podľa zvyku"
+              : kto.cez === "ai"
+                ? "návrhom AI"
+                : undefined;
       // Bez autora (starý doklad, zápis cez API) sa ukáže len čas.
-      return meno ? { kluc: "", meno } : kto.id ? { kluc: "kolega" } : { kluc: "" };
+      const zaklad = meno ? { kluc: "", meno } : kto.id ? { kluc: "kolega" } : { kluc: "" };
+      return pripona && (meno || kto.id) ? { ...zaklad, pripona } : zaklad;
     }
   }
 }
@@ -156,7 +173,7 @@ export function casUdalosti(kedy: string | null, loc: string): string | null {
 
 /** Mená členov treba načítať len vtedy, keď niektorá udalosť ukazuje človeka. */
 export function potrebujeMena(k: KtoKedy): boolean {
-  return [k.nahrane, k.ulozene, k.zauctovane].some((u) => u?.kto.typ === "clovek" && u.kto.id);
+  return [k.nahrane, k.ulozene, k.zauctovane].some((u) => (u?.kto.typ === "clovek" || u?.kto.typ === "appka") && u.kto.id);
 }
 
 /**

@@ -1319,6 +1319,7 @@ function InvoiceDetail() {
         companyId={inv.company_id}
         agenda="faktura"
         id={inv.id}
+        row={inv}
         onPocet={setPocetHistorie}
       />
     </>

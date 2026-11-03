@@ -39,7 +39,9 @@ export function UdalostText({
 }) {
   const { t, jazyk } = useT();
   const k = textKto(u.kto, mena);
-  const kto = k.meno ?? (k.kluc ? t(k.kluc, k.premenne) : "");
+  const kto = [k.meno ?? (k.kluc ? t(k.kluc, k.premenne) : ""), k.pripona ? `(${t(k.pripona)})` : ""]
+    .filter(Boolean)
+    .join(" ");
   const kedy = casUdalosti(u.kedy, lokalJazyka(jazyk));
   if (kompaktne)
     return (
@@ -64,10 +66,13 @@ export function KtoKedyDokladu({
   companyId,
   agenda,
   row,
+  bezRamu = false,
 }: {
   companyId: string | null | undefined;
   agenda: AgendaKtoKedy;
   row: Record<string, any> | null | undefined;
+  /** V kompaktnom detaile ako riadok sekcie, bez vlastného rámčeka. */
+  bezRamu?: boolean;
 }) {
   const { t } = useT();
   const k = ktoKedyDokladu(row, agenda);
@@ -81,7 +86,11 @@ export function KtoKedyDokladu({
   if (!casti.length) return null;
   return (
     <div
-      className="flex items-start gap-2 rounded-xl border border-border bg-card px-5 py-3 text-xs text-muted-foreground"
+      className={
+        bezRamu
+          ? "flex items-start gap-2 text-xs text-muted-foreground"
+          : "flex items-start gap-2 rounded-xl border border-border bg-card px-5 py-3 text-xs text-muted-foreground"
+      }
       data-testid="kto-kedy-dokladu"
     >
       <UserCheck className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />

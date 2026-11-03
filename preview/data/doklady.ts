@@ -678,6 +678,45 @@ export function naplnDoklady(db: DemoDb) {
   db.vloz("purchase_invoice_payments", uhrady);
   PRIJATE.push(...prijate);
 
+  /* História zmien (spúšťač zapis_historiu_dokladu): pri niekoľkých zaúčtovaných
+     prijatých faktúrach úprava sumy a položiek, zaúčtovanie automatom, zmena
+     predkontácie, odovzdanie konektorom a spárovanie s platbou. */
+  db.vloz(
+    "historia_dokladov",
+    prijate
+      .filter((r) => r.zauctovane_at && r.type === "regular")
+      .slice(0, 6)
+      .flatMap((r, i) => {
+        const t0 = Date.parse(String(r.created_at));
+        const kedy = (h: number) => new Date(t0 + h * 3600 * 1000).toISOString();
+        const h = (n: number, pole: string, pred: unknown, po: unknown, kto: string | null, kto_typ: string, kto_popis: string | null = null) => ({
+          id: uid(`hist-prijata:${r.id}:${n}`),
+          company_id: FIRMA,
+          agenda: "prijata",
+          doklad_id: r.id,
+          pole,
+          pred,
+          po,
+          kto,
+          kto_typ,
+          kto_popis,
+          kedy: kedy(n),
+        });
+        const suma = Number(r.amount_total ?? 0);
+        const predk = String(r.pohoda_predkontacia ?? "501/321");
+        return [
+          h(1, "amount_total", r2(suma - 10), suma, UCTOVNIK, i % 2 ? "appka" : "clovek"),
+          h(1, "items", { pocet: 1, suma: r2(suma - 10) }, { pocet: 2, suma }, UCTOVNIK, i % 2 ? "appka" : "clovek"),
+          h(2, "zauctovane_at", null, kedy(2), null, "automat", "ai"),
+          h(2, "zauctovanie_zdroj", null, "ai", null, "automat", "ai"),
+          h(2, "pohoda_predkontacia", null, "501/321", null, "automat", "ai"),
+          h(3, "pohoda_predkontacia", "501/321", predk === "501/321" ? "518/321" : predk, MAJITEL, "clovek"),
+          h(4, "exported_at", null, kedy(4), UCTOVNIK, "clovek", "konektor"),
+          h(5, "_platba", null, { suma: -suma, mena: r.currency ?? "EUR", datum: String(kedy(5)).slice(0, 10), protistrana: r.supplier_name }, null, "api", "Banka – import"),
+        ];
+      }),
+  );
+
   /* ================================================= bločky */
   const kategorie = [
     "kancelarske_potreby",
