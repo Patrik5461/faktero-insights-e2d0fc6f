@@ -662,3 +662,109 @@ select.input {
 :where(.overflow-x-auto, .overflow-auto, .overflow-x-scroll) .sr-only {
   left: 0;
 }
+
+/*
+  Textová vrstva náhľadu PDF (TextovaVrstvaPdf.tsx) — priehľadný text pdf.js
+  nad plátnom, aby sa dal označiť a skopírovať. Výber z pdf_viewer.css (celý
+  súbor je obrovský a patrí k prehliadaču pdf.js). Polohy sú v percentách
+  strany, písmo rastie s `--total-scale-factor` (nastavuje komponent podľa
+  šírky strany). Označený text má viditeľné modré pozadie.
+*/
+.faktero-text-vrstva {
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor, 1) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  text-align: initial;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  color-scheme: only light;
+  z-index: 0;
+}
+.faktero-text-vrstva[data-main-rotation="90"] {
+  transform: rotate(90deg) translateY(-100%);
+}
+.faktero-text-vrstva[data-main-rotation="180"] {
+  transform: rotate(180deg) translate(-100%, -100%);
+}
+.faktero-text-vrstva[data-main-rotation="270"] {
+  transform: rotate(270deg) translateX(-100%);
+}
+.faktero-text-vrstva :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.faktero-text-vrstva > :not(.markedContent),
+.faktero-text-vrstva .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.faktero-text-vrstva .markedContent {
+  display: contents;
+}
+.faktero-text-vrstva ::selection,
+.faktero-slova-skenu ::selection {
+  background: rgb(37 99 235 / 0.35);
+  color: transparent;
+}
+.faktero-text-vrstva br::selection {
+  background: transparent;
+}
+.faktero-text-vrstva .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.faktero-text-vrstva.selecting .endOfContent {
+  top: 0;
+}
+/* Obal vrstvy — myš nechytá, tú berie až vrstva s textom. */
+.faktero-text-obal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.faktero-text-obal > .faktero-text-vrstva {
+  pointer-events: auto;
+}
+/* V režime výberu oblasti (Nespracované) text prepúšťa myš na plochu výberu — s Alt sa dá označiť. */
+.faktero-text-obal[data-pasivna] > .faktero-text-vrstva,
+.faktero-text-obal[data-pasivna] :is(span, br) {
+  pointer-events: none;
+}
+/* Hodnoty z AI nad skenom — písmo podľa výšky rámčeka (kontajner = strana). */
+.faktero-slova-skenu {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  line-height: 1;
+}
+.faktero-slova-skenu > span {
+  position: absolute;
+  white-space: pre;
+  color: transparent;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}

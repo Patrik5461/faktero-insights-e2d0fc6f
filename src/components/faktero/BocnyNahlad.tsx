@@ -9,6 +9,12 @@ import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { PanelNahladu } from "@/components/faktero/PanelNahladu";
 import { KartaNahladu, RozlozenieDetailu } from "@/components/faktero/DetailDokladu";
 import { useT } from "@/lib/i18n/useT";
+import {
+  ObrazokSoZvyraznenim,
+  PrepinacZvyraznenia,
+  useZvyraznenieDokladu,
+} from "@/components/faktero/ZvyraznenieVytazenych";
+import type { UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 
 /** Súbor na náhľad — PDF kreslí pdf.js, obrázok (sken bločku, fotka) ide cez `<img>`. */
 export type SuborNahladu = { url: string; obrazok?: boolean } | null;
@@ -190,7 +196,11 @@ export function SNahladom({
           )}
           {stav === "hotovo" && subor ? (
             subor.obrazok ? (
-              <img src={subor.url} alt={nazov ?? ""} className="mx-auto block max-w-full" />
+              <ObrazokSoZvyraznenim
+                url={subor.url}
+                alt={nazov ?? ""}
+                className="mx-auto block max-w-full"
+              />
             ) : (
               <NahladPdf key={subor.url} url={subor.url} />
             )
@@ -279,6 +289,7 @@ export function DetailSNahladom({
   onSkryt,
   akcie,
   naMobile,
+  udaje,
   children,
 }: {
   zobrazit: boolean;
@@ -288,14 +299,38 @@ export function DetailSNahladom({
   onSkryt: () => void;
   akcie?: ReactNode;
   naMobile?: boolean;
+  /**
+   * Uložené údaje dokladu (prijatá faktúra) — zvýraznia sa v náhľade ako
+   * v Nespracovaných, s prepínačom „Zvýrazniť údaje" medzi akciami.
+   */
+  udaje?: UdajeNespracovaneho | null;
   children: ReactNode;
 }) {
   const { t } = useT();
+  const { zvyraznenie, prepni } = useZvyraznenieDokladu(zobrazit ? udaje : null);
   if (!zobrazit) return <>{children}</>;
   return (
     <RozlozenieDetailu
       nahlad={
-        <KartaNahladu nazov={nazov} akcie={akcie} onSkryt={onSkryt} lenSiroka={!naMobile}>
+        <KartaNahladu
+          nazov={nazov}
+          akcie={
+            zvyraznenie && subor && !subor.obrazok ? (
+              <>
+                <PrepinacZvyraznenia
+                  zap={zvyraznenie.zobrazit}
+                  onPrepni={prepni}
+                  className="rounded-md border border-border p-1 hover:bg-secondary"
+                />
+                {akcie}
+              </>
+            ) : (
+              akcie
+            )
+          }
+          onSkryt={onSkryt}
+          lenSiroka={!naMobile}
+        >
           {subor === undefined ? (
             <div className="flex justify-center p-6 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -305,9 +340,13 @@ export function DetailSNahladom({
               {t("K dokladu nie je súbor na náhľad.")}
             </p>
           ) : subor.obrazok ? (
-            <img src={subor.url} alt={nazov ?? ""} className="mx-auto block max-w-full" />
+            <ObrazokSoZvyraznenim
+              url={subor.url}
+              alt={nazov ?? ""}
+              className="mx-auto block max-w-full"
+            />
           ) : (
-            <NahladPdf key={subor.url} url={subor.url} />
+            <NahladPdf key={subor.url} url={subor.url} zvyraznenie={zvyraznenie} />
           )}
         </KartaNahladu>
       }

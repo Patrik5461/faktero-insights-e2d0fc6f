@@ -4,6 +4,12 @@ import { Check, Download, Loader2, RotateCcw, RotateCw, ZoomIn, ZoomOut } from "
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody, PageHeader } from "./AppShell";
 import { NahladPdf } from "./NahladPdf";
+import {
+  ObrazokSoZvyraznenim,
+  PrepinacZvyraznenia,
+  useZvyraznenieDokladu,
+} from "./ZvyraznenieVytazenych";
+import type { UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 import { PolozkyK, type PolozkaK } from "./DetailDokladuKompaktny";
 import { useT } from "@/lib/i18n/useT";
 import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahladom";
@@ -19,13 +25,17 @@ export function NahladDokladuNastroje({
   mime,
   nazov,
   akcie,
+  udaje,
 }: {
   url: string | null;
   mime: string | null;
   nazov?: string | null;
   akcie?: ReactNode;
+  /** Uložené údaje dokladu — zvýraznia sa v náhľade PDF ako v Nespracovaných. */
+  udaje?: UdajeNespracovaneho | null;
 }) {
   const { t } = useT();
+  const zv = useZvyraznenieDokladu(udaje);
   const [otocenie, setOtocenie] = useState(0);
   const [zvacsenie, setZvacsenie] = useState(1);
   const pdf = String(mime ?? "").includes("pdf") || /\.pdf(\?|$)/i.test(String(url ?? ""));
@@ -73,6 +83,7 @@ export function NahladDokladuNastroje({
                 <Download className="h-4 w-4" />
               </a>
             ) : null}
+            {zv.zvyraznenie && pdf ? <PrepinacZvyraznenia zap={zv.zap} onPrepni={zv.prepni} /> : null}
             {akcie}
             <PrepinacStranyNahladu className="p-2" />
           </div>
@@ -82,9 +93,13 @@ export function NahladDokladuNastroje({
       {url ? (
         <OtocenyPriblizeny otocenie={otocenie} zvacsenie={zvacsenie}>
           {pdf ? (
-            <NahladPdf url={url} />
+            <NahladPdf url={url} zvyraznenie={zv.zvyraznenie} />
           ) : (
-            <img src={url} alt={nazov ?? t("Doklad")} className="block w-full rounded-md" />
+            <ObrazokSoZvyraznenim
+              url={url}
+              alt={nazov ?? t("Doklad")}
+              className="block w-full rounded-md"
+            />
           )}
         </OtocenyPriblizeny>
       ) : (

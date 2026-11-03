@@ -65,6 +65,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useDizajn } from "@/hooks/useDizajn";
 import { BlocekDetailKompaktny } from "@/components/faktero/BlocekDetailKompaktny";
 import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
+import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
 import { RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
 import { SumarK } from "@/components/faktero/DetailDokladuKompaktny";
 import { sadzbyKrajiny, zoradPodlaSadzby } from "@/lib/faktero/vat-rates";
@@ -1035,6 +1036,7 @@ function NovyDokladPage() {
                 <NahladDokladuNastroje
                   url={preview}
                   mime={nahladJePdf ? "application/pdf" : uploadedFile?.mime ?? "image/jpeg"}
+                  udaje={ulozeny ? udajeZBlocku(ulozeny) : null}
                 />
               </div>
             ) : null

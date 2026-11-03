@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { udajeZPrijatej } from "@/lib/faktero/nespracovane";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useServerFn } from "@tanstack/react-start";
 import { Pencil } from "lucide-react";
@@ -135,6 +136,8 @@ export function PrijataDetailKompaktna({
     Math.abs(celkom) > 0 &&
     Math.abs(Number(row.amount_without_vat ?? 0) + Number(row.vat_amount ?? 0) - celkom) < 0.015;
   const ibanOk = Boolean(row.supplier_iban && upravIban(row.supplier_iban));
+  // Zvýraznenie uložených údajov v náhľade (ako v Nespracovaných).
+  const udajeNahladu = useMemo(() => udajeZPrijatej(row).udaje, [row]);
 
   return (
     <RozlozenieKompaktne
@@ -152,6 +155,7 @@ export function PrijataDetailKompaktna({
               : null
           }
           prazdne="K dokladu nie je súbor na náhľad."
+          udaje={udajeNahladu}
         />
       }
     >
