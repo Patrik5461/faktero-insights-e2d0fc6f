@@ -14,11 +14,11 @@ export default {
     "Zrušit vazbu dokladu na pohyb na účtu?",
   "Platba: {stav}": "Platba: {stav}",
   dokladov: "dokladů",
-  "{n} s nájdenou platbou": "{n} s nalezenou platbou",
+  "Nájdené platby k dokladom: {n}": "Nalezené platby k dokladům: {n}",
   "Žiadne doklady s nájdenou platbou": "Žádné doklady s nalezenou platbou",
   "Zobraziť len tieto": "Zobrazit jen tyto",
   "Spárovať všetky isté ({k})": "Spárovat všechny jisté ({k})",
-  "Spárovať {n} s istou zhodou platby? Doklady sa označia ako uhradené.":
-    "Spárovat {n} s jistou shodou platby? Doklady se označí jako uhrazené.",
+  "Spárovať doklady s istou zhodou platby ({n})? Doklady sa označia ako uhradené.":
+    "Spárovat doklady s jistou shodou platby ({n})? Doklady se označí jako uhrazené.",
   "Párujem…": "Páruji…",
 };

@@ -34,11 +34,12 @@ export function PasNavrhovPlatieb({
   const [pracuje, setPracuje] = useState(false);
   if (pocet <= 0 && !lenTieto) return null;
 
-  const nazov = nazovDokladov ?? t("dokladov");
+  // `nazovDokladov` ostáva v API kvôli spätnej kompatibilite; text je bez skloňovania.
+  void nazovDokladov;
 
   const sparuj = async () => {
     const ok = await potvrd(
-      t("Spárovať {n} s istou zhodou platby? Doklady sa označia ako uhradené.", { n: `${istych} ${nazov}` }),
+      t("Spárovať doklady s istou zhodou platby ({n})? Doklady sa označia ako uhradené.", { n: istych }),
       { potvrdit: t("Spárovať") },
     );
     if (!ok) return;
@@ -60,7 +61,8 @@ export function PasNavrhovPlatieb({
         <BodkaPlatby stav="navrh" className="h-2.5 w-2.5 shrink-0" />
         <span className="min-w-0">
           {pocet > 0
-            ? t("{n} s nájdenou platbou", { n: `${pocet} ${nazov}` })
+            ? // Bez skloňovania („1 faktúr“) — počet ide za dvojbodku.
+              t("Nájdené platby k dokladom: {n}", { n: pocet })
             : t("Žiadne doklady s nájdenou platbou")}
         </span>
       </span>

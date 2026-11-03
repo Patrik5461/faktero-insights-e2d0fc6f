@@ -108,7 +108,7 @@ describe("PasNavrhovPlatieb", () => {
 
   it("počet, filter a hromadné spárovanie istých", () => {
     const h = html(<PasNavrhovPlatieb pocet={5} istych={2} {...zaklad} nazovDokladov="faktúr" />);
-    expect(h).toContain("5 faktúr s nájdenou platbou");
+    expect(h).toContain("Nájdené platby k dokladom: 5");
     expect(h).toContain("Zobraziť len tieto");
     expect(h).toContain("Spárovať všetky isté (2)");
     expect(h).toContain("fk-oznam-pozor");
@@ -120,7 +120,7 @@ describe("PasNavrhovPlatieb", () => {
 
   it("nemčina", () => {
     const h = html(<PasNavrhovPlatieb pocet={3} istych={1} {...zaklad} />, "de");
-    expect(h).toContain("3 Belege mit gefundener Zahlung");
+    expect(h).toContain("Gefundene Zahlungen zu Belegen: 3");
     expect(h).toContain("Alle sicheren verknüpfen (1)");
   });
 });

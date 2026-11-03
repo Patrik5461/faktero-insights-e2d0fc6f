@@ -276,8 +276,7 @@ export function IkonaPlatby(p: VlastnostiIkonyPlatby) {
   useZatvorNaEscape(otvorene ? zavri : null);
 
   // Umiestnenie okna pri ikonke (desktop): pod ňou, a keď sa nezmestí, nad ňou.
-  useLayoutEffect(() => {
-    if (!otvorene || otvorene.mobil) return;
+  const umiestni = useCallback(() => {
     const b = tlacidlo.current?.getBoundingClientRect();
     const h = okno.current?.offsetHeight ?? 0;
     if (!b) return;
@@ -286,14 +285,25 @@ export function IkonaPlatby(p: VlastnostiIkonyPlatby) {
     const dole = b.bottom + 6;
     const top = dole + h > window.innerHeight - 8 && b.top - 6 - h > 8 ? b.top - 6 - h : dole;
     setPoloha({ top, left, width: sirka });
-  }, [otvorene]);
+  }, []);
+  useLayoutEffect(() => {
+    if (!otvorene || otvorene.mobil) return;
+    umiestni();
+  }, [otvorene, umiestni]);
 
-  // Pri posúvaní stránky by okno odplávalo od riadku — zavrieť.
+  /*
+    Pri posúvaní stránky okno ide s ikonkou. Zatvárať pri každom posune
+    nešlo: prehliadač pri kliku/zameraní stránku často posunie o pár
+    pixelov a okno sa zavrelo hneď po otvorení (prvý klik „nefungoval“).
+    Zavrie sa až keď ikonka zmizne z obrazovky.
+  */
   useEffect(() => {
     if (!otvorene || otvorene.mobil) return;
     const h = (e: Event) => {
       if (okno.current && e.target instanceof Node && okno.current.contains(e.target)) return;
-      zavri();
+      const b = tlacidlo.current?.getBoundingClientRect();
+      if (!b || b.bottom < 0 || b.top > window.innerHeight) zavri();
+      else umiestni();
     };
     window.addEventListener("scroll", h, true);
     window.addEventListener("resize", zavri);

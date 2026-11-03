@@ -14,11 +14,11 @@ export default {
     "Verknüpfung des Belegs mit dem Kontoumsatz aufheben?",
   "Platba: {stav}": "Zahlung: {stav}",
   dokladov: "Belege",
-  "{n} s nájdenou platbou": "{n} mit gefundener Zahlung",
+  "Nájdené platby k dokladom: {n}": "Gefundene Zahlungen zu Belegen: {n}",
   "Žiadne doklady s nájdenou platbou": "Keine Belege mit gefundener Zahlung",
   "Zobraziť len tieto": "Nur diese anzeigen",
   "Spárovať všetky isté ({k})": "Alle sicheren verknüpfen ({k})",
-  "Spárovať {n} s istou zhodou platby? Doklady sa označia ako uhradené.":
-    "{n} mit sicherer Zahlungsübereinstimmung verknüpfen? Die Belege werden als bezahlt markiert.",
+  "Spárovať doklady s istou zhodou platby ({n})? Doklady sa označia ako uhradené.":
+    "Belege mit sicherer Zahlungsübereinstimmung verknüpfen ({n})? Die Belege werden als bezahlt markiert.",
   "Párujem…": "Wird verknüpft…",
 };
