@@ -26,6 +26,10 @@ import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
 import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
+import { VyberKvDph, usePredvyplnenieKv } from "@/components/faktero/VyberKvDph";
+import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { kvAutoPrijatej } from "@/lib/faktero/kv-auto";
+import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
 
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
@@ -216,6 +220,15 @@ export function PrijataFakturaForm({
   /** Kódy zaúčtovania a položky — len na čítanie (pravidlo z dokladu, kompaktná úprava). */
   const [kody, setKody] = useState({ predkontacia: "", clenenie: "", kv: "", kategoria: "" });
   const [polozkyDokladu, setPolozkyDokladu] = useState<PolozkaK[]>([]);
+  /** Členenie KV, ako bolo uložené — úprava ho posiela len pri zmene (zámok odovzdaných). */
+  const kvUlozeneRef = useRef<string>("");
+  const kvPredvyplnenie = usePredvyplnenieKv(getActiveCompanyId(), "prijata", {
+    supplier_ico: form.supplier_ico.trim() || null,
+    supplier_name: form.supplier_name.trim() || null,
+    payment_method: form.payment_method || null,
+    druh: "prijata",
+    typ: typPrijatej(form.type, sumaZPola(form.amount_total || "0"), form.opravuje_cislo),
+  });
 
   /*
     Faktúra v cudzej mene sa do priznania k DPH uvádza v domácej mene firmy
@@ -298,6 +311,7 @@ export function PrijataFakturaForm({
         kv: (data as any).kv_clenenie ?? "",
         kategoria: (data as any).category ?? "",
       });
+      kvUlozeneRef.current = (data as any).kv_clenenie ?? "";
       setPolozkyDokladu(Array.isArray(data.items) ? (data.items as PolozkaK[]) : []);
       setNacitavam(false);
     })();
@@ -482,6 +496,8 @@ export function PrijataFakturaForm({
         odpocet: form.type === "proforma" ? false : form.odpocet,
         opravuje_cislo: form.opravuje_cislo.trim() || null,
         type: form.type,
+        // Prázdne = automaticky (alebo z pravidla — doplní ho spúšťač v databáze).
+        kv_clenenie: form.type === "proforma" ? null : kody.kv || null,
         advance_invoice_id:
           form.type === "regular" && form.advance_invoice_id ? form.advance_invoice_id : null,
         file_path,
@@ -492,6 +508,7 @@ export function PrijataFakturaForm({
         // Autora ani firmu úprava nemení; nová príloha sa doplní, len keď je.
         const { created_by, company_id, ...zmeny } = payload;
         const uprava: Record<string, unknown> = { ...zmeny };
+        if ((kody.kv || "") === (kvUlozeneRef.current || "")) delete uprava.kv_clenenie;
         if (!file) {
           delete uprava.file_path;
           delete uprava.file_mime;
@@ -911,6 +928,35 @@ export function PrijataFakturaForm({
             "Rozhoduje, do ktorej časti kontrolného výkazu a do ktorého riadku priznania faktúra vstúpi.",
           )}
         </span>
+      </Field>
+      <Field label="Členenie KV DPH">
+        {form.type === "proforma" ? (
+          <span className="block text-xs text-muted-foreground" data-kv-zalohova="">
+            {t(
+              "Zálohová faktúra nie je daňový doklad — do kontrolného výkazu nepatrí. Členenie KV dostane až daňový doklad k platbe či vyúčtovacia faktúra.",
+            )}
+          </span>
+        ) : (
+          <VyberKvDph
+            value={kody.kv}
+            onChange={(v) => setKody((k) => ({ ...k, kv: v }))}
+            moznosti={KV_PRIJATE}
+            pravidlo={id || kody.kv ? null : kvPredvyplnenie.pravidlo}
+            auto={form.vat_amount.trim() === "" && !form.dph_rezim ? undefined : kvAutoPrijatej(
+              {
+                type: form.type,
+                amount_total: sumaZPola(form.amount_total || "0"),
+                vat_amount: sumaZPola(form.vat_amount || "0"),
+                dph_rezim: form.dph_rezim,
+                odpocet: form.odpocet,
+                opravuje_cislo: form.opravuje_cislo,
+                pohoda_clenenie_dph: kody.clenenie,
+              },
+              { predvolene: kvPredvyplnenie.predvolene },
+            )}
+            className="input"
+          />
+        )}
       </Field>
       <Field label="Odpočítanie dane" ramcek>
         <span className="pole-zaskrtnutie flex items-center gap-2 text-sm">

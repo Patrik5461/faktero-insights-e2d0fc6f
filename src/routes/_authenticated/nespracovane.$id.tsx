@@ -33,6 +33,7 @@ import {
   SekciaZauctovania,
 } from "@/components/faktero/DetailDokladu";
 import { poliaPreDruh, zapisDoUdajov, type KlucPola } from "@/lib/faktero/vyber-z-dokladu";
+import { kvAutoNespracovaneho } from "@/lib/faktero/kv-auto";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import {
   detailNespracovanehoFn,
@@ -669,6 +670,13 @@ function Detail() {
                 <PoliaZauctovania
                   siroke
                   navrhy={navrhy}
+                  kvAuto={kvAutoNespracovaneho(druh, u, {
+                    predvolene: navrhy?.predvoleneKv,
+                    clenenie:
+                      u.kody.clenenie ||
+                      navrhy?.podlaKategorie?.[u.kategoria]?.clenenie ||
+                      navrhy?.predvoleneClenenie,
+                  })}
                   doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
                   hodnoty={hodnotyKodov}
                   oznacenia={oznaceniaZUdajov(u)}

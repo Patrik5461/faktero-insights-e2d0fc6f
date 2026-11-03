@@ -33,6 +33,8 @@ import {
 import { textOdovzdanyDoklad, textPoslatOpravu } from "@/lib/faktero/stav-odovzdania";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { kvAutoBlocku } from "@/lib/faktero/kv-auto";
+import { VyberKvDph, usePredvyplnenieKv } from "@/components/faktero/VyberKvDph";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -240,6 +242,19 @@ function NovyDokladPage() {
       .then(setKody)
       .catch(() => {});
   }, [cid, nacitajKody]);
+  // Pravidlo, ktoré pri uložení doplní členenie KV (spúšťač v databáze) — ukáže sa v prázdnej voľbe.
+  const kvPredvyplnenie = usePredvyplnenieKv(
+    cid,
+    "doklad",
+    {
+      supplier_ico: form.supplier_ico.trim() || null,
+      supplier_name: form.supplier_name.trim() || null,
+      payment_method: form.payment_method || null,
+      druh: "blocek",
+    },
+    undefined,
+    false,
+  );
   // „Poslať opravu do Pohody“ = vrátenie z Pohody (doklad ide späť medzi nespracované).
   const poslatOpravu = usePoslatOpravuDoPohody();
   // Kam bloček odišiel (Money, Omega…) — štítok a akcia nesmú tvrdiť Pohodu.
@@ -1648,18 +1663,25 @@ function NovyDokladPage() {
                   <span className="mb-1 block text-sm font-medium">
                     {t("Členenie kontrolného výkazu DPH")}
                   </span>
-                  <select
+                  <VyberKvDph
                     value={form.kv_clenenie}
-                    onChange={(e) => updateForm("kv_clenenie", e.target.value)}
+                    onChange={(v) => updateForm("kv_clenenie", v)}
+                    moznosti={KV_PRIJATE}
+                    pravidlo={ulozeny ? null : kvPredvyplnenie.pravidlo}
+                    auto={form.vat_amount === "" ? undefined : kvAutoBlocku(
+                      {
+                        vat_amount: Number(String(form.vat_amount).replace(",", ".")) || 0,
+                        vat_breakdown: ulozeny?.vat_breakdown,
+                        odpocet: ulozeny?.odpocet,
+                        pohoda_clenenie_dph:
+                          form.pohoda_clenenie_dph ||
+                          kody?.podlaKategorie?.[form.category]?.clenenie ||
+                          kody?.predvoleneClenenie,
+                      },
+                      { predvolene: kody?.predvoleneKv },
+                    )}
                     className="h-11 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm"
-                  >
-                    <option value="">{t("automaticky (B3 — bloček)")}</option>
-                    {KV_PRIJATE.map((k) => (
-                      <option key={k.kod} value={k.kod}>
-                        {t(k.nazov)}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
                 </div>
                 <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">

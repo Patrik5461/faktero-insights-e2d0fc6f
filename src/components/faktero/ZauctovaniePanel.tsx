@@ -38,7 +38,8 @@ import {
   type MoznostKodu,
   type TypDokladuPolozky,
 } from "@/lib/faktero/predkontacie";
-import { KV_PRIJATE, kvAutomaticky, kvSPredvolenym } from "@/lib/faktero/kv-clenenie";
+import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { kvAutoPrijatej, textKv, textKvAuto } from "@/lib/faktero/kv-auto";
 import { KodPohody } from "./KodPohody";
 import {
   HistoriaOdovzdania,
@@ -211,9 +212,7 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
                 onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
                 className={vstup}
               >
-                <option value="">
-                  {hromadne ? t("nemeniť") : `${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}
-                </option>
+                <option value="">{hromadne ? t("nemeniť") : textKvAuto(t, kvAuto)}</option>
                 {hromadne && <option value="auto">{t("automaticky")}</option>}
                 {kvMoznosti.map((k) => (
                   <option key={k.kod} value={k.kod}>
@@ -378,9 +377,7 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
             onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
             className={vstup}
           >
-            <option value="">
-              {hromadne ? t("nemeniť") : `${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}
-            </option>
+            <option value="">{hromadne ? t("nemeniť") : textKvAuto(t, kvAuto)}</option>
             {hromadne && <option value="auto">{t("automaticky")}</option>}
             {kvMoznosti.map((k) => (
               <option key={k.kod} value={k.kod}>
@@ -783,15 +780,11 @@ export function ZauctovaniePanel({
   if (kompaktne) {
     const vstupK = "h-10 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-sm";
     const popisK = "mb-1 block text-xs text-muted-foreground";
-    const kvAuto =
-      kvSPredvolenym(
-        kvAutomaticky({
-          opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
-          prenesenie: row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
-        }),
-        "prijata",
-        navrhy?.predvoleneKv,
-      ) ?? undefined;
+    const kvAuto = kvAutoPrijatej(row, {
+      predvolene: navrhy?.predvoleneKv,
+      clenenie:
+        h.clenenie || navrhy?.podlaKategorie?.[h.kategoria]?.clenenie || navrhy?.predvoleneClenenie,
+    });
     const stitok = (pole: PoleNavrhu) =>
       oznacenia?.[pole] ? <StitokNavrhu zdroj={oznacenia[pole]!} /> : null;
     const male =
@@ -1200,7 +1193,7 @@ export function ZauctovaniePanel({
               onChange={(e) => setH({ ...h, kv: e.target.value })}
               className={vstupK}
             >
-              <option value="">{`${t("automaticky")}${kvAuto ? ` (${kvAuto})` : ""}`}</option>
+              <option value="">{textKvAuto(t, kvAuto)}</option>
               {KV_PRIJATE.map((k) => (
                 <option key={k.kod} value={k.kod}>
                   {t(k.nazov)}
@@ -1446,7 +1439,18 @@ export function ZauctovaniePanel({
               {t("Predkontácia")}{" "}
               <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
               {t("členenie DPH")}{" "}
-              <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
+              <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>,{" "}
+              {t("členenie KV DPH")}{" "}
+              <strong data-kv-dokladu="">
+                {textKv(
+                  t,
+                  row.kv_clenenie,
+                  kvAutoPrijatej(row, {
+                    predvolene: navrhy?.predvoleneKv,
+                    clenenie: row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie,
+                  }),
+                )}
+              </strong>
               {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
                 ? ` ${t("(rozúčtovaná na {n} riadky)", { n: row.rozuctovanie.length })}`
                 : ""}
@@ -1489,17 +1493,13 @@ export function ZauctovaniePanel({
               setHodnoty={setH}
               oznacenia={oznacenia}
               doklad={{ typ: "faktura", platba: row.payment_method }}
-              kvAuto={
-                kvSPredvolenym(
-                  kvAutomaticky({
-                    opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
-                    prenesenie:
-                      row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
-                  }),
-                  "prijata",
-                  navrhy?.predvoleneKv,
-                ) ?? undefined
-              }
+              kvAuto={kvAutoPrijatej(row, {
+                predvolene: navrhy?.predvoleneKv,
+                clenenie:
+                  h.clenenie ||
+                  navrhy?.podlaKategorie?.[h.kategoria]?.clenenie ||
+                  navrhy?.predvoleneClenenie,
+              })}
             />
             {aktivneAi && <NavrhAiInfo dovod={navrh?.dovod ?? null} onZahod={zahodNavrh} />}
             {navrh?.stav === "bez_ciselnika" && <NavrhBezCiselnika />}
