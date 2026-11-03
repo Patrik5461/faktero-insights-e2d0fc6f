@@ -6,9 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { upozornenieA1 } from "@/lib/faktero/kv-urcenie";
+import { kvAutoVystavenej, textKvAuto } from "@/lib/faktero/kv-auto";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { prvePravidlo, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
-import { useT } from "@/lib/i18n/useT";
+import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { KodPohody } from "./KodPohody";
 import { MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "./PoleDokladu";
 import type { Navrhy } from "./ZauctovaniePanel";
@@ -40,6 +41,8 @@ export function UctovneNastaveniaFaktury({
   onDatumDane,
   sposobPlatby,
   onSposobPlatby,
+  kvDoklad,
+  ulozena,
 }: {
   companyId: string | null;
   typ: string;
@@ -57,8 +60,23 @@ export function UctovneNastaveniaFaktury({
   onDatumDane: (v: string) => void;
   sposobPlatby: string;
   onSposobPlatby: (v: string) => void;
+  /**
+   * Uložená faktúra (úprava): pravidlo sa pri úprave znova neuplatní (spúšťač
+   * beží len pri založení a zmene odberateľa), preto sa jeho kód neponúka.
+   */
+  ulozena?: boolean;
+  /** Údaje faktúry pre automatické členenie KV (`kv-auto.ts`). */
+  kvDoklad?: {
+    /** Faktúra nesie DPH; bez údaja sa predpokladá, že áno. */
+    maDph?: boolean;
+    reverseChargeType?: string | null;
+    krajinaOdberatela?: string | null;
+    /** Opravuje inú faktúru (dobropis, vrubopis). */
+    opravny?: boolean;
+  };
 }) {
   const { t } = useT();
+  const krajinaFirmy = useKrajinaFirmyKontext();
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const [otvorene, setOtvorene] = useState(false);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
@@ -124,16 +142,34 @@ export function UctovneNastaveniaFaktury({
       (reverseCharge ? clenenieDphPdp : null) ||
       navrhy?.predvoleneClenenie ||
       "",
-    kv: pravidlo?.kv_clenenie || navrhy?.predvoleneKv || "",
+    kv: pravidlo?.kv_clenenie || "",
   };
+  /* Čo faktúra dostane podľa zákona (s predvoleným firmy), keď pole aj pravidlo ostanú prázdne. */
+  const kvAuto = kvAutoVystavenej(
+    {
+      type: typ,
+      reverse_charge: Boolean(reverseCharge),
+      reverse_charge_type: kvDoklad?.reverseChargeType ?? null,
+      customer_country: kvDoklad?.krajinaOdberatela ?? null,
+      customer_ic_dph: odberatel?.icDph ?? null,
+      customer_ico: odberatel?.ico ?? null,
+      customer_dic: odberatel?.dic ?? null,
+      vat_total: kvDoklad?.maDph === false ? 0 : 1,
+      opravuje_fakturu_id: kvDoklad?.opravny ? "opravuje" : null,
+    },
+    {
+      predvolene: navrhy?.predvoleneKv,
+      clenenie: kody.clenenie || predvolene.clenenie,
+      krajinaFirmy,
+    },
+  );
+  // KV je slovenský výkaz — nemecká firma ho nemá.
+  const bezKv = krajinaFirmy === "DE";
   const vysledne = {
     predkontacia: kody.predkontacia || predvolene.predkontacia,
     clenenie: kody.clenenie || predvolene.clenenie,
-    kv: kody.kv || predvolene.kv,
   };
-  const suhrn = [vysledne.predkontacia, vysledne.clenenie, vysledne.kv && `KV ${vysledne.kv}`]
-    .filter(Boolean)
-    .join(" · ");
+  const suhrn = [vysledne.predkontacia, vysledne.clenenie].filter(Boolean).join(" · ");
 
   return (
     <section className="rounded-xl border border-border bg-card">
@@ -158,6 +194,43 @@ export function UctovneNastaveniaFaktury({
           )}
         </span>
       </button>
+      {/* Členenie KV je vidieť vždy — aj keď sú ostatné účtovné nastavenia zbalené. */}
+      {bezKv ? null : (
+        <div className="px-5 pb-5" data-kv-faktury="">
+          <MriezkaDokladu>
+            <PoleDokladu label={t("Členenie KV DPH")} htmlFor="kv-faktury" className={bunka.cela}>
+              <select
+                id="kv-faktury"
+                value={kody.kv}
+                onChange={(e) => onKody({ ...kody, kv: e.target.value })}
+                className={VSTUP_DOKLADU}
+              >
+                <option value="">
+                  {predvolene.kv && pravidlo && !ulozena
+                    ? t("z pravidla „{nazov}“ ({kod})", {
+                        nazov: pravidlo.nazov,
+                        kod: predvolene.kv,
+                      })
+                    : textKvAuto(t, kvAuto)}
+                </option>
+                {KV_VYDANE.map((k) => (
+                  <option key={k.kod} value={k.kod}>
+                    {t(k.nazov)}
+                  </option>
+                ))}
+              </select>
+              {/* A.1 pri občanovi (bez IČ DPH, IČO aj DIČ) — patrí do D.2 (kv-urcenie.ts). */}
+              {odberatel && upozornenieA1({ kv: kody.kv, ...odberatel }) && (
+                <p role="alert" className="fk-text-pozor mt-1 text-xs">
+                  {t(
+                    "Odberateľ nemá IČ DPH, IČO ani DIČ — faktúra súkromnej osobe patrí do D.2, nie do A.1.",
+                  )}
+                </p>
+              )}
+            </PoleDokladu>
+          </MriezkaDokladu>
+        </div>
+      )}
       {otvorene && (
         <div className="p-5 pt-0">
           <MriezkaDokladu>
@@ -229,37 +302,6 @@ export function UctovneNastaveniaFaktury({
                   vyber
                 />
               </div>
-            </PoleDokladu>
-            <PoleDokladu
-              label={t("Členenie KV DPH")}
-              htmlFor="kv-faktury"
-              className={bunka.polovica}
-            >
-              <select
-                id="kv-faktury"
-                value={kody.kv}
-                onChange={(e) => onKody({ ...kody, kv: e.target.value })}
-                className={VSTUP_DOKLADU}
-              >
-                <option value="">
-                  {predvolene.kv
-                    ? t("predvolené: {kod}", { kod: predvolene.kv })
-                    : t("automaticky")}
-                </option>
-                {KV_VYDANE.map((k) => (
-                  <option key={k.kod} value={k.kod}>
-                    {t(k.nazov)}
-                  </option>
-                ))}
-              </select>
-              {/* A.1 pri občanovi (bez IČ DPH, IČO aj DIČ) — patrí do D.2 (kv-urcenie.ts). */}
-              {odberatel && upozornenieA1({ kv: kody.kv, ...odberatel }) && (
-                <p role="alert" className="fk-text-pozor mt-1 text-xs">
-                  {t(
-                    "Odberateľ nemá IČ DPH, IČO ani DIČ — faktúra súkromnej osobe patrí do D.2, nie do A.1.",
-                  )}
-                </p>
-              )}
             </PoleDokladu>
           </MriezkaDokladu>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

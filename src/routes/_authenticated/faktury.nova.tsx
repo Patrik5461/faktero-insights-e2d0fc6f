@@ -2847,6 +2847,15 @@ function NewInvoice() {
               return c ? { ico: c.ico, name: c.name, dic: c.dic, icDph: c.ic_dph } : null;
             })()}
             reverseCharge={form.reverse_charge}
+            kvDoklad={{
+              // Kým faktúra nemá sumu, nevie sa, či nesie DPH — ukáže sa bežné určenie.
+              maDph: Number(totals.total ?? 0)
+                ? Math.abs(Number(totals.vat_total ?? 0)) >= 0.005
+                : undefined,
+              reverseChargeType: form.reverse_charge_type || null,
+              krajinaOdberatela: customers.find((x) => x.id === form.customer_id)?.country ?? null,
+              opravny: Boolean(form.opravuje_fakturu_id),
+            }}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
             onKody={(k) => setForm((f) => ({ ...f, ...k }))}
             datumDane={form.delivery_date}

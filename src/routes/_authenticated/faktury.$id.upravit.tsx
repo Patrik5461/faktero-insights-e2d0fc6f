@@ -1236,6 +1236,13 @@ function EditInvoice() {
                 : null
             }
             reverseCharge={Boolean(inv.reverse_charge)}
+            ulozena
+            kvDoklad={{
+              maDph: Math.abs(Number(totals.vat_total ?? 0)) >= 0.005,
+              reverseChargeType: inv.reverse_charge_type ?? null,
+              krajinaOdberatela: odberatel?.customer_country ?? inv.customer_country ?? null,
+              opravny: Boolean(inv.opravuje_fakturu_id),
+            }}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
             onKody={(k) => setForm((f) => ({ ...f, ...k }))}
             datumDane={form.delivery_date}

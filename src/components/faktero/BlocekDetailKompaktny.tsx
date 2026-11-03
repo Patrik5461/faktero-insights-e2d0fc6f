@@ -13,6 +13,7 @@ import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { kontrolaUlozenehoBlocku, zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
 import { KontrolaSumyBlocku, potvrdRozdielSumy } from "./KontrolaSumyBlocku";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { kvAutoBlocku } from "@/lib/faktero/kv-auto";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import type { PoleZauctovaniaDokladu } from "@/lib/faktero/zauctovanie-dokladu";
 import { useT } from "@/lib/i18n/useT";
@@ -329,7 +330,13 @@ export function BlocekDetailKompaktny({
               navrhy={kody}
               doklad={{ typ: "blocek", platba: row.payment_method }}
               kvMoznosti={KV_PRIJATE}
-              kvAuto="B3"
+              kvAuto={kvAutoBlocku(row, {
+                predvolene: kody?.predvoleneKv,
+                clenenie:
+                  k.clenenie ||
+                  kody?.podlaKategorie?.[k.kategoria]?.clenenie ||
+                  kody?.predvoleneClenenie,
+              })}
               hodnoty={{
                 predkontacia: k.predkontacia,
                 clenenie: k.clenenie,

@@ -22,6 +22,7 @@ import { Loader2, Plus } from "lucide-react";
 import { useHoverPola, type ZvyraznenieNahladu } from "./ZvyraznenieVytazenych";
 import { poleZPrvku } from "./NahladSVyberom";
 import type { KlucPola } from "@/lib/faktero/vyber-z-dokladu";
+import { kvAutoNespracovaneho } from "@/lib/faktero/kv-auto";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
 import { NauceneZDodavatela } from "./NauceneZDodavatela";
 import { NavrhAiNespracovaneho } from "./NavrhAi";
@@ -218,6 +219,13 @@ export function NespracovanyKompaktny({
               {/* Zaúčtovanie hneď za druhom dokladu — je dôležitejšie než platobné údaje. */}
               <PoliaZauctovania
                 navrhy={navrhy}
+                kvAuto={kvAutoNespracovaneho(druh, u, {
+                  predvolene: navrhy?.predvoleneKv,
+                  clenenie:
+                    u.kody.clenenie ||
+                    navrhy?.podlaKategorie?.[u.kategoria]?.clenenie ||
+                    navrhy?.predvoleneClenenie,
+                })}
                 oznacenia={oznaceniaZUdajov(u)}
                 doklad={{ typ: druh === "blocek" ? "blocek" : "faktura", platba: u.platba }}
                 hodnoty={{

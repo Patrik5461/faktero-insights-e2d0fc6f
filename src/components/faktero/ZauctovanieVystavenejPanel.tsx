@@ -13,6 +13,7 @@ import {
   zrusZauctovanieVystavenejFn,
 } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
+import { kvAutoVystavenej, textKv } from "@/lib/faktero/kv-auto";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
@@ -74,7 +75,8 @@ export function useZauctovanieVystavenej({
     pre Pohodu jej nič nedá. Predkontácia je pre ňu číslo účtu DATEV
     (export-datev.ts ho berie pred predvoleným účtom osnovy).
   */
-  const de = useKrajinaFirmyKontext() === "DE";
+  const krajinaFirmy = useKrajinaFirmyKontext();
+  const de = krajinaFirmy === "DE";
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const nacitajStav = useServerFn(stavVystavenejFn);
   const zauctuj = useServerFn(zauctujVystavenuFn);
@@ -462,10 +464,18 @@ export function useZauctovanieVystavenej({
       "Zaúčtovanie zrušené",
     );
 
+  /* Čo faktúra dostane v KV, keď pole ostane prázdne (to isté ako výkaz a export). */
+  const kvAuto = kvAutoVystavenej(inv, {
+    predvolene: navrhy?.predvoleneKv,
+    clenenie: h.clenenie || navrhy?.predvoleneClenenie,
+    krajinaFirmy,
+  });
+
   return {
     de,
     loc,
     navrhy,
+    kvAuto,
     h,
     setH,
     vPohode,
@@ -512,6 +522,7 @@ export function ZauctovanieVystavenejPanel({
     vyberPravidla,
     poPolozkachANapoveda,
     prehladRozuctovania,
+    kvAuto,
   } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
   // Koncept sa nezaúčtuje.
   if (inv.status === "draft") return null;
@@ -563,11 +574,12 @@ export function ZauctovanieVystavenejPanel({
             <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
             {t("členenie DPH")}{" "}
             <strong>{inv.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
-            {inv.kv_clenenie ? (
+            {de ? null : (
               <>
-                , KV <strong>{inv.kv_clenenie}</strong>
+                , {t("členenie KV DPH")}{" "}
+                <strong data-kv-dokladu="">{textKv(t, inv.kv_clenenie, kvAuto)}</strong>
               </>
-            ) : null}
+            )}
             .{" "}
             {vPohode.program
               ? t("Faktúra je odovzdaná do účtovníctva ({program}).", { program: vPohode.program })
@@ -618,6 +630,7 @@ export function ZauctovanieVystavenejPanel({
               })
             }
             kvMoznosti={KV_VYDANE}
+            kvAuto={kvAuto}
             popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
             priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
           />
@@ -785,6 +798,7 @@ export function PoliaZauctovaniaVystavenej({
             })
           }
           kvMoznosti={KV_VYDANE}
+          kvAuto={z.kvAuto}
           popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
           priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
         />
