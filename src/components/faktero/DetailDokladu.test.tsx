@@ -76,7 +76,7 @@ describe("RozlozenieDetailu + KartaNahladu", () => {
     expect(h).not.toContain("hidden lg:block");
     expect(h).toContain("lg:sticky");
     // Výška z výrezu, nie podľa obsahu: dokument vyplní celú kartu a roluje len jej vnútro.
-    expect(h).toContain("lg:h-[calc(100vh-6rem)]");
+    expect(h).toContain("lg:h-[calc(100vh-var(--vyska-hlavicky)-2.5rem)]");
     expect(h).not.toContain("self-start");
     expect(h).not.toMatch(/max-h-/);
     expect(h.match(/overflow-auto/g)).toHaveLength(1);

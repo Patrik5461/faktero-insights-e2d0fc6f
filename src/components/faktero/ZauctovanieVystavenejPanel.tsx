@@ -263,11 +263,11 @@ export function useZauctovanieVystavenej({
                   setPolozky((ps) => ps.map((x, j) => (j === i ? { ...x, ...z } : x)));
                 return (
                   <tr key={p.id} className="border-t border-border align-top">
-                    <td className="py-1.5 pr-2">
+                    <td className="min-w-[10rem] py-1.5 pr-2">
                       {p.name}
                       <span className="block text-xs text-muted-foreground">{p.vat_rate} %</span>
                     </td>
-                    <td className="py-1.5 pr-2 text-right tabular-nums">
+                    <td className="whitespace-nowrap py-1.5 pr-2 text-right tabular-nums">
                       {formatujCislo(p.subtotal, 2)}
                     </td>
                     <td className="py-1.5 pr-2 w-36">

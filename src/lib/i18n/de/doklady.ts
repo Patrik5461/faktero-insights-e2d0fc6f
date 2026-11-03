@@ -144,6 +144,8 @@ export default {
   "Doklad sa prečíta": "Der Beleg wird ausgelesen",
   "Doklad uložený": "Beleg gespeichert",
   "Doklad uložený a spracovaný": "Beleg gespeichert und verarbeitet",
+  "Doklad uložený do Nespracovaných dokladov": "Beleg unter Unverarbeitete Belege gespeichert",
+  "Bloček uložený v Bločkoch — čaká na spracovanie": "Kassenbon unter Kassenbons gespeichert — wartet auf Verarbeitung",
   "Doklad uložený medzi nespracované": "Beleg unter Unverarbeitete gespeichert",
   "Doklad v hotovosti": "Barbeleg",
   "Doklad z Finančnej správy vrátane položiek: {n}":

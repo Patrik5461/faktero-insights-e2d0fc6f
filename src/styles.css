@@ -103,6 +103,13 @@
    */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /*
+   * Výška lepivej hlavičky webu (lišta 56 px + okraj). V kompaktnom dizajne
+   * pod ňou býva pás podmenu, ktorý sa zalamuje na dva riadky — AppShell preto
+   * skutočnú výšku meria a prepisuje. Lepivé panely (náhľad dokladu) od nej
+   * odsadzujú vrch, inak ich pás zakryl.
+   */
+  --vyska-hlavicky: 57px;
 
   /* Faktero — Trustworthy Fintech (deep green + warm stone) */
   --radius: 0.625rem;

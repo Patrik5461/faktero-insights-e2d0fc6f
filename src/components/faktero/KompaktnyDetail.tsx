@@ -335,9 +335,14 @@ export function NahladKompaktny({
 /**
  * Obal panela náhľadu v kompaktnom rozložení: na širokej obrazovke drží pri
  * vrchu a má výšku výrezu (ako panel s údajmi), na úzkej je v toku stránky.
+ *
+ * Vrch je pod skutočnou výškou hlavičky (`--vyska-hlavicky` — pás podmenu sa
+ * zalamuje na dva riadky). Výška odráta aj spodné odsadenie stránky (pb-24):
+ * mriežka je na stránke posledná a rovnako vysoká ako panel, takže pri
+ * dorolovaní na koniec ho ťahala nahor a pás podmenu zakryl vrch náhľadu.
  */
 export const NAHLAD_PANEL =
-  "h-auto min-w-0 overflow-hidden rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:self-start";
+  "h-auto min-w-0 overflow-hidden rounded-2xl border border-border bg-card lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)] lg:h-[calc(100vh-var(--vyska-hlavicky)-7.5rem)] lg:self-start";
 
 /**
  * Otočenie a priblíženie dokladu tak, aby ostal v rolovacej časti panela.
@@ -437,7 +442,7 @@ export function PanelKompaktny({
     <div
       {...zvysok}
       data-panel-kompaktny=""
-      className={`flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] ${className}`}
+      className={`flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)] lg:max-h-[calc(100vh-var(--vyska-hlavicky)-7.5rem)] ${className}`}
     >
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>
       {pata ? <div className="space-y-2 border-t border-border p-4">{pata}</div> : null}

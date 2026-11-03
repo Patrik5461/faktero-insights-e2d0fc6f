@@ -754,6 +754,7 @@ function NovyDokladPage() {
               : null,
       };
       let stav = search.id ? stavDokladu : "new";
+      let presunutyDoNespracovanych = false;
       if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
       else {
         /*
@@ -771,6 +772,7 @@ function NovyDokladPage() {
           },
         });
         if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
+        presunutyDoNespracovanych = Boolean(novy?.nespracovany_id);
       }
       const rovnoSpracovany = !search.id && stav === "processed";
       if (spracovat && search.id) {
@@ -784,7 +786,10 @@ function NovyDokladPage() {
           ? t("Doklad uložený a spracovaný")
           : search.id
             ? t("Doklad uložený")
-            : t("Doklad uložený medzi nespracované"),
+            : presunutyDoNespracovanych
+              ? t("Doklad uložený do Nespracovaných dokladov")
+              : // Nový doklad v Bločkoch čaká na záložke Nespracované — nie v agende Nespracované doklady.
+                t("Bloček uložený v Bločkoch — čaká na spracovanie"),
       );
       /*
        * Zoznam sa otvára na jednom mesiaci a radí sa podľa dátumu vystavenia.
@@ -1077,7 +1082,7 @@ function NovyDokladPage() {
           nahlad={
             nahladVedla ? (
               /* Na lg+ pevná výška z výrezu — náhľad ju vyplní a roluje sa len v ňom. */
-              <div className="min-w-0 lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:self-start">
+              <div className="min-w-0 lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)] lg:h-[calc(100vh-var(--vyska-hlavicky)-2.5rem)] lg:self-start">
                 <NahladDokladuNastroje
                   url={preview}
                   mime={nahladJePdf ? "application/pdf" : uploadedFile?.mime ?? "image/jpeg"}

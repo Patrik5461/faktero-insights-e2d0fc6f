@@ -141,6 +141,8 @@ export default {
   "Doklad sa prečíta": "Doklad se přečte",
   "Doklad uložený": "Doklad uložen",
   "Doklad uložený a spracovaný": "Doklad uložen a zpracován",
+  "Doklad uložený do Nespracovaných dokladov": "Doklad uložen do Nezpracovaných dokladů",
+  "Bloček uložený v Bločkoch — čaká na spracovanie": "Účtenka uložena v Účtenkách — čeká na zpracování",
   "Doklad uložený medzi nespracované": "Doklad uložen mezi nezpracované",
   "Doklad v hotovosti": "Doklad v hotovosti",
   "Doklad z Finančnej správy vrátane položiek: {n}":

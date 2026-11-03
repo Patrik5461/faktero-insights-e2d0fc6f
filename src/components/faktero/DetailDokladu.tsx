@@ -82,7 +82,7 @@ export function KartaNahladu({
     <aside
       aria-label={nazov ? `${t("Náhľad dokladu")} — ${nazov}` : t("Náhľad dokladu")}
       data-karta-nahladu=""
-      className={`min-w-0 rounded-xl border border-border bg-card lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] ${lenSiroka ? "hidden lg:block" : ""}`}
+      className={`min-w-0 rounded-xl border border-border bg-card lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)] lg:h-[calc(100vh-var(--vyska-hlavicky)-2.5rem)] ${lenSiroka ? "hidden lg:block" : ""}`}
     >
       <PanelNahladu
         className="h-auto lg:h-full"
