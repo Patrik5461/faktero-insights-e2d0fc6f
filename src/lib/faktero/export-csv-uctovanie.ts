@@ -13,6 +13,8 @@ import { bezVzorca } from "@/lib/bezpecny-text";
 
 import { rozdelUcet, type DokladUctovania, type KodUctovania } from "./zauctovanie-export";
 import { kodPreDoklad } from "./uctovanie-agenda";
+import { domacaMena, domacejZaJednotku } from "./kurzy";
+import { zoradPodlaSadzby } from "./vat-rates";
 
 const dveSk = (n: unknown): string => {
   const x = Number(n);
@@ -82,12 +84,22 @@ export const STLPCE_CSV_UCTOVANIA = [
   // Prijatý doklad: kedy prišiel a do ktorého obdobia ide odpočet DPH (voľba „Dátum odpočtu").
   "datum_prijatia",
   "datum_odpoctu",
+  /*
+    Doklad v cudzej mene: základ a daň riadku v domácej mene (SK EUR, CZ CZK)
+    prepočítané kurzom dokladu — daň sa priznáva v domácej mene.
+  */
+  "mena_domaca",
+  "zaklad_domaca",
+  "dph_domaca",
 ];
 
 export function buildCsvUctovanie(opts: {
   doklady: DokladUctovania[];
   kody: Record<string, KodUctovania>;
+  /** Krajina firmy — domáca mena a zápis kurzu (SK ECB, CZ ČNB). */
+  krajina?: string | null;
 }): string {
+  const domaca = domacaMena(opts.krajina);
   const riadky: string[] = [STLPCE_CSV_UCTOVANIA.join(";")];
   for (const d of opts.doklady) {
     const zn = d.druh === "dobropis" ? -1 : 1;
@@ -106,7 +118,12 @@ export function buildCsvUctovanie(opts: {
             text: null,
           },
         ];
-    for (const r of zoznam) {
+    const cudzia = d.mena !== domaca;
+    const zaJednu = cudzia ? domacejZaJednotku(d.kurz, opts.krajina) : 1;
+    const vDomacej = (x: number) =>
+      !cudzia ? dveSk(zn * x) : zaJednu > 0 ? dveSk(Math.round(zn * x * zaJednu * 100) / 100) : "";
+    // Rozpis po sadzbách vzostupne (0 → 5 → 19 → 23); riadky s rovnakou sadzbou ostanú v poradí.
+    for (const r of zoradPodlaSadzby(zoznam, "sadzba")) {
       const kod = kodPreDoklad(opts.kody, r.predkontacia, d);
       const md = rozdelUcet(kod?.ucetMd);
       const dal = rozdelUcet(kod?.ucetD);
@@ -148,6 +165,9 @@ export function buildCsvUctovanie(opts: {
           pole(d.poznamka),
           d.agenda === "vystavena" ? "" : (d.datumPrijatia ?? ""),
           d.agenda === "vystavena" ? "" : (d.datumOdpoctu ?? ""),
+          domaca,
+          vDomacej(r.zaklad),
+          vDomacej(r.dph),
         ].join(";"),
       );
     }

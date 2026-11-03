@@ -11,7 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useRadenie } from "@/hooks/useRadenie";
-import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
+import { stiahniExcel, stlpceRozpisuDph, tabulka } from "@/lib/faktero/excel-zoznamu";
+import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { uhradaSlovom } from "@/lib/faktero/payment-method";
 import { sPolozkami, SELECT_DOKLADOV } from "@/lib/faktero/stlpce-zoznamov";
 import { vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
@@ -759,11 +760,14 @@ function DokladyPage() {
           { nazov: t("Základ"), hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
           { nazov: t("DPH"), hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
           { nazov: t("Spolu"), hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
+          // Rozpis DPH po sadzbách z `vat_breakdown` (starší doklad: jedna sadzba z hlavičky).
+          ...stlpceRozpisuDph(r, (x: any) => rozpisBlocku(x), t),
           { nazov: t("Mena"), hodnota: (x: any) => x.currency },
           { nazov: t("Úhrada"), hodnota: (x: any) => uhradaSlovom(x.payment_method, t) },
           { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
           { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
           { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+          { nazov: t("KV DPH"), hodnota: (x: any) => x.kv_clenenie },
           { nazov: t("Zdroj"), hodnota: (x: any) => t(ZDROJ_DOKLADU[x.source] ?? x.source) },
         ]),
       },

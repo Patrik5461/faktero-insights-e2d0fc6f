@@ -28,6 +28,7 @@
 import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import type { DokladUctovania, KodUctovania, RiadokUctovania } from "./zauctovanie-export";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
+import { priehradkySadzieb } from "./rozpis-dph-exportu";
 
 export type NastaveniaFlexi = {
   /** Typ vystavenej faktúry (číselník `typ-faktury-vydane`), predvolene FAKTURA. */
@@ -79,15 +80,24 @@ type Priehradka = "Zakl" | "Sniz" | "Sniz2" | "Osv";
  * znížená a 2. znížená, nula je oslobodené. Percentá si Flexi drží vo
  * vlastnom číselníku podľa obdobia, preto sa posiela priehradka.
  */
-function priehradky(riadky: RiadokUctovania[]): (sadzba: number) => Priehradka {
-  const kladne = [...new Set(riadky.map((r) => Number(r.sadzba) || 0))]
-    .filter((s) => s > 0)
-    .sort((a, b) => b - a);
+function priehradky(
+  riadky: RiadokUctovania[],
+  krajina?: string | null,
+  den?: string | null,
+): (sadzba: number) => Priehradka {
+  /* Podľa sadzieb krajiny ku dňu plnenia (SK: 23 základná, 19 znížená, 5 druhá
+     znížená). Poradie na doklade nestačí: bloček len s 19 % by išiel do
+     základnej priehradky a Flexi by k nemu dosadila 23 %. */
+  const mapa = priehradkySadzieb(
+    riadky.map((r) => Number(r.sadzba) || 0),
+    krajina,
+    den,
+  );
   return (sadzba: number) => {
     const s = Number(sadzba) || 0;
     if (s <= 0) return "Osv";
-    const i = kladne.indexOf(s);
-    return i <= 0 ? "Zakl" : i === 1 ? "Sniz" : "Sniz2";
+    const h = mapa.get(s);
+    return h === "znizena" ? "Sniz" : h === "znizena2" ? "Sniz2" : "Zakl";
   };
 }
 
@@ -127,8 +137,8 @@ function mena(
 }
 
 /** Súčty hlavičky po priehradkách (`sumZklZakl`, `sumDphSniz`, `sumOsv`…), pri cudzej mene aj `*Men`. */
-function sumyHlavicky(d: DokladUctovania, zn: number, o: string, m: Mena): string {
-  const pr = priehradky(d.riadky);
+function sumyHlavicky(d: DokladUctovania, zn: number, o: string, m: Mena, krajina?: string | null): string {
+  const pr = priehradky(d.riadky, krajina, d.datumDodania ?? d.datumVystavenia);
   const zaklad: Record<Priehradka, number> = { Zakl: 0, Sniz: 0, Sniz2: 0, Osv: 0 };
   const dan: Record<Priehradka, number> = { Zakl: 0, Sniz: 0, Sniz2: 0, Osv: 0 };
   for (const r of d.riadky) {
@@ -157,8 +167,15 @@ function sumyHlavicky(d: DokladUctovania, zn: number, o: string, m: Mena): strin
 }
 
 /** Účtovné položky rozúčtovaného dokladu — každá s vlastným predpisom a riadkom DPH. */
-function uctovnePolozky(d: DokladUctovania, zn: number, tag: string, o: string, m: Mena): string {
-  const pr = priehradky(d.riadky);
+function uctovnePolozky(
+  d: DokladUctovania,
+  zn: number,
+  tag: string,
+  o: string,
+  m: Mena,
+  krajina?: string | null,
+): string {
+  const pr = priehradky(d.riadky, krajina, d.datumDodania ?? d.datumVystavenia);
   return d.riadky
     .map((r) => {
       const nazov = r.text || d.text;
@@ -332,9 +349,10 @@ export function buildFlexiUctovanie(opts: {
           tagPolozky,
           o + "  ",
           m,
+          opts.firma?.country,
         )}\n${o}</${kolekcia}>`
       : `\n${o}<bezPolozek>true</bezPolozek>` +
-        sumyHlavicky(d, zn, o, m) +
+        sumyHlavicky(d, zn, o, m, opts.firma?.country) +
         vazba("typUcOp", d.predkontacia, o) +
         vazba("clenDph", d.clenenie, o);
 

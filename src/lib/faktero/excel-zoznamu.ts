@@ -4,6 +4,8 @@
   s filtrami aj zoradením, ktoré si človek nastavil.
 */
 
+import { hodnotaStlpca, stlpceRozpisu, type RiadokRozpisuDph } from "./rozpis-dph-exportu";
+
 export type StlpecExcelu<T> = {
   nazov: string;
   hodnota: (r: T) => string | number | null | undefined;
@@ -37,4 +39,33 @@ export async function stiahniExcel(
     XLSX.utils.book_append_sheet(wb, ws, h.nazov.slice(0, 31));
   }
   XLSX.writeFile(wb, nazovSuboru);
+}
+
+/**
+ * Stĺpce rozpisu DPH po sadzbách (Základ 0 %, Základ 19 %, DPH 19 %, …,
+ * Základ v prenesení) pre Excel zoznamu — len sadzby, ktoré sa v exporte
+ * vyskytli, vzostupne. `t` prekladá názov stĺpca.
+ */
+export function stlpceRozpisuDph<T>(
+  riadky: T[],
+  rozpis: (r: T) => RiadokRozpisuDph[],
+  t: (kluc: string, p?: Record<string, string | number>) => string,
+): StlpecExcelu<T>[] {
+  const cache = new Map<T, RiadokRozpisuDph[]>();
+  const rozpisRiadku = (r: T) => {
+    let x = cache.get(r);
+    if (!x) cache.set(r, (x = rozpis(r)));
+    return x;
+  };
+  return stlpceRozpisu(riadky.map(rozpisRiadku)).map((s) => ({
+    nazov:
+      s.druh === "pdp"
+        ? s.sadzba
+          ? t("Základ v prenesení {sadzba} %", { sadzba: s.sadzba })
+          : t("Základ v prenesení")
+        : s.druh === "dph"
+          ? t("DPH {sadzba} %", { sadzba: s.sadzba })
+          : t("Základ {sadzba} %", { sadzba: s.sadzba }),
+    hodnota: (r: T) => hodnotaStlpca(rozpisRiadku(r), s),
+  }));
 }

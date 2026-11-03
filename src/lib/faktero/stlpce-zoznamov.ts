@@ -32,13 +32,22 @@ export const SELECT_VYSTAVENYCH =
 export async function sPolozkami<T extends { id: string }>(
   tabulka: "purchase_invoices" | "expense_documents",
   riadky: T[],
-): Promise<(T & { items: unknown })[]> {
+): Promise<(T & { items: unknown; vat_breakdown?: unknown })[]> {
   if (!riadky.length) return [];
-  const polozky = await riadkyPreIds<{ id: string; items: unknown }>(
+  // Bločky nesú rozpis DPH po sadzbách vo `vat_breakdown` — Excel ho rozpíše do stĺpcov.
+  const stlpce = tabulka === "expense_documents" ? "id, items, vat_breakdown" : "id, items";
+  const polozky = await riadkyPreIds<{ id: string; items: unknown; vat_breakdown?: unknown }>(
     riadky.map((r) => r.id),
     (kus, od, po) =>
-      supabase.from(tabulka).select("id, items").in("id", kus).order("id").range(od, po) as any,
+      supabase.from(tabulka).select(stlpce).in("id", kus).order("id").range(od, po) as any,
   );
-  const podlaId = new Map(polozky.map((p) => [p.id, p.items]));
-  return riadky.map((r) => ({ ...r, items: podlaId.get(r.id) ?? null }));
+  const podlaId = new Map(polozky.map((p) => [p.id, p]));
+  return riadky.map((r) => {
+    const p = podlaId.get(r.id);
+    return {
+      ...r,
+      items: p?.items ?? null,
+      ...(tabulka === "expense_documents" ? { vat_breakdown: p?.vat_breakdown ?? null } : {}),
+    };
+  });
 }

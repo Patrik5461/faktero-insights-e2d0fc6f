@@ -288,6 +288,8 @@ export function buildIsdoc(opts: {
   // Sadzba zálohy, ktorá na vyúčtovaní nie je, musí mať v rekapitulácii vlastný riadok.
   for (const s0 of uplatnene.keys())
     if (!sumare.some((r) => r.sadzba === s0)) sumare.push({ sadzba: s0, zaklad: 0, dan: 0 });
+  // Rekapitulácia vzostupne aj s doplnenou sadzbou zálohy (0 → 5 → 19 → 23).
+  sumare.sort((a, b) => porovnajSadzby(a.sadzba, b.sadzba));
   const claimed = (s0: number) => uplatnene.get(s0) ?? { sadzba: s0, zaklad: 0, dph: 0 };
   const uplatZaklad = [...uplatnene.values()].reduce((a, r) => a + r.zaklad, 0);
   const uplatDan = [...uplatnene.values()].reduce((a, r) => a + r.dph, 0);

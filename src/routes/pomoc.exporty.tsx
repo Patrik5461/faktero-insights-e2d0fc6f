@@ -124,7 +124,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Zoznamy Doklady a Prijaté faktúry majú aj tlačidlo <strong>Excel</strong> — stiahne to, čo
-          práve vidíte (s filtrami aj zoradením), v dvoch hárkoch: doklady a ich položky.
+          práve vidíte (s filtrami aj zoradením), v dvoch hárkoch: doklady so základom a DPH po
+          sadzbách a oddielom KV DPH, a ich položky.
         </p>
       </>
     ),

@@ -35,6 +35,7 @@ import { statEu } from "./sadzby-eu";
 
 import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
+import { priehradkySadzieb, sadzbaVHladine } from "./rozpis-dph-exportu";
 import { polozkyOdpoctu, prekazkaOdpoctu, sumaOdpoctov } from "./zalohy-odpocty";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 import {
@@ -3200,10 +3201,16 @@ export function buildOmegaTxt(opts: {
     }
     // Zľava na doklad je len v hlavičke a odpočet zálohy ide ako záporné položky.
     const items = polozkySOdpoctom(invoice, povodne, opts.company);
-    const sadzby = sadzbyDokladu(items);
-    const vyssia = sadzby[0];
-    const nizsia = sadzby[1];
-    const znizena2 = sadzby[2];
+    // Priehradky podľa sadzieb krajiny ku dňu plnenia (23 vyššia, 19 nižšia, 5 znížená 2),
+    // nie podľa poradia na doklade — inak by bloček len s 19 % išiel ako „vyššia“.
+    const hladiny = priehradkySadzieb(
+      sadzbyDokladu(items),
+      (company as any)?.country,
+      invoice.delivery_date ?? invoice.issue_date,
+    );
+    const vyssia = sadzbaVHladine(hladiny, "zakladna");
+    const nizsia = sadzbaVHladine(hladiny, "znizena");
+    const znizena2 = sadzbaVHladine(hladiny, "znizena2");
 
     const cudzia = (invoice.currency ?? domacaMenaFirmy(company)) !== domacaMenaFirmy(company);
     /*
@@ -3413,10 +3420,16 @@ export function buildMoneyS3Xml(opts: {
     const zaJednu = domacejZaJednotku(kurz, (company as any)?.country);
     const naDomacu = (x: unknown) => (cudzia ? Number(x ?? 0) * zaJednu : Number(x ?? 0));
 
-    const sadzby = sadzbyDokladu(items);
-    const vyssia = sadzby[0];
-    const nizsia = sadzby[1];
-    const dalsie = sadzby.slice(2);
+    // SazbaDPH2 = základná, SazbaDPH1 = znížená, druhá znížená (SK 5 %) do
+    // SeznamDalsiSazby — podľa sadzieb krajiny, nie podľa poradia na doklade.
+    const hladiny = priehradkySadzieb(
+      sadzbyDokladu(items),
+      (company as any)?.country,
+      invoice.delivery_date ?? invoice.issue_date,
+    );
+    const vyssia = sadzbaVHladine(hladiny, "zakladna");
+    const nizsia = sadzbaVHladine(hladiny, "znizena");
+    const dalsie = sadzbyDokladu(items).filter((s) => s !== vyssia && s !== nizsia);
 
     const v = zaSadzbu(items, vyssia);
     const n = zaSadzbu(items, nizsia);
