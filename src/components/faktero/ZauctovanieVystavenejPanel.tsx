@@ -15,6 +15,12 @@ import {
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KodPohody } from "./KodPohody";
+import { RozuctovaniePanel } from "./RozuctovaniePanel";
+import {
+  prekazkaRozuctovaniaVystavenej,
+  rozpisVystavenej,
+} from "@/lib/faktero/rozuctovanie-vystavenej";
+import { nacitajRozuctovanie } from "@/lib/faktero/rozuctovanie";
 import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
@@ -38,6 +44,8 @@ type Polozka = {
   predkontacia: string;
   clenenie: string;
   kv: string;
+  stredisko: string;
+  cinnost: string;
 };
 
 /**
@@ -87,6 +95,8 @@ export function useZauctovanieVystavenej({
     intPoznamka: "",
   });
   const [polozky, setPolozky] = useState<Polozka[]>([]);
+  // Položky tak, ako sú v DB — z nich sa skladá rozpis po sadzbách pre rozúčtovanie sumy.
+  const [surovePolozky, setSurovePolozky] = useState<any[] | null>(null);
   const [poPolozkach, setPoPolozkach] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -102,9 +112,14 @@ export function useZauctovanieVystavenej({
       predkontacia: x.pohoda_predkontacia ?? "",
       clenenie: x.pohoda_clenenie_dph ?? "",
       kv: x.kv_clenenie ?? "",
+      stredisko: x.stredisko ?? "",
+      cinnost: x.cinnost ?? "",
     }));
+    setSurovePolozky(s.polozky);
     setPolozky(p);
-    setPoPolozkach(p.some((x: Polozka) => x.predkontacia || x.clenenie || x.kv));
+    setPoPolozkach(
+      p.some((x: Polozka) => x.predkontacia || x.clenenie || x.kv || x.stredisko || x.cinnost),
+    );
   }
 
   useEffect(() => {
@@ -150,7 +165,9 @@ export function useZauctovanieVystavenej({
           intPoznamka: h.intPoznamka,
           lenUlozit,
           polozky: polozky.map((p) =>
-            poPolozkach ? p : { ...p, predkontacia: "", clenenie: "", kv: "" },
+            poPolozkach
+              ? p
+              : { ...p, predkontacia: "", clenenie: "", kv: "", stredisko: "", cinnost: "" },
           ),
         },
       });
@@ -226,14 +243,16 @@ export function useZauctovanieVystavenej({
       </label>
       {poPolozkach && (
         <div className="mt-2 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="py-1 pr-2 font-medium">{t("Položka")}</th>
                 <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
                 <th className="py-1 pr-2 font-medium">{t("Predkontácia")}</th>
                 <th className="py-1 pr-2 font-medium">{t("Členenie DPH")}</th>
-                <th className="py-1 font-medium">{t("KV")}</th>
+                <th className="py-1 pr-2 font-medium">{t("KV")}</th>
+                <th className="py-1 pr-2 font-medium">{t("Stredisko")}</th>
+                <th className="py-1 font-medium">{t("Činnosť")}</th>
               </tr>
             </thead>
             <tbody>
@@ -272,7 +291,7 @@ export function useZauctovanieVystavenej({
                         vyber
                       />
                     </td>
-                    <td className="py-1.5 w-24">
+                    <td className="py-1.5 pr-2 w-24">
                       <select
                         aria-label={t("KV položky {n}", { n: i + 1 })}
                         value={p.kv}
@@ -287,6 +306,28 @@ export function useZauctovanieVystavenej({
                         ))}
                       </select>
                     </td>
+                    <td className="py-1.5 pr-2 w-32">
+                      <KodPohody
+                        ariaLabel={t("Stredisko položky {n}", { n: i + 1 })}
+                        value={p.stredisko}
+                        onChange={(v) => zmen({ stredisko: v })}
+                        moznosti={navrhy?.strediska ?? []}
+                        placeholder={h.stredisko || navrhy?.predvoleneStredisko || ""}
+                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                        vyber
+                      />
+                    </td>
+                    <td className="py-1.5 w-32">
+                      <KodPohody
+                        ariaLabel={t("Činnosť položky {n}", { n: i + 1 })}
+                        value={p.cinnost}
+                        onChange={(v) => zmen({ cinnost: v })}
+                        moznosti={navrhy?.cinnosti ?? []}
+                        placeholder={h.cinnost || ""}
+                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                        vyber
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -294,11 +335,37 @@ export function useZauctovanieVystavenej({
           </table>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
-              "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v Pohode dostane „Rozúčtovať“.",
+              "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane „Rozúčtovať“.",
             )}
           </p>
         </div>
       )}
+
+      {/*
+        Rozúčtovanie sumy faktúry na viac riadkov (napr. jedna položka „Služby“
+        rozdelená na dve strediská). Má prednosť pred kódmi pri položkách.
+      */}
+      {surovePolozky ? (
+        <RozuctovaniePanel
+          companyId={inv.company_id}
+          druh="vystavena"
+          id={inv.id}
+          rozpis={rozpisVystavenej(inv, surovePolozky)}
+          ulozene={inv.rozuctovanie}
+          navrhy={navrhy}
+          kody={{
+            predkontacia: h.predkontacia || navrhy?.predvolenaPredkontacia || null,
+            clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
+            stredisko: h.stredisko || navrhy?.predvoleneStredisko || null,
+            cinnost: h.cinnost || null,
+          }}
+          kvMoznosti={KV_VYDANE}
+          sStrediskom
+          prekazka={prekazkaRozuctovaniaVystavenej(inv, surovePolozky)}
+          zamknute={Boolean(stav?.vPohode)}
+          onZmena={onZmena}
+        />
+      ) : null}
 
       <NapovedaPredkontacii>
         {t(
@@ -327,6 +394,68 @@ export function useZauctovanieVystavenej({
     </>
   );
 
+  /*
+    Odovzdaná faktúra: zaúčtovanie po položkách a rozúčtovanie len na čítanie
+    (meniť sa dá až po vrátení z Pohody — zámok v DB).
+  */
+  const rozuctovanieUlozene = nacitajRozuctovanie(inv.rozuctovanie);
+  const polozkySKodmi = polozky.filter(
+    (p) => p.predkontacia || p.clenenie || p.kv || p.stredisko || p.cinnost,
+  );
+  const kodyText = (x: {
+    predkontacia?: string | null;
+    clenenie?: string | null;
+    kv?: string | null;
+    stredisko?: string | null;
+    cinnost?: string | null;
+  }) =>
+    [
+      x.predkontacia,
+      x.clenenie,
+      x.kv ? `KV ${x.kv}` : "",
+      x.stredisko ? `${t("str.")} ${x.stredisko}` : "",
+      x.cinnost ? `${t("čin.")} ${x.cinnost}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ") || "—";
+  const prehladRozuctovania =
+    rozuctovanieUlozene.length || polozkySKodmi.length ? (
+      <div className="mt-3 space-y-1 text-xs" data-prehlad-rozuctovania="">
+        {rozuctovanieUlozene.length ? (
+          <>
+            <div className="font-medium">
+              {t("Rozúčtovaná na {n} riadky", { n: rozuctovanieUlozene.length })}
+            </div>
+            <ul className="space-y-0.5 text-muted-foreground">
+              {rozuctovanieUlozene.map((r, i) => (
+                <li key={i} className="flex flex-wrap justify-between gap-x-3">
+                  <span className="min-w-0">
+                    {kodyText(r)}
+                    {r.text ? ` — ${r.text}` : ""}
+                  </span>
+                  <span className="tabular-nums">
+                    {r.sadzba} % · {formatujCislo(r.zaklad, 2)} + {formatujCislo(r.dph, 2)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <>
+            <div className="font-medium">{t("Kódy pri položkách")}</div>
+            <ul className="space-y-0.5 text-muted-foreground">
+              {polozkySKodmi.map((p) => (
+                <li key={p.id} className="flex flex-wrap justify-between gap-x-3">
+                  <span className="min-w-0 truncate">{p.name}</span>
+                  <span>{kodyText(p)}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    ) : null;
+
   const zrusZauctovanie = () =>
     void akcia(
       () => zrus({ data: { company_id: inv.company_id, id: inv.id } }),
@@ -349,6 +478,7 @@ export function useZauctovanieVystavenej({
     obnov,
     vyberPravidla,
     poPolozkachANapoveda,
+    prehladRozuctovania,
   };
 }
 
@@ -381,6 +511,7 @@ export function ZauctovanieVystavenejPanel({
     obnov,
     vyberPravidla,
     poPolozkachANapoveda,
+    prehladRozuctovania,
   } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
   // Koncept sa nezaúčtuje.
   if (inv.status === "draft") return null;
@@ -442,6 +573,7 @@ export function ZauctovanieVystavenejPanel({
               ? t("Faktúra je odovzdaná do účtovníctva ({program}).", { program: vPohode.program })
               : t("Faktúra je v Pohode.")}
           </p>
+          {prehladRozuctovania}
           <div className="mt-3 flex flex-wrap gap-2">
             {vPohode.program ? null : (
               <button
@@ -587,7 +719,17 @@ export function PoliaZauctovaniaVystavenej({
   onZmena: () => void;
 }) {
   const { t } = useT();
-  const { de, navrhy, h, setH, vPohode, obnov, vyberPravidla, poPolozkachANapoveda } = z;
+  const {
+    de,
+    navrhy,
+    h,
+    setH,
+    vPohode,
+    obnov,
+    vyberPravidla,
+    poPolozkachANapoveda,
+    prehladRozuctovania,
+  } = z;
   if (inv.status === "draft")
     return (
       <p className="text-xs text-muted-foreground">
@@ -649,6 +791,7 @@ export function PoliaZauctovaniaVystavenej({
         {vPohode ? null : vyberPravidla}
         {vPohode ? null : poPolozkachANapoveda}
       </fieldset>
+      {vPohode ? prehladRozuctovania : null}
     </>
   );
 }

@@ -19,16 +19,27 @@ import {
 } from "./pohoda-zamok";
 
 const adresar = new URL("../../../supabase/migrations/", import.meta.url);
-const subor = readdirSync(adresar).find((f) => /pohoda_zamok\.sql$/.test(f));
+/*
+  Pôvodná migrácia zámku a neskoršie, ktoré spúšťače znova zakladajú s ďalšími
+  poľami (`*_pohoda_zamok.sql`) — platí najnovšia definícia každého spúšťača.
+*/
+const subory = readdirSync(adresar)
+  .filter((f) => /pohoda_zamok\.sql$/.test(f))
+  .sort();
+const subor = subory[0];
 const sql = subor ? readFileSync(new URL(subor, adresar), "utf8") : "";
+const sqlOdNajnovsej = [...subory].reverse().map((f) => readFileSync(new URL(f, adresar), "utf8"));
 
-/** Argumenty spúšťača `create trigger <nazov> … execute function f(...)`. */
+/** Argumenty spúšťača `create trigger <nazov> … execute function f(...)` (najnovšia migrácia). */
 function argumenty(spustac: string): string[] {
-  const m = new RegExp(
-    `create trigger ${spustac}[\\s\\S]*?execute function [\\w.]+\\(([\\s\\S]*?)\\);`,
-  ).exec(sql);
-  if (!m) throw new Error(`spúšťač ${spustac} v migrácii chýba`);
-  return [...m[1].matchAll(/'([a-z_0-9]+)'/g)].map((x) => x[1]);
+  const re = new RegExp(
+    `create trigger ${spustac}\\s[\\s\\S]*?execute function [\\w.]+\\(([\\s\\S]*?)\\);`,
+  );
+  for (const text of sqlOdNajnovsej) {
+    const m = re.exec(text);
+    if (m) return [...m[1].matchAll(/'([a-z_0-9]+)'/g)].map((x) => x[1]);
+  }
+  throw new Error(`spúšťač ${spustac} v migrácii chýba`);
 }
 
 describe("zámok po odovzdaní — migrácia a zoznamy polí", () => {

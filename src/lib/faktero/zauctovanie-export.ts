@@ -15,6 +15,7 @@
 
 import { jeSamozdanenie } from "./datum-prijatia";
 import { riadkyDokladu, rozpisBlocku, type OdpocetVozidla, type RozpisSadzby } from "./rozuctovanie";
+import { platneRozuctovanieVystavenej } from "./rozuctovanie-vystavenej";
 import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodStatu } from "./company-autofill";
@@ -593,17 +594,33 @@ export function vystavenaNaUctovanie(
   const zlava = Math.abs(Number(inv?.discount_total ?? 0));
   const spoluPolozky = polozky.reduce((a, p) => a + p.zaklad, 0);
   const koef = zlava && spoluPolozky ? Math.max(0, (spoluPolozky - zlava) / spoluPolozky) : 1;
+  /*
+    Rozúčtovanie sumy faktúry (`invoices.rozuctovanie`, kladné sumy) má
+    prednosť pred kódmi položiek; KV položky prebíja KV faktúry.
+  */
+  const rozuctovanie = platneRozuctovanieVystavenej(inv, items);
   const riadky = zlucRiadky(
-    polozky.map((p) => ({
-      sadzba: p.sadzba,
-      zaklad: r2(p.zaklad * koef),
-      dph: r2(p.dph * koef),
-      predkontacia: p.predkontacia ?? predkontacia,
-      clenenie: p.clenenie ?? clenenie,
-      kv,
-      odpocet: true,
-      text: null,
-    })),
+    rozuctovanie.length
+      ? rozuctovanie.map((r) => ({
+          sadzba: Number(r.sadzba) || 0,
+          zaklad: r2(r.zaklad),
+          dph: r2(r.dph),
+          predkontacia: t(r.predkontacia) ?? predkontacia,
+          clenenie: t(r.clenenie) ?? clenenie,
+          kv: t(r.kv) ?? kv,
+          odpocet: true,
+          text: t(r.text),
+        }))
+      : polozky.map((p, i) => ({
+          sadzba: p.sadzba,
+          zaklad: r2(p.zaklad * koef),
+          dph: r2(p.dph * koef),
+          predkontacia: p.predkontacia ?? predkontacia,
+          clenenie: p.clenenie ?? clenenie,
+          kv: t(items?.[i]?.kv_clenenie) ?? kv,
+          odpocet: true,
+          text: null,
+        })),
   );
   /*
     Odpočet zdanenej zálohy: záporné riadky v sadzbách dokladu k platbe so

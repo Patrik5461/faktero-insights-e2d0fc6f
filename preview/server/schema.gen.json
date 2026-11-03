@@ -4084,6 +4084,8 @@
     "invoice_items": {
       "pohlad": false,
       "stlpce": {
+        "stredisko": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "cinnost": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "prenesenie": {
           "druh": "boolean",
           "nullable": false,
@@ -4306,6 +4308,7 @@
     "invoices": {
       "pohlad": false,
       "stlpce": {
+        "rozuctovanie": { "druh": "json", "nullable": true, "volitelny": false, "povinny": false },
         "pokladna_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "naposledy_zauctoval": {
           "druh": "text",

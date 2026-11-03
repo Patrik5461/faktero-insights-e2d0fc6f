@@ -18,7 +18,8 @@ import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
 import { kodPokladneDokladu } from "./pokladne";
 import { kvPrijatehoDokladu } from "./kv-urcenie";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
-import { rozpisBlocku } from "./rozuctovanie";
+import { nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
+import { chybaUlozenehoRozuctovaniaVystavenej } from "./rozuctovanie-vystavenej";
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
 import { domacaMena } from "./kurzy";
 import {
@@ -270,15 +271,31 @@ export function prekazkaVydanej(
   if (jeNeplatitel(company) && Math.abs(Number(invoice?.vat_total ?? 0)) > 0.005)
     return `${cislo} — ${DOVOD_NEPLATITEL_VYSTAVENA}`;
 
+  /*
+    Rozúčtovanie, ktoré po úprave faktúry nesedí so sumami položiek — bez
+    zastavenia by do Pohody potichu odišla faktúra bez neho (kódy hlavičky).
+  */
+  {
+    const dovod = chybaUlozenehoRozuctovaniaVystavenej(invoice, items);
+    if (dovod)
+      return `${cislo} — rozúčtovanie nesedí s faktúrou (${dovod}) — upravte alebo zrušte rozúčtovanie v zaúčtovaní faktúry`;
+  }
+
   // Členenie a KV musia patriť vydaným dokladom (PALIERA FA20260004 odišla s PD).
   {
+    const rozuctovanie = nacitajRozuctovanie(invoice?.rozuctovanie);
     const dovod = prekazkaClenenia(
       "vydane",
       [
         kod(invoice?.pohoda_clenenie_dph) || kod(nastavenia?.clenenieDph),
         ...(items ?? []).map((it) => it?.pohoda_clenenie_dph),
+        ...rozuctovanie.map((r) => r.clenenie),
       ],
-      [invoice?.kv_clenenie, ...(items ?? []).map((it) => it?.kv_clenenie)],
+      [
+        invoice?.kv_clenenie,
+        ...(items ?? []).map((it) => it?.kv_clenenie),
+        ...rozuctovanie.map((r) => r.kv),
+      ],
     );
     if (dovod) return `${cislo} — ${dovod}`;
   }
@@ -312,8 +329,14 @@ export function prekazkaVydanej(
 
   // Zaúčtovaná faktúra musí mať kódy (vlastné, predvolené alebo pri všetkých položkách).
   if (invoice?.zauctovane_at) {
+    // Rozúčtovaná faktúra nesie kódy v riadkoch rozúčtovania (tie nahrádzajú položky).
+    const rozuctovanie = nacitajRozuctovanie(invoice?.rozuctovanie);
     const vsetkyPolozky = (pole: string) =>
-      (items ?? []).length > 0 && (items ?? []).every((it) => kod(it?.[pole]));
+      rozuctovanie.length
+        ? rozuctovanie.every((r) =>
+            kod(pole === "pohoda_predkontacia" ? r.predkontacia : r.clenenie),
+          )
+        : (items ?? []).length > 0 && (items ?? []).every((it) => kod(it?.[pole]));
     const predvolenaPk =
       typ === "proforma"
         ? nastavenia?.predkontaciaZaloha

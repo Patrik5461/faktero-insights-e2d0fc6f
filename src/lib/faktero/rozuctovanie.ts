@@ -21,6 +21,9 @@ export type RiadokRozuctovania = {
   kv?: string | null;
   /** Pri účtovaní pomerom: či si z tejto časti firma odpočíta DPH. */
   odpocet?: boolean;
+  /** Stredisko a činnosť riadku (vystavená faktúra); prázdne = z dokladu. */
+  stredisko?: string | null;
+  cinnost?: string | null;
 };
 
 export type RozpisSadzby = { sadzba: number; zaklad: number; dph: number };
@@ -158,7 +161,18 @@ export function ocisti(riadky: RiadokRozuctovania[]): RiadokRozuctovania[] {
     dph: r2(Number(r.dph) || 0),
     text: String(r.text ?? "").trim().slice(0, 90) || null,
     kv: String(r.kv ?? "").trim().slice(0, 5) || null,
+    ...strediskoACinnost(r),
   }));
+}
+
+/** Stredisko a činnosť riadku — len vyplnené (staršie riadky ich nemajú). */
+function strediskoACinnost(r: { stredisko?: unknown; cinnost?: unknown }): {
+  stredisko?: string;
+  cinnost?: string;
+} {
+  const st = String(r?.stredisko ?? "").trim().slice(0, 30);
+  const ci = String(r?.cinnost ?? "").trim().slice(0, 30);
+  return { ...(st ? { stredisko: st } : {}), ...(ci ? { cinnost: ci } : {}) };
 }
 
 /** Rozúčtovanie z JSON stĺpca — čokoľvek iné ako pole riadkov je „žiadne". */
@@ -175,6 +189,7 @@ export function nacitajRozuctovanie(v: unknown): RiadokRozuctovania[] {
         dph: Number(x.dph) || 0,
         text: x.text ?? null,
         kv: x.kv ?? null,
+        ...strediskoACinnost(x),
       })),
   );
 }
