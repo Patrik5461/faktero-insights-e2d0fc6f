@@ -71,7 +71,27 @@ type Item = {
   _original_stock_item_id?: string | null;
   _original_name?: string;
   _locked?: boolean;
+  /**
+   * Zaúčtovanie položky (predkontácia, členenie DPH, KV, stredisko, činnosť) —
+   * vo formulári sa nemení, ale pri uložení sa položky zapisujú nanovo, tak ho
+   * treba preniesť (predtým sa úpravou faktúry stratilo).
+   */
+  _kody?: Record<string, string | null>;
 };
+
+/** Zaúčtovacie stĺpce položky, ktoré má riadok z DB (stredisko a činnosť až po migrácii). */
+const KODY_POLOZKY = [
+  "pohoda_predkontacia",
+  "pohoda_clenenie_dph",
+  "kv_clenenie",
+  "stredisko",
+  "cinnost",
+] as const;
+function kodyPolozky(r: Record<string, any>): Record<string, string | null> | undefined {
+  const o: Record<string, string | null> = {};
+  for (const k of KODY_POLOZKY) if (k in r && r[k]) o[k] = r[k];
+  return Object.keys(o).length ? o : undefined;
+}
 
 const EMPTY: Item = {
   name: "",
@@ -218,6 +238,7 @@ function EditInvoice() {
           _original_quantity: Number(r.quantity),
           _original_stock_item_id: r.stock_item_id ?? null,
           _original_name: r.name,
+          _kody: kodyPolozky(r),
           _locked: !!r.stock_item_id && (i.status as string) === "sent",
         })),
       );
@@ -416,6 +437,7 @@ function EditInvoice() {
           // Väzba na cenník sa pri úprave nesmie stratiť (predtým sa zahodila).
           product_id: it.product_id ?? null,
           ...colneUdajeNaZapis(it),
+          ...(it._kody ?? {}),
           subtotal: Number(s.toFixed(2)),
           vat_amount: Number(v.toFixed(2)),
           total: Number((s + v).toFixed(2)),

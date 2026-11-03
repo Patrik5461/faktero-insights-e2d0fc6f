@@ -667,10 +667,12 @@ const riadokRozuctovania = z.object({
   dph: z.number(),
   text: z.string().max(200).nullable().optional(),
   kv: z.string().max(5).nullable().optional(),
+  stredisko: z.string().max(30).nullable().optional(),
+  cinnost: z.string().max(30).nullable().optional(),
 });
 
 /**
- * Rozúčtovanie prijatej faktúry alebo bločku na viac riadkov.
+ * Rozúčtovanie prijatej faktúry, bločku alebo vystavenej faktúry na viac riadkov.
  *
  * Súčty po sadzbách musia sedieť s dokladom na cent — kontrola beží tu, nie
  * len v prehliadači. Prázdny zoznam rozúčtovanie zruší. Odovzdaný doklad sa
@@ -682,7 +684,7 @@ export const ulozRozuctovanieFn = createServerFn({ method: "POST" })
     z
       .object({
         company_id: z.string().uuid(),
-        druh: z.enum(["prijata", "doklad"]),
+        druh: z.enum(["prijata", "doklad", "vystavena"]),
         id: z.string().uuid(),
         riadky: z.array(riadokRozuctovania).max(50),
       })
@@ -691,6 +693,43 @@ export const ulozRozuctovanieFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { chybaRozuctovania, ocisti, rozpisBlocku } = await import("./rozuctovanie");
+    if (data.druh === "vystavena") {
+      /*
+        Vystavená faktúra (aj dobropis a zálohová): rozpis z položiek, sumy
+        riadkov kladné. Faktúra v Pohode (alebo inom programe) sa nemení —
+        zámok v DB by zmenu aj tak nepustil.
+      */
+      const { data: f, error: e0 } = await supabase
+        .from("invoices")
+        .select("id, status, deleted_at, exported_at, discount_total, reverse_charge")
+        .eq("company_id", data.company_id)
+        .eq("id", data.id)
+        .maybeSingle();
+      if (e0) throw new Error(e0.message);
+      if (!f || f.deleted_at) throw new Error("Faktúra sa nenašla.");
+      if (f.exported_at || (await vPohode(supabase, f.id)))
+        throw new Error("Faktúra je už v Pohode — najprv ju vráťte z Pohody.");
+      const { data: polozky, error: e1 } = await supabase
+        .from("invoice_items")
+        .select("*")
+        .eq("invoice_id", f.id);
+      if (e1) throw new Error(e1.message);
+      const { prekazkaRozuctovaniaVystavenej, rozpisVystavenej } = await import("./rozuctovanie-vystavenej");
+      const riadky = ocisti(data.riadky as any);
+      if (riadky.length) {
+        const prekazka = prekazkaRozuctovaniaVystavenej(f, polozky ?? []);
+        if (prekazka) throw new Error(prekazka);
+      }
+      const chyba = chybaRozuctovania(riadky, rozpisVystavenej(f, polozky ?? []));
+      if (chyba) throw new Error(chyba);
+      const { error: e2 } = await supabase
+        .from("invoices")
+        .update({ rozuctovanie: riadky.length ? riadky : null })
+        .eq("id", f.id)
+        .eq("company_id", data.company_id);
+      if (e2) throw new Error(e2.message);
+      return { ok: true, riadkov: riadky.length };
+    }
     const tabulka = data.druh === "prijata" ? "purchase_invoices" : "expense_documents";
     const { data: d, error } = await supabase
       .from(tabulka)
@@ -757,6 +796,8 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
               predkontacia: kod,
               clenenie: kod,
               kv: z.string().trim().max(5).optional().nullable(),
+              stredisko: kod,
+              cinnost: kod,
             }),
           )
           .max(500)
@@ -802,6 +843,8 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
           pohoda_predkontacia: p.predkontacia?.trim() || null,
           pohoda_clenenie_dph: p.clenenie?.trim() || null,
           kv_clenenie: p.kv?.trim() || null,
+          stredisko: p.stredisko?.trim() || null,
+          cinnost: p.cinnost?.trim() || null,
         })
         .eq("id", p.id)
         .eq("invoice_id", f.id);
@@ -887,7 +930,8 @@ export const stavVystavenejFn = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase
         .from("invoice_items")
-        .select("id, name, subtotal, vat_rate, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie")
+        // Celé riadky: stredisko a činnosť položky pribudli migráciou — pred ňou by výber stĺpcov spadol.
+        .select("*")
         .eq("invoice_id", data.id)
         .order("position"),
     ]);

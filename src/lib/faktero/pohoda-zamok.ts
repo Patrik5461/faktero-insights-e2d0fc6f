@@ -89,6 +89,7 @@ export const ZAMOK_FAKTURY = [
   "kv_clenenie",
   "stredisko",
   "cinnost",
+  "rozuctovanie",
   // storno a zmazanie
   "cancelled_at",
   "deleted_at",
@@ -115,6 +116,8 @@ export const ZAMOK_POLOZKY_FAKTURY = [
   "pohoda_predkontacia",
   "pohoda_clenenie_dph",
   "kv_clenenie",
+  "stredisko",
+  "cinnost",
 ] as const;
 
 /**

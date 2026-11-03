@@ -5268,6 +5268,8 @@ export type Database = {
           pohoda_predkontacia: string | null
           pohoda_clenenie_dph: string | null
           kv_clenenie: string | null
+          stredisko: string | null
+          cinnost: string | null
         }
         Insert: {
           prenesenie?: boolean
@@ -5293,6 +5295,8 @@ export type Database = {
           pohoda_predkontacia?: string | null
           pohoda_clenenie_dph?: string | null
           kv_clenenie?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
         }
         Update: {
           prenesenie?: boolean
@@ -5318,6 +5322,8 @@ export type Database = {
           pohoda_predkontacia?: string | null
           pohoda_clenenie_dph?: string | null
           kv_clenenie?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
         }
         Relationships: [
           {
@@ -5667,6 +5673,7 @@ export type Database = {
           vratene_z_pohody_at: string | null
           oprava_zauctovania_at: string | null
           oprava_zauctovania_povodne: Json | null
+          rozuctovanie: Json | null
         }
         Insert: {
           pokladna_id?: string | null
@@ -5789,6 +5796,7 @@ export type Database = {
           vratene_z_pohody_at?: string | null
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
+          rozuctovanie?: Json | null
         }
         Update: {
           pokladna_id?: string | null
@@ -5911,6 +5919,7 @@ export type Database = {
           vratene_z_pohody_at?: string | null
           oprava_zauctovania_at?: string | null
           oprava_zauctovania_povodne?: Json | null
+          rozuctovanie?: Json | null
         }
         Relationships: [
           {

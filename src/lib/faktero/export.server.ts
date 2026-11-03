@@ -36,6 +36,10 @@ import { statEu } from "./sadzby-eu";
 import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { priehradkySadzieb, sadzbaVHladine } from "./rozpis-dph-exportu";
+import {
+  platneRozuctovanieVystavenej,
+  znamienkoPoloziekVystavenej,
+} from "./rozuctovanie-vystavenej";
 import { polozkyOdpoctu, prekazkaOdpoctu, sumaOdpoctov } from "./zalohy-odpocty";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 import {
@@ -797,16 +801,50 @@ export function polozkyFaktur(opts: {
           : invoice.reverse_charge
             ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
             : nastavenia?.clenenieDph);
-      // Rozúčtovať treba, len keď položky naozaj vedú na rôzne predkontácie —
-      // keď majú všetky ten istý kód, patrí do hlavičky.
+      /*
+        Rozúčtovanie sumy faktúry (`invoices.rozuctovanie`): namiesto položiek
+        idú do Pohody riadky rozúčtovania, každý so svojimi kódmi. Súčty po
+        sadzbách sedia s položkami (inak sa rozúčtovanie nepoužije a kontrola
+        pred exportom faktúru zastaví), takže súhrn DPH ostáva z položiek.
+      */
+      const rozRiadky = platneRozuctovanieVystavenej(invoice as any, povodneRiadky as any[]);
+      // Riadky sú uložené kladne — smer dostanú rovnako ako položky (`zn` × znamienko položiek v DB).
+      const smerRiadkov = zn * znamienkoPoloziekVystavenej(povodneRiadky as any[]);
+      const zdrojeKodov: ItemRow[] = rozRiadky.length
+        ? rozRiadky.map(
+            (r) =>
+              ({
+                pohoda_predkontacia: r.predkontacia,
+                pohoda_clenenie_dph: r.clenenie,
+                kv_clenenie: r.kv,
+                stredisko: r.stredisko,
+                cinnost: r.cinnost,
+              }) as any,
+          )
+        : items;
+      /*
+        Stredisko a činnosť: položka (riadok) má vlastné, inak platí faktúra a
+        potom predvolené stredisko firmy.
+      */
+      const strediskoFaktury = String((invoice as any).stredisko ?? "").trim() || String(nastavenia?.stredisko ?? "").trim();
+      const cinnostFaktury = String((invoice as any).cinnost ?? "").trim();
+      const strediskoPolozky = (it: ItemRow) => String((it as any).stredisko ?? "").trim() || strediskoFaktury;
+      const cinnostPolozky = (it: ItemRow) => String((it as any).cinnost ?? "").trim() || cinnostFaktury;
+      // Rozúčtovať treba, len keď položky naozaj vedú na rôzne predkontácie,
+      // strediská alebo činnosti — keď majú všetky to isté, patrí to do hlavičky.
+      const pkPolozky = (it: ItemRow) =>
+        String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna || "";
       const kodyPoloziek = new Set(
-        items.map((it) => String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna || ""),
+        zdrojeKodov.map((it) => `${pkPolozky(it)}|${strediskoPolozky(it)}|${cinnostPolozky(it)}`),
       );
       const poPolozkach = kodyPoloziek.size > 1;
+      const prvy = zdrojeKodov[0];
       const predkontacia = poPolozkach
         ? nastavenia?.predkontaciaRozuctovat?.trim() ||
           (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
-        : [...kodyPoloziek][0] || predkontaciaJedna;
+        : (prvy ? pkPolozky(prvy) : "") || predkontaciaJedna;
+      const strediskoHlavicky = !poPolozkach && prvy ? strediskoPolozky(prvy) : strediskoFaktury;
+      const cinnostHlavicky = !poPolozkach && prvy ? cinnostPolozky(prvy) : cinnostFaktury;
       const clenenie = zalohova ? "" : clenenieJedno;
       /*
         Členenie KV DPH (len SK verzia). Bez neho by doklad v Pohode do
@@ -873,6 +911,9 @@ export function polozkyFaktur(opts: {
         */
         const pdpPolozka = tuzemskePdp || pdpRiadok;
         const kodTovaru = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 4);
+        // Stredisko a činnosť položky (invoice.xsd: po CodePDP, pred intrastatItem) — len pri rozúčtovaní.
+        const centre = poPolozkach ? odkazIds("inv:centre", strediskoPolozky(it), "          ") : "";
+        const activity = poPolozkach ? odkazIds("inv:activity", cinnostPolozky(it), "          ") : "";
         return `${pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""}${
           cl ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>` : ""
         }${
@@ -881,7 +922,7 @@ export function polozkyFaktur(opts: {
             : ""
         }${pdpPolozka ? `\n          <inv:PDP>true</inv:PDP>` : ""}${
           pdpPolozka && !cz && kodTovaru.length === 4 ? `\n          <inv:CodePDP>${kodTovaru}</inv:CodePDP>` : ""
-        }`;
+        }${centre}${activity}`;
       };
 
       const forma = FORMY_UHRADY[String(invoice.payment_method ?? "")] ?? "draft";
@@ -892,7 +933,28 @@ export function polozkyFaktur(opts: {
       const cudzia = menaFaktury !== domacaMena;
       const menaBlok = cudzia ? "foreignCurrency" : "homeCurrency";
 
-      const itemRows = items
+      const textRozuctovania = skrat(textVystavenej(invoice, ex, cz), 90) || `Faktúra ${invoice.invoice_number ?? ""}`.trim();
+      const itemRows = rozRiadky.length
+        ? rozRiadky
+            .map((r, i) => {
+              const na2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+              const z = smerRiadkov * na2(Number(r.zaklad) || 0);
+              const d = smerRiadkov * na2(Number(r.dph) || 0);
+              return `
+        <inv:invoiceItem>${el("inv:text", skrat(r.text, 90) || textRozuctovania, "          ")}
+          <inv:quantity>${smerRiadkov}</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>${kodSadzby(Number(r.sadzba), tab)}</inv:rateVAT>
+          <inv:${menaBlok}>${elSuma("typ:unitPrice", Math.abs(Number(r.zaklad) || 0), "            ")}${elSuma(
+            "typ:price",
+            z,
+            "            ",
+          )}${elSuma("typ:priceVAT", d, "            ")}${elSuma("typ:priceSum", na2(z + d), "            ")}
+          </inv:${menaBlok}>${kodyPolozky(zdrojeKodov[i])}
+        </inv:invoiceItem>`;
+            })
+            .join("")
+        : items
         .map((it, i) => {
           const kod = kody[i];
           const mnozstvo = zn * Number(it.quantity ?? 0);
@@ -1080,8 +1142,8 @@ export function polozkyFaktur(opts: {
             ? `\n        <inv:classificationKVDPH><typ:ids>${esc(kvHlavicka)}</typ:ids></inv:classificationKVDPH>`
             : ""
         }${
-          odkazIds("inv:centre", (invoice as any).stredisko || nastavenia?.stredisko, "        ") +
-          odkazIds("inv:activity", (invoice as any).cinnost, "        ") +
+          odkazIds("inv:centre", strediskoHlavicky, "        ") +
+          odkazIds("inv:activity", cinnostHlavicky, "        ") +
           // Už odoslaná eFaktúra: účtovníčka ju v Pohode nesmie poslať cez Peppol druhýkrát.
           el(
             "inv:intNote",

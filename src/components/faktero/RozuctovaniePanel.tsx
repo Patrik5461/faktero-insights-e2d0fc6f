@@ -26,7 +26,8 @@ const f2 = (n: number) => formatujCislo(n, 2);
 /**
  * Rozúčtovanie dokladu na viac riadkov — každý s vlastnou predkontáciou,
  * členením DPH a sumou. Do Pohody ide ako položky s vlastným zaúčtovaním,
- * hlavička dostane „Rozúčtovať".
+ * hlavička dostane „Rozúčtovať". Pri vystavenej faktúre má riadok aj
+ * stredisko a činnosť (`sStrediskom`).
  */
 export function RozuctovaniePanel({
   companyId,
@@ -38,17 +39,31 @@ export function RozuctovaniePanel({
   kody,
   zamknute,
   onZmena,
+  kvMoznosti = KV_PRIJATE,
+  sStrediskom,
+  prekazka,
 }: {
   companyId: string;
-  druh: "prijata" | "doklad";
+  druh: "prijata" | "doklad" | "vystavena";
   id: string;
   rozpis: RozpisSadzby[];
   ulozene: unknown;
   navrhy: Navrhy | null;
-  /** Kódy dokladu — nimi sa predvyplní prvý riadok. */
-  kody: { predkontacia: string | null; clenenie: string | null };
+  /** Kódy dokladu — nimi sa predvyplní prvý riadok (stredisko a činnosť len ako nápoveda). */
+  kody: {
+    predkontacia: string | null;
+    clenenie: string | null;
+    stredisko?: string | null;
+    cinnost?: string | null;
+  };
   zamknute?: boolean;
   onZmena?: () => void;
+  /** Členenia KV na výber (vystavená faktúra má vlastné). */
+  kvMoznosti?: readonly { kod: string; nazov: string }[];
+  /** Stĺpce Stredisko a Činnosť (vystavená faktúra). */
+  sStrediskom?: boolean;
+  /** Prečo sa doklad rozúčtovať sumou nedá — namiesto tlačidla sa ukáže dôvod. */
+  prekazka?: string | null;
 }) {
   const { t } = useT();
   const uloz = useServerFn(ulozRozuctovanieFn);
@@ -113,13 +128,29 @@ export function RozuctovaniePanel({
     ]);
   }
 
+  if (!riadky.length && prekazka) {
+    return (
+      <p className="mt-3 rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
+        <Split className="mr-1 inline h-3.5 w-3.5" />
+        {t(prekazka)}
+      </p>
+    );
+  }
+
   if (!riadky.length) {
     return (
       <div className="mt-3 rounded-md border border-dashed border-border p-3 text-sm">
         <button
           type="button"
           disabled={zamknute}
-          onClick={() => setRiadky(zaciatokRozuctovania(rozpis, kody))}
+          onClick={() =>
+            setRiadky(
+              zaciatokRozuctovania(rozpis, {
+                predkontacia: kody.predkontacia,
+                clenenie: kody.clenenie,
+              }),
+            )
+          }
           className="inline-flex items-center gap-1.5 text-primary hover:underline disabled:opacity-50"
         >
           <Split className="h-4 w-4" /> {t("Rozúčtovať na viac predkontácií")}
@@ -134,6 +165,8 @@ export function RozuctovaniePanel({
   }
 
   const vstup = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm";
+  // Úzky stĺpec panela (detail s náhľadom PDF): bez spodnej šírky by tabuľka ovládacie prvky zmačkala.
+  const kodVstup = `${vstup} min-w-[8rem]`;
   return (
     <div className="mt-3 rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -154,12 +187,18 @@ export function RozuctovaniePanel({
         </div>
       </div>
       <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className={`w-full text-sm ${sStrediskom ? "min-w-[1060px]" : "min-w-[820px]"}`}>
           <thead>
             <tr className="text-left text-xs text-muted-foreground">
               <th className="py-1 pr-2 font-medium">{t("Predkontácia")}</th>
               <th className="py-1 pr-2 font-medium">{t("Členenie DPH")}</th>
               <th className="py-1 pr-2 font-medium">{t("KV DPH")}</th>
+              {sStrediskom ? (
+                <>
+                  <th className="py-1 pr-2 font-medium">{t("Stredisko")}</th>
+                  <th className="py-1 pr-2 font-medium">{t("Činnosť")}</th>
+                </>
+              ) : null}
               <th className="py-1 pr-2 font-medium">{t("Sadzba")}</th>
               <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
               <th className="py-1 pr-2 text-right font-medium">{t("DPH")}</th>
@@ -179,7 +218,7 @@ export function RozuctovaniePanel({
                     onChange={(v) => zmen(i, { predkontacia: v })}
                     moznosti={navrhy?.predkontacie ?? []}
                     placeholder={kody.predkontacia ?? ""}
-                    className={vstup}
+                    className={kodVstup}
                     vyber
                   />
                 </td>
@@ -191,24 +230,50 @@ export function RozuctovaniePanel({
                     moznosti={navrhy?.clenenia ?? []}
                     vyber
                     placeholder={kody.clenenie ?? ""}
-                    className={vstup}
+                    className={kodVstup}
                   />
                 </td>
                 <td className="py-1 pr-2 w-24">
                   <select
                     value={r.kv ?? ""}
                     onChange={(e) => zmen(i, { kv: e.target.value || null })}
-                    className={vstup}
+                    className={`${vstup} min-w-[5.5rem]`}
                     aria-label={t("Členenie KV riadku {n}", { n: i + 1 })}
                   >
                     <option value="">{t("z dokladu")}</option>
-                    {KV_PRIJATE.map((k) => (
+                    {kvMoznosti.map((k) => (
                       <option key={k.kod} value={k.kod} title={t(k.nazov)}>
                         {k.kod === "X" ? t("nezahŕňať") : k.kod}
                       </option>
                     ))}
                   </select>
                 </td>
+                {sStrediskom ? (
+                  <>
+                    <td className="py-1 pr-2 w-32">
+                      <KodPohody
+                        ariaLabel={t("Stredisko riadku {n}", { n: i + 1 })}
+                        value={r.stredisko ?? ""}
+                        onChange={(v) => zmen(i, { stredisko: v })}
+                        moznosti={navrhy?.strediska ?? []}
+                        placeholder={kody.stredisko ?? ""}
+                        className={kodVstup}
+                        vyber
+                      />
+                    </td>
+                    <td className="py-1 pr-2 w-32">
+                      <KodPohody
+                        ariaLabel={t("Činnosť riadku {n}", { n: i + 1 })}
+                        value={r.cinnost ?? ""}
+                        onChange={(v) => zmen(i, { cinnost: v })}
+                        moznosti={navrhy?.cinnosti ?? []}
+                        placeholder={kody.cinnost ?? ""}
+                        className={kodVstup}
+                        vyber
+                      />
+                    </td>
+                  </>
+                ) : null}
                 <td className="py-1 pr-2 w-20">
                   <select
                     value={r.sadzba}
