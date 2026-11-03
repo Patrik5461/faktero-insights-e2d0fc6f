@@ -28,6 +28,7 @@ import {
 import { riadkySoZlavou } from "./zlavy";
 import { kodStatu } from "./company-autofill";
 import { zoradSadzby } from "./vat-rates";
+import { priehradkySadzieb, tuzemskePrenesenie } from "./rozpis-dph-exportu";
 
 export type RiadokFaktury = {
   invoice_number?: unknown;
@@ -123,14 +124,22 @@ const NAZOV_UHRADY: Record<string, string> = {
   card: "Karta",
 };
 
-/** Kladné sadzby na doklade — do stĺpcov rekapitulácie (zoradí `zoradSadzby`). */
-function sadzby(polozky: PolozkaFaktury[]): number[] {
-  return [...new Set(polozky.map((p) => cislo(p.vat_rate)))]
+/** Položka v tuzemskom prenesení — celá faktúra alebo len táto položka. */
+const vPreneseni = (invoice: RiadokFaktury, p: PolozkaFaktury) =>
+  tuzemskePrenesenie(invoice as any) || Boolean((p as any).prenesenie);
+
+/**
+ * Kladné sadzby na doklade — do stĺpcov rekapitulácie (zoradí `zoradSadzby`).
+ * Položka v prenesení má vlastný stĺpec „Základ v prenesení“ — keby niesla
+ * sadzbu 23 %, započítala by sa inak dvakrát.
+ */
+function sadzby(invoice: RiadokFaktury, polozky: PolozkaFaktury[]): number[] {
+  return [...new Set(polozky.filter((p) => !vPreneseni(invoice, p)).map((p) => cislo(p.vat_rate)))]
     .filter((r) => r > 0);
 }
 
-function zaSadzbu(polozky: PolozkaFaktury[], sadzba: number, zn = 1) {
-  const vybrane = polozky.filter((p) => cislo(p.vat_rate) === sadzba);
+function zaSadzbu(invoice: RiadokFaktury, polozky: PolozkaFaktury[], sadzba: number, zn = 1) {
+  const vybrane = polozky.filter((p) => cislo(p.vat_rate) === sadzba && !vPreneseni(invoice, p));
   return {
     zaklad: zn * vybrane.reduce((a, p) => a + cislo(p.subtotal), 0),
     dan: zn * vybrane.reduce((a, p) => a + cislo(p.vat_amount), 0),
@@ -152,7 +161,7 @@ export function buildUniverzalCsv(opts: {
   const domaca = domacaMena(opts.krajina);
   /* Stĺpce sadzieb podľa toho, čo sa v dávke naozaj vyskytlo — prázdne by len zavadzali. */
   const pouziteSadzby = zoradSadzby([
-    ...new Set(opts.invoices.flatMap(({ items }) => sadzby(items))),
+    ...new Set(opts.invoices.flatMap(({ invoice, items }) => sadzby(invoice, items))),
   ]);
 
   /* Stĺpce kurzu pribudnú len vtedy, keď je v dávke doklad v cudzej mene.
@@ -197,6 +206,9 @@ export function buildUniverzalCsv(opts: {
     // Prenesenie len pri niektorých položkách a colné kódy (KN) položiek.
     "Základ v prenesení",
     "Colné kódy",
+    // Kontrolný výkaz DPH (oddiel z dokladu) a pri cudzej mene základ a daň v domácej mene.
+    "KV DPH",
+    ...(cudziaMena ? [`Základ v ${domaca}`, `DPH v ${domaca}`] : []),
   ];
 
   const riadky = opts.invoices.map(({ invoice, items: povodne }) => {
@@ -206,13 +218,15 @@ export function buildUniverzalCsv(opts: {
     const odpocet = sumaOdpoctov((invoice as any)._odpocty) || cislo((invoice as any).advance_amount);
     const jeOdpocet = text(invoice.type) === "regular" || text(invoice.type) === "debit_note";
     // Položka v prenesení nie je oslobodené plnenie — má vlastný stĺpec.
-    const vPreneseni = (p: PolozkaFaktury) => Boolean((p as any).prenesenie);
+    const pdp = (p: PolozkaFaktury) => vPreneseni(invoice, p);
     const nulova =
       zn *
       items
-        .filter((p) => cislo(p.vat_rate) === 0 && !vPreneseni(p))
+        .filter((p) => cislo(p.vat_rate) === 0 && !pdp(p))
         .reduce((a, p) => a + cislo(p.subtotal), 0);
-    const zakladPdp = zn * items.filter(vPreneseni).reduce((a, p) => a + cislo(p.subtotal), 0);
+    const zakladPdp = zn * items.filter(pdp).reduce((a, p) => a + cislo(p.subtotal), 0);
+    const domacaSuma = (vMene: unknown, vDomacej: unknown) =>
+      (text(invoice.currency) || domaca) === domaca ? cislo(vMene) : cislo(vDomacej);
     const colneKody = [
       ...new Set(povodne.map((p) => text((p as any).colny_kod)).filter(Boolean)),
     ].join(", ");
@@ -242,7 +256,7 @@ export function buildUniverzalCsv(opts: {
       NAZOV_UHRADY[text(invoice.payment_method)] ?? text(invoice.payment_method),
       dveSk(nulova),
       ...pouziteSadzby.flatMap((r) => {
-        const s = zaSadzbu(items, r, zn);
+        const s = zaSadzbu(invoice, items, r, zn);
         return [dveSk(s.zaklad), dveSk(s.dan)];
       }),
       dveSk(zn * cislo(invoice.discount_total)),
@@ -250,12 +264,19 @@ export function buildUniverzalCsv(opts: {
       dveSk(zn * cislo(invoice.vat_total)),
       dveSk(zn * cislo(invoice.total)),
       ...(cudziaMena ? [dveSk(zn * vEur)] : []),
-      invoice.reverse_charge ? "áno" : items.some(vPreneseni) ? "pri položkách" : "nie",
+      invoice.reverse_charge ? "áno" : items.some(pdp) ? "pri položkách" : "nie",
       text(invoice.notes) || text(invoice.intro_note),
       jeOdpocet && odpocet ? dveSk(odpocet) : "",
       dveSk(zn * cislo(invoice.total) - (jeOdpocet ? odpocet : 0)),
       zakladPdp ? dveSk(zakladPdp) : "",
       colneKody,
+      text((invoice as any).kv_clenenie) === "X" ? "nezahŕňať" : text((invoice as any).kv_clenenie),
+      ...(cudziaMena
+        ? [
+            dveSk(zn * domacaSuma(invoice.subtotal, invoice.subtotal_eur)),
+            dveSk(zn * domacaSuma(invoice.vat_total, invoice.vat_total_eur)),
+          ]
+        : []),
     ];
     return bunky.map(csvPole).join(";");
   });
@@ -348,7 +369,14 @@ export function buildFlexiXml(opts: {
     const odp = suhrnOdpoctov(odpocty);
     const odpZaklad = odp.reduce((a, r) => a + r.zaklad, 0);
     const odpDph = odp.reduce((a, r) => a + r.dph, 0);
-    const zakladna = Math.max(0, ...items.map((p) => cislo(p.vat_rate)));
+    /* Priehradka podľa sadzieb krajiny ku dňu plnenia (SK: 23 základná, 19 znížená,
+       5 druhá znížená) — nie „najvyššia na doklade je základná“, inak by faktúra
+       len s 19 % išla do základnej priehradky a 5 % do tej istej ako 19 %. */
+    const hladiny = priehradkySadzieb(
+      items.map((p) => cislo(p.vat_rate)),
+      opts.krajina,
+      text(invoice.delivery_date) || text(invoice.issue_date),
+    );
     // Tuzemské prenesenie: položka dostane členenie DPH z nastavenia firmy.
     const pdpCela =
       Boolean((invoice as any).reverse_charge) &&
@@ -357,12 +385,15 @@ export function buildFlexiXml(opts: {
     const polozky = items
       .map((p) => {
         const sadzba = cislo(p.vat_rate);
+        const h = sadzba === 0 ? "nulova" : hladiny.get(sadzba);
         const priehradka =
-          sadzba === 0
-            ? "typSzbDph.dphOsv"
-            : sadzba === zakladna
-              ? "typSzbDph.dphZakl"
-              : "typSzbDph.dphSniz";
+          h === "zakladna"
+            ? "typSzbDph.dphZakl"
+            : h === "znizena"
+              ? "typSzbDph.dphSniz"
+              : h === "znizena2"
+                ? "typSzbDph.dphSniz2"
+                : "typSzbDph.dphOsv";
         return `      <faktura-vydana-polozka>
         <nazev>${esc(p.name)}</nazev>
         <mnozMj>${dve(zn * cislo(p.quantity))}</mnozMj>

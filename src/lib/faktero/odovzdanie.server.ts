@@ -1,6 +1,8 @@
 import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
 import { bezVzorca } from "@/lib/bezpecny-text";
 import { dokladDoBalika } from "./odovzdanie-faktury";
+import { hodnotaStlpca, kodStlpca, rozpisVystavenej, stlpceRozpisu } from "./rozpis-dph-exportu";
+import { rozpisBlocku } from "./rozuctovanie";
 
 /**
  * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
@@ -408,6 +410,9 @@ export async function zostavBalik(
     vyvezene = faktury.filter((f: Riadok) => !cislaPreskocenych.has(f.invoice_number));
 
     if (xmlFaktur) zip.file("pohoda-faktury.xml", xmlFaktur);
+    // Rozpis DPH po sadzbách (zaklad_23, dph_23, …) a KV — za pôvodné stĺpce.
+    const rozpisFaktur = balikFaktur.map((b) => rozpisVystavenej(b.invoice, b.items, company.country));
+    const stlpceFaktur = stlpceRozpisu(rozpisFaktur);
     zip.file(
       "faktury.csv",
       csvSubor(
@@ -425,8 +430,10 @@ export async function zostavBalik(
           "celkom",
           "mena",
           "v_xml",
+          ...stlpceFaktur.map(kodStlpca),
+          "kv_dph",
         ],
-        faktury.map((f: Riadok) => [
+        faktury.map((f: Riadok, i: number) => [
           f.invoice_number,
           TYP_DOKLADU[f.type] ?? f.type,
           f.issue_date,
@@ -440,6 +447,8 @@ export async function zostavBalik(
           f.total,
           f.currency,
           cislaPreskocenych.has(f.invoice_number) ? "nie" : "áno",
+          ...stlpceFaktur.map((st) => hodnotaStlpca(rozpisFaktur[i] ?? [], st)),
+          f.kv_clenenie ?? "",
         ]),
       ),
     );
@@ -476,6 +485,8 @@ export async function zostavBalik(
       if (xmlDokladov) zip.file("pohoda-prijate-doklady.xml", xmlDokladov);
       else dokladyDoXml = [];
     }
+    const rozpisDokladov = doklady.map((d: Riadok) => rozpisBlocku(d));
+    const stlpceDokladov = stlpceRozpisu(rozpisDokladov);
     zip.file(
       "prijate-doklady.csv",
       csvSubor(
@@ -490,8 +501,10 @@ export async function zostavBalik(
           "celkom",
           "mena",
           "kategoria",
+          ...stlpceDokladov.map(kodStlpca),
+          "kv_dph",
         ],
-        doklady.map((d: Riadok) => [
+        doklady.map((d: Riadok, i: number) => [
           d.issue_date,
           d.supplier_name ?? "",
           d.supplier_ico ?? "",
@@ -502,6 +515,8 @@ export async function zostavBalik(
           d.total_amount,
           d.currency,
           d.category ?? "",
+          ...stlpceDokladov.map((st) => hodnotaStlpca(rozpisDokladov[i] ?? [], st)),
+          d.kv_clenenie ?? "",
         ]),
       ),
     );
@@ -534,6 +549,9 @@ export async function zostavBalik(
       if (xmlPrijatych) zip.file("pohoda-prijate-faktury.xml", xmlPrijatych);
       else prijateDoXml = [];
     }
+    const { rozpisPrijatej } = await import("./prijate-do-pohody");
+    const rozpisPrijatych = prijate.map((p: Riadok) => rozpisPrijatej(p));
+    const stlpcePrijatych = stlpceRozpisu(rozpisPrijatych);
     zip.file(
       "prijate-faktury.csv",
       csvSubor(
@@ -553,8 +571,11 @@ export async function zostavBalik(
           "clenenie_dph",
           "zauctovana",
           "typ",
+          ...stlpcePrijatych.map(kodStlpca),
+          "kv_dph",
+          "rezim_dph",
         ],
-        prijate.map((p: Riadok) => [
+        prijate.map((p: Riadok, i: number) => [
           p.invoice_number,
           p.supplier_name ?? "",
           p.supplier_ico ?? "",
@@ -570,6 +591,9 @@ export async function zostavBalik(
           p.pohoda_clenenie_dph ?? "",
           p.zauctovane_at ? "áno" : "nie",
           p.type === "proforma" ? "zálohová" : "faktúra",
+          ...stlpcePrijatych.map((st) => hodnotaStlpca(rozpisPrijatych[i] ?? [], st)),
+          p.kv_clenenie ?? "",
+          p.dph_rezim ?? "",
         ]),
       ),
     );

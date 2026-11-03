@@ -134,7 +134,7 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       upozornenia = r.upozornenia;
     } else {
       const { buildCsvUctovanie } = await import("./export-csv-uctovanie");
-      obsah = buildCsvUctovanie({ doklady: ok, kody });
+      obsah = buildCsvUctovanie({ doklady: ok, kody, krajina: firma?.country });
     }
 
     // Doklad, ktorý do súboru neprešiel, sa nesmie tváriť ako odovzdaný.

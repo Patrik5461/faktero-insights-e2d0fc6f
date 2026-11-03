@@ -749,7 +749,11 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
 
-    // CSV súhrn
+    // CSV súhrn — za pôvodnými stĺpcami rozpis DPH po sadzbách (zaklad_23, dph_23…) a KV.
+    const { rozpisBlocku } = await import("./rozuctovanie");
+    const { stlpceRozpisu, hodnotaStlpca, kodStlpca } = await import("./rozpis-dph-exportu");
+    const rozpisy = rows.map((r: any) => rozpisBlocku(r));
+    const stlpceSadzieb = stlpceRozpisu(rozpisy);
     const header = [
       "id",
       "datum",
@@ -765,13 +769,15 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       "kategoria",
       "poznamka",
       "subor",
+      ...stlpceSadzieb.map(kodStlpca),
+      "kv_dph",
     ].join(";");
     const escape = (v: unknown) => {
       const s = v == null ? "" : bezVzorca(v);
       return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
     };
     const lines = [header];
-    for (const r of rows) {
+    for (const [i, r] of rows.entries()) {
       lines.push(
         [
           r.id,
@@ -788,6 +794,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
           r.category ?? "",
           r.note ?? "",
           r.file_path ? r.file_path.split("/").pop() : "",
+          ...stlpceSadzieb.map((st) => hodnotaStlpca(rozpisy[i] ?? [], st)),
+          r.kv_clenenie ?? "",
         ]
           .map(escape)
           .join(";"),

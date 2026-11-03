@@ -18,7 +18,8 @@ import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
 import { useRadenie } from "@/hooks/useRadenie";
-import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
+import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
+import { stiahniExcel, stlpceRozpisuDph, tabulka } from "@/lib/faktero/excel-zoznamu";
 import { sPolozkami, SELECT_PRIJATYCH } from "@/lib/faktero/stlpce-zoznamov";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
@@ -935,10 +936,14 @@ function PurchaseInvoicesPage() {
                           { nazov: t("Základ"), hodnota: (x: any) => Number(x.amount_without_vat ?? 0) },
                           { nazov: t("DPH"), hodnota: (x: any) => Number(x.vat_amount ?? 0) },
                           { nazov: t("Spolu"), hodnota: (x: any) => Number(x.amount_total ?? 0) },
+                          // Rozpis DPH po sadzbách (Základ 19 %, DPH 19 %, …, Základ v prenesení).
+                          ...stlpceRozpisuDph(r, (x: any) => rozpisPrijatej(x), t),
                           { nazov: t("Mena"), hodnota: (x: any) => x.currency },
                           { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
                           { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
                           { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+                          { nazov: t("KV DPH"), hodnota: (x: any) => x.kv_clenenie },
+                          { nazov: t("Režim DPH"), hodnota: (x: any) => x.dph_rezim },
                           { nazov: t("Odovzdaná"), hodnota: (x: any) => (x.exported_at ? t("áno") : "") },
                         ]),
                       },
