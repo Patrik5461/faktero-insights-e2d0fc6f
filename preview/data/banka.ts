@@ -271,6 +271,31 @@ export function naplnBanka(db: DemoDb) {
   }
   if (novePlatbyPrijatych.length) db.vloz("purchase_invoice_payments", novePlatbyPrijatych);
 
+  // Odchádzajúce platby k ešte neuhradeným prijatým faktúram (nespárované) —
+  // zoznam prijatých ich ukáže ako „platba nájdená“ (oranžová ikonka v riadku):
+  // prvá s VS (istá), druhá len podľa sumy a dodávateľa (návrh na potvrdenie).
+  const neuhradene = prijate
+    .filter(
+      (pi) =>
+        ["received", "booked"].includes(String(pi.status)) &&
+        (pi.currency || "EUR") === "EUR" &&
+        (!pi.payment_method || pi.payment_method === "prevod") &&
+        pi.issue_date &&
+        String(pi.issue_date) >= od &&
+        Number(pi.amount_total) > 0,
+    )
+    .slice(0, 2);
+  neuhradene.forEach((pi, i) => {
+    pohyb({
+      bank_account_id: UCET_HLAVNY,
+      booking_date: den(-1 - i),
+      amount: -Number(pi.amount_total),
+      counterparty: pi.supplier_name ?? "Dodávateľ",
+      variable_symbol: i === 0 ? (pi.variable_symbol ?? null) : null,
+      description: i === 0 ? "Úhrada faktúry" : "Platba dodávateľovi",
+    });
+  });
+
   // Výdavky — bločky platené kartou
   for (const e of db.tabulka("expense_documents")) {
     if (e.company_id !== FIRMA || e.deleted_at || e.payment_method !== "karta") continue;

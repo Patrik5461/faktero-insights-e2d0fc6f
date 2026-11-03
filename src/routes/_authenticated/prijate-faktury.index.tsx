@@ -35,7 +35,6 @@ import {
   User,
   Landmark,
   Lock,
-  X,
   Upload,
   BookCheck,
   Download,
@@ -93,6 +92,9 @@ import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 
 import { bezVzorca } from "@/lib/bezpecny-text";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { stavPlatby, type StavPlatby } from "@/lib/faktero/stav-platby";
+import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
+import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
@@ -164,7 +166,42 @@ function PurchaseInvoicesPage() {
   // Naposledy otvorená faktúra — zvýraznený riadok po návrate z detailu.
   const posledny = usePoslednyOtvoreny("prijate-faktury");
   const klik = useKlikNaRiadok();
-  const [rows, setRows] = useState<any[]>([]);
+  const [rowsVsetky, setRows] = useState<any[]>([]);
+  // Filtre sú v adrese; hľadanie toolbaru je hľadanie podľa dodávateľa.
+  const lf = useListFilters({ pageSizeKey: "prijate-faktury" });
+  /* Väzba na banku: ktorý pohyb faktúru uhradil a čo sa ešte ponúka spárovať. */
+  type Uhrada = { datum: string; transactionId: string; suma: number; protistrana: string | null };
+  const [uhrady, setUhrady] = useState<Record<string, Uhrada>>({});
+  const [navrhy, setNavrhy] = useState<any[]>([]);
+  const [parujem, setParujem] = useState<string | null>(null);
+  /* Návrh k faktúre — pri viacerých pohyboch na jednu faktúru vyhráva istý. */
+  const navrhPodlaFaktury = useMemo(() => {
+    const m = new Map<string, any>();
+    for (const z of navrhy) {
+      if (!z.purchaseInvoiceId) continue;
+      const doteraz = m.get(z.purchaseInvoiceId);
+      if (!doteraz || (doteraz.istota !== "auto" && z.istota === "auto")) m.set(z.purchaseInvoiceId, z);
+    }
+    return m;
+  }, [navrhy]);
+  /* Stav platby v riadku: spárovaná / nájdená / nenájdená, alebo nič (hotovosť, koncept…). */
+  const platbaRiadku = (r: any): StavPlatby | null =>
+    stavPlatby({
+      sparovana: !!uhrady[r.id],
+      maNavrh: navrhPodlaFaktury.has(r.id),
+      platiSaPrevodom: !r.payment_method || !ZAPLATENE_NA_MIESTE.has(r.payment_method),
+      uhradena: r.status === "paid" || !!r.payment_date,
+      aktivna: r.status !== "draft" && r.status !== "cancelled" && !r.deleted_at,
+    });
+  // Filter „Platba“ je v adrese ako ostatné; počíta sa v prehliadači z väzieb a návrhov.
+  const lfPlatba = lf.filter("platba") as
+    | ""
+    | StavPlatby;
+  const rows = useMemo(
+    () => (lfPlatba ? rowsVsetky.filter((r: any) => platbaRiadku(r) === lfPlatba) : rowsVsetky),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rowsVsetky, lfPlatba, uhrady, navrhPodlaFaktury],
+  );
   // Súčet úhrad (aj čiastočných) po faktúrach — pre stav „Čiastočne uhradená“.
   const [uhradene, setUhradene] = useState<Record<string, number>>({});
   /** Zaplatené zálohové faktúry, ktoré faktúry v zozname zúčtovávajú (id → suma). */
@@ -177,8 +214,6 @@ function PurchaseInvoicesPage() {
     rows.map((r: any) => r.id),
   );
   const [loading, setLoading] = useState(true);
-  // Filtre sú v adrese; hľadanie toolbaru je hľadanie podľa dodávateľa.
-  const lf = useListFilters({ pageSizeKey: "prijate-faktury" });
   const status = lf.filter("stav");
   const supplier = lf.q;
   // Obdobie podľa dátumu prijatia, vystavenia, dodania alebo splatnosti — faktúra
@@ -215,7 +250,7 @@ function PurchaseInvoicesPage() {
       return m;
     };
   }, [cis.navrhy]);
-  const pocetStlpcov = zobrazenie.viditelne.length + 1;
+  const pocetStlpcov = zobrazenie.viditelne.length + 2; // výber + ikonka platby
   const rad = useRadenie(rows, {
     cislo: (r: any) => r.invoice_number,
     dodavatel: (r: any) => r.supplier_name,
@@ -232,7 +267,7 @@ function PurchaseInvoicesPage() {
   });
   // Stovky riadkov naraz zablokovali prehliadač — kreslí sa po dávkach.
   const postupne = usePostupneZobrazenie(rad.zoradene, {
-    reset: [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra],
+    reset: [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra, lfPlatba],
     potrebneId: posledny.id,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -263,11 +298,6 @@ function PurchaseInvoicesPage() {
   const [mena, setMena] = useState<Record<string, string>>({});
   const nacitajMena = useServerFn(menaClenovFirmy);
 
-  /* Väzba na banku: ktorý pohyb faktúru uhradil a čo sa ešte ponúka spárovať. */
-  type Uhrada = { datum: string; transactionId: string; suma: number; protistrana: string | null };
-  const [uhrady, setUhrady] = useState<Record<string, Uhrada>>({});
-  const [navrhy, setNavrhy] = useState<any[]>([]);
-  const [parujem, setParujem] = useState<string | null>(null);
   const navrhyFn = useServerFn(navrhniParovaniePrijatych);
   const sparujFn = useServerFn(potvrdParovaniePrijatej);
   const rozparujFn = useServerFn(zrusParovaniePrijatej);
@@ -301,6 +331,34 @@ function PurchaseInvoicesPage() {
     }
   }
 
+  /* Isté návrhy k faktúram v zozname jeden po druhom — aj tu potvrdzuje človek, len jedným klikom. */
+  const navrhyVZozname = navrhy.filter((z) =>
+    rowsVsetky.some((r: any) => r.id === z.purchaseInvoiceId && platbaRiadku(r) === "navrh"),
+  );
+  const isteVZozname = navrhyVZozname.filter((z) => z.istota === "auto");
+  async function sparujVsetkyIste() {
+    const zoznam = [...isteVZozname];
+    let ok = 0;
+    const chyby: string[] = [];
+    for (const z of zoznam) {
+      setParujem(z.transactionId);
+      try {
+        await sparujFn({
+          data: { transaction_id: z.transactionId, purchase_invoice_id: z.purchaseInvoiceId },
+        });
+        ok++;
+      } catch (e: any) {
+        chyby.push(`${z.faktura?.invoice_number ?? ""}: ${e?.message ?? ""}`);
+      }
+    }
+    setParujem(null);
+    if (ok) toast.success(t("Spárované: {n} z {m}.", { n: ok, m: zoznam.length }));
+    if (chyby.length) toast.error(t("Niektoré sa spárovať nepodarilo."), { description: chyby.join("\n") });
+    await load();
+    await nacitajNavrhy();
+  }
+
+  // Potvrdenie (potvrd) robí IkonaPlatby pred zavolaním.
   async function rozparuj(transactionId: string) {
     try {
       await rozparujFn({ data: { transaction_id: transactionId } });
@@ -310,6 +368,50 @@ function PurchaseInvoicesPage() {
     } catch (e: any) {
       toast.error(e?.message ?? t("Zrušiť sa to nepodarilo."));
     }
+  }
+
+  /** Ikonka banky s bodkou pri čísle faktúry — v tabuľke aj na karte. */
+  function ikonaPlatby(r: any) {
+    const stav = platbaRiadku(r);
+    if (!stav) return null;
+    const u = uhrady[r.id];
+    const z = navrhPodlaFaktury.get(r.id);
+    const pohyb =
+      stav === "sparovana" && u
+        ? {
+            datum: u.datum,
+            suma: u.suma,
+            mena: r.currency ?? "EUR",
+            protistrana: u.protistrana,
+            odkaz: "/bankove-ucty/transakcie",
+          }
+        : stav === "navrh" && z?.pohyb
+          ? {
+              datum: z.pohyb.booking_date,
+              suma: z.pohyb.amount,
+              mena: z.pohyb.currency ?? r.currency ?? "EUR",
+              vs: z.pohyb.variable_symbol,
+              protistrana: z.pohyb.counterparty,
+              odkaz: "/bankove-ucty/transakcie",
+            }
+          : null;
+    return (
+      <IkonaPlatby
+        stav={stav}
+        pohyb={pohyb}
+        dovody={stav === "navrh" ? (z?.dovody ?? []).map((x: string) => t(x)) : undefined}
+        ista={z?.istota === "auto"}
+        zaneprazdnene={!!z && parujem === z.transactionId}
+        onSparuj={z ? () => sparuj(z) : undefined}
+        onNie={
+          z
+            ? () => setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
+            : undefined
+        }
+        onZrus={u ? () => rozparuj(u.transactionId) : undefined}
+        odkazRucne="/bankove-ucty/transakcie"
+      />
+    );
   }
 
   function toggle(id: string) {
@@ -969,6 +1071,16 @@ function PurchaseInvoicesPage() {
                   { value: "nie", label: "Neexportované" },
                 ],
               },
+              {
+                key: "platba",
+                label: "Platba",
+                type: "select",
+                options: [
+                  { value: "sparovana", label: "Spárovaná" },
+                  { value: "navrh", label: "Nájdená" },
+                  { value: "nenajdena", label: "Nenájdená" },
+                ],
+              },
               ...filtreStavuAStitkov(cis.stavy, cis.stitky),
             ]}
             previewToggle={bocny}
@@ -1106,67 +1218,20 @@ function PurchaseInvoicesPage() {
         )}
 
         {/*
-          Návrhy na spárovanie s platbami z účtu. Nič sa nepáruje potichu — aj
-          istá dvojica čaká na potvrdenie, lebo potvrdením sa faktúra označí za
-          zaplatenú a to je zápis do účtovníctva.
+          Návrhy na spárovanie s platbami z účtu sú ikonkou v riadku; tu len
+          tenký pás. Nič sa nepáruje potichu — aj istá dvojica čaká na klik,
+          lebo potvrdením sa faktúra označí za zaplatenú.
         */}
-        {navrhy.length > 0 && (
-          <div className="mb-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/5">
-            <div className="px-4 py-3 text-sm font-medium">
-              {t("Našli sme platby k faktúram")} ({navrhy.length})
-            </div>
-            {navrhy.map((z) => (
-              <div
-                key={z.transactionId}
-                className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">
-                    {z.faktura?.supplier_name ?? t("Faktúra")}{" "}
-                    <span className="text-muted-foreground">{z.faktura?.invoice_number}</span>{" "}
-                    <span className="suma">
-                      {z.faktura?.amount_total != null
-                        ? formatujMenu(z.faktura.amount_total, z.faktura.currency ?? "EUR")
-                        : ""}
-                    </span>
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {z.pohyb?.booking_date ? datumNaDoklade(z.pohyb.booking_date) : ""} ·{" "}
-                    {z.dovody.map((x: string) => t(x)).join(" · ")}
-                  </span>
-                </span>
-                {/* Pred potvrdením si treba faktúru pozrieť — v bočnom náhľade, ak je zapnutý, inak v novej karte, aby zoznam návrhov ostal. */}
-                {z.purchaseInvoiceId && (
-                  <button
-                    onClick={() => {
-                      const id = z.purchaseInvoiceId as string;
-                      if (bocny.aktivny() && rows.some((x: any) => x.id === id)) bocny.setVybrany(id);
-                      else window.open(`/prijate-faktury/${id}`, "_blank", "noopener");
-                    }}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    {t("Náhľad faktúry")}
-                  </button>
-                )}
-                <button
-                  disabled={parujem === z.transactionId}
-                  onClick={() => sparuj(z)}
-                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary-hover disabled:opacity-60"
-                >
-                  {z.istota === "auto" ? t("Spárovať") : t("Áno, patrí k sebe")}
-                </button>
-                <button
-                  onClick={() =>
-                    setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
-                  }
-                  className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground"
-                >
-                  {t("Nie")}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="mt-4">
+          <PasNavrhovPlatieb
+            pocet={navrhyVZozname.length}
+            istych={isteVZozname.length}
+            lenTieto={lfPlatba === "navrh"}
+            onLenTieto={(zapnut) => lf.setFilter("platba", zapnut ? "navrh" : "")}
+            onSparujIste={sparujVsetkyIste}
+            nazovDokladov={t("faktúr")}
+          />
+        </div>
 
         <div className="mt-4">
         <ResponsiveTable
@@ -1211,7 +1276,10 @@ function PurchaseInvoicesPage() {
               }
               status={
                 <div className="flex flex-col items-end gap-1">
-                  <StatusBadge status={r.status} />
+                  <span className="inline-flex items-center gap-1.5">
+                    {ikonaPlatby(r)}
+                    <StatusBadge status={r.status} />
+                  </span>
                   {jeCiastocneUhradena(r, uhradene[r.id]) && (
                     <StavOdznak ton="pozor" title={formatujMenu(uhradene[r.id], r.currency ?? "EUR")}>
                       {t("Čiastočne uhradená")}
@@ -1253,6 +1321,9 @@ function PurchaseInvoicesPage() {
                     onChange={toggleAll}
                   />
                   <span className="sr-only">{t("Výber")}</span>
+                </th>
+                <th className="w-8 px-1 py-3">
+                  <span className="sr-only">{t("Platba")}</span>
                 </th>
                 <th className="p-3">{rad.hlavicka("cislo", t("Číslo"))}</th>
                 <th className="p-3">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>
@@ -1325,6 +1396,7 @@ function PurchaseInvoicesPage() {
                       onChange={() => toggle(r.id)}
                     />
                   </td>
+                  <td className="w-8 px-1 py-3 text-center">{ikonaPlatby(r)}</td>
                   <td className="cislo-dokladu whitespace-nowrap p-3">
                     {r.invoice_number}
                     <span className="ml-1.5 inline-flex align-middle">
@@ -1534,25 +1606,6 @@ function PurchaseInvoicesPage() {
                           }`}
                         >
                           {t("Samofaktúra")} · {t(NAZVY_STAVOV[stavSamofaktury(r)]).toLowerCase()}
-                        </span>
-                      )}
-                      {/*
-                      Keď faktúru uhradil pohyb z účtu, je to vidieť priamo tu —
-                      inak by sa väzba dala len vytvoriť, nie skontrolovať ani
-                      zrušiť.
-                    */}
-                      {uhrady[r.id] && (
-                        <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                          <Landmark className="h-3 w-3" />
-                          <span className="tabular-nums">{uhrady[r.id].datum}</span>
-                          <button
-                            onClick={() => rozparuj(uhrady[r.id].transactionId)}
-                            title={t("Zrušiť väzbu na platbu")}
-                            aria-label={t("Zrušiť väzbu na platbu")}
-                            className="rounded p-0.5 hover:bg-muted"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
                         </span>
                       )}
                     </td>
