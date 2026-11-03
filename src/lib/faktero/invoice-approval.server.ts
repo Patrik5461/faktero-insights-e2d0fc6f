@@ -111,9 +111,9 @@ Odkaz je platný 7 dní.`;
       from,
       reply_to: company?.email_reply_to,
     });
-    await povolenie.hotovo(true);
-  } catch (e) {
-    await povolenie.hotovo(false);
+    await povolenie.hotovo(true, { cez: "resend" });
+  } catch (e: any) {
+    await povolenie.hotovo(false, { chyba: String(e?.message ?? e).slice(0, 500) });
     throw e;
   }
 }

@@ -19,6 +19,7 @@ import { naplnZamestnanci } from "./zamestnanci";
 import { naplnUctovnictvo } from "./uctovnictvo";
 import { naplnEfaktura } from "./efaktura";
 import { naplnNastavenia } from "./nastavenia";
+import { naplnOdoslaneMaily } from "./odoslane-maily";
 import { naplnOznamy } from "./oznamy";
 
 const MODULY: [string, (db: DemoDb) => void][] = [
@@ -35,6 +36,7 @@ const MODULY: [string, (db: DemoDb) => void][] = [
   ["účtovníctvo", naplnUctovnictvo],
   ["eFaktúra", naplnEfaktura],
   ["nastavenia, integrácie, podpora", naplnNastavenia],
+  ["odoslané e-maily", naplnOdoslaneMaily],
   ["oznam o aktualizácii", naplnOznamy],
 ];
 

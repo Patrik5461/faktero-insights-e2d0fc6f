@@ -111,10 +111,24 @@ export type KontextOdoslania = {
   sprava?: string | null;
 };
 
+/** Čo sa k odoslaniu zapíše pre súhrn v Nastaveniach → Odoslané e-maily. */
+export type VysledokOdoslania = {
+  /** Prečo odoslanie zlyhalo, alebo prečo vlastný SMTP nevyšiel (mail išiel cez Resend). */
+  chyba?: string | null;
+  /** Ktorou cestou mail odišiel. */
+  cez?: "smtp" | "resend" | null;
+};
+
 export type Povolenie = {
   /** Zavolať po odoslaní; pri `false` sa adresáti do stropu nerátajú. */
-  hotovo: (odoslane: boolean) => Promise<void>;
+  hotovo: (odoslane: boolean, vysledok?: VysledokOdoslania) => Promise<void>;
 };
+
+/** Text chyby do evidencie — krátky, bez „Resend error:" na začiatku. */
+export function textChyby(e: unknown): string {
+  const s = String((e as any)?.message ?? e ?? "").replace(/^Resend error:\s*/i, "").trim();
+  return s.slice(0, 500);
+}
 
 type Firma = {
   id: string;
@@ -318,11 +332,23 @@ export async function strazOdoslanie(k: KontextOdoslania): Promise<Povolenie> {
 
   const id = r.id!;
   return {
-    hotovo: async (odoslane: boolean) => {
-      const { error: e } = await supabaseAdmin
+    hotovo: async (odoslane: boolean, vysledok?: VysledokOdoslania) => {
+      const stav = odoslane ? "odoslane" : "zlyhalo";
+      const doplnok: Record<string, string> = {};
+      if (vysledok?.chyba) doplnok.chyba = String(vysledok.chyba).slice(0, 500);
+      if (vysledok?.cez) doplnok.cez = vysledok.cez;
+      let { error: e } = await supabaseAdmin
         .from("odosielanie_mailov")
-        .update({ stav: odoslane ? "odoslane" : "zlyhalo" })
+        .update({ stav, ...doplnok } as any)
         .eq("id", id);
+      // Kým nie je migrácia so stĺpcami chyba/cez, zapíše sa aspoň stav —
+      // inak by rezervácia ostala visieť a strop by ju rátal.
+      if (e && Object.keys(doplnok).length) {
+        ({ error: e } = await supabaseAdmin
+          .from("odosielanie_mailov")
+          .update({ stav })
+          .eq("id", id));
+      }
       if (e) console.error("[ochrana-odosielania] dokončenie", e.message);
     },
   };

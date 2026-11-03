@@ -8,7 +8,7 @@ const datum = (d: string) => {
 
 /** E-mail odberateľovi: potvrdenie novej splatnosti (eFaktúra sa zmeniť nedá). */
 export async function posliOznamenieSplatnosti(v: {
-  f: { company_id: string; invoice_number: string; due_date: string; total: number; currency: string; customer_email: string };
+  f: { id?: string; company_id: string; invoice_number: string; due_date: string; total: number; currency: string; customer_email: string };
   nova: string;
   poznamka: string | null;
   /** Kto odosiela — pre strážcu odosielania. */
@@ -45,7 +45,12 @@ export async function posliOznamenieSplatnosti(v: {
         <p style="color:#6b7280;font-size:13px">Faktúra sa nemení — platí doklad, ktorý ste dostali, len s novým dátumom splatnosti.</p>
         <p>${escapeHtml(nazov)}</p>
       </div>`,
-      ochrana: { userId: v.userId ?? null, druh: "splatnost", sprava: v.poznamka ?? "" },
+      ochrana: {
+        userId: v.userId ?? null,
+        druh: "splatnost",
+        dokladId: v.f.id ?? null,
+        sprava: v.poznamka ?? "",
+      },
     });
   } catch (e: any) {
     if (e?.name === "OdosielanieZastavene")

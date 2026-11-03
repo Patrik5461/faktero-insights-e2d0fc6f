@@ -198,6 +198,47 @@ const SEKCIE: HelpSection[] = [
     ),
   },
   {
+    id: "odoslane-maily",
+    title: "Odoslané e-maily",
+    body: (
+      <>
+        <p>
+          <strong>Nastavenia → Odoslané e-maily</strong> ukazujú, koľko e-mailov Faktero poslalo v
+          mene firmy a komu: faktúry a dobropisy, upomienky, cenové ponuky, samofaktúry, predĺženie
+          splatnosti, podklady účtovníkovi, žiadosti o schválenie aj pozvánky do firmy. Obdobie si
+          vyberiete — tento mesiac, minulý mesiac, tento rok alebo vlastné od – do.
+        </p>
+        <ul className="mt-3 list-disc space-y-1.5 pl-5">
+          <li>
+            <strong>Súhrn</strong> — počet odoslaných e-mailov, rôznych adresátov, neodoslaných
+            (poštová služba e-mail odmietla) a zastavených strážcom odosielania.
+          </li>
+          <li>
+            <strong>Podľa druhu a podľa adresátov</strong> — koľko čoho odišlo, komu koľko a kedy
+            naposledy; pri adrese je aj odberateľ z dokladu. Vidno aj to, kto e-maily odosielal a
+            čo odišlo automaticky (upomienky, API, appka).
+          </li>
+          <li>
+            <strong>Posledné odoslania</strong> — každý e-mail s odkazom na faktúru, ponuku či
+            samofaktúru, so stavom a dôvodom chyby. Celý zoznam za obdobie stiahnete tlačidlom{" "}
+            <strong>CSV</strong> (otvorí ho Excel).
+          </li>
+          <li>
+            <strong>Strop odosielania</strong> — koľko adresátov firma oslovila za posledných 24
+            hodín a koľko jej strážca dovolí (bežne 200 rôznych adresátov za deň, 20 na jeden
+            e-mail; nová firma prvých 7 dní menej). Ak potrebujete viac, napíšte na
+            podpora@faktero.sk.
+          </li>
+        </ul>
+        <p className="mt-3">
+          Stránku vidí majiteľ, administrátor a účtovník — sú v nej adresy všetkých odberateľov.
+          Úplná evidencia všetkých e-mailov je od 17. 10. 2026; za staršie obdobie sú v súhrne len
+          faktúry (od 31. 7. 2026), upomienky a cenové ponuky.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "eshop",
     title: "Shoptet a Zásielkovňa",
     body: (
