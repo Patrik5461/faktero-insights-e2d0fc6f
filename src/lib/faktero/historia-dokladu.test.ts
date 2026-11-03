@@ -213,3 +213,39 @@ describe("hodnotaPola", () => {
     expect(hodnotaPola("items", { pocet: 1, suma: null }, t, loc)).toBe("1 riadok");
   });
 });
+
+describe("stavy a kódy slovami", () => {
+  it("stav podľa agendy — tak ako odznak v zozname", () => {
+    expect(hodnotaPola("status", "received", t, loc, "prijata")).toBe("Prijaté");
+    expect(hodnotaPola("status", "booked", t, loc, "prijata")).toBe("Zaúčtované");
+    expect(hodnotaPola("status", "paid", t, loc, "prijata")).toBe("Zaplatené");
+    expect(hodnotaPola("status", "new", t, loc, "doklad")).toBe("Nespracovaný");
+    expect(hodnotaPola("status", "exported", t, loc, "ostatny")).toBe("Odovzdaný");
+    expect(hodnotaPola("status", "issued", t, loc, "faktura")).toBe("Vystavená");
+    expect(hodnotaPola("status", "cancelled", t, loc, "faktura")).toBe("Stornovaná");
+    // Bez agendy všeobecný názov, neznámy kód ostane.
+    expect(hodnotaPola("status", "booked", t, loc)).toBe("zaúčtovaná");
+    expect(hodnotaPola("status", "xyz", t, loc, "prijata")).toBe("xyz");
+  });
+  it("spôsob úhrady, typ faktúry, druh ostatného dokladu", () => {
+    expect(hodnotaPola("payment_method", "karta", t, loc, "doklad")).toBe("Karta");
+    expect(hodnotaPola("payment_method", "bank_transfer", t, loc, "faktura")).toBe("Prevod");
+    expect(hodnotaPola("type", "proforma", t, loc, "prijata")).toBe("Zálohová faktúra");
+    expect(hodnotaPola("kind", "exekucia", t, loc, "ostatny")).toBe("Exekúcia");
+  });
+  it("„Stav received → booked“ pri zaúčtovaní sa neopakuje ako úprava", () => {
+    const k = "2026-11-03T09:00:00Z";
+    const u = udalostiZHistorie([
+      z("zauctovane_at", null, k, k),
+      z("pohoda_predkontacia", null, "501/321", k),
+      z("status", "received", "booked", k),
+    ]);
+    expect(u.map((x) => x.druh)).toEqual(["zauctovanie"]);
+  });
+  it("samostatná zmena stavu ide do úpravy slovami", () => {
+    const k = "2026-11-03T09:00:00Z";
+    const u = udalostiZHistorie([z("status", "received", "booked", k)]);
+    expect(u[0].druh).toBe("uprava");
+    expect(textZmien(u[0], t, loc, "prijata")).toEqual([{ pole: "Stav", pred: "Prijaté", po: "Zaúčtované" }]);
+  });
+});

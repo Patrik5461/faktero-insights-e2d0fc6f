@@ -7,6 +7,8 @@
              sa preto odosielateľ (`odosielatel_mailu`).
   Uloženie:  prijatá faktúra `spracoval` / `spracovane_at` (klikol Vytvoriť),
              bloček a ostatný doklad `processed_by` / `processed_at`.
+             Ručne zapísaný doklad tieto stĺpce nemá — uložiť ho = vytvoriť,
+             ukáže sa `created_by` / `created_at` (Uložené nikdy nechýba).
   Zaúčtovanie: posledné — `naposledy_zauctoval` / `naposledy_zauctovane_at`
              (píše spúšťač), staršie doklady `zauctoval` / `zauctovane_at`.
              Bez človeka a so zdrojom pravidlo/zvyk/ai = automat.
@@ -36,8 +38,13 @@ export type Udalost = { kto: Kto; kedy: string | null };
 
 export type KtoKedy = {
   nahrane: Udalost | null;
-  /** Kto doklad uložil (Vytvoriť v Nespracovaných, spracovanie bločku) — len keď sa líši od zaúčtovania. */
+  /**
+   * Kto doklad uložil (Vytvoriť v Nespracovaných, spracovanie bločku);
+   * ručne zapísaný doklad = vytvorenie (`created_by` / `created_at`).
+   */
   ulozene: Udalost | null;
+  /** Uloženie odvodené z vytvorenia (doklad nešiel cez Nespracované) — zoznam ho neopakuje. */
+  ulozeneVytvorenim?: boolean;
   zauctovane: Udalost | null;
 };
 
@@ -94,6 +101,23 @@ export function ulozenieDokladu(
   return { kto: { typ: "clovek", id }, kedy };
 }
 
+/**
+ * Uloženie ručne zapísaného dokladu = jeho vytvorenie: kto ho zapísal
+ * (`created_by`) a kedy (`created_at`). Doklad z mailu, API či importu
+ * uložil server bez človeka.
+ */
+export function ulozenieVytvorenim(
+  r: Record<string, any> | null | undefined,
+  agenda: AgendaKtoKedy,
+): Udalost | null {
+  if (!r || agenda === "faktura" || agenda === "nespracovany") return null;
+  const kedy = s(r.created_at) ?? s(r.nahrane_at);
+  const nahral = ktoNahral(r, agenda);
+  const kto: Kto = nahral.typ === "clovek" ? nahral : nahral.typ === "mail" ? { typ: "system" } : nahral;
+  if (!kedy && kto.typ === "clovek" && !kto.id) return null;
+  return { kto, kedy };
+}
+
 /** Dve udalosti „v tú istú chvíľu“ — do 2 minút. */
 export const ROVNAKO_MS = 2 * 60 * 1000;
 export const tenIstyCas = (a: string | null, b: string | null) =>
@@ -108,8 +132,10 @@ export function ktoKedyDokladu(
   const zauctovane = zauctovanieDokladu(r, agenda);
   // Uloženie sa ukazuje vždy — aj keď ho ten istý človek hneď zaúčtoval
   // (požiadavka 2026-11-03: „kto doklad uložil, dátum a čas“).
-  const ulozene = ulozenieDokladu(r, agenda);
-  return { nahrane, ulozene, zauctovane };
+  // Ručne zapísaný doklad (bez spracovania z Nespracovaných) uložil ten, kto ho vytvoril.
+  const vyslovne = ulozenieDokladu(r, agenda);
+  const ulozene = vyslovne ?? ulozenieVytvorenim(r, agenda);
+  return { nahrane, ulozene, zauctovane, ...(!vyslovne && ulozene ? { ulozeneVytvorenim: true } : {}) };
 }
 
 /**

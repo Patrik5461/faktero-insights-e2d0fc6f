@@ -27,6 +27,7 @@ export function VolbyExportuOkno({
   pocet,
   nazov,
   ponukaOznacit = true,
+  predvoleneOznacit = true,
   ponukaPolozky,
   ponukaFormat = false,
   onClose,
@@ -35,6 +36,8 @@ export function VolbyExportuOkno({
   pocet: number;
   nazov: string;
   ponukaOznacit?: boolean;
+  /** Či je „Označiť ako odovzdané“ na začiatku zaškrtnuté (zálohové: nie — stiahnutie nesmie zamknúť). */
+  predvoleneOznacit?: boolean;
   /** Bločky: ponúknuť „Exportovať položky dokladu" (hodnota = nastavenie firmy). */
   ponukaPolozky?: { predvolene: boolean };
   /** Bločky: ponúknuť výber „XML pre Pohodu“ / „ZIP (XML + skeny)“. */
@@ -47,7 +50,7 @@ export function VolbyExportuOkno({
   const [v, setV] = useState<VolbyExportu>({
     datumZauctovania: null,
     ajOdovzdane: false,
-    oznacit: true,
+    oznacit: predvoleneOznacit,
     radenie: "datum",
     polozky: null,
     format: "xml",
