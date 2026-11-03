@@ -1302,7 +1302,7 @@ function PurchaseInvoicesPage() {
                 */
                 <tr
                   key={r.id}
-                  {...posledny.riadok(r.id)}
+                  {...posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null)}
                   {...klik(
                     { to: "/prijate-faktury/$id", params: { id: r.id } },
                     {
@@ -1314,7 +1314,7 @@ function PurchaseInvoicesPage() {
                     },
                   )}
                   data-nahlad-id={r.id}
-                  className={`${TRIEDA_KLIK_RIADKU} ${posledny.riadok(r.id).className} ${bocny.zapnuty && bocny.vybrany === r.id ? "bg-primary/10" : ""}`}
+                  className={`${TRIEDA_KLIK_RIADKU} ${posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null).className}`}
                   onDoubleClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>

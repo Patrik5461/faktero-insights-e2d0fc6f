@@ -227,7 +227,10 @@ export function useSipkyNahladu(
       const dalsi = e.key === "ArrowDown" ? Math.min(idcka.length - 1, i + 1) : Math.max(0, i - 1);
       const id = idcka[dalsi];
       setVybrany(id);
-      document.querySelector(`[data-nahlad-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
+      const el = document.querySelector<HTMLElement>(`[data-nahlad-id="${id}"]`);
+      el?.scrollIntoView({ block: "nearest" });
+      // Zameranie ide s výberom — inak ostal rámik (focus) na riadku, z ktorého sa šípkami odišlo.
+      if (el && el.tabIndex >= 0) el.focus({ preventScroll: true });
     }
     window.addEventListener("keydown", klaves);
     return () => window.removeEventListener("keydown", klaves);
