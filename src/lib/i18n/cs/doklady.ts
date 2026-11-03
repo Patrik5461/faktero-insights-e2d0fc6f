@@ -862,6 +862,8 @@ export default {
     "Vše, co přijde e-mailem nebo nahrajete, čeká zde. Otevřete doklad, určete druh, zkontrolujte údaje, zaúčtujte a vytvořte.",
   Všetky: "Všechny",
   "Všetky druhy": "Všechny druhy",
+  "Všetky stavy platby": "Všechny stavy platby",
+  Nenájdená: "Nenalezená",
   "Všetky mesiace": "Všechny měsíce",
   "Všetky priečinky": "Všechny složky",
   "Všetky stavy": "Všechny stavy",

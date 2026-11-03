@@ -878,6 +878,8 @@ export default {
     "Alles, was per E-Mail eingeht oder hochgeladen wird, wartet hier. Öffnen Sie den Beleg, bestimmen Sie die Art, prüfen Sie die Angaben, verbuchen und erstellen Sie ihn.",
   Všetky: "Alle",
   "Všetky druhy": "Alle Arten",
+  "Všetky stavy platby": "Alle Zahlungsstatus",
+  Nenájdená: "Nicht gefunden",
   "Všetky mesiace": "Alle Monate",
   "Všetky priečinky": "Alle Ordner",
   "Všetky stavy": "Alle Status",

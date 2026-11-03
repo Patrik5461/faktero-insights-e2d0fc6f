@@ -20,8 +20,10 @@ import {
   DRUHY_OSTATNYCH,
   nazovDruhu,
   stavLehoty,
+  stavPlatbyOstatneho,
   type DruhOstatneho,
 } from "@/lib/faktero/ostatne-doklady";
+import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
 import {
   STAV_DOKLADU_NAZOV,
   ZALOZKY_DOKLADOV,
@@ -92,6 +94,8 @@ function OstatneDokladyPage() {
   // Priečinky (zmluvy, objednávky…) — filtrujú sa na obrazovke z načítaných dokladov.
   const priecinok = lf.filter("priecinok");
   const stitokFiltra = lf.filter("stitok");
+  // Platba: zatiaľ len „nenájdená“ — väzba iného dokladu na pohyb z účtu neexistuje.
+  const platbaFiltra = lf.filter("platba");
   const cis = useCiselnikyDokladov(cid, null, false);
   // Štítky na výber: číselník firmy a tie, čo sú na načítaných dokladoch.
   const stitkyNaVyber = [...new Set([...cis.stitky, ...rows.flatMap((r) => (r.stitky ?? []) as string[])])].sort();
@@ -103,6 +107,7 @@ function OstatneDokladyPage() {
       (!priecinok ||
         String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok)) &&
       (!stitokFiltra || (r.stitky ?? []).includes(stitokFiltra)) &&
+      (!platbaFiltra || stavPlatbyOstatneho(r) === platbaFiltra) &&
       (!hladane ||
         [r.sender, r.subject, r.priecinok, ...(r.stitky ?? [])]
           .filter(Boolean)
@@ -135,7 +140,7 @@ function OstatneDokladyPage() {
   // Zmena filtra na obrazovke výber zruší, aby sa nemiešal so skrytými riadkami.
   useEffect(() => {
     setSelected(new Set());
-  }, [priecinok, stitokFiltra, hladane]);
+  }, [priecinok, stitokFiltra, platbaFiltra, hladane]);
   const [nespracovanych, setNespracovanych] = useState<number | null>(null);
   const [pracujem, setPracujem] = useState(false);
   const dnes = dnesBratislava();
@@ -360,6 +365,13 @@ function OstatneDokladyPage() {
                 { value: "__bez", label: "Bez priečinka" },
               ],
             },
+            {
+              key: "platba",
+              label: "Platba",
+              type: "select",
+              allLabel: "Všetky stavy platby",
+              options: [{ value: "nenajdena", label: "Nenájdená" }],
+            },
             ...(stitkyNaVyber.length
               ? [
                   {
@@ -515,12 +527,16 @@ function OstatneDokladyPage() {
                     }
                     amount={r.amount != null ? formatujMenu(r.amount, r.currency) : undefined}
                     status={
-                      <StavOdznak ton={tonStavu(STAV_TON, r.status)}>
-                        {t(
-                          STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
-                            r.status,
-                        )}
-                      </StavOdznak>
+                      // Ikonka mimo názvu — názov je odkaz na detail, tlačidlo v ňom by ho otvorilo.
+                      <span className="inline-flex items-center gap-1">
+                        <IkonaPlatby stav={stavPlatbyOstatneho(r)} />
+                        <StavOdznak ton={tonStavu(STAV_TON, r.status)}>
+                          {t(
+                            STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
+                              r.status,
+                          )}
+                        </StavOdznak>
+                      </span>
                     }
                     actions={
                       <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
@@ -621,6 +637,7 @@ function OstatneDokladyPage() {
                               ) : null}
                             </td>
                             <td className="min-w-0 px-3 py-2">
+                              <IkonaPlatby stav={stavPlatbyOstatneho(r)} className="mr-1 align-middle" />
                               <button
                                 onClick={() =>
                                   navigate({ to: "/ostatne-doklady/novy", search: { id: r.id } })

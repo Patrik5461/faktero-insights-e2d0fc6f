@@ -5,6 +5,7 @@
 */
 
 import { cislo, datum } from "./mail-prijem";
+import { stavPlatby, type StavPlatby } from "./stav-platby";
 
 export const DRUHY_OSTATNYCH = [
   { kluc: "exekucia", nazov: "Exekúcia" },
@@ -225,4 +226,42 @@ export function lehotyNaUpozornenie(doklady: LehotaDokladu[], dnes: string) {
     .filter((d) => d.status !== "exported" && d.due_date && stavLehoty(d.due_date, dnes))
     .map((d) => ({ ...d, po: stavLehoty(d.due_date, dnes) === "po" }))
     .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+}
+
+/**
+ * Druhy, ktoré bývajú výzvou na úhradu (predpis poistného, platobný výmer,
+ * pokuta…). Exekúcia sa nepočíta — zamestnávateľ zráža splátky zo mzdy, suma
+ * na doklade je dlh, nie jedna platba; leasing a úver sa párujú po splátkach
+ * (`matched_installment_id`), zmluva sama nie je platba.
+ */
+export const DRUHY_NA_UHRADU: readonly DruhOstatneho[] = [
+  "poistovna",
+  "danovy_urad",
+  "socialna_zdravotna",
+  "uradny_list",
+  "ine",
+];
+
+/**
+ * Stav platby iného dokladu pre ikonku banky. Väzba na pohyb z účtu zatiaľ
+ * neexistuje (`bank_transactions` nemá stĺpec na iný doklad), takže doklad
+ * nemôže byť spárovaný ani mať návrh — ukazuje sa len „nenájdená“ pri doklade,
+ * ktorý sa má platiť: druh na úhradu, kladná suma a lehota. Odovzdaný doklad
+ * je u účtovníka uzavretý, ikonku nemá (inak by svietil načerveno navždy).
+ */
+export function stavPlatbyOstatneho(r: {
+  kind?: string | null;
+  amount?: number | string | null;
+  due_date?: string | null;
+  status?: string | null;
+}): StavPlatby | null {
+  const suma = Number(r.amount ?? 0);
+  return stavPlatby({
+    sparovana: false,
+    maNavrh: false,
+    platiSaPrevodom:
+      DRUHY_NA_UHRADU.includes(r.kind as DruhOstatneho) && Number.isFinite(suma) && suma > 0 && !!r.due_date,
+    uhradena: false,
+    aktivna: r.status !== "exported",
+  });
 }

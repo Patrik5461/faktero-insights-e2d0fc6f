@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bezpecneMeno, jeCestaDokladu, nazovDruhu, stavLehoty } from "./ostatne-doklady";
+import { bezpecneMeno, jeCestaDokladu, nazovDruhu, stavLehoty, stavPlatbyOstatneho } from "./ostatne-doklady";
 
 describe("iné doklady", () => {
   it("meno súboru bez diakritiky a lomiek", () => {
@@ -204,5 +204,20 @@ describe("väzba dokladu na kontokorent", () => {
   });
   it("číslo zmluvy úveru vedie na úver, nie na kontokorent", () => {
     expect(navrhniZmluvu("Splátkový kalendár k zmluve UZF/24/81047", zmluvy)).toBe("uv");
+  });
+  it("stav platby len pri doklade na úhradu", () => {
+    const predpis = { kind: "poistovna", amount: 120.5, due_date: "2026-11-15", status: "new" };
+    expect(stavPlatbyOstatneho(predpis)).toBe("nenajdena");
+    expect(stavPlatbyOstatneho({ ...predpis, amount: "120.50" })).toBe("nenajdena");
+    expect(stavPlatbyOstatneho({ ...predpis, status: "processed" })).toBe("nenajdena");
+    // Odovzdaný, bez sumy, bez lehoty, nulová suma — nie je čo hľadať.
+    expect(stavPlatbyOstatneho({ ...predpis, status: "exported" })).toBe(null);
+    expect(stavPlatbyOstatneho({ ...predpis, amount: null })).toBe(null);
+    expect(stavPlatbyOstatneho({ ...predpis, amount: 0 })).toBe(null);
+    expect(stavPlatbyOstatneho({ ...predpis, due_date: null })).toBe(null);
+    // Exekúcia, zmluva, leasing sa takto neplatia.
+    expect(stavPlatbyOstatneho({ ...predpis, kind: "exekucia" })).toBe(null);
+    expect(stavPlatbyOstatneho({ ...predpis, kind: "zmluva" })).toBe(null);
+    expect(stavPlatbyOstatneho({ ...predpis, kind: "leasing_uver" })).toBe(null);
   });
 });
