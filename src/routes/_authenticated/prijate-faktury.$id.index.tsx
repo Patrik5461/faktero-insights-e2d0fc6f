@@ -26,6 +26,12 @@ import { nacitajNesedi } from "@/lib/faktero/cudzia-faktura";
 import { potvrdOdberatelaFn } from "@/lib/faktero/cudzia-faktura.functions";
 import { UpozornenieKontrolyEfaktury } from "@/components/faktero/NalezyKontrolyEfaktury";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
+import {
+  ObrazokSoZvyraznenim,
+  PrepinacZvyraznenia,
+  useZvyraznenieDokladu,
+} from "@/components/faktero/ZvyraznenieVytazenych";
+import { udajeZPrijatej, type UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
@@ -1218,6 +1224,7 @@ function PurchaseInvoiceDetail() {
           nazov={[row.invoice_number, row.supplier_name].filter(Boolean).join(" · ")}
           onSkryt={() => nahladDetail.prepni(false)}
           naMobile
+          udaje={udajeZPrijatej(row).udaje}
           akcie={
             <button
               type="button"
@@ -1282,6 +1289,7 @@ function PurchaseInvoiceDetail() {
                 maPrilohu={!!row.file_path}
                 stiahni={downloadPdf}
                 zobrazitVedla={nahladDetail.zapnuty ? undefined : () => nahladDetail.prepni(true)}
+                udaje={udajeZPrijatej(row).udaje}
               />
             </div>
 
@@ -1438,6 +1446,7 @@ function NahladPrilohy({
   maPrilohu,
   stiahni,
   zobrazitVedla,
+  udaje,
 }: {
   url: string | null;
   mime?: string | null;
@@ -1445,8 +1454,11 @@ function NahladPrilohy({
   stiahni: () => void;
   /** Vráti doklad vľavo vedľa údajov (len na širokej obrazovke). */
   zobrazitVedla?: () => void;
+  /** Uložené údaje — zvýraznia sa v náhľade ako v Nespracovaných. */
+  udaje?: UdajeNespracovaneho;
 }) {
   const { t } = useT();
+  const zv = useZvyraznenieDokladu(udaje);
   if (!maPrilohu) return null;
   const jeObrazok = (mime ?? "").startsWith("image/");
 
@@ -1454,6 +1466,13 @@ function NahladPrilohy({
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
         <h2 className="text-sm font-medium">{t("Náhľad dokladu")}</h2>
+        {zv.zvyraznenie && !jeObrazok ? (
+          <PrepinacZvyraznenia
+            zap={zv.zap}
+            onPrepni={zv.prepni}
+            className="rounded-md border border-border p-1 hover:bg-secondary"
+          />
+        ) : null}
         {zobrazitVedla && (
           <button
             type="button"
@@ -1473,10 +1492,14 @@ function NahladPrilohy({
       {!url ? (
         <div className="p-8 text-center text-sm text-muted-foreground">{t("Načítavam náhľad…")}</div>
       ) : jeObrazok ? (
-        <img src={url} alt={t("Doklad")} className="max-h-[70vh] w-full bg-muted/20 object-contain" />
+        <ObrazokSoZvyraznenim
+          url={url}
+          alt={t("Doklad")}
+          className="max-h-[70vh] w-full bg-muted/20 object-contain"
+        />
       ) : (
         /* Vlastné vykreslenie — na zabudovaný prehliadač PDF sa spoľahnúť nedá. */
-        <NahladPdf url={url} />
+        <NahladPdf url={url} zvyraznenie={zv.zvyraznenie} />
       )}
     </div>
   );

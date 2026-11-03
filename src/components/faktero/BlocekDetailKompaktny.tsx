@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { BookCheck, Check, CheckCircle2, Loader2, Lock } from "lucide-react";
@@ -141,6 +142,8 @@ export function BlocekDetailKompaktny({
   const zamknute = Boolean(row.exported_at || row.locked_at);
   // Iný program než Pohoda (Money, Omega…) — null = Pohoda.
   const program = useProgramOdovzdania(row.export_job_id, Boolean(row.exported_at));
+  // Zvýraznenie uložených údajov v náhľade (ako v Nespracovaných).
+  const udajeNahladu = useMemo(() => udajeZBlocku(row), [row]);
   const spracovanie = spracovanieDokladu(row, "doklad");
   const spracoval = menoSpracovatela(spracovanie, mena);
   const ulozil = nahralDokladu(row.source, row.created_by, mena);
@@ -292,6 +295,7 @@ export function BlocekDetailKompaktny({
             subor={nahlad.subor}
             onSkryt={nahlad.onSkryt}
             prazdne="K dokladu nie je súbor na náhľad."
+            udaje={udajeNahladu}
           />
         ) : null
       }

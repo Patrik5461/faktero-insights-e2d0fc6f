@@ -18,6 +18,7 @@ import { sucty, type UdajeNespracovaneho } from "./nespracovane";
 import type { PolohaAi } from "./polohy-ai";
 import {
   poleVyberu,
+  polePodlaPopisu,
   type KlucPola,
   type Obdlznik,
   type SlovoNahladu,
@@ -288,4 +289,24 @@ function zTextu(
 /** Polia zvýraznenia, ktoré formulár pri danom druhu ukazuje. */
 export function poliaZvyrazneniaPreDruh(polia: KlucPola[]): KlucPola[] {
   return POLIA_ZVYRAZNENIA.filter((k) => polia.includes(k));
+}
+
+/**
+ * Popisy polí v detailoch dokladov (kompaktný detail prijatej faktúry,
+ * bločku), ktoré sa líšia od popisov formulára Nespracovaných.
+ */
+const POPISY_DETAILU: Record<string, KlucPola> = {
+  "číslo faktúry": "cislo",
+  "dátum vydania": "datumVystavenia",
+  "dátum daňovej povinnosti": "datumVystavenia",
+  "dátum splatnosti": "splatnost",
+  "celková suma": "celkom",
+  "suma celkom": "celkom",
+};
+
+/** Pole podľa (slovenského) popisu rámčeka v detaile dokladu. */
+export function polePopisuDetailu(popis: string | null | undefined): KlucPola | null {
+  const p = String(popis ?? "").trim();
+  if (!p) return null;
+  return POPISY_DETAILU[p.toLocaleLowerCase("sk")] ?? polePodlaPopisu(p);
 }

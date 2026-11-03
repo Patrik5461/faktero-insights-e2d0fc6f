@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useT } from "@/lib/i18n/useT";
 import { slovaStranyPdf } from "@/lib/faktero/pdf-slova";
+import { maStranaText, slovaZoZvyrazneni, type SlovoSkenu } from "@/lib/faktero/textova-vrstva";
+import { SlovaSkenu, TextovaVrstvaPdf, useNapovedaSkenu } from "./TextovaVrstvaPdf";
 import type { SlovoNahladu } from "@/lib/faktero/vyber-z-dokladu";
 import {
   usePosunNaAktivne,
@@ -19,8 +21,12 @@ import {
  * Doklad sa teda vykresľuje sám, cez pdf.js: rovnako v prehliadači, v telefóne
  * aj v appke.
  *
- * S `zvyraznenie` (nespracovaný doklad) sa prečíta aj textová vrstva a nad
- * plátnom sa vyznačia miesta, odkiaľ sa vzali vyťažené údaje.
+ * Nad plátnom leží priehľadná textová vrstva pdf.js — text dokladu sa dá
+ * myšou označiť a skopírovať (`TextovaVrstvaPdf`). Sken bez textu ukáže
+ * hodnoty od AI (ak sú) alebo pri pokuse o označenie krátku nápovedu.
+ *
+ * So `zvyraznenie` sa nad plátnom vyznačia miesta, odkiaľ sa vzali vyťažené
+ * údaje (nespracovaný doklad, detail prijatej faktúry, bločku).
  *
  * Knižnica sa načíta až keď je čo ukázať — do hlavného balíka nepatrí.
  */
@@ -31,16 +37,29 @@ const MAX_STRAN = 10;
 const SIRKA = 1100;
 
 type Stav = "citam" | "hotovo" | "zlyhalo";
-type Strana = { cislo: number; pomer: number; platno: HTMLCanvasElement };
+type Strana = {
+  cislo: number;
+  pomer: number;
+  platno: HTMLCanvasElement;
+  /** Strana pdf.js — pre textovú vrstvu. */
+  pdf: any;
+  /** Obsah textovej vrstvy (`getTextContent`); kým sa číta, `undefined`. */
+  obsah?: any;
+  /** Má strana text? `false` = sken. */
+  maText?: boolean;
+};
 
 export function NahladPdf({
   url,
   className,
   zvyraznenie,
+  textovaVrstva = true,
 }: {
   url: string;
   className?: string;
   zvyraznenie?: ZvyraznenieNahladu;
+  /** Priehľadný text nad plátnom na označenie a kopírovanie (predvolene zapnutý). */
+  textovaVrstva?: boolean;
 }) {
   const { t } = useT();
   const box = useRef<HTMLDivElement>(null);
@@ -48,7 +67,7 @@ export function NahladPdf({
   const [stran, setStran] = useState(0);
   const [strany, setStrany] = useState<Strana[]>([]);
   const [slova, setSlova] = useState<SlovoNahladu[][]>([]);
-  const citatText = Boolean(zvyraznenie);
+  const [pdfjsModul, setPdfjsModul] = useState<any>(null);
 
   useEffect(() => {
     let zrusene = false;
@@ -68,11 +87,12 @@ export function NahladPdf({
           "pdfjs-dist/build/pdf.worker.min.mjs",
           import.meta.url,
         ).toString();
+        if (!zrusene) setPdfjsModul(() => pdfjs);
 
         const dokument = await pdfjs.getDocument({ url }).promise;
         if (zrusene) return;
         setStran(dokument.numPages);
-        const meradlo = citatText ? document.createElement("canvas").getContext("2d") : null;
+        const meradlo = document.createElement("canvas").getContext("2d");
 
         for (let i = 1; i <= Math.min(dokument.numPages, MAX_STRAN); i++) {
           const strana = await dokument.getPage(i);
@@ -89,17 +109,34 @@ export function NahladPdf({
           if (zrusene) return;
           setStrany((pred) => [
             ...pred,
-            { cislo: i, pomer: viewport.height / viewport.width, platno },
+            { cislo: i, pomer: viewport.height / viewport.width, platno, pdf: strana },
           ]);
-          if (citatText) {
-            const s = await slovaStranyPdf(pdfjs, strana, viewport, meradlo);
-            if (zrusene) return;
-            setSlova((pred) => {
-              const n = [...pred];
-              n[i - 1] = s;
-              return n;
+          /*
+            Text sa číta bokom — kreslenie ďalšej strany naň nečaká. Ten istý
+            obsah slúži textovej vrstve (kopírovanie) aj zvýrazneniu údajov.
+          */
+          void strana
+            .getTextContent()
+            .then(async (obsah: any) => {
+              if (zrusene) return;
+              const maText = maStranaText(obsah);
+              setStrany((pred) =>
+                pred.map((s) => (s.cislo === i ? { ...s, obsah, maText } : s)),
+              );
+              if (!maText) return;
+              const s = await slovaStranyPdf(pdfjs, strana, viewport, meradlo, obsah);
+              if (zrusene) return;
+              setSlova((pred) => {
+                const n = [...pred];
+                n[i - 1] = s;
+                return n;
+              });
+            })
+            .catch((e: unknown) => {
+              if (zrusene) return;
+              console.warn("[nahlad] text strany sa nepodarilo prečítať:", e);
+              setStrany((pred) => pred.map((s) => (s.cislo === i ? { ...s, maText: false } : s)));
             });
-          }
         }
         setStav("hotovo");
       } catch (e) {
@@ -113,7 +150,7 @@ export function NahladPdf({
     return () => {
       zrusene = true;
     };
-  }, [url, citatText]);
+  }, [url]);
 
   const vsetky = useZvyraznenia(slova, zvyraznenie);
   const zobrazit = Boolean(zvyraznenie?.zobrazit);
@@ -145,7 +182,14 @@ export function NahladPdf({
       */}
       <div ref={box} className="bg-muted/20">
         {strany.map((s, i) => (
-          <StranaPdf key={s.cislo} strana={s}>
+          <StranaPdf
+            key={s.cislo}
+            strana={s}
+            pdfjs={textovaVrstva ? pdfjsModul : null}
+            slovaSkenu={
+              s.maText === false ? slovaZoZvyrazneni(vsetky, zvyraznenie?.udaje, i) : undefined
+            }
+          >
             {zobrazit ? (
               <ZvyrazneniaStrany zvyraznenia={vsetky} strana={i} aktivne={zvyraznenie?.aktivne} />
             ) : null}
@@ -167,19 +211,42 @@ export function NahladPdf({
   );
 }
 
-/** Jedna strana — plátno v obale s pevným pomerom, aby rámčeky zvýraznenia sedeli. */
-function StranaPdf({ strana, children }: { strana: Strana; children?: ReactNode }) {
+/**
+ * Jedna strana — plátno v obale s pevným pomerom, aby rámčeky zvýraznenia
+ * sedeli; nad ním textová vrstva (kopírovanie), pri skene hodnoty od AI
+ * alebo nápoveda, že sa tu nedá nič označiť.
+ */
+function StranaPdf({
+  strana,
+  pdfjs,
+  slovaSkenu,
+  children,
+}: {
+  strana: Strana;
+  pdfjs: any;
+  slovaSkenu?: SlovoSkenu[];
+  children?: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.replaceChildren(strana.platno);
   }, [strana.platno]);
+  const sken = Boolean(pdfjs) && strana.maText === false;
+  const { handlers, napoveda } = useNapovedaSkenu(sken && !slovaSkenu?.length);
   return (
     <div
       className="relative mx-auto w-full max-w-full border-b border-border last:border-b-0"
       style={{ aspectRatio: `1 / ${strana.pomer}` }}
+      data-strana-pdf={strana.cislo}
+      {...handlers}
     >
       <div ref={ref} className="absolute inset-0" />
       {children}
+      {pdfjs && strana.maText && strana.obsah ? (
+        <TextovaVrstvaPdf pdfjs={pdfjs} strana={strana.pdf} obsah={strana.obsah} />
+      ) : null}
+      {sken && slovaSkenu?.length ? <SlovaSkenu slova={slovaSkenu} /> : null}
+      {napoveda}
     </div>
   );
 }

@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Crosshair, Loader2, X } from "lucide-react";
+import { Copy, Crosshair, Loader2, X } from "lucide-react";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import {
   ObrazokSoZvyraznenim,
@@ -19,6 +19,8 @@ import {
   type ZvyraznenieNahladu,
 } from "@/components/faktero/ZvyraznenieVytazenych";
 import { slovaStranyPdf } from "@/lib/faktero/pdf-slova";
+import { maStranaText } from "@/lib/faktero/textova-vrstva";
+import { TextovaVrstvaPdf } from "@/components/faktero/TextovaVrstvaPdf";
 import { precitajVyrezFn } from "@/lib/faktero/vyber-z-dokladu.functions";
 import {
   NAZOV_TYPU,
@@ -68,6 +70,9 @@ type Strana = {
   pomer: number;
   platno?: HTMLCanvasElement;
   slova: SlovoNahladu[];
+  /** Strana pdf.js a jej text — pre textovú vrstvu (označenie s Alt). */
+  pdf?: any;
+  obsah?: any;
 };
 
 type Subor = { url: string | null; mime?: string | null; nazov?: string | null };
@@ -86,6 +91,24 @@ type Props = {
   zvyraznenie?: ZvyraznenieNahladu;
   onPrepniZvyraznenie?: () => void;
 };
+
+/** Drží človek práve kláves Alt? (Označenie textu namiesto oblasti.) */
+function useDrziAlt(): boolean {
+  const [alt, setAlt] = useState(false);
+  useEffect(() => {
+    const kl = (e: KeyboardEvent) => setAlt(e.altKey);
+    const pusti = () => setAlt(false);
+    window.addEventListener("keydown", kl);
+    window.addEventListener("keyup", kl);
+    window.addEventListener("blur", pusti);
+    return () => {
+      window.removeEventListener("keydown", kl);
+      window.removeEventListener("keyup", kl);
+      window.removeEventListener("blur", pusti);
+    };
+  }, []);
+  return alt;
+}
 
 function useJeDesktop(): boolean {
   const [ano, setAno] = useState(false);
@@ -280,6 +303,12 @@ function Vyber({
   const [poslednyVyber, setPoslednyVyber] = useState<{ strana: number; r: Obdlznik } | null>(null);
   const [volbaPola, setVolbaPola] = useState<KlucPola | "">("");
   const pdfStrany = useRef<any[]>([]);
+  const [pdfjsModul, setPdfjsModul] = useState<any>(null);
+  /*
+    Ťah myšou tu označuje oblasť (oprava poľa). Text na kopírovanie sa označí
+    ťahom so stlačeným Alt — vtedy textová vrstva prevezme myš.
+  */
+  const alt = useDrziAlt();
   const bitmapa = useRef<Promise<ImageBitmap> | null>(null);
   const obal = useRef<HTMLDivElement>(null);
   /** Strana a posledná poloha myši počas ťahu — pri rolovaní sa z nich prepočíta koniec. */
@@ -307,6 +336,7 @@ function Vyber({
           "pdfjs-dist/build/pdf.worker.min.mjs",
           import.meta.url,
         ).toString();
+        if (!zrusene) setPdfjsModul(() => pdfjs);
         const dokument = await pdfjs.getDocument({ url }).promise;
         if (zrusene) return;
         setPocetStran(dokument.numPages);
@@ -325,12 +355,21 @@ function Vyber({
           await strana.render({ canvas: platno, canvasContext: kontext, viewport }).promise;
           if (zrusene) return;
 
-          const slova = await slovaStranyPdf(pdfjs, strana, viewport, meradlo);
+          const obsah = await strana.getTextContent().catch(() => null);
+          if (zrusene) return;
+          const slova = obsah ? await slovaStranyPdf(pdfjs, strana, viewport, meradlo, obsah) : [];
           if (zrusene) return;
           pdfStrany.current[i - 1] = strana;
           setStrany((pred) => [
             ...pred,
-            { cislo: i, pomer: viewport.height / viewport.width, platno, slova },
+            {
+              cislo: i,
+              pomer: viewport.height / viewport.width,
+              platno,
+              slova,
+              pdf: strana,
+              obsah: maStranaText(obsah) ? obsah : undefined,
+            },
           ]);
         }
         setStav("hotovo");
@@ -370,6 +409,32 @@ function Vyber({
   useEffect(() => {
     if (pole) setOznacene(null);
   }, [pole]);
+
+  // Ctrl+C nad označenou oblasťou skopíruje jej text (keď nie je označený iný text).
+  const textOznaceneho = oznacene?.text ?? "";
+  useEffect(() => {
+    if (!textOznaceneho) return;
+    const kl = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "c") return;
+      const ciel = e.target as HTMLElement | null;
+      if (ciel && (ciel.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ciel.tagName)))
+        return;
+      if (window.getSelection()?.toString()) return;
+      e.preventDefault();
+      void kopirujText(textOznaceneho);
+    };
+    window.addEventListener("keydown", kl);
+    return () => window.removeEventListener("keydown", kl);
+  }, [textOznaceneho]);
+
+  async function kopirujText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t("Skopírované do schránky."), { duration: 1500 });
+    } catch {
+      toast.error(t("Text sa nepodarilo skopírovať."));
+    }
+  }
 
   // Ťah pokračuje aj pri rolovaní panela (koliesko, automatický posun pri
   // okraji): koniec obdĺžnika sa prepočíta z polohy myši voči posunutej strane.
@@ -478,7 +543,10 @@ function Vyber({
   }
 
   function dole(e: ReactPointerEvent<HTMLDivElement>, strana: number) {
-    if (e.button !== 0 || citamVyrez) return;
+    // S Alt sa označuje text na kopírovanie (textová vrstva), nie oblasť.
+    if (e.button !== 0 || citamVyrez || e.altKey) return;
+    // Staré označenie textu by po ťahu oblasti ostalo svietiť (preventDefault ho nezruší).
+    window.getSelection()?.removeAllRanges();
     const b = bodVStrane(e);
     e.currentTarget.setPointerCapture(e.pointerId);
     tahBod.current = { el: e.currentTarget, x: e.clientX, y: e.clientY };
@@ -624,6 +692,7 @@ function Vyber({
             ) : null}
             <span className="basis-full">
               {t("alebo kliknite do poľa vo formulári a potom na text v doklade.")}
+              {maText ? ` ${t("Text na kopírovanie označíte ťahom so stlačeným Alt.")}` : null}
             </span>
           </div>
         )}
@@ -656,6 +725,16 @@ function Vyber({
               strana={s}
               index={i}
               aktivna={!!pole}
+              textovaVrstva={
+                pdfjsModul && s.pdf && s.obsah ? (
+                  <TextovaVrstvaPdf
+                    pdfjs={pdfjsModul}
+                    strana={s.pdf}
+                    obsah={s.obsah}
+                    pasivna={!alt || tah !== null}
+                  />
+                ) : null
+              }
               hover={hover?.strana === i ? hover.i : -1}
               tah={
                 tah?.strana === i && tah.tahane
@@ -767,6 +846,16 @@ function Vyber({
               {citamVyrez ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               {t("Použiť do poľa")} {cielOznaceneho ? t(poleVyberu(cielOznaceneho).nazov) : ""}
             </button>
+            {oznacene.text ? (
+              <button
+                type="button"
+                onClick={() => void kopirujText(oznacene.text)}
+                title={t("Skopírovať označený text (Ctrl+C)")}
+                className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+              >
+                <Copy className="h-3.5 w-3.5" /> {t("Kopírovať")}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setOznacene(null)}
@@ -797,6 +886,7 @@ function StranaNahladu({
   onOdid,
   onZrusTah,
   zvyraznenia,
+  textovaVrstva,
   children,
 }: {
   strana: Strana;
@@ -814,6 +904,8 @@ function StranaNahladu({
   onZrusTah: () => void;
   /** Rámčeky vyťažených údajov (pod vrstvou výberu). */
   zvyraznenia?: ReactNode;
+  /** Textová vrstva — nad plochou výberu, myš preberá len so stlačeným Alt. */
+  textovaVrstva?: ReactNode;
   children?: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -865,6 +957,7 @@ function StranaNahladu({
             "rounded-sm bg-[color-mix(in_oklch,var(--stav-uspech-bod)_25%,transparent)] ring-2 ring-[var(--stav-uspech-bod)]",
           )}
       </div>
+      {textovaVrstva}
     </div>
   );
 }

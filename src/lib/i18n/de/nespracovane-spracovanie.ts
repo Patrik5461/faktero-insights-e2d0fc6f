@@ -24,4 +24,10 @@ export default {
     "Rechnungsart automatisch anhand der Firmen-IBANs bestimmen",
   "Keď je na faktúre ako príjemca platby IBAN niektorého vášho bankového účtu, ide o vašu vystavenú faktúru — Faktero na to upozorní a medzi prijaté ju založí len po potvrdení.":
     "Steht auf der Rechnung als Zahlungsempfänger die IBAN eines Ihrer Bankkonten, handelt es sich um Ihre Ausgangsrechnung — Faktero weist darauf hin und legt sie nur nach Bestätigung als Eingangsrechnung an.",
+  "Sken bez textu – kopírovanie nie je možné": "Scan ohne Text – Kopieren nicht möglich",
+  "Text na kopírovanie označíte ťahom so stlačeným Alt.": "Text zum Kopieren markieren Sie durch Ziehen mit gedrückter Alt-Taste.",
+  "Skopírovať označený text (Ctrl+C)": "Markierten Text kopieren (Strg+C)",
+  "Kopírovať": "Kopieren",
+  "Skopírované do schránky.": "In die Zwischenablage kopiert.",
+  "Text sa nepodarilo skopírovať.": "Der Text konnte nicht kopiert werden.",
 };

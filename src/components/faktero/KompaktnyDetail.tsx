@@ -19,8 +19,11 @@ import { PrepinacStranyNahladu, RozlozenieSNahladom } from "./RozlozenieSNahlado
 import {
   ObrazokSoZvyraznenim,
   PrepinacZvyraznenia,
+  useAktivnePoleDetailu,
+  useZvyraznenieDokladu,
   type ZvyraznenieNahladu,
 } from "./ZvyraznenieVytazenych";
+import type { UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 import type { KlucPola } from "@/lib/faktero/vyber-z-dokladu";
 import type { StranaNahladu } from "@/hooks/useStranaNahladu";
 import { useT } from "@/lib/i18n/useT";
@@ -53,7 +56,7 @@ export function Pole({
 }) {
   const { t } = useT();
   return (
-    <label className="relative block">
+    <label className="relative block" data-hodnota={popis}>
       <span className="pointer-events-none absolute -top-2 left-2.5 z-10 bg-card px-1 text-[11px] leading-none text-muted-foreground">
         {t(popis)}
       </span>
@@ -175,9 +178,10 @@ export type SuborKompaktny = {
  */
 export function NahladKompaktny({
   subor,
-  zvyraznenie,
+  zvyraznenie: zvyraznenieZvonka,
+  udaje,
   aktivnePole = null,
-  onPrepniZvyraznenie,
+  onPrepniZvyraznenie: onPrepniZvonka,
   onZmaz,
   onSkryt,
   busy,
@@ -185,6 +189,12 @@ export function NahladKompaktny({
 }: {
   subor: SuborKompaktny | null | undefined;
   zvyraznenie?: Omit<ZvyraznenieNahladu, "aktivne">;
+  /**
+   * Uložené údaje dokladu (detail prijatej faktúry, bločku) — zvýraznia sa
+   * v texte PDF tou istou logikou ako v Nespracovaných, s vlastným prepínačom.
+   * Bez `zvyraznenie` zvonka.
+   */
+  udaje?: UdajeNespracovaneho | null;
   aktivnePole?: KlucPola | null;
   onPrepniZvyraznenie?: () => void;
   /** „Zmazať do koša“ v nástrojoch (nespracovaný doklad). */
@@ -198,9 +208,17 @@ export function NahladKompaktny({
   const { t } = useT();
   const [otocenie, setOtocenie] = useState(0);
   const [zvacsenie, setZvacsenie] = useState(1);
+  const vlastne = useZvyraznenieDokladu(zvyraznenieZvonka ? null : udaje);
+  const zvyraznenie: Omit<ZvyraznenieNahladu, "aktivne"> | undefined =
+    zvyraznenieZvonka ?? vlastne.zvyraznenie;
+  const onPrepniZvyraznenie = zvyraznenieZvonka ? onPrepniZvonka : vlastne.prepni;
+  // Uložený doklad: miesto údaja, na ktorý človek ukáže v paneli vedľa.
+  const poleDetailu = useAktivnePoleDetailu(!zvyraznenieZvonka && Boolean(udaje));
   const url = subor?.url ?? null;
   const pdf = String(subor?.mime ?? "").includes("pdf");
-  const zv = zvyraznenie ? { ...zvyraznenie, aktivne: aktivnePole } : undefined;
+  const zv = zvyraznenie
+    ? { ...zvyraznenie, aktivne: zvyraznenieZvonka ? aktivnePole : (aktivnePole ?? poleDetailu) }
+    : undefined;
   return (
     <PanelNahladu
       className={NAHLAD_PANEL}

@@ -23,4 +23,10 @@ export default {
     "Automaticky určit typ faktury podle firemních IBAN",
   "Keď je na faktúre ako príjemca platby IBAN niektorého vášho bankového účtu, ide o vašu vystavenú faktúru — Faktero na to upozorní a medzi prijaté ju založí len po potvrdení.":
     "Když je na faktuře jako příjemce platby IBAN některého vašeho bankovního účtu, jde o vaši vydanou fakturu — Faktero na to upozorní a mezi přijaté ji založí jen po potvrzení.",
+  "Sken bez textu – kopírovanie nie je možné": "Sken bez textu – kopírování není možné",
+  "Text na kopírovanie označíte ťahom so stlačeným Alt.": "Text ke kopírování označíte tažením se stisknutým Alt.",
+  "Skopírovať označený text (Ctrl+C)": "Zkopírovat označený text (Ctrl+C)",
+  "Kopírovať": "Kopírovat",
+  "Skopírované do schránky.": "Zkopírováno do schránky.",
+  "Text sa nepodarilo skopírovať.": "Text se nepodařilo zkopírovat.",
 };

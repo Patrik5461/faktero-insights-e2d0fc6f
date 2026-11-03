@@ -11,10 +11,12 @@ export async function slovaStranyPdf(
   strana: any,
   viewport: any,
   meradlo: CanvasRenderingContext2D | null,
+  /** Už prečítaný `getTextContent()` — textová vrstva náhľadu ho má tiež, netreba čítať dvakrát. */
+  predcitany?: any,
 ): Promise<SlovoNahladu[]> {
   const slova: SlovoNahladu[] = [];
   try {
-    const obsah = await strana.getTextContent();
+    const obsah = predcitany ?? (await strana.getTextContent());
     for (const p of obsah.items as any[]) {
       if (!p?.str?.trim()) continue;
       const styl = (obsah.styles as any)?.[p.fontName] ?? {};

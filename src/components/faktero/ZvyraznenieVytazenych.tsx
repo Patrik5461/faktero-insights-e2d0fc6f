@@ -3,9 +3,17 @@ import { Highlighter } from "lucide-react";
 import type { UdajeNespracovaneho } from "@/lib/faktero/nespracovane";
 import type { KlucPola, SlovoNahladu } from "@/lib/faktero/vyber-z-dokladu";
 import { poleVyberu } from "@/lib/faktero/vyber-z-dokladu";
-import { zvyrazneniaUdajov, type Zvyraznenie } from "@/lib/faktero/zvyraznenie-vytazenych";
+import {
+  hodnotaPola,
+  POLIA_ZVYRAZNENIA,
+  polePopisuDetailu,
+  zvyrazneniaUdajov,
+  type Zvyraznenie,
+} from "@/lib/faktero/zvyraznenie-vytazenych";
 import type { PolohaAi } from "@/lib/faktero/polohy-ai";
 import { useT } from "@/lib/i18n/useT";
+import { slovaZoZvyrazneni } from "@/lib/faktero/textova-vrstva";
+import { SlovaSkenu, useNapovedaSkenu } from "./TextovaVrstvaPdf";
 
 /*
   Zvýraznenie vyťažených údajov v náhľade dokladu — rámčeky okolo miest,
@@ -226,7 +234,78 @@ export function useHoverPola(poleZ: (el: EventTarget | null) => KlucPola | null)
   };
 }
 
-/** Obrázok dokladu s rámčekmi vyťažených údajov (polohy od AI). */
+/**
+ * Pole detailu dokladu pod myšou alebo naposledy kliknuté — rámčeky `Hodnota`
+ * a `Pole` nesú popis v `data-hodnota`. Náhľad sa potom posunie na miesto
+ * údaja ako v Nespracovaných (tam to robí `useHoverPola` nad formulárom).
+ * Počúva na celom dokumente — panel s údajmi je súrodenec náhľadu a detail
+ * je na stránke jeden, tak ho netreba nič učiť.
+ */
+export function useAktivnePoleDetailu(zapnute: boolean): KlucPola | null {
+  const [klik, setKlik] = useState<KlucPola | null>(null);
+  const [hover, setHover] = useState<KlucPola | null>(null);
+  useEffect(() => {
+    if (!zapnute) return;
+    let posledne: KlucPola | null = null;
+    let casovac: ReturnType<typeof setTimeout> | null = null;
+    const poleZ = (el: EventTarget | null) => {
+      const r = el instanceof Element ? el.closest("[data-hodnota]") : null;
+      return r ? polePopisuDetailu(r.getAttribute("data-hodnota")) : null;
+    };
+    const nad = (e: Event) => {
+      const k = poleZ(e.target);
+      if (posledne === k) return;
+      posledne = k;
+      if (casovac) clearTimeout(casovac);
+      casovac = setTimeout(() => setHover(k), k ? 150 : 0);
+    };
+    const vyber = (e: Event) => {
+      const k = poleZ(e.target);
+      if (k) setKlik(k);
+    };
+    document.addEventListener("mouseover", nad);
+    document.addEventListener("focusin", vyber);
+    document.addEventListener("click", vyber);
+    return () => {
+      if (casovac) clearTimeout(casovac);
+      document.removeEventListener("mouseover", nad);
+      document.removeEventListener("focusin", vyber);
+      document.removeEventListener("click", vyber);
+    };
+  }, [zapnute]);
+  return hover ?? klik;
+}
+
+/**
+ * Zvýraznenie údajov uloženého dokladu (detail prijatej faktúry, bločku…) —
+ * prepínač je spoločný s Nespracovanými (zapamätaný, predvolene zapnutý).
+ */
+export function useZvyraznenieDokladu(udaje: UdajeNespracovaneho | null | undefined) {
+  const [zap, prepni] = useZobrazitZvyraznenie();
+  /*
+    Údaje sa smú podať aj nanovo pri každom vykreslení (`udajeZPrijatej(row)`)
+    — drží sa posledný objekt, kým sa nezmení niektorá zvýrazňovaná hodnota,
+    aby sa hľadanie v texte neopakovalo zbytočne.
+  */
+  const kluc = udaje
+    ? POLIA_POLOH_KLUCE.map((k) => String(hodnotaPola(udaje, k) ?? "")).join("\u0001")
+    : "";
+  const drzane = useRef<{ kluc: string; udaje: UdajeNespracovaneho } | null>(null);
+  if (!udaje) drzane.current = null;
+  else if (drzane.current?.kluc !== kluc) drzane.current = { kluc, udaje };
+  const stale = drzane.current?.udaje;
+  const zvyraznenie = useMemo(
+    () => (stale ? { udaje: stale, zobrazit: zap } : undefined),
+    [stale, zap],
+  );
+  return { zvyraznenie, zap, prepni };
+}
+
+/**
+ * Obrázok dokladu s rámčekmi vyťažených údajov (polohy od AI). Obrázok nemá
+ * text — hodnoty od AI sa nad ním dajú označiť a skopírovať, inak pri pokuse
+ * o označenie ukáže krátku nápovedu.
+ */
 export function ObrazokSoZvyraznenim({
   url,
   alt,
@@ -242,16 +321,32 @@ export function ObrazokSoZvyraznenim({
   const zvyraznenia = useZvyraznenia(BEZ_SLOV, zvyraznenie);
   const zobrazit = Boolean(zvyraznenie?.zobrazit);
   usePosunNaAktivne(box, zvyraznenie?.aktivne, zvyraznenia, zobrazit);
-  if (!zvyraznenia.length) return <img src={url} alt={alt} className={className} />;
+  const slova = useMemo(
+    () => slovaZoZvyrazneni(zvyraznenia, zvyraznenie?.udaje, 0),
+    [zvyraznenia, zvyraznenie?.udaje],
+  );
+  const { handlers, napoveda } = useNapovedaSkenu(!slova.length);
+  if (!zvyraznenia.length)
+    return (
+      <div className="relative" {...handlers}>
+        <img src={url} alt={alt} className={className} draggable={false} />
+        {napoveda}
+      </div>
+    );
   return (
-    <div ref={box} className="relative mx-auto w-fit max-w-full">
-      <img src={url} alt={alt} className={`${className ?? ""} block`} />
+    <div ref={box} className="relative mx-auto w-fit max-w-full" {...handlers}>
+      <img src={url} alt={alt} className={`${className ?? ""} block`} draggable={false} />
       {zobrazit ? (
         <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={0} aktivne={zvyraznenie?.aktivne} />
       ) : null}
+      <SlovaSkenu slova={slova} />
+      {napoveda}
     </div>
   );
 }
+
+/** Hodnoty, od ktorých zvýraznenie závisí (aj názov dodávateľa — poloha od AI). */
+const POLIA_POLOH_KLUCE = [...POLIA_ZVYRAZNENIA, "dodavatel.nazov"] as KlucPola[];
 
 /** Obrázok nemá textovú vrstvu — jedna strana bez slov (stála hodnota pre useMemo). */
 const BEZ_SLOV: SlovoNahladu[][] = [[]];
