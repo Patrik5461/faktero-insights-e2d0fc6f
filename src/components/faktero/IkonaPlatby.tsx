@@ -48,6 +48,8 @@ export type VlastnostiIkonyPlatby = {
   onZrus?: () => void | Promise<void>;
   /** Pri 'nenajdena' — kam ísť spárovať ručne (Banka). */
   odkazRucne?: string | null;
+  /** Pri 'nenajdena' — vlastný text namiesto predvolenej vety o Banke (už preložený alebo kľúč pre `t()`). */
+  popisNenajdena?: string;
   className?: string;
 };
 
@@ -71,8 +73,10 @@ const NADPIS: Record<StavPlatby, string> = {
   nenajdena: "Platba sa zatiaľ nenašla",
 };
 
-const SIRKA_OKNA = 320;
+const SIRKA_OKNA = 344;
 const HRANICA_MOBILU = 768;
+/** Pred zmeraním: neviditeľné, ale fokusovateľné (`visibility: hidden` by fokus do okna nepustilo). */
+const SKRYTE: CSSProperties = { top: 0, left: 0, opacity: 0 };
 
 function datumSk(d: string | null | undefined): string | null {
   if (!d) return null;
@@ -106,6 +110,7 @@ export function ObsahPlatby({
   onNie,
   onZrus,
   odkazRucne,
+  popisNenajdena,
   onZavri,
   idNadpisu,
 }: Omit<VlastnostiIkonyPlatby, "className" | "stav"> & {
@@ -187,7 +192,7 @@ export function ObsahPlatby({
           {riadky.map(([k, v]) => (
             <div key={k} className="contents">
               <dt className="text-muted-foreground">{k}</dt>
-              <dd className="min-w-0 truncate text-right font-medium tabular-nums" title={v}>
+              <dd className="min-w-0 text-right font-medium tabular-nums [overflow-wrap:anywhere]">
                 {v}
               </dd>
             </div>
@@ -208,9 +213,11 @@ export function ObsahPlatby({
         </div>
       )}
 
-      {stav === "nenajdena" && (
+      {stav === "nenajdena" && (popisNenajdena || odkazRucne) && (
         <p className="text-sm text-muted-foreground">
-          {t("Pohyb z účtu, ktorý by k dokladu sedel, sme zatiaľ nenašli. Ak platba odišla, spárujte ju ručne v Banke.")}
+          {popisNenajdena
+            ? t(popisNenajdena)
+            : t("Pohyb z účtu, ktorý by k dokladu sedel, sme zatiaľ nenašli. Ak platba odišla, spárujte ju ručne v Banke.")}
         </p>
       )}
 
@@ -255,7 +262,7 @@ export function IkonaPlatby(p: VlastnostiIkonyPlatby) {
   const okno = useRef<HTMLDivElement>(null);
   const idNadpisu = useId();
   const [otvorene, setOtvorene] = useState<null | { mobil: boolean; kontajner: HTMLElement }>(null);
-  const [poloha, setPoloha] = useState<CSSProperties>({ visibility: "hidden" });
+  const [poloha, setPoloha] = useState<CSSProperties>(SKRYTE);
 
   const zavri = useCallback(() => {
     setOtvorene(null);
@@ -306,7 +313,7 @@ export function IkonaPlatby(p: VlastnostiIkonyPlatby) {
     const el = tlacidlo.current;
     // Portál do obalu redizajnu, aby okno dostalo jeho premenné (písmo, tiene).
     const kontajner = (el?.closest("[data-web-redizajn]") as HTMLElement | null) ?? document.body;
-    setPoloha({ visibility: "hidden" });
+    setPoloha(SKRYTE);
     setOtvorene({ mobil: window.innerWidth < HRANICA_MOBILU, kontajner });
   };
 
@@ -321,6 +328,7 @@ export function IkonaPlatby(p: VlastnostiIkonyPlatby) {
       onNie={p.onNie}
       onZrus={p.onZrus}
       odkazRucne={p.odkazRucne}
+      popisNenajdena={p.popisNenajdena}
       onZavri={zavri}
       idNadpisu={idNadpisu}
     />

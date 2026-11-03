@@ -79,6 +79,20 @@ describe("ObsahPlatby", () => {
   });
 });
 
+describe("ObsahPlatby — nenájdená bez Banky", () => {
+  it("bez odkazu nespomína Banku, len nadpis", () => {
+    const h = html(<ObsahPlatby stav="nenajdena" />);
+    expect(h).toContain("Platba sa zatiaľ nenašla");
+    expect(h).not.toContain("Banke");
+  });
+
+  it("vlastný popis nahradí predvolenú vetu", () => {
+    const h = html(<ObsahPlatby stav="nenajdena" odkazRucne="/banka" popisNenajdena="Predpis zatiaľ nikto nezaplatil." />);
+    expect(h).toContain("Predpis zatiaľ nikto nezaplatil.");
+    expect(h).not.toContain("sme zatiaľ nenašli");
+  });
+});
+
 describe("PasNavrhovPlatieb", () => {
   const zaklad = { lenTieto: false, onLenTieto: () => {}, onSparujIste: async () => {} };
 
