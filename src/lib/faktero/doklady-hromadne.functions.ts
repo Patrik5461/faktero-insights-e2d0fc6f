@@ -78,7 +78,7 @@ export const hromadneDokladyFn = createServerFn({ method: "POST" })
       prijata:
         "id, invoice_number, status, exported_at, locked_at, issue_date, deleted_at, stitky, zauctovane_at",
       doklad:
-        "id, document_number, supplier_name, status, exported_at, locked_at, issue_date, stitky, zauctovane_at",
+        "id, document_number, supplier_name, supplier_ico, total_amount, currency, qr_raw, status, exported_at, locked_at, issue_date, stitky, zauctovane_at",
       vystavena: "id, invoice_number, status, exported_at, issue_date, deleted_at, stitky, sent_at",
       ostatny: "id, subject, stitky",
     }[ag];
@@ -138,17 +138,34 @@ export const hromadneDokladyFn = createServerFn({ method: "POST" })
     const ids = ok.map((r) => r.id);
 
     switch (a.typ) {
-      case "predkontacia":
-        await uprav(ids, { pohoda_predkontacia: a.kod || null });
-        // Bloček s určenou predkontáciou je zaúčtovaný (ako pri „Predkontácia" v Dokladoch).
-        if (ag === "doklad" && a.kod)
+      case "predkontacia": {
+        /*
+          Bloček s určenou predkontáciou je zaúčtovaný (ako pri „Predkontácia"
+          v Dokladoch) — duplicitný sa preto nemení vôbec (duplicita-zauctovania.ts).
+        */
+        let ciel = ids;
+        if (ag === "doklad" && a.kod) {
+          const { vynechajDuplicity } = await import("./duplicita-zauctovania.server");
+          const v = await vynechajDuplicity(
+            supabase,
+            data.company_id,
+            "blocek",
+            ok.filter((r) => !r.zauctovane_at),
+          );
+          preskocene.push(...v.preskocene);
+          const vynechane = new Set(v.duplicity.map((d) => d.id));
+          ciel = ids.filter((id) => !vynechane.has(id));
+        }
+        await uprav(ciel, { pohoda_predkontacia: a.kod || null });
+        if (ag === "doklad" && a.kod && ciel.length)
           await supabase
             .from("expense_documents")
             .update({ zauctovane_at: new Date().toISOString(), zauctoval: context.userId })
             .eq("company_id", data.company_id)
-            .in("id", ids)
+            .in("id", ciel)
             .is("zauctovane_at", null);
         break;
+      }
       case "clenenie":
         await uprav(ids, { pohoda_clenenie_dph: a.kod || null });
         break;

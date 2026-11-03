@@ -142,20 +142,28 @@ export const findExpenseDuplicateFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: OdtlacokDokladu & { company_id: string }) => odtlacokSchema.parse(data))
   .handler(async ({ data, context }) => {
-    if (!daSaPorovnat(data)) return null;
     const { supabase } = context;
-    let dopyt = supabase
-      .from("expense_documents")
-      .select("id, document_number, issue_date, total_amount, currency, supplier_name, qr_raw, supplier_ico")
-      .eq("company_id", data.company_id)
-      .limit(20);
-    dopyt = data.qr_raw?.trim()
-      ? dopyt.eq("qr_raw", data.qr_raw.trim())
-      : dopyt.eq("document_number", data.document_number!).eq("issue_date", data.issue_date!);
-    const { data: najdene, error } = await dopyt;
-    if (error) throw new Error(error.message);
-    const bloček = (najdene ?? []).find((r) => jeTenIstyDoklad(data, r as OdtlacokDokladu));
-    if (bloček) return { ...bloček, kde: "blocky" as const };
+    /*
+      Uložený bloček podľa pravidla, ktoré aj zastaví zápis
+      (duplicita-zauctovania.ts): rovnaký QR, inak dodávateľ + deň + suma.
+    */
+    {
+      const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
+      const uz = await najdiUlozenyBlocek(supabase, data.company_id, data);
+      if (uz)
+        return {
+          id: uz.id as string,
+          document_number: uz.document_number ?? null,
+          issue_date: uz.issue_date ?? null,
+          total_amount: uz.total_amount == null ? null : Number(uz.total_amount),
+          currency: (uz.currency as string) || "EUR",
+          supplier_name: uz.supplier_name ?? null,
+          qr_raw: uz.qr_raw ?? null,
+          supplier_ico: uz.supplier_ico ?? null,
+          kde: "blocky" as const,
+        };
+    }
+    if (!daSaPorovnat(data)) return null;
     /*
       Ten istý bloček môže ešte čakať v Nespracovaných dokladoch (odfotený,
       z mailu, nahratý na webe) — tam QR kód uložený nie je, porovnáva sa
@@ -240,15 +248,17 @@ export const createExpenseFn = createServerFn({ method: "POST" })
         } as unknown as NonNullable<typeof uz> & { nespracovany_id: string };
     }
     const qr = data.qr_raw?.trim();
-    if (qr) {
-      const { data: uz } = await supabase
-        .from("expense_documents")
-        .select("*")
-        .eq("company_id", data.company_id)
-        .eq("qr_raw", qr)
-        .limit(1)
-        .maybeSingle();
-      if (uz) return uz;
+    /*
+      Duplicitný bloček sa neuloží (Patrik 3. 11.): rovnaký QR z eKasy, alebo
+      ten istý dodávateľ, deň a suma. Predtým sa pri rovnakom QR potichu vrátil
+      uložený — appka si myslela, že uložila nový. Opakovaný pokus toho istého
+      zápisu stráži `id` vyššie.
+    */
+    {
+      const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
+      const { chybaUlozenehoBlocku } = await import("./duplicita-zauctovania");
+      const uz = await najdiUlozenyBlocek(supabase, data.company_id, { ...data, qr_raw: qr ?? null });
+      if (uz) throw new Error(chybaUlozenehoBlocku(uz));
     }
     /*
       Ako v Doklado: bloček s QR kódom (údaje z Finančnej správy) ide rovno
@@ -825,6 +835,11 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const obdobie =
       data.month ?? (/^\d{4}-\d{2}$/.test(jedenMesiac) ? jedenMesiac : new Date().toISOString().slice(0, 7));
     const { pohodaXmlBlockov } = await import("./blocky-pohoda-xml.server");
+    // Duplicitný bloček (ten istý QR, alebo dodávateľ + deň + suma) do Pohody nejde.
+    {
+      const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
+      await oznacDuplicity(supabase, data.company_id, "blocek", rows.filter((r: any) => !r.exported_at));
+    }
     const { subory: xmlPodlaRoka, preskocene } = pohodaXmlBlockov({
       firma,
       rows,

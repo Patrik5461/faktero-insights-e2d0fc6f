@@ -382,6 +382,10 @@ function DokladyPage() {
     if (!c || !kodPk) return;
     try {
       const v = await zauctujDokladyFn({ data: { company_id: c, ids: [id], predkontacia: kodPk } });
+      if (v.duplicity?.length) {
+        toast.warning(t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže."));
+        return;
+      }
       if (v.preskocenych) {
         toast.warning(t("Doklad je už odovzdaný — predkontácia sa nezmenila."));
         return;

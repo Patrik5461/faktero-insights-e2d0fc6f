@@ -1028,6 +1028,20 @@ export function naplnDoklady(db: DemoDb) {
     if (r.created_at) r.nahrane_at = new Date(Date.parse(String(r.created_at)) - 25 * 60 * 1000).toISOString();
     if (i === 2) r.odosielatel_mailu = "pokladna@obchod.example";
   });
+  // Duplicita: ten istý bloček dvakrát (raz QR, raz fotka) — nezaúčtuje sa ani jeden.
+  {
+    const vzor = blocky.find((b) => b.status === "processed" && !b.zauctovane_at && !b.exported_at && b.supplier_ico);
+    if (vzor) {
+      blocky.push({
+        ...vzor,
+        id: uid("blocek:duplicita"),
+        qr_raw: null,
+        source: "photo",
+        pdf_token: null,
+        created_at: new Date(Date.parse(String(vzor.created_at)) + 3 * 3600 * 1000).toISOString(),
+      });
+    }
+  }
   db.vloz("expense_documents", blocky);
   BLOCKY.push(...blocky);
 
@@ -1797,4 +1811,22 @@ export function naplnDoklady(db: DemoDb) {
     });
   });
   db.vloz("komentare_dokladov", kom);
+  /* Duplicita (duplicita-zauctovania.ts): tá istá faktúra nahratá druhýkrát —
+     prvá je zaúčtovaná, druhá sa zaúčtovať nedá. Druhý pár: ani jedna nie je. */
+  {
+    const pred = prijate.length;
+    const pol = [{ name: "Kancelársky papier A4 (krabica)", quantity: 4, unit: "ks", unit_price: 28.5, vat_rate: 23 }];
+    const prva = pridajPrijatu({ kluc: "duplicita:1", k: D("velkoobchod"), datum: den(-9), polozky: pol, cislo: "FA-2026-7701", stav: "booked" });
+    prva.zauctovane_at = prva.created_at;
+    prva.zauctoval = UCTOVNIK;
+    prva.pohoda_predkontacia = "501";
+    prva.pohoda_clenenie_dph = "PD";
+    pridajPrijatu({ kluc: "duplicita:2", k: D("velkoobchod"), datum: den(-9), polozky: pol, cislo: "FA 2026 7701", stav: "received", extra: { source: "mail" } });
+    const pol2 = [{ name: "Servis tlačiarne", quantity: 1, unit: "ks", unit_price: 89, vat_rate: 23 }];
+    pridajPrijatu({ kluc: "duplicita:3", k: D("gama"), datum: den(-4), polozky: pol2, cislo: "2026-0415", stav: "received" });
+    pridajPrijatu({ kluc: "duplicita:4", k: D("gama"), datum: den(-4), polozky: pol2, cislo: "2026-0415", stav: "received", extra: { source: "mail" } });
+    // Na konci modulu, aby pridané volania náhody nezmenili ostatné demo dáta.
+    db.vloz("purchase_invoices", prijate.slice(pred));
+    PRIJATE.push(...prijate.slice(pred));
+  }
 }

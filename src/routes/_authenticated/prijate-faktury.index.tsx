@@ -672,8 +672,15 @@ function PurchaseInvoicesPage() {
               : t("Zaúčtovaných {n} faktúr", { n }),
         );
       }
-      if (r.preskocene.length)
-        toast.error(t("Vynechané: {zoznam}", { zoznam: r.preskocene.join(" · ") }));
+      // Duplicity zvlášť — koľko a ktoré (duplicita-zauctovania.ts).
+      const dup = r.duplicity ?? [];
+      if (dup.length)
+        toast.warning(
+          t("Preskočené duplicity ({n}): {zoznam}", { n: dup.length, zoznam: dup.map((d) => d.cislo).join(", ") }),
+          { description: t("Rovnaký doklad je v evidencii viackrát — zaúčtovať sa dá až po zmazaní jedného z nich.") },
+        );
+      const ine = r.preskocene.filter((x) => !dup.some((d) => x.startsWith(`${d.cislo}: `)));
+      if (ine.length) toast.error(t("Vynechané: {zoznam}", { zoznam: ine.join(" · ") }));
       setZauctovanie(false);
       setSelected(new Set());
       await load();

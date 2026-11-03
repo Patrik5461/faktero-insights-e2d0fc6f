@@ -57,17 +57,23 @@ export function PredkontaciaDokladovOkno({
     setBusy(true);
     try {
       const r = await uloz({ data: { company_id: companyId, ids, ...h } });
-      if (r.preskocenych)
+      const dup = r.duplicity ?? [];
+      if (dup.length)
+        toast.warning(
+          t("Preskočené duplicity ({n}): {zoznam}", { n: dup.length, zoznam: dup.map((d) => d.cislo).join(", ") }),
+          { description: t("Rovnaký doklad je v evidencii viackrát — zaúčtovať sa dá až po zmazaní jedného z nich.") },
+        );
+      if (r.preskocenych > dup.length)
         toast.warning(
           t(
             "Nastavené na {zmenenych}; {preskocenych} už je odovzdaných do Pohody, tie sa nemenia.",
             {
               zmenenych: r.zmenenych,
-              preskocenych: r.preskocenych,
+              preskocenych: r.preskocenych - dup.length,
             },
           ),
         );
-      else
+      else if (r.zmenenych || !dup.length)
         toast.success(
           r.zmenenych ? t("Nastavené") : t("Nič sa nezmenilo — vyplňte aspoň jedno pole."),
         );

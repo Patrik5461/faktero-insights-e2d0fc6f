@@ -307,6 +307,15 @@ export async function zostavDavku(
     ),
   );
   const prijate = vCasti(prijateSch, "issue_date");
+  /*
+    Duplicitný doklad (ten istý dvakrát v evidencii) do Pohody nejde —
+    `prekazkaDokladu` ho podľa `_duplicita` zastaví a povie prečo.
+  */
+  {
+    const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
+    await oznacDuplicity(supabase, vstup.companyId, "prijata", prijate);
+    await oznacDuplicity(supabase, vstup.companyId, "blocek", doklady ?? []);
+  }
 
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.

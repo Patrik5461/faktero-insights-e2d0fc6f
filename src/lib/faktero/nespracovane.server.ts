@@ -279,7 +279,13 @@ export async function vytvorDoklad(
   r: Record<string, any>,
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,
-): Promise<{ agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean; cudzia?: boolean }> {
+): Promise<{
+  agenda: "prijata" | "doklad" | "ostatny";
+  id: string;
+  zauctovana?: boolean;
+  cudzia?: boolean;
+  duplicita?: boolean;
+}> {
   const dnes = dnesBratislava();
   const teraz = new Date().toISOString();
   let bajty: Uint8Array | null = null;
@@ -367,7 +373,13 @@ export async function vytvorDoklad(
     };
   };
 
-  let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string; zauctovana?: boolean; cudzia?: boolean };
+  let vysledok: {
+    agenda: "prijata" | "doklad" | "ostatny";
+    id: string;
+    zauctovana?: boolean;
+    cudzia?: boolean;
+    duplicita?: boolean;
+  };
   if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
@@ -382,9 +394,20 @@ export async function vytvorDoklad(
     */
     const { nesediNespracovany, firmaNaPorovnanie } = await import("./cudzia-faktura.server");
     const cudzia = nesediNespracovany({ ...r, druh }, await firmaNaPorovnanie(supabase, r.company_id));
+    /*
+      Duplicita (to isté číslo od toho istého dodávateľa už v evidencii je —
+      človek ju vytvoril cez „Vytvoriť aj tak“): faktúra vznikne, ale
+      nezaúčtuje sa, kým sa jedna z nich nezmaže (duplicita-zauctovania.ts).
+    */
+    const { duplicityDokladov } = await import("./duplicita-zauctovania.server");
+    const duplicitna = (
+      await duplicityDokladov(supabase, r.company_id, "prijata", [
+        { ...zakl, id: "novy-doklad", status: "received" },
+      ])
+    ).has("novy-doklad");
     // Zaúčtovaná je aj faktúra, ktorej každá položka má vlastnú predkontáciu (hlavička môže ostať prázdna).
     const zauctovat =
-      !cudzia && Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
+      !cudzia && !duplicitna && Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
     // Zaplatená ostáva zaplatená aj zaúčtovaná (ako po zaúčtovaní v paneli).
     const stav = (zauct: boolean) => (u.uhradene ? "paid" : zauct ? "booked" : "received");
     const { data, error } = await supabase
@@ -427,7 +450,7 @@ export async function vytvorDoklad(
       návrh AI počká na potvrdenie v zaúčtovaní faktúry.
     */
     let zauctovana = zauctovat;
-    if (!cudzia && !zauctovat && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
+    if (!cudzia && !duplicitna && !zauctovat && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
       const { kodyPrijatejUrcene } = await import("./nespracovane-nastavenia");
       const { kodyPodlaKategorie } = await import("./predkontacie.server");
       const { data: firma } = await supabase
@@ -477,8 +500,24 @@ export async function vytvorDoklad(
         /* Kurz je doplnok — doklad je uložený. */
       }
     }
-    vysledok = { agenda: "prijata", id: data.id, zauctovana, ...(cudzia ? { cudzia: true } : {}) };
+    vysledok = {
+      agenda: "prijata",
+      id: data.id,
+      zauctovana,
+      ...(cudzia ? { cudzia: true } : {}),
+      ...(duplicitna ? { duplicita: true } : {}),
+    };
   } else if (druh === "blocek") {
+    /*
+      Ten istý bloček už v Bločkoch je (rovnaký QR, alebo dodávateľ + deň +
+      suma) — druhýkrát sa neuloží. Nespracovaný ostáva, kým ho človek nezmaže.
+    */
+    {
+      const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
+      const { chybaUlozenehoBlocku } = await import("./duplicita-zauctovania");
+      const uz = await najdiUlozenyBlocek(supabase, r.company_id, blocekZUdajov(u));
+      if (uz) throw new Error(chybaUlozenehoBlocku(uz));
+    }
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
       const up = await supabase.storage.from("expense-receipts").upload(cesta, bajty, { contentType: mime });
@@ -679,6 +718,17 @@ export async function varovaniaNespracovaneho(
       )
     )
       out.push(`Ten istý doklad ${cislo} čaká v Nespracovaných ešte raz.`);
+  }
+  /*
+    Ten istý bloček už v Bločkoch je (dodávateľ + deň + suma — pravidlo, ktoré
+    zastaví aj „Vytvoriť“). Bloček z mailu či automatu tak ostane tu s
+    poznámkou „duplicita“, nestratí sa a druhýkrát sa neuloží.
+  */
+  if (!out.some((x) => x.includes("medzi bločkami"))) {
+    const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
+    const { popisBlocku } = await import("./duplicita-zauctovania");
+    const uz = await najdiUlozenyBlocek(supabase, r.company_id, blocekZUdajov(u)).catch(() => null);
+    if (uz) out.push(`Duplicita — tento bloček už je uložený: ${popisBlocku(uz)}.`);
   }
   /*
     Odberateľ z dokladu, ktorý nesedí na firmu, ukazuje detail zvlášť

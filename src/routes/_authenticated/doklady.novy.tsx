@@ -46,6 +46,7 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { domacaMena } from "@/lib/faktero/kurzy";
+import { rozlozChybuBlocku } from "@/lib/faktero/duplicita-zauctovania";
 import {
   createExpenseFn,
   updateExpenseFn,
@@ -57,6 +58,7 @@ import {
 } from "@/lib/faktero/expenses.functions";
 import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
+import { UpozornenieDuplicity, useDuplicitaDokladu } from "@/components/faktero/DuplicitaDokladu";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY, formatujMenu, formatujCislo, formatujMnozstvo } from "@/lib/faktero/mena";
@@ -200,6 +202,8 @@ function NovyDokladPage() {
   // Vlastné stavy dokladov firmy (Účtovníctvo → Predkontácie) — kódy tu netreba.
   const ciselnikyFirmy = useCiselnikyDokladov(cid, null, false);
   const [ulozeny, setUlozeny] = useState<any>(null);
+  // Ten istý bloček v evidencii viackrát — upozornenie v časti Zaúčtovanie (nezaúčtuje sa).
+  const duplicityBlocku = useDuplicitaDokladu("blocek", ulozeny);
   /*
     Kompaktné rozloženie: uložený doklad sa otvorí ako detail s účtovaním
     priamo na stránke; ceruzka prepne na tento formulár.
@@ -650,6 +654,11 @@ function NovyDokladPage() {
       toast.error(t("Vyberte firmu"));
       return;
     }
+    // Uložený bloček druhýkrát neuložíme (duplicita-zauctovania.ts); v Nespracovaných len upozorníme.
+    if (duplikat && !search.id && duplikat.kde !== "nespracovane") {
+      toast.error(t("Tento bloček už je uložený — druhýkrát ho uložiť nemožno."));
+      return;
+    }
     if (duplikat && !search.id && !(await potvrd(t("Tento bloček už vo firme máte. Uložiť ho aj tak ešte raz?")))) {
       return;
     }
@@ -769,7 +778,17 @@ function NovyDokladPage() {
         },
       });
     } catch (e: any) {
-      toast.error(chybaZapisu(e, "Uloženie zlyhalo"));
+      const uz = rozlozChybuBlocku(e?.message);
+      if (uz)
+        toast.error(t("Tento bloček už je uložený: {popis}", { popis: uz.popis }), {
+          action: uz.id
+            ? {
+                label: t("Otvoriť"),
+                onClick: () => navigate({ to: "/doklady/novy", search: { id: uz.id } as any }),
+              }
+            : undefined,
+        });
+      else toast.error(chybaZapisu(e, "Uloženie zlyhalo"));
     } finally {
       setSaving(false);
     }
@@ -1489,6 +1508,7 @@ function NovyDokladPage() {
                 <div className="mb-2 text-sm font-semibold">
                   {t("Zaúčtovanie (Pohoda)")}
                 </div>
+                <UpozornenieDuplicity druh="blocek" druhe={duplicityBlocku} className="mb-3" />
                 {ulozeny?.exported_at && (
                   <div className="dk-pozor mb-3 flex flex-wrap items-center gap-2 rounded-md border p-2 text-sm">
                     {t(textOdovzdanyDoklad(programOdovzdania), { program: programOdovzdania ?? "" })}

@@ -449,6 +449,13 @@ export async function zostavBalik(
     nejde ani sa neoznačí — ostane v súpiske a v zozname vynechaných.
   */
   const { prekazkaDokladu } = await import("./pohoda-kontrola");
+  // Duplicitný doklad (ten istý dvakrát v evidencii) do XML nejde — `_duplicita`.
+  {
+    const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
+    // Už odovzdané ostávajú v balíku ako doteraz — zastaví sa len nový duplikát.
+    await oznacDuplicity(supabase, vstup.companyId, "blocek", doklady.filter((d: Riadok) => !d.exported_at));
+    await oznacDuplicity(supabase, vstup.companyId, "prijata", prijate.filter((p: Riadok) => !p.exported_at));
+  }
   let xmlDokladov = "";
   let dokladyDoXml: Riadok[] = [];
   if (doklady.length) {

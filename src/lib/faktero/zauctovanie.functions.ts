@@ -6,6 +6,7 @@ import type { MoznostKodu } from "./predkontacie";
 import { POLIA_ZAUCTOVANIA_DOKLADU, zmenaZauctovaniaDokladu } from "./zauctovanie-dokladu";
 import { DOVOD_BEZ_CLENENIA } from "./clenenie-zauctovania";
 import { nazovProgramuExportu } from "./odovzdanie-exportu";
+import type { VynechanaDuplicita } from "./duplicita-zauctovania.server";
 
 /*
   Zaúčtovanie prijatých faktúr — predkontácia, členenie DPH, kategória a
@@ -332,7 +333,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
     const { data: riadky, error } = await supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, status, exported_at, deleted_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh, odberatel_nesedi",
+        "id, invoice_number, status, exported_at, deleted_at, issue_date, opravuje_id, zauctovane_at, samofakturacia, samofakturacia_stav, type, supplier_ico, supplier_ic_dph, supplier_name, amount_total, opravuje_cislo, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh, odberatel_nesedi",
       )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
@@ -364,6 +365,26 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
     }
 
     /*
+      Duplicitný doklad (to isté číslo od toho istého dodávateľa) sa nezaúčtuje —
+      v Pohode by bol dvakrát náklad aj odpočet DPH (duplicita-zauctovania.ts).
+    */
+    let duplicity: VynechanaDuplicita[] = [];
+    if (!data.lenUlozit && ok.length) {
+      const { vynechajDuplicity } = await import("./duplicita-zauctovania.server");
+      const v = await vynechajDuplicity(
+        supabase,
+        data.company_id,
+        "prijata",
+        // Už zaúčtovanej sa len menia kódy — tá je platná, duplicitná je tá druhá.
+        (riadky ?? []).filter((x: any) => ok.includes(x.id) && !x.zauctovane_at),
+      );
+      duplicity = v.duplicity;
+      preskocene.push(...v.preskocene);
+      const vynechane = new Set(v.duplicity.map((d) => d.id));
+      ok.splice(0, ok.length, ...ok.filter((id) => !vynechane.has(id)));
+    }
+
+    /*
       Členenie DPH: kde ho okno nevybralo a faktúra ho nemá, doplní sa z
       návrhu pre faktúru (pravidlo, návyk dodávateľa — ako na detaile, bez AI).
       Platiteľ DPH faktúru bez členenia nezaúčtuje (clenenie-zauctovania.ts).
@@ -389,6 +410,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
         preskocene,
         ponukaPravidla: null,
         bezClenenia,
+        duplicity,
         doplneneClenenie: Object.keys(doplnitClenenie).length,
         doplnenaPredkontacia: ok.filter((id) => doplnitPredkontaciu[id]).length,
       };
@@ -483,6 +505,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       preskocene,
       ponukaPravidla,
       bezClenenia,
+      duplicity,
       doplneneClenenie: ok.filter((id) => doplnitClenenie[id]).length,
       doplnenaPredkontacia: ok.filter((id) => doplnitPredkontaciu[id]).length,
     };
@@ -544,17 +567,38 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const zmena = zmenaZauctovaniaDokladu(data as Parameters<typeof zmenaZauctovaniaDokladu>[0]);
-    if (!Object.keys(zmena).length) return { zmenenych: 0, preskocenych: 0 };
+    if (!Object.keys(zmena).length)
+      return { zmenenych: 0, preskocenych: 0, ponukaPravidla: null, preskocene: [] as string[], duplicity: [] };
 
     const { data: riadky, error } = await supabase
       .from("expense_documents")
       .select(
-        "id, exported_at, supplier_ico, supplier_ic_dph, supplier_name, pohoda_predkontacia, zauctovane_at, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
+        "id, exported_at, document_number, issue_date, total_amount, currency, qr_raw, status, supplier_ico, supplier_ic_dph, supplier_name, pohoda_predkontacia, zauctovane_at, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
       )
       .eq("company_id", data.company_id)
       .in("id", data.ids);
     if (error) throw new Error(error.message);
-    const ok = (riadky ?? []).filter((r: any) => !r.exported_at).map((r: any) => r.id);
+    let ok = (riadky ?? []).filter((r: any) => !r.exported_at).map((r: any) => r.id);
+    /*
+      Určená predkontácia bloček zaúčtuje — duplicitný (ten istý QR, alebo
+      dodávateľ + deň + suma) sa nezaúčtuje a nezmení. Už zaúčtovaný sa len
+      upravuje, ten nová kontrola nezastaví.
+    */
+    const preskocene: string[] = [];
+    let duplicity: VynechanaDuplicita[] = [];
+    if (zmena.pohoda_predkontacia && ok.length) {
+      const { vynechajDuplicity } = await import("./duplicita-zauctovania.server");
+      const v = await vynechajDuplicity(
+        supabase,
+        data.company_id,
+        "blocek",
+        (riadky ?? []).filter((r: any) => ok.includes(r.id) && !r.zauctovane_at),
+      );
+      duplicity = v.duplicity;
+      preskocene.push(...v.preskocene);
+      const vynechane = new Set(duplicity.map((d) => d.id));
+      ok = ok.filter((id: string) => !vynechane.has(id));
+    }
     let ponukaPravidla: Awaited<ReturnType<typeof opravaAutomatu>> = null;
     if (ok.length) {
       const { error: e2 } = await supabase
@@ -606,7 +650,13 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
           );
       }
     }
-    return { zmenenych: ok.length, preskocenych: (riadky ?? []).length - ok.length, ponukaPravidla };
+    return {
+      zmenenych: ok.length,
+      preskocenych: (riadky ?? []).length - ok.length,
+      ponukaPravidla,
+      preskocene,
+      duplicity,
+    };
   });
 
 const riadokRozuctovania = z.object({
