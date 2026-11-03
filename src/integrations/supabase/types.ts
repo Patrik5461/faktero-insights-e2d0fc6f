@@ -1475,6 +1475,8 @@ export type Database = {
       odosielanie_mailov: {
         Row: {
           adresati: string[]
+          cez: string | null
+          chyba: string | null
           company_id: string
           created_at: string
           doklad_id: string | null
@@ -1487,6 +1489,8 @@ export type Database = {
         }
         Insert: {
           adresati: string[]
+          cez?: string | null
+          chyba?: string | null
           company_id: string
           created_at?: string
           doklad_id?: string | null
@@ -1499,6 +1503,8 @@ export type Database = {
         }
         Update: {
           adresati?: string[]
+          cez?: string | null
+          chyba?: string | null
           company_id?: string
           created_at?: string
           doklad_id?: string | null

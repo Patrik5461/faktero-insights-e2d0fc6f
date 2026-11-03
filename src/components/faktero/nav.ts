@@ -333,6 +333,8 @@ export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   // Ukladá sa do `companies` — upraviť ju smie len majiteľ, admin alebo účtovník.
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry", companyAdminOnly: true },
   { to: "/nastavenia/email-sablony", label: "E-mailové šablóny" },
+  // Adresy všetkých odberateľov, pozvaných aj účtovníka — server vydá len správcovi.
+  { to: "/nastavenia/odoslane-maily", label: "Odoslané e-maily", companyAdminOnly: true },
   { to: "/nastavenia/poznamky", label: "Preddefinované poznámky" },
   // Zálohy celej firmy (server: `spravca`).
   { to: "/nastavenia/zalohy", label: "Zálohy dokladov", companyAdminOnly: true },

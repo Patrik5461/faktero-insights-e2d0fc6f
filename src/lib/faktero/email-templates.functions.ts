@@ -152,10 +152,11 @@ export const sendTestEmailTemplateFn = createServerFn({ method: "POST" })
         html,
       }),
     });
-    await povolenie.hotovo(res.ok);
     if (!res.ok) {
       const t = await res.text();
+      await povolenie.hotovo(false, { chyba: t.slice(0, 500) });
       throw new Error(`Resend error: ${t.slice(0, 500)}`);
     }
+    await povolenie.hotovo(true, { cez: "resend" });
     return { ok: true };
   });

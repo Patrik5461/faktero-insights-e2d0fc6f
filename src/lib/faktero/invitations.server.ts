@@ -94,7 +94,12 @@ export async function vytvorPozvanku(
           </div>`,
         }),
       });
-      await povolenie.hotovo(odpoved.ok);
+      await povolenie.hotovo(
+        odpoved.ok,
+        odpoved.ok
+          ? { cez: "resend" }
+          : { chyba: `Poštová služba odmietla e-mail (${odpoved.status}).` },
+      );
       if (odpoved.ok) emailOdoslany = true;
       else chybaEmailu = `Poštová služba odmietla e-mail (${odpoved.status}).`;
     }

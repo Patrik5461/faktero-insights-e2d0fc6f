@@ -1019,6 +1019,8 @@
       "pohlad": false,
       "stlpce": {
         "adresati": { "druh": "array", "nullable": false, "volitelny": false, "povinny": true },
+        "cez": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "chyba": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "company_id": { "druh": "text", "nullable": false, "volitelny": false, "povinny": true },
         "created_at": { "druh": "text", "nullable": false, "volitelny": false, "povinny": false },
         "doklad_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },

@@ -199,6 +199,7 @@ import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authent
 import { Route as AuthenticatedNastaveniaIndexRouteImport } from './routes/_authenticated/nastavenia.index'
 import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
 import { Route as AuthenticatedNastaveniaEshopRouteImport } from './routes/_authenticated/nastavenia.eshop'
+import { Route as AuthenticatedNastaveniaOdoslaneMailyRouteImport } from './routes/_authenticated/nastavenia.odoslane-maily'
 import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
 import { Route as AuthenticatedNastaveniaPoznamkyRouteImport } from './routes/_authenticated/nastavenia.poznamky'
 import { Route as AuthenticatedNastaveniaPrihlasitAppkuRouteImport } from './routes/_authenticated/nastavenia.prihlasit-appku'
@@ -1401,6 +1402,12 @@ const AuthenticatedNastaveniaEshopRoute =
   AuthenticatedNastaveniaEshopRouteImport.update({
     id: '/nastavenia/eshop',
     path: '/nastavenia/eshop',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNastaveniaOdoslaneMailyRoute =
+  AuthenticatedNastaveniaOdoslaneMailyRouteImport.update({
+    id: '/nastavenia/odoslane-maily',
+    path: '/nastavenia/odoslane-maily',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNastaveniaOnlinePlatbyRoute =
@@ -2691,6 +2698,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/eshop': typeof AuthenticatedNastaveniaEshopRoute
+  '/nastavenia/odoslane-maily': typeof AuthenticatedNastaveniaOdoslaneMailyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
   '/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
@@ -3070,6 +3078,7 @@ export interface FileRoutesByTo {
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/eshop': typeof AuthenticatedNastaveniaEshopRoute
+  '/nastavenia/odoslane-maily': typeof AuthenticatedNastaveniaOdoslaneMailyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
   '/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
@@ -3460,6 +3469,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/_authenticated/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/_authenticated/nastavenia/eshop': typeof AuthenticatedNastaveniaEshopRoute
+  '/_authenticated/nastavenia/odoslane-maily': typeof AuthenticatedNastaveniaOdoslaneMailyRoute
   '/_authenticated/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/_authenticated/nastavenia/poznamky': typeof AuthenticatedNastaveniaPoznamkyRoute
   '/_authenticated/nastavenia/prihlasit-appku': typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
@@ -3850,6 +3860,7 @@ export interface FileRouteTypes {
     | '/jazdy/vozidla'
     | '/nastavenia/email-sablony'
     | '/nastavenia/eshop'
+    | '/nastavenia/odoslane-maily'
     | '/nastavenia/online-platby'
     | '/nastavenia/poznamky'
     | '/nastavenia/prihlasit-appku'
@@ -4229,6 +4240,7 @@ export interface FileRouteTypes {
     | '/jazdy/vozidla'
     | '/nastavenia/email-sablony'
     | '/nastavenia/eshop'
+    | '/nastavenia/odoslane-maily'
     | '/nastavenia/online-platby'
     | '/nastavenia/poznamky'
     | '/nastavenia/prihlasit-appku'
@@ -4618,6 +4630,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/vozidla'
     | '/_authenticated/nastavenia/email-sablony'
     | '/_authenticated/nastavenia/eshop'
+    | '/_authenticated/nastavenia/odoslane-maily'
     | '/_authenticated/nastavenia/online-platby'
     | '/_authenticated/nastavenia/poznamky'
     | '/_authenticated/nastavenia/prihlasit-appku'
@@ -6337,6 +6350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNastaveniaEshopRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/nastavenia/odoslane-maily': {
+      id: '/_authenticated/nastavenia/odoslane-maily'
+      path: '/nastavenia/odoslane-maily'
+      fullPath: '/nastavenia/odoslane-maily'
+      preLoaderRoute: typeof AuthenticatedNastaveniaOdoslaneMailyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/nastavenia/online-platby': {
       id: '/_authenticated/nastavenia/online-platby'
       path: '/nastavenia/online-platby'
@@ -7875,6 +7895,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJazdyVozidlaRoute: typeof AuthenticatedJazdyVozidlaRoute
   AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
   AuthenticatedNastaveniaEshopRoute: typeof AuthenticatedNastaveniaEshopRoute
+  AuthenticatedNastaveniaOdoslaneMailyRoute: typeof AuthenticatedNastaveniaOdoslaneMailyRoute
   AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   AuthenticatedNastaveniaPoznamkyRoute: typeof AuthenticatedNastaveniaPoznamkyRoute
   AuthenticatedNastaveniaPrihlasitAppkuRoute: typeof AuthenticatedNastaveniaPrihlasitAppkuRoute
@@ -8001,6 +8022,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNastaveniaEmailSablonyRoute:
     AuthenticatedNastaveniaEmailSablonyRoute,
   AuthenticatedNastaveniaEshopRoute: AuthenticatedNastaveniaEshopRoute,
+  AuthenticatedNastaveniaOdoslaneMailyRoute:
+    AuthenticatedNastaveniaOdoslaneMailyRoute,
   AuthenticatedNastaveniaOnlinePlatbyRoute:
     AuthenticatedNastaveniaOnlinePlatbyRoute,
   AuthenticatedNastaveniaPoznamkyRoute: AuthenticatedNastaveniaPoznamkyRoute,
