@@ -179,7 +179,7 @@ async function prihlas(prehliadac) {
         ([k, v]) => localStorage.setItem(k, v),
         [klucRelacie(), JSON.stringify(relacia)],
       );
-      await page.goto(`${BASE}/prehlad`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${BASE}/dashboard`, { waitUntil: "domcontentloaded" });
       await page.waitForURL((u) => !u.pathname.startsWith("/prihlasenie"), { timeout: 40000 });
     }
     await page
