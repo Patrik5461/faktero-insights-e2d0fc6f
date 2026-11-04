@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { MAX_UCTOVNEJ_POZNAMKY } from "@/lib/faktero/uctovna-poznamka";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { BookCheck, Download, Loader2, Lock, Undo2 } from "lucide-react";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { kvAutoVystavenej, textKv } from "@/lib/faktero/kv-auto";
+import { navrhClenenieVystavenej } from "@/lib/faktero/clenenie-vystavenej";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
@@ -155,6 +156,58 @@ export function useZauctovanieVystavenej({
   const neuctuje = !isAccountingDocument(inv.type);
   const zauctovana = !neuctuje && Boolean(inv.zauctovane_at);
 
+  /*
+    Návrh členenia DPH do prázdneho poľa (ako pri faktúre): najprv to, čo
+    navrhol motor automatického účtovania (`auto_uctovanie_navrh`), inak
+    pravidlo → predvolené firmy → režim dane. Dobropis 20260004 (SFC) mal
+    návrh „UD“, ale pole ostalo „—“ — návrh sa ukazoval len v štítku.
+    Predvyplní sa len nezaúčtovanému dokladu mimo Pohody; uloží ho až
+    Uložiť / Zaúčtovať (alebo Potvrdiť návrh).
+  */
+  const navrhClenenia: string | null = (() => {
+    if (neuctuje || !navrhy) return null;
+    const ulozeny = String((inv.auto_uctovanie_navrh as any)?.clenenieDph ?? "").trim();
+    if (ulozeny) return ulozeny;
+    return (
+      navrhClenenieVystavenej({
+        predvoleneFirmy: navrhy.predvoleneClenenie,
+        platitel: navrhy.platitel !== false,
+        krajinaFirmy: krajinaFirmy || "SK",
+        ciselnik: navrhy.clenenia ?? [],
+        doklad: {
+          opravny:
+            inv.type === "credit_note" ||
+            inv.type === "debit_note" ||
+            Boolean(inv.opravuje_fakturu_id),
+          dph: Number(inv.vat_total ?? 0),
+          reverseCharge: Boolean(inv.reverse_charge),
+          reverseChargeType: inv.reverse_charge_type ?? null,
+          euPlnenie: inv.eu_plnenie ?? null,
+          osobitnaUprava: inv.osobitna_uprava ?? null,
+          ossKrajina: inv.oss_country ?? null,
+          partnerIcDph: inv.customer_ic_dph ?? null,
+          partnerKrajina: inv.customer_country ?? null,
+        },
+      })?.kod ?? null
+    );
+  })();
+  const predvyplnene = useRef<string | null>(null);
+  useEffect(() => {
+    predvyplnene.current = null;
+  }, [inv.id]);
+  useEffect(() => {
+    if (!stav || vPohode || zauctovana || neuctuje || inv.status === "draft") return;
+    if (String(inv.pohoda_clenenie_dph ?? "").trim() || !navrhClenenia) return;
+    if (predvyplnene.current === navrhClenenia) return;
+    predvyplnene.current = navrhClenenia;
+    setH((x) => (x.clenenie.trim() ? x : { ...x, clenenie: navrhClenenia }));
+  }, [stav, vPohode, zauctovana, neuctuje, inv.status, inv.pohoda_clenenie_dph, navrhClenenia]);
+  // Pole drží návrh, ktorý ešte nie je uložený — povie to veta pod poliami.
+  const clenenieZNavrhu =
+    !String(inv.pohoda_clenenie_dph ?? "").trim() &&
+    Boolean(navrhClenenia) &&
+    h.clenenie.trim() === navrhClenenia;
+
   async function uloz(lenUlozit: boolean) {
     setBusy(true);
     try {
@@ -238,6 +291,13 @@ export function useZauctovanieVystavenej({
   /* Účtovanie po položkách, nápoveda a predvolené kódy. */
   const poPolozkachANapoveda = (
     <>
+      {clenenieZNavrhu ? (
+        <p className="mt-2 text-xs text-muted-foreground" data-clenenie-z-navrhu="">
+          {t("Členenie DPH {kod} je z návrhu zaúčtovania — uloží sa tlačidlom Zaúčtovať alebo Uložiť bez zaúčtovania.", {
+            kod: navrhClenenia ?? "",
+          })}
+        </p>
+      ) : null}
       <label className="mt-3 flex items-center gap-2 text-sm">
         <input
           type="checkbox"

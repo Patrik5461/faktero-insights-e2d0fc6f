@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { BookCheck, ChevronDown, ChevronUp, Star } from "lucide-react";
@@ -7,6 +7,8 @@ import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { upozornenieA1 } from "@/lib/faktero/kv-urcenie";
 import { kvAutoVystavenej, textKvAuto } from "@/lib/faktero/kv-auto";
+import { navrhClenenieVystavenej } from "@/lib/faktero/clenenie-vystavenej";
+import { isAccountingDocument } from "@/lib/faktero/uctovny-doklad";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { prvePravidlo, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
@@ -43,6 +45,7 @@ export function UctovneNastaveniaFaktury({
   onSposobPlatby,
   kvDoklad,
   ulozena,
+  predvyplnitClenenie,
 }: {
   companyId: string | null;
   typ: string;
@@ -65,6 +68,12 @@ export function UctovneNastaveniaFaktury({
    * beží len pri založení a zmene odberateľa), preto sa jeho kód neponúka.
    */
   ulozena?: boolean;
+  /**
+   * Prázdne členenie DPH sa vyplní návrhom (pravidlo → predvolené firmy →
+   * režim dane) — pri dobropise a ťarchopise, aby ho účtovník videl a mohol
+   * zmeniť ešte pred vystavením. Ručne zmenené pole sa už neprepíše.
+   */
+  predvyplnitClenenie?: boolean;
   /** Údaje faktúry pre automatické členenie KV (`kv-auto.ts`). */
   kvDoklad?: {
     /** Faktúra nesie DPH; bez údaja sa predpokladá, že áno. */
@@ -135,14 +144,67 @@ export function UctovneNastaveniaFaktury({
     [pravidla, odberatel?.ico, odberatel?.name, typ],
   );
 
+  /*
+    Návrh členenia DPH: pravidlo → (neplatiteľ: nezahrnovať) → prenesenie →
+    predvolené firmy → režim dane. Rovnaký pre faktúru, dobropis aj ťarchopis.
+  */
+  const opravnyDoklad = Boolean(kvDoklad?.opravny) || typ === "credit_note" || typ === "debit_note";
+  const navrhClenenia = navrhy
+    ? navrhClenenieVystavenej({
+        pravidlo: pravidlo?.clenenie_dph,
+        pdpFirmy: clenenieDphPdp,
+        predvoleneFirmy: navrhy.predvoleneClenenie,
+        platitel: navrhy.platitel !== false,
+        krajinaFirmy: krajinaFirmy || "SK",
+        ciselnik: navrhy.clenenia ?? [],
+        doklad: {
+          opravny: opravnyDoklad,
+          dph: kvDoklad?.maDph === undefined ? null : kvDoklad.maDph ? 1 : 0,
+          reverseCharge: Boolean(reverseCharge),
+          reverseChargeType: kvDoklad?.reverseChargeType ?? null,
+          partnerIcDph: odberatel?.icDph ?? null,
+          partnerKrajina: kvDoklad?.krajinaOdberatela ?? null,
+        },
+      })
+    : null;
   const predvolene = {
     predkontacia: pravidlo?.predkontacia || navrhy?.predvolenaPredkontacia || "",
     clenenie:
+      navrhClenenia?.kod ||
       pravidlo?.clenenie_dph ||
       (reverseCharge ? clenenieDphPdp : null) ||
       navrhy?.predvoleneClenenie ||
       "",
-    kv: pravidlo?.kv_clenenie || "",
+    // Opravný doklad A.1/A.2 z pravidla pre faktúry nedostane (spúšťač ho vynechá) — patrí do C.1 / D.2.
+    kv:
+      opravnyDoklad && ["A1", "A2"].includes(String(pravidlo?.kv_clenenie ?? "").toUpperCase())
+        ? ""
+        : pravidlo?.kv_clenenie || "",
+  };
+  // Zálohová faktúra sa neúčtuje — členenie DPH nedostane (uctovny-doklad.ts).
+  const uctuje = isAccountingDocument(typ);
+
+  /*
+    Predvyplnenie prázdneho členenia (dobropis, ťarchopis). Kým ho nikto
+    nezmenil, ide s návrhom (zmena odberateľa či prenesenia ho prepočíta);
+    po ručnej zmene — aj vymazaní — ostane, čo človek zvolil.
+  */
+  const rucneClenenie = useRef(false);
+  const autoClenenie = useRef("");
+  useEffect(() => {
+    if (!predvyplnitClenenie || ulozena || !uctuje || rucneClenenie.current) return;
+    const navrh = predvolene.clenenie;
+    if (!navrh) return;
+    const aktualne = kody.clenenie.trim();
+    if (aktualne && aktualne !== autoClenenie.current) return;
+    if (aktualne === navrh) return;
+    autoClenenie.current = navrh;
+    onKody({ ...kody, clenenie: navrh });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [predvyplnitClenenie, ulozena, uctuje, predvolene.clenenie, kody.clenenie]);
+  const zmenClenenie = (v: string) => {
+    rucneClenenie.current = true;
+    onKody({ ...kody, clenenie: v });
   };
   /* Čo faktúra dostane podľa zákona (s predvoleným firmy), keď pole aj pravidlo ostanú prázdne. */
   const kvAuto = kvAutoVystavenej(
@@ -194,11 +256,39 @@ export function UctovneNastaveniaFaktury({
           )}
         </span>
       </button>
-      {/* Členenie KV je vidieť vždy — aj keď sú ostatné účtovné nastavenia zbalené. */}
-      {bezKv ? null : (
-        <div className="px-5 pb-5" data-kv-faktury="">
+      {/*
+        Členenie DPH a KV je vidieť vždy — aj keď sú ostatné účtovné nastavenia
+        zbalené, pri každej firme (s Pohodou aj bez nej) a pri každom účtovnom
+        doklade vrátane dobropisu a ťarchopisu.
+      */}
+      {bezKv && !uctuje ? null : (
+        <div className="px-5 pb-5" data-kv-faktury="" data-clenenie-faktury="">
           <MriezkaDokladu>
-            <PoleDokladu label={t("Členenie KV DPH")} htmlFor="kv-faktury" className={bunka.cela}>
+            {uctuje ? (
+              <PoleDokladu
+                label={t("Členenie DPH")}
+                htmlFor="clenenie-faktury"
+                className={bezKv ? bunka.cela : bunka.polovica}
+              >
+                <div id="clenenie-faktury" className="min-w-0">
+                  <KodPohody
+                    ariaLabel="Členenie DPH"
+                    value={kody.clenenie}
+                    onChange={zmenClenenie}
+                    moznosti={navrhy?.clenenia ?? []}
+                    placeholder={predvolene.clenenie || t("napr. UD")}
+                    className={VSTUP_DOKLADU}
+                    vyber
+                  />
+                </div>
+              </PoleDokladu>
+            ) : null}
+            {bezKv ? null : (
+            <PoleDokladu
+              label={t("Členenie KV DPH")}
+              htmlFor="kv-faktury"
+              className={uctuje ? bunka.polovica : bunka.cela}
+            >
               <select
                 id="kv-faktury"
                 value={kody.kv}
@@ -228,6 +318,7 @@ export function UctovneNastaveniaFaktury({
                 </p>
               )}
             </PoleDokladu>
+            )}
           </MriezkaDokladu>
         </div>
       )}
@@ -281,23 +372,6 @@ export function UctovneNastaveniaFaktury({
                   onChange={(v) => onKody({ ...kody, predkontacia: v })}
                   moznosti={navrhy?.predkontacie ?? []}
                   placeholder={predvolene.predkontacia || t("napr. 3Fv")}
-                  className={VSTUP_DOKLADU}
-                  vyber
-                />
-              </div>
-            </PoleDokladu>
-            <PoleDokladu
-              label={t("Členenie DPH")}
-              htmlFor="clenenie-faktury"
-              className={bunka.polovica}
-            >
-              <div id="clenenie-faktury" className="min-w-0">
-                <KodPohody
-                  ariaLabel="Členenie DPH"
-                  value={kody.clenenie}
-                  onChange={(v) => onKody({ ...kody, clenenie: v })}
-                  moznosti={navrhy?.clenenia ?? []}
-                  placeholder={predvolene.clenenie || t("napr. UD")}
                   className={VSTUP_DOKLADU}
                   vyber
                 />

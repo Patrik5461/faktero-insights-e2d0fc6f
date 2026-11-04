@@ -1,6 +1,7 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
 import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
+import { kvOpravnehoZPovodnej } from "@/lib/faktero/kv-urcenie";
 import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
@@ -497,7 +498,7 @@ function NewInvoice() {
       const { data: f } = await supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, customer_id, currency, language, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, osobitna_uprava, job_id, order_number, rounding_mode",
+          "id, invoice_number, type, customer_id, currency, language, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, osobitna_uprava, job_id, order_number, rounding_mode, pohoda_clenenie_dph, kv_clenenie",
         )
         .eq("company_id", cid)
         .eq("id", invoiceId)
@@ -506,6 +507,20 @@ function NewInvoice() {
       if ((f as any).type !== "regular")
         return toast.error(tarchopis ? t("Ťarchopis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej.") : t("Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej."));
       setOpravujeCislo(String((f as any).invoice_number ?? ""));
+      /*
+        Členenie DPH a KV z opravovanej faktúry — dobropis opravuje to isté
+        plnenie. KV A.1/A.2 sa mení na C.1 (opravné doklady s odkazom na
+        pôvodnú faktúru). Keď faktúra kódy nemá, pole doplní návrh
+        (UctovneNastaveniaFaktury → predvyplnitClenenie).
+      */
+      const clenenieFaktury = String((f as any).pohoda_clenenie_dph ?? "").trim();
+      const kvFaktury = kvOpravnehoZPovodnej((f as any).kv_clenenie);
+      if (clenenieFaktury || kvFaktury)
+        setForm((x) => ({
+          ...x,
+          clenenie: clenenieFaktury || x.clenenie,
+          kv: kvFaktury || x.kv,
+        }));
       // Text nad položkami je povinný — pri dobropise ho dá väzba sama.
       setForm((x) =>
         !jeUvodFaktury(x.intro_note)
@@ -2847,6 +2862,7 @@ function NewInvoice() {
               return c ? { ico: c.ico, name: c.name, dic: c.dic, icDph: c.ic_dph } : null;
             })()}
             reverseCharge={form.reverse_charge}
+            predvyplnitClenenie={form.type === "credit_note" || form.type === "debit_note"}
             kvDoklad={{
               // Kým faktúra nemá sumu, nevie sa, či nesie DPH — ukáže sa bežné určenie.
               maDph: Number(totals.total ?? 0)

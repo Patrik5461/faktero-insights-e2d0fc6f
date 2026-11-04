@@ -45,7 +45,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("companies")
           .select(
-            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady",
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, vat_payer",
           )
           .eq("id", data.company_id)
           .maybeSingle(),
@@ -125,8 +125,27 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         ponuka(ciselnik ?? [], "predkontacia", agendy, kluc),
         pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),
       ),
+      /*
+        Členenie DPH dobropisu je to isté ako pri faktúre (UD, UDpdp, UN …) —
+        kódy obmedzené v číselníku na vydanú faktúru sa ponúknu aj dobropisu,
+        inak by mu z ponuky zmizli (kód obmedzený len na dobropis ostáva).
+      */
       clenenia: doplnene(
-        ponukaClenenia(ponuka(ciselnik ?? [], "clenenie_dph", [], kluc), kluc),
+        ponukaClenenia(
+          kluc === "dobropis"
+            ? ponuka(
+                ((ciselnik ?? []) as any[]).map((r) =>
+                  Array.isArray(r.druhy_dokladov) && r.druhy_dokladov.includes("faktura")
+                    ? { ...r, druhy_dokladov: [...r.druhy_dokladov, "dobropis"] }
+                    : r,
+                ),
+                "clenenie_dph",
+                [],
+                kluc,
+              )
+            : ponuka(ciselnik ?? [], "clenenie_dph", [], kluc),
+          kluc,
+        ),
         pocet([predvoleneClenenie, ...vsetky.map((r: any) => r.clenenie_dph ?? r.pohoda_clenenie_dph)]),
       ),
       predvolenaPredkontacia,
@@ -138,6 +157,8 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           ? firma?.kv_clenenie_doklady
           : firma?.kv_clenenie_prijata) ?? null) as string | null,
       maCiselnik: (ciselnik ?? []).length > 0,
+      /** Firma je platiteľ DPH — neplatiteľ dostane predvolené „nezahrnovať do priznania“. */
+      platitel: firma?.vat_payer !== false,
       strediska: ponuka(ciselnik ?? [], "stredisko"),
       cinnosti: ponuka(ciselnik ?? [], "cinnost"),
       pokladne: ponuka(ciselnik ?? [], "pokladna"),
@@ -865,6 +886,23 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
       data.company_id,
       context.userId,
     );
+    /*
+      Uložený návrh zaúčtovania sa prepočíta proti novým kódom — inak by
+      na doklade aj na stránke Na kontrolu ďalej svietilo „Chýba
+      predkontácia“, hoci ju človek práve vybral (dobropis 20260004 SFC).
+    */
+    if (data.lenUlozit && f.auto_uctovanie_navrh) {
+      try {
+        const srv = await import("./auto-uctovanie.server");
+        const { data: row } = await supabase.from("invoices").select("*").eq("id", f.id).maybeSingle();
+        if (row && !row.zauctovane_at) {
+          const n = await srv.navrhPreRiadok(supabase, "vystavena", row, { ai: false });
+          if (!n.neprepisovat) await srv.ulozNavrh(supabase, "vystavena", row.id, n);
+        }
+      } catch (e) {
+        console.warn("[zauctovanie] návrh sa neprepočítal:", String((e as Error)?.message ?? e).slice(0, 160));
+      }
+    }
     return { ok: true, ponukaPravidla };
   });
 

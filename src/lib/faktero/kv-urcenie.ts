@@ -71,12 +71,37 @@ export function kvVystavenehoDokladu(o: KvVystavenehoVstup): string {
   // Zálohová faktúra nie je daňový doklad.
   if (o.typ === "proforma") return "";
   const r = rucneKv(o.kvDokladu);
+  /*
+    Opravný doklad (dobropis, ťarchopis, § 25a) nikdy nejde do A.1/A.2 ako
+    bežná faktúra — patrí do C.1 s odkazom na pôvodnú faktúru, oprava
+    faktúry občanovi do D.2. Ručné A.1/A.2 (skopírované z faktúry alebo
+    z pravidla pre vystavené faktúry) preto rozhodne automatika.
+  */
+  if (r !== null && jeOpravnyVystaveny(o) && (r === "A1" || r === "A2")) return kvAuto(o);
   if (r !== null) return r === "" || KV_KODY_VYSTAVENE.includes(r) ? r : kvAuto(o);
   return kvAuto(o);
 }
 
+function jeOpravnyVystaveny(o: Pick<KvVystavenehoVstup, "opravny" | "typ">): boolean {
+  return Boolean(o.opravny) || o.typ === "credit_note" || o.typ === "debit_note";
+}
+
+/**
+ * Členenie KV, ktoré dobropis či ťarchopis prevezme z opravovanej faktúry:
+ * A.1 a A.2 sa menia na C.1 (opravné doklady s odkazom na pôvodnú faktúru),
+ * D.1/D.2 a „nezahŕňať“ ostávajú. Prázdne = automaticky.
+ */
+export function kvOpravnehoZPovodnej(kvPovodnej: unknown): string {
+  const k = String(kvPovodnej ?? "")
+    .trim()
+    .toUpperCase();
+  if (k === "A1" || k === "A2" || k === "C1") return "C1";
+  if (k === "D1" || k === "D2" || k === "X") return k;
+  return "";
+}
+
 function kvAuto(o: KvVystavenehoVstup): string {
-  const opravny = Boolean(o.opravny) || o.typ === "credit_note" || o.typ === "debit_note";
+  const opravny = jeOpravnyVystaveny(o);
   const podnikatel = odberatelPodnikatel({
     icDph: o.icDphOdberatela,
     ico: o.icoOdberatela,
@@ -140,6 +165,8 @@ export type KvPrijatehoVstup = {
 
 export function kvPrijatehoDokladu(o: KvPrijatehoVstup): string {
   const r = rucneKv(o.kvDokladu);
+  // Prijatý dobropis s ručným B.2 (z pravidla pre prijaté faktúry) patrí do C.2 s odkazom na pôvodnú.
+  if (r === "B2" && o.dobropis && !o.blocek) return "C2";
   if (r !== null) return r;
   if (jeNezahrnovat(o.clenenieDph)) return "";
   if (o.pdp) return "B1";

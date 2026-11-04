@@ -31,6 +31,9 @@ import { VyberKvDph, usePredvyplnenieKv } from "@/components/faktero/VyberKvDph"
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { kvAutoPrijatej } from "@/lib/faktero/kv-auto";
 import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
+import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
+import { KodPohody } from "@/components/faktero/KodPohody";
+import type { MoznostKodu } from "@/lib/faktero/predkontacie";
 import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
 
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
@@ -232,6 +235,32 @@ export function PrijataFakturaForm({
   const [polozkyDokladu, setPolozkyDokladu] = useState<PolozkaK[]>([]);
   /** Členenie KV, ako bolo uložené — úprava ho posiela len pri zmene (zámok odovzdaných). */
   const kvUlozeneRef = useRef<string>("");
+  /** Členenie DPH, ako bolo uložené — úprava ho posiela len pri zmene (zámok odovzdaných). */
+  const clenenieUlozeneRef = useRef<string>("");
+  /*
+    Ponuka členení DPH (číselník firmy, inak základné SK) a predvolené pre
+    prijaté — pole je pri každej prijatej faktúre aj dobropise, nielen v detaile.
+  */
+  const nacitajNavrhyKodov = useServerFn(navrhyKodovFn);
+  const [clenenia, setClenenia] = useState<{ moznosti: MoznostKodu[]; predvolene: string | null }>({
+    moznosti: [],
+    predvolene: null,
+  });
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    let zive = true;
+    nacitajNavrhyKodov({ data: { company_id: cid, pre: "prijata" } })
+      .then(
+        (n: any) =>
+          zive &&
+          setClenenia({ moznosti: n?.clenenia ?? [], predvolene: n?.predvoleneClenenie ?? null }),
+      )
+      .catch(() => {});
+    return () => {
+      zive = false;
+    };
+  }, [nacitajNavrhyKodov]);
   const kvPredvyplnenie = usePredvyplnenieKv(getActiveCompanyId(), "prijata", {
     supplier_ico: form.supplier_ico.trim() || null,
     supplier_name: form.supplier_name.trim() || null,
@@ -327,6 +356,7 @@ export function PrijataFakturaForm({
         kategoria: (data as any).category ?? "",
       });
       kvUlozeneRef.current = (data as any).kv_clenenie ?? "";
+      clenenieUlozeneRef.current = (data as any).pohoda_clenenie_dph ?? "";
       setPolozkyDokladu(Array.isArray(data.items) ? (data.items as PolozkaK[]) : []);
       setNacitavam(false);
     })();
@@ -536,6 +566,8 @@ export function PrijataFakturaForm({
         type: form.type,
         // Prázdne = automaticky (alebo z pravidla — doplní ho spúšťač v databáze).
         kv_clenenie: form.type === "proforma" ? null : kody.kv || null,
+        // Prázdne = predvolené (alebo z pravidla — doplní ho spúšťač v databáze).
+        pohoda_clenenie_dph: form.type === "proforma" ? null : kody.clenenie.trim() || null,
         advance_invoice_id:
           form.type === "regular" && form.advance_invoice_id ? form.advance_invoice_id : null,
         file_path,
@@ -547,6 +579,8 @@ export function PrijataFakturaForm({
         const { created_by, company_id, ...zmeny } = payload;
         const uprava: Record<string, unknown> = { ...zmeny };
         if ((kody.kv || "") === (kvUlozeneRef.current || "")) delete uprava.kv_clenenie;
+        if (kody.clenenie.trim() === (clenenieUlozeneRef.current || "").trim())
+          delete uprava.pohoda_clenenie_dph;
         if (!file) {
           delete uprava.file_path;
           delete uprava.file_mime;
@@ -1007,6 +1041,21 @@ export function PrijataFakturaForm({
           />
         )}
       </Field>
+      {form.type === "proforma" ? null : (
+        <Field label="Členenie DPH">
+          <div className="min-w-0" data-clenenie-prijatej="">
+            <KodPohody
+              ariaLabel="Členenie DPH"
+              value={kody.clenenie}
+              onChange={(v) => setKody((k) => ({ ...k, clenenie: v }))}
+              moznosti={clenenia.moznosti}
+              placeholder={clenenia.predvolene || t("napr. PD")}
+              className="input"
+              vyber
+            />
+          </div>
+        </Field>
+      )}
       <Field label="Odpočítanie dane" ramcek>
         <span className="pole-zaskrtnutie flex items-center gap-2 text-sm">
           <input
