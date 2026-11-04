@@ -48,7 +48,8 @@ async function stranaKompaktne(t, moznosti = {}) {
   return p;
 }
 
-export async function overKompaktnyDetail(t, { id, hladaj, navyse }) {
+/** `neuctuje` = zálohová faktúra: bez polí zaúčtovania, v pätičke len „Stiahnuť XML pre Pohodu“. */
+export async function overKompaktnyDetail(t, { id, hladaj, navyse, neuctuje = false }) {
   const page = await stranaKompaktne(t);
   await page.setViewportSize({ width: 1440, height: 900 });
 
@@ -90,53 +91,85 @@ export async function overKompaktnyDetail(t, { id, hladaj, navyse }) {
     );
   });
 
-  await t.krok("zaúčtovanie hneď za typom dokladu, tlačidlá v pätičke", async () => {
-    const sekcia = page.locator("section#zauctovanie");
-    await sekcia.waitFor({ timeout: 20000 });
-    t.over(
-      (await sekcia.getAttribute("data-sekcia")) === "Základné údaje",
-      "kotva #zauctovanie nie je sekcia Základné údaje",
-    );
-    const text = (await sekcia.innerText()).replace(/\s+/g, " ");
-    const k = (s) => text.indexOf(s);
-    t.over(
-      k("Typ dokladu") > -1 &&
-        k("Typ dokladu") < k("Predkontácia") &&
-        k("Predkontácia") < k("Členenie DPH") &&
-        k("Členenie DPH") < k("Členenie KV DPH") &&
-        k("Členenie KV DPH") < k("Dátum vystavenia"),
-      `poradie polí: ${text.slice(0, 300)}`,
-    );
-    t.over(k("Kategória nákladu") === -1, "vystavená faktúra nemá kategóriu nákladu");
-    const pata = page.locator("[data-panel-kompaktny] > div").last();
-    for (const x of ["Uložiť bez zaúčtovania", "Zaúčtovať"])
+  if (neuctuje)
+    await t.krok("zálohová sa neúčtuje: bez polí, v pätičke len XML pre Pohodu", async () => {
+      const sekcia = page.locator("section#zauctovanie");
+      await sekcia.waitFor({ timeout: 20000 });
       t.over(
-        (await pata.getByRole("button", { name: x, exact: true }).count()) === 1,
-        `v pätičke chýba „${x}“`,
+        (await sekcia.getAttribute("data-sekcia")) === "Základné údaje",
+        "kotva #zauctovanie nie je sekcia Základné údaje",
       );
-    if (navyse) await navyse(page);
-  });
-
-  await t.krok("uloženie predkontácie z číselníka (pätička)", async () => {
-    const sekcia = page.locator("section#zauctovanie");
-    const hladanie = page.getByPlaceholder(/Hľadať kód, názov alebo účet/).last();
-    for (let i = 0; i < 4 && !(await hladanie.isVisible().catch(() => false)); i++) {
-      await sekcia.getByRole("combobox", { name: "Predkontácia", exact: true }).first().click();
-      await hladanie.waitFor({ timeout: 3000 }).catch(() => {});
-    }
-    await hladanie.fill(hladaj);
-    await page.getByRole("option").filter({ hasText: hladaj }).first().click();
-    await page
-      .locator("[data-panel-kompaktny]")
-      .getByRole("button", { name: "Uložiť bez zaúčtovania" })
-      .click();
-    const f = await t.cakajNa("predkontácia v databáze", async () => {
-      const r = await t.rest.get(`invoices?id=eq.${id}&select=pohoda_predkontacia,zauctovane_at`);
-      const x = r.data?.[0];
-      return x?.pohoda_predkontacia ? x : null;
+      await sekcia.locator("[data-neuctuje-sa]").first().waitFor({ timeout: 10000 });
+      const text = (await sekcia.innerText()).replace(/\s+/g, " ");
+      t.over(text.includes("Typ dokladu"), `chýba Typ dokladu: ${text.slice(0, 300)}`);
+      for (const z of ["Predkontácia", "Členenie DPH", "Členenie KV DPH"])
+        t.over(!text.includes(z), `zálohová má pole „${z}“`);
+      const panel = page.locator("[data-panel-kompaktny]").first();
+      t.over(
+        (await panel.getByText("Neúčtuje sa", { exact: true }).count()) > 0,
+        "chýba stav „Neúčtuje sa“",
+      );
+      const pata = page.locator("[data-panel-kompaktny] > div").last();
+      for (const x of ["Uložiť bez zaúčtovania", "Zaúčtovať"])
+        t.over(
+          (await panel.getByRole("button", { name: x, exact: true }).count()) === 0,
+          `zálohová má tlačidlo „${x}“`,
+        );
+      t.over(
+        (await pata.getByRole("button", { name: "Stiahnuť XML pre Pohodu" }).count()) === 1,
+        "v pätičke chýba „Stiahnuť XML pre Pohodu“",
+      );
+      if (navyse) await navyse(page);
     });
-    t.over(!f.zauctovane_at, "Uložiť bez zaúčtovania faktúru zaúčtovalo");
-  });
+  else {
+    await t.krok("zaúčtovanie hneď za typom dokladu, tlačidlá v pätičke", async () => {
+      const sekcia = page.locator("section#zauctovanie");
+      await sekcia.waitFor({ timeout: 20000 });
+      t.over(
+        (await sekcia.getAttribute("data-sekcia")) === "Základné údaje",
+        "kotva #zauctovanie nie je sekcia Základné údaje",
+      );
+      const text = (await sekcia.innerText()).replace(/\s+/g, " ");
+      const k = (s) => text.indexOf(s);
+      t.over(
+        k("Typ dokladu") > -1 &&
+          k("Typ dokladu") < k("Predkontácia") &&
+          k("Predkontácia") < k("Členenie DPH") &&
+          k("Členenie DPH") < k("Členenie KV DPH") &&
+          k("Členenie KV DPH") < k("Dátum vystavenia"),
+        `poradie polí: ${text.slice(0, 300)}`,
+      );
+      t.over(k("Kategória nákladu") === -1, "vystavená faktúra nemá kategóriu nákladu");
+      const pata = page.locator("[data-panel-kompaktny] > div").last();
+      for (const x of ["Uložiť bez zaúčtovania", "Zaúčtovať"])
+        t.over(
+          (await pata.getByRole("button", { name: x, exact: true }).count()) === 1,
+          `v pätičke chýba „${x}“`,
+        );
+      if (navyse) await navyse(page);
+    });
+
+    await t.krok("uloženie predkontácie z číselníka (pätička)", async () => {
+      const sekcia = page.locator("section#zauctovanie");
+      const hladanie = page.getByPlaceholder(/Hľadať kód, názov alebo účet/).last();
+      for (let i = 0; i < 4 && !(await hladanie.isVisible().catch(() => false)); i++) {
+        await sekcia.getByRole("combobox", { name: "Predkontácia", exact: true }).first().click();
+        await hladanie.waitFor({ timeout: 3000 }).catch(() => {});
+      }
+      await hladanie.fill(hladaj);
+      await page.getByRole("option").filter({ hasText: hladaj }).first().click();
+      await page
+        .locator("[data-panel-kompaktny]")
+        .getByRole("button", { name: "Uložiť bez zaúčtovania" })
+        .click();
+      const f = await t.cakajNa("predkontácia v databáze", async () => {
+        const r = await t.rest.get(`invoices?id=eq.${id}&select=pohoda_predkontacia,zauctovane_at`);
+        const x = r.data?.[0];
+        return x?.pohoda_predkontacia ? x : null;
+      });
+      t.over(!f.zauctovane_at, "Uložiť bez zaúčtovania faktúru zaúčtovalo");
+    });
+  }
 
   await t.krok("úzka obrazovka: náhľad nad panelom, bez posuvu do strany", async () => {
     const m = await stranaKompaktne(t, { mobil: true });

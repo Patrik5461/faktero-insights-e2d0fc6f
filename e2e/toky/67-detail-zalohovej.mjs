@@ -1,7 +1,8 @@
 /*
   Jednotný detail zálohovej faktúry (QA firma Test) — to isté rozloženie ako
   nespracovaný doklad a vystavená faktúra (tok 66): náhľad PDF, údaje, pod
-  nimi karta „Zaúčtovanie“ s predkontáciou zálohových faktúr, prepnutie strany
+  nimi karta „Zaúčtovanie“ — zálohová sa neúčtuje (bez polí, len „Neúčtuje sa“
+  a „Stiahnuť XML pre Pohodu“; XML sa nesťahuje, zapísalo by odovzdanie), prepnutie strany
   a úzka obrazovka. Navyše: karta zálohy s „Daňovým dokladom k prijatej
   platbe“ ostala. Faktúra sa po toku zmaže, voľba strany v účte sa vráti.
 */
@@ -9,7 +10,7 @@ import { pripravStranu } from "./64-nahlad-strana.mjs";
 import { overJednotnyDetail, zalozFakturu } from "./66-detail-vystavenej.mjs";
 
 export default {
-  popis: "detail zálohovej faktúry ako nespracovaný doklad — náhľad, zaúčtovanie, záloha",
+  popis: "detail zálohovej faktúry ako nespracovaný doklad — náhľad, neúčtuje sa, záloha",
   limit: 180000,
   async spusti(t) {
     await pripravStranu(t);
@@ -18,7 +19,7 @@ export default {
     );
     await overJednotnyDetail(t, {
       id: f.id,
-      hladaj: "Zálohová faktúra",
+      neuctuje: true,
       navyse: async (page) => {
         await page.getByText("Daňový doklad k prijatej platbe").first().waitFor({ timeout: 10000 });
       },
