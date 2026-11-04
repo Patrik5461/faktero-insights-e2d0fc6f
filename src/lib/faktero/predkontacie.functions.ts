@@ -114,20 +114,61 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const zmazPredkontaciuFn = createServerFn({ method: "POST" })
+const DRUHY = [
+  "predkontacia",
+  "clenenie_dph",
+  "stredisko",
+  "cinnost",
+  "ciselny_rad",
+  "pokladna",
+  "zakazka",
+  "bankovy_ucet",
+] as const;
+
+/**
+ * Hromadné zmazanie kódov číselníka (aj jedného). Použité v dokladoch,
+ * pravidlách či nastaveniach sa nezmažú — vrátia sa na deaktiváciu.
+ */
+export const zmazKodyCiselnikaFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
-    z.object({ company_id: z.string().uuid(), ids: z.array(z.string().uuid()).min(1).max(2000) }).parse(d),
+    z
+      .object({
+        company_id: z.string().uuid(),
+        druh: z.enum(DRUHY),
+        ids: z.array(z.string().uuid()).min(1).max(2000),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const supabase = context.supabase as any;
-    const { error } = await supabase
-      .from("predkontacie")
-      .delete()
-      .eq("company_id", data.company_id)
-      .in("id", data.ids);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    const { zmazKodyCiselnika } = await import("./ciselnik-mazanie.server");
+    return zmazKodyCiselnika(context.supabase as any, {
+      companyId: data.company_id,
+      druh: data.druh,
+      ids: data.ids,
+    });
+  });
+
+/** Hromadne zapne alebo vypne kódy číselníka (jedným požiadavkom). */
+export const nastavAktivneCiselnikaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        ids: z.array(z.string().uuid()).min(1).max(2000),
+        aktivne: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { nastavAktivneKodov } = await import("./ciselnik-mazanie.server");
+    const zmenene = await nastavAktivneKodov(context.supabase as any, {
+      companyId: data.company_id,
+      ids: data.ids,
+      aktivne: data.aktivne,
+    });
+    return { zmenene: zmenene.length };
   });
 
 /** Predvolené kódy podľa druhu dokladu a predkontácie podľa označenia platby. */

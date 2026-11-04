@@ -39,8 +39,18 @@ import {
   predkontacieFn,
   ulozPredkontaciuFn,
   ulozPredvoleneFn,
-  zmazPredkontaciuFn,
+  zmazKodyCiselnikaFn,
+  nastavAktivneCiselnikaFn,
 } from "@/lib/faktero/predkontacie.functions";
+import { useHromadnyVyber } from "@/hooks/useHromadnyVyber";
+import {
+  ListaHromadnychAkcii,
+  PouziteNaDeaktivaciu,
+  ZaskrtavadloRiadku,
+  ZaskrtavadloVsetkych,
+} from "@/components/faktero/HromadnyVyber";
+import { zoznamKodov } from "@/lib/faktero/hromadny-vyber";
+import { NAZOV_KDE, type PouzityKod } from "@/lib/faktero/ciselnik-mazanie";
 import { potvrd } from "@/lib/potvrdenie";
 import { KV_CLENENIA, KV_PREDVOLENE, nazovKv, type DruhKvPredvoleneho } from "@/lib/faktero/kv-clenenie";
 import { triedaStavu } from "@/components/faktero/web/Stav";
@@ -1022,7 +1032,8 @@ function Ciselnik({
   const { t } = useT();
   const uloz = useServerFn(ulozPredkontaciuFn);
   const sekcia = useRef<HTMLElement>(null);
-  const zmaz = useServerFn(zmazPredkontaciuFn);
+  const zmaz = useServerFn(zmazKodyCiselnikaFn);
+  const nastavAktivne = useServerFn(nastavAktivneCiselnikaFn);
   const [druh, setDruh] = useState<DruhCiselnika>("predkontacia");
   const [hladaj, setHladaj] = useState("");
   const [agenda, setAgenda] = useState("");
@@ -1080,6 +1091,12 @@ function Ciselnik({
       `${z.kod} ${z.popis ?? ""} ${z.ucet_md ?? ""} ${z.ucet_d ?? ""}`.toLowerCase().includes(q)
     );
   });
+  const vyber = useHromadnyVyber(riadky.map((r) => r.id));
+  const oznacene = riadky.filter((r) => vyber.jeOznaceny(r.id));
+  const [hromadne, setHromadne] = useState<"zmazat" | "aktivovat" | "deaktivovat" | null>(null);
+  /** Kódy, ktoré sa pri poslednom mazaní nedali zmazať (použité) — ponuka deaktivácie. */
+  const [pouzite, setPouzite] = useState<PouzityKod[]>([]);
+  const [deaktivujem, setDeaktivujem] = useState(false);
 
   async function ulozit() {
     if (!form) return;
@@ -1098,21 +1115,79 @@ function Ciselnik({
 
   async function prepniAktivne(z: Zaznam) {
     try {
-      await uloz({ data: { company_id: companyId, ...z, aktivne: !z.aktivne } });
+      await nastavAktivne({ data: { company_id: companyId, ids: [z.id], aktivne: !z.aktivne } });
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? t("Nepodarilo sa"));
     }
   }
 
-  async function zmazat(ids: string[], otazka: string) {
-    if (!(await potvrd(otazka))) return;
+  const dalsich = (n: number) => t("+ {n} ďalších", { n });
+
+  /**
+   * Zmaže záznamy jedným požiadavkom. Použité v dokladoch (pravidlách,
+   * nastaveniach) server nezmaže a vráti ich — tie ponúkneme deaktivovať.
+   */
+  async function zmazat(vybrane: Zaznam[]) {
+    if (!vybrane.length) return;
+    const otazka =
+      vybrane.length === 1
+        ? t("Zmazať {kod} z číselníka?", { kod: vybrane[0].kod })
+        : t("Zmazať označené záznamy z číselníka ({n})?", { n: vybrane.length }) +
+          "\n" +
+          zoznamKodov(
+            vybrane.map((r) => r.kod),
+            dalsich,
+          );
+    const dovetok = t("Doklady, ktoré kód už majú, sa nezmenia. Použité kódy sa nezmažú — ponúkneme ich deaktiváciu.");
+    if (!(await potvrd(`${otazka}\n${dovetok}`, { potvrdit: t("Zmazať"), nebezpecne: true }))) return;
+    setHromadne("zmazat");
+    setPouzite([]);
     try {
-      await zmaz({ data: { company_id: companyId, ids } });
-      toast.success(t("Zmazané"));
+      const r = await zmaz({ data: { company_id: companyId, druh, ids: vybrane.map((x) => x.id) } });
+      setPouzite(r.pouzite);
+      vyber.zrus();
+      if (r.zmazane.length) toast.success(t("Zmazané: {n}", { n: r.zmazane.length }));
+      if (r.pouzite.length)
+        toast.warning(t("Nezmazané, lebo sú použité: {n}", { n: r.pouzite.length }));
+      if (r.nezmazane.length)
+        toast.error(t("Niektoré záznamy sa nezmazali — chýba vám právo alebo už neexistujú ({n}).", { n: r.nezmazane.length }));
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? t("Nepodarilo sa zmazať"));
+    } finally {
+      setHromadne(null);
+    }
+  }
+
+  async function aktivovat(ids: string[], aktivne: boolean) {
+    if (!ids.length) return;
+    try {
+      const r = await nastavAktivne({ data: { company_id: companyId, ids, aktivne } });
+      toast.success(aktivne ? t("Aktivované: {n}", { n: r.zmenene }) : t("Deaktivované: {n}", { n: r.zmenene }));
+      onZmena();
+      return true;
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+      return false;
+    }
+  }
+
+  async function hromadneAktivne(aktivne: boolean) {
+    setHromadne(aktivne ? "aktivovat" : "deaktivovat");
+    try {
+      if (await aktivovat(oznacene.filter((r) => r.aktivne !== aktivne).map((r) => r.id), aktivne)) vyber.zrus();
+    } finally {
+      setHromadne(null);
+    }
+  }
+
+  async function deaktivovatPouzite() {
+    setDeaktivujem(true);
+    try {
+      if (await aktivovat(pouzite.map((p) => p.id), false)) setPouzite([]);
+    } finally {
+      setDeaktivujem(false);
     }
   }
 
@@ -1132,6 +1207,7 @@ function Ciselnik({
                 setDruh(k);
                 setAgenda("");
                 setForm(null);
+                setPouzite([]);
               }}
               className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1 ${druh === k ? "bg-card font-semibold text-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
             >
@@ -1372,6 +1448,26 @@ function Ciselnik({
         </label>
       </div>
 
+      <PouziteNaDeaktivaciu
+        polozky={pouzite.map((p) => ({ kod: p.kod, kde: p.kde.map((k) => t(NAZOV_KDE[k])).join(", ") }))}
+        nadpis={
+          druh === "predkontacia"
+            ? t("Tieto predkontácie sú použité v dokladoch, môžete ich iba deaktivovať:")
+            : undefined
+        }
+        onDeaktivovat={deaktivovatPouzite}
+        onZavriet={() => setPouzite([])}
+        busy={deaktivujem}
+      />
+      <ListaHromadnychAkcii
+        pocet={vyber.pocet}
+        busy={hromadne}
+        onZmazat={() => zmazat(oznacene)}
+        onDeaktivovat={oznacene.some((r) => r.aktivne) ? () => hromadneAktivne(false) : null}
+        onAktivovat={oznacene.some((r) => !r.aktivne) ? () => hromadneAktivne(true) : null}
+        onZrusit={vyber.zrus}
+      />
+
       {riadky.length === 0 ? (
         <div className="mt-3">
           <EmptyState
@@ -1388,6 +1484,9 @@ function Ciselnik({
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground [&>th:first-child]:pl-3">
+                <th className="w-8 py-2 pr-2">
+                  <ZaskrtavadloVsetkych vyber={vyber} />
+                </th>
                 <th className="py-2 pr-3 font-semibold">{t("Kód")}</th>
                 <th className="whitespace-nowrap py-2 pr-3 font-semibold">{t("Popis")}</th>
                 <th className="whitespace-nowrap py-2 pr-3 font-semibold">
@@ -1407,6 +1506,9 @@ function Ciselnik({
                   naKlik={() => upravRiadok(z)}
                   className={`border-t border-border first:border-t-0 [&>td:first-child]:pl-3 ${z.aktivne ? "" : "opacity-50"}`}
                 >
+                  <td className="w-8 py-1.5 pr-2">
+                    <ZaskrtavadloRiadku vyber={vyber} id={z.id} popis={z.kod} />
+                  </td>
                   <td className="whitespace-nowrap py-1.5 pr-3 font-mono font-semibold">{z.kod}</td>
                   <td className="py-1.5 pr-3">
                     {z.popis ?? "—"}
@@ -1474,12 +1576,7 @@ function Ciselnik({
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() =>
-                        zmazat(
-                          [z.id],
-                          t("Zmazať {kod} z číselníka? Doklady, ktoré ho už majú, sa nezmenia.", { kod: z.kod }),
-                        )
-                      }
+                      onClick={() => zmazat([z])}
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
                       aria-label={t("Zmazať {kod}", { kod: z.kod })}
                     >
@@ -1490,24 +1587,6 @@ function Ciselnik({
               ))}
             </tbody>
           </table>
-          {riadky.length > 1 && (
-            <div className="mt-3 text-right">
-              <button
-                onClick={() =>
-                  zmazat(
-                    riadky.map((r) => r.id),
-                    t(
-                      "Zmazať všetkých {n} zobrazených záznamov? Doklady, ktoré ich už majú, sa nezmenia.",
-                      { n: riadky.length },
-                    ),
-                  )
-                }
-                className="text-xs text-muted-foreground underline hover:text-destructive"
-              >
-                {t("Zmazať zobrazené ({n})", { n: riadky.length })}
-              </button>
-            </div>
-          )}
         </div>
       )}
     </section>
