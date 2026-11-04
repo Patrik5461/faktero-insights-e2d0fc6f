@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { potvrd } from "@/lib/potvrdenie";
 import { useServerFn } from "@tanstack/react-start";
 import { prepocitajPrijatuFn } from "@/lib/faktero/kurzy.functions";
-import { najdiDuplicituPrijatejFn } from "@/lib/faktero/prijate-duplicity.functions";
-import { textDuplicity } from "@/lib/faktero/prijate-duplicity";
+import { ulozenaPrijataFn } from "@/lib/faktero/duplicita-zauctovania.functions";
+import { rozlozChybuPrijatej } from "@/lib/faktero/duplicita-zauctovania";
+import { UpozornenieUlozenejPrijatej, type UlozenaPrijata } from "@/components/faktero/DuplicitaDokladu";
 import { Upload, Loader2 } from "lucide-react";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { menyNaVyber } from "@/lib/faktero/meny-na-vyber";
@@ -40,6 +41,13 @@ function addDays(iso: string, d: number) {
   return posunDni(iso, d);
 }
 
+/** Polia, ktorých zmena pri úprave vyžaduje novú kontrolu duplicity. */
+function klucDuplicity(...v: unknown[]): string {
+  return v
+    .map((x, i) => (i === 3 ? (x == null || x === "" ? "" : Number(x).toFixed(2)) : String(x ?? "").trim()))
+    .join("|");
+}
+
 /**
  * Formulár prijatej faktúry — ten istý na zaevidovanie aj na opravu.
  *
@@ -60,7 +68,9 @@ export function PrijataFakturaForm({
   const { t } = useT();
   const upravujeme = Boolean(id);
   const prepocitaj = useServerFn(prepocitajPrijatuFn);
-  const hladajDuplicitu = useServerFn(najdiDuplicituPrijatejFn);
+  const hladajDuplicitu = useServerFn(ulozenaPrijataFn);
+  // Tá istá faktúra už v evidencii je — upozornenie s odkazom nad tlačidlom Uložiť.
+  const [duplicita, setDuplicita] = useState<UlozenaPrijata | null>(null);
   const [povodnyKluc, setPovodnyKluc] = useState<string | null>(null);
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -267,9 +277,14 @@ export function PrijataFakturaForm({
       }
       // Kľúč faktúry pri načítaní — otázka na duplicitu len keď sa zmení.
       setPovodnyKluc(
-        [data.invoice_number, data.supplier_ico, data.supplier_name]
-          .map((x) => String(x ?? "").trim())
-          .join("|"),
+        klucDuplicity(
+          data.invoice_number,
+          data.supplier_ico,
+          data.supplier_name,
+          data.amount_total,
+          data.issue_date,
+          data.type,
+        ),
       );
       setForm({
         supplier_name: data.supplier_name ?? "",
@@ -413,12 +428,21 @@ export function PrijataFakturaForm({
       }
       /*
         Tá istá faktúra už v evidencii je (prišla mailom, zadal ju niekto iný)?
-        Druhýkrát by bola náklad, odpočet DPH aj platba. Pýta sa pri novej
-        faktúre a pri úprave, keď sa zmenilo číslo či dodávateľ.
+        Druhýkrát by bola náklad, odpočet DPH aj platba — neuloží sa vôbec.
+        Rovnaké číslo s inou sumou či z iného roka (dodávateľ čísla opakuje)
+        sa uloží po potvrdení. Pri úprave sa pýta, len keď sa zmenilo číslo,
+        dodávateľ, suma, dátum alebo typ (duplicita-zauctovania.ts).
       */
-      const kluc = [form.invoice_number, form.supplier_ico, form.supplier_name]
-        .map((x) => String(x ?? "").trim())
-        .join("|");
+      const suma = sumaZPola(form.amount_total || "0") || 0;
+      const kluc = klucDuplicity(
+        form.invoice_number,
+        form.supplier_ico,
+        form.supplier_name,
+        suma,
+        form.issue_date,
+        form.type,
+      );
+      setDuplicita(null);
       const dup =
         (id && kluc === povodnyKluc) || (cielId && !id)
           ? null
@@ -428,16 +452,30 @@ export function PrijataFakturaForm({
                 invoice_number: form.invoice_number.trim(),
                 supplier_ico: form.supplier_ico.trim() || null,
                 supplier_name: form.supplier_name.trim(),
-                supplier_iban: form.supplier_iban.replace(/\s+/g, "") || null,
-                amount_total: sumaZPola(form.amount_total || "0") || null,
+                amount_total: suma,
+                currency: form.currency || null,
+                issue_date: form.issue_date || null,
+                type: form.type || "regular",
+                opravuje_cislo: form.opravuje_cislo.trim() || null,
                 vylucit_id: cielId,
               },
             }).catch(() => null);
+      if (dup?.blok) {
+        setDuplicita({ ...dup.blok, blok: true });
+        toast.error(t("Táto faktúra už je v evidencii: {popis}", { popis: dup.blok.popis }), {
+          action: {
+            label: t("Otvoriť"),
+            onClick: () => navigate({ to: "/prijate-faktury/$id", params: { id: dup.blok!.id } }),
+          },
+        });
+        setBusy(false);
+        return;
+      }
       if (
-        dup &&
-        !(await potvrd(`${t(textDuplicity(dup))}\n${t("Uložiť ju aj tak druhýkrát?")}`, {
-          potvrdit: t("Uložiť aj tak"),
-          zrusit: t("Neukladať"),
+        dup?.mozna &&
+        !(await potvrd(t(dup.mozna.text), {
+          potvrdit: t("Nie je duplicita – uložiť"),
+          zrusit: t("Späť"),
           nebezpecne: true,
         }))
       ) {
@@ -542,6 +580,17 @@ export function PrijataFakturaForm({
       toast.success(t("Prijatá faktúra bola uložená"));
       navigate({ to: "/prijate-faktury/$id", params: { id: data!.id } });
     } catch (e: any) {
+      // Spúšťač v databáze našiel tú istú faktúru (napr. súbežné uloženie).
+      const uz = rozlozChybuPrijatej(e?.message);
+      if (uz) {
+        setDuplicita({ id: uz.id, popis: uz.popis, blok: true });
+        toast.error(t("Táto faktúra už je v evidencii: {popis}", { popis: uz.popis }), {
+          action: uz.id
+            ? { label: t("Otvoriť"), onClick: () => navigate({ to: "/prijate-faktury/$id", params: { id: uz.id! } }) }
+            : undefined,
+        });
+        return;
+      }
       const { friendlyError } = await import("@/lib/faktero/plan-error");
       toast.error(t(friendlyError(e, "Uloženie zlyhalo")));
     } finally {
@@ -1097,6 +1146,7 @@ export function PrijataFakturaForm({
             {poliaOstatne}
           </section>
 
+          <UpozornenieUlozenejPrijatej duplicita={duplicita} />
           <div className="flex justify-end gap-2">
             <Link
               to="/prijate-faktury"

@@ -3,7 +3,8 @@
   "include": [
     "./*.ts",
     "../../src/lib/faktero/ciselne-rady.ts",
-    "../../src/lib/faktero/ciselne-rady-import.server.ts"
+    "../../src/lib/faktero/ciselne-rady-import.server.ts",
+    "../../src/lib/faktero/duplicita-zauctovania.ts"
   ],
   "compilerOptions": { "types": ["node"] }
 }

@@ -279,6 +279,8 @@ export async function vytvorDoklad(
   r: Record<string, any>,
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,
+  /** `ajDuplicitu` — človek potvrdil, že možná duplicita (iná suma či rok) nie je duplicita. */
+  volby: { ajDuplicitu?: boolean } = {},
 ): Promise<{
   agenda: "prijata" | "doklad" | "ostatny";
   id: string;
@@ -381,12 +383,23 @@ export async function vytvorDoklad(
     duplicita?: boolean;
   };
   if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
+    const zakl = prijataZUdajov(druh, { ...u, datumPrijatia: u.datumPrijatia || (await predvolenePrijatie(supabase, r)) }, dnes);
+    /*
+      Tá istá faktúra už v evidencii je (rovnaké číslo, dodávateľ, suma aj
+      rok) — druhýkrát sa nevytvorí ani na „Vytvoriť aj tak“; nespracovaný
+      ostáva, kým ho človek nezmaže (Patrik 4. 11.: MOKOŠÁK 1126817 prišla
+      mailom po importe). Rovnaké číslo s inou sumou či z iného roka len
+      upozorní — po potvrdení „Nie je duplicita“ (`ajDuplicitu`) sa vytvorí.
+    */
+    {
+      const { overUlozeniePrijatej } = await import("./duplicita-zauctovania.server");
+      await overUlozeniePrijatej(supabase, r.company_id, { ...zakl, status: "received" }, { ajMoznu: volby.ajDuplicitu });
+    }
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
       const up = await supabase.storage.from("purchase-invoices").upload(cesta, bajty, { contentType: mime });
       if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
     }
-    const zakl = prijataZUdajov(druh, { ...u, datumPrijatia: u.datumPrijatia || (await predvolenePrijatie(supabase, r)) }, dnes);
     /*
       Odberateľ na doklade je iná firma — faktúra vznikne (človek zvolil
       „Uložiť aj tak“) s príznakom a nezaúčtuje sa, kým nepotvrdí, že patrí
@@ -395,9 +408,8 @@ export async function vytvorDoklad(
     const { nesediNespracovany, firmaNaPorovnanie } = await import("./cudzia-faktura.server");
     const cudzia = nesediNespracovany({ ...r, druh }, await firmaNaPorovnanie(supabase, r.company_id));
     /*
-      Duplicita (to isté číslo od toho istého dodávateľa už v evidencii je —
-      človek ju vytvoril cez „Vytvoriť aj tak“): faktúra vznikne, ale
-      nezaúčtuje sa, kým sa jedna z nich nezmaže (duplicita-zauctovania.ts).
+      Poistka: duplicita, ktorá sa medzitým objavila (súbežné vytvorenie),
+      sa nezaúčtuje — spúšťač v databáze by ju aj tak neuložil.
     */
     const { duplicityDokladov } = await import("./duplicita-zauctovania.server");
     const duplicitna = (
@@ -651,6 +663,65 @@ export async function vytvorDoklad(
   await supabase.from("nespracovane_doklady").delete().eq("id", r.id);
   if (r.file_path) await supabase.storage.from(KOS_NESPRACOVANYCH).remove([r.file_path]);
   return vysledok;
+}
+
+/** Prijatá faktúra v evidencii, ktorú nespracovaný doklad opakuje. */
+export type DuplicitaNespracovaneho = {
+  /** Id existujúcej prijatej faktúry. */
+  id: string;
+  /** „1126817, MOKOŠÁK PLUS s.r.o., 78,30 EUR“ */
+  popis: string;
+  /** true = tá istá faktúra (nevytvorí sa); false = rovnaké číslo, iná suma či rok (len upozornenie). */
+  blok: boolean;
+  zauctovana: boolean;
+};
+
+const DRUHY_PRIJATEJ = new Set(["faktura", "zalohova", "dobropis"]);
+
+/**
+ * Nespracované doklady, ktoré opakujú prijatú faktúru v evidencii — pre
+ * upozornenie na detaile hneď pri otvorení a odznak „Duplicita“ v zozname.
+ * Doklad bez určeného druhu sa posudzuje ako faktúra (tak ho väčšinou
+ * aj vytvoria). Jeden dotaz na kandidátov pre celý zoznam.
+ */
+export async function duplicityNespracovanych(
+  supabase: Klient,
+  companyId: string,
+  rows: { id: string; druh?: string | null; udaje?: unknown }[],
+): Promise<Map<string, DuplicitaNespracovaneho>> {
+  const out = new Map<string, DuplicitaNespracovaneho>();
+  const dnes = dnesBratislava();
+  const faktury: Record<string, any>[] = [];
+  for (const r of rows) {
+    const druh = (r.druh || "faktura") as string;
+    if (!DRUHY_PRIJATEJ.has(druh)) continue;
+    const u = nacitajUdaje(r.udaje);
+    if (!u.cislo.trim()) continue;
+    faktury.push({ ...prijataZUdajov(druh as "faktura", u, dnes), id: r.id, status: "received" });
+  }
+  if (!faktury.length) return out;
+  const { kandidatiDuplicit } = await import("./duplicita-zauctovania.server");
+  const { naPorovnanie, suDuplicitne, moznaDuplicita, popisPrijatej } = await import("./duplicita-zauctovania");
+  const kandidati = (await kandidatiDuplicit(supabase, companyId, "prijata", faktury))
+    .sort(
+      (x, y) =>
+        Number(Boolean(y.exported_at || y.zauctovane_at)) - Number(Boolean(x.exported_at || x.zauctovane_at)),
+    )
+    .map((k) => ({ k, p: naPorovnanie("prijata", k) }));
+  for (const f of faktury) {
+    const n = naPorovnanie("prijata", f);
+    const blok = kandidati.find((x) => suDuplicitne(n, x.p));
+    const mozna = blok ? null : kandidati.find((x) => moznaDuplicita(n, x.p));
+    const z = blok ?? mozna;
+    if (!z) continue;
+    out.set(f.id, {
+      id: z.k.id,
+      popis: popisPrijatej(z.k),
+      blok: Boolean(blok),
+      zauctovana: Boolean(z.k.zauctovane_at || z.k.exported_at),
+    });
+  }
+  return out;
 }
 
 /**

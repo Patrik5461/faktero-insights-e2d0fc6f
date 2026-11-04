@@ -297,6 +297,52 @@ describe("zaevidovanie je idempotentné", () => {
     expect(db.purchase_invoices).toHaveLength(1);
   });
 
+  it("rovnaké číslo od toho istého dodávateľa z iného roka a s inou sumou je iná faktúra — založí sa", async () => {
+    const db = databaza();
+    db.purchase_invoices.push({
+      id: "cccccccc-0000-0000-0000-000000000002",
+      company_id: FIRMA,
+      invoice_number: "FA2026001",
+      supplier_name: "Dodávateľ s.r.o.",
+      supplier_ico: "86179504",
+      amount_total: 50,
+      issue_date: "2024-03-01",
+      status: "paid",
+      deleted_at: null,
+    });
+    const v = await mod.zaevidujPrijatuEfakturu(falosnyKlient(db), {
+      companyId: FIRMA,
+      receivedId: PRIJATA,
+      userId: null,
+    });
+    expect(v).toMatchObject({ kam: "prijate", uzExistoval: false });
+    expect(db.purchase_invoices).toHaveLength(2);
+  });
+
+  it("keď zápis zastaví spúšťač duplicity, eFaktúra sa pripojí k existujúcej", async () => {
+    const db = databaza();
+    const sb = falosnyKlient(db);
+    const EXIST = "cccccccc-0000-0000-0000-000000000003";
+    const povodne = sb.from;
+    (sb as any).from = (meno: string) => {
+      const b = povodne(meno);
+      if (meno !== "purchase_invoices") return b;
+      const insert = b.insert;
+      b.insert = (d: Riadok) => {
+        insert(d);
+        b.single = async () => ({
+          data: null,
+          error: { message: `Táto faktúra už je v evidencii: FA2026001, Dodávateľ s.r.o., 1230,00 EUR [${EXIST}]` },
+        });
+        return b;
+      };
+      return b;
+    };
+    const v = await mod.zaevidujPrijatuEfakturu(sb, { companyId: FIRMA, receivedId: PRIJATA, userId: null });
+    expect(v).toMatchObject({ kam: "prijate", id: EXIST, pripojena: true });
+    expect(db.efaktura_received_documents[0]).toMatchObject({ matched_supplier_invoice_id: EXIST, status: "matched" });
+  });
+
   it("do Nespracovaných ide s údajmi z XML a druhýkrát sa nezdvojí", async () => {
     const db = databaza({ prijem_ciel: "nespracovane" });
     const sb = falosnyKlient(db);

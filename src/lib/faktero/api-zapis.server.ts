@@ -12,6 +12,7 @@ import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
 import { ZnackyVstup, maZnacky } from "./api-evidencia";
 import { chybaDb, riadokZnaciek, strazZamku } from "./api-evidencia.server";
+import { chybaUlozenejPrijatej, rozlozChybuBlocku, rozlozChybuPrijatej } from "./duplicita-zauctovania";
 
 type Odpoved = { status: number; body: any };
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -307,6 +308,45 @@ async function strazDuplicity(
   });
 }
 
+/**
+ * Duplicitný doklad — 409 `duplicate_document` s id existujúceho
+ * (`details.existing_id`; `details.id` ostáva kvôli starším klientom).
+ */
+export function odpovedDuplicity(existujuci: { id?: unknown }, sprava: string): Odpoved {
+  const id = String(existujuci.id);
+  return err("duplicate_document", sprava, 409, { id, existing_id: id });
+}
+
+/**
+ * Chyba databázy pri zápise dokladu: duplicitu, ktorú zastavil spúšťač
+ * (`Táto faktúra už je v evidencii: … [id]`, `Tento bloček už je uložený: … [id]`),
+ * vráti ako 409 `duplicate_document`; ostatné ako `chybaDb`.
+ */
+export function chybaZapisuDokladu(e: { message?: string; code?: string } | null): Odpoved {
+  const m = String(e?.message ?? "");
+  const uz = rozlozChybuPrijatej(m) ?? rozlozChybuBlocku(m);
+  if (uz) {
+    const id = uz.id;
+    return err("duplicate_document", m, 409, id ? { id, existing_id: id } : undefined);
+  }
+  return chybaDb(e);
+}
+
+/**
+ * Tá istá prijatá faktúra (číslo + dodávateľ + suma + rok) sa druhýkrát
+ * neuloží — 409. Rovnaké číslo s inou sumou či z iného roka (možná duplicita)
+ * API pustí: nemá ako sa spýtať a dodávatelia čísla v ďalších rokoch opakujú.
+ */
+async function strazUlozeniaPrijatej(
+  ctx: ApiCtx,
+  riadok: Record<string, unknown>,
+  vylucitId: string | null = null,
+): Promise<Odpoved | null> {
+  const { najdiUlozenuPrijatu } = await import("./duplicita-zauctovania.server");
+  const { blok } = await najdiUlozenuPrijatu(ctx.supabase as any, ctx.company_id, riadok, vylucitId);
+  return blok ? odpovedDuplicity(blok, chybaUlozenejPrijatej(blok)) : null;
+}
+
 const STL_PRIJATEJ =
   "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at, odberatel_nesedi";
 
@@ -330,20 +370,14 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const { riadok, sumy: s } = riadokPrijatej(d, teraz);
   if (s.spolu == null)
     return err("validation_error", "Zadajte položky (items) alebo sumy (amount_total).");
-  // Bez external_id: tá istá faktúra (dodávateľ + číslo + suma) sa druhýkrát nezaloží.
-  const ico = lenCislice(d.supplier.ico);
-  if (!d.external_id && ico) {
-    const { data: dup } = await db
-      .from("purchase_invoices")
-      .select("id")
-      .eq("company_id", ctx.company_id)
-      .eq("supplier_ico", ico)
-      .eq("invoice_number", d.invoice_number)
-      .eq("amount_total", s.spolu)
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
-    if (dup) return err("duplicate", "Táto prijatá faktúra už existuje.", 409, { id: dup.id });
+  // Tá istá faktúra (číslo + dodávateľ + suma + rok) sa druhýkrát nezaloží.
+  {
+    const dup = await strazUlozeniaPrijatej(ctx, {
+      ...riadok,
+      type: riadok.type ?? "regular",
+      status: riadok.status ?? "received",
+    });
+    if (dup) return dup;
   }
   // Zaúčtovanie (`accounting.booked`) duplicitnej faktúry sa nepustí.
   if (riadok.zauctovane_at) {
@@ -397,7 +431,7 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
     })
     .select(STL_PRIJATEJ)
     .single();
-  if (error) return chybaDb(error);
+  if (error) return chybaZapisuDokladu(error);
   return ok({ objekt: "purchase_invoice", ...data }, 201);
 }
 
@@ -432,6 +466,15 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
       409,
     );
   }
+  // Zmena čísla, dodávateľa, sumy, dátumu či typu na už evidovanú faktúru sa neuloží.
+  if (
+    ["invoice_number", "supplier_ico", "supplier_name", "amount_total", "issue_date", "type"].some(
+      (k) => k in riadok && String(riadok[k] ?? "") !== String(stary[k] ?? ""),
+    )
+  ) {
+    const dup = await strazUlozeniaPrijatej(ctx, { ...stary, ...riadok }, id);
+    if (dup) return dup;
+  }
   if (riadok.zauctovane_at && !stary.zauctovane_at) {
     const dup = await strazDuplicity(ctx, "prijata", { ...stary, ...riadok });
     if (dup) return dup;
@@ -452,7 +495,7 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .is("deleted_at", null)
     .select(STL_PRIJATEJ)
     .maybeSingle();
-  if (error) return chybaDb(error);
+  if (error) return chybaZapisuDokladu(error);
   if (!data) return err("not_found", "Prijatá faktúra sa nenašla.", 404);
   return ok({ objekt: "purchase_invoice", ...data });
 }
@@ -575,7 +618,7 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
     const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
     const { chybaUlozenehoBlocku } = await import("./duplicita-zauctovania");
     const uz = await najdiUlozenyBlocek(db, ctx.company_id, blocek);
-    if (uz) return err("duplicate", chybaUlozenehoBlocku(uz), 409, { id: uz.id });
+    if (uz) return odpovedDuplicity(uz, chybaUlozenehoBlocku(uz));
   }
   const kurz = await (await import("./kurz-dokladu.server")).doplnovacKurzov(ctx.company_id)(
     "expense_documents",
@@ -596,7 +639,7 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
     })
     .select(STL_BLOCKU)
     .single();
-  if (error) return chybaDb(error);
+  if (error) return chybaZapisuDokladu(error);
   return ok({ objekt: "receipt", ...data }, 201);
 }
 

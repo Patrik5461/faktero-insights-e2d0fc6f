@@ -16,6 +16,7 @@ import {
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { PREDPONA_ULOZENEJ_PRIJATEJ, rozlozChybuPrijatej } from "@/lib/faktero/duplicita-zauctovania";
 import { cislaOdberatela, nesediZChyby } from "@/lib/faktero/cudzia-faktura";
 import {
   doplnZNastavenia,
@@ -270,6 +271,13 @@ export function RozpoznanyDoklad({
       onUlozene(druh);
     } catch (e) {
       const sprava = e instanceof Error ? e.message : String(e ?? "");
+      /* Tá istá faktúra už v evidencii je — neuloží sa (bez „Uložiť aj tak“). */
+      const ulozena = rozlozChybuPrijatej(sprava);
+      if (ulozena) {
+        toast.error(`${PREDPONA_ULOZENEJ_PRIJATEJ}${ulozena.popis}`);
+        setUkladam(false);
+        return;
+      }
       /* Ten istý doklad už v evidencii je — rozhodne človek, nie appka. */
       if (sprava.startsWith(PREDPONA_DUPLICITY) && !ajDuplicitu) {
         setUkladam(false);

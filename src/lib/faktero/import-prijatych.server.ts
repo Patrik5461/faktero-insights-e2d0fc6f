@@ -36,6 +36,13 @@ import {
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { nesuladKrajinyPohody } from "./pohoda-citanie";
+import {
+  naPorovnanie,
+  popisPrijatej,
+  rozlozChybuPrijatej,
+  suDuplicitne,
+  type DokladNaPorovnanie,
+} from "./duplicita-zauctovania";
 export type Vstup = { meno: string; bajty: Uint8Array };
 
 const SKENY = /\.(pdf|jpe?g|png|webp|heic)$/i;
@@ -167,22 +174,9 @@ export async function rozbal(
   return { zaznamy, skeny, poznamky, prijmy };
 }
 
-/** Kľúče dokladov, ktoré vo firme už sú — aby sa import dal pustiť aj druhý raz. */
+/** Kľúče bločkov, ktoré vo firme už sú — aby sa import dal pustiť aj druhý raz. */
 export async function existujuceKluce(klient: any, companyId: string): Promise<Set<string>> {
   const kluce = new Set<string>();
-  for (let od = 0; od < 50000; od += 1000) {
-    const { data } = await klient
-      .from("purchase_invoices")
-      .select("invoice_number, supplier_ico, supplier_name")
-      .eq("company_id", companyId)
-      .is("deleted_at", null)
-      .range(od, od + 999);
-    for (const r of data ?? [])
-      kluce.add(
-        klucDuplicity({ typ: "faktura", cislo: r.invoice_number, ico: r.supplier_ico, dodavatel: r.supplier_name, vystavenie: null, spolu: null }),
-      );
-    if (!data || data.length < 1000) break;
-  }
   for (let od = 0; od < 50000; od += 1000) {
     const { data } = await klient
       .from("expense_documents")
@@ -203,6 +197,71 @@ export async function existujuceKluce(klient: any, companyId: string): Promise<S
     if (!data || data.length < 1000) break;
   }
   return kluce;
+}
+
+/*
+  Prijaté faktúry, ktoré vo firme už sú — porovnávajú sa pravidlom
+  `suDuplicitne` (duplicita-zauctovania.ts): rovnaké číslo, dodávateľ, suma
+  aj rok. Tá istá faktúra sa nezaloží druhýkrát (a spúšťač v databáze by ju
+  aj tak odmietol); rovnaké číslo s inou sumou či z iného roka (Alza opakuje
+  čísla) sa naimportuje. Index podľa normalizovaného čísla.
+*/
+export type EvidenciaPrijatych = Map<string, { doklad: DokladNaPorovnanie; popis: string }[]>;
+
+export async function existujucePrijate(klient: any, companyId: string): Promise<EvidenciaPrijatych> {
+  const out: EvidenciaPrijatych = new Map();
+  for (let od = 0; od < 50000; od += 1000) {
+    const { data } = await klient
+      .from("purchase_invoices")
+      .select(
+        "id, invoice_number, type, status, supplier_ico, supplier_name, amount_total, currency, issue_date, opravuje_cislo, opravuje_id, deleted_at, zauctovane_at, exported_at",
+      )
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .range(od, od + 999);
+    for (const r of data ?? []) pridajDoEvidencie(out, r);
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+function pridajDoEvidencie(e: EvidenciaPrijatych, r: Record<string, any>) {
+  const d = naPorovnanie("prijata", r);
+  if (!d.cislo) return;
+  const zoz = e.get(d.cislo) ?? [];
+  zoz.push({ doklad: d, popis: popisPrijatej(r) });
+  e.set(d.cislo, zoz);
+}
+
+const ODO_DNES = { stav: "new" as StavImportu, zdrojAplikacie: "", dnes: "" };
+
+/** Riadok importovanej faktúry na porovnanie (ako by sa zapísal). */
+function riadokNaPorovnanie(z: PrijatyZaznam, id: string): Record<string, any> {
+  const r = riadokPrijatejFaktury(z, { ...ODO_DNES, dnes: dnesBratislava() });
+  // Bez dátumu by sa dosadil dnešok — neznámy dátum sa za rozdiel nepočíta.
+  return { ...r, id, issue_date: z.vystavenie ?? null, status: "received" };
+}
+
+/**
+ * Popis faktúry v evidencii, ktorú importovaný záznam opakuje (null = nová).
+ * Stornovaný záznam sa neporovnáva (duplicitu nerobí).
+ */
+export function duplicitaPrijatej(z: PrijatyZaznam, e: EvidenciaPrijatych, id = "import"): string | null {
+  if (z.typ !== "faktura" || z.stornovany) return null;
+  const n = naPorovnanie("prijata", riadokNaPorovnanie(z, id));
+  if (!n.cislo) return null;
+  return (e.get(n.cislo) ?? []).find((x) => suDuplicitne(n, x.doklad))?.popis ?? null;
+}
+
+/** Zapísaná (alebo naplánovaná) faktúra — ďalší rovnaký záznam z toho istého importu je duplicita. */
+export function zapamatajPrijatu(z: PrijatyZaznam, e: EvidenciaPrijatych, id: string) {
+  if (z.typ !== "faktura" || z.stornovany) return;
+  pridajDoEvidencie(e, riadokNaPorovnanie(z, id));
+}
+
+/** „1126817 (MOKOŠÁK PLUS s.r.o.): už je v evidencii — 1126817, MOKOŠÁK PLUS s.r.o., 78,30 EUR“ */
+function textPreskocenej(z: PrijatyZaznam, popis: string): string {
+  return `${z.cislo ?? "bez čísla"}${z.dodavatel ? ` (${z.dodavatel})` : ""}: už je v evidencii — ${popis}`;
 }
 
 /** Kľúče pokladničných príjmov, ktoré firma už má — opakovaný import ich nezdvojí. */
@@ -231,6 +290,8 @@ export type Plan = {
   skeny: Vstup[];
   parovanie: Map<number, number>;
   duplicity: Set<number>;
+  /** Čo sa preskočí ako duplicita — do súhrnu importu („číslo (dodávateľ): už je v evidencii“). */
+  duplicityPopis: string[];
   skenyBezParu: number[];
   poznamky: string[];
 };
@@ -254,18 +315,31 @@ export async function naplanuj(klient: any, companyId: string, vstupy: Vstup[]):
     for (const z of zaznamy) if (!z.mena) z.mena = domaca;
   }
   const existuju = await existujuceKluce(klient, companyId);
+  const prijate = await existujucePrijate(klient, companyId);
   const duplicity = new Set<number>();
+  const duplicityPopis: string[] = [];
   const videne = new Set<string>();
   zaznamy.forEach((z, i) => {
+    if (z.typ === "faktura") {
+      // Ten istý doklad v XML aj v CSV (alebo dvakrát v jednom súbore) sa naimportuje raz.
+      const popis = duplicitaPrijatej(z, prijate, `plan-${i}`);
+      if (popis) {
+        duplicity.add(i);
+        duplicityPopis.push(textPreskocenej(z, popis));
+      } else zapamatajPrijatu(z, prijate, `plan-${i}`);
+      return;
+    }
     const k = klucDuplicity(z);
-    // Ten istý doklad v XML aj v CSV sa naimportuje raz.
-    if (existuju.has(k) || videne.has(k)) duplicity.add(i);
+    if (existuju.has(k) || videne.has(k)) {
+      duplicity.add(i);
+      duplicityPopis.push(`${z.cislo ?? z.dodavatel ?? "bloček"}${z.dodavatel && z.cislo ? ` (${z.dodavatel})` : ""}: bloček už je v evidencii`);
+    }
     videne.add(k);
   });
   const parovanie = priradSkeny(zaznamy, skeny);
   const sparovane = new Set(parovanie.values());
   const skenyBezParu = skeny.map((_, j) => j).filter((j) => !sparovane.has(j));
-  return { zaznamy, skeny, parovanie, duplicity, skenyBezParu, poznamky, prijmy, prijmyDuplicity };
+  return { zaznamy, skeny, parovanie, duplicity, duplicityPopis, skenyBezParu, poznamky, prijmy, prijmyDuplicity };
 }
 
 export function suhrnPlanu(p: Plan) {
@@ -275,6 +349,8 @@ export function suhrnPlanu(p: Plan) {
     blocky: nove.filter((z) => z.typ === "blocek").length,
     pokladna: p.prijmy.length - p.prijmyDuplicity.size,
     duplicity: p.duplicity.size + p.prijmyDuplicity.size,
+    /** Preskočené duplicity po jednej („číslo (dodávateľ): už je v evidencii — …“). */
+    duplicityZoznam: (p.duplicityPopis ?? []).slice(0, 100),
     skenyPriradene: [...p.parovanie.keys()].filter((i) => !p.duplicity.has(i)).length,
     skenyBezParu: p.skenyBezParu.length,
     poznamky: p.poznamky.slice(0, 30),
@@ -417,6 +493,8 @@ export async function vykonajImport(args: {
     pokladna: 0,
     skenyPriradene: 0,
     preskocene: 0,
+    /** Preskočené duplicity po jednej — súhrn importu ich vypíše. */
+    duplicity: [...(plan.duplicityPopis ?? [])] as string[],
     chyby: [] as string[],
     /** Čo sa nezapísalo a človek to má vedieť (storná, cudzia mena, iná krajina). */
     upozornenia: plan.poznamky.slice(0, 50),
@@ -430,7 +508,7 @@ export async function vykonajImport(args: {
         processed_rows: hotovo,
         imported_invoices: vysledok.faktury + vysledok.blocky + vysledok.ostatne + vysledok.pokladna,
         failed_rows: vysledok.chyby.length,
-        result: { ...vysledok, chyby: vysledok.chyby.slice(0, 50) },
+        result: { ...vysledok, chyby: vysledok.chyby.slice(0, 50), duplicity: vysledok.duplicity.slice(0, 100) },
         ...(koniec ? { status: "completed", completed_at: new Date().toISOString() } : {}),
       })
       .eq("id", args.jobId);
@@ -449,7 +527,12 @@ export async function vykonajImport(args: {
         else vysledok.blocky++;
         if (sken) vysledok.skenyPriradene++;
       } catch (e: any) {
-        vysledok.chyby.push(`${z.cislo ?? z.dodavatel ?? "doklad"}: ${String(e?.message ?? e).slice(0, 120)}`);
+        // Spúšťač v databáze našiel tú istú faktúru (napr. súbežný zápis) — preskočená, nie chyba.
+        const dup = rozlozChybuPrijatej(e?.message);
+        if (dup) {
+          vysledok.preskocene++;
+          vysledok.duplicity.push(textPreskocenej(z, dup.popis));
+        } else vysledok.chyby.push(`${z.cislo ?? z.dodavatel ?? "doklad"}: ${String(e?.message ?? e).slice(0, 120)}`);
       }
     }
     hotovo++;
@@ -497,6 +580,7 @@ export async function vykonajImport(args: {
     const { precitajDoklad } = await import("./mail-prijem.server");
     const { jeOstatnyZMailu, ostatnyZMailu, bezpecneMeno } = await import("./ostatne-doklady");
     const existuju = await existujuceKluce(klient, args.companyId);
+    const prijate = await existujucePrijate(klient, args.companyId);
     const naRade = [...plan.skenyBezParu];
     const pracovnik = async () => {
       while (naRade.length) {
@@ -566,12 +650,16 @@ export async function vykonajImport(args: {
                 .eq("id", par.id);
               par.maSubor = true;
               vysledok.skenyPriradene++;
-            } else if (existuju.has(klucDuplicity(z))) {
+            } else if (z.typ === "faktura" && duplicitaPrijatej(z, prijate)) {
+              vysledok.preskocene++;
+              vysledok.duplicity.push(textPreskocenej(z, duplicitaPrijatej(z, prijate)!));
+            } else if (z.typ !== "faktura" && existuju.has(klucDuplicity(z))) {
               vysledok.preskocene++;
             } else {
+              if (z.typ === "faktura") zapamatajPrijatu(z, prijate, `sken-${j}`);
+              else existuju.add(klucDuplicity(z));
               const w = await zapisZaznam(klient, o, z, sken);
               zapisane.push(w);
-              existuju.add(klucDuplicity(z));
               if (z.typ === "faktura") vysledok.faktury++;
               else vysledok.blocky++;
             }
@@ -580,7 +668,11 @@ export async function vykonajImport(args: {
             vysledok.chyby.push(`${sken.meno}: nevyzerá ako doklad, preskočené`);
           }
         } catch (e: any) {
-          vysledok.chyby.push(`${sken.meno}: ${String(e?.message ?? e).slice(0, 120)}`);
+          const dup = rozlozChybuPrijatej(e?.message);
+          if (dup) {
+            vysledok.preskocene++;
+            vysledok.duplicity.push(`${sken.meno}: už je v evidencii — ${dup.popis}`);
+          } else vysledok.chyby.push(`${sken.meno}: ${String(e?.message ?? e).slice(0, 120)}`);
         }
         hotovo++;
         await priebeh();

@@ -429,7 +429,7 @@ curl https://faktero.sk/api/v1/invoices \\
                     ["405", "Method Not Allowed — koncový bod túto metódu neprijíma"],
                     [
                       "409",
-                      "Conflict — konflikt stavu: duplicate, invalid_state, locked, issue_date_in_past, approval_pending, buyer_mismatch, already_matched, bank_payment",
+                      "Conflict — konflikt stavu: duplicate, duplicate_document, invalid_state, locked, issue_date_in_past, approval_pending, buyer_mismatch, already_matched, bank_payment",
                     ],
                     ["422", "Unprocessable Entity — validačná chyba"],
                     [
@@ -771,7 +771,7 @@ curl https://faktero.sk/api/v1/invoices \\
             <h3 className="mt-5 font-semibold">{t("Zápis prijatej faktúry")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
-                "Sumy pošlite buď ako položky (ceny bez DPH, sadzba v %), alebo ako amount_total (+ amount_without_vat a vat_amount). Dodávateľ sa založí v adresári, ak tam nie je. S external_id je opakované volanie bezpečné; bez neho sa tá istá faktúra (IČO + číslo + suma) druhýkrát nezaloží (409). Súbor (PDF, JPG, PNG) ide ako base64 do 14 MB. Bez accounting.booked príde faktúra nezaúčtovaná.",
+                "Sumy pošlite buď ako položky (ceny bez DPH, sadzba v %), alebo ako amount_total (+ amount_without_vat a vat_amount). Dodávateľ sa založí v adresári, ak tam nie je. S external_id je opakované volanie bezpečné. Tá istá faktúra (číslo + dodávateľ podľa IČO, inak názvu + suma + rok vystavenia) sa druhýkrát nezaloží ani úpravou nevznikne — API vráti 409 s kódom duplicate_document a v details.existing_id je id existujúcej faktúry. Rovnaké číslo s inou sumou alebo z iného roka sa zapíše. Rovnako 409 duplicate_document vráti aj duplicitný bloček. Súbor (PDF, JPG, PNG) ide ako base64 do 14 MB. Bez accounting.booked príde faktúra nezaúčtovaná.",
               )}
             </p>
             <div className="mt-3">
