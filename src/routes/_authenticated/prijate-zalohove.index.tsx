@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { Download, Plus, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
@@ -417,7 +418,7 @@ function PrijateZalohovePage() {
               loading={loading}
               emptyText={t("Zatiaľ žiadna prijatá záloha.")}
               desktop={
-                <div className="overflow-x-auto rounded-xl border border-border bg-card">
+                <TabulkaZoznamu>
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="whitespace-nowrap border-b border-border text-left text-xs font-semibold text-muted-foreground">
@@ -496,7 +497,7 @@ function PrijateZalohovePage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TabulkaZoznamu>
               }
               mobileCard={(r: Riadok) => (
                 <MobileListCard

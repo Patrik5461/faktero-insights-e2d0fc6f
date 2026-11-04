@@ -3,6 +3,7 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { useServerFn } from "@tanstack/react-start";
 import { runRecurringNow, toggleRecurring } from "@/lib/faktero/recurring.functions";
 import { Plus, Play, Power, PowerOff, Repeat, Trash2, RotateCcw, Hash } from "lucide-react";
@@ -201,7 +202,7 @@ function RecurringList() {
             items={list.rows}
             emptyText="Žiadne výsledky."
             desktop={
-              <div className="overflow-x-auto rounded-xl border border-border bg-card">
+              <TabulkaZoznamu>
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                     <tr>
@@ -320,7 +321,7 @@ function RecurringList() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TabulkaZoznamu>
             }
             mobileCard={(r: any) => (
               <MobileListCard

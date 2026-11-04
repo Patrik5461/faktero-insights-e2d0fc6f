@@ -10,6 +10,7 @@ import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { toast } from "sonner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { zoznamVyuctovaniFn } from "@/lib/faktero/vyuctovanie-vydavkov.functions";
 import { nazovTypu, TYPY_VYUCTOVANIA } from "@/lib/faktero/vyuctovanie-vydavkov";
@@ -173,7 +174,7 @@ function Zoznam() {
               />
             )}
             desktop={
-              <div className="overflow-x-auto rounded-xl border border-border bg-card">
+              <TabulkaZoznamu>
                 <table className="w-full text-sm">
                   <thead className="border-b border-border bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                     <tr>
@@ -193,7 +194,7 @@ function Zoznam() {
                         ciel={{ to: "/doklady/vyuctovania/$id", params: { id: r.id } }}
                         className="border-b border-border last:border-0 hover:bg-secondary/40"
                       >
-                        <td className="p-3">
+                        <td className="min-w-[12rem] max-w-[24rem] whitespace-normal p-3">
                           <Link
                             to="/doklady/vyuctovania/$id"
                             params={{ id: r.id }}
@@ -209,7 +210,7 @@ function Zoznam() {
                         <td className="suma p-3 text-right">
                           {formatujMenu(r.suhrn.spolu, r.mena)}
                         </td>
-                        <td className="p-3 text-xs">
+                        <td className="min-w-[10rem] whitespace-normal p-3 text-xs">
                           {vysledokVyuctovania(t, r.typ, Number(r.suhrn.rozdiel) || 0, r.mena)}
                         </td>
                         <td className="p-3 text-xs">
@@ -223,7 +224,7 @@ function Zoznam() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TabulkaZoznamu>
             }
           />
         )}

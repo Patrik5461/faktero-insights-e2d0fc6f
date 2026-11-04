@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { Plus, Trash2, RotateCcw, Hash, Download, Undo2 } from "lucide-react";
@@ -329,7 +330,7 @@ function ProformaListPage() {
             );
           }}
           desktop={
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+            <TabulkaZoznamu>
               <table className="w-full text-sm">
                 <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
@@ -467,7 +468,7 @@ function ProformaListPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </TabulkaZoznamu>
           }
         />
         {!list.showDeleted && list.total > 0 ? (

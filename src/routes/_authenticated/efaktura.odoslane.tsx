@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, RefreshCw, Eye, Send } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   listEfakturaDocumentsFn,
@@ -264,7 +265,7 @@ function SentPage() {
           })}
         </div>
 
-        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+        <TabulkaZoznamu className="hidden md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
               <tr>
@@ -275,7 +276,7 @@ function SentPage() {
                 <th className="p-3">{t("Validácia")}</th>
                 <th className="p-3">{t("Doručenie")}</th>
                 <th className="p-3">{t("Vytvorené")}</th>
-                <th className="p-3 text-right">{t("Akcie")}</th>
+                <th data-stlpec-akcie className="p-3 text-right">{t("Akcie")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -330,7 +331,7 @@ function SentPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TabulkaZoznamu>
       </PageBody>
       {okno && companyId && (
         <OdoslanieEfakturyOkno

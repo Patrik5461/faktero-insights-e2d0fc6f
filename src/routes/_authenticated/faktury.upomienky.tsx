@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Settings, ChevronDown, ChevronRight } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
@@ -393,7 +394,7 @@ function OdoslaneUpomienky() {
               })}
               {zarazka()}
             </div>
-            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+            <TabulkaZoznamu className="hidden md:block">
               <table className="w-full text-sm">
                 {hlavicka()}
                 <tbody className="divide-y divide-border">
@@ -401,7 +402,7 @@ function OdoslaneUpomienky() {
                   {zarazkaRiadok(7)}
                 </tbody>
               </table>
-            </div>
+            </TabulkaZoznamu>
           </>
         )}
       </PageBody>

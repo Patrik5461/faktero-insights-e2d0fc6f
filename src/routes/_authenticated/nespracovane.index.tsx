@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Upload, AlertTriangle, FileText, Landmark, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   blocekDoNespracovanychFn,
@@ -421,7 +422,7 @@ function Stranka() {
           </div>
         ) : null}
 
-        <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+        <TabulkaZoznamu className="hidden md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-semibold whitespace-nowrap text-muted-foreground">
               <tr>
@@ -486,7 +487,7 @@ function Stranka() {
                     {druhText(r)}
                     {r.subor ? <div className="max-w-[16rem] truncate text-xs text-muted-foreground">{r.subor}</div> : null}
                   </td>
-                  <td className="p-3">
+                  <td className="min-w-[11rem] max-w-[20rem] whitespace-normal p-3">
                     <span className="inline-flex min-w-0 items-center gap-1.5">
                       <CudziaFakturaZnak nesedi={r.odberatelNesedi} />
                       {r.dodavatel ?? <span className="text-muted-foreground">—</span>}
@@ -496,13 +497,13 @@ function Stranka() {
                   <td className="whitespace-nowrap p-3"><span className="cislo-dokladu">{r.cislo ?? "—"}</span></td>
                   <td className="p-3 whitespace-nowrap">{datumText(r)}</td>
                   <td className="suma p-3 text-right">{sumaText(r)}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{zdrojText(r)}</td>
-                  <td className="p-3 text-xs">{stavText(r)}</td>
+                  <td className="min-w-[9rem] whitespace-normal p-3 text-xs text-muted-foreground">{zdrojText(r)}</td>
+                  <td className="min-w-[9rem] whitespace-normal p-3 text-xs">{stavText(r)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </TabulkaZoznamu>
 
         {/* Na mobile karty — tabuľka by ukázala len prvé tri stĺpce. */}
         <div className="space-y-2 md:hidden">

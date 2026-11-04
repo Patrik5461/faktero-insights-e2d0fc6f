@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
@@ -1321,7 +1322,7 @@ function PurchaseInvoicesPage() {
           onOtvorit={(id) => navigate({ to: "/prijate-faktury/$id", params: { id } })}
           onZavriet={() => bocny.setVybrany(null)}
         >
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+        <TabulkaZoznamu>
           <table className="w-full text-sm">
             <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
               <tr>
@@ -1334,7 +1335,7 @@ function PurchaseInvoicesPage() {
                   />
                   <span className="sr-only">{t("Výber")}</span>
                 </th>
-                <th className="w-8 px-1 py-3">
+                <th data-stlpec-ikona className="w-8 px-1 py-3">
                   <span className="sr-only">{t("Platba")}</span>
                 </th>
                 <th className="p-3">{rad.hlavicka("cislo", t("Číslo"))}</th>
@@ -1408,7 +1409,7 @@ function PurchaseInvoicesPage() {
                       onChange={() => toggle(r.id)}
                     />
                   </td>
-                  <td className="w-8 px-1 py-3 text-center">{ikonaPlatby(r)}</td>
+                  <td data-stlpec-ikona className="w-8 px-1 py-3 text-center">{ikonaPlatby(r)}</td>
                   <td className="cislo-dokladu whitespace-nowrap p-3">
                     {r.invoice_number}
                     <span className="ml-1.5 inline-flex align-middle">
@@ -1421,7 +1422,7 @@ function PurchaseInvoicesPage() {
                       </StavOdznak>
                     )}
                   </td>
-                  <td className="min-w-[11rem] p-3">
+                  <td className="min-w-[11rem] max-w-[20rem] whitespace-normal p-3">
                     {r.odberatel_nesedi ? (
                       <CudziaFakturaZnak nesedi={nacitajNesedi(r.odberatel_nesedi)} className="mr-1.5 align-middle" />
                     ) : null}
@@ -1552,7 +1553,7 @@ function PurchaseInvoicesPage() {
                     </td>
                   )}
                   {je("stav") && (
-                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="min-w-[8rem] whitespace-normal p-3" onClick={(e) => e.stopPropagation()}>
                       <StatusBadge status={r.status} />
                       {jeCiastocneUhradena(r, uhradene[r.id]) && (
                         <StavOdznak
@@ -1628,7 +1629,7 @@ function PurchaseInvoicesPage() {
             </tbody>
           </table>
           {paticka}
-        </div>
+        </TabulkaZoznamu>
         </SNahladom>
           }
         />

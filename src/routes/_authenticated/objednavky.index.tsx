@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listSalesOrders } from "@/lib/faktero/sales-orders.functions";
 import {
@@ -164,7 +165,7 @@ function OrdersPage() {
           <ResponsiveTable
             items={zobrazene}
             desktop={
-              <div className="overflow-x-auto rounded-xl border border-border bg-card">
+              <TabulkaZoznamu>
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-xs text-muted-foreground [&_th]:whitespace-nowrap">
                     <tr className="border-b border-border">
@@ -243,7 +244,7 @@ function OrdersPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TabulkaZoznamu>
             }
             mobileCard={(o: any) => {
               const stav = (o.stav_vypocitany ?? o.status) as StavPrijatejObjednavky;

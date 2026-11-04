@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { suhrnVyberu, type PolozkaSuhrnu, type SumaMeny } from "@/lib/faktero/suhrn-vyberu";
 import { suhrnZPoloziek, type SuhrnDph } from "@/lib/faktero/suhrn-dph";
@@ -40,6 +40,22 @@ export function SuctovaListaVyberu({
   const { t } = useT();
   const menyFirmy = useFormatMenyFirmy();
   const n = pocet ?? polozky.length;
+  const lista = useRef<HTMLDivElement>(null);
+  /*
+    Výška lišty pre lepivý posuvník tabuľky (`TabulkaZoznamu`) — oba sú
+    prilepené k spodku obrazovky a posuvník by inak ostal pod lištou.
+  */
+  useEffect(() => {
+    const el = lista.current;
+    if (!el) return;
+    const koren = document.documentElement;
+    const ro = new ResizeObserver(() => koren.style.setProperty("--vyska-listy-vyberu", `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      koren.style.removeProperty("--vyska-listy-vyberu");
+    };
+  }, [n > 0]);
   if (!n) return null;
   const s = suhrnVyberu(polozky);
   const doklady = (k: number) =>
@@ -54,6 +70,7 @@ export function SuctovaListaVyberu({
 
   return (
     <div
+      ref={lista}
       role="region"
       aria-label={t("Súčet vybraných dokladov")}
       className="sticky bottom-0 z-30 -mx-4 border-t border-primary/40 bg-card/95 px-4 py-2 pr-20 text-sm shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur sm:-mx-6 sm:px-6 sm:pr-24"
