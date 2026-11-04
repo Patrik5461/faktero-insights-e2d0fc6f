@@ -29,6 +29,7 @@ import { NapovedaPredkontacii, SekciaZauctovania } from "./DetailDokladu";
 import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
+import { isAccountingDocument } from "@/lib/faktero/uctovny-doklad";
 import { TLACIDLO_DRUHE, TLACIDLO_HLAVNE } from "./KompaktnyDetail";
 import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
@@ -150,7 +151,9 @@ export function useZauctovanieVystavenej({
   ]);
 
   const vPohode = stav?.vPohode ?? null;
-  const zauctovana = Boolean(inv.zauctovane_at);
+  // Zálohová faktúra sa neúčtuje: bez polí zaúčtovania, len export do Pohody.
+  const neuctuje = !isAccountingDocument(inv.type);
+  const zauctovana = !neuctuje && Boolean(inv.zauctovane_at);
 
   async function uloz(lenUlozit: boolean) {
     setBusy(true);
@@ -479,6 +482,7 @@ export function useZauctovanieVystavenej({
     h,
     setH,
     vPohode,
+    neuctuje,
     zauctovana,
     busy,
     uloz,
@@ -512,6 +516,7 @@ export function ZauctovanieVystavenejPanel({
     h,
     setH,
     vPohode,
+    neuctuje,
     zauctovana,
     busy,
     uloz,
@@ -545,6 +550,10 @@ export function ZauctovanieVystavenejPanel({
               : t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
             {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
           </span>
+        ) : neuctuje ? (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            {t("Neúčtuje sa")}
+          </span>
         ) : zauctovana ? (
           <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
             {t("Zaúčtovaná {kedy}", { kedy: kedy(inv.zauctovane_at, loc) })}
@@ -565,27 +574,35 @@ export function ZauctovanieVystavenejPanel({
           void obnov();
         }}
       />
-      {!vPohode && <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />}
+      {!vPohode && !neuctuje && (
+        <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />
+      )}
 
       {vPohode ? (
         <>
-          <p className="mt-3">
-            {t("Predkontácia")}{" "}
-            <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
-            {t("členenie DPH")}{" "}
-            <strong>{inv.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
-            {de ? null : (
-              <>
-                , {t("členenie KV DPH")}{" "}
-                <strong data-kv-dokladu="">{textKv(t, inv.kv_clenenie, kvAuto)}</strong>
-              </>
-            )}
-            .{" "}
-            {vPohode.program
-              ? t("Faktúra je odovzdaná do účtovníctva ({program}).", { program: vPohode.program })
-              : t("Faktúra je v Pohode.")}
-          </p>
-          {prehladRozuctovania}
+          {neuctuje ? (
+            <NeuctujeSaInfo className="mt-3" />
+          ) : (
+            <p className="mt-3">
+              {t("Predkontácia")}{" "}
+              <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
+              {t("členenie DPH")}{" "}
+              <strong>{inv.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
+              {de ? null : (
+                <>
+                  , {t("členenie KV DPH")}{" "}
+                  <strong data-kv-dokladu="">{textKv(t, inv.kv_clenenie, kvAuto)}</strong>
+                </>
+              )}
+              .{" "}
+              {vPohode.program
+                ? t("Faktúra je odovzdaná do účtovníctva ({program}).", {
+                    program: vPohode.program,
+                  })
+                : t("Faktúra je v Pohode.")}
+            </p>
+          )}
+          {neuctuje ? null : prehladRozuctovania}
           <div className="mt-3 flex flex-wrap gap-2">
             {vPohode.program ? null : (
               <button
@@ -606,13 +623,31 @@ export function ZauctovanieVystavenejPanel({
                 ? t("Vrátiť z účtovníctva (opraviť)")
                 : t("Vrátiť z Pohody (opraviť)")}
             </button>
-            <OpravitZauctovanie
-              row={inv}
-              druh="faktura"
-              onZmena={onZmena}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            />
+            {neuctuje ? null : (
+              <OpravitZauctovanie
+                row={inv}
+                druh="faktura"
+                onZmena={onZmena}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+              />
+            )}
           </div>
+        </>
+      ) : neuctuje ? (
+        <>
+          <NeuctujeSaInfo className="mt-3" />
+          {de ? null : (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={stiahnut}
+                disabled={busy}
+                title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary-hover hover:bg-primary/10 disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -686,7 +721,7 @@ export function ZauctovanieVystavenejPanel({
 /** Stav zaúčtovania vpravo od nadpisu sekcie: Nezaúčtovaná / Zaúčtovaná / V Pohode. */
 export function StavZauctovaniaVystavenej({ inv, z }: { inv: any; z: ZauctovanieVystavenej }) {
   const { t } = useT();
-  const { vPohode, zauctovana, busy, loc } = z;
+  const { vPohode, neuctuje, zauctovana, busy, loc } = z;
   if (inv.status === "draft") return null;
   return (
     <span className="flex items-center gap-1.5" data-stav-zauctovania="">
@@ -700,6 +735,10 @@ export function StavZauctovaniaVystavenej({ inv, z }: { inv: any; z: Zauctovanie
               })
             : t("V Pohode od {kedy}", { kedy: kedy(vPohode.kedy, loc) })}
           {vPohode.cislo ? ` · ${t("č. {cislo}", { cislo: vPohode.cislo })}` : ""}
+        </span>
+      ) : neuctuje ? (
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          {t("Neúčtuje sa")}
         </span>
       ) : zauctovana ? (
         <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">
@@ -738,6 +777,7 @@ export function PoliaZauctovaniaVystavenej({
     h,
     setH,
     vPohode,
+    neuctuje,
     obnov,
     vyberPravidla,
     poPolozkachANapoveda,
@@ -776,36 +816,41 @@ export function PoliaZauctovaniaVystavenej({
           {t("Obdobie je uzavreté — dátumy a sumy faktúry sa už nemenia.")}
         </p>
       ) : null}
-      {!vPohode ? <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} /> : null}
-      <fieldset disabled={Boolean(vPohode)} className="min-w-0 space-y-3.5 disabled:opacity-70">
-        <PoliaZauctovania
-          navrhy={navrhy}
-          hodnoty={{
-            predkontacia: h.predkontacia,
-            clenenie: h.clenenie,
-            kv: de ? undefined : h.kv,
-            stredisko: h.stredisko,
-            cinnost: h.cinnost,
-          }}
-          setHodnoty={(x) =>
-            setH({
-              ...h,
-              predkontacia: x.predkontacia,
-              clenenie: x.clenenie,
-              kv: x.kv ?? h.kv,
-              stredisko: x.stredisko ?? "",
-              cinnost: x.cinnost ?? "",
-            })
-          }
-          kvMoznosti={KV_VYDANE}
-          kvAuto={z.kvAuto}
-          popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
-          priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
-        />
-        {vPohode ? null : vyberPravidla}
-        {vPohode ? null : poPolozkachANapoveda}
-      </fieldset>
-      {vPohode ? prehladRozuctovania : null}
+      {neuctuje ? <NeuctujeSaInfo /> : null}
+      {!vPohode && !neuctuje ? (
+        <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />
+      ) : null}
+      {neuctuje ? null : (
+        <fieldset disabled={Boolean(vPohode)} className="min-w-0 space-y-3.5 disabled:opacity-70">
+          <PoliaZauctovania
+            navrhy={navrhy}
+            hodnoty={{
+              predkontacia: h.predkontacia,
+              clenenie: h.clenenie,
+              kv: de ? undefined : h.kv,
+              stredisko: h.stredisko,
+              cinnost: h.cinnost,
+            }}
+            setHodnoty={(x) =>
+              setH({
+                ...h,
+                predkontacia: x.predkontacia,
+                clenenie: x.clenenie,
+                kv: x.kv ?? h.kv,
+                stredisko: x.stredisko ?? "",
+                cinnost: x.cinnost ?? "",
+              })
+            }
+            kvMoznosti={KV_VYDANE}
+            kvAuto={z.kvAuto}
+            popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
+            priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
+          />
+          {vPohode ? null : vyberPravidla}
+          {vPohode ? null : poPolozkachANapoveda}
+        </fieldset>
+      )}
+      {vPohode && !neuctuje ? prehladRozuctovania : null}
     </>
   );
 }
@@ -846,7 +891,17 @@ export function PataZauctovaniaVystavenej({
   onZmena: () => void;
 }) {
   const { t } = useT();
-  const { de, vPohode, zauctovana, busy, uloz, stiahnut, vratitZPohody, zrusZauctovanie } = z;
+  const {
+    de,
+    vPohode,
+    neuctuje,
+    zauctovana,
+    busy,
+    uloz,
+    stiahnut,
+    vratitZPohody,
+    zrusZauctovanie,
+  } = z;
   if (inv.status === "draft") return null;
   const odkaz =
     "inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-60";
@@ -863,7 +918,9 @@ export function PataZauctovaniaVystavenej({
           {vPohode.program ? t("Vrátiť z účtovníctva (opraviť)") : t("Vrátiť z Pohody (opraviť)")}
         </button>
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={odkaz} />
+          {neuctuje ? null : (
+            <OpravitZauctovanie row={inv} druh="faktura" onZmena={onZmena} className={odkaz} />
+          )}
           {vPohode.program ? null : (
             <button type="button" onClick={stiahnut} disabled={busy} className={odkaz}>
               <Download className="h-3.5 w-3.5" /> {t("Stiahnuť XML znova")}
@@ -871,6 +928,20 @@ export function PataZauctovaniaVystavenej({
           )}
         </div>
       </>
+    );
+  // Zálohová faktúra sa neúčtuje — ostáva len stiahnutie XML pre Pohodu.
+  if (neuctuje)
+    return de ? null : (
+      <button
+        type="button"
+        onClick={stiahnut}
+        disabled={busy}
+        title={t("Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú.")}
+        className={TLACIDLO_HLAVNE}
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        {t("Stiahnuť XML pre Pohodu")}
+      </button>
     );
   return (
     <>
@@ -906,5 +977,17 @@ export function PataZauctovaniaVystavenej({
         </div>
       )}
     </>
+  );
+}
+
+/** Zálohová faktúra nie je daňový ani účtovný doklad — namiesto polí zaúčtovania. */
+function NeuctujeSaInfo({ className = "" }: { className?: string }) {
+  const { t } = useT();
+  return (
+    <p className={`text-sm text-muted-foreground ${className}`} data-neuctuje-sa="">
+      {t(
+        "Zálohová faktúra nie je daňový ani účtovný doklad — neúčtuje sa, preto nemá predkontáciu ani členenie DPH. Do Pohody ide len ako evidencia zálohy.",
+      )}
+    </p>
   );
 }

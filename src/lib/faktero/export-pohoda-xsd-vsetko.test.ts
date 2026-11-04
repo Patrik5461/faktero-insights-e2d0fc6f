@@ -260,7 +260,7 @@ describe("Pohoda — vystavené faktúry proti invoice.xsd", () => {
     expect(hodnota(x, "inv:roundingVAT")).toBe("none");
   });
 
-  it("zálohová faktúra ide ako issuedAdvanceInvoice s predkontáciou zálohy a bez členenia DPH", () => {
+  it("zálohová faktúra ide ako issuedAdvanceInvoice bez predkontácie a bez členenia DPH", () => {
     const x = buildPohodaInvoiceXml({
       company: firmaSK,
       nastavenia,
@@ -274,7 +274,8 @@ describe("Pohoda — vystavené faktúry proti invoice.xsd", () => {
     uloz("02-vydana-zalohova", x);
     expect(chybySchemy(x)).toEqual([]);
     expect(hodnota(x, "inv:invoiceType")).toBe("issuedAdvanceInvoice");
-    expect(x).toContain("<inv:accounting><typ:ids>3Zv</typ:ids></inv:accounting>");
+    // Zálohová faktúra sa neúčtuje (uctovny-doklad.ts) — ani predvolená predkontácia zálohy.
+    expect(x).not.toContain("<inv:accounting>");
     // „Nepoužívá se u typů Proforma a Zálohová faktura" (invoice.xsd).
     expect(x).not.toContain("<inv:classificationVAT>");
   });
@@ -1120,7 +1121,7 @@ describe("Pohoda — zálohové faktúry (vydané aj prijaté)", () => {
     expect(x).not.toContain("<inv:invoiceDetail>");
   });
 
-  it("prijatá zálohová s DPH na doklade dodávateľa ide tiež bez DPH; vlastná predkontácia („Bez“) ostane", () => {
+  it("prijatá zálohová s DPH na doklade dodávateľa ide tiež bez DPH a bez vlastnej predkontácie", () => {
     const x = buildPohodaExpensesXml({
       company: firmaSK,
       nastavenia,
@@ -1144,7 +1145,7 @@ describe("Pohoda — zálohové faktúry (vydané aj prijaté)", () => {
     expect(hodnota(x, "inv:invoiceType")).toBe("receivedAdvanceInvoice");
     expect(hodnota(x, "typ:priceNone")).toBe("1500.60");
     expect(hodnota(x, "typ:priceHighVAT")).toBe("0.00");
-    expect(x).toContain("<inv:accounting><typ:ids>Bez</typ:ids></inv:accounting>");
+    expect(x).not.toContain("<inv:accounting>");
     expect(x).not.toContain("<inv:classificationVAT>");
     expect(x).not.toContain("<inv:classificationKVDPH>");
   });

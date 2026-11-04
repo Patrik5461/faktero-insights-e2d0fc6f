@@ -22,6 +22,7 @@ import { nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
 import { chybaUlozenehoRozuctovaniaVystavenej } from "./rozuctovanie-vystavenej";
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
 import { domacaMena } from "./kurzy";
+import { isAccountingDocument } from "./uctovny-doklad";
 import {
   DOVOD_NEPLATITEL_PRIJATY,
   DOVOD_NEPLATITEL_VYSTAVENA,
@@ -239,6 +240,8 @@ export function prekazkaVydanej(
   const cz = krajinaDane(company?.country) === "CZ";
   const typ = String(invoice?.type ?? "regular");
   const zalohova = typ === "proforma";
+  // Zálohová faktúra sa neúčtuje — rozúčtovanie, členenia ani predkontácia sa nekontrolujú.
+  const uctovny = isAccountingDocument(typ);
   const tuzemskePdp = jeTuzemskePdp(invoice, company);
   const pdpPolozky = maPdpPolozky(invoice, items);
 
@@ -275,14 +278,14 @@ export function prekazkaVydanej(
     Rozúčtovanie, ktoré po úprave faktúry nesedí so sumami položiek — bez
     zastavenia by do Pohody potichu odišla faktúra bez neho (kódy hlavičky).
   */
-  {
+  if (uctovny) {
     const dovod = chybaUlozenehoRozuctovaniaVystavenej(invoice, items);
     if (dovod)
       return `${cislo} — rozúčtovanie nesedí s faktúrou (${dovod}) — upravte alebo zrušte rozúčtovanie v zaúčtovaní faktúry`;
   }
 
   // Členenie a KV musia patriť vydaným dokladom (PALIERA FA20260004 odišla s PD).
-  {
+  if (uctovny) {
     const rozuctovanie = nacitajRozuctovanie(invoice?.rozuctovanie);
     const dovod = prekazkaClenenia(
       "vydane",
@@ -328,7 +331,7 @@ export function prekazkaVydanej(
   }
 
   // Zaúčtovaná faktúra musí mať kódy (vlastné, predvolené alebo pri všetkých položkách).
-  if (invoice?.zauctovane_at) {
+  if (invoice?.zauctovane_at && uctovny) {
     // Rozúčtovaná faktúra nesie kódy v riadkoch rozúčtovania (tie nahrádzajú položky).
     const rozuctovanie = nacitajRozuctovanie(invoice?.rozuctovanie);
     const vsetkyPolozky = (pole: string) =>
@@ -409,9 +412,9 @@ export function prekazkaDokladu(
 
   /*
     Prijatá zálohová faktúra nie je daňový doklad — ide bez DPH, členenia,
-    KV aj predvolenej predkontácie, takže kontroly zaúčtovania sa jej netýkajú.
+    KV aj predkontácie, takže kontroly zaúčtovania sa jej netýkajú.
   */
-  if (d?._typPohody === "receivedAdvanceInvoice") return null;
+  if (!isAccountingDocument(d?._typPohody as string | undefined)) return null;
 
   const krajina = krajinaDane(company?.country);
   const rozpis: { sadzba: number; zaklad: number; dph: number; pdp?: boolean }[] = Array.isArray(

@@ -52,6 +52,7 @@ import {
 } from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { kvPrijatehoPrePohodu, kvVystavenehoPrePohodu } from "./pohoda-kv";
+import { isAccountingDocument } from "./uctovny-doklad";
 import { jeNezahrnovat } from "./uctovanie-agenda";
 import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
 import {
@@ -732,6 +733,8 @@ export function polozkyFaktur(opts: {
       // Zálohová faktúra nemá členenie DPH (invoice.xsd: „Nepoužívá se u typů
       // Proforma a Zálohová faktura") a do kontrolného výkazu nepatrí.
       const zalohova = typ === "proforma";
+      // Neúčtovný doklad (zálohová faktúra) ide bez predkontácie, členenia DPH, KV aj rozúčtovania.
+      const uctovny = isAccountingDocument(typ);
 
       const denPlnenia = String(invoice.delivery_date ?? invoice.issue_date ?? "");
       /*
@@ -780,13 +783,14 @@ export function polozkyFaktur(opts: {
         Keď má niektorá položka vlastnú predkontáciu (účtovné nastavenia
         položky), hlavička dostane „Rozúčtovať" a kódy nesú položky.
       */
-      const predkontaciaJedna =
-        String((invoice as any).pohoda_predkontacia ?? "").trim() ||
-        (typ === "proforma" || typ === "advance_payment"
-          ? nastavenia?.predkontaciaZaloha
-          : typ === "credit_note"
-            ? nastavenia?.predkontaciaDobropis
-            : nastavenia?.predkontacia);
+      const predkontaciaJedna = !uctovny
+        ? ""
+        : String((invoice as any).pohoda_predkontacia ?? "").trim() ||
+          (typ === "advance_payment"
+            ? nastavenia?.predkontaciaZaloha
+            : typ === "credit_note"
+              ? nastavenia?.predkontaciaDobropis
+              : nastavenia?.predkontacia);
       /*
         Tuzemské prenesenie (§ 69 ods. 12): členenie pre prenesenie firmy,
         inak predvolené SK Pohody — bez neho by Pohoda faktúru zaúčtovala ako
@@ -807,7 +811,7 @@ export function polozkyFaktur(opts: {
         sadzbách sedia s položkami (inak sa rozúčtovanie nepoužije a kontrola
         pred exportom faktúru zastaví), takže súhrn DPH ostáva z položiek.
       */
-      const rozRiadky = platneRozuctovanieVystavenej(invoice as any, povodneRiadky as any[]);
+      const rozRiadky = uctovny ? platneRozuctovanieVystavenej(invoice as any, povodneRiadky as any[]) : [];
       // Riadky sú uložené kladne — smer dostanú rovnako ako položky (`zn` × znamienko položiek v DB).
       const smerRiadkov = zn * znamienkoPoloziekVystavenej(povodneRiadky as any[]);
       const zdrojeKodov: ItemRow[] = rozRiadky.length
@@ -833,11 +837,11 @@ export function polozkyFaktur(opts: {
       // Rozúčtovať treba, len keď položky naozaj vedú na rôzne predkontácie,
       // strediská alebo činnosti — keď majú všetky to isté, patrí to do hlavičky.
       const pkPolozky = (it: ItemRow) =>
-        String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna || "";
+        (uctovny ? String((it as any).pohoda_predkontacia ?? "").trim() : "") || predkontaciaJedna || "";
       const kodyPoloziek = new Set(
         zdrojeKodov.map((it) => `${pkPolozky(it)}|${strediskoPolozky(it)}|${cinnostPolozky(it)}`),
       );
-      const poPolozkach = kodyPoloziek.size > 1;
+      const poPolozkach = uctovny && kodyPoloziek.size > 1;
       const prvy = zdrojeKodov[0];
       const predkontacia = poPolozkach
         ? nastavenia?.predkontaciaRozuctovat?.trim() ||
@@ -1767,13 +1771,13 @@ export function polozkyDokladov(opts: {
       const blocek = !d?._typPohody;
       /*
         Prijatá zálohová faktúra sa neúčtuje a do DPH nevstupuje: bez
-        predvolenej predkontácie (len vlastná, napr. „Bez“), bez členenia DPH
-        a KV — invoice.xsd: členenie „Nepoužívá se u typů … Zálohová faktura“.
+        predkontácie, členenia DPH a KV — invoice.xsd: členenie „Nepoužívá se
+        u typů … Zálohová faktura“ (`isAccountingDocument`).
       */
-      const zalohovaPrijata = d?._typPohody === "receivedAdvanceInvoice";
+      const zalohovaPrijata = !isAccountingDocument(d?._typPohody);
       const podlaKat = zalohovaPrijata ? null : nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
       const predkontaciaJedna = zalohovaPrijata
-        ? String(d?.pohoda_predkontacia ?? "").trim() || null
+        ? null
         : String(d?.pohoda_predkontacia ?? "").trim() ||
           podlaKat?.predkontacia ||
           (blocek ? nastavenia?.predkontaciaDoklady : null) ||

@@ -1,3 +1,4 @@
+import { isAccountingDocument } from "./uctovny-doklad";
 import { createServerFn } from "@tanstack/react-start";
 import { DOVOD_CUDZIA_ZAUCTOVANIE } from "./cudzia-faktura";
 import { z } from "zod";
@@ -350,6 +351,11 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       }
       if (!data.lenUlozit && (r.status === "draft" || r.status === "cancelled")) {
         preskocene.push(`${r.invoice_number}: ${r.status === "draft" ? "koncept" : "stornovaná"}`);
+        continue;
+      }
+      // Zálohová faktúra nie je účtovný doklad (uctovny-doklad.ts).
+      if (!data.lenUlozit && !isAccountingDocument(r.type)) {
+        preskocene.push(`${r.invoice_number}: zálohová faktúra sa neúčtuje`);
         continue;
       }
       if (!data.lenUlozit && !zapocitatelna(r)) {
@@ -811,7 +817,7 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
     const { data: f } = await supabase
       .from("invoices")
       .select(
-        "id, status, deleted_at, customer_ico, customer_name, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
+        "id, type, status, deleted_at, customer_ico, customer_name, pohoda_predkontacia, zauctovanie_zdroj, zauctovanie_istota, auto_uctovanie_navrh",
       )
       .eq("company_id", data.company_id)
       .eq("id", data.id)
@@ -820,6 +826,8 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
     if (await vPohode(supabase, f.id))
       throw new Error("Faktúra je už v Pohode — najprv ju vráťte z Pohody.");
     if (!data.lenUlozit && f.status === "draft") throw new Error("Koncept sa zaúčtovať nedá — najprv ho vystavte.");
+    if (!data.lenUlozit && !isAccountingDocument(f.type))
+      throw new Error("Zálohová faktúra sa neúčtuje — do Pohody ide bez predkontácie.");
 
     const zmena: Record<string, unknown> = {
       pohoda_predkontacia: data.predkontacia?.trim() || null,
@@ -971,7 +979,7 @@ export const zauctujVystaveneHromadneFn = createServerFn({ method: "POST" })
     const [{ data: riadky, error }, { data: logy }] = await Promise.all([
       supabase
         .from("invoices")
-        .select("id, invoice_number, status, deleted_at")
+        .select("id, invoice_number, type, status, deleted_at")
         .eq("company_id", data.company_id)
         .in("id", data.ids),
       supabase
@@ -988,6 +996,8 @@ export const zauctujVystaveneHromadneFn = createServerFn({ method: "POST" })
     for (const r of riadky ?? []) {
       if (r.deleted_at) continue;
       if (r.status === "draft") preskocene.push(`${r.invoice_number}: koncept`);
+      else if (!isAccountingDocument(r.type))
+        preskocene.push(`${r.invoice_number}: zálohová faktúra sa neúčtuje`);
       else if (vPohode.has(r.id)) preskocene.push(`${r.invoice_number}: už je v Pohode`);
       else ok.push(r.id);
     }

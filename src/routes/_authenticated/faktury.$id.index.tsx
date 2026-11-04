@@ -15,6 +15,7 @@ import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
 import { useDizajn } from "@/hooks/useDizajn";
 import { VystavenaDetailKompaktna } from "@/components/faktero/VystavenaDetailKompaktna";
 import { rezimDphVystavenej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
+import { isAccountingDocument } from "@/lib/faktero/uctovny-doklad";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody } from "@/components/faktero/AppShell";
@@ -1178,12 +1179,15 @@ function InvoiceDetail() {
       zostava: sumaNaZobrazenie(inv, zostavaUhradit(inv.total, inv.advance_amount)),
       bezUhrady: inv.status === "cancelled" || inv.status === "draft" || jeDobropisNaZobrazenie(inv),
     },
-    zauctovanie: {
-      ...stavZauctovania(inv),
-      predkontacia: inv.pohoda_predkontacia,
-      clenenie: inv.pohoda_clenenie_dph,
-      kv: inv.kv_clenenie,
-    },
+    // Zálohová faktúra sa neúčtuje — bez predkontácie, členenia a stavu zaúčtovania.
+    zauctovanie: isAccountingDocument(inv.type)
+      ? {
+          ...stavZauctovania(inv),
+          predkontacia: inv.pohoda_predkontacia,
+          clenenie: inv.pohoda_clenenie_dph,
+          kv: inv.kv_clenenie,
+        }
+      : undefined,
   };
 
   /*
