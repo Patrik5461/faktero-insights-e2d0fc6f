@@ -52,7 +52,8 @@ export type Blokator =
   | "rezim_dph"
   | "uzamknuty"
   | "cudzi_odberatel"
-  | "duplicita";
+  | "duplicita"
+  | "bez_clenenia";
 
 export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   polozky: "Súčet položiek nesedí so sumou dokladu",
@@ -66,6 +67,7 @@ export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   uzamknuty: "Doklad je odovzdaný alebo uzamknutý",
   cudzi_odberatel: "Faktúra nepatrí tejto firme (odberateľ na doklade je iná firma)",
   duplicita: "Duplicitný doklad — rovnaký doklad je v evidencii viackrát; jeden zmažte",
+  bez_clenenia: "Na doklade chýba členenie DPH — doplní ho až potvrdenie návrhu",
 };
 
 export type NavrhZauctovania = {
@@ -335,7 +337,8 @@ export function kodClenenia(
 /** Riadok kontrolného výkazu (len SK platiteľ; prijaté B1/B2/B3/C2/X, vydané A2 alebo automaticky). */
 function kvPreRezim(rezim: RezimDph, d: VstupClenenia): string | null {
   if (String(d.krajinaFirmy).toUpperCase() !== "SK") return null;
-  if (d.smer === "vydane") return rezim === "vystup_pdp" ? "A2" : null;
+  // Opravný doklad k prenesenej faktúre patrí do C.1, nie do A.2 — určí ho automatika (kv-urcenie.ts).
+  if (d.smer === "vydane") return rezim === "vystup_pdp" && !d.opravny ? "A2" : null;
   switch (rezim) {
     case "pdp_tuzemsko":
     case "eu_tovar":
@@ -478,6 +481,36 @@ export function blokatory(v: VstupBlokatorov): Blokator[] {
   if (!String(v.predkontacia ?? "").trim()) out.push("predkontacia");
   if (!String(v.clenenieDph ?? "").trim()) out.push("clenenie");
   return out;
+}
+
+/**
+ * Návrh uložený na doklade, prepočítaný proti tomu, čo na doklade je teraz.
+ * Návrh vzniká raz (pri uložení dokladu alebo „Navrhnúť znova“); keď človek
+ * potom predkontáciu či členenie doplní ručne, uložený blokátor „Chýba
+ * predkontácia“ by svietil ďalej. Kódy z dokladu majú prednosť pred návrhom,
+ * blokátory vyriešené dokladom zmiznú a pribudne upozornenie, keď na
+ * doklade samom členenie DPH chýba (doplní ho až potvrdenie návrhu).
+ */
+export function aktualnyNavrh(
+  n: NavrhZauctovania,
+  row: {
+    pohoda_predkontacia?: string | null;
+    pohoda_clenenie_dph?: string | null;
+    kv_clenenie?: string | null;
+  },
+): NavrhZauctovania {
+  const t = (v: unknown) => String(v ?? "").trim() || null;
+  const predkontacia = t(row.pohoda_predkontacia) ?? t(n.predkontacia);
+  const clenenieDph = t(row.pohoda_clenenie_dph) ?? t(n.clenenieDph);
+  const kvClenenie = t(row.kv_clenenie) ?? t(n.kvClenenie);
+  const bl = (n.blokatory ?? []).filter(
+    (b) =>
+      b !== "bez_clenenia" &&
+      !(b === "predkontacia" && predkontacia) &&
+      !(b === "clenenie" && clenenieDph),
+  );
+  if (!t(row.pohoda_clenenie_dph) && clenenieDph && !n.neprepisovat) bl.push("bez_clenenia");
+  return { ...n, predkontacia, clenenieDph, kvClenenie, blokatory: bl };
 }
 
 // ───────────────────────── autopilot ─────────────────────────

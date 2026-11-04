@@ -1184,7 +1184,12 @@ function InvoiceDetail() {
       ? {
           ...stavZauctovania(inv),
           predkontacia: inv.pohoda_predkontacia,
-          clenenie: inv.pohoda_clenenie_dph,
+          /* Prázdne členenie ukáže návrh zaúčtovania (uloží sa v časti Zaúčtovanie). */
+          clenenie:
+            inv.pohoda_clenenie_dph ||
+            ((inv as any).auto_uctovanie_navrh?.clenenieDph
+              ? t("{kod} (návrh)", { kod: (inv as any).auto_uctovanie_navrh.clenenieDph })
+              : null),
           kv: inv.kv_clenenie,
         }
       : undefined,

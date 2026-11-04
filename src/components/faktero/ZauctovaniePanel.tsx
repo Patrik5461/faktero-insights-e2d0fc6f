@@ -75,6 +75,8 @@ export type Navrhy = {
   /** Predvolené členenie KV DPH firmy pre bežný doklad. */
   predvoleneKv?: string | null;
   maCiselnik?: boolean;
+  /** Firma je platiteľ DPH (`companies.vat_payer`). */
+  platitel?: boolean;
   podlaKategorie?: Record<string, { predkontacia?: string; clenenie?: string }>;
   strediska?: MoznostKodu[];
   cinnosti?: MoznostKodu[];

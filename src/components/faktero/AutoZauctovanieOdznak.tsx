@@ -11,10 +11,12 @@ import {
 } from "@/lib/faktero/auto-uctovanie.functions";
 import {
   TEXTY_BLOKATOROV,
+  aktualnyNavrh,
   popisZdroja,
   type Blokator,
   type NavrhZauctovania,
 } from "@/lib/faktero/auto-uctovanie";
+import { isAccountingDocument } from "@/lib/faktero/uctovny-doklad";
 
 type Typ = "prijata" | "blocek" | "vystavena";
 
@@ -54,7 +56,20 @@ export function AutoZauctovanieOdznak({
   const potvrd = useServerFn(potvrdNavrhyFn);
   const prepocitaj = useServerFn(prepocitajNavrhFn);
   const [busy, setBusy] = useState(false);
-  const navrh = (row.auto_uctovanie_navrh ?? null) as NavrhZauctovania | null;
+  const ulozeny = (row.auto_uctovanie_navrh ?? null) as NavrhZauctovania | null;
+  /*
+    Uložený návrh proti kódom, ktoré sú na doklade teraz: predkontácia
+    doplnená po vzniku návrhu už nesvieti ako „Chýba predkontácia“ a
+    chýbajúce členenie DPH na doklade sa ohlási (P: dobropis 20260004 SFC).
+  */
+  const navrh = ulozeny
+    ? (() => {
+        const n = aktualnyNavrh(ulozeny, row);
+        return isAccountingDocument(row.type)
+          ? n
+          : { ...n, blokatory: n.blokatory.filter((b) => b !== "bez_clenenia") };
+      })()
+    : null;
   const auto = ["pravidlo", "zvyk", "ai"].includes(String(row.zauctovanie_zdroj ?? ""));
 
   async function akcia(f: () => Promise<unknown>, ok?: string) {
