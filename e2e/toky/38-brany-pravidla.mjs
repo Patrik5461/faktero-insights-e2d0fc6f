@@ -52,8 +52,12 @@ export default {
         aktivne: true,
         ...x,
       });
+    // Každý bloček vlastný kód — inak spúšťač duplicít bločkov odmietne druhý s tým istým
+    // IČO, dňom a sumou (napr. ico(1) dvakrát po 12,30 €).
+    let poradieBlocku = 0;
     const blocek = (x) =>
       t.rest.vloz("expense_documents", {
+        qr_raw: `QR-${z}-${++poradieBlocku}`,
         company_id: firma,
         issue_date: t.dnes,
         total_amount: 12.3,

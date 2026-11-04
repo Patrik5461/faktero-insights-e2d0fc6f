@@ -14,8 +14,14 @@
     bloček s bločkom. Dobropis a faktúra, ktorú opravuje, nie sú duplicita.
   - Druhý doklad sa ráta, len keď nie je zmazaný, stornovaný ani koncept.
   - **Prijatá faktúra:** rovnaké číslo dokladu dodávateľa (bez medzier,
-    pomlčiek a vedúcich núl) a rovnaký dodávateľ — IČO, keď ho majú oba,
-    inak názov bez diakritiky a právnej formy.
+    pomlčiek a vedúcich núl), rovnaký dodávateľ — IČO, keď ho majú oba,
+    inak názov bez diakritiky a právnej formy — a rovnaká suma aj rok
+    vystavenia (neznáma suma či dátum sa za rozdiel nepočíta). Taká faktúra
+    sa **ani neuloží** (`chybaUlozenejPrijatej`, spúšťač v databáze).
+    Rovnaké číslo od toho istého dodávateľa s inou sumou alebo z iného roka
+    je len **možná duplicita** (`moznaDuplicita`) — Alza a iní opakujú čísla
+    v ďalších rokoch; človek ju po potvrdení „Nie je duplicita“ uloží a
+    zaúčtovanie ju nezastaví.
   - **Bloček:** rovnaký kód z eKasy (QR nesie jednoznačné UID/OKP dokladu);
     keď ho oba nemajú, rovnaký dodávateľ (IČO, inak názov) + dátum + suma.
     Duplicitný bloček sa ani neuloží (`chybaUlozenehoBlocku`).
@@ -72,12 +78,15 @@ const centy = (v: unknown): number | null => {
   return Number.isFinite(n) ? Math.round(Math.abs(n) * 100) : null;
 };
 
+const bezCisla = (v: unknown) => String(v ?? "").trim().toLowerCase() === "bez čísla";
+
 export function zPrijatej(r: Riadok): DokladNaPorovnanie {
   const suma = Number(r.amount_total);
   return {
     id: String(r.id ?? ""),
     druh: "prijata",
-    cislo: normCislo(r.invoice_number),
+    // „bez čísla“ dosadí vytvorenie z Nespracovaných — dve také nie sú tá istá faktúra.
+    cislo: bezCisla(r.invoice_number) ? "" : normCislo(r.invoice_number),
     cisloText: String(r.invoice_number ?? "").trim(),
     typ: String(r.type ?? "regular"),
     dobropis: (Number.isFinite(suma) && suma < 0) || Boolean(r.opravuje_cislo || r.opravuje_id),
@@ -123,17 +132,40 @@ function rovnakyDodavatel(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean
   return Boolean(a.nazov) && a.nazov === b.nazov;
 }
 
+/** Prijaté faktúry s rovnakým číslom od toho istého dodávateľa (bez ohľadu na sumu a rok). */
+function rovnakeCisloOdDodavatela(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean {
+  if (!a.id || a.id === b.id) return false;
+  if (a.druh !== "prijata" || b.druh !== "prijata" || a.neplatny || b.neplatny) return false;
+  // Dobropis a faktúra, ktorú opravuje, majú často to isté číslo — nie sú to dva rovnaké doklady.
+  if (a.dobropis !== b.dobropis) return false;
+  if (a.typ !== b.typ) return false;
+  if (!a.cislo || a.cislo !== b.cislo) return false;
+  return rovnakyDodavatel(a, b);
+}
+
+/** Rovnaká suma a rok vystavenia — neznáme sa za rozdiel nepočíta. */
+function rovnakaSumaARok(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean {
+  if (a.centy != null && b.centy != null && a.centy !== b.centy) return false;
+  const ra = a.datum.slice(0, 4);
+  const rb = b.datum.slice(0, 4);
+  return !ra || !rb || ra === rb;
+}
+
+/**
+ * Možná duplicita prijatej faktúry: rovnaké číslo od toho istého dodávateľa,
+ * ale iná suma alebo iný rok. Upozorní, uložiť sa dá po potvrdení.
+ */
+export function moznaDuplicita(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean {
+  return rovnakeCisloOdDodavatela(a, b) && !rovnakaSumaARok(a, b);
+}
+
 /** Sú `a` a `b` ten istý doklad (podľa pravidla vyššie)? */
 export function suDuplicitne(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean {
   if (!a.id || a.id === b.id) return false;
   if (a.druh !== b.druh || a.neplatny || b.neplatny) return false;
+  if (a.druh === "prijata") return rovnakeCisloOdDodavatela(a, b) && rovnakaSumaARok(a, b);
   // Dobropis a faktúra, ktorú opravuje, majú často to isté číslo — nie sú to dva rovnaké doklady.
   if (a.dobropis !== b.dobropis) return false;
-  if (a.druh === "prijata") {
-    if (a.typ !== b.typ) return false;
-    if (!a.cislo || a.cislo !== b.cislo) return false;
-    return rovnakyDodavatel(a, b);
-  }
   // Bloček: kód eKasy (UID/OKP) je jednoznačný — dva rôzne kódy sú dva nákupy.
   if (a.qr && b.qr) return a.qr === b.qr;
   // Inak rovnaký dodávateľ, deň a suma (Patrik 3. 11.: „nedovoľ ukladať duplicity bločkov“).
@@ -241,4 +273,50 @@ export function rozlozChybuBlocku(sprava: unknown): { popis: string; id: string 
   const zvysok = s.slice(i + PREDPONA_ULOZENEHO_BLOCKU.length);
   const m = /\s*\[([0-9a-f-]{36})\]\s*$/i.exec(zvysok);
   return { popis: m ? zvysok.slice(0, m.index).trim() : zvysok.trim(), id: m ? m[1] : null };
+}
+
+/* ───────────── uloženie prijatej faktúry ───────────── */
+
+/** Začiatok chyby pri ukladaní duplicitnej prijatej faktúry (aj zo spúšťača v DB). */
+export const PREDPONA_ULOZENEJ_PRIJATEJ = "Táto faktúra už je v evidencii: ";
+
+/** „1126817, MOKOŠÁK PLUS s.r.o., 78,30 EUR“ */
+export function popisPrijatej(r: Riadok): string {
+  const suma =
+    r.amount_total == null || r.amount_total === ""
+      ? ""
+      : `${Number(r.amount_total).toFixed(2).replace(".", ",")} ${r.currency || "EUR"}`;
+  return [
+    String(r.invoice_number ?? "").trim() || "bez čísla",
+    String(r.supplier_name ?? "").trim() || "bez dodávateľa",
+    suma,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+/** Chyba pri uložení — id na konci v hranatých zátvorkách nesie odkaz „Otvoriť“. */
+export function chybaUlozenejPrijatej(r: Riadok): string {
+  return `${PREDPONA_ULOZENEJ_PRIJATEJ}${popisPrijatej(r)} [${r.id}]`;
+}
+
+/** Rozloží chybu z `chybaUlozenejPrijatej` (alebo zo spúšťača); null = iná chyba. */
+export function rozlozChybuPrijatej(sprava: unknown): { popis: string; id: string | null } | null {
+  const s = String(sprava ?? "");
+  const i = s.indexOf(PREDPONA_ULOZENEJ_PRIJATEJ);
+  if (i < 0) return null;
+  const zvysok = s.slice(i + PREDPONA_ULOZENEJ_PRIJATEJ.length);
+  const m = /\s*\[([0-9a-f-]{36})\]/i.exec(zvysok);
+  return { popis: (m ? zvysok.slice(0, m.index) : zvysok).trim(), id: m ? m[1] : null };
+}
+
+/**
+ * Text možnej duplicity (iná suma alebo rok) — za `PREDPONA_DUPLICITY`;
+ * rozhranie ho ukáže v potvrdení „Nie je duplicita – uložiť“.
+ */
+export function textMoznejDuplicity(r: Riadok): string {
+  const rok = String(r.issue_date ?? "").slice(0, 4);
+  return `Faktúra s rovnakým číslom od toho istého dodávateľa už v evidencii je: ${popisPrijatej(r)}${
+    rok ? `, vystavená ${datumSk(r.issue_date)}` : ""
+  }. Má inú sumu alebo je z iného roka — niektorí dodávatelia čísla opakujú. Ak nejde o duplicitu, uložte ju.`;
 }

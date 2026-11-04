@@ -387,6 +387,26 @@ export function AppShell({
     navigate({ to: "/faktury", search: { q } as any });
   }
 
+  /*
+    Skutočná výška lepivej hlavičky do `--vyska-hlavicky`: pás podmenu
+    kompaktného dizajnu sa zalamuje (jeden aj dva riadky) a náhľad dokladu
+    s `top-20` pod ním zmizol hore.
+  */
+  const hlavickaRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = hlavickaRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const koren = document.documentElement;
+    const zapis = () => koren.style.setProperty("--vyska-hlavicky", `${Math.round(el.getBoundingClientRect().height)}px`);
+    zapis();
+    const ro = new ResizeObserver(zapis);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      koren.style.removeProperty("--vyska-hlavicky");
+    };
+  }, []);
+
   return (
     /*
       Rám aplikácie je vodorovný: panel vľavo, obsah vpravo. Predtým boli nad
@@ -410,6 +430,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top header */}
         <header
+          ref={hlavickaRef}
           className={`sticky top-0 z-40 border-b border-border transition-[background-color,backdrop-filter] ${
             scrolled ? "bg-card/80 backdrop-blur-[8px]" : "bg-card"
           }`}

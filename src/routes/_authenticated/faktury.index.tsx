@@ -62,6 +62,7 @@ import {
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { OZNACENIE_V_NAHLADE } from "@/lib/faktero/posledny-otvoreny";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { supabase } from "@/integrations/supabase/client";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
@@ -1290,7 +1291,8 @@ function InvoicesPage() {
                     <KlikatelnyRiadok
                       key={i.id}
                       data-nahlad-id={i.id}
-                      className={bocny.zapnuty && bocny.vybrany === i.id ? "bg-primary/10" : undefined}
+                      className={bocny.zapnuty && bocny.vybrany === i.id ? OZNACENIE_V_NAHLADE : undefined}
+                      aria-current={bocny.zapnuty && bocny.vybrany === i.id ? true : undefined}
                       ciel={{ to: "/faktury/$id", params: { id: i.id } }}
                       naKlik={() =>
                         bocny.aktivny()

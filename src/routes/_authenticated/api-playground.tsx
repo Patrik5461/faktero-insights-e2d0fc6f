@@ -197,14 +197,14 @@ function Playground() {
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
               <label className="block text-sm">
                 <span className="font-semibold">{t("API kľúč")}</span>
                 <select
                   value={selectedKeyId}
                   onChange={(e) => setSelectedKeyId(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full min-w-0 max-w-full truncate rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {keys.length === 0 && (
                     <option value="">{t("Žiadne kľúče — vytvorte v sekcii API kľúče")}</option>
@@ -237,7 +237,7 @@ function Playground() {
                     setVars({});
                     setResponse(null);
                   }}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full min-w-0 max-w-full truncate rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {RECIPES.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -289,11 +289,11 @@ function Playground() {
                   <Copy className="mr-1 inline h-3 w-3" /> {t("Kopírovať")}
                 </button>
               </div>
-              <pre className="overflow-x-auto rounded-md border border-border bg-muted p-3 text-xs">{curl}</pre>
+              <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted p-3 text-xs">{curl}</pre>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
               <h3 className="mb-2 text-base font-semibold">{t("Odpoveď")}</h3>
               {response ? (
@@ -304,7 +304,7 @@ function Playground() {
                       {response.status}
                     </StavOdznak>
                   </div>
-                  <pre className="max-h-[400px] overflow-auto rounded-md border border-border bg-muted p-3 text-xs">
+                  <pre className="max-h-[400px] max-w-full overflow-auto rounded-md border border-border bg-muted p-3 text-xs">
                     {response.body}
                   </pre>
                 </>

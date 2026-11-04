@@ -38,6 +38,8 @@ type Nahlad = {
   /** Príjmové pokladničné doklady z Pohody — do pokladne. */
   pokladna?: number;
   duplicity: number;
+  /** Preskočené duplicity po jednej („číslo (dodávateľ): už je v evidencii — …“). */
+  duplicityZoznam?: string[];
   skenyPriradene: number;
   skenyBezParu: number;
   poznamky: string[];
@@ -52,6 +54,26 @@ type Nahlad = {
     sken: string | null;
   }[];
 };
+
+/** Doklady, ktoré už vo Fakteri sú — preskočia sa, po jednom s číslom a dodávateľom. */
+function ZoznamDuplicit({ polozky }: { polozky?: string[] | null }) {
+  const { t } = useT();
+  if (!polozky?.length) return null;
+  return (
+    <details className="mt-3 text-sm" data-import-duplicity>
+      <summary className="cursor-pointer font-medium">
+        {t("Preskočené duplicity: {n}", { n: polozky.length })}
+      </summary>
+      <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+        {polozky.map((c, i) => (
+          <li key={i} className="break-words">
+            {c}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
 
 const cakaj = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -325,6 +347,7 @@ function ImportDokladovPage() {
                     )}
                   </p>
                 )}
+                <ZoznamDuplicit polozky={nahlad.duplicityZoznam} />
                 {nahlad.ukazka.length > 0 && (
                   <div className="mt-4 overflow-x-auto rounded-lg border border-border">
                     <table className="w-full text-sm">
@@ -518,6 +541,7 @@ function ImportDokladovPage() {
                     </ul>
                   </details>
                 )}
+                {hotovy && <ZoznamDuplicit polozky={priebeh.vysledok?.duplicity} />}
                 {priebeh.vysledok?.chyby?.length > 0 && (
                   <details className="mt-3 text-sm">
                     <summary className="dk-text-pozor cursor-pointer font-medium">

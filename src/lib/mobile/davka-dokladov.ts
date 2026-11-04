@@ -21,6 +21,7 @@ import {
   type UdajeNespracovaneho,
 } from "@/lib/faktero/nespracovane";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
+import { PREDPONA_ULOZENEJ_PRIJATEJ, rozlozChybuPrijatej } from "@/lib/faktero/duplicita-zauctovania";
 import {
   doplnZNastavenia,
   rozoberDataUrl,
@@ -248,6 +249,9 @@ export function naHromadneUlozenie(davka: DokladVDavke[]): DokladVDavke[] {
 
 /** Stav po neúspešnom hromadnom uložení — duplicita sa odlíši od chyby. */
 export function poChybeUlozenia(sprava: string): Pick<DokladVDavke, "stav" | "chyba"> {
+  // Tá istá faktúra už v evidencii je — neuloží sa vôbec (bez „Uložiť aj tak“).
+  const ulozena = rozlozChybuPrijatej(sprava);
+  if (ulozena) return { stav: "chyba", chyba: `${PREDPONA_ULOZENEJ_PRIJATEJ}${ulozena.popis}` };
   if (sprava.startsWith(PREDPONA_DUPLICITY))
     return { stav: "duplicita", chyba: sprava.slice(PREDPONA_DUPLICITY.length).trim() };
   // Faktúra inej firmy — po ťuknutí detail ponúkne „Uložiť aj tak“.

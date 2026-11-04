@@ -594,7 +594,7 @@ function Detail() {
           </div>
 
           <aside className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-5 lg:sticky lg:top-20">
+            <div className="rounded-xl border border-border bg-card p-5 lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)]">
               <h2 className="text-sm font-semibold">{t("Výsledok")}</h2>
               <dl className="mt-3 space-y-1 text-sm">
                 <div className="flex justify-between">

@@ -890,8 +890,8 @@ export function ZauctovaniePanel({
                 })}
               </span>
             ) : (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                {t("Nezaúčtovaná")}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${duplicitny ? "dk-chyba border" : "bg-muted text-muted-foreground"}`}>
+                {duplicitny ? t("Nezaúčtovaná – duplicita") : t("Nezaúčtovaná")}
               </span>
             )}
             {ukladam ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
@@ -1073,8 +1073,8 @@ export function ZauctovaniePanel({
               {t("Zaúčtovaná {kedy} — čaká na odovzdanie", { kedy: kedy(row.zauctovane_at, loc) })}
             </span>
           ) : (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {t("Nezaúčtovaná")}
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${duplicitny ? "dk-chyba border" : "bg-muted text-muted-foreground"}`}>
+              {duplicitny ? t("Nezaúčtovaná – duplicita") : t("Nezaúčtovaná")}
             </span>
           )}
         </div>
@@ -1423,8 +1423,8 @@ export function ZauctovaniePanel({
             {t("Zaúčtovaná {kedy} — čaká na odovzdanie", { kedy: kedy(row.zauctovane_at, loc) })}
           </span>
         ) : (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-            {t("Nezaúčtovaná")}
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${duplicitny ? "dk-chyba border" : "bg-muted text-muted-foreground"}`}>
+            {duplicitny ? t("Nezaúčtovaná – duplicita") : t("Nezaúčtovaná")}
           </span>
         )
       }

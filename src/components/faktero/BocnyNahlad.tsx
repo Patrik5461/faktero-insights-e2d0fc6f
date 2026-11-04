@@ -147,7 +147,7 @@ export function SNahladom({
         <PanelNahladu
           role="complementary"
           aria-label={t("Náhľad dokladu")}
-          className="sticky top-20 hidden h-[calc(100dvh-6rem)] min-w-0 overflow-hidden rounded-xl border border-border bg-card lg:flex"
+          className="sticky top-[calc(var(--vyska-hlavicky)+1.5rem)] hidden h-[calc(100dvh-var(--vyska-hlavicky)-2.5rem)] min-w-0 overflow-hidden rounded-xl border border-border bg-card lg:flex"
           obsahClassName="bg-muted/30"
           toolbar={
             <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-sm">

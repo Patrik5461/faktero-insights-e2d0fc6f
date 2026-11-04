@@ -54,8 +54,17 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         },
         firma,
       );
+    // Odznak „Duplicita“: tá istá prijatá faktúra už v evidencii je.
+    const { duplicityNespracovanych } = await import("./nespracovane.server");
+    const duplicity = await duplicityNespracovanych(supabase, data.company_id, rows ?? []).catch(
+      () => new Map<string, { id: string; popis: string; blok: boolean }>(),
+    );
     return {
-      doklady: (rows ?? []).map((r: any) => ({ ...zhrnutieNespracovaneho(r), odberatelNesedi: nesedi(r) })),
+      doklady: (rows ?? []).map((r: any) => ({
+        ...zhrnutieNespracovaneho(r),
+        odberatelNesedi: nesedi(r),
+        duplicita: duplicity.get(r.id) ?? null,
+      })),
       blocky: (blocky ?? []).map((b: any) => zhrnutieBlocku(b)),
     };
   });
@@ -216,15 +225,29 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { nesediNespracovany } = await import("./cudzia-faktura.server");
     const { firmaZRiadku } = await import("./cudzia-faktura");
     const odberatelNesedi = firma ? nesediNespracovany(r, firmaZRiadku(firma as any)) : null;
+    /*
+      Tá istá prijatá faktúra už v evidencii je — upozornenie s odkazom hneď
+      pri otvorení (nie až po „Vytvoriť“), s voľbou zmazať z Nespracovaných.
+    */
+    const { duplicityNespracovanych } = await import("./nespracovane.server");
+    const duplicita =
+      (await duplicityNespracovanych(supabase, r.company_id, [{ id: r.id, druh: r.druh, udaje }]).catch(() => null))?.get(
+        r.id,
+      ) ?? null;
+    const varovania = (await varovaniaNespracovaneho(supabase, r, udaje, firma)).filter(
+      // Duplicitu prijatej ukazuje upozornenie s odkazom — text by ju zdvojil.
+      (v) => !(duplicita && v.startsWith("Prijatá faktúra ")),
+    );
     return {
       odberatelNesedi,
+      duplicita,
       vlastneUcty,
       /** IBAN odberateľa z dokladu — firemný znamená, že faktúra je prijatá. */
       ibanOdberatela: typeof ai?.buyer_iban === "string" ? (ai.buyer_iban as string) : null,
       /** Kde AI údaje na doklade našla — zvýraznenie na obrázku a skene. */
       polohyAi: polohyZAi(ai),
       povinne: (firma?.povinne_polia_dokladu ?? []) as string[],
-      varovania: await varovaniaNespracovaneho(supabase, r, udaje, firma),
+      varovania,
       id: r.id as string,
       companyId: r.company_id as string,
       zdroj: r.zdroj as string,
@@ -304,7 +327,7 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         druh: DRUH,
         udaje: UdajeVstup,
-        /** Človek videl upozornenie na duplicitu a chce doklad aj tak. */
+        /** Človek potvrdil, že možná duplicita (rovnaké číslo, iná suma či rok) nie je duplicita. */
         ajDuplicitu: z.boolean().optional(),
         /** Človek videl, že faktúra nepatrí firme (iný odberateľ), a ukladá ju aj tak. */
         ajCudziu: z.boolean().optional(),
@@ -342,28 +365,10 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
       "Doklad čaká na schválenie — vytvoriť ho možno až po schválení.",
     );
     /*
-      Tá istá prijatá faktúra už v evidencii je (prišla mailom znova, zadal ju
-      niekto ručne) — druhýkrát by bola náklad aj odpočet DPH a príkaz na
-      úhradu by ju zaplatil dvakrát. Bez výslovného súhlasu sa nevytvorí.
+      Tá istá prijatá faktúra už v evidencii je — kontroluje `vytvorDoklad`:
+      duplicitu nevytvorí vôbec, možnú duplicitu (iná suma či rok) len po
+      potvrdení `ajDuplicitu`.
     */
-    if (!data.ajDuplicitu && (data.druh === "faktura" || data.druh === "zalohova" || data.druh === "dobropis")) {
-      const { najdiDuplicituPrijatej } = await import("./prijate-duplicity.server");
-      const { textDuplicity, PREDPONA_DUPLICITY } = await import("./prijate-duplicity");
-      const dup = await najdiDuplicituPrijatej(
-        supabase,
-        r.company_id,
-        {
-          invoice_number: u.cislo,
-          supplier_ico: u.dodavatel.ico,
-          supplier_name: u.dodavatel.nazov,
-          supplier_iban: u.dodavatel.iban,
-          amount_total: u.celkom,
-        },
-        { nespracovanyId: r.id },
-      );
-      if (dup?.kde === "prijate")
-        throw new Error(`${PREDPONA_DUPLICITY}${textDuplicity(dup)}\nVytvoriť ju aj tak druhýkrát?`);
-    }
     /*
       Odberateľ na doklade je iná firma — bez výslovného „Uložiť aj tak“ sa
       prijatá faktúra nezaloží. Rozhranie podľa predpony chyby ukáže voľby.
@@ -375,7 +380,7 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
       if (n) throw new Error(chybaCudzej(n));
     }
     const { vytvorDoklad } = await import("./nespracovane.server");
-    return vytvorDoklad(supabase, context.userId, r, data.druh, u);
+    return vytvorDoklad(supabase, context.userId, r, data.druh, u, { ajDuplicitu: data.ajDuplicitu });
   });
 
 /** Do koša — dá sa obnoviť, kým sa kôš nevysype (súbor ostáva v úložisku). */

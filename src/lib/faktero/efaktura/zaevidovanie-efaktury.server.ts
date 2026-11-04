@@ -217,8 +217,27 @@ export async function zaevidujPrijatuEfakturu(
       nahradneCislo: `EF-${receivedId.slice(0, 8)}`,
     });
 
-    /* Tá istá faktúra už prišla inou cestou — eFaktúra sa len pripojí. */
+    /*
+      Tá istá faktúra už prišla inou cestou (mail, import, ručne) — nová
+      prijatá sa nezaloží, eFaktúra sa len pripojí k existujúcej. Pravidlo
+      je to isté ako pri uložení (duplicita-zauctovania.ts: číslo + dodávateľ
+      + suma + rok); rovnaké číslo s inou sumou či z iného roka je iná
+      faktúra (dodávateľ čísla opakuje) a založí sa.
+    */
+    const pripojKPrijatej = async (idPrijatej: string): Promise<VysledokZaevidovania> => {
+      await oznac({ matched_supplier_invoice_id: idPrijatej, status: "matched" });
+      // Pripojená faktúra bez prílohy dostane PDF z eFaktúry.
+      if (xml) {
+        const { prilozPdfKPrijatej } = await import("./nahlad.server");
+        await prilozPdfKPrijatej(supabase, companyId, idPrijatej, xml);
+      }
+      return { kam: "prijate", id: idPrijatej, uzExistoval: true, pripojena: true };
+    };
     if (r.cislo) {
+      const { najdiUlozenuPrijatu } = await import("../duplicita-zauctovania.server");
+      const { blok } = await najdiUlozenuPrijatu(supabase, companyId, { ...riadok, status: "received" });
+      if (blok) return await pripojKPrijatej(String(blok.id));
+      // Tá istá faktúra môže ešte čakať v Nespracovaných (prišla aj mailom).
       const { najdiDuplicituPrijatej } = await import("../prijate-duplicity.server");
       const dup = await najdiDuplicituPrijatej(supabase, companyId, {
         invoice_number: r.cislo,
@@ -227,15 +246,6 @@ export async function zaevidujPrijatuEfakturu(
         supplier_iban: r.iban,
         amount_total: riadok.amount_total,
       } as any);
-      if (dup?.kde === "prijate") {
-        await oznac({ matched_supplier_invoice_id: dup.id, status: "matched" });
-        // Pripojená faktúra bez prílohy dostane PDF z eFaktúry.
-        if (xml) {
-          const { prilozPdfKPrijatej } = await import("./nahlad.server");
-          await prilozPdfKPrijatej(supabase, companyId, dup.id, xml);
-        }
-        return { kam: "prijate", id: dup.id, uzExistoval: true, pripojena: true };
-      }
       if (dup?.kde === "nespracovane") {
         await oznac({ nespracovany_id: dup.id });
         return { kam: "nespracovane", id: dup.id, uzExistoval: true, pripojena: true };
@@ -278,7 +288,13 @@ export async function zaevidujPrijatuEfakturu(
       } as TablesInsert<"purchase_invoices">)
       .select("id")
       .single();
-    if (chybaZapisu) throw new Error(chybaZapisu.message);
+    if (chybaZapisu) {
+      // Spúšťač našiel tú istú faktúru (súbežne vznikla inou cestou) — pripojí sa k nej.
+      const { rozlozChybuPrijatej } = await import("../duplicita-zauctovania");
+      const uzJe = rozlozChybuPrijatej(chybaZapisu.message);
+      if (uzJe?.id) return await pripojKPrijatej(uzJe.id);
+      throw new Error(chybaZapisu.message);
+    }
 
     await oznac({
       matched_supplier_invoice_id: faktura.id,

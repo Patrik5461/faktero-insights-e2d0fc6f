@@ -1,21 +1,48 @@
 import { useCallback, useRef, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
+  OZNACENIE_V_NAHLADE,
   poslednyOtvoreny,
   zapamatajOtvoreny,
-  ZVYRAZNENIE_KARTY,
-  ZVYRAZNENIE_RIADKA,
   type ZoznamDokladov,
 } from "@/lib/faktero/posledny-otvoreny";
 
+export interface VlastnostiRiadku {
+  ref?: (el: HTMLElement | null) => void;
+  className: string;
+  "aria-current"?: true;
+}
+
 /**
- * Zvýraznenie naposledy otvoreného dokladu v zozname. `ref(id)` daj na
- * riadok aj na kartu — zoznam doroluje k tej, ktorá je naozaj vidieť
- * (tabuľka a karty sa striedajú podľa šírky obrazovky), a len raz.
+ * Jadro bez hookov (kvôli testom): vlastnosti riadka/karty dokladu `x`.
+ *
+ * - `vybrany` = doklad práve v bočnom náhľade → neutrálne `OZNACENIE_V_NAHLADE`
+ *   a `aria-current`. Je to výsledok kliknutia a náhľad je otvorený.
+ * - `posledny` = naposledy otvorený doklad → len ref na jednorazové
+ *   dorolovanie, bez akejkoľvek farby. Zelený pruh, ktorý tu býval, ostával
+ *   na „náhodnom“ riadku aj naprieč návštevami a vyzeral ako zaseknutá myš.
+ */
+export function vlastnostiRiadku(
+  x: string,
+  posledny: string | null,
+  vybrany: string | null | undefined,
+  naRiadok: (el: HTMLElement | null) => void,
+): VlastnostiRiadku {
+  const p: VlastnostiRiadku = { className: "" };
+  if (x === posledny) p.ref = naRiadok;
+  if (vybrany && x === vybrany) {
+    p.className = OZNACENIE_V_NAHLADE;
+    p["aria-current"] = true;
+  }
+  return p;
+}
+
+/**
+ * Naposledy otvorený doklad v zozname. `ref(id)` daj na riadok aj na kartu —
+ * zoznam doroluje k tej, ktorá je naozaj vidieť (tabuľka a karty sa
+ * striedajú podľa šírky obrazovky), a len raz.
  */
 export function usePoslednyOtvoreny(zoznam: ZoznamDokladov) {
-  // Mení sa aj počas práce v zozname (klik, bočný náhľad) — inak ostal
-  // zvýraznený riadok spred otvorenia stránky a vyzeralo to ako „myš na ňom“.
   const [id, setId] = useState(() => poslednyOtvoreny(zoznam, getActiveCompanyId()));
   const dorolovane = useRef(false);
   const naRiadok = useCallback((el: HTMLElement | null) => {
@@ -39,18 +66,9 @@ export function usePoslednyOtvoreny(zoznam: ZoznamDokladov) {
   return {
     id,
     zapamataj,
-    /**
-     * Vlastnosti riadka tabuľky: trieda zvýraznenia a ref na dorolovanie.
-     * `vybrany` (doklad v bočnom náhľade) má prednosť — zvýraznený je vždy
-     * len jeden riadok, ten, ktorý je práve v náhľade.
-     */
-    riadok: (x: string, vybrany?: string | null) =>
-      x === (vybrany ?? id)
-        ? { ref: naRiadok, className: ZVYRAZNENIE_RIADKA, "aria-current": true as const }
-        : { className: "" },
-    karta: (x: string, vybrany?: string | null) =>
-      x === (vybrany ?? id)
-        ? { ref: naRiadok, className: ZVYRAZNENIE_KARTY, "aria-current": true as const }
-        : { className: "" },
+    /** Vlastnosti riadka tabuľky; `vybrany` = doklad v bočnom náhľade (ak je zapnutý). */
+    riadok: (x: string, vybrany?: string | null) => vlastnostiRiadku(x, id, vybrany, naRiadok),
+    /** To isté pre kartu na mobile. */
+    karta: (x: string, vybrany?: string | null) => vlastnostiRiadku(x, id, vybrany, naRiadok),
   };
 }

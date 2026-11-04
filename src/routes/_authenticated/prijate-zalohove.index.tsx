@@ -312,6 +312,7 @@ function PrijateZalohovePage() {
         <VolbyExportuOkno
           pocet={naExport.length}
           nazov={t("Prijaté zálohové faktúry do Pohody (XML)")}
+          predvoleneOznacit={false}
           onClose={() => setVolbyExportu(false)}
           onExport={exportujSVolbami}
         />

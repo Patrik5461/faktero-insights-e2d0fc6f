@@ -407,7 +407,7 @@ function InvoiceAppearancePage() {
           </div>
 
           {/* Live náhľad */}
-          <aside className="rounded-xl border border-border bg-card p-4 lg:sticky lg:top-20">
+          <aside className="rounded-xl border border-border bg-card p-4 lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)]">
             <div className="text-sm font-semibold text-foreground">
               {t("Náhľad")}
             </div>

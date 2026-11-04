@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter, type NavigateOptions } from "@tanstack/react-router";
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
 
@@ -158,9 +158,80 @@ export interface PropsRiadku {
   "data-klik-riadok"?: "";
 }
 
-/** Vzhľad klikateľného riadku — len kurzor, jemný hover a viditeľné zameranie. */
+/**
+ * Vzhľad klikateľného riadku — len kurzor, hover cez CSS `:hover` a rámik
+ * zamerania len pri `:focus-visible`, ktorý riadok nedostal „ticho“
+ * (pozri `nainstalujTichyFokus`).
+ */
 export const TRIEDA_KLIK_RIADKU =
-  "cursor-pointer [@media(hover:hover)]:hover:bg-muted/30 focus-visible:outline-none focus-visible:bg-muted/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
+  "cursor-pointer [@media(hover:hover)]:hover:bg-muted/30 focus-visible:outline-none [&:focus-visible:not([data-tichy-fokus])]:bg-muted/30 [&:focus-visible:not([data-tichy-fokus])]:ring-2 [&:focus-visible:not([data-tichy-fokus])]:ring-inset [&:focus-visible:not([data-tichy-fokus])]:ring-ring";
+
+/** Atribút riadku, ktorý dostal fokus inak než tabulátorom — bez rámika. */
+export const ATRIBUT_TICHY_FOKUS = "data-tichy-fokus";
+
+/** Riadky, ktorých sa tichý fokus týka. */
+const SELEKTOR_RIADKU = "[data-klik-riadok], tr[tabindex]";
+
+/**
+ * Prišiel fokus z tabulátora? Len vtedy má riadok ukázať rámik.
+ *
+ * Prehliadač dá `:focus-visible` aj fokusu, ktorý vráti skript po zatvorení
+ * okna Escapom (posledná interakcia bola klávesnica), šípkam v bočnom náhľade
+ * a v Chrome aj riadku zameranému myšou, keď potom človek stlačí hocijaký
+ * kláves. Riadok tak ostal orámovaný a podfarbený, „akoby na ňom bola myš“,
+ * kým sa neklikne inde.
+ */
+export function fokusZTabulatora(
+  klavesa: { key: string; cas: number } | null,
+  teraz: number,
+): boolean {
+  return !!klavesa && klavesa.key === "Tab" && teraz - klavesa.cas < 1000;
+}
+
+let tichyFokusNainstalovany = false;
+
+/**
+ * Raz na dokument: riadok zameraný inak než tabulátorom (klik, návrat fokusu
+ * po zatvorení detailu/okna, šípky) dostane `data-tichy-fokus` a rámik
+ * nekreslí. Fokus samotný ostáva (Enter, čítačka, ďalší Tab idú odtiaľ).
+ */
+export function nainstalujTichyFokus(doc: Document | undefined = globalThis.document): void {
+  if (!doc || tichyFokusNainstalovany) return;
+  tichyFokusNainstalovany = true;
+  let posledna: { key: string; cas: number } | null = null;
+  doc.addEventListener(
+    "keydown",
+    (e) => {
+      posledna = { key: e.key, cas: Date.now() };
+    },
+    true,
+  );
+  doc.addEventListener(
+    "pointerdown",
+    () => {
+      posledna = null;
+    },
+    true,
+  );
+  doc.addEventListener(
+    "focusin",
+    (e) => {
+      const el = e.target as Element | null;
+      if (!el || typeof el.matches !== "function" || !el.matches(SELEKTOR_RIADKU)) return;
+      if (fokusZTabulatora(posledna, Date.now())) el.removeAttribute(ATRIBUT_TICHY_FOKUS);
+      else el.setAttribute(ATRIBUT_TICHY_FOKUS, "");
+    },
+    true,
+  );
+  doc.addEventListener(
+    "focusout",
+    (e) => {
+      const el = e.target as Element | null;
+      if (el && typeof el.removeAttribute === "function") el.removeAttribute(ATRIBUT_TICHY_FOKUS);
+    },
+    true,
+  );
+}
 
 export interface RouterPreRiadok {
   navigate: (o: NavigateOptions) => unknown;
@@ -246,6 +317,7 @@ export function propsKlikuNaRiadok(
  */
 export function useKlikNaRiadok() {
   const router = useRouter();
+  useEffect(() => nainstalujTichyFokus(), []);
   return useCallback(
     (ciel: CielDetailu | null | undefined, moznosti?: MoznostiRiadku) =>
       propsKlikuNaRiadok(router as unknown as RouterPreRiadok, ciel, moznosti),

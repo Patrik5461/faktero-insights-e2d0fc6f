@@ -71,7 +71,7 @@ describe("NahladKompaktny", () => {
     expect(h).toContain('data-pdf="https://x/fa.pdf"');
     expect(h).toContain('href="https://x/fa.pdf"');
     // Výška panela z výrezu, rolovacia je len časť s dokladom — žiadny strop max-h.
-    expect(h).toContain("lg:h-[calc(100vh-6rem)]");
+    expect(h).toContain("lg:h-[calc(100vh-var(--vyska-hlavicky)-7.5rem)]");
     expect(h).toContain("data-nahlad-obsah");
     expect(h).not.toContain("lg:max-h-");
   });
@@ -129,7 +129,7 @@ describe("Pole, Hodnota, Sekcia, PanelKompaktny", () => {
         <p>SEKCIE</p>
       </PanelKompaktny>,
     );
-    expect(h).toContain("lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]");
+    expect(h).toContain("lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)] lg:max-h-[calc(100vh-var(--vyska-hlavicky)-7.5rem)]");
     expect(h).toContain("min-h-0 flex-1 overflow-auto");
     expect(h.indexOf("SEKCIE")).toBeLessThan(h.indexOf("Vytvoriť"));
     expect(h).toContain("border-t border-border p-4");

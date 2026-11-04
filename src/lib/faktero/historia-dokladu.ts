@@ -24,6 +24,8 @@ import {
   type AgendaKtoKedy,
   type Kto,
 } from "./kto-kedy";
+import { STAV_DOKLADU_NAZOV } from "./doklad-stav";
+import { nazovDruhu, DRUHY_KLUCE } from "./ostatne-doklady";
 
 export type AgendaHistorie = "prijata" | "doklad" | "faktura" | "ostatny";
 
@@ -208,6 +210,9 @@ export function udalostiZapisu(zaznamy: ZaznamHistorie[]): UdalostHistorie[] {
     minute.add(poleDoklada(stav.pole)?.pole ?? stav.pole);
     pridaj(jeUhradene(stav.po) ? "uhrada" : "zrusenie_uhrady");
   } else if (stav && exp && stav.pole === "status") {
+    minute.add("status");
+  } else if (stav && zauct && stav.pole === "status" && (stav.po === "booked" || stav.pred === "booked")) {
+    // Prijatá: zaúčtovanie prepne stav na „Zaúčtované“ (zrušenie späť) — neopakuje sa ako úprava.
     minute.add("status");
   }
 
@@ -452,6 +457,31 @@ const PENIAZE = new Set([
   "vat_total",
   "total",
 ]);
+/** Stav dokladu tak, ako ho ukazuje odznak v zozname danej agendy. */
+const STAVY_AGENDY: Record<AgendaHistorie, Record<string, string>> = {
+  // prijate-faktury.index.tsx STATUS_LABEL
+  prijata: {
+    draft: "Koncept",
+    received: "Prijaté",
+    booked: "Zaúčtované",
+    paid: "Zaplatené",
+    partially_paid: "Čiastočne uhradená",
+    cancelled: "Stornované",
+  },
+  // dashboard.tsx StatusBadge
+  faktura: {
+    draft: "Koncept",
+    issued: "Vystavená",
+    sent: "Odoslaná",
+    paid: "Uhradená",
+    partially_paid: "Čiastočne uhradená",
+    overdue: "Po splatnosti",
+    cancelled: "Stornovaná",
+  },
+  doklad: STAV_DOKLADU_NAZOV,
+  ostatny: STAV_DOKLADU_NAZOV,
+};
+/** Stav bez agendy (prenos z Doklada, neznáma agenda). */
 const STAVY: Record<string, string> = {
   paid: "uhradená",
   unpaid: "neuhradená",
@@ -461,10 +491,31 @@ const STAVY: Record<string, string> = {
   overdue: "po splatnosti",
   new: "nová",
   draft: "koncept",
+  issued: "vystavená",
   sent: "odoslaná",
+  received: "prijatá",
+  booked: "zaúčtovaná",
   exported: "odovzdaná",
   processed: "spracovaná",
   cancelled: "stornovaná",
+};
+/** Spôsob úhrady — bločky `prevod/hotovost/karta`, faktúry `bank_transfer/cash/card`. */
+const SPOSOBY_UHRADY: Record<string, string> = {
+  prevod: "Prevod",
+  bank_transfer: "Prevod",
+  transfer: "Prevod",
+  hotovost: "Hotovosť",
+  cash: "Hotovosť",
+  karta: "Karta",
+  card: "Karta",
+};
+/** Typ faktúry (vystavenej aj prijatej). */
+const TYPY_FAKTURY: Record<string, string> = {
+  regular: "Faktúra",
+  proforma: "Zálohová faktúra",
+  credit_note: "Dobropis",
+  debit_note: "Ťarchopis",
+  advance_payment: "Daňový doklad k prijatej platbe",
 };
 
 type Prekladac = (s: string, p?: Record<string, string | number>) => string;
@@ -481,7 +532,13 @@ const cislo = (v: unknown, loc: string) => {
 };
 
 /** Hodnota poľa na zobrazenie (prázdna = „—“). */
-export function hodnotaPola(pole: string, v: unknown, t: Prekladac, loc: string): string {
+export function hodnotaPola(
+  pole: string,
+  v: unknown,
+  t: Prekladac,
+  loc: string,
+  agenda?: AgendaHistorie,
+): string {
   // Príznak „faktúra nepatrí firme“ — zrušený = človek potvrdil, že patrí tejto firme.
   if (pole === "odberatel_nesedi") {
     if (v == null) return t("patrí tejto firme (potvrdené)");
@@ -510,7 +567,15 @@ export function hodnotaPola(pole: string, v: unknown, t: Prekladac, loc: string)
   if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
   if (typeof v === "boolean") return v ? t("áno") : t("nie");
   if (pole === "job_id" || pole === "employee_id" || pole === "financing_contract_id") return t("zmenená");
-  if (pole === "status" || pole === "paymentStatus") return STAVY[String(v)] ? t(STAVY[String(v)]) : String(v);
+  const kod = String(v);
+  if (pole === "status") {
+    const nazov = (agenda ? STAVY_AGENDY[agenda][kod] : undefined) ?? STAVY[kod];
+    return nazov ? t(nazov) : kod;
+  }
+  if (pole === "paymentStatus") return STAVY[kod] ? t(STAVY[kod]) : kod;
+  if (pole === "payment_method" && SPOSOBY_UHRADY[kod]) return t(SPOSOBY_UHRADY[kod]);
+  if (pole === "type" && TYPY_FAKTURY[kod]) return t(TYPY_FAKTURY[kod]);
+  if (pole === "kind" && (DRUHY_KLUCE as readonly string[]).includes(kod)) return t(nazovDruhu(kod));
   if (PENIAZE.has(pole)) return cislo(v, loc);
   if (pole.endsWith("_at") || /date|Date|At$/.test(pole)) {
     const str = String(v);
@@ -533,6 +598,7 @@ export function textZmien(
   u: Pick<UdalostHistorie, "druh" | "zmeny">,
   t: Prekladac,
   loc: string,
+  agenda?: AgendaHistorie,
 ): { pole: string | null; pred: string | null; po: string }[] {
   const lenPredkontacia =
     u.zmeny.length === 1 &&
@@ -540,9 +606,9 @@ export function textZmien(
     (u.druh === "zauctovanie" || u.druh === "zmena_zauctovania" || u.druh === "zrusenie_zauctovania" || u.druh === "oprava_zauctovania");
   return u.zmeny.map((z) => {
     const nazov = lenPredkontacia ? null : POLIA_HISTORIE[z.pole] ? t(POLIA_HISTORIE[z.pole]) : z.pole;
-    const pred = prazdne(z.pred) && z.pole !== "odberatel_nesedi" ? null : hodnotaPola(z.pole, z.pred, t, loc);
+    const pred = prazdne(z.pred) && z.pole !== "odberatel_nesedi" ? null : hodnotaPola(z.pole, z.pred, t, loc, agenda);
     // Zrušenie zaúčtovania: kódy ostali, ukáže sa, čo bolo.
-    const po = hodnotaPola(z.pole, z.po, t, loc);
+    const po = hodnotaPola(z.pole, z.po, t, loc, agenda);
     return { pole: nazov, pred, po };
   });
 }

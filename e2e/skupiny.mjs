@@ -25,7 +25,9 @@
 
   NAKONIEC beží až po skončení všetkých skupín, sám: 12 API (zapisuje do test2
   aj QA Českej — rozbilo by porovnanie výkazov), 35 skener (bločky do všetkých
-  troch firiem) a 79 výkon stránok (meria časy — súbežná záťaž by ich skreslila).
+  troch firiem), 79 výkon stránok (meria časy — súbežná záťaž by ich skreslila)
+  a 115 oznam o aktualizácii (oznam pre QA účet vidia všetky jeho karty — okno
+  „Plánovaná aktualizácia“ prekrylo súbežné toky klik-b5 a faktura-detail-stavy, 3. 11.).
 
   Nový tok, ktorý tu nie je, pôjde bezpečne do NAKONIEC (beh to v logu napíše) —
   pridaj ho do skupiny podľa firmy, do ktorej zapisuje. Skupiny sú vyvážené na
@@ -161,8 +163,6 @@ export const SKUPINY = [
       "audit-verejne-endpointy",
       // Klik B6: len číta, prepína firmu len v kontexte svojho prehliadača.
       "klik-b6",
-      // Oznam o aktualizácii: vlastný oznam len pre QA účet (servisným kľúčom), po toku zmazaný.
-      "oznam-aktualizacie",
     ],
   },
   {
@@ -175,7 +175,7 @@ export const SKUPINY = [
 ];
 
 /** Po skupinách, sériovo a bez súbežných tokov. */
-export const NAKONIEC = ["api", "apka-skener", "vykon-stranok"];
+export const NAKONIEC = ["api", "apka-skener", "vykon-stranok", "oznam-aktualizacie"];
 
 /**
   Toky, ktoré menia SKUTOČNÉ nastavenia QA účtu (overujú, že sa voľba uloží

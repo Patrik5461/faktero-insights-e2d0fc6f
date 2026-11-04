@@ -79,3 +79,96 @@ export function UpozornenieDuplicity({
     </div>
   );
 }
+
+/* ───────────── prijatá faktúra, ktorá už v evidencii je ───────────── */
+
+/** Čo o existujúcej faktúre treba ukázať — `DuplicitaNespracovaneho` zo servera. */
+export type UlozenaPrijata = {
+  id: string | null;
+  popis: string;
+  /** true = tá istá faktúra (neuloží sa); false = rovnaké číslo, iná suma či rok. */
+  blok: boolean;
+};
+
+/** Odznak „Duplicita“ v zozname Nespracovaných. */
+export function DuplicitaZnak({ duplicita }: { duplicita: UlozenaPrijata | null | undefined }) {
+  const { t } = useT();
+  if (!duplicita) return null;
+  const popis = duplicita.blok
+    ? t("Táto faktúra už je v evidencii: {popis}", { popis: duplicita.popis })
+    : t("Faktúra s rovnakým číslom od tohto dodávateľa už v evidencii je: {popis}", { popis: duplicita.popis });
+  return (
+    <span
+      title={popis}
+      data-duplicita-znak
+      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold leading-none ${
+        duplicita.blok ? "dk-chyba" : "dk-pozor"
+      }`}
+    >
+      {duplicita.blok ? t("Duplicita") : t("Možná duplicita")}
+    </span>
+  );
+}
+
+/**
+ * Upozornenie na detaile nespracovaného dokladu (aj formulára prijatej):
+ * „Táto faktúra už je v evidencii: číslo, dodávateľ, suma — Otvoriť“ a pri
+ * nespracovanom voľba „Zmazať z Nespracovaných“.
+ */
+export function UpozornenieUlozenejPrijatej({
+  duplicita,
+  onZmaz,
+  busy = false,
+  className = "",
+}: {
+  duplicita: UlozenaPrijata | null | undefined;
+  onZmaz?: () => void;
+  busy?: boolean;
+  className?: string;
+}) {
+  const { t } = useT();
+  if (!duplicita) return null;
+  return (
+    <div
+      role="alert"
+      data-duplicita-prijatej
+      className={`w-full rounded-md border px-3 py-2 text-sm ${duplicita.blok ? "dk-chyba" : "dk-pozor"} ${className}`}
+    >
+      <div className="font-semibold">
+        {duplicita.blok
+          ? t("Táto faktúra už je v evidencii")
+          : t("Faktúra s rovnakým číslom od tohto dodávateľa už v evidencii je")}
+      </div>
+      <div className="mt-0.5 break-words">
+        {duplicita.popis}
+        {duplicita.id ? (
+          <>
+            {" — "}
+            <Link to="/prijate-faktury/$id" params={{ id: duplicita.id }} className="font-semibold underline">
+              {t("Otvoriť")}
+            </Link>
+          </>
+        ) : null}
+      </div>
+      <div className="mt-1 text-xs">
+        {duplicita.blok
+          ? onZmaz
+            ? t("Druhýkrát sa nevytvorí ani nezaúčtuje. Tento doklad zmažte z Nespracovaných.")
+            : t("Druhýkrát sa neuloží ani nezaúčtuje.")
+          : onZmaz
+            ? t("Má inú sumu alebo je z iného roka — niektorí dodávatelia čísla opakujú. Pri vytvorení sa vás spýtame, či nejde o duplicitu.")
+            : t("Má inú sumu alebo je z iného roka — niektorí dodávatelia čísla opakujú.")}
+      </div>
+      {onZmaz ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onZmaz}
+          className="mt-2 inline-flex items-center rounded-md border border-current/40 bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:opacity-60"
+        >
+          {t("Zmazať z Nespracovaných")}
+        </button>
+      ) : null}
+    </div>
+  );
+}

@@ -189,7 +189,7 @@ export function PrijataUpravaKompaktna({
         >
           <form
             onSubmit={onSubmit}
-            className="@container flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]"
+            className="@container flex min-w-0 flex-col rounded-2xl border border-border bg-card lg:sticky lg:top-[calc(var(--vyska-hlavicky)+1.5rem)] lg:max-h-[calc(100vh-var(--vyska-hlavicky)-7.5rem)]"
           >
             <div className="min-h-0 flex-1 overflow-auto">
               <SekciaK nadpis="Základné údaje">{zakladne}</SekciaK>

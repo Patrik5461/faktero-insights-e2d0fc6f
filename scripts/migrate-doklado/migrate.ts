@@ -46,6 +46,13 @@ import {
   druhPodlaTypuFaktury,
 } from "../../src/lib/faktero/ciselne-rady";
 import { rozpoznajRadyPoImporte } from "../../src/lib/faktero/ciselne-rady-import.server";
+import {
+  naPorovnanie,
+  popisPrijatej,
+  rozlozChybuPrijatej,
+  suDuplicitne,
+  type DokladNaPorovnanie,
+} from "../../src/lib/faktero/duplicita-zauctovania";
 
 const datumDokladu = (d: DokladAleboFaktura) => datumZTextu(d.issuedAt);
 
@@ -131,6 +138,12 @@ type Existujuce = {
   /** Iné číslo, ten istý doklad: IČO + dátum vystavenia + suma (len keď je jediný taký). */
   prijatePodlaDna: Map<string, { id: string; doklado_id: string | null; cislo: string } | null>;
   prijatePodlaDoklado: Set<string>;
+  /*
+    Pravidlo duplicity prijatej faktúry (duplicita-zauctovania.ts: číslo bez
+    medzier a núl + dodávateľ + suma + rok) — tú istú faktúru zapísanú inak,
+    než ju chytia kľúče vyššie, spúšťač v databáze aj tak neuloží.
+  */
+  prijatePravidlom: Map<string, { id: string; doklado_id: string | null; d: DokladNaPorovnanie; popis: string }[]>;
   blocky: Map<string, { id: string; doklado_id: string | null }>;
   blockyPodlaDoklado: Set<string>;
   partneri: Map<string, { id: string; odberatel: boolean; dodavatel: boolean }>;
@@ -165,6 +178,21 @@ function najdiPrijatu(
   );
 }
 
+function zapamatajPravidlom(ex: Existujuce, r: Record<string, any>, dokladoId: string | null) {
+  const d = naPorovnanie("prijata", { status: "received", ...r });
+  if (!d.cislo) return;
+  const zoz = ex.prijatePravidlom.get(d.cislo) ?? [];
+  zoz.push({ id: String(r.id), doklado_id: dokladoId, d, popis: popisPrijatej(r) });
+  ex.prijatePravidlom.set(d.cislo, zoz);
+}
+
+/** Tá istá prijatá faktúra podľa pravidla duplicity (null = nová). */
+function najdiPravidlom(ex: Existujuce, hlavicka: Record<string, any>) {
+  const n = naPorovnanie("prijata", { status: "received", ...hlavicka, id: "nova-z-doklada" });
+  if (!n.cislo) return null;
+  return (ex.prijatePravidlom.get(n.cislo) ?? []).find((x) => suDuplicitne(n, x.d)) ?? null;
+}
+
 /**
  * IČO + číslo + suma. Bez IČO kľúč nie je (""): zahraniční dodávatelia bez
  * IČO s rovnakým číslom (RNS26012268 od dvoch firiem) by sa inak zliali.
@@ -196,7 +224,9 @@ async function nacitajExistujuce(db: Db, companyId: string, sId: boolean): Promi
     vsetko<any>((od, po) =>
       db
         .from("purchase_invoices")
-        .select(`id, supplier_ico, invoice_number, amount_total, issue_date${d}`)
+        .select(
+          `id, supplier_ico, supplier_name, invoice_number, type, status, amount_total, currency, issue_date, opravuje_cislo, opravuje_id, zauctovane_at, exported_at${d}`,
+        )
         .eq("company_id", companyId)
         .is("deleted_at", null)
         .order("id")
@@ -251,8 +281,10 @@ async function nacitajExistujuce(db: Db, companyId: string, sId: boolean): Promi
       ]),
     ),
     blockyPodlaDoklado: new Set(blocky.map((b) => b.doklado_id).filter(Boolean)),
+    prijatePravidlom: new Map(),
     partneri: new Map(),
   };
+  for (const f of prijate) zapamatajPravidlom(e, f, f.doklado_id ?? null);
   for (const f of prijate) {
     if (!lenCislice(f.supplier_ico)) continue;
     const k = klucDna(f.supplier_ico, f.issue_date, f.amount_total);
@@ -980,13 +1012,17 @@ async function zapisFirmy(a: {
         m.hlavicka.invoice_number,
         m.hlavicka.amount_total,
       );
-      const uz = najdiPrijatu(
-        ex,
-        m.hlavicka.supplier_ico,
-        m.hlavicka.invoice_number,
-        m.hlavicka.amount_total,
-        m.hlavicka.issue_date,
-      );
+      const pravidlom = najdiPravidlom(ex, m.hlavicka);
+      const uz =
+        najdiPrijatu(
+          ex,
+          m.hlavicka.supplier_ico,
+          m.hlavicka.invoice_number,
+          m.hlavicka.amount_total,
+          m.hlavicka.issue_date,
+        ) ?? pravidlom;
+      if (uz === pravidlom && pravidlom)
+        log(`  duplicita: prijatá ${z.invoiceNumber} (${z.organizationName}) už je v evidencii — ${pravidlom.popis}; nezakladám`);
       if (uz) {
         if (!uz.doklado_id)
           await db
@@ -1024,6 +1060,7 @@ async function zapisFirmy(a: {
         .single();
       if (error || !nova) throw new Error(error?.message ?? "prijatá faktúra sa nezapísala");
       if (k) ex.prijate.set(k, { id: nova.id, doklado_id: id });
+      zapamatajPravidlom(ex, { ...m.hlavicka, id: nova.id }, id);
       ex.prijatePodlaCislaSumy.set(
         klucCislaSumy(m.hlavicka.invoice_number, m.hlavicka.amount_total),
         {
@@ -1035,6 +1072,13 @@ async function zapisFirmy(a: {
       ex.prijatePodlaDoklado.add(id);
       s.nove++;
     } catch (e) {
+      // Spúšťač v databáze našiel tú istú faktúru — preskočená, nie chyba.
+      const dup = rozlozChybuPrijatej((e as Error).message);
+      if (dup) {
+        s.preskocene++;
+        log(`  duplicita: prijatá ${z.invoiceNumber ?? id} už je v evidencii — ${dup.popis}; nezaložená`);
+        continue;
+      }
       s.chyby++;
       log(`  CHYBA prijatá ${id} ${z.invoiceNumber ?? ""}: ${(e as Error).message}`);
     }

@@ -165,7 +165,11 @@ export function RozuctovaniePanel({
   }
 
   const vstup = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm";
-  // Úzky stĺpec panela (detail s náhľadom PDF): bez spodnej šírky by tabuľka ovládacie prvky zmačkala.
+  /*
+    Úzky stĺpec panela (detail s náhľadom PDF): bez spodnej šírky by tabuľka
+    ovládacie prvky zmačkala — sumy („100“) boli vidno len ako „1“. Každé pole
+    má preto spodnú šírku; tabuľka sa radšej posúva vodorovne vo svojom ráme.
+  */
   const kodVstup = `${vstup} min-w-[8rem]`;
   return (
     <div className="mt-3 rounded-md border border-border p-3">
@@ -187,7 +191,7 @@ export function RozuctovaniePanel({
         </div>
       </div>
       <div className="mt-2 overflow-x-auto">
-        <table className={`w-full text-sm ${sStrediskom ? "min-w-[1060px]" : "min-w-[820px]"}`}>
+        <table className={`w-full text-sm ${sStrediskom ? "min-w-[1200px]" : "min-w-[940px]"}`}>
           <thead>
             <tr className="text-left text-xs text-muted-foreground">
               <th className="py-1 pr-2 font-medium">{t("Predkontácia")}</th>
@@ -278,7 +282,7 @@ export function RozuctovaniePanel({
                   <select
                     value={r.sadzba}
                     onChange={(e) => zmen(i, { sadzba: Number(e.target.value) })}
-                    className={vstup}
+                    className={`${vstup} min-w-[5rem]`}
                     aria-label={t("Sadzba riadku {n}", { n: i + 1 })}
                   >
                     {sadzby.map((s) => (
@@ -294,7 +298,7 @@ export function RozuctovaniePanel({
                     step="0.01"
                     value={r.zaklad}
                     onChange={(e) => zmen(i, { zaklad: Number(e.target.value) })}
-                    className={`${vstup} text-right`}
+                    className={`${vstup} min-w-[6.5rem] text-right tabular-nums`}
                     aria-label={t("Základ riadku {n}", { n: i + 1 })}
                   />
                 </td>
@@ -304,7 +308,7 @@ export function RozuctovaniePanel({
                     step="0.01"
                     value={r.dph}
                     onChange={(e) => zmen(i, { dph: Number(e.target.value) })}
-                    className={`${vstup} text-right`}
+                    className={`${vstup} min-w-[6.5rem] text-right tabular-nums`}
                     aria-label={t("DPH riadku {n}", { n: i + 1 })}
                   />
                 </td>
@@ -313,7 +317,7 @@ export function RozuctovaniePanel({
                     value={r.text ?? ""}
                     onChange={(e) => zmen(i, { text: e.target.value })}
                     placeholder={t("nepovinné")}
-                    className={vstup}
+                    className={`${vstup} min-w-[8rem]`}
                     aria-label={t("Text riadku {n}", { n: i + 1 })}
                   />
                 </td>

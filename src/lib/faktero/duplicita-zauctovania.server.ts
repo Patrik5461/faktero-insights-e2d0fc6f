@@ -7,7 +7,9 @@
   vždy sa filtruje podľa firmy.
 */
 import {
+  chybaUlozenejPrijatej,
   duplicityDokladu,
+  moznaDuplicita,
   naPorovnanie,
   suDuplicitne,
   textDuplicity,
@@ -21,7 +23,7 @@ type Riadok = Record<string, any>;
 
 const STLPCE: Record<DruhDuplicity, string> = {
   prijata:
-    "id, company_id, invoice_number, type, status, supplier_ico, supplier_name, amount_total, issue_date, opravuje_cislo, opravuje_id, deleted_at, zauctovane_at, exported_at",
+    "id, company_id, invoice_number, type, status, supplier_ico, supplier_name, amount_total, currency, issue_date, opravuje_cislo, opravuje_id, deleted_at, zauctovane_at, exported_at",
   blocek:
     "id, company_id, document_number, status, supplier_ico, supplier_name, total_amount, currency, issue_date, qr_raw, zauctovane_at, exported_at",
 };
@@ -183,4 +185,52 @@ export async function vynechajDuplicity(
     preskocene.push(`${cislo}: ${textDuplicity(druhe)}`);
   }
   return { ok: riadky.map((r) => String(r.id)).filter((x) => !mapa.has(x)), duplicity, preskocene };
+}
+
+/**
+ * Už uložená prijatá faktúra, ktorá je tá istá ako `faktura` (`blok` —
+ * nesmie sa uložiť), alebo len s rovnakým číslom od toho istého dodávateľa
+ * (`mozna` — iná suma či rok, uloží sa po potvrdení). `vylucitId` = upravovaná.
+ */
+export async function najdiUlozenuPrijatu(
+  sb: Klient,
+  companyId: string,
+  faktura: Riadok,
+  vylucitId?: string | null,
+): Promise<{ blok: Riadok | null; mozna: Riadok | null }> {
+  const novy = naPorovnanie("prijata", {
+    status: "received",
+    ...faktura,
+    deleted_at: null,
+    id: vylucitId || faktura.id || "nova-prijata",
+  });
+  if (!novy.cislo) return { blok: null, mozna: null };
+  const kandidati = (await kandidatiDuplicit(sb, companyId, "prijata", [faktura])).filter(
+    (k) => k.id !== novy.id && (!vylucitId || k.id !== vylucitId),
+  );
+  // Zaúčtovaná či odovzdaná navrch — odkaz ukáže tú, ktorá platí.
+  kandidati.sort((x, y) => Number(Boolean(y.exported_at || y.zauctovane_at)) - Number(Boolean(x.exported_at || x.zauctovane_at)));
+  const blok = kandidati.find((k) => suDuplicitne(novy, naPorovnanie("prijata", k))) ?? null;
+  const mozna = blok ? null : (kandidati.find((k) => moznaDuplicita(novy, naPorovnanie("prijata", k))) ?? null);
+  return { blok, mozna };
+}
+
+/**
+ * Pred zápisom prijatej faktúry: duplicitu odmietne vždy, možnú duplicitu
+ * (iná suma či rok), kým ju človek nepotvrdí (`ajMoznu`). Chyby nesú
+ * predpony, podľa ktorých rozhranie ukáže odkaz alebo potvrdenie.
+ */
+export async function overUlozeniePrijatej(
+  sb: Klient,
+  companyId: string,
+  faktura: Riadok,
+  volby: { vylucitId?: string | null; ajMoznu?: boolean } = {},
+): Promise<void> {
+  const { blok, mozna } = await najdiUlozenuPrijatu(sb, companyId, faktura, volby.vylucitId);
+  if (blok) throw new Error(chybaUlozenejPrijatej(blok));
+  if (mozna && !volby.ajMoznu) {
+    const { PREDPONA_DUPLICITY } = await import("./prijate-duplicity");
+    const { textMoznejDuplicity } = await import("./duplicita-zauctovania");
+    throw new Error(`${PREDPONA_DUPLICITY}${textMoznejDuplicity(mozna)}`);
+  }
 }

@@ -51,7 +51,7 @@ function RiadokUdalosti({
     .filter(Boolean)
     .join(" ");
   const kedy = casUdalosti(u.kedy, loc);
-  const zmeny = textZmien(u, t, loc);
+  const zmeny = textZmien(u, t, loc, agenda);
   const info = textInfo(u, t, loc);
   return (
     <li className="min-w-0 text-xs" data-udalost={u.druh}>

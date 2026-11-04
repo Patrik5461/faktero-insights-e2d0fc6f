@@ -1387,6 +1387,56 @@ export function naplnDoklady(db: DemoDb) {
       updated_at: cas(-i - 1, 8 + (i % 9), 5),
     });
   });
+  /* Tá istá prijatá faktúra prišla mailom znova (Patrik 4. 11.: MOKOŠÁK
+     1126817) — detail ukáže „Táto faktúra už je v evidencii“, zoznam odznak
+     „Duplicita“ a „Vytvoriť“ ju druhýkrát nezaloží. */
+  {
+    const p = prijate.find(
+      (r) => r.zauctovane_at && r.supplier_ico && !r.deleted_at && r.type === "regular" && Number(r.amount_total) > 0,
+    );
+    if (p) {
+      const id = uid("nesprac:duplicita");
+      const zaklad = Number(p.amount_without_vat ?? 0);
+      const dph = Number(p.vat_amount ?? 0);
+      nesprac.push({
+        id,
+        company_id: FIRMA,
+        created_by: MAJITEL,
+        zdroj: "mail",
+        stav: "vytazene",
+        druh: "faktura",
+        file_name: `faktura-${p.invoice_number}.pdf`,
+        file_mime: "application/pdf",
+        file_size: 27720,
+        file_path: `${FIRMA}/nespracovane/${id}.pdf`,
+        ai: { supplier_name: p.supplier_name, supplier_ico: p.supplier_ico, buyer_name: "Demo s.r.o.", buyer_ico: "00000001" },
+        udaje: {
+          dodavatel: { nazov: p.supplier_name, ico: p.supplier_ico, dic: "", icDph: "", iban: p.supplier_iban ?? "", ulica: "", mesto: "", psc: "", krajina: "SK", email: "" },
+          cislo: p.invoice_number,
+          vs: p.variable_symbol ?? "",
+          popis: "",
+          datumVystavenia: p.issue_date,
+          datumDodania: p.delivery_date ?? p.issue_date,
+          splatnost: p.due_date ?? p.issue_date,
+          mena: p.currency ?? "EUR",
+          rozpis: [{ sadzba: 23, zaklad, dph }],
+          celkom: Number(p.amount_total),
+          platba: "prevod",
+          kategoria: "",
+          opravuje: "",
+          jobId: "",
+          poznamka: "",
+          ostatny: { druh: "", predmet: "", lehota: "" },
+          kody: { predkontacia: "1PZ", clenenie: "PD", kv: "", stredisko: "", cinnost: "", rad: "", intPoznamka: "" },
+          polozky: [],
+        },
+        chyba: null,
+        inbox_message_id: null,
+        created_at: cas(0, 11, 48),
+        updated_at: cas(0, 11, 48),
+      });
+    }
+  }
   db.vloz("nespracovane_doklady", nesprac);
 
   /* ================================================= ostatné doklady */

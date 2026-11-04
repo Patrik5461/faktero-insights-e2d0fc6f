@@ -1,4 +1,5 @@
 import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { DuplicitaZnak } from "@/components/faktero/DuplicitaDokladu";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -489,6 +490,7 @@ function Stranka() {
                     <span className="inline-flex min-w-0 items-center gap-1.5">
                       <CudziaFakturaZnak nesedi={r.odberatelNesedi} />
                       {r.dodavatel ?? <span className="text-muted-foreground">—</span>}
+                      <DuplicitaZnak duplicita={r.duplicita} />
                     </span>
                   </td>
                   <td className="whitespace-nowrap p-3"><span className="cislo-dokladu">{r.cislo ?? "—"}</span></td>
@@ -558,6 +560,7 @@ function Stranka() {
                 <span className="inline-flex min-w-0 items-center gap-1.5">
                   <CudziaFakturaZnak nesedi={r.odberatelNesedi} />
                   <span className="min-w-0 truncate">{r.dodavatel ?? <span className="text-muted-foreground">—</span>}</span>
+                  <DuplicitaZnak duplicita={r.duplicita} />
                 </span>
                 <span className="whitespace-nowrap text-muted-foreground">
                   {r.cislo ? `${r.cislo} · ` : ""}

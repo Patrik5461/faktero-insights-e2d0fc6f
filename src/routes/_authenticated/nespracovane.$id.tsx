@@ -58,7 +58,8 @@ import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
 import { potvrd } from "@/lib/potvrdenie";
 import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
-import { rozlozChybuBlocku } from "@/lib/faktero/duplicita-zauctovania";
+import { rozlozChybuBlocku, rozlozChybuPrijatej } from "@/lib/faktero/duplicita-zauctovania";
+import { UpozornenieUlozenejPrijatej, type UlozenaPrijata } from "@/components/faktero/DuplicitaDokladu";
 import { nesediZChyby } from "@/lib/faktero/cudzia-faktura";
 import { CudziaFakturaUpozornenie, textCudzejFaktury } from "@/components/faktero/CudziaFaktura";
 import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
@@ -101,6 +102,8 @@ function Detail() {
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [busy, setBusy] = useState(false);
   const [nenajdene, setNenajdene] = useState<string | null>(null);
+  // Tá istá prijatá faktúra už v evidencii je — zo servera pri otvorení, alebo z chyby pri „Vytvoriť“.
+  const [duplicita, setDuplicita] = useState<UlozenaPrijata | null>(null);
   // Oprava poľa kliknutím do náhľadu — pole, pre ktoré sa práve vyberá.
   const [vyberPole, setVyberPole] = useState<KlucPola | null>(null);
   const udajeRef = useRef<HTMLDivElement>(null);
@@ -114,6 +117,7 @@ function Detail() {
     try {
       const r = await nacitaj({ data: { id } });
       setD(r);
+      setDuplicita(r.duplicita ?? null);
       setDruh((r.druh as DruhNespracovaneho) ?? "");
       setU(r.udaje);
     } catch (e: any) {
@@ -249,9 +253,14 @@ function Detail() {
   ) : smer?.smer === "prijata" ? (
     <PrijataPodlaIbanPoznamka smer={smer} />
   ) : null;
+  const upozornenieDuplicity =
+    duplicita && jePrijata ? (
+      <UpozornenieUlozenejPrijatej duplicita={duplicita} busy={busy} onZmaz={() => void zmazDoklad()} />
+    ) : null;
   const upozornenieVlastnej =
-    upozornenieCudzej || upozornenieIban ? (
+    upozornenieDuplicity || upozornenieCudzej || upozornenieIban ? (
       <div className="space-y-2">
+        {upozornenieDuplicity}
         {upozornenieCudzej}
         {upozornenieIban}
       </div>
@@ -305,9 +314,17 @@ function Detail() {
       const r = await vytvor({
         data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu, ajCudziu },
       });
+      /*
+        Poistka: duplicita sa už nevytvorí (vytvorDoklad), ale keby ju server
+        predsa vrátil, nesmie to vyzerať ako úspech ani ako zaúčtovanie.
+      */
+      if (r.agenda === "prijata" && r.duplicita)
+        toast.error(t("Faktúra je vytvorená, ale nezaúčtovaná – duplicita. Rovnaká faktúra už v evidencii je, jednu z nich zmažte."), {
+          action: { label: t("Otvoriť"), onClick: () => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } }) },
+        });
       const kam =
         r.agenda === "prijata" && r.duplicita
-          ? t("Faktúra je vytvorená, ale nezaúčtovaná — rovnaká faktúra už v evidencii je. Jednu z nich zmažte.")
+          ? null
           : r.agenda === "prijata" && r.cudzia
           ? t("Faktúra je uložená medzi prijatými faktúrami s červeným výkričníkom — nepatrí tejto firme a nedá sa zaúčtovať, kým to nepotvrdíte")
           : r.agenda === "prijata" && r.zauctovana === false
@@ -317,7 +334,7 @@ function Detail() {
           : r.agenda === "doklad"
             ? t("Doklad je vytvorený a presunutý medzi doklady")
             : t("Doklad je vytvorený a presunutý medzi iné doklady");
-      toast.success(kam, {
+      if (kam) toast.success(kam, {
         action: {
           label: t("Otvoriť"),
           onClick: () =>
@@ -333,14 +350,24 @@ function Detail() {
       else navigate({ to: "/nespracovane" });
     } catch (e: any) {
       const sprava = String(e?.message ?? "");
-      // Server našiel tú istú faktúru — rozhodne človek, či ju chce dvakrát.
+      // Tá istá faktúra už v evidencii je — nevytvorí sa; upozornenie s odkazom a „Zmazať z Nespracovaných“.
+      const ulozena = rozlozChybuPrijatej(sprava);
+      if (ulozena) {
+        setDuplicita({ id: ulozena.id, popis: ulozena.popis, blok: true });
+        toast.error(t("Táto faktúra už je v evidencii: {popis}", { popis: ulozena.popis }), {
+          action: ulozena.id
+            ? { label: t("Otvoriť"), onClick: () => navigate({ to: "/prijate-faktury/$id", params: { id: ulozena.id! } }) }
+            : undefined,
+        });
+        return;
+      }
+      // Rovnaké číslo od toho istého dodávateľa, ale iná suma či rok — rozhodne človek.
       if (sprava.startsWith(PREDPONA_DUPLICITY)) {
         setBusy(false);
         if (
           await potvrd(sprava.slice(PREDPONA_DUPLICITY.length), {
-            potvrdit: t("Vytvoriť aj tak"),
-            zrusit: t("Nevytvárať"),
-            nebezpecne: true,
+            potvrdit: t("Nie je duplicita – uložiť"),
+            zrusit: t("Späť"),
           })
         )
           await vytvorDoklad(true, ajCudziu);
