@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listPurchaseOrders } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
@@ -139,7 +140,7 @@ function PurchaseOrdersPage() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <TabulkaZoznamu>
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                 <tr>
@@ -182,7 +183,7 @@ function PurchaseOrdersPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabulkaZoznamu>
         )}
       </PageBody>
     </>

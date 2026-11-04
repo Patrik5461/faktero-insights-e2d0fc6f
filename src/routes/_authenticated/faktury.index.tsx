@@ -19,6 +19,7 @@ import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
 import { useSuhrnVystavenych, useSuhrnVyberuVystavenych } from "@/hooks/useSuhrnVystavenych";
 import { DNI_PAROVANIA, MAX_PAROVANIA } from "@/lib/faktero/parovanie-limity";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { StatusBadge } from "./dashboard";
 import {
   Plus,
@@ -1238,7 +1239,7 @@ function InvoicesPage() {
               onOtvorit={(id) => navigate({ to: "/faktury/$id", params: { id } })}
               onZavriet={() => bocny.setVybrany(null)}
             >
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+            <TabulkaZoznamu>
               <table className="w-full text-sm">
                 <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
@@ -1480,7 +1481,7 @@ function InvoicesPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabulkaZoznamu>
             </SNahladom>
           }
         />

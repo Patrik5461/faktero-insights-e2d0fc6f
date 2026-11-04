@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Inbox, RefreshCw, FileInput, ExternalLink, Eye, Download, X, Paperclip, Send, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -650,7 +651,7 @@ function ReceivedPage() {
               </>
             )}
             desktop={
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <TabulkaZoznamu>
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                 <tr>
@@ -662,7 +663,7 @@ function ReceivedPage() {
                   <th className="px-2 py-3 text-right">{t("Suma")}</th>
                   <th className="px-2 py-3">{t("Stav")}</th>
                   <th className="px-2 py-3">{t("Kontrola")}</th>
-                  <th className="px-2 py-3 text-right">{t("Akcie")}</th>
+                  <th data-stlpec-akcie className="px-2 py-3 text-right">{t("Akcie")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -732,7 +733,7 @@ function ReceivedPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabulkaZoznamu>
             }
           />
         )}

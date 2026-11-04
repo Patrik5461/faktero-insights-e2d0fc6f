@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   listDeliveryNoteImportsFn,
@@ -169,7 +170,7 @@ function DeliveryNoteHistoryPage() {
                 );
               })}
             </div>
-            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+            <TabulkaZoznamu className="hidden md:block">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr>
@@ -218,7 +219,7 @@ function DeliveryNoteHistoryPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </TabulkaZoznamu>
           </>
         )}
       </PageBody>

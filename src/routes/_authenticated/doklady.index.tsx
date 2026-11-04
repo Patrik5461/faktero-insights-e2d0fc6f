@@ -21,6 +21,7 @@ import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { dokladyMimoMesiacaFn } from "@/lib/faktero/expenses.functions";
 import {
@@ -1174,8 +1175,9 @@ function DokladyPage() {
           onZavriet={() => bocny.setVybrany(null)}
         >
         {/* Na telefóne sú riadky samostatné karty (ako vo vystavených faktúrach) — rám zoznamu len pre tabuľku a prázdny stav. */}
-        <div
-          className={`overflow-x-auto rounded-2xl border border-border bg-card ${!loading && rows.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
+        <TabulkaZoznamu
+          className={`rounded-2xl ${!loading && rows.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
+          posuvClassName="max-sm:overflow-visible"
         >
           {loading ? (
             <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
@@ -1387,7 +1389,7 @@ function DokladyPage() {
                     {je("datum") && (
                       <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.issue_date)}</td>
                     )}
-                    <td className="min-w-[11rem] px-3 py-2">
+                    <td className="min-w-[11rem] max-w-[20rem] whitespace-normal px-3 py-2">
                       <button
                         onClick={() =>
                           {
@@ -1702,7 +1704,7 @@ function DokladyPage() {
               }
             />
           ) : null}
-        </div>
+        </TabulkaZoznamu>
         </SNahladom>
         {kos && getActiveCompanyId() && (
           <KosDokladovOkno

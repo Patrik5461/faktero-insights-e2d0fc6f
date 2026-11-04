@@ -6,6 +6,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   exportOstatnychZipFn,
@@ -435,7 +436,7 @@ function OstatneDokladyPage() {
 
         {/* Pri kartách na telefóne bez vonkajšieho rámika — karty majú vlastný. */}
         <div
-          className={`overflow-hidden rounded-xl border border-border bg-card ${!loading && zobrazene.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
+          className={`overflow-clip rounded-xl border border-border bg-card ${!loading && zobrazene.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
         >
           {loading ? (
             <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
@@ -568,7 +569,7 @@ function OstatneDokladyPage() {
                 );
               }}
               desktop={
-                <div className="overflow-x-auto">
+                <TabulkaZoznamu className="rounded-none border-0">
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs font-semibold whitespace-nowrap text-muted-foreground">
                       <tr>
@@ -748,7 +749,7 @@ function OstatneDokladyPage() {
                       })}
                     </tbody>
                   </table>
-                </div>
+                </TabulkaZoznamu>
               }
             />
           )}

@@ -794,3 +794,89 @@ tbody > tr[data-klik-riadok]:has(> td:first-child input[type="checkbox"]:checked
   background-color: color-mix(in oklch, var(--primary) 6%, var(--card));
   box-shadow: inset 3px 0 0 var(--primary);
 }
+
+/*
+  Zoznamy dokladov (stránka s `DocumentListToolbar`) nemajú strop šírky.
+  Strop 1440 bodov z `PageHeader`/`PageBody` pri veľa stĺpcoch tabuľku
+  orezal, hoci napravo bolo voľné miesto. Hlavička, KPI karty, filtre aj
+  tabuľka sa rozšíria spolu, takže okraje ostanú zarovnané. Ostatné stránky
+  (detaily, formuláre, nastavenia) si strop nechávajú.
+*/
+main:has([data-zoznam-dokladov]) :is([data-w-hlavicka-stranky], [data-obsah-stranky]) {
+  max-width: none;
+}
+
+/*
+  Tabuľka zoznamu (`TabulkaZoznamu`). Bunky sa nezalamujú — dátumy, sumy
+  a čísla ostanú v jednom riadku a pri veľa stĺpcoch tabuľka radšej
+  pretečie do vodorovného posunu, než by stĺpce stlačila („E-\nmailom“).
+  Dlhé texty (dodávateľ, popis) si zalomenie zapnú `whitespace-normal`
+  s vlastnou min/max šírkou — preto vo vrstve, nech ich utilita prebije.
+*/
+@layer components {
+  [data-tabulka-zoznamu] :is(th, td) {
+    white-space: nowrap;
+  }
+}
+
+/*
+  Lepivé stĺpce: zaškrtávadlo (a ikona hneď za ním, `data-stlpec-ikona`)
+  vľavo, stĺpec akcií vpravo (hlavička len so `sr-only` alebo
+  `data-stlpec-akcie`). Rozhoduje hlavička — riadok bez zaškrtávadla
+  (napr. doklad, ktorý sa práve číta) sa posúva rovnako ako ostatné.
+  Lepivá bunka potrebuje nepriehľadné pozadie: karta + farba riadka cez
+  `--pozadie-riadka`, ktorú nastavujú hover, náhľad aj zaškrtnutie.
+*/
+[data-tabulka-zoznamu] tr {
+  --pozadie-riadka: transparent;
+}
+[data-tabulka-zoznamu] thead tr {
+  --pozadie-riadka: color-mix(in oklab, var(--muted) 40%, transparent);
+}
+@media (hover: hover) {
+  [data-tabulka-zoznamu] tbody > tr[data-klik-riadok]:hover {
+    --pozadie-riadka: color-mix(in oklab, var(--muted) 30%, transparent);
+  }
+  /* Riadok bez vlastného hoveru dostane v redizajne farbu z web.css. */
+  [data-web-redizajn] [data-tabulka-zoznamu] tbody > tr:not([data-klik-riadok]):hover {
+    --pozadie-riadka: color-mix(in oklab, var(--accent) 70%, transparent);
+  }
+}
+[data-tabulka-zoznamu] tbody > tr[aria-current]:not([aria-current="false"]) {
+  --pozadie-riadka: color-mix(in oklab, var(--muted) 40%, transparent);
+}
+[data-tabulka-zoznamu] tbody > tr[data-klik-riadok]:has(> td:first-child input[type="checkbox"]:checked) {
+  --pozadie-riadka: color-mix(in oklch, var(--primary) 6%, transparent);
+}
+[data-tabulka-zoznamu] table:has(> thead > tr > th:first-child > input[type="checkbox"]) > :is(thead, tbody, tfoot) > tr > :first-child:not([colspan]),
+[data-tabulka-zoznamu] table:has(> thead > tr > th:first-child > input[type="checkbox"]) > :is(thead, tbody, tfoot) > tr > :first-child:not([colspan]) + [data-stlpec-ikona],
+[data-tabulka-zoznamu] table:is(:has(> thead > tr > th:last-child > .sr-only:only-child), :has(> thead > tr > th:last-child[data-stlpec-akcie])) > :is(thead, tbody, tfoot) > tr > :last-child:not([colspan]) {
+  position: sticky;
+  z-index: 1;
+  background-color: var(--card);
+  background-image: linear-gradient(var(--pozadie-riadka), var(--pozadie-riadka));
+}
+[data-tabulka-zoznamu] table:has(> thead > tr > th:first-child > input[type="checkbox"]) > :is(thead, tbody, tfoot) > tr > :first-child:not([colspan]) {
+  left: 0;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  max-width: 2.5rem;
+}
+[data-tabulka-zoznamu] table:has(> thead > tr > th:first-child > input[type="checkbox"]) > :is(thead, tbody, tfoot) > tr > :first-child:not([colspan]) + [data-stlpec-ikona] {
+  left: 2.5rem;
+}
+[data-tabulka-zoznamu] table:is(:has(> thead > tr > th:last-child > .sr-only:only-child), :has(> thead > tr > th:last-child[data-stlpec-akcie])) > :is(thead, tbody, tfoot) > tr > :last-child:not([colspan]) {
+  right: 0;
+}
+/* Tieň na hrane lepivých stĺpcov, len keď je pod nimi niečo odrolované. */
+[data-tabulka-zoznamu][data-posun-vlavo] [data-tabulka-zoznamu] table:has(> thead > tr > th:first-child > input[type="checkbox"]) > :is(thead, tbody, tfoot) > tr > :first-child:not([colspan]):not(:has(+ [data-stlpec-ikona])),
+[data-tabulka-zoznamu][data-posun-vlavo] [data-tabulka-zoznamu] table:has(> thead > tr > th:first-child > input[type="checkbox"]) > :is(thead, tbody, tfoot) > tr > :first-child:not([colspan]) + [data-stlpec-ikona] {
+  box-shadow: 6px 0 6px -6px color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+[data-tabulka-zoznamu][data-posun-vpravo] [data-tabulka-zoznamu] table:is(:has(> thead > tr > th:last-child > .sr-only:only-child), :has(> thead > tr > th:last-child[data-stlpec-akcie])) > :is(thead, tbody, tfoot) > tr > :last-child:not([colspan]) {
+  box-shadow: -6px 0 6px -6px color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+/* Zaškrtnutý riadok: zelený pruh na lepivom zaškrtávadle ostáva aj s tieňom. */
+[data-tabulka-zoznamu][data-posun-vlavo] tbody > tr[data-klik-riadok]:has(> td:first-child input[type="checkbox"]:checked) > td:first-child:not(:has(+ [data-stlpec-ikona])) {
+  box-shadow: inset 3px 0 0 var(--primary), 6px 0 6px -6px color-mix(in oklab, var(--foreground) 22%, transparent);
+}

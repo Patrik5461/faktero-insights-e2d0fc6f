@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { Plus, Trash2, RotateCcw, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -211,7 +212,7 @@ function QuotesPage() {
             />
           )}
           desktop={
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+            <TabulkaZoznamu>
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                   <tr>
@@ -316,7 +317,7 @@ function QuotesPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabulkaZoznamu>
           }
         />
         {/* Prázdny zoznam už má hlášku v tabuľke — „Žiadne výsledky“ zo stránkovania by ju len zopakovalo. */}

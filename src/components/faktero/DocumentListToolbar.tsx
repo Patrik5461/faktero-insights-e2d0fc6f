@@ -105,7 +105,8 @@ export function DocumentListToolbar({
   );
 
   return (
-    <div className="mb-3 space-y-2">
+    /* `data-zoznam-dokladov` zruší strop šírky stránky (styles.css). */
+    <div data-zoznam-dokladov className="mb-3 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-[12rem] max-w-md flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
