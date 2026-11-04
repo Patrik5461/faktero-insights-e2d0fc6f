@@ -10,6 +10,7 @@
 import { jeSamozdanenie } from "./datum-prijatia";
 import { najblizsiaSadzba, zoradPodlaSadzby } from "./vat-rates";
 import { prepocitajPolozku, sumySamofaktury } from "./samofakturacia";
+import { maPopisPrijatej, textPrijatejFaktury } from "./text-dokladu";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
@@ -188,14 +189,7 @@ export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: n
 
 /** Text prijatej faktúry pre Pohodu — čo sa fakturuje. */
 export function textPrijatej(p: any): string {
-  const uvod = String(p?.intro_note ?? "").trim();
-  if (uvod) return uvod.slice(0, 240);
-  const polozky = (Array.isArray(p?.items) ? p.items : [])
-    .map((x: any) => String(x?.name ?? "").trim())
-    .filter(Boolean);
-  if (polozky.length)
-    return (polozky.slice(0, 3).join(", ") + (polozky.length > 3 ? " a ďalšie" : "")).slice(0, 240);
-  return `Faktúra č. ${p?.invoice_number ?? ""}`.trim();
+  return textPrijatejFaktury(p);
 }
 
 /** Riadok `purchase_invoices` → doklad pre `polozkyDokladov`. */
@@ -242,6 +236,9 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     supplier_city: p.supplier_city,
     supplier_zip: p.supplier_zip,
     supplier_country: p.supplier_country,
+    supplier_email: p.supplier_email ?? null,
+    // Zdroj dokladu — eFaktúra nesie úplné údaje dodávateľa v XML (`dodavateliaPrijatych`).
+    source: p.source ?? null,
     document_number: p.invoice_number,
     issue_date: p.issue_date,
     currency: p.currency,
@@ -273,6 +270,8 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
       v adrese): text nad položkami, inak názvy položiek, inak číslo faktúry.
     */
     _text: textPrijatej(p),
+    // Bez predmetu aj položiek ide len „Faktúra č.“ — export ho nahradí názvami z eFaktúry.
+    _textBezPopisu: !maPopisPrijatej(p),
     // Účet dodávateľa — Pohoda ho dá na príkaz na úhradu.
     _ucetDodavatela: p.supplier_iban,
     _symVar: p.variable_symbol,

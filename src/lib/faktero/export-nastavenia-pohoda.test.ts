@@ -242,13 +242,20 @@ describe("zmenené nastavenia", () => {
     expect(hodnota(doklad(x, 1), "inv:intNote")).toBe("OMV č. B55");
     // Bloček bez vlastnej predkontácie berie kód prijatých dokladov — aj jeho popis.
     expect(hodnota(doklad(x, 1), "inv:text")).toBe("Nákup materiálu");
-    // Bez popisu predkontácie ide predvolený text.
+    // Bez popisu predkontácie ide predvolený text — popis bločku z poznámky (4. 11. 2026),
     const z = buildPohodaExpensesXml({
       company: firmaS({ textPrijate: "polozka" }),
       doklady: [blocek],
       nastavenia,
     });
-    expect(hodnota(z, "inv:text")).toBe("OMV č. B55");
+    expect(hodnota(z, "inv:text")).toBe("Nafta");
+    // bez poznámky dodávateľ s číslom.
+    const z2 = buildPohodaExpensesXml({
+      company: firmaS({ textPrijate: "polozka" }),
+      doklady: [{ ...blocek, note: null }],
+      nastavenia,
+    });
+    expect(hodnota(z2, "inv:text")).toBe("OMV č. B55");
     const y = buildPohodaExpensesXml({
       company: firmaS({ textPrijate: "dodavatel_cislo" }),
       doklady: [prijata],

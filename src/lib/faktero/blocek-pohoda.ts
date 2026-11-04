@@ -15,7 +15,7 @@
 
   Čisté funkcie (bez siete a DB), testy v `blocek-pohoda.test.ts`.
 */
-import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
+import { nazvyPoloziek, textZNazvov } from "./text-dokladu";
 import { odvodClenenia, type KodCiselnika } from "./auto-uctovanie";
 import { jeNeplatitel, jeNezahrnovat } from "./uctovanie-agenda";
 
@@ -97,22 +97,44 @@ export function sAdresouDodavatela<T extends Record<string, any>>(
 }
 
 /**
+ * Prijatá faktúra doplnená o dodávateľa (`dodavateliaPrijatych`) — IČO, DIČ,
+ * IČ DPH, adresa a e-mail len do prázdnych polí; čo je na doklade, platí.
+ * Bez predmetu aj položiek dostane text z názvov položiek eFaktúry namiesto
+ * „Faktúra č. …“ (`_text` pri tvare `prijataAkoDoklad`, `_nazvyPoloziekZdroja`
+ * pre ostatné exporty).
+ */
+export function sDoplnenymDodavatelom<T extends Record<string, any>>(
+  d: T,
+  doplnenie:
+    | (AdresaDodavatela & { ico?: string | null; email?: string | null; nazvyPoloziek?: string[] })
+    | null
+    | undefined,
+): T {
+  if (!doplnenie) return d;
+  const dopln = (pole: string, hodnota: unknown) =>
+    t(d?.[pole]) || !t(hodnota) ? {} : { [pole]: t(hodnota) };
+  const nazvy = (doplnenie.nazvyPoloziek ?? []).map(t).filter(Boolean);
+  return {
+    ...d,
+    ...dopln("supplier_ico", doplnenie.ico),
+    ...dopln("supplier_dic", doplnenie.dic),
+    ...dopln("supplier_ic_dph", doplnenie.ic_dph),
+    ...dopln("supplier_street", doplnenie.street),
+    ...dopln("supplier_city", doplnenie.city),
+    ...dopln("supplier_zip", doplnenie.zip),
+    ...dopln("supplier_country", doplnenie.country),
+    ...dopln("supplier_email", doplnenie.email),
+    ...(nazvy.length ? { _nazvyPoloziekZdroja: nazvy } : {}),
+    ...(nazvy.length && d?._textBezPopisu ? { _text: textZNazvov(nazvy), _textBezPopisu: false } : {}),
+  };
+}
+
+/**
  * Text bločku ako text prijatej faktúry (`textPrijatej`): čo sa kúpilo —
  * prvé tri položky. Bez položiek prázdny (volajúci použije dodávateľa s číslom).
  */
 export function textBlocku(d: { items?: unknown } | null | undefined): string {
-  const polozky = (Array.isArray(d?.items) ? d!.items : [])
-    // Zaokrúhlenie nie je tovar — do textu dokladu nepatrí.
-    .filter((x: any) => !jePolozkaZaokruhlenia(x))
-    .map((x: any) =>
-      t(x?.name)
-        // eKasa: kód tovaru a hviezdička pred názvom („* 3 03     OMV Diesel“).
-        .replace(/^\*\s*(\d+\s+)*/, "")
-        .trim(),
-    )
-    .filter(Boolean);
-  if (!polozky.length) return "";
-  return (polozky.slice(0, 3).join(", ") + (polozky.length > 3 ? " a ďalšie" : "")).slice(0, 240);
+  return textZNazvov(nazvyPoloziek(d?.items));
 }
 
 /**

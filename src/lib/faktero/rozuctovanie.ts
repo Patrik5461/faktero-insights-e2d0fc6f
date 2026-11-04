@@ -8,6 +8,7 @@
 */
 import { kodClenenia } from "./auto-uctovanie";
 import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
+import { nazovPolozky, textZNazvov } from "./text-dokladu";
 import { porovnajSadzby, zoradSadzby } from "./vat-rates";
 
 export type RiadokRozuctovania = {
@@ -430,14 +431,17 @@ export function rozuctovaniePolozkami(
 export function rozvinPomery(
   riadky: RiadokRozuctovania[],
   pomery: Record<string, unknown> | null | undefined,
+  /** Názov riadku, ktorý sa delí (bez neho by časti niesli len percento). */
+  sNazvom?: (r: RiadokRozuctovania) => RiadokRozuctovania,
 ): RiadokRozuctovania[] {
   const out: RiadokRozuctovania[] = [];
-  for (const r of riadky) {
-    const pomer = nacitajPomer(pomery?.[String(r.predkontacia ?? "")]);
+  for (const r0 of riadky) {
+    const pomer = nacitajPomer(pomery?.[String(r0.predkontacia ?? "")]);
     if (!pomer) {
-      out.push(r);
+      out.push(r0);
       continue;
     }
+    const r = sNazvom ? sNazvom(r0) : r0;
     for (const c of rozuctovaniePodlaPomeru(pomer, [{ sadzba: r.sadzba, zaklad: r.zaklad, dph: r.dph }], r.clenenie)) {
       out.push({ ...c, kv: r.kv, text: [r.text, c.text].filter(Boolean).join(" · ") || null });
     }
@@ -517,6 +521,21 @@ export function rozdelPodlaVozidla(
  * výslovnejšie nerozhodlo: ručné rozúčtovanie, pomer z pravidla, predkontácia
  * s pomerom či doklad bez nároku na odpočet majú prednosť.
  */
+/**
+ * Názov riadku podľa položiek dokladu v jeho sadzbe — pre časti pomeru
+ * a odpočtu vozidla, ktoré by inak niesli len „50 %“ (pripomienka 4. 11.
+ * 2026: bloček OMV išiel ako „50 % / 30 % / 20 %“ namiesto „OMV Diesel“).
+ * Percento sa k názvu len pripojí.
+ */
+export function nazovRiadkuZPoloziek(items: unknown, sadzba: number, jedinaSadzba: boolean): string | null {
+  const nazvy = (Array.isArray(items) ? items : [])
+    .filter((x: any) => !jePolozkaZaokruhlenia(x))
+    .filter((x: any) => jedinaSadzba || Number(x?.vat_rate) === Number(sadzba))
+    .map((x: any) => nazovPolozky(x?.name))
+    .filter(Boolean);
+  return textZNazvov(nazvy).slice(0, 60) || null;
+}
+
 export function riadkyDokladu(
   d: { rozuctovanie?: unknown; items?: unknown; odpocet?: unknown },
   rozpis: RozpisSadzby[],
@@ -540,14 +559,18 @@ export function riadkyDokladu(
       ? zPoloziek
       : rozpis.map((s) => ({ predkontacia, clenenie, sadzba: s.sadzba, zaklad: r2(s.zaklad), dph: r2(s.dph) }));
   }
+  // Riadok bez vlastného textu dostane názov položiek svojej sadzby (len keď sa delí pomerom či vozidlom).
+  const jedinaSadzba = new Set(rozpis.map((s) => s.sadzba)).size <= 1;
+  const sNazvom = (r: RiadokRozuctovania): RiadokRozuctovania =>
+    r.text ? r : { ...r, text: nazovRiadkuZPoloziek(d?.items, r.sadzba, jedinaSadzba) };
   if (pomerDokladu) {
     const out: RiadokRozuctovania[] = [];
-    for (const r of zaklad)
+    for (const r of zaklad.map(sNazvom))
       for (const c of rozuctovaniePodlaPomeru(pomerDokladu, [{ sadzba: r.sadzba, zaklad: r.zaklad, dph: r.dph }], r.clenenie))
         out.push({ ...c, kv: r.kv, text: [r.text, c.text].filter(Boolean).join(" · ") || null });
     return out;
   }
-  const out = rozvinPomery(zaklad, pomery);
+  const out = rozvinPomery(zaklad, pomery, sNazvom);
   if (
     vozidlo &&
     !rucnePlati &&
@@ -555,7 +578,7 @@ export function riadkyDokladu(
     // Predkontácia s pomerom už odpočet krátila — vozidlo by ho skrátilo druhýkrát.
     !out.some((r) => r.odpocet === false)
   ) {
-    return rozdelPodlaVozidla(out, vozidlo);
+    return rozdelPodlaVozidla(out.map(sNazvom), vozidlo);
   }
   return out;
 }
