@@ -775,3 +775,22 @@ select.input {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/*
+  Zaškrtnutý riadok zoznamu (hromadný výber) — jediné zelené zvýraznenie
+  riadka: jemné pozadie a ľavý pruh. Kreslí sa priamo zo stavu zaškrtávadla
+  (`:has(:checked)`), takže riadok a zaškrtávadlo sú vždy v súlade a nič iné
+  (naposledy otvorený doklad, fokus, hover) riadok nazeleno nezafarbí.
+  Mimo vrstiev zámerne — má prednosť pred hover/fokus pozadím z utilít.
+*/
+tbody > tr[data-klik-riadok]:has(> td:first-child input[type="checkbox"]:checked) {
+  background-color: color-mix(in oklch, var(--primary) 6%, transparent);
+}
+tbody > tr[data-klik-riadok]:has(> td:first-child input[type="checkbox"]:checked) > td:first-child {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+/* Karta na mobile (nie riadok tabuľky) so zaškrtávadlom. */
+[data-klik-riadok]:not(tr):has(input[type="checkbox"]:checked) {
+  background-color: color-mix(in oklch, var(--primary) 6%, var(--card));
+  box-shadow: inset 3px 0 0 var(--primary);
+}

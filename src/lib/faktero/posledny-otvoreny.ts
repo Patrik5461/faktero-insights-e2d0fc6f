@@ -1,6 +1,8 @@
 /*
   Naposledy otvorený doklad v zozname (ako v Doklado): po návrate z detailu
-  je jeho riadok zvýraznený a zoznam k nemu doroluje. Pamätá sa len
+  k nemu zoznam doroluje. Farebne sa NEzvýrazňuje — zelený pruh a pozadie
+  ostávajúce na riadku vyzerali ako zaseknutá myš (2026-11-04); zelené je
+  len zaškrtnutie (hromadný výber). Pamätá sa len
   v prehliadači (localStorage), zvlášť pre každý zoznam a firmu — do
   databázy to nepatrí. Prístup k úložisku môže zlyhať (súkromné okno,
   zablokované dáta), preto všetko v try/catch a bez úložiska sa nič nedeje.
@@ -10,11 +12,13 @@ export type ZoznamDokladov = "nespracovane" | "prijate-faktury" | "doklady";
 
 type Uloziste = Pick<Storage, "getItem" | "setItem">;
 
-/** Trieda zvýrazneného riadka — jemné pozadie a ľavý pruh v primárnej farbe. */
-export const ZVYRAZNENIE_RIADKA =
-  "bg-primary/5 [&>td:first-child]:shadow-[inset_3px_0_0_var(--primary)]";
-/** To isté pre kartu na mobile (nie je to riadok tabuľky). */
-export const ZVYRAZNENIE_KARTY = "bg-primary/5 shadow-[inset_3px_0_0_var(--primary)]";
+/**
+ * Doklad, ktorý je práve v bočnom náhľade — nenápadné neutrálne pozadie,
+ * žiadna zelená ani pruh. Zelené pozadie s pruhom patrí len zaškrtnutému
+ * riadku (kreslí ho CSS cez `:has(:checked)`, takže je vždy v súlade
+ * so zaškrtávadlom).
+ */
+export const OZNACENIE_V_NAHLADE = "bg-muted/40";
 
 export function klucPoslednehoOtvoreneho(
   zoznam: ZoznamDokladov,

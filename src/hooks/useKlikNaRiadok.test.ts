@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  ATRIBUT_TICHY_FOKUS,
+  fokusZTabulatora,
+  nainstalujTichyFokus,
   NEOTVARAT_SELEKTOR,
+  TRIEDA_KLIK_RIADKU,
   propsKlikuNaRiadok,
   rozhodniKlaves,
   rozhodniKlik,
@@ -299,5 +303,47 @@ describe("propsKlikuNaRiadok", () => {
     const { p } = priprav({ klavesnica: false });
     expect(p.tabIndex).toBeUndefined();
     expect(p.onKeyDown).toBeUndefined();
+  });
+});
+
+describe("tichý fokus riadku", () => {
+  it("rámik len pri fokuse z tabulátora (do 1 s)", () => {
+    expect(fokusZTabulatora({ key: "Tab", cas: 1000 }, 1200)).toBe(true);
+    expect(fokusZTabulatora({ key: "Tab", cas: 1000 }, 2500)).toBe(false);
+    expect(fokusZTabulatora({ key: "Escape", cas: 1000 }, 1100)).toBe(false);
+    expect(fokusZTabulatora({ key: "ArrowDown", cas: 1000 }, 1100)).toBe(false);
+    expect(fokusZTabulatora(null, 1100)).toBe(false);
+  });
+
+  it("trieda riadku nekreslí rámik ani pozadie pri tichom fokuse a hover len cez :hover", () => {
+    expect(TRIEDA_KLIK_RIADKU).not.toMatch(/(^| )focus-visible:(bg|ring)/);
+    expect(TRIEDA_KLIK_RIADKU).toContain("[&:focus-visible:not([data-tichy-fokus])]:ring-2");
+    expect(TRIEDA_KLIK_RIADKU).not.toMatch(/primary/);
+  });
+
+  it("fokus vrátený po Escape/kliku dostane data-tichy-fokus, Tab nie", () => {
+    const pocuvadla: Record<string, ((e: any) => void)[]> = {};
+    const doc = {
+      addEventListener: (typ: string, f: (e: any) => void) => (pocuvadla[typ] ??= []).push(f),
+    } as unknown as Document;
+    nainstalujTichyFokus(doc);
+    const posli = (typ: string, e: any) => pocuvadla[typ]?.forEach((f) => f(e));
+    const attrs = new Set<string>();
+    const riadok = {
+      matches: (s: string) => s.includes("[data-klik-riadok]"),
+      setAttribute: (a: string) => attrs.add(a),
+      removeAttribute: (a: string) => attrs.delete(a),
+    };
+    posli("keydown", { key: "Escape" });
+    posli("focusin", { target: riadok });
+    expect(attrs.has(ATRIBUT_TICHY_FOKUS)).toBe(true);
+    posli("focusout", { target: riadok });
+    expect(attrs.has(ATRIBUT_TICHY_FOKUS)).toBe(false);
+    posli("pointerdown", {});
+    posli("focusin", { target: riadok });
+    expect(attrs.has(ATRIBUT_TICHY_FOKUS)).toBe(true);
+    posli("keydown", { key: "Tab" });
+    posli("focusin", { target: riadok });
+    expect(attrs.has(ATRIBUT_TICHY_FOKUS)).toBe(false);
   });
 });

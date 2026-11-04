@@ -363,8 +363,12 @@ html.dark [data-web-redizajn] {
   [data-web-redizajn] table {
     font-variant-numeric: tabular-nums;
   }
-  [data-web-redizajn] table tbody tr:hover {
-    background-color: color-mix(in oklch, var(--accent) 70%, transparent);
+  /* Len skutočná myš — na dotykovom displeji :hover po ťuknutí ostane
+     „visieť“ na riadku, kým sa neťukne inde. */
+  @media (hover: hover) {
+    [data-web-redizajn] table tbody tr:hover {
+      background-color: color-mix(in oklch, var(--accent) 70%, transparent);
+    }
   }
 
   /* Ikony lucide: jednotný ťah. Veľkosť nesie trieda (h-4 w-4 …). */
