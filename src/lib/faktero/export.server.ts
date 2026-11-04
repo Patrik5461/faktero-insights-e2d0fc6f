@@ -70,9 +70,10 @@ import {
   jeHotovostnyBlocek,
   kodyPolozkyBlocku,
   sAdresouDodavatela,
-  textBlocku,
+  sDoplnenymDodavatelom,
   type AdresaDodavatela,
 } from "./blocek-pohoda";
+import { textBlockuNaExport } from "./text-dokladu";
 import type { KodCiselnika } from "./auto-uctovanie";
 type InvoiceRow = any;
 type ItemRow = any;
@@ -360,6 +361,8 @@ export type PohodaNastavenia = {
   bankaPodlaUctu?: Record<string, string>;
   /** Adresa dodávateľa hotovostného bločku podľa IČO (`blocek-pohoda.server.ts`). */
   adresyDodavatelov?: Record<string, AdresaDodavatela>;
+  /** Doplnenie dodávateľa prijatej faktúry podľa id dokladu (`dodavateliaPrijatych`). */
+  dodavateliaPrijatych?: Record<string, Parameters<typeof sDoplnenymDodavatelom>[1]>;
   /** Číselník členení DPH firmy (z Pohody) — pre členenie bločku podľa zákona. */
   cleneniaDph?: KodCiselnika[];
 };
@@ -1663,7 +1666,12 @@ export function polozkyDokladov(opts: {
       const d1 = dobropisPrijaty && !cz ? kladnyDobropis(d0) : d0;
       // Hotovostný bloček: adresa, DIČ a IČ DPH dodávateľa, ktoré bloček v DB nemá.
       const hotovostnyBlocek = jeHotovostnyBlocek(d1);
-      const d = hotovostnyBlocek ? sAdresouDodavatela(d1, nastavenia?.adresyDodavatelov) : d1;
+      // Prijatá faktúra: IČO, DIČ, adresa a e-mail dodávateľa, ktoré doklad nemá (eFaktúra, import, OCR).
+      const d = hotovostnyBlocek
+        ? sAdresouDodavatela(d1, nastavenia?.adresyDodavatelov)
+        : d1?._typPohody && d1._typPohody !== "danovyDokladKPlatbe"
+          ? sDoplnenymDodavatelom(d1, nastavenia?.dodavateliaPrijatych?.[String(d1?.id ?? "")])
+          : d1;
       const tab = sadzbyKuDnu(String(d?.issue_date ?? ""), krajinaDane(company.country));
       const rozpis = rozpisDokladu(d);
       const zaSadzbu = (p: Priehradka) =>
@@ -1894,8 +1902,25 @@ export function polozkyDokladov(opts: {
         dodávateľ s číslom a kategóriou); firma si môže zvoliť názov účtovnej
         položky (predkontácie), poznámku alebo dodávateľa s číslom dokladu.
       */
+      /*
+        Bloček: popis dokladu (poznámka bez systémových viet) → názov účtovnej
+        položky z číselníka → názvy položiek → dodávateľ s číslom
+        (`text-dokladu.ts`, rovnako ako Omega).
+      */
       const textAuto =
-        skrat(d?._text || (hotovostnyBlocek ? textBlocku(d) : ""), 240) || popis || "Prijatý doklad";
+        skrat(
+          d?._text ||
+            (blocek
+              ? textBlockuNaExport({
+                  poznamka: d?.note,
+                  uctovnaPolozka: nastavenia?.popisyPredkontacii?.[String(predkontaciaJedna ?? "")],
+                  polozky: hotovostnyBlocek ? d?.items : null,
+                })
+              : ""),
+          240,
+        ) ||
+        popis ||
+        "Prijatý doklad";
       const textDokladu =
         (prijatyDoklad && ex.textPrijate !== "auto"
           ? skrat(
@@ -2201,6 +2226,10 @@ export function polozkyDokladov(opts: {
         el("typ:ico", skrat(icoPrePohodu(d?.supplier_ico, d?.supplier_name, d?.supplier_country, (company as any)?.pohoda_ico_z_mena), 15), "            "),
         el("typ:dic", skrat(d?.supplier_dic, 18), "            "),
         el("typ:icDph", skrat(d?.supplier_ic_dph, 18), "            "),
+        // E-mail dodávateľa — type.xsd ho v adrese pripúšťa pri prijatých faktúrach len v SK verzii.
+        p === "inv" && !cz && !blocek && /^received(Invoice|CreditNotice)$/.test(typPohody)
+          ? el("typ:email", skrat(d?.supplier_email, 98), "            ")
+          : "",
       ].join("");
 
       // Číslo dokladu od dodávateľa: prijatá faktúra ho má vždy, bloček
@@ -2220,14 +2249,15 @@ export function polozkyDokladov(opts: {
         !cz && dobropisPrijaty && p === "inv" ? skrat(String(d?._opravujeCislo ?? "").trim(), 32) : "";
       // Dátumy, ktoré pozná len jedna verzia: SK dátum dodania tovaru (prijaté
       // faktúry, interné doklady), CZ dátum pre kontrolné hlásenie.
-      const datumDodania = String(d?._datumDph || "").trim();
+      // Bloček v agende faktúr (ostatný záväzok, prijatá faktúra): dátum dodania = deň predaja.
+      const datumDodania = String(d?._datumDph || (blocek ? d?.issue_date : "") || "").trim();
       const datumyVerzie =
         (!prijatyDoklad
           ? ""
           : cz
             ? // Obdobie kontrolného hlásenia = obdobie odpočtu (neskorší z DUZP a prijatia).
               el(`${p}:dateKHDPH`, datumOdpoctu, "        ")
-            : p !== "vch" && d?._typPohody && !zalohovaPrijata
+            : (p !== "vch" && d?._typPohody && !zalohovaPrijata) || (p === "inv" && blocek)
               ? el(`${p}:dateDelivery`, datumDodania, "        ")
               : "") +
         /*

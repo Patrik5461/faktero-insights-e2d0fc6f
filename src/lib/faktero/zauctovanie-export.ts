@@ -20,6 +20,13 @@ import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodStatu } from "./company-autofill";
 import { polozkyPrijatej, rozpisPrijatej } from "./prijate-do-pohody";
+import {
+  maPopisPrijatej,
+  nazvyPoloziek,
+  popisZPoznamky,
+  textPrijatejFaktury,
+  textZNazvov,
+} from "./text-dokladu";
 import { kodPokladneDokladu } from "./pokladne";
 import { datumyPrijateho, type DatumOdpoctu, type DatumZapisu } from "./export-nastavenia";
 import {
@@ -116,7 +123,14 @@ export type DokladUctovania = {
   zakazka: string | null;
   rad: string | null;
   pokladna: string | null;
+  /**
+   * Text dokladu (`text-dokladu.ts`). Prijatá faktúra: predmet → položky →
+   * „Faktúra č.“. Bloček: názvy položiek → dodávateľ s číslom; pred ne patrí
+   * `popis` a názov účtovnej položky, ktorý pozná až builder s číselníkom.
+   */
   text: string;
+  /** Popis dokladu od človeka (poznámka bez systémových viet) — len bloček. */
+  popis?: string | null;
   poznamka: string | null;
   intPoznamka: string | null;
   prenesenieDph: boolean;
@@ -255,6 +269,19 @@ const znamienkoCelku = (celkom: unknown, riadky: { zaklad: number; dph: number }
 };
 
 /** Zlúči riadky s rovnakou sadzbou a kódmi — do účtovníctva ide súhrn, nie položky. */
+/**
+ * Text zlúčeného riadku: časti pomeru s tým istým kódom („OMV Diesel · 30 %“
+ * a „OMV Diesel · 20 %“) dajú „OMV Diesel · 50 %“; iné texty žiadny (platí text dokladu).
+ */
+function zlucText(a: string | null, b: string | null): string | null {
+  const m = (x: string | null) => /^(.*?)(?:\s·\s)?(\d+(?:[.,]\d+)?) %$/.exec(String(x ?? ""));
+  const ma = m(a);
+  const mb = m(b);
+  if (!ma || !mb || ma[1] !== mb[1]) return null;
+  const spolu = r2(Number(ma[2].replace(",", ".")) + Number(mb[2].replace(",", ".")));
+  return [ma[1], `${String(spolu).replace(".", ",")} %`].filter(Boolean).join(" · ");
+}
+
 export function zlucRiadky(riadky: RiadokUctovania[]): RiadokUctovania[] {
   const out: RiadokUctovania[] = [];
   for (const r of riadky) {
@@ -269,6 +296,7 @@ export function zlucRiadky(riadky: RiadokUctovania[]): RiadokUctovania[] {
     if (k) {
       k.zaklad = r2(k.zaklad + r.zaklad);
       k.dph = r2(k.dph + r.dph);
+      if (k.text !== r.text) k.text = zlucText(k.text, r.text);
     } else out.push({ ...r, zaklad: r2(r.zaklad), dph: r2(r.dph) });
   }
   return out.filter((r) => r.zaklad || r.dph);
@@ -411,11 +439,14 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
           : t(nast.radDoklady)),
     // Ručne zvolená na doklade → pokladňa dokladu → predvolená (pokladne.ts).
     pokladna: forma === "pokladna" ? (kodPokladneDokladu(d, nast) || null) : null,
+    popis: popisZPoznamky(d?.note),
     text:
+      textZNazvov(nazvyPoloziek(d?.items)) ||
       [t(d?.supplier_name), t(d?.document_number) ? `č. ${d.document_number}` : null]
         .filter(Boolean)
         .join(" ")
-        .slice(0, 240) || "Prijatý doklad",
+        .slice(0, 240) ||
+      "Prijatý doklad",
     poznamka: t(d?.note),
     intPoznamka: t(d?.int_poznamka),
     prenesenieDph: false,
@@ -509,11 +540,11 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     zakazka: p?.job_id ? (nast.zakazkyDokladov?.[String(p.job_id)] ?? null) : null,
     rad: t(p?.pohoda_rad) ?? t(nast.radPrijate),
     pokladna: null,
+    // Predmet → položky (aj z eFaktúry, keď doklad vlastné nemá) → „Faktúra č.“.
     text:
-      [t(p?.supplier_name), t(p?.invoice_number) ? `č. ${p.invoice_number}` : null]
-        .filter(Boolean)
-        .join(" ")
-        .slice(0, 240) || "Prijatá faktúra",
+      (!maPopisPrijatej(p) && Array.isArray(p?._nazvyPoloziekZdroja)
+        ? textZNazvov(p._nazvyPoloziekZdroja)
+        : "") || textPrijatejFaktury(p),
     poznamka: t(p?.note),
     intPoznamka: t(p?.int_poznamka),
     prenesenieDph: prenesenie,

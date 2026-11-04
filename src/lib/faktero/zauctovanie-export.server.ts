@@ -166,11 +166,21 @@ export async function nacitajNaUctovanie(
         .is("deleted_at", null),
     );
     const nast = await nastaveniaUctovania(supabase, company, rows);
-    return rows.map((p: any) => prijataNaUctovanie(p, nast));
+    // Dodávateľ bez IČO, DIČ či adresy (eFaktúra, import, OCR) — ako pri Pohode.
+    const { dodavateliaPrijatych } = await import("./blocek-pohoda.server");
+    const { sDoplnenymDodavatelom } = await import("./blocek-pohoda");
+    const doplnenie = await dodavateliaPrijatych(supabase, company.id, rows);
+    return rows.map((p: any) =>
+      prijataNaUctovanie(sDoplnenymDodavatelom(p, doplnenie[String(p.id)]), nast),
+    );
   }
   const rows = await poDavkach<any>(ids, (kus) =>
     supabase.from("expense_documents").select("*").eq("company_id", company.id).in("id", kus),
   );
   const nast = await nastaveniaUctovania(supabase, company, rows);
-  return rows.map((d: any) => blocekNaUctovanie(d, nast));
+  // Hotovostný bloček: adresa a DIČ dodávateľa, ktoré bloček v DB nemá — ako pri Pohode.
+  const { adresyDodavatelovBlockov } = await import("./blocek-pohoda.server");
+  const { sAdresouDodavatela } = await import("./blocek-pohoda");
+  const adresy = await adresyDodavatelovBlockov(supabase, company.id, rows);
+  return rows.map((d: any) => blocekNaUctovanie(sAdresouDodavatela(d, adresy), nast));
 }

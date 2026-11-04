@@ -251,6 +251,12 @@ export async function nastaveniaDokladov(
   {
     const b = await import("./blocek-pohoda.server");
     out.adresyDodavatelov = await b.adresyDodavatelovBlockov(supabase, company.id, doklady);
+    // Prijatá faktúra bez IČO, DIČ či adresy dodávateľa (eFaktúra, import, OCR).
+    out.dodavateliaPrijatych = await b.dodavateliaPrijatych(
+      supabase,
+      company.id,
+      doklady.filter((d) => d._typPohody && d._typPohody !== "danovyDokladKPlatbe"),
+    );
     out.cleneniaDph = await b.cleneniaDphFirmy(supabase, company.id);
   }
 

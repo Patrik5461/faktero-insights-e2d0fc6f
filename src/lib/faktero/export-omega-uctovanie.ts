@@ -28,6 +28,21 @@
 
 import { rozdelUcet, type DokladUctovania, type KodUctovania, type RiadokUctovania } from "./zauctovanie-export";
 import { kodPreDoklad } from "./uctovanie-agenda";
+import { textBlockuNaExport } from "./text-dokladu";
+
+/**
+ * Text dokladu do Omegy (stĺpec 41 hlavičky a text zápisov bez vlastného).
+ * Bloček: popis dokladu → názov účtovnej položky z číselníka (nikdy kód) →
+ * položky → dodávateľ s číslom; ostatné doklady `d.text` (`text-dokladu.ts`).
+ */
+export function textDokladuOmega(d: DokladUctovania, kody: Record<string, KodUctovania>): string {
+  if (d.agenda !== "doklad") return d.text;
+  return textBlockuNaExport({
+    poznamka: d.popis,
+    uctovnaPolozka: kodPreDoklad(kody, d.predkontacia, d)?.popis,
+    nahradny: d.text,
+  });
+}
 
 export type DruhOmega = "OF" | "OD" | "OPF" | "DF" | "DD" | "DPF" | "PD" | "ID";
 
@@ -263,6 +278,7 @@ export function buildOmegaUctovanie(opts: {
                 ? "B3"
                 : "B2";
 
+    const textDokladu = textDokladuOmega(d, kody);
     const zapisy: Zapis[] = [];
     let chyba: string | null = null;
     for (const r of d.riadky as RiadokUctovania[]) {
@@ -277,7 +293,7 @@ export function buildOmegaUctovanie(opts: {
       }
       const protiucet =
         druh === "PD" || druh === "ID" ? partner : (vystup ? kod?.ucetMd : kod?.ucetD) || partner;
-      const text = pole(r.text || d.text, 60);
+      const text = pole(r.text || textDokladu, 60);
       const kv = r.kv && r.kv !== "X" ? r.kv : r.kv === "X" ? "" : kvDokladu;
       const p = priehradka(r.sadzba);
       if (!p) {
@@ -417,7 +433,7 @@ export function buildOmegaUctovanie(opts: {
     if (druh === "PD") set(35, "-");
     set(36, pole(d.partner.iban));
     set(40, pole([d.poznamka, d.intPoznamka].filter(Boolean).join(" · ")));
-    set(41, pole(d.text, 60));
+    set(41, pole(textDokladu, 60));
     if (druh === "PD") set(43, pole(d.partner.nazov));
     const icDph = pole(d.partner.icDph, 50);
     if (/^[A-Z]{2}/i.test(icDph)) {

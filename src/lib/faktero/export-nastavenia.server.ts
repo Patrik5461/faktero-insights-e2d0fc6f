@@ -54,14 +54,13 @@ async function nacitajDoplnky(
   if (!company?.id) return out;
 
   const [popisy, partneri, ucty] = await Promise.all([
-    ex.textPrijate === "polozka"
-      ? supabase
-          .from("predkontacie")
-          .select("kod, popis")
-          .eq("company_id", company.id)
-          .eq("druh", "predkontacia")
-          .eq("aktivne", true)
-      : Promise.resolve({ data: null }),
+    // Popis predkontácie — text dokladu „názov účtovnej položky“ aj text bločku bez popisu.
+    supabase
+      .from("predkontacie")
+      .select("kod, popis")
+      .eq("company_id", company.id)
+      .eq("druh", "predkontacia")
+      .eq("aktivne", true),
     ex.partneri === "parovat"
       ? vsetkoAkoData((zac, kon) =>
           supabase
