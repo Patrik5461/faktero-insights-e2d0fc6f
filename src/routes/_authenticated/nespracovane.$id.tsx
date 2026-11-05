@@ -894,15 +894,15 @@ function Detail() {
                       {u.rozpis.map((r, i) => (
                         <tr key={i}>
                           <td className="py-1 pr-2">
-                            <VolbaSadzbyDph riadok={r} sadzby={sadzby} onChange={(z) => setRozpis(i, z)} className="w-40 max-w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm" />
+                            <VolbaSadzbyDph riadok={r} sadzby={sadzby} onChange={(z) => setRozpis(i, z)} className="w-24 max-w-full rounded-md border border-input bg-background px-1.5 py-1.5 text-sm sm:w-40 sm:px-2" />
                           </td>
                           <td className="py-1 pr-2">
                             <DesatinnePole hodnota={r.zaklad} naZmenu={(z) => {
                               setRozpis(i, { zaklad: z, dph: Math.round(z * Number(r.sadzba)) / 100 });
-                            }} className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
+                            }} className="w-full min-w-[5.5rem] rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
                           </td>
                           <td className="py-1 pr-2">
-                            <DesatinnePole hodnota={r.dph} naZmenu={(v) => setRozpis(i, { dph: v })} className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
+                            <DesatinnePole hodnota={r.dph} naZmenu={(v) => setRozpis(i, { dph: v })} className="w-full min-w-[5.5rem] rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
                           </td>
                           <td className="py-1 text-right">
                             <button type="button" aria-label={t("Odstrániť sadzbu")} onClick={() => set({ rozpis: u.rozpis.filter((_, j) => j !== i), celkom: null })} className="rounded p-1 text-muted-foreground hover:bg-secondary">

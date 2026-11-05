@@ -64,8 +64,11 @@ export const STYL_SKUPINY: Record<
   polozky: { farba: "var(--chart-2)", ciara: "dotted" },
 };
 
-/** Štítok priamo pri rámčeku — rozpis DPH vždy (sadzba a kategória), ostatné len pri aktívnom. */
-const STITOK_VZDY: SkupinaZvyraznenia[] = ["dph"];
+/*
+  Štítok pri rámčeku len pri aktívnom údaji — stále štítky rozpisu DPH (9 px) prekrývali
+  čísla zmenšeného dokladu, na mobile celé stĺpce rekapitulácie (kontrola 5. 11. 2026).
+  Sadzbu a kategóriu ukáže bublina a legenda.
+*/
 
 const KLUC_ULOZENIA = "faktero.nespracovane.zvyraznenie";
 
@@ -305,7 +308,7 @@ export function ZvyrazneniaStrany({
           const akt = silne(z);
           const { farba, ciara } = STYL_SKUPINY[z.skupina];
           const stitok =
-            j === 0 && z.stitok && (akt || STITOK_VZDY.includes(z.skupina))
+            j === 0 && z.stitok && akt
               ? t(z.stitok, z.stitokParam)
               : null;
           return (
