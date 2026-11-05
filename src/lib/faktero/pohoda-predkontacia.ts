@@ -7,18 +7,22 @@
   není uveden typ předkontace, je nastaveno 'Nevím'“) a položkám nič.
 
   Firmy prenesené z Doklada (PALIERA) majú v číselníku predkontácie pomenované
-  účtami MD/D („501000 325000“, zdroj `subor`) — Doklado tak predkontácie
-  zobrazuje, Pohoda ich tak nepozná. Takýto kód sa preto pred odoslaním
-  preloží na skratku:
+  účtami MD/D („501000 325000“, zdroj `subor`). Skratka predkontácie v Pohode
+  MÔŽE byť aj dvojica účtov — v číselníkoch načítaných z Pohody (BÝVAJLEPŠIE,
+  MaxiTicket) také skratky naozaj sú —, preto sa kód z číselníka firmy
+  nezahadzuje (overené 5. 11. 2026; zahodenie by PALIERE vzalo predkontáciu
+  z väčšiny dokladov). Poradie:
 
-   1. kód, ktorý je v číselníku firmy zo zdroja Pohoda, ide tak, ako je
-      (Pohoda môže mať aj predkontáciu nazvanú „311000 602100“);
-   2. inak predkontácia z číselníka Pohody s rovnakými účtami MD a D — ak je
+   1. kód, ktorý je v číselníku firmy zo zdroja Pohoda, ide tak, ako je;
+   2. ručná tabuľka v nastaveniach exportu (Predkontácie → Export →
+      Skratky predkontácií v Pohode) — výslovná voľba firmy má prednosť;
+   3. predkontácia z číselníka Pohody s rovnakými účtami MD a D — ak je
       práve jedna;
-   3. inak tabuľka v nastaveniach exportu (Predkontácie → Export →
-      Skratky predkontácií v Pohode);
-   4. inak sa predkontácia NEPOŠLE (Pohoda dá „Neviem“) a kontrola pred
-      exportom na to upozorní — dvojica účtov by v Pohode aj tak nič nenašla.
+   4. kód, ktorý je v číselníku firmy z iného zdroja (súbor/Doklado, ručne),
+      ide tak, ako je — v Pohode musí existovať predkontácia s touto skratkou
+      v agende dokladu (inak Pohoda dá „Neviem“);
+   5. inak (dvojica účtov, ktorá nie je v žiadnom číselníku) sa predkontácia
+      NEPOŠLE a kontrola pred exportom na to upozorní.
 
   Kód, ktorý dvojicou účtov nie je („1Fp“, „PHM“, „Rozúčtovať“), ide ako
   doteraz — firma ho zadala ako skratku.
@@ -31,6 +35,8 @@ export type MapaPredkontaciiPohody = {
   podlaUctov: Record<string, string[]>;
   /** Ručná tabuľka firmy: kód Faktera („501000 325000“) → skratka v Pohode. */
   rucne: Record<string, string>;
+  /** Kódy z číselníka firmy z iného zdroja než Pohoda (súbor/Doklado, ručne). Voliteľné kvôli starším mapám. */
+  ostatne?: string[];
 };
 
 const t = (v: unknown) => String(v ?? "").trim();
@@ -52,10 +58,16 @@ export function mapaPredkontacii(
   rucne?: Record<string, unknown> | null,
 ): MapaPredkontaciiPohody {
   const pohoda = new Set<string>();
+  const ostatne = new Set<string>();
   const podlaUctov: Record<string, string[]> = {};
   for (const r of ciselnik ?? []) {
     if (r.druh && r.druh !== "predkontacia") continue;
-    if (r.aktivne === false || r.zdroj !== "pohoda") continue;
+    if (r.aktivne === false) continue;
+    if (r.zdroj !== "pohoda") {
+      const kodIny = t(r.kod);
+      if (kodIny) ostatne.add(kodIny);
+      continue;
+    }
     const kod = t(r.kod);
     if (!kod) continue;
     pohoda.add(kod);
@@ -65,7 +77,7 @@ export function mapaPredkontacii(
     const k = `${md} ${d}`;
     if (!(podlaUctov[k] ??= []).includes(kod)) podlaUctov[k].push(kod);
   }
-  return { pohoda: [...pohoda], podlaUctov, rucne: ocistiRucne(rucne) };
+  return { pohoda: [...pohoda], podlaUctov, rucne: ocistiRucne(rucne), ostatne: [...ostatne] };
 }
 
 /** Ručná tabuľka bez prázdnych riadkov, kľúče v tvare „MD D“. */
@@ -84,7 +96,7 @@ export type SkratkaPredkontacie = {
   /** Čo ide do `typ:ids`; prázdne = predkontácia sa nepošle. */
   skratka: string;
   /** Odkiaľ skratka je. `chyba` = dvojica účtov bez skratky. */
-  zdroj: "kod" | "pohoda" | "ciselnik" | "nastavenia" | "chyba";
+  zdroj: "kod" | "pohoda" | "ciselnik" | "nastavenia" | "ciselnik_firmy" | "chyba";
 };
 
 /** Skratka predkontácie Pohody pre kód Faktera. */
@@ -93,11 +105,12 @@ export function skratkaPredkontacie(kod: unknown, mapa: MapaPredkontaciiPohody):
   if (!k) return { skratka: "", zdroj: "kod" };
   if (mapa.pohoda.includes(k)) return { skratka: k, zdroj: "pohoda" };
   const par = normParUctov(k);
+  const rucne = mapa.rucne[k] ?? (par ? mapa.rucne[par] : undefined);
+  if (rucne) return { skratka: rucne, zdroj: "nastavenia" };
   if (!par) return { skratka: k, zdroj: "kod" };
   const zCiselnika = mapa.podlaUctov[par] ?? [];
   if (zCiselnika.length === 1) return { skratka: zCiselnika[0]!, zdroj: "ciselnik" };
-  const rucne = mapa.rucne[par] ?? mapa.rucne[k];
-  if (rucne) return { skratka: rucne, zdroj: "nastavenia" };
+  if (mapa.ostatne?.includes(k)) return { skratka: k, zdroj: "ciselnik_firmy" };
   return { skratka: "", zdroj: "chyba" };
 }
 
@@ -142,5 +155,5 @@ export function varovanieSkratky(cislo: unknown, chybajuce: string[]): string | 
   if (!chybajuce.length) return null;
   return `${t(cislo) || "?"} — predkontácia ${chybajuce
     .map((k) => `„${k}“`)
-    .join(", ")} je dvojica účtov, nie skratka predkontácie Pohody — doklad pôjde bez predkontácie (v Pohode „Neviem“); doplňte skratku v Predkontácie → Export → Skratky predkontácií v Pohode`;
+    .join(", ")} je dvojica účtov, ktorá nie je v číselníku predkontácií firmy ani Pohody — doklad pôjde bez predkontácie (v Pohode „Neviem“); doplňte skratku v Predkontácie → Export → Skratky predkontácií v Pohode`;
 }

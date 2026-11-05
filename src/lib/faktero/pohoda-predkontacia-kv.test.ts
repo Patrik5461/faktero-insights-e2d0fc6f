@@ -278,12 +278,19 @@ describe("A) 13721 — bloček kartou do Ostatných záväzkov", () => {
     expect(chybySchemy(xml, "inv", "invoice.xsd")).toEqual([]);
   });
 
-  it("bez skratky ide doklad bez predkontácie (nie s účtami) a kontrola to nahlási", () => {
+  it("bez skratky ide kód z číselníka firmy (Doklado) tak, ako je — PALIERA ho tak posielala", () => {
     const bez = buildPohodaExpensesXml({ company: firma, doklady: [blocek13721], nastavenia: nastaveniaPaliery(bezTabulky) });
-    expect(bez).not.toContain("<inv:accounting>");
+    expect(bez).toContain("<inv:accounting><typ:ids>501000 325000</typ:ids></inv:accounting>");
     expect(polozky(bez, "inv", "invoice").every((x) => ids(x, "classificationKVDPH") === "B3")).toBe(true);
+    expect(chybySchemy(bez, "inv", "invoice.xsd")).toEqual([]);
+  });
+
+  it("dvojica účtov mimo číselníka sa nepošle a kontrola to nahlási", () => {
+    const prazdna = mapaPredkontacii([], {});
+    const bez = buildPohodaExpensesXml({ company: firma, doklady: [blocek13721], nastavenia: nastaveniaPaliery(prazdna) });
+    expect(bez).not.toContain("<inv:accounting>");
     const surove = buildPohodaExpensesXml({ company: firma, doklady: [blocek13721], nastavenia: nastaveniaPaliery(null) });
-    expect(chybajuceSkratky(predkontacieVXml(surove), bezTabulky)).toEqual(["501000 325000"]);
+    expect(chybajuceSkratky(predkontacieVXml(surove), prazdna)).toEqual(["501000 325000"]);
     expect(chybySchemy(bez, "inv", "invoice.xsd")).toEqual([]);
   });
 
