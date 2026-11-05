@@ -299,6 +299,7 @@ export default {
   Kanál: "Kanal",
   Karta: "Karte",
   karta: "Karte",
+  kartou: "mit Karte",
   Kartou: "Mit Karte",
   Kategória: "Kategorie",
   "Keď by sa adresa dostala tam, kam nemá, dá sa nižšie":
@@ -571,6 +572,7 @@ export default {
   "Pretiahnite súbory sem alebo": "Dateien hierher ziehen oder",
   Prevod: "Überweisung",
   prevod: "Überweisung",
+  prevodom: "per Überweisung",
   Prevodom: "Per Überweisung",
   "prevodom (predvolené)": "per Überweisung (Standard)",
   "Prečíta doklad znova a doplní chýbajúce údaje (VS, IBAN, splatnosť, adresu). Vyplnené neprepíše.":

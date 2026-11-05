@@ -1629,9 +1629,20 @@ function DokladyPage() {
                               {t("zrušiť")}
                             </button>
                           </span>
-                        ) : r.payment_method === "hotovost" ? (
-                          // Hotovosť v banke nikdy nebude — pomlčka by tu vyzerala ako chýbajúci údaj.
-                          <span className="text-muted-foreground">{t("hotovosť")}</span>
+                        ) : r.payment_method === "hotovost" ||
+                          r.payment_method === "karta" ||
+                          r.payment_method === "prevod" ? (
+                          /*
+                            Bez spárovanej platby aspoň spôsob úhrady — pri karte a prevode bola
+                            pomlčka mätúca (vyzeralo to, že sa ukazuje len hotovosť).
+                          */
+                          <span className="text-muted-foreground">
+                            {t(
+                              ({ hotovost: "hotovosť", karta: "kartou", prevod: "prevodom" } as Record<string, string>)[
+                                r.payment_method
+                              ],
+                            )}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
