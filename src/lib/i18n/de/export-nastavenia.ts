@@ -144,4 +144,12 @@ export default {
     "Unter <0>Buchhaltung → Konverter Excel → Pohoda</0> laden Sie die Vorlage für Ausgangsrechnungen, Eingangsrechnungen oder Kassenbons herunter, füllen sie in Excel aus und laden sie wieder hoch. Faktero erstellt daraus einen XML-Stapel mit den Vorkontierungen und Einstellungen der Firma.",
   "Riadky s rovnakým číslom dokladu sa spoja do jedného dokladu. Do Faktera sa nič neukladá — XML sa len stiahne a naimportujete ho v Pohode.":
     "Zeilen mit derselben Belegnummer werden zu einem Beleg zusammengefasst. In Faktero wird nichts gespeichert — das XML wird nur heruntergeladen und Sie importieren es in Pohoda.",
+  "Skratky predkontácií v Pohode":
+    "Kürzel der Vorkontierungen in Pohoda",
+  "Pohoda pozná predkontáciu len podľa skratky (napr. 1Fp), nie podľa účtov. Ku každej predkontácii pomenovanej účtami doplňte skratku z Pohody (Účtovníctvo → Predkontácie). Bez skratky pôjde doklad bez predkontácie a kontrola pred exportom na to upozorní.":
+    "Pohoda erkennt eine Vorkontierung nur an ihrem Kürzel (z. B. 1Fp), nicht an den Konten. Ergänzen Sie zu jeder nach Konten benannten Vorkontierung das Kürzel aus Pohoda (Buchhaltung → Vorkontierungen). Ohne Kürzel wird der Beleg ohne Vorkontierung übertragen und die Prüfung vor dem Export weist darauf hin.",
+  "skratka":
+    "Kürzel",
+  "Skratka v Pohode pre":
+    "Kürzel in Pohoda für",
 };

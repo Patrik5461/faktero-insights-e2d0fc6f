@@ -10,6 +10,8 @@
   párovanie s bankou, sťahovanie pohybov aj hromadný príkaz.
 */
 
+import { ocistiRucne } from "./pohoda-predkontacia";
+
 /** Ktorý dátum ide do „Dátumu zápisu" prijatého dokladu (Pohoda `date`). */
 export type DatumZapisu = "vyhotovenie" | "dodanie" | "dorucenie";
 /**
@@ -44,6 +46,12 @@ export type NastaveniaExportu = {
   /** Doklad bez iných položiek dostane položky z rozpisu DPH (po jednej na sadzbu). */
   polozkyZRozpisu: boolean;
   nazovOdpoctu: NazovOdpoctu;
+  /**
+   * Skratky predkontácií v Pohode pre kódy Faktera, ktoré sú dvojicou účtov
+   * („501000 325000“ → „1Fp“). Pohoda pozná predkontáciu len podľa skratky
+   * (`pohoda-predkontacia.ts`). Prázdne = len to, čo nájde číselník Pohody.
+   */
+  skratkyPredkontacii: Record<string, string>;
 };
 
 export const PREDVOLENE_EXPORTU: NastaveniaExportu = {
@@ -57,6 +65,7 @@ export const PREDVOLENE_EXPORTU: NastaveniaExportu = {
   dokladKPlatbe: "interne",
   polozkyZRozpisu: false,
   nazovOdpoctu: "doklad",
+  skratkyPredkontacii: {},
 };
 
 /** Povolené hodnoty každej voľby — aj pre validáciu pri ukladaní. */
@@ -70,7 +79,10 @@ export const MOZNOSTI_EXPORTU = {
   partneri: ["nepridavat", "parovat"],
   dokladKPlatbe: ["interne", "vydane"],
   nazovOdpoctu: ["doklad", "sadzba", "doklad_sadzba"],
-} as const satisfies Record<Exclude<keyof NastaveniaExportu, "polozkyZRozpisu">, readonly string[]>;
+} as const satisfies Record<
+  Exclude<keyof NastaveniaExportu, "polozkyZRozpisu" | "skratkyPredkontacii">,
+  readonly string[]
+>;
 
 const jeden = <T extends string>(v: unknown, povolene: readonly T[], predvolene: T): T =>
   povolene.includes(v as T) ? (v as T) : predvolene;
@@ -95,6 +107,7 @@ export function nastaveniaExportu(v: unknown): NastaveniaExportu {
     dokladKPlatbe: jeden(x.dokladKPlatbe, m.dokladKPlatbe, p.dokladKPlatbe),
     polozkyZRozpisu: typeof x.polozkyZRozpisu === "boolean" ? x.polozkyZRozpisu : p.polozkyZRozpisu,
     nazovOdpoctu: jeden(x.nazovOdpoctu, m.nazovOdpoctu, p.nazovOdpoctu),
+    skratkyPredkontacii: ocistiRucne(x.skratkyPredkontacii as Record<string, unknown> | null),
   };
 }
 

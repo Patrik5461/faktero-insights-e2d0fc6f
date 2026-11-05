@@ -232,7 +232,7 @@ describe("text, členenie a položky", () => {
     ).toBe(null);
   });
 
-  it("položka: vlastné kódy, inak dokladu; KV len s DPH a mimo nezahŕňať", () => {
+  it("položka: vlastné kódy, inak dokladu; KV s DPH aj pri PN (5. 11. 2026), nie pri UN", () => {
     expect(
       kodyPolozkyBlocku({
         polozka: { vat_rate: 23 },
@@ -256,7 +256,10 @@ describe("text, členenie a položky", () => {
         clenenie: "PD",
         kv: "B3",
       }),
-    ).toEqual({ predkontacia: "518", clenenie: "PN", kv: "" });
+    ).toEqual({ predkontacia: "518", clenenie: "PN", kv: "B3" });
+    expect(
+      kodyPolozkyBlocku({ polozka: { vat_rate: 23, clenenie: "UN" }, predkontacia: "501", clenenie: "PD", kv: "B3" }).kv,
+    ).toBe("");
   });
 
   it("doplnenie má bloček v hotovosti aj kartou (nie prevod, faktúra ani vyúčtovanie)", () => {

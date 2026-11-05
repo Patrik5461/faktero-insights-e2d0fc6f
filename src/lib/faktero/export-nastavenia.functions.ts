@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { MOZNOSTI_EXPORTU, MOZNOSTI_TEXTU_PRIJEMCU } from "./export-nastavenia";
+import { ocistiRucne } from "./pohoda-predkontacia";
 
 /*
   Uloženie nastavení exportu do účtovníctva a nastavení banky do
@@ -28,6 +29,8 @@ const exportSchema = z
     dokladKPlatbe: z.enum(MOZNOSTI_EXPORTU.dokladKPlatbe),
     polozkyZRozpisu: z.boolean(),
     nazovOdpoctu: z.enum(MOZNOSTI_EXPORTU.nazovOdpoctu),
+    // Kód Faktera (dvojica účtov) → skratka predkontácie v Pohode (max. 19 znakov).
+    skratkyPredkontacii: z.record(z.string().max(40), z.string().trim().max(19)),
   })
   .partial();
 
@@ -65,7 +68,15 @@ export const ulozNastaveniaUctovaniaFn = createServerFn({ method: "POST" })
       any
     >;
     const nove: Record<string, any> = { ...un };
-    if (data.export) nove.export = { ...(un.export ?? {}), ...data.export };
+    if (data.export)
+      nove.export = {
+        ...(un.export ?? {}),
+        ...data.export,
+        // Celá tabuľka skratiek sa nahrádza (zmazaný riadok má zmiznúť).
+        ...(data.export.skratkyPredkontacii
+          ? { skratkyPredkontacii: ocistiRucne(data.export.skratkyPredkontacii) }
+          : {}),
+      };
     if (data.banka) nove.banka = { ...(un.banka ?? {}), ...data.banka };
     const { data: upd, error } = await supabase
       .from("companies")

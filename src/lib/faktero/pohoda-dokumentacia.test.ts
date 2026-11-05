@@ -349,8 +349,12 @@ describe("členenie KV DPH (príručka SK: prázdne pole = doklad do KV nevstúp
     const kody = [...xml.matchAll(/Item>[\s\S]*?<\/\w+:\w+Item>/g)].map(
       (m) => /classificationKVDPH><typ:ids>([^<]+)</.exec(m[0])?.[1] ?? null,
     );
-    // Časť s členením „nezahrnovať do priznania“ (PN) do KV nepatrí.
-    expect(kody).toEqual(["B3", null]);
+    /*
+      Aj časť s členením PN nesie KV dokladu (Patrik 5. 11. 2026: v Pohode
+      inak prázdne Čl.KV DPH) — členenie DPH a KV sú v Pohode nezávislé,
+      výnimky pri `kvPolozkyPrePohodu` (pohoda-kv.ts).
+    */
+    expect(kody).toEqual(["B3", "B3"]);
   });
 });
 

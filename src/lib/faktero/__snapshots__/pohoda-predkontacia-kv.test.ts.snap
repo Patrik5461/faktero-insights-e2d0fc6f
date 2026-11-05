@@ -1,0 +1,341 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`A) 13721 — bloček kartou do Ostatných záväzkov > snímka XML 1`] = `
+"<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="54613124" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="7e391040-fa9f-41ab-82d9-a061acad0162" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>commitment</inv:invoiceType>
+        <inv:symVar>13721</inv:symVar>
+        <inv:symPar>13721</inv:symPar>
+        <inv:originalDocument>13721</inv:originalDocument>
+        <inv:date>2026-10-22</inv:date>
+        <inv:dateTax>2026-10-22</inv:dateTax>
+        <inv:dateDelivery>2026-10-22</inv:dateDelivery>
+        <inv:text>Viac. kva. b. 400g, Nite neúd., Ovčí zákvas 0,5l a ďalšie</inv:text>
+        <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Slovenský potravinársky priemysel a.s .</typ:company>
+            <typ:ico>47793155</typ:ico>
+            <typ:icDph>SK2024133650</typ:icDph>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>creditcard</typ:paymentType></inv:paymentType>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Viac. kva. b. 400g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>third</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>2.85</typ:unitPrice>
+            <typ:price>2.85</typ:price>
+            <typ:priceVAT>0.14</typ:priceVAT>
+            <typ:priceSum>2.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Nite neúd.</inv:text>
+          <inv:quantity>0.272</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>35.26</typ:unitPrice>
+            <typ:price>9.59</typ:price>
+            <typ:priceVAT>1.81</typ:priceVAT>
+            <typ:priceSum>11.40</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Ovčí zákvas 0,5l</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>third</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>4.75</typ:unitPrice>
+            <typ:price>4.75</typ:price>
+            <typ:priceVAT>0.24</typ:priceVAT>
+            <typ:priceSum>4.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Kozí kefír 0,5l</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>third</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>2.85</typ:unitPrice>
+            <typ:price>2.85</typ:price>
+            <typ:priceVAT>0.14</typ:priceVAT>
+            <typ:priceSum>2.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Kozí camembert 100g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>4.19</typ:unitPrice>
+            <typ:price>4.19</typ:price>
+            <typ:priceVAT>0.80</typ:priceVAT>
+            <typ:priceSum>4.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Parmareg.maslo 200g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>third</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>2.85</typ:unitPrice>
+            <typ:price>2.85</typ:price>
+            <typ:priceVAT>0.14</typ:priceVAT>
+            <typ:priceSum>2.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Papierová taška malá</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>0.56</typ:unitPrice>
+            <typ:price>0.56</typ:price>
+            <typ:priceVAT>0.13</typ:priceVAT>
+            <typ:priceSum>0.69</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Pros.San.Daniele.90g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>5.87</typ:unitPrice>
+            <typ:price>5.87</typ:price>
+            <typ:priceVAT>1.12</typ:priceVAT>
+            <typ:priceSum>6.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Los.úd.čier.kor.100g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>6.71</typ:unitPrice>
+            <typ:price>6.71</typ:price>
+            <typ:priceVAT>1.28</typ:priceVAT>
+            <typ:priceSum>7.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Ovčie nite cca 250g</inv:text>
+          <inv:quantity>0.25</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>30.20</typ:unitPrice>
+            <typ:price>7.55</typ:price>
+            <typ:priceVAT>1.43</typ:priceVAT>
+            <typ:priceSum>8.98</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Cocofir banan 250ml</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>4.19</typ:unitPrice>
+            <typ:price>4.19</typ:price>
+            <typ:priceVAT>0.80</typ:priceVAT>
+            <typ:priceSum>4.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Prot.tyč.jahoda65g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>2.43</typ:unitPrice>
+            <typ:price>2.43</typ:price>
+            <typ:priceVAT>0.56</typ:priceVAT>
+            <typ:priceSum>2.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Prot.pistácia 65g</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>2.43</typ:unitPrice>
+            <typ:price>2.43</typ:price>
+            <typ:priceVAT>0.56</typ:priceVAT>
+            <typ:priceSum>2.99</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>2Bk</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>13.30</typ:price3>
+          <typ:price3VAT>0.66</typ:price3VAT>
+          <typ:priceLow>38.10</typ:priceLow>
+          <typ:priceLowVAT>7.24</typ:priceLowVAT>
+          <typ:priceHigh>5.42</typ:priceHigh>
+          <typ:priceHighVAT>1.25</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>"
+`;
+
+exports[`B) 11665 — PHM v hotovosti pomerom 50/30/20 % > snímka XML 1`] = `
+"<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="54613124" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="06eb6d19-550e-4ea2-96af-960baa07edfe" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>expense</vch:voucherType>
+        <vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>
+        <vch:symPar>11665</vch:symPar>
+        <vch:originalDocument>11665</vch:originalDocument>
+        <vch:date>2026-10-26</vch:date>
+        <vch:dateTax>2026-10-26</vch:dateTax>
+        <vch:text>OMV Diesel</vch:text>
+        <vch:accounting><typ:ids>Rozúčtovať</typ:ids></vch:accounting>
+        <vch:classificationKVDPH><typ:ids>B3</typ:ids></vch:classificationKVDPH>
+        <vch:partnerIdentity>
+          <typ:address>
+            <typ:company>OMV Slovensko, s.r.o.</typ:company>
+            <typ:ico>00604381</typ:ico>
+            <typ:icDph>SK2020491407</typ:icDph>
+          </typ:address>
+        </vch:partnerIdentity>
+      </vch:voucherHeader>
+      <vch:voucherDetail>
+        <vch:voucherItem>
+          <vch:text>OMV Diesel · 50 %</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>high</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>54.95</typ:unitPrice>
+            <typ:price>54.95</typ:price>
+            <typ:priceVAT>12.64</typ:priceVAT>
+            <typ:priceSum>67.59</typ:priceSum>
+          </vch:homeCurrency>
+          <vch:accounting><typ:ids>1PHM</typ:ids></vch:accounting>
+          <vch:classificationVAT><typ:ids>PD</typ:ids></vch:classificationVAT>
+          <vch:classificationKVDPH><typ:ids>B3</typ:ids></vch:classificationKVDPH>
+        </vch:voucherItem>
+        <vch:voucherItem>
+          <vch:text>OMV Diesel · 30 %</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>high</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>32.97</typ:unitPrice>
+            <typ:price>32.97</typ:price>
+            <typ:priceVAT>7.58</typ:priceVAT>
+            <typ:priceSum>40.55</typ:priceSum>
+          </vch:homeCurrency>
+          <vch:accounting><typ:ids>2PHM</typ:ids></vch:accounting>
+          <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
+          <vch:classificationKVDPH><typ:ids>B3</typ:ids></vch:classificationKVDPH>
+        </vch:voucherItem>
+        <vch:voucherItem>
+          <vch:text>OMV Diesel · 20 %</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>high</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>21.97</typ:unitPrice>
+            <typ:price>21.97</typ:price>
+            <typ:priceVAT>5.05</typ:priceVAT>
+            <typ:priceSum>27.02</typ:priceSum>
+          </vch:homeCurrency>
+          <vch:accounting><typ:ids>2PHM</typ:ids></vch:accounting>
+          <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
+          <vch:classificationKVDPH><typ:ids>B3</typ:ids></vch:classificationKVDPH>
+        </vch:voucherItem>
+      </vch:voucherDetail>
+      <vch:voucherSummary>
+        <vch:roundingVAT>none</vch:roundingVAT>
+        <vch:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>109.89</typ:priceHigh>
+          <typ:priceHighVAT>25.27</typ:priceHighVAT>
+          <typ:round><typ:priceRound>-0.01</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>
+</dat:dataPack>"
+`;

@@ -10,6 +10,23 @@ import {
 } from "@/lib/faktero/export-nastavenia";
 import { ulozNastaveniaUctovaniaFn } from "@/lib/faktero/export-nastavenia.functions";
 import { otlacok } from "@/lib/faktero/formular-z-firmy";
+import {
+  jeParUctov,
+  mapaPredkontacii,
+  normParUctov,
+  skratkaPredkontacie,
+} from "@/lib/faktero/pohoda-predkontacia";
+
+/** Riadok číselníka predkontácií (stránka Predkontácie). */
+type KodCiselnika = {
+  druh: string;
+  kod: string;
+  popis: string | null;
+  zdroj: string;
+  ucet_md: string | null;
+  ucet_d: string | null;
+  aktivne: boolean;
+};
 
 type Moznost = [string, string];
 
@@ -64,10 +81,13 @@ const ODPOCET_ZALOHY: Moznost[] = [
 export function NastaveniaExportu({
   companyId,
   firma,
+  predkontacie,
   onUlozene,
 }: {
   companyId: string;
   firma: Record<string, any>;
+  /** Číselník firmy — pre tabuľku skratiek predkontácií v Pohode. */
+  predkontacie?: KodCiselnika[] | null;
   onUlozene?: () => void;
 }) {
   const { t } = useT();
@@ -197,6 +217,12 @@ export function NastaveniaExportu({
         )}
       </fieldset>
 
+      <SkratkyPredkontacii
+        predkontacie={predkontacie ?? []}
+        hodnoty={n.skratkyPredkontacii}
+        onZmena={(skratkyPredkontacii) => setN({ ...n, skratkyPredkontacii })}
+      />
+
       <div className="mt-4 flex justify-end">
         <button
           onClick={ulozit}
@@ -208,5 +234,81 @@ export function NastaveniaExportu({
         </button>
       </div>
     </section>
+  );
+}
+
+/**
+ * Skratky predkontácií v Pohode pre kódy, ktoré sú dvojicou účtov
+ * („501000 325000“ z Doklada či zo súboru). Pohoda predkontáciu pozná len
+ * podľa skratky — bez nej by doklad dostal „Neviem“. Kód, ktorý číselník
+ * Pohody preloží sám (rovnaké účty MD/D), sa ukáže ako návrh.
+ */
+function SkratkyPredkontacii({
+  predkontacie,
+  hodnoty,
+  onZmena,
+}: {
+  predkontacie: KodCiselnika[];
+  hodnoty: Record<string, string>;
+  onZmena: (v: Record<string, string>) => void;
+}) {
+  const { t } = useT();
+  const predk = predkontacie.filter((r) => r.druh === "predkontacia");
+  const mapa = mapaPredkontacii(predk, {});
+  const kody = [
+    ...new Set([
+      ...predk
+        .filter((r) => r.aktivne !== false && r.zdroj !== "pohoda" && jeParUctov(r.kod))
+        .map((r) => normParUctov(r.kod) ?? r.kod),
+      ...Object.keys(hodnoty),
+    ]),
+  ].sort();
+  if (!kody.length) return null;
+  const popis = (kod: string) =>
+    predk.find((r) => (normParUctov(r.kod) ?? r.kod) === kod && r.popis)?.popis ?? "";
+  return (
+    <fieldset className="mt-4 rounded-lg border border-border p-3 sm:p-4">
+      <legend className="px-1 text-sm font-semibold">{t("Skratky predkontácií v Pohode")}</legend>
+      <p className="max-w-prose text-xs text-muted-foreground">
+        {t(
+          "Pohoda pozná predkontáciu len podľa skratky (napr. 1Fp), nie podľa účtov. Ku každej predkontácii pomenovanej účtami doplňte skratku z Pohody (Účtovníctvo → Predkontácie). Bez skratky pôjde doklad bez predkontácie a kontrola pred exportom na to upozorní.",
+        )}
+      </p>
+      {mapa.pohoda.length ? (
+        <datalist id="skratky-pohody">
+          {mapa.pohoda.map((k) => (
+            <option key={k} value={k} />
+          ))}
+        </datalist>
+      ) : null}
+      <div className="mt-3 grid gap-2">
+        {kody.map((kod) => {
+          const navrh = skratkaPredkontacie(kod, mapa);
+          return (
+            <label key={kod} className="grid min-w-0 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
+              <span className="min-w-0 text-sm">
+                <span className="font-mono">{kod}</span>
+                {popis(kod) ? <span className="text-muted-foreground"> · {popis(kod)}</span> : null}
+              </span>
+              <input
+                value={hodnoty[kod] ?? ""}
+                maxLength={19}
+                list={mapa.pohoda.length ? "skratky-pohody" : undefined}
+                placeholder={navrh.zdroj === "ciselnik" ? navrh.skratka : t("skratka")}
+                aria-label={`${t("Skratka v Pohode pre")} ${kod}`}
+                onChange={(e) => {
+                  const v = { ...hodnoty };
+                  const s = e.target.value.trim();
+                  if (s) v[kod] = e.target.value;
+                  else delete v[kod];
+                  onZmena(v);
+                }}
+                className="block w-full rounded-md border border-input bg-background px-2 py-1.5 font-mono text-sm"
+              />
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }

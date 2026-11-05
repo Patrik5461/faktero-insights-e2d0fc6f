@@ -17,7 +17,8 @@
 */
 import { nazvyPoloziek, textZNazvov } from "./text-dokladu";
 import { odvodClenenia, type KodCiselnika } from "./auto-uctovanie";
-import { jeNeplatitel, jeNezahrnovat } from "./uctovanie-agenda";
+import { jeNeplatitel } from "./uctovanie-agenda";
+import { kvPolozkyPrePohodu } from "./pohoda-kv";
 
 /** Adresa dodávateľa tak, ako ide do `typ:address`. */
 export type AdresaDodavatela = {
@@ -169,8 +170,8 @@ export function clenenieBlockuPodlaZakona(o: {
 
 /**
  * Kódy položky bločku pre Pohodu: predkontácia (vlastná položky, inak
- * dokladu), členenie DPH (vlastné položky, inak dokladu) a členenie KV —
- * len položka s DPH a mimo „nezahŕňať“, rovnako ako riadok rozúčtovania.
+ * dokladu), členenie DPH (vlastné položky, inak dokladu) a členenie KV
+ * dokladu — aj pri PN, výnimky pri `kvPolozkyPrePohodu` (pohoda-kv.ts).
  */
 export function kodyPolozkyBlocku(o: {
   polozka: { predkontacia?: unknown; clenenie?: unknown; vat_rate?: unknown };
@@ -181,7 +182,7 @@ export function kodyPolozkyBlocku(o: {
   const predkontacia = t(o.polozka?.predkontacia) || t(o.predkontacia);
   const clenenie = t(o.polozka?.clenenie) || t(o.clenenie);
   const sDph = Math.abs(Number(o.polozka?.vat_rate ?? 0)) > 0;
-  const kv = sDph && !jeNezahrnovat(clenenie) ? t(o.kv) : "";
+  const kv = kvPolozkyPrePohodu({ cz: false, clenenie, dph: sDph ? 1 : 0, zdedene: t(o.kv) });
   return { predkontacia, clenenie, kv };
 }
 

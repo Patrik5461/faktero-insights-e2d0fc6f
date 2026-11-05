@@ -130,6 +130,15 @@ const sections: HelpSection[] = [
           tiež na stránke Predkontácie.
         </p>
         <p>
+          Pohoda pozná predkontáciu len podľa <strong>skratky</strong> (napr. <code>1Fp</code>), nie
+          podľa účtov. Ak máte predkontácie pomenované účtami (napr. <code>501000 325000</code> po
+          prechode z Doklada), Faktero ich preloží na skratku z číselníka Pohody s rovnakými účtami,
+          inak podľa tabuľky <strong>Skratky predkontácií v Pohode</strong> na stránke Predkontácie
+          (Export). Bez skratky pôjde doklad bez predkontácie a kontrola pred odovzdaním na to
+          upozorní. Položka „ako doklad“ dostane predkontáciu dokladu a každá položka aj členenie KV
+          DPH dokladu — aj s členením DPH PN.
+        </p>
+        <p>
           Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému
           doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.
         </p>

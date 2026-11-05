@@ -51,7 +51,8 @@ import {
   prekazkaVydanej,
 } from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
-import { kvPrijatehoPrePohodu, kvVystavenehoPrePohodu } from "./pohoda-kv";
+import { kvPolozkyPrePohodu, kvPrijatehoPrePohodu, kvVystavenehoPrePohodu } from "./pohoda-kv";
+import { predkontacieNaSkratky, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { isAccountingDocument } from "./uctovny-doklad";
 import { jeNezahrnovat } from "./uctovanie-agenda";
 import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
@@ -365,6 +366,12 @@ export type PohodaNastavenia = {
   dodavateliaPrijatych?: Record<string, Parameters<typeof sDoplnenymDodavatelom>[1]>;
   /** Číselník členení DPH firmy (z Pohody) — pre členenie bločku podľa zákona. */
   cleneniaDph?: KodCiselnika[];
+  /**
+   * Preklad predkontácií na skratky Pohody (`pohoda-predkontacia.ts`) —
+   * dvojica účtov „501000 325000“ → skratka z číselníka Pohody alebo
+   * z nastavení exportu. Bez mapy ide kód tak, ako je.
+   */
+  mapaPredkontacii?: MapaPredkontaciiPohody | null;
 };
 
 /** Nastavenia exportu pre builder — z `nastavenia.export`, inak z firmy. */
@@ -421,14 +428,22 @@ const SCHEMY: Record<string, string> = {
 };
 
 /** Obálka `dataPack` okolo hotových položiek. */
-function obalka(opts: { ico: unknown; note: string; prefixy: string[]; entries: string }): string {
+function obalka(opts: {
+  ico: unknown;
+  note: string;
+  prefixy: string[];
+  entries: string;
+  /** Nastavenia s mapou predkontácií — dvojice účtov sa preložia na skratky Pohody. */
+  nastavenia?: PohodaNastavenia | null;
+}): string {
+  const entries = predkontacieNaSkratky(opts.entries, opts.nastavenia?.mapaPredkontacii);
   const xmlns = opts.prefixy
     .map((p) => `\n  xmlns:${p}="http://www.stormware.cz/schema/version_2/${SCHEMY[p]}"`)
     .join("");
   return `<?xml version="1.0" encoding="utf-8"?>
 <dat:dataPack id="${ID_BALIKA}" ico="${esc(opts.ico ?? "")}" application="Faktero" version="2.0" note="${esc(opts.note)}"
   xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"${xmlns}
-  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${opts.entries}
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
 </dat:dataPack>`;
 }
 
@@ -622,6 +637,7 @@ export function buildPohodaInvoiceXml(opts: {
   povodneCisla?: Record<string, string>;
 }): string {
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Export z Faktero",
     prefixy: opts.invoices.some(({ invoice }) => String(invoice.type) === "advance_payment") ? ["inv", "int"] : ["inv"],
@@ -893,10 +909,13 @@ export function polozkyFaktur(opts: {
           `\n          </inv:intrastatItem>`
         );
       };
-      const kodyPolozky = (it: ItemRow) => {
-        const pk = poPolozkach
-          ? String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna
-          : "";
+      const kodyPolozky = (it: ItemRow, dphRiadku: unknown = (it as any).vat_amount) => {
+        /*
+          Predkontácia na každej položke účtovného dokladu — vlastná, inak
+          dokladu („ako doklad“ ide výslovne, Pohoda ju z hlavičky do položiek
+          nedoplní). Zálohová faktúra je bez predkontácie.
+        */
+        const pk = uctovny ? pkPolozky(it) : "";
         // Položka v prenesení na inak bežnej faktúre: členenie DPH pre prenesenie
         // a riadok kontrolného výkazu (SK A.2) / hlášení (CZ A.1) priamo na položke.
         const pdpRiadok = !invoice.reverse_charge && Boolean((it as any).prenesenie);
@@ -904,10 +923,21 @@ export function polozkyFaktur(opts: {
           ? ""
           : String((it as any).pohoda_clenenie_dph ?? "").trim() ||
             (pdpRiadok ? clenenieVydanejPdp(nastavenia, company as any) : "");
-        // KV DPH (SK A.2). CZ verzia element nemá — kontrolné hlásenie A.1 si
-        // Pohoda odvodí z členenia DPH položky.
-        const kvp =
-          cz || zalohova ? "" : String((it as any).kv_clenenie ?? "").trim() || (pdpRiadok ? "A2" : "");
+        /*
+          KV DPH na každej položke (len SK; CZ verzia element nemá — kontrolné
+          hlásenie si Pohoda odvodí z členenia DPH): vlastné, položka
+          v prenesení A.2, inak členenie KV faktúry. Výnimky (UN, oslobodené,
+          nedaňová položka) pri `kvPolozkyPrePohodu`.
+        */
+        const kvp = kvPolozkyPrePohodu({
+          cz: cz || zalohova,
+          vlastne: (it as any).kv_clenenie,
+          rucneDokladu: (invoice as any).kv_clenenie,
+          pdp: pdpRiadok ? "A2" : null,
+          clenenie: cl || clenenie,
+          dph: dphRiadku,
+          zdedene: kvHlavicka,
+        });
         /*
           Príznak prenesenia a kód tovaru na položke (invoice.xsd: `PDP` —
           „Příznak Přenesení daňové povinnosti (pouze pro Vydané faktury, Vydané
@@ -924,7 +954,7 @@ export function polozkyFaktur(opts: {
         return `${pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""}${
           cl ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>` : ""
         }${
-          kvp && kvp !== "X"
+          kvp
             ? `\n          <inv:classificationKVDPH><typ:ids>${esc(kvp)}</typ:ids></inv:classificationKVDPH>`
             : ""
         }${pdpPolozka ? `\n          <inv:PDP>true</inv:PDP>` : ""}${
@@ -957,7 +987,7 @@ export function polozkyFaktur(opts: {
             z,
             "            ",
           )}${elSuma("typ:priceVAT", d, "            ")}${elSuma("typ:priceSum", na2(z + d), "            ")}
-          </inv:${menaBlok}>${kodyPolozky(zdrojeKodov[i])}
+          </inv:${menaBlok}>${kodyPolozky(zdrojeKodov[i], r.dph)}
         </inv:invoiceItem>`;
             })
             .join("")
@@ -1260,6 +1290,7 @@ export function buildPohodaCashXml(opts: {
   nastavenia?: PohodaNastavenia;
 }): string {
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Pokladňa z Faktero",
     prefixy: ["vch"],
@@ -1415,6 +1446,7 @@ export function buildPohodaBankXml(opts: {
   nastavenia?: PohodaNastavenia;
 }): string {
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Bankový výpis z Faktero",
     prefixy: ["bnk"],
@@ -1545,6 +1577,7 @@ export function buildPohodaExpensesXml(opts: {
   // keď neprejde žiadny doklad, súbor nevznikne a volajúci to povie.
   if (!entries.trim()) return "";
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Prijaté doklady z Faktero",
     prefixy: ["inv", "vch", "int"],
@@ -1981,22 +2014,34 @@ export function polozkyDokladov(opts: {
           });
       /*
         Členenie KV DPH položky (len SK, nie zálohová). Pohoda ho z hlavičky do
-        položiek nevezme, tak ho nesie každá položka s daňou:
-        ručne zvolené na položke > „X“ (nezahŕňať) zvolené na doklade >
-        prenesenie (B1) > členenie dokladu (ručné, inak predvolené či podľa
-        zákona — B2, B3, C2…). Položka bez dane a „nezahŕňať do priznania“
-        (UN/PN) členenie nedostanú.
+        položiek nevezme, tak ho nesie KAŽDÁ položka — aj s členením DPH PN
+        (neodpočítateľná časť PHM 50/30/20 % patrí do B.3 s celým dokladom):
+        ručne zvolené na položke > „X“ zvolené na doklade > prenesenie (B1) >
+        členenie dokladu (ručné, inak predvolené či podľa zákona — B2, B3,
+        C2…). Výnimky sú opísané pri `kvPolozkyPrePohodu` (pohoda-kv.ts).
       */
       const rucneDokladu = String(d?.kv_clenenie ?? "").trim();
+      /*
+        Rozúčtovaný doklad, ktorého žiadny riadok s daňou nemá odpočet
+        (všetky „nezahŕňať do priznania“), do B.2/B.3 nepatrí rovnako ako
+        doklad s PN v hlavičke (`kvPrijatehoDokladu`).
+      */
+      const riadkySDanou = rozuctovany ? rozuct.filter((r) => Math.abs(Number(r.dph ?? 0)) >= 0.005) : [];
+      const bezOdpoctuVsetko =
+        riadkySDanou.length > 0 &&
+        riadkySDanou.every((r) => jeNezahrnovat(r.clenenie || clenenieJedno) && !String(r.kv ?? "").trim());
+      const kvDokladuPrePolozky = bezOdpoctuVsetko ? "" : kvAuto;
       const kvPolozky = (x: { kv?: unknown; pdp?: unknown; dph?: unknown }, cl: string | null | undefined): string => {
         if (cz || zalohovaPrijata) return "";
-        const vlastne = String(x?.kv ?? "").trim();
-        if (vlastne) return kv(vlastne);
-        if (rucneDokladu === "X") return "";
-        if (x?.pdp) return "B1";
-        if (Math.abs(Number(x?.dph ?? 0)) < 0.005) return "";
-        if (jeNezahrnovat(cl)) return "";
-        return kvAuto;
+        return kvPolozkyPrePohodu({
+          cz,
+          vlastne: x?.kv,
+          rucneDokladu,
+          pdp: x?.pdp ? "B1" : null,
+          clenenie: cl,
+          dph: x?.dph,
+          zdedene: kvDokladuPrePolozky,
+        });
       };
       /*
         Rozúčtovaný doklad: hlavička nesie členenie KV, keď ho majú všetky
@@ -2021,7 +2066,8 @@ export function polozkyDokladov(opts: {
           const cl = x.pdp ? clenenieprijatejPdp(nastavenia, cz) || x.clenenie : x.clenenie;
           // KV na položke s DPH — Pohoda ho z hlavičky do položiek nevezme (aj prijatá faktúra).
           const kvx = kvPolozky(x, cl);
-          const pk = rozuctovanePolozky ? kodPolozky(x) : x.predkontacia;
+          // Položka „ako doklad“ dostane predkontáciu dokladu výslovne — Pohoda ju do položiek sama nedoplní.
+          const pk = kodPolozky(x);
           return `
         <${p}:${koren}Item>${el(`${p}:text`, skrat(x.nazov, 90), "          ")}
           <${p}:quantity>${mnozstvoPohody(x.mnozstvo)}</${p}:quantity>${el(`${p}:unit`, skrat(x.mj, 10), "          ")}
@@ -2767,6 +2813,7 @@ export function buildPohodaMovementsXml(opts: {
   nastavenia?: PohodaNastavenia;
 }): string {
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Skladové pohyby z Faktero",
     prefixy: ["pri", "vyd"],
@@ -2808,6 +2855,7 @@ export function buildPohodaStockXml(opts: {
   nastavenia?: PohodaNastavenia;
 }): string {
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Skladové karty z Faktero",
     prefixy: ["stk", "ftr"],
@@ -2869,6 +2917,7 @@ export function buildPohodaDavkaXml(opts: {
       : "",
   ].join("");
   return obalka({
+    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Dávka z Faktero",
     prefixy: ["inv", "vch", "int", "adb", "stk", "con", "pri", "vyd", "ftr"],

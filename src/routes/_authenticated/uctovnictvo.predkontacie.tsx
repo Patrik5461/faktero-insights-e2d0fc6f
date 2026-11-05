@@ -182,7 +182,7 @@ function Stranka() {
             onUlozene={obnov}
             onPridat={() => setPridat((n) => n + 1)}
           />
-          <NastaveniaExportu companyId={companyId} firma={firma} onUlozene={obnov} />
+          <NastaveniaExportu companyId={companyId} firma={firma} predkontacie={zaznamy} onUlozene={obnov} />
           <Import companyId={companyId} firma={firma} onZmena={obnov} />
           <StavyAStitkyNastavenia companyId={companyId} />
         </div>

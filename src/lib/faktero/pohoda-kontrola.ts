@@ -17,6 +17,7 @@ import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
 import { kodPokladneDokladu } from "./pokladne";
 import { kvPrijatehoDokladu } from "./kv-urcenie";
+import { skratkaPredkontacie, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
 import { chybaUlozenehoRozuctovaniaVystavenej } from "./rozuctovanie-vystavenej";
@@ -583,7 +584,11 @@ function varovanieNeznamehoKodu(d: Riadok, nastavenia?: Riadok | null): string |
       kod(nastavenia?.predkontaciaPrijata),
     ...rozuctovanie.map((r) => kod(r?.predkontacia)),
   ].filter(Boolean);
-  const nezname = [...new Set(kody.filter((k) => !zname.includes(k) && !zavazkove.has(k)))];
+  // Dvojica účtov, ktorú export preloží na skratku (číselník Pohody, nastavenia exportu), je v poriadku.
+  const mapa = nastavenia?.mapaPredkontacii as MapaPredkontaciiPohody | null | undefined;
+  const prelozi = (k: string) =>
+    Boolean(mapa) && ["ciselnik", "nastavenia"].includes(skratkaPredkontacie(k, mapa!).zdroj);
+  const nezname = [...new Set(kody.filter((k) => !zname.includes(k) && !zavazkove.has(k) && !prelozi(k)))];
   if (!nezname.length) return null;
   const cislo = d?._povodneCislo || d?.document_number || "?";
   return `${cislo} — predkontácia ${nezname.map((k) => `„${k}“`).join(", ")} nie je v číselníku Pohody pre prijaté faktúry — Pohoda ju pri importe nenájde; vyberte kód z číselníka alebo ho v Pohode založte`;

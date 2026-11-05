@@ -74,3 +74,68 @@ export function kvPrijatehoPrePohodu(o: {
   // Nadobudnutie z EÚ samozdaní v Pohode interný doklad (B.1), faktúra ide bez členenia.
   return kvPrijatehoDokladu({ ...o, nadobudnutieDoB1: false });
 }
+
+/*
+  Členenie KV DPH na POLOŽKE dokladu (len SK).
+
+  Pohoda si členenie KV z hlavičky do položiek nevezme — položka bez neho
+  v kontrolnom výkaze chýba (pripomienka 5. 11. 2026: bloček OMV, PHM
+  50/30/20 %, položky s členením DPH PN mali v Pohode prázdne „Čl.KV DPH“).
+  Preto ho nesie každá položka: vlastné, inak zdedené z dokladu.
+
+  Členenie DPH a členenie KV sú v Pohode dve nezávislé polia (príručka
+  POHODA SK, Kontrolný výkaz DPH: „Do kontrolného výkazu vstupujú doklady,
+  ktoré … majú priradené príslušné členenie KV DPH“; číselník členení DPH
+  slovenskej Pohody — PN „Nezahrňovať do priznania DPH“, PB „Tuzemské plnenia
+  – bez nároku“ — o KV nehovorí nič). PN na časti dokladu (neodpočítateľná
+  časť PHM) teda KV neruší: B.2/B.3 uvádza celý základ a daň dokladu, odpočet
+  počíta Pohoda z členenia DPH. Či doklad do KV patrí vôbec, rozhoduje
+  hlavička (`kvPrijatehoDokladu`: celý doklad bez odpočtu do B.2/B.3 nepatrí).
+
+  Vedomé výnimky — položka KV nedostane:
+   - CZ Pohoda element nemá (kontrolné hlásenie odvodí z členenia DPH);
+   - „X“ (nezahŕňať do KV) zvolené na položke alebo na doklade;
+   - členenie DPH, ktoré do KV nepatrí z podstaty (`clenenieBezKv`): UN
+     (nezahŕňať do priznania pri vystavených), oslobodené plnenia UN…/RN…
+     (§ 65, § 67 — do KV sa neuvádzajú); UN§69 je prenesenie (A.2), to nie;
+   - nedaňová položka: bez DPH, keď doklad nie je v prenesení (A.2/B.1 sa
+     uvádzajú aj bez dane).
+*/
+
+/** Členenie DPH, ktoré Pohoda do kontrolného výkazu nezahŕňa. */
+export function clenenieBezKv(clenenie: unknown): boolean {
+  const k = String(clenenie ?? "").trim();
+  if (!k) return false;
+  if (/^UN§69/i.test(k)) return false;
+  return /^(UN|RN)/.test(k);
+}
+
+/** Sekcia KV v prenesení daňovej povinnosti (uvádza sa aj bez dane). */
+const kvPrenesenia = (kv: string) => /^(A2|B1|C1|C2B1)/i.test(kv);
+
+export function kvPolozkyPrePohodu(o: {
+  cz: boolean;
+  /** Vlastné členenie KV položky (ručne, z rozúčtovania). */
+  vlastne?: unknown;
+  /** Ručné členenie KV dokladu — „X“ vypne KV aj na položkách. */
+  rucneDokladu?: unknown;
+  /** Kód KV pre položku v prenesení (B1 prijatá, A2 vystavená), ak ním je. */
+  pdp?: string | null;
+  /** Členenie DPH položky. */
+  clenenie?: unknown;
+  /** DPH položky. */
+  dph?: unknown;
+  /** Členenie KV dokladu (hlavičky). */
+  zdedene: string;
+}): string {
+  if (o.cz) return "";
+  const vlastne = String(o.vlastne ?? "").trim();
+  if (vlastne) return vlastne.toUpperCase() === "X" ? "" : vlastne;
+  if (String(o.rucneDokladu ?? "").trim().toUpperCase() === "X") return "";
+  if (o.pdp) return o.pdp;
+  if (clenenieBezKv(o.clenenie)) return "";
+  const zdedene = String(o.zdedene ?? "").trim();
+  if (!zdedene || zdedene.toUpperCase() === "X") return "";
+  if (Math.abs(Number(o.dph ?? 0)) < 0.005 && !kvPrenesenia(zdedene)) return "";
+  return zdedene;
+}

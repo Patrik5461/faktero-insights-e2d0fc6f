@@ -10,6 +10,7 @@
 
 import { nastaveniaExportu, type NastaveniaExportu } from "./export-nastavenia";
 import { vsetkoAkoData } from "./strankovanie";
+import { mapaPredkontacii, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 
 type Klient = any;
 
@@ -18,6 +19,8 @@ export type DoplnkyExportu = {
   popisyPredkontacii?: Record<string, string>;
   partneriVPohode?: string[];
   bankaPodlaUctu?: Record<string, string>;
+  /** Preklad predkontácií (dvojíc účtov) na skratky Pohody. */
+  mapaPredkontacii?: MapaPredkontaciiPohody;
 };
 
 export async function doplnkyExportu(
@@ -57,7 +60,7 @@ async function nacitajDoplnky(
     // Popis predkontácie — text dokladu „názov účtovnej položky“ aj text bločku bez popisu.
     supabase
       .from("predkontacie")
-      .select("kod, popis")
+      .select("kod, popis, zdroj, ucet_md, ucet_d")
       .eq("company_id", company.id)
       .eq("druh", "predkontacia")
       .eq("aktivne", true),
@@ -78,6 +81,12 @@ async function nacitajDoplnky(
       .eq("company_id", company.id),
   ]);
 
+  /*
+    Skratky predkontácií Pohody: číselník z Pohody (rovnaké účty MD/D) a ručná
+    tabuľka z nastavení exportu. Mapa je vždy, keď sa číselník dal načítať —
+    dvojica účtov bez skratky potom do Pohody nejde (pozri pohoda-predkontacia.ts).
+  */
+  if (popisy?.data) out.mapaPredkontacii = mapaPredkontacii(popisy.data, ex.skratkyPredkontacii);
   if (popisy?.data) {
     out.popisyPredkontacii = {};
     for (const r of popisy.data as { kod: string; popis: string | null }[]) {

@@ -15,6 +15,8 @@ import { prekazkaDokladu, varovanieDokladu } from "./pohoda-kontrola";
 import { poliaDokladovXml, rozdielyPoli, type RozdielPola } from "./pohoda-rozdiely";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
+import { chybajuceSkratky, predkontacieVXml, varovanieSkratky } from "./pohoda-predkontacia";
+import type { PohodaNastavenia } from "./export.server";
 
 type Klient = any;
 type Riadok = Record<string, any>;
@@ -41,6 +43,22 @@ async function firma(supabase: Klient, companyId: string): Promise<Riadok> {
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Firma nenájdená");
   return data;
+}
+
+/**
+ * Predkontácie dokladu, ktoré sú dvojicou účtov bez skratky v Pohode. Zloží
+ * XML bez prekladu (tak, ako by išlo predtým) a pozrie, ktoré kódy mapa
+ * nepreloží — rovnaké miesta, z ktorých export predkontáciu naozaj berie.
+ */
+function varovanieChybajucejSkratky(
+  cislo: unknown,
+  nast: PohodaNastavenia,
+  xml: (n: PohodaNastavenia) => string,
+): string | null {
+  const mapa = nast.mapaPredkontacii;
+  if (!mapa) return null;
+  const kody = predkontacieVXml(xml({ ...nast, mapaPredkontacii: null }));
+  return varovanieSkratky(cislo, chybajuceSkratky(kody, mapa));
 }
 
 /** Ešte neodovzdané doklady, ktoré by kontrola pred odovzdaním zastavila. */
@@ -95,7 +113,11 @@ export async function zastaveneDoklady(
 
   if (faktury.data?.length) {
     const { bundle } = await pripravFaktury(supabase, companyId, faktury.data);
-    const nast = nastaveniaFaktur(company);
+    const nast: PohodaNastavenia = {
+      ...nastaveniaFaktur(company),
+      // Skratky predkontácií (mapa z číselníka a nastavení exportu).
+      ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
+    };
     for (const { invoice, items } of bundle) {
       const dovod = pohodaPrekazka(invoice as any, company as any, {
         items: items as any,
@@ -103,6 +125,19 @@ export async function zastaveneDoklady(
       });
       if (dovod)
         out.push({ druh: "faktura", id: invoice.id, cislo: invoice.invoice_number, dovod });
+      else {
+        const varovanie = varovanieChybajucejSkratky(invoice.invoice_number, nast, (n) =>
+          buildPohodaInvoiceXml({ company: bezOdkazov(company), invoices: [{ invoice, items }] as any, nastavenia: n }),
+        );
+        if (varovanie)
+          out.push({
+            druh: "faktura",
+            id: invoice.id,
+            cislo: invoice.invoice_number,
+            dovod: varovanie,
+            varovanie: true,
+          });
+      }
     }
   }
   // Duplicity (ten istý doklad dvakrát) kontrola zastaví ako ostatné prekážky.
@@ -119,7 +154,11 @@ export async function zastaveneDoklady(
       const dovod = prekazkaDokladu(doklad, company, nast as any);
       if (dovod) out.push({ druh: "prijata", id: p.id, cislo: p.invoice_number, dovod });
       else {
-        const varovanie = varovanieDokladu(doklad, nast as any, company as any);
+        const varovanie =
+          varovanieDokladu(doklad, nast as any, company as any) ??
+          varovanieChybajucejSkratky(p.invoice_number, nast, (n) =>
+            buildPohodaExpensesXml({ company: bezOdkazov(company), doklady: [doklad], nastavenia: n }),
+          );
         if (varovanie)
           out.push({
             druh: "prijata",
@@ -133,6 +172,13 @@ export async function zastaveneDoklady(
     for (const d of doklady.data ?? []) {
       const dovod = prekazkaDokladu(d, company, nast as any);
       if (dovod) out.push({ druh: "doklad", id: d.id, cislo: d.document_number || "", dovod });
+      else {
+        const varovanie = varovanieChybajucejSkratky(d.document_number, nast, (n) =>
+          buildPohodaExpensesXml({ company: bezOdkazov(company), doklady: [d], nastavenia: n }),
+        );
+        if (varovanie)
+          out.push({ druh: "doklad", id: d.id, cislo: d.document_number || "", dovod: varovanie, varovanie: true });
+      }
     }
   }
   return out;

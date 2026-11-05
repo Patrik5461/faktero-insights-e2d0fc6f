@@ -136,4 +136,12 @@ export default {
     "V <0>Účetnictví → Konvertor Excel → Pohoda</0> si stáhnete šablonu pro vydané faktury, přijaté faktury nebo účtenky, vyplníte ji v Excelu a nahrajete zpět. Faktero z ní poskládá dávku XML s předkontacemi a nastaveními firmy.",
   "Riadky s rovnakým číslom dokladu sa spoja do jedného dokladu. Do Faktera sa nič neukladá — XML sa len stiahne a naimportujete ho v Pohode.":
     "Řádky se stejným číslem dokladu se spojí do jednoho dokladu. Do Faktera se nic neukládá — XML se jen stáhne a naimportujete ho v Pohodě.",
+  "Skratky predkontácií v Pohode":
+    "Zkratky předkontací v Pohodě",
+  "Pohoda pozná predkontáciu len podľa skratky (napr. 1Fp), nie podľa účtov. Ku každej predkontácii pomenovanej účtami doplňte skratku z Pohody (Účtovníctvo → Predkontácie). Bez skratky pôjde doklad bez predkontácie a kontrola pred exportom na to upozorní.":
+    "Pohoda pozná předkontaci jen podle zkratky (např. 1Fp), ne podle účtů. Ke každé předkontaci pojmenované účty doplňte zkratku z Pohody (Účetnictví → Předkontace). Bez zkratky půjde doklad bez předkontace a kontrola před exportem na to upozorní.",
+  "skratka":
+    "zkratka",
+  "Skratka v Pohode pre":
+    "Zkratka v Pohodě pro",
 };
