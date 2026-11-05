@@ -129,6 +129,19 @@ describe("GPS Dozor — pomocné funkcie", () => {
     expect(j2.spotrebaL).toBe(3.79); // US galón
     expect(mapujJazdu("X", JAZDY[2])).toBeNull(); // nedokončená
   });
+
+  it("súkromná jazda so skrytou adresou (objekt namiesto textu) nespadne", () => {
+    // Presne takto to vrátil DEMO účet 5. 11. 2026 — predtým zhodilo celú synchronizáciu.
+    const j = mapujJazdu("X", {
+      ...JAZDY[0],
+      TripType: true,
+      StartAddress: { reason: 3, resource: "Label_DenialReason_PrivateInformation" },
+      FinishAddress: { reason: 3, resource: "Enum_PropertyDeniedReasonEnum_PrivateTrips" },
+    } as never)!;
+    expect(j.odAdresa).toBeNull();
+    expect(j.doAdresa).toBeNull();
+    expect(j.sukromna).toBe(true);
+  });
 });
 
 describe("GPS Dozor — adaptér", () => {

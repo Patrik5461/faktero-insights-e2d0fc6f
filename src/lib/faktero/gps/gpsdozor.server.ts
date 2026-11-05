@@ -124,8 +124,9 @@ export type DozorJazda = {
   FinishTime?: string;
   StartPosition?: { Latitude?: string | number; Longitude?: string | number };
   FinishPosition?: { Latitude?: string | number; Longitude?: string | number };
-  StartAddress?: string;
-  FinishAddress?: string;
+  /** Pri súkromnej jazde príde namiesto textu objekt `{reason, resource}` (údaj skrytý). */
+  StartAddress?: string | Record<string, unknown>;
+  FinishAddress?: string | Record<string, unknown>;
   TotalDistance?: number;
   Purpose?: string;
   DriverName?: string;
@@ -134,6 +135,11 @@ export type DozorJazda = {
   Odometer?: number;
   FuelConsumed?: { Value?: number; VolumeUnit?: number };
 };
+
+/** Text z poľa API; skrytý údaj (objekt `{reason, resource}`) alebo iný typ → null. */
+export function textApi(v: unknown): string | null {
+  return typeof v === "string" ? v.trim() || null : null;
+}
 
 export function mapujJazdu(vozidlo: string, r: DozorJazda): GpsJazda | null {
   const zaciatok = naIso(r.StartTime);
@@ -148,14 +154,14 @@ export function mapujJazdu(vozidlo: string, r: DozorJazda): GpsJazda | null {
     palivo && cislo(palivo.Value) != null
       ? (cislo(palivo.Value) as number) * (GALON[palivo.VolumeUnit ?? 0] ?? 1)
       : null;
-  const ucel = (r.Purpose ?? "").trim() || null;
+  const ucel = textApi(r.Purpose);
   return {
     externeId: r.Id != null ? String(r.Id) : `${vozidlo}:${r.StartTime}`,
     vozidloExterneId: vozidlo,
     zaciatok,
     koniec,
-    odAdresa: (r.StartAddress ?? "").trim() || null,
-    doAdresa: (r.FinishAddress ?? "").trim() || null,
+    odAdresa: textApi(r.StartAddress),
+    doAdresa: textApi(r.FinishAddress),
     odLat: cislo(r.StartPosition?.Latitude),
     odLng: cislo(r.StartPosition?.Longitude),
     doLat: cislo(r.FinishPosition?.Latitude),
@@ -211,8 +217,8 @@ export const adapter: GpsAdapter = {
         videne.add(a.Code);
         vysledok.push({
           externeId: a.Code,
-          spz: (a.SPZ ?? "").trim() || null,
-          nazov: (a.Name ?? "").trim() || null,
+          spz: textApi(a.SPZ),
+          nazov: textApi(a.Name),
           tachometerKm: cislo(a.Odometer),
         });
       }
