@@ -1,15 +1,15 @@
 /*
-  Test migrácie 20261105210000_parovanie_inych_dokladov.sql v PGlite (Postgres
+  Test migrácie 20261105160055_parovanie_inych_dokladov.sql v PGlite (Postgres
   vo WebAssembly) — bez ostrej databázy. Pripraví minimálnu kostru tabuliek
   a funkcií, ktoré migrácia predpokladá (stĺpce a `zapis_historiu_dokladu`
   podľa produkcie k 2026-11-05), pustí migráciu dvakrát (musí byť opakovateľná)
-  a potom kontroly z `20261105210000_parovanie_inych_dokladov.test.sql`.
+  a potom kontroly z `20261105160055_parovanie_inych_dokladov.test.sql`.
 
   PGlite nie je v závislostiach projektu; spúšťa sa z vlastného priečinka:
 
     mkdir -p /tmp/pglite-test && (cd /tmp/pglite-test && npm i @electric-sql/pglite@0.3)
     PGLITE=/tmp/pglite-test/node_modules/@electric-sql/pglite/dist/index.js \
-      node supabase/testy/20261105210000_parovanie_inych_dokladov.pglite.mjs
+      node supabase/testy/20261105160055_parovanie_inych_dokladov.pglite.mjs
 */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -83,10 +83,10 @@ values ('00000000-0000-0000-0000-00000000000a', gen_random_uuid(), current_date,
 `;
 
 const migracia = readFileSync(
-  join(tu, "../migrations/20261105210000_parovanie_inych_dokladov.sql"),
+  join(tu, "../migrations/20261105160055_parovanie_inych_dokladov.sql"),
   "utf8",
 );
-const kontroly = readFileSync(join(tu, "20261105210000_parovanie_inych_dokladov.test.sql"), "utf8")
+const kontroly = readFileSync(join(tu, "20261105160055_parovanie_inych_dokladov.test.sql"), "utf8")
   // Migrácia je už pustená vyššie; v DO bloku ostane prázdny príkaz.
   .replaceAll("%%MIGRACIA%%", "select 1");
 

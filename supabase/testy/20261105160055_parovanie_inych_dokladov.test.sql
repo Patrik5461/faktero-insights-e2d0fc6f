@@ -1,11 +1,11 @@
--- Kontroly migrácie 20261105210000_parovanie_inych_dokladov.sql.
+-- Kontroly migrácie 20261105160055_parovanie_inych_dokladov.sql.
 --
 -- Celé beží v jednom DO bloku, ktorý na konci VŽDY vyhodí výnimku — Postgres
 -- tak vráti migráciu aj testovacie riadky späť. Úspech = hláška „TEST_OK …“,
 -- čokoľvek iné je chyba.
 --
 -- Bežne sa púšťa v PGlite bez ostrej databázy:
---   node supabase/testy/20261105210000_parovanie_inych_dokladov.pglite.mjs
+--   node supabase/testy/20261105160055_parovanie_inych_dokladov.pglite.mjs
 -- (návod v hlavičke skriptu; ten miesto značky nižšie dá prázdny príkaz).
 --
 -- Proti kópii/ostrej databáze len so súhlasom: miesto značky %%MIGRACIA%% vložiť
