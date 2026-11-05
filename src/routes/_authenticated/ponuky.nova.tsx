@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -103,14 +104,21 @@ function NewQuote() {
       .is("deleted_at", null)
       .eq("odberatel", true)
       .then(({ data }) => setCustomers(data ?? []));
-    supabase
-      .from("products")
-      .select("id, name, unit, unit_price, vat_rate")
-      .eq("company_id", cid)
-      .eq("active", true)
-      .is("deleted_at", null)
-      .order("name")
-      .then(({ data }) => setProdukty(data ?? []));
+    // Celý katalóg po stránkach — PostgREST vráti najviac 1 000 riadkov a produkt
+    // za tisíckou by sa na doklad nedal vybrať (ani by nedostal cenu hladiny).
+    vsetkyRiadky((od, po) =>
+      supabase
+        .from("products")
+        .select("id, name, unit, unit_price, vat_rate")
+        .eq("company_id", cid)
+        .eq("active", true)
+        .is("deleted_at", null)
+        .order("name")
+        .order("id")
+        .range(od, po),
+    )
+      .then((data) => setProdukty(data))
+      .catch(() => setProdukty([]));
   }, []);
 
   /* Cenník sa načíta pre vybraného odberateľa — dohodnuté ceny a akcie

@@ -13191,6 +13191,10 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["company_role"]
       }
+      importuj_cennik: {
+        Args: { p_company_id: string; p_polozky: Json; p_nove_hladiny?: string[] }
+        Returns: Json
+      }
       is_company_admin: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean

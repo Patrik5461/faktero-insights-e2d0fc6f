@@ -1,4 +1,5 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
 import { kvOpravnehoZPovodnej } from "@/lib/faktero/kv-urcenie";
@@ -885,14 +886,21 @@ function NewInvoice() {
       .eq("odberatel", true)
       .order("name")
       .then(({ data }) => setCustomers(data ?? []));
-    supabase
-      .from("products")
-      .select("id, name, unit, unit_price, vat_rate, description, colny_kod, krajina_povodu, hmotnost_kg")
-      .eq("company_id", cid)
-      .is("deleted_at", null)
-      .eq("active", true)
-      .order("name")
-      .then(({ data }) => setProducts(data ?? []));
+    // Celý katalóg po stránkach — PostgREST vráti najviac 1 000 riadkov a produkt
+    // za tisíckou by sa na doklad nedal vybrať (ani by nedostal cenu hladiny).
+    vsetkyRiadky((od, po) =>
+      supabase
+        .from("products")
+        .select("id, name, unit, unit_price, vat_rate, description, colny_kod, krajina_povodu, hmotnost_kg")
+        .eq("company_id", cid)
+        .is("deleted_at", null)
+        .eq("active", true)
+        .order("name")
+        .order("id")
+        .range(od, po),
+    )
+      .then((data) => setProducts(data))
+      .catch(() => setProducts([]));
     supabase
       .from("companies")
       .select("*")
