@@ -62,7 +62,8 @@ export default {
       porovnaj("po splatnosti suma", p.hodnota, s.po_splatnosti_suma);
       const [pocet, dlznikov] = p.meta.split("·").map(cislo);
       porovnaj("po splatnosti počet", pocet, s.po_splatnosti_pocet);
-      porovnaj("dlžníkov", dlznikov, s.dlznikov);
+      // Dlaždica „Po splatnosti“ ukazuje dlžníkov PO SPLATNOSTI (S-03), nie všetkých.
+      porovnaj("dlžníkov po splatnosti", dlznikov, s.dlznikov_po_splatnosti);
       porovnaj("pohľadávky", (await dlazdica("Dlžia mi zákazníci")).hodnota, s.neuhradene_suma);
       return zle;
     }
