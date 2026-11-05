@@ -54,6 +54,8 @@ export type PrijataPrehladu = {
   currency?: string | null;
   amount_without_vat_eur?: number | string | null;
   vat_amount_eur?: number | string | null;
+  /** Rozpis DPH po sadzbách z dokladu (`[{sadzba, zaklad, dph}]`), od 5. 11. 2026. */
+  vat_breakdown?: unknown;
 };
 
 /**
@@ -208,6 +210,29 @@ export function vystupPrehladu(
   return b;
 }
 
+/** Riadky `vat_breakdown` prijatej faktúry, keď je v domácej mene a sedí so sumami. */
+function rozpisPrijatejPrehladu(
+  p: PrijataPrehladu,
+  krajina: KrajinaDane,
+  base: number,
+  vat: number,
+): { sadzba: number; zaklad: number; dph: number; vat_category: string | null }[] | null {
+  if (jeCudzia(p.currency, krajina) || !Array.isArray(p.vat_breakdown)) return null;
+  const riadky = (p.vat_breakdown as Record<string, unknown>[])
+    .map((x) => ({
+      sadzba: n(x?.sadzba),
+      zaklad: n(x?.zaklad),
+      dph: n(x?.dph),
+      vat_category: typeof x?.vat_category === "string" ? x.vat_category : null,
+    }))
+    .filter((x) => x.zaklad || x.dph);
+  if (!riadky.length) return null;
+  const sz = riadky.reduce((a, x) => a + x.zaklad, 0);
+  const sd = riadky.reduce((a, x) => a + x.dph, 0);
+  if (Math.abs(sz - base) > 0.02 + 1e-9 || Math.abs(sd - vat) > 0.02 + 1e-9) return null;
+  return riadky;
+}
+
 /**
  * DPH na vstupe z prijatých faktúr. Sadzbu nemajú uloženú — dopočíta sa z
  * pomeru dane k základu a prilepí k najbližšej platnej sadzbe. Sumy v domácej
@@ -219,6 +244,20 @@ export function vstupPrehladu(prijate: PrijataPrehladu[], krajina: KrajinaDane):
     const domace = sumyPrijatejDomace(p, krajina);
     if (!domace) continue;
     const { base, vat } = domace;
+    // Uložený rozpis po sadzbách (domáca mena, sedí so sumami) — inak by viac
+    // sadzieb splynulo do jednej „priemernej“ (0 % + 23 % → 19 %).
+    const rozpis = rozpisPrijatejPrehladu(p, krajina, base, vat);
+    if (rozpis) {
+      for (const x of rozpis) {
+        // „Nie je predmetom DPH“ do prehľadu DPH nepatrí vôbec.
+        if (x.vat_category === "out_of_scope") continue;
+        const r = riadokPre(b, x.dph === 0 ? "0" : vatBucketKey(x.sadzba));
+        r.base += x.zaklad;
+        r.vat += x.dph;
+        r.docs.add(p.id);
+      }
+      continue;
+    }
     const ab = Math.abs(base);
     const av = Math.abs(vat);
     let key = "exempt";

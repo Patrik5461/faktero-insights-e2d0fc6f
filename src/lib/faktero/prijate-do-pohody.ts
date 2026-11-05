@@ -30,6 +30,8 @@ export type PolozkaPrijatej = {
   clenenie: string | null;
   /** Ručne zvolené členenie KV DPH položky (`kv`, staršie `kv_clenenie`). */
   kv?: string | null;
+  /** Kategória DPH položky (`vat_category`: standard / out_of_scope / exempt / reverse_charge / needs_review). */
+  vat_category?: string | null;
 };
 
 /**
@@ -108,6 +110,7 @@ export function polozkyPrijatej(p: any): PolozkaPrijatej[] | null {
     predkontacia: x?.predkontacia ? String(x.predkontacia) : null,
     clenenie: x?.clenenie ? String(x.clenenie) : null,
     kv: String(x?.kv ?? x?.kv_clenenie ?? "").trim() || null,
+    ...(typeof x?.vat_category === "string" && x.vat_category ? { vat_category: String(x.vat_category) } : {}),
   }));
   // Súčet základov za sadzbu = zaokrúhlený nezaokrúhlený súčet.
   const skupiny = new Map<string, number[]>();
@@ -159,7 +162,21 @@ export function polozkyPrijatej(p: any): PolozkaPrijatej[] | null {
   return out;
 }
 
-export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: number; pdp?: boolean }[] {
+/** Riadok rozpisu prijatej faktúry po sadzbách. */
+export type RiadokRozpisuPrijatej = {
+  sadzba: number;
+  zaklad: number;
+  dph: number;
+  pdp?: boolean;
+  /**
+   * Kategória DPH riadku (`vat_category`), keď ju doklad nesie: `out_of_scope`
+   * („Nie je predmetom DPH“) do priznania ani KV nevstupuje — filtruje volajúci
+   * (`ideDoPriznania` v rozpis-dph-kontrola.ts); súčty dokladu ju obsahujú.
+   */
+  vat_category?: string;
+};
+
+export function rozpisPrijatej(p: any): RiadokRozpisuPrijatej[] {
   // Samofaktúra má vlastné položky so sadzbami — rozpis je presný.
   if (p?.samofakturacia && Array.isArray(p.items) && p.items.length) {
     return sumySamofaktury(
@@ -167,21 +184,50 @@ export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: n
       Number(p.discount_total ?? 0),
     ).sadzby.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dph: x.dan }));
   }
+  const zaklad = Number(p?.amount_without_vat ?? 0);
+  const dph = Number(p?.vat_amount ?? 0);
+  /*
+    Uložený rozpis DPH z dokladu (`vat_breakdown`, od 5. 11. 2026) — rekapitulácia
+    z faktúry s kategóriou riadku, prešla kontrolou pri vyťažení alebo ju
+    zadal človek. Má prednosť pred položkami (tie nevedia „Nie je predmetom
+    DPH“), ale len keď sedí so sumami faktúry. Bez neho by viac sadzieb
+    splynulo do jednej „priemernej“ (0 % + 23 % → 18,7 % → 19 %).
+  */
+  const ulozeny = Array.isArray(p?.vat_breakdown) ? (p.vat_breakdown as any[]) : null;
+  if (ulozeny?.length) {
+    const riadky: RiadokRozpisuPrijatej[] = ulozeny
+      .map((x) => {
+        const kat = typeof x?.vat_category === "string" && x.vat_category ? String(x.vat_category) : null;
+        const pdp = x?.pdp === true || kat === "reverse_charge" || (!kat && celaPdp(p) && !Number(x?.dph));
+        return {
+          sadzba: Number(x?.sadzba) || 0,
+          zaklad: r2(Number(x?.zaklad) || 0),
+          dph: r2(Number(x?.dph) || 0),
+          ...(pdp ? { pdp: true } : {}),
+          ...(kat ? { vat_category: kat } : {}),
+        };
+      })
+      .filter((x) => x.zaklad || x.dph);
+    const sz = riadky.reduce((a, x) => a + x.zaklad, 0);
+    const sd = riadky.reduce((a, x) => a + x.dph, 0);
+    if (riadky.length && Math.abs(sz - zaklad) <= 0.02 + 1e-9 && Math.abs(sd - dph) <= 0.02 + 1e-9)
+      return zoradPodlaSadzby(riadky, "sadzba");
+  }
   // Z položiek po sadzbách (aj so zmiešaným prenesením daňovej povinnosti).
   const polozky = polozkyPrijatej(p);
   if (polozky) {
-    const po = new Map<string, { sadzba: number; zaklad: number; dph: number; pdp?: boolean }>();
+    const po = new Map<string, RiadokRozpisuPrijatej>();
     for (const x of polozky) {
-      const k = `${x.sadzba}|${x.pdp}`;
-      const r = po.get(k) ?? { sadzba: x.sadzba, zaklad: 0, dph: 0, ...(x.pdp ? { pdp: true } : {}) };
+      const kat = x.vat_category && x.vat_category !== "reverse_charge" ? x.vat_category : null;
+      const k = `${x.sadzba}|${x.pdp}|${kat ?? ""}`;
+      const r =
+        po.get(k) ?? { sadzba: x.sadzba, zaklad: 0, dph: 0, ...(x.pdp ? { pdp: true } : {}), ...(kat ? { vat_category: kat } : {}) };
       r.zaklad = r2(r.zaklad + x.zaklad);
       r.dph = r2(r.dph + x.dph);
       po.set(k, r);
     }
     return zoradPodlaSadzby([...po.values()], "sadzba");
   }
-  const zaklad = Number(p?.amount_without_vat ?? 0);
-  const dph = Number(p?.vat_amount ?? 0);
   if (!zaklad && !dph) return [];
   const sadzba = zaklad ? najblizsiaSadzba((dph / zaklad) * 100, "SK") : 0;
   return [{ sadzba, zaklad: r2(zaklad), dph: r2(dph), ...(celaPdp(p) ? { pdp: true } : {}) }];

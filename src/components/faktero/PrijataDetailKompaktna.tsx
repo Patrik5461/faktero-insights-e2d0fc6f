@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { udajeZPrijatej } from "@/lib/faktero/nespracovane";
+import { popisyRiadkuDph } from "./VolbaSadzbyDph";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useServerFn } from "@tanstack/react-start";
 import { Pencil } from "lucide-react";
@@ -261,17 +262,14 @@ export function PrijataDetailKompaktna({
             <Hodnota popis="Mena">{menaDokladu}</Hodnota>
           </div>
           {rozpis.map((r) => (
-            <div key={`${r.sadzba}-${r.pdp ? 1 : 0}`} className="grid grid-cols-2 gap-3">
-              <Hodnota
-                popis={
-                  r.pdp
-                    ? t("Základ dane {sadzba} % (PDP)", { sadzba: r.sadzba })
-                    : t("Základ dane {sadzba} %", { sadzba: r.sadzba })
-                }
-              >
+            <div
+              key={`${r.sadzba}-${r.pdp ? 1 : 0}-${(r as any).vat_category ?? ""}`}
+              className="grid grid-cols-2 gap-3"
+            >
+              <Hodnota popis={popisyRiadkuDph(r as any, t).zaklad}>
                 <span className="tabular-nums">{formatujCislo(r.zaklad, 2)}</span>
               </Hodnota>
-              <Hodnota popis={t("Daň {sadzba} %", { sadzba: r.sadzba })}>
+              <Hodnota popis={popisyRiadkuDph(r as any, t).dan}>
                 <span className="tabular-nums">{formatujCislo(r.dph, 2)}</span>
               </Hodnota>
             </div>

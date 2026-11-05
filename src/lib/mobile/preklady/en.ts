@@ -749,6 +749,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.neznamyPredajca": "Unknown merchant",
   "app.zDokladuZatvorka": "(read from the receipt)",
   "app.zTohoDph": "of which VAT {suma}",
+  "app.rozpisDphNesedi": "VAT breakdown does not add up — the document will be flagged for review",
   "app.bezPripojeniaKratke": "offline",
   "app.bezOdpovede": "no response",
 

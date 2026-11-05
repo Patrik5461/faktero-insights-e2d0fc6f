@@ -7,6 +7,8 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu";
 import { nahranieDokladu } from "@/lib/faktero/kto-kedy";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
+import { UpozornenieRozpisuDph } from "@/components/faktero/UpozornenieRozpisuDph";
+import { VolbaSadzbyDph } from "@/components/faktero/VolbaSadzbyDph";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
 import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero/NavrhAi";
@@ -49,6 +51,7 @@ import {
   chybajuce,
   rozdielPoloziek,
   kontrolaSumy,
+  kontrolaRozpisuUdajov,
   sucty,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
@@ -71,7 +74,6 @@ import {
 } from "@/components/faktero/VlastnaFakturaUpozornenie";
 import { useHoverPola, useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
 import { POLIA_ZVYRAZNENIA } from "@/lib/faktero/zvyraznenie-vytazenych";
-import { zoradSadzby } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Nespracovaný doklad — Faktero") }] }),
@@ -207,8 +209,11 @@ function Detail() {
 
   const set = (z: Partial<UdajeNespracovaneho>) => setU({ ...u, ...z });
   const setDod = (z: Partial<UdajeNespracovaneho["dodavatel"]>) => setU({ ...u, dodavatel: { ...u.dodavatel, ...z } });
+  // Zmena rozpisu ruší „Rozpis je správny“ — kontrola beží znova.
   const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
-    set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null });
+    set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null, rozpisPotvrdeny: false });
+  // Rozpis DPH: daň = základ × sadzba, platná sadzba, súčty voči sumám z dokladu.
+  const kontrolaRozpisu = kontrolaRozpisuUdajov(u, krajinaFirmy);
 
   /*
     Smer faktúry podľa IBAN-u — nastavenie „Automaticky určiť typ faktúry
@@ -270,6 +275,7 @@ function Detail() {
     polia: druh ? poliaPreDruh(druh) : POLIA_ZVYRAZNENIA,
     zobrazit: zobrazitZvyraznenie,
     polohy: d.polohyAi,
+    doplnok: d.doplnokAi ?? undefined,
   };
 
   async function ulozZmeny() {
@@ -298,6 +304,21 @@ function Detail() {
     */
     if (u && druh === "blocek" && !ajDuplicitu && !ajCudziu && !(await potvrdRozdielSumy(kontrolaSumy(u), u.mena || "EUR", t)))
       return;
+    /*
+      Rozpis DPH, ktorý nesedí, sa neuloží potichu: buď ho človek opraví,
+      alebo vedome vytvorí doklad, ktorý pôjde na kontrolu.
+    */
+    if (druh && druh !== "ostatny" && !kontrolaRozpisu.ok && !ajDuplicitu && !ajCudziu) {
+      const ano = await potvrd(
+        t("Rozpis DPH nesedí — skontrolujte ho podľa dokladu") +
+          "\n" +
+          kontrolaRozpisu.chyby.map((c) => c.sprava).join("\n") +
+          "\n" +
+          t("Vytvoriť doklad aj tak? Pôjde na kontrolu."),
+        { potvrdit: t("Vytvoriť na kontrolu"), zrusit: t("Opraviť rozpis") },
+      );
+      if (!ano) return;
+    }
     // Pri opakovaní kvôli duplicite už človek vlastnú faktúru potvrdil.
     if (vlastnyUcet && !ajDuplicitu) {
       const ano = await potvrd(
@@ -496,6 +517,7 @@ function Detail() {
             chyby={chyby}
             sucty={s}
             sadzby={sadzby}
+            kontrolaRozpisu={kontrolaRozpisu}
             busy={busy}
             onVytvor={() => void vytvorDoklad()}
             onUloz={() => void ulozZmeny()}
@@ -872,13 +894,7 @@ function Detail() {
                       {u.rozpis.map((r, i) => (
                         <tr key={i}>
                           <td className="py-1 pr-2">
-                            <select value={String(r.sadzba)} onChange={(e) => setRozpis(i, { sadzba: Number(e.target.value) })} className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                              {zoradSadzby([...new Set([...sadzby, 0, Number(r.sadzba)])]).map((x) => (
-                                <option key={x} value={x}>
-                                  {x} %
-                                </option>
-                              ))}
-                            </select>
+                            <VolbaSadzbyDph riadok={r} sadzby={sadzby} onChange={(z) => setRozpis(i, z)} className="w-40 max-w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm" />
                           </td>
                           <td className="py-1 pr-2">
                             <DesatinnePole hodnota={r.zaklad} naZmenu={(z) => {
@@ -897,6 +913,11 @@ function Detail() {
                       ))}
                     </tbody>
                   </table>
+                  <UpozornenieRozpisuDph
+                    className="mt-2"
+                    kontrola={kontrolaRozpisu}
+                    onPotvrd={() => set({ kontrolaDph: undefined, rozpisPotvrdeny: true })}
+                  />
                   <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-destructive" : ""}`}>
                     <span className="text-muted-foreground">
                       {t("Základ {zaklad} · DPH {dph}", { zaklad: s.zaklad.toFixed(2), dph: s.dph.toFixed(2) })}

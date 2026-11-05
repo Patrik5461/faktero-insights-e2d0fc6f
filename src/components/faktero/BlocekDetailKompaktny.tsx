@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
+import { popisyRiadkuDph } from "./VolbaSadzbyDph";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { BookCheck, Check, CheckCircle2, Loader2, Lock } from "lucide-react";
@@ -489,11 +490,11 @@ export function BlocekDetailKompaktny({
             <Hodnota popis="Mena">{menaDokladu}</Hodnota>
           </div>
           {rozpis.map((r) => (
-            <div key={r.sadzba} className="grid grid-cols-2 gap-3">
-              <Hodnota popis={t("Základ dane {sadzba} %", { sadzba: r.sadzba })}>
+            <div key={`${r.sadzba}-${r.vat_category ?? ""}`} className="grid grid-cols-2 gap-3">
+              <Hodnota popis={popisyRiadkuDph(r, t).zaklad}>
                 <span className="tabular-nums">{formatujCislo(r.zaklad, 2)}</span>
               </Hodnota>
-              <Hodnota popis={t("Daň {sadzba} %", { sadzba: r.sadzba })}>
+              <Hodnota popis={popisyRiadkuDph(r, t).dan}>
                 <span className="tabular-nums">{formatujCislo(r.dph, 2)}</span>
               </Hodnota>
             </div>

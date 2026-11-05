@@ -15,7 +15,7 @@ import type { UdajeNespracovaneho } from "./nespracovane";
 import { prazdneUdaje } from "./nespracovane";
 import type { KlucPola, Obdlznik } from "./vyber-z-dokladu";
 import { poleVyberu } from "./vyber-z-dokladu";
-import { hodnotaPola, type Zvyraznenie } from "./zvyraznenie-vytazenych";
+import type { Zvyraznenie } from "./zvyraznenie-vytazenych";
 
 /**
  * Mierka textovej vrstvy: koľko px na obrazovke pripadá na 1 bod strany
@@ -56,7 +56,7 @@ export function textHodnoty(kluc: KlucPola, hodnota: string | number | null): st
 }
 
 /** Slovo položené nad skenom — hodnota údaja na mieste, ktoré určila AI. */
-export type SlovoSkenu = Obdlznik & { text: string; kluc: KlucPola };
+export type SlovoSkenu = Obdlznik & { text: string; kluc: string };
 
 /**
  * Slová pre sken bez textovej vrstvy zo zvýraznení (polohy od AI) jednej
@@ -69,10 +69,10 @@ export function slovaZoZvyrazneni(
 ): SlovoSkenu[] {
   if (!udaje) return [];
   const out: SlovoSkenu[] = [];
-  const videne = new Set<KlucPola>();
+  const videne = new Set<string>();
   for (const z of zvyraznenia) {
     if (z.strana !== strana || videne.has(z.kluc) || !z.r.length) continue;
-    const text = textHodnoty(z.kluc, hodnotaPola(udaje, z.kluc));
+    const text = z.text;
     if (!text) continue;
     videne.add(z.kluc);
     out.push({ ...z.r[0], text, kluc: z.kluc });

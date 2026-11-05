@@ -27,7 +27,13 @@ export type RiadokRozuctovania = {
   cinnost?: string | null;
 };
 
-export type RozpisSadzby = { sadzba: number; zaklad: number; dph: number };
+export type RozpisSadzby = {
+  sadzba: number;
+  zaklad: number;
+  dph: number;
+  /** Kategória riadku (`rozpis-dph-kontrola.ts`) — „Nie je predmetom DPH“ nejde do priznania. */
+  vat_category?: string;
+};
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
@@ -207,6 +213,7 @@ export function rozpisBlocku(d: any): RozpisSadzby[] {
         sadzba: Number(x?.sadzba ?? 0),
         zaklad: Number(x?.zaklad ?? 0),
         dph: Number(x?.dph ?? 0),
+        ...(typeof x?.vat_category === "string" ? { vat_category: x.vat_category } : {}),
       }))
       .filter((x) => x.zaklad || x.dph)
       .sort((a, b) => porovnajSadzby(a.sadzba, b.sadzba));

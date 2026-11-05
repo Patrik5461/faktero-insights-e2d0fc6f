@@ -5,6 +5,7 @@ import { maStranaText, slovaZoZvyrazneni, type SlovoSkenu } from "@/lib/faktero/
 import { SlovaSkenu, TextovaVrstvaPdf, useNapovedaSkenu } from "./TextovaVrstvaPdf";
 import type { SlovoNahladu } from "@/lib/faktero/vyber-z-dokladu";
 import {
+  LegendaZvyraznenia,
   usePosunNaAktivne,
   useZvyraznenia,
   ZvyrazneniaStrany,
@@ -180,6 +181,9 @@ export function NahladPdf({
         Bez vlastného posuvníka a stropu výšky — roluje rodič (PanelNahladu,
         okno, stránka). Posun na aktívne zvýraznenie hľadá rolovacieho predka sám.
       */}
+      {zobrazit && vsetky.length ? (
+        <LegendaZvyraznenia zvyraznenia={vsetky} className="px-1 pb-2" />
+      ) : null}
       <div ref={box} className="bg-muted/20">
         {strany.map((s, i) => (
           <StranaPdf

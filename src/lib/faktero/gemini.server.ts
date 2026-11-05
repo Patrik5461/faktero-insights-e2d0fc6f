@@ -17,6 +17,10 @@ export async function geminiVision(
     json?: boolean;
     /** Vypne uvažovanie modelu — pri rozhovore zožerie strop a spomalí odpoveď. */
     bezUvazovania?: boolean;
+    /** Iný model než `modelGemini()` (vyťažovanie dokladov). */
+    model?: string;
+    /** Časový limit volania v ms (predvolene 120 s). */
+    limitMs?: number;
   },
   merac?: MeracTokenov,
 ): Promise<string> {
@@ -54,6 +58,8 @@ async function volaj(
     json?: boolean;
     bezUvazovania?: boolean;
     schema?: Record<string, unknown>;
+    model?: string;
+    limitMs?: number;
   },
   merac?: MeracTokenov,
 ): Promise<string> {
@@ -61,44 +67,54 @@ async function volaj(
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
+  const limit = nastavenie?.limitMs ?? 120000;
+  const timeout = setTimeout(() => controller.abort(), limit);
+  const model = nastavenie?.model || modelGemini();
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${modelGemini()}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        ...(nastavenie
-          ? {
-              generationConfig: {
-                temperature: 0,
-                ...(nastavenie.maxOutputTokens
-                  ? { maxOutputTokens: nastavenie.maxOutputTokens }
-                  : {}),
-                ...(nastavenie.json ? { responseMimeType: "application/json" } : {}),
-                // Schéma odpovede — model vráti presne tieto polia.
-                ...(nastavenie.json && nastavenie.schema
-                  ? { responseSchema: nastavenie.schema }
-                  : {}),
-                /*
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          ...(nastavenie
+            ? {
+                generationConfig: {
+                  temperature: 0,
+                  ...(nastavenie.maxOutputTokens
+                    ? { maxOutputTokens: nastavenie.maxOutputTokens }
+                    : {}),
+                  ...(nastavenie.json ? { responseMimeType: "application/json" } : {}),
+                  // Schéma odpovede — model vráti presne tieto polia.
+                  ...(nastavenie.json && nastavenie.schema
+                    ? { responseSchema: nastavenie.schema }
+                    : {}),
+                  /*
                   Model s uvažovaním minie na premýšľanie aj šesťsto tokenov
                   navyše. Pri čítaní dokumentu sa to oplatí, pri rozhovore nie:
                   strop sa vyčerpá myslením a odpoveď sa odreže ako „nezmestila
                   sa", hoci otázka bola jednoduchá.
                 */
-                ...(nastavenie.bezUvazovania ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-              },
-            }
-          : {}),
-      }),
-      signal: controller.signal,
-    },
-  );
+                  ...(nastavenie.bezUvazovania ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+                },
+              }
+            : {}),
+        }),
+        signal: controller.signal,
+      },
+    );
+  } catch (e: any) {
+    clearTimeout(timeout);
+    if (e?.name === "AbortError")
+      throw new Error(`Gemini ${model}: časový limit ${Math.round(limit / 1000)} s`);
+    throw e;
+  }
 
   clearTimeout(timeout);
 

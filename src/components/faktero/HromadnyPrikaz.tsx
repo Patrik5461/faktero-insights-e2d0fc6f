@@ -143,7 +143,7 @@ export function HromadnyPrikaz({
           riadkyPreIds(ids, (kus, od, po) =>
             supabase
               .from("purchase_invoices")
-              .select("id, na_kontrolu_at, odberatel_nesedi" as "id")
+              .select("id, na_kontrolu_at, na_kontrolu_dovod, odberatel_nesedi" as "id")
               .eq("company_id", companyId)
               .in("id", kus)
               .order("id")
@@ -167,7 +167,10 @@ export function HromadnyPrikaz({
         );
       }
       for (const k of (kontrola.data ?? []) as any[]) {
-        if (k.na_kontrolu_at) out[String(k.id)] = { ...out[String(k.id)], naKontrolu: true };
+        /* Kontrola s dôvodom (rozpis DPH) sumu na úhradu nemení — z príkazu
+           vyraďuje len neotvorená automaticky zaradená eFaktúra. */
+        if (k.na_kontrolu_at && !k.na_kontrolu_dovod)
+          out[String(k.id)] = { ...out[String(k.id)], naKontrolu: true };
         if (k.odberatel_nesedi) out[String(k.id)] = { ...out[String(k.id)], cudzia: true };
       }
       for (const p of (pohyby ?? []) as any[]) {

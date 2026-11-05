@@ -88,7 +88,7 @@ describe("zvýraznenie uložených dokladov", () => {
     expect(cislo.r[0].y).toBeCloseTo(0, 5);
   });
 
-  it("bloček — číslo, IČO, dátum a suma", () => {
+  it("bloček — názov, číslo, IČO, dátum a suma", () => {
     const u = udajeZBlocku({
       supplier_name: "Shell",
       supplier_ico: "31322832",
@@ -101,7 +101,7 @@ describe("zvýraznenie uložených dokladov", () => {
       u,
     );
     expect(new Set(z.map((x) => x.kluc))).toEqual(
-      new Set(["cislo", "dodavatel.ico", "datumVystavenia", "celkom"]),
+      new Set(["dodavatel.nazov", "cislo", "dodavatel.ico", "datumVystavenia", "celkom"]),
     );
   });
 

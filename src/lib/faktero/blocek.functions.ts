@@ -59,6 +59,11 @@ export type BlocekVysledok = {
   vat_rate?: number;
   /** Rozpis po sadzbách — bloček ich má často viac naraz. */
   vat_breakdown?: { sadzba: number; zaklad: number; dph: number }[];
+  /**
+   * Rozpis DPH prečítaný z fotky nesedí so sumami či sadzbami dokladu
+   * (`rozpis-dph-kontrola.ts`) — dôvod pre človeka. Doklad treba skontrolovať.
+   */
+  kontrola_dph?: string;
   /** Spôsob úhrady, keď ho doklad nesie. Väčšina bločkov ho neposiela. */
   payment_method?: "hotovost" | "karta" | "prevod";
   currency?: string;
@@ -280,6 +285,28 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
         : zaokruhlenieZPoloziek(precitane);
     const items = nastavZaokruhlenie(precitane, zaokr) as BlocekPolozka[];
 
+    /*
+      Rozpis DPH: tabuľka z bločku, inak položky (ceny s DPH), inak jedna
+      sadzba — len keď daň zo základu pri nej naozaj vychádza. Čo neprejde
+      kontrolou, ide von s dôvodom; nikdy nie potichu.
+    */
+    const { rozpisZVytazenia } = await import("./rozpis-dph-vytazeny");
+    const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
+    const sumaBezZaokr = ocr.total != null ? round2(Number(ocr.total) - (zaokr || 0)) : null;
+    const rozpisFoto = rozpisZVytazenia(
+      {
+        amount_without_vat: ocr.net_amount ?? null,
+        vat_amount: ocr.vat_amount ?? null,
+        amount_total: sumaBezZaokr,
+        vat_breakdown: ocr.vat_breakdown ?? null,
+        items: precitane.filter((p) => !p.zaokruhlenie),
+        items_total_with_vat: true,
+        issue_date: ocr.date ?? null,
+      },
+      { krajina: eet ? "CZ" : (data.krajina ?? "SK") },
+    );
+    const rozpisOk = rozpisFoto.rozpis.length > 0;
+
     const vysledok: BlocekVysledok = {
       zdroj: "foto",
       overeny: false,
@@ -290,7 +317,19 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       supplier_ic_dph: ocr.ic_dph ?? undefined,
       total: ocr.total ?? undefined,
       vat_amount: ocr.vat_amount ?? undefined,
-      vat_rate: ocr.vat_rate ?? prevazujucaSadzba(items.filter((p) => !p.zaokruhlenie)),
+      vat_rate:
+        rozpisFoto.rozpis.length === 1
+          ? rozpisFoto.rozpis[0]!.sadzba
+          : rozpisFoto.rozpis.length > 1
+            ? [...rozpisFoto.rozpis].sort((a, b) => b.zaklad - a.zaklad)[0]!.sadzba
+            : (ocr.vat_rate ?? prevazujucaSadzba(items.filter((p) => !p.zaokruhlenie))),
+      ...(rozpisOk
+        ? {
+            vat_breakdown: rozpisFoto.rozpis,
+            net_amount: round2(rozpisFoto.rozpis.reduce((a, r) => a + r.zaklad, 0)),
+          }
+        : {}),
+      ...(rozpisOk && !rozpisFoto.kontrola.ok ? { kontrola_dph: popisChybRozpisu(rozpisFoto.kontrola) } : {}),
       currency: ocr.currency ?? "EUR",
       date: ocr.date ?? undefined,
       document_number: ocr.document_number ?? undefined,

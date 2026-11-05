@@ -205,6 +205,8 @@ describe("kto odpovedal", () => {
     expect((await precitajDoklad("eA==", "image/png"))?.field_locations).toBeTruthy();
 
     vi.resetModules();
+    // Vyšší model na vyťažovanie aj bežný model zlyhajú → číta OpenAI.
+    geminiVision.mockRejectedValueOnce(new Error("Gemini 429: RESOURCE_EXHAUSTED"));
     geminiVision.mockRejectedValueOnce(new Error("Gemini 429: RESOURCE_EXHAUSTED"));
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -214,5 +216,24 @@ describe("kto odpovedal", () => {
     const ai = await druhy.precitajDoklad("eA==", "image/png");
     expect(ai?.invoice_number).toBe("FA1");
     expect(ai?.field_locations).toBeUndefined();
+  });
+
+  it("vyťažovanie: vyšší model, pri zlyhaní bežný — s modelom v nastavení", async () => {
+    geminiVision.mockResolvedValueOnce("pro");
+    const { aiVision } = await import("./ai.server");
+    expect(await aiVision("b", "image/png", "p", { vytazenie: true })).toBe("pro");
+    expect((geminiVision.mock.calls.at(-1) as any)[3].model).toBe("gemini-3.1-pro-preview");
+
+    geminiVision.mockRejectedValueOnce(new Error("Gemini gemini-3.1-pro-preview: časový limit 90 s"));
+    geminiVision.mockResolvedValueOnce("flash");
+    expect(await aiVision("b", "image/png", "p", { vytazenie: { limitMs: 90_000 } })).toBe("flash");
+    const posledne = geminiVision.mock.calls.slice(-2) as any[];
+    expect(posledne[0][3]).toMatchObject({ model: "gemini-3.1-pro-preview", limitMs: 90_000 });
+    expect(posledne[1][3].model).toBeUndefined();
+
+    // Bez vyťažovania (predkontácia, asistent) sa vyšší model nevolá.
+    geminiVision.mockResolvedValueOnce("x");
+    await aiVision("b", "image/png", "p", {});
+    expect((geminiVision.mock.calls.at(-1) as any)[3].model).toBeUndefined();
   });
 });

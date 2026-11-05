@@ -23,6 +23,10 @@ export type OcrBlocek = {
   /** `zalohova` = proforma/preddavková faktúra, `ostra` = daňový doklad. */
   document_subtype?: string | null;
   items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
+  /** Základ dane spolu (bez DPH). */
+  net_amount?: number | null;
+  /** Rozpis DPH z tabuľky na bločku — riadok za každú sadzbu. */
+  vat_breakdown?: Array<{ rate: number; base: number; vat: number }> | null;
   /** Zaokrúhlenie sumy na úhradu (hotovosť), napr. -0.02. */
   rounding?: number | null;
 };
@@ -46,12 +50,18 @@ Sadzby DPH ${KDE[krajina]} sú ${zoznam} percent — inú nevracaj.
 Dátum vráť tak, ako je na doklade, vo formáte YYYY-MM-DD.
 Keď údaj na doklade nie je, daj null; nič si nevymýšľaj.
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"rounding":number|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}
+{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"net_amount":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"vat_breakdown":[{"rate":${vyber},"base":number,"vat":number}],"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"rounding":number|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}
 "total" je suma na úhradu (po zaokrúhlení). Zaokrúhlenie („Zaokrúhlenie", napr. -0.02) daj do "rounding",
 nie medzi položky; keď na doklade nie je, null.
 Do "document_title" daj nadpis dokladu tak, ako je vytlačený. "document_subtype" je "zalohova"
 pri zálohovej, proforma či preddavkovej faktúre (nie je daňový doklad), inak "ostra"; faktúra,
-ktorá len odpočítava zaplatenú zálohu, je "ostra".`;
+ktorá len odpočítava zaplatenú zálohu, je "ostra".
+"net_amount" je základ dane spolu (bez DPH a bez zaokrúhlenia), "vat_amount" DPH spolu.
+"vat_breakdown" prepíš presne z tabuľky rozpisu DPH na doklade (sadzba – základ – DPH), riadok za
+každú sadzbu vrátane 0 %; keď tabuľka chýba, zrátaj ho z položiek podľa ich sadzby. "vat_rate" vyplň
+len vtedy, keď je na doklade jediná sadzba, inak null. Sadzbu ber vždy z dokladu — nikdy nedopĺňaj
+predvolenú a nikdy nedávaj celý základ jednej sadzbe, keď doklad má viac sadzieb.
+"unit_price" položky je cena za kus S DPH, tak ako je vytlačená.`
 }
 
 export async function ocrBlocek(

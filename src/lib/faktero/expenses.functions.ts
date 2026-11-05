@@ -335,6 +335,32 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
     if (!row) throw new Error("Doklad sa nepodarilo uložiť.");
+    /*
+      Rozpis DPH, ktorý nesedí so základom a DPH alebo nesie sadzbu, čo
+      v krajine neplatí, sa neuloží potichu — doklad ide na kontrolu s
+      dôvodom. Zvlášť, aby chýbajúci stĺpec nezablokoval uloženie.
+    */
+    try {
+      const { kontrolaUlozenehoBlocku } = await import("./rozpis-dph-vytazeny");
+      const { data: firmaK } = await supabase
+        .from("companies")
+        .select("country")
+        .eq("id", data.company_id)
+        .maybeSingle();
+      const k = kontrolaUlozenehoBlocku(row as any, (firmaK as any)?.country ?? null);
+      if (!k.ok) {
+        const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
+        const dovod = popisChybRozpisu(k);
+        const { error: eK } = await supabase
+          .from("expense_documents")
+          .update({ na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: dovod } as any)
+          .eq("id", row.id);
+        if (eK) console.warn("[doklad] na kontrolu sa nezapísalo:", eK.message);
+        else Object.assign(row as any, { na_kontrolu_dovod: dovod });
+      }
+    } catch (e: any) {
+      console.warn("[doklad] kontrola rozpisu DPH:", e?.message ?? e);
+    }
     // DIČ a adresa dodávateľa pre Pohodu — len doplnok, uloženie dokladu nezastaví.
     await (await import("./blocek-dodavatel-ulozenie.server"))
       .ulozDodavatelaBlocku(supabase, row.id, { dic: supplier_dic, adresa: supplier_address })

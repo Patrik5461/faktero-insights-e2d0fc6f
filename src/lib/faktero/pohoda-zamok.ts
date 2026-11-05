@@ -150,6 +150,7 @@ export const ZAMOK_PRIJATEJ = [
   "amount_total",
   "discount_total",
   "items",
+  "vat_breakdown",
   "currency",
   "exchange_rate",
   "dph_rezim",

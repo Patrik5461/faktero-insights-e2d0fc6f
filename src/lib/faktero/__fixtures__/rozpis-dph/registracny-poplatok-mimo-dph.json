@@ -1,0 +1,23 @@
+{
+  "_popis": "Doklad č. 2 od Patrika (5. 11. 2026): stĺpcová rekapitulácia Nie je predmetom DPH | Oslobodené | 1. Znížená | Základná | Celkom; základ 360,00 | 0,00 | 0,00 | 24,39 | 384,39; daň – | – | 0,00 | 5,61 | 5,61; k úhrade 390,00. Položky: registračný poplatok 360,00 (0 %), administratívny poplatok 24,39 (23 %). Extrakcia vrátila jednu sadzbu „1,46 %“ (5,61 / 384,39). Správne: 23 % 24,39 / 5,61 a nie je predmetom DPH 360,00.",
+  "supplier_name": "Test Registrácia s.r.o.",
+  "supplier_ic_dph": "SK2020000000",
+  "invoice_number": "2026-REG-1",
+  "issue_date": "2026-10-20",
+  "delivery_date": "2026-10-20",
+  "amount_without_vat": 384.39,
+  "vat_amount": 5.61,
+  "amount_total": 390.0,
+  "currency": "EUR",
+  "reverse_charge": false,
+  "vat_breakdown": [
+    { "rate": 0, "base": 360.0, "vat": 0, "vat_category": "out_of_scope" },
+    { "rate": 0, "base": 0, "vat": 0, "vat_category": "exempt" },
+    { "rate": 19, "base": 0, "vat": 0, "vat_category": "standard" },
+    { "rate": 23, "base": 24.39, "vat": 5.61, "vat_category": "standard" }
+  ],
+  "items": [
+    { "name": "Registračný poplatok", "quantity": 1, "unit_price": 360.0, "vat_rate": 0, "total": 360.0, "vat_category": "out_of_scope" },
+    { "name": "Administratívny poplatok", "quantity": 1, "unit_price": 24.39, "vat_rate": 23, "total": 24.39, "vat_category": "standard" }
+  ]
+}

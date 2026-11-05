@@ -24,6 +24,7 @@ import {
 } from "./mail-potvrdenie";
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 import { POKYN_POLOH } from "./polohy-ai";
+import { pokynRozpisuDph } from "./rozpis-dph-vytazeny";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 /**
@@ -95,10 +96,12 @@ Vráť VÝLUČNE JSON v tvare:
  "delivery_date": "YYYY-MM-DD"|null,
  "amount_without_vat": number|null, "vat_amount": number|null, "amount_total": number|null,
  "currency": string|null,
+ "vat_breakdown": [{"rate": number, "base": number, "vat": number}],
  "reverse_charge": boolean, "reverse_charge_text": string|null,
  "items": [{"name": string, "quantity": number|null, "unit": string|null,
             "unit_price": number|null, "vat_rate": number|null, "total": number|null,
-            "reverse_charge": boolean}]}
+            "reverse_charge": boolean}],
+ "items_total_with_vat": boolean|null}
 Dátum dodania ("delivery_date") hľadaj pod „Dátum dodania", „Dátum dodania tovaru/služby",
 „Dátum vzniku daňovej povinnosti", „Dátum uskutočnenia zdaniteľného plnenia", „DUZP",
 „Datum zdanitelného plnění" — keď na doklade nie je, null (nie dátum vystavenia).
@@ -142,6 +145,7 @@ Pri bločku pridaj aj "rounding": zaokrúhlenie sumy na úhradu tak, ako je na d
 Keď zaokrúhlenie na doklade nie je, null.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
+${pokynRozpisuDph()}
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
 ${POKYN_POLOH}`;
 
@@ -150,7 +154,19 @@ ${POKYN_POLOH}`;
  * Bez neho sa každé čítanie zapísalo ako „Doklady z e-mailu“ bez firmy, aj keď
  * doklad odfotili v appke alebo nahrali na webe.
  */
-export type KontextCitania = { ucel?: string; firma?: string | null };
+export type KontextCitania = {
+  ucel?: string;
+  firma?: string | null;
+  /**
+   * Na odpoveď čaká prehliadač — nginx pretne požiadavku po 30 s. Vyšší model
+   * číta 31–38 s (meranie 5. 11. 2026), tak sa číta rovno bežným modelom.
+   * Pozadie (Nespracované, mail, import) číta vyšším.
+   */
+  synchronne?: boolean;
+};
+
+/** Vyšší model na pozadí — keď do 90 s neodpovie, číta bežný model. */
+const LIMIT_VYSSIEHO_MODELU_MS = 90_000;
 
 /** Prečíta doklad cez Gemini. Keď sa to nepodarí, vráti null a doklad vznikne prázdny. */
 export async function precitajDoklad(
@@ -180,6 +196,8 @@ export async function precitajDoklad(
       ucel: kontext?.ucel ?? "doklad-z-posty",
       firma: kontext?.firma ?? null,
       odpovedal: (p) => (kto = p),
+      // Doklady číta vyšší model (`modelGeminiVytazenie`), pri zlyhaní bežný.
+      vytazenie: kontext?.synchronne ? false : { limitMs: LIMIT_VYSSIEHO_MODELU_MS },
     });
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
     const ai = json ? (JSON.parse(json) as Record<string, unknown>) : null;

@@ -1,0 +1,19 @@
+{
+  "_popis": "Faktúra RISS Plus (5. 11. 2026, purchase_invoices 860e184e): rozpis DPH 26,90 | 0 % | 0,00 ; 116,87 | 23 % | 26,88. Spolu bez DPH 143,77, DPH 26,88, celkom 170,65. AI vrátila položky so sumou riadku BEZ DPH a bez vat_breakdown — starý rozpisZAi z toho urobil 19 % 143,77 / 26,88.",
+  "supplier_name": "RISS Plus, s.r.o.",
+  "invoice_number": "FA-TEST-1",
+  "issue_date": "2026-10-29",
+  "delivery_date": "2026-10-29",
+  "amount_without_vat": 143.77,
+  "vat_amount": 26.88,
+  "amount_total": 170.65,
+  "currency": "EUR",
+  "reverse_charge": false,
+  "reverse_charge_text": "Prenesenie daňovej povinnosti podľa § 69 ods. 12 písm. f) zákona o DPH",
+  "items": [
+    { "name": "Debniaca tvárnica P+D 300x250x500 48ks/pal", "quantity": 60, "unit": "ks", "unit_price": 1.52352, "vat_rate": 23, "total": 91.41, "reverse_charge": false },
+    { "name": "Bet.oceľ hrebienková 6mm 6m", "quantity": 20, "unit": "ks", "unit_price": 1.3452, "vat_rate": 0, "total": 26.9, "reverse_charge": true },
+    { "name": "Rukavice Wurth HI-LITE COOL, neon veľ. 9,10", "quantity": 2, "unit": "ks", "unit_price": 3.1293, "vat_rate": 23, "total": 6.26, "reverse_charge": false },
+    { "name": "Doprava", "quantity": 16, "unit": "km", "unit_price": 1.2, "vat_rate": 23, "total": 19.2, "reverse_charge": false }
+  ]
+}

@@ -55,6 +55,36 @@ export async function volbyCitaniaFirmy(supabase: Klient, companyId: string) {
 }
 
 /**
+ * Rozpis DPH, ktorý neprešiel kontrolou, sa neuloží potichu: vytvorený doklad
+ * dostane `na_kontrolu_at` s dôvodom a v detaile svieti upozornenie. Zvlášť
+ * od zápisu dokladu — chýbajúci stĺpec nesmie zablokovať vytvorenie.
+ */
+async function oznacNaKontroluDph(
+  supabase: Klient,
+  tabulka: "purchase_invoices" | "expense_documents",
+  id: string,
+  companyId: string,
+  u: UdajeNespracovaneho,
+): Promise<void> {
+  const { kontrolaRozpisuUdajov } = await import("./nespracovane");
+  const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
+  const k = kontrolaRozpisuUdajov(u, await krajinaFirmy(supabase, companyId));
+  if (k.ok) return;
+  const { error } = await supabase
+    .from(tabulka)
+    .update({ na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: popisChybRozpisu(k) } as any)
+    .eq("id", id);
+  if (error) console.warn(`[nespracovane] ${tabulka} na kontrolu sa nezapísalo:`, error.message);
+}
+
+/** Krajina firmy — podľa nej sa overujú sadzby rozpisu DPH z vyťaženia. */
+async function krajinaFirmy(supabase: Klient, companyId: string | null | undefined): Promise<string | null> {
+  if (!companyId) return null;
+  const { data } = await supabase.from("companies").select("country").eq("id", companyId).maybeSingle();
+  return (data as any)?.country ?? null;
+}
+
+/**
  * Vyťažené údaje po úprave podľa firmy (vypnuté položky, dodací list) a s
  * nastavením zo skenera — dopĺňa sa len to, čo doklad nepovedal.
  */
@@ -145,7 +175,9 @@ export async function zalozNespracovany(
   if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
   const dnes = dnesBratislava();
   const vytazene = args.ai !== undefined;
-  let udaje = vytazene ? udajeZAi(args.ai, dnes) : null;
+  let udaje = vytazene
+    ? udajeZAi(args.ai, dnes, { krajina: args.ai ? await krajinaFirmy(supabase, args.companyId) : null })
+    : null;
   // Dátum prijatia: mail → kedy prišiel, nahratie → dnes (človek ho môže prepísať).
   const prijatie = args.prijate
     ? predvolenyDatumPrijatia({ nahrane: args.prijate })
@@ -215,7 +247,8 @@ export async function vytazNespracovany(id: string): Promise<void> {
     const povodne = nacitajUdaje(r.udaje);
     const druh = r.druh ?? navrhDruhu(ai, r.file_name);
     // Čo už človek vyplnil (napr. druh z appky), sa neprepisuje.
-    let udaje = povodne.dodavatel.nazov || povodne.cislo ? doplnUdaje(povodne, udajeZAi(ai, dnes)) : udajeZAi(ai, dnes);
+    const nove = udajeZAi(ai, dnes, { krajina: await krajinaFirmy(supabaseAdmin, r.company_id) });
+    let udaje = povodne.dodavatel.nazov || povodne.cislo ? doplnUdaje(povodne, nove) : nove;
     /*
       Naučené z predchádzajúcich dokladov dodávateľa — len do prázdnych polí.
       Firma je z riadka dokladu, nie z požiadavky (beží cez supabaseAdmin).
@@ -375,6 +408,18 @@ export async function vytvorDoklad(
     };
   };
 
+  /*
+    Rozpis DPH, ktorý človek v Nespracovaných opravil oproti vyťaženiu, nesie
+    príznak ručnej úpravy — opravný skript ho neprepíše. Spúšťač
+    `faktero_rucna_uprava_dph` stráži len UPDATE, preto sa nastavuje tu.
+  */
+  const rucnaUprava = await (async () => {
+    if (druh === "ostatny") return {};
+    const { rozpisUpravenyClovekom } = await import("./nespracovane");
+    const upraveny = rozpisUpravenyClovekom(u, r.ai ?? null, dnes, await krajinaFirmy(supabase, r.company_id));
+    return upraveny ? { rucne_upravene_at: teraz, rucne_upravil: userId } : {};
+  })();
+
   let vysledok: {
     agenda: "prijata" | "doklad" | "ostatny";
     id: string;
@@ -443,6 +488,7 @@ export async function vytvorDoklad(
         zauctoval: zauctovat ? userId : null,
         ...zdrojZauctovaniaPriVytvoreni(zauctovat),
         ...(cudzia ? { odberatel_nesedi: { ...cudzia, zistene_at: teraz } } : {}),
+        ...rucnaUprava,
       })
       .select("id, pohoda_predkontacia, pohoda_clenenie_dph, category, reverse_charge")
       .single();
@@ -455,6 +501,7 @@ export async function vytvorDoklad(
       doklad nahral. Zvlášť, aby chýbajúci stĺpec nezablokoval vytvorenie.
     */
     await supabase.from("purchase_invoices").update({ spracoval: userId, spracovane_at: teraz }).eq("id", data.id);
+    await oznacNaKontroluDph(supabase, "purchase_invoices", data.id, r.company_id, u);
     /*
       Vytvorením je faktúra skontrolovaná — keď sa dá určiť predkontácia aj
       členenie (vlastné, z pravidla, ktoré doplnil spúšťač, z kategórie alebo
@@ -560,6 +607,7 @@ export async function vytvorDoklad(
         file_mime: cesta ? mime : null,
         file_size: bajty?.length ?? null,
         ai_raw: r.ai ?? null,
+        ...rucnaUprava,
       })
       .select("id, pohoda_predkontacia")
       .single();
@@ -585,6 +633,7 @@ export async function vytvorDoklad(
         .update({ zauctovane_at: teraz, zauctoval: userId, ...zdrojZauctovaniaPriVytvoreni(true) })
         .eq("id", data.id)
         .is("zauctovane_at", null);
+    await oznacNaKontroluDph(supabase, "expense_documents", data.id, r.company_id, u);
     vysledok = { agenda: "doklad", id: data.id, zauctovana: zauctovanyBlocek };
   } else {
     const idDokladu = crypto.randomUUID();
@@ -865,7 +914,12 @@ export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string
   u.mena = e.currency ?? "EUR";
   const rozpis = Array.isArray(e.vat_breakdown) ? e.vat_breakdown : null;
   u.rozpis = rozpis?.length
-    ? rozpis.map((r: any) => ({ sadzba: Number(r.sadzba) || 0, zaklad: Number(r.zaklad) || 0, dph: Number(r.dph) || 0 }))
+    ? rozpis.map((r: any) => ({
+        sadzba: Number(r.sadzba) || 0,
+        zaklad: Number(r.zaklad) || 0,
+        dph: Number(r.dph) || 0,
+        ...(r.vat_category ? { vat_category: r.vat_category } : {}),
+      }))
     : e.net_amount != null || e.vat_amount != null
       ? [{ sadzba: Number(e.vat_rate) || 0, zaklad: Number(e.net_amount) || 0, dph: Number(e.vat_amount) || 0 }]
       : [];

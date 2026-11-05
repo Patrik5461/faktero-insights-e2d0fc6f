@@ -2311,6 +2311,12 @@ export function Potvrdenie({
                 : ""}
             </div>
           )}
+          {vysledok.kontrola_dph ? (
+            <div role="alert" className="mt-2 rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-2 text-xs">
+              <div className="font-semibold text-app-pozor">{t("app.rozpisDphNesedi")}</div>
+              <div className="mt-0.5 text-app-text-2">{vysledok.kontrola_dph}</div>
+            </div>
+          ) : null}
           {vysledok.items.length > 0 && (
             <div className="mt-2 text-xs text-app-text-2">
               {t("app.poloziekZDokladu", { pocet: vysledok.items.length })}
