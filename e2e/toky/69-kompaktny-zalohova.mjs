@@ -1,7 +1,8 @@
 /*
   Detail zálohovej faktúry v KOMPAKTNOM rozložení (QA firma Test) — to isté
   ako tok 68 (vystavená): náhľad PDF a panel 400 px ako nespracovaný doklad,
-  sekcie v rovnakom poradí, zaúčtovanie za typom dokladu a tlačidlá v pätičke.
+  sekcie v rovnakom poradí; zálohová sa neúčtuje — bez polí zaúčtovania,
+  v pätičke len „Stiahnuť XML pre Pohodu“.
   Navyše: číslo zálohovej faktúry a karta „Daňový doklad k prijatej platbe“
   ostali v paneli. QA účtu sa voľby dizajnu vrátia, faktúra sa zmaže.
 */
@@ -18,7 +19,7 @@ export default {
     );
     await overKompaktnyDetail(t, {
       id: f.id,
-      hladaj: "Zálohová faktúra",
+      neuctuje: true,
       navyse: async (page) => {
         const panel = page.locator("[data-panel-kompaktny]");
         await panel.getByText("Číslo zálohovej faktúry").first().waitFor({ timeout: 10000 });
