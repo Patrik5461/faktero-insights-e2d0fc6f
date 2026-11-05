@@ -23,7 +23,7 @@ import {
   type OdosielatelPotvrdeni,
 } from "./mail-potvrdenie";
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
-import { POKYN_POLOH } from "./polohy-ai";
+import { POKYN_POLOH, POKYN_POLOH_KRATKY } from "./polohy-ai";
 import { pokynRozpisuDph } from "./rozpis-dph-vytazeny";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
@@ -147,7 +147,7 @@ Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď do
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 ${pokynRozpisuDph()}
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
-${POKYN_POLOH}`;
+`;
 
 /**
  * Odkiaľ čítanie prišlo — pre prehľad využitia AI v admine (`ai_pouzitie`).
@@ -192,13 +192,18 @@ export async function precitajDoklad(
     // Uprednostnená domáca mena firmy (nastavenie Nespracovaných) — doplnok pokynu.
     const { pokynCitania } = await import("./vytazenie-mena");
     let kto: "gemini" | "openai" | null = null;
-    const odpoved = await aiVision(base64, mimeType, pokynCitania(PROMPT, volby), {
-      ucel: kontext?.ucel ?? "doklad-z-posty",
-      firma: kontext?.firma ?? null,
-      odpovedal: (p) => (kto = p),
-      // Doklady číta vyšší model (`modelGeminiVytazenie`), pri zlyhaní bežný.
-      vytazenie: kontext?.synchronne ? false : { limitMs: LIMIT_VYSSIEHO_MODELU_MS },
-    });
+    const odpoved = await aiVision(
+      base64,
+      mimeType,
+      pokynCitania(PROMPT + (kontext?.synchronne ? POKYN_POLOH_KRATKY : POKYN_POLOH), volby),
+      {
+        ucel: kontext?.ucel ?? "doklad-z-posty",
+        firma: kontext?.firma ?? null,
+        odpovedal: (p) => (kto = p),
+        // Doklady číta vyšší model (`modelGeminiVytazenie`), pri zlyhaní bežný.
+        vytazenie: kontext?.synchronne ? false : { limitMs: LIMIT_VYSSIEHO_MODELU_MS },
+      },
+    );
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
     const ai = json ? (JSON.parse(json) as Record<string, unknown>) : null;
     // Polohy údajov (zvýraznenie v náhľade) vie presne len Gemini — od náhrady sa zahodia.
@@ -481,7 +486,9 @@ export async function spracujPrijatyMail(
   */
   const { data: firma } = await supabaseAdmin
     .from("companies")
-    .select("mail_povoleni_odosielatelia, mail_ukladat_bez_dokladu, ico, ic_dph, name, country, uctovanie_nastavenia")
+    .select(
+      "mail_povoleni_odosielatelia, mail_ukladat_bez_dokladu, ico, ic_dph, name, country, uctovanie_nastavenia",
+    )
     .eq("id", adresa.company_id)
     .maybeSingle();
   // Uprednostnená domáca mena pri vyťažení (nastavenie Nespracovaných dokladov).
@@ -606,7 +613,8 @@ export async function spracujPrijatyMail(
         const obsah = await obsahMailu(mail.email_id, apiKey);
         const { textMailu } = await import("./zdrojovy-mail");
         textPreUlozenie = textMailu(rozbalTelo(obsah.text), rozbalTelo(obsah.html));
-        komuPreUlozenie = (Array.isArray(obsah.to) ? obsah.to.join(", ") : obsah.to ?? null) || null;
+        komuPreUlozenie =
+          (Array.isArray(obsah.to) ? obsah.to.join(", ") : (obsah.to ?? null)) || null;
         await supabaseAdmin
           .from("inbox_messages")
           .update({
@@ -615,18 +623,25 @@ export async function spracujPrijatyMail(
           })
           .eq("id", zaznam.id);
       } catch (e: any) {
-        console.warn("[mail-prijem] text mailu sa neuložil:", String(e?.message ?? e).slice(0, 200));
+        console.warn(
+          "[mail-prijem] text mailu sa neuložil:",
+          String(e?.message ?? e).slice(0, 200),
+        );
       }
     }
 
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
-    const lenObrazkyAPdf = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
+    const lenObrazkyAPdf = vsetky.filter((p) =>
+      jePrilohaDoklad(p.content_type, p.filename, p.size),
+    );
     /*
       Faktúra poslaná len ako ISDOC (bez PDF) je tiež doklad — údaje v nej sú
       presné. Keď PDF v maile je, ISDOC sa použije ako zdroj údajov k nemu
       (`zXmlVedla`) a samostatný doklad z neho nevzniká, inak by bol dvakrát.
     */
-    const vsetkyDoklady = lenObrazkyAPdf.some((p) => /pdf/i.test(p.content_type ?? "") || /\.pdf$/i.test(p.filename ?? ""))
+    const vsetkyDoklady = lenObrazkyAPdf.some(
+      (p) => /pdf/i.test(p.content_type ?? "") || /\.pdf$/i.test(p.filename ?? ""),
+    )
       ? lenObrazkyAPdf
       : [...lenObrazkyAPdf, ...vsetky.filter((p) => /\.isdoc$/i.test(p.filename ?? ""))];
     // Pri rozdelenom maile sa o podpisoch a logách hovorí len raz, nie za každú firmu.
@@ -658,20 +673,36 @@ export async function spracujPrijatyMail(
             userId: adresaFirmy.user_id,
             zdroj: "mail",
             bajty: Buffer.from(pdf),
-            nazov: `${(predmet ?? "e-mail").replace(/[\\/:*?"<>|]+/g, " ").slice(0, 80).trim() || "e-mail"}.pdf`,
+            nazov: `${
+              (predmet ?? "e-mail")
+                .replace(/[\\/:*?"<>|]+/g, " ")
+                .slice(0, 80)
+                .trim() || "e-mail"
+            }.pdf`,
             mime: "application/pdf",
-            poznamka: [
-              odosielatel ? `E-mail bez prílohy od ${odosielatel}` : "E-mail bez prílohy",
-              predmet ? `predmet „${predmet.slice(0, 120)}“` : null,
-            ]
-              .filter(Boolean)
-              .join(", ") + ".",
+            poznamka:
+              [
+                odosielatel ? `E-mail bez prílohy od ${odosielatel}` : "E-mail bez prílohy",
+                predmet ? `predmet „${predmet.slice(0, 120)}“` : null,
+              ]
+                .filter(Boolean)
+                .join(", ") + ".",
             inboxMessageId: zaznam?.id ?? null,
           });
-          await doprav("hotovo", "Mail bez dokladu uložený do Nespracovaných ako PDF s textom.", vsetky.length, [], [], [n.id]);
+          await doprav(
+            "hotovo",
+            "Mail bez dokladu uložený do Nespracovaných ako PDF s textom.",
+            vsetky.length,
+            [],
+            [],
+            [n.id],
+          );
           return { stav: "hotovo", vytvorenych: 1 };
         } catch (e: any) {
-          console.warn("[mail-prijem] mail bez dokladu sa neuložil:", String(e?.message ?? e).slice(0, 200));
+          console.warn(
+            "[mail-prijem] mail bez dokladu sa neuložil:",
+            String(e?.message ?? e).slice(0, 200),
+          );
         }
       }
       await doprav("bez_prilohy", "Mail neobsahoval PDF ani fotku dokladu.", vsetky.length, []);
@@ -688,12 +719,18 @@ export async function spracujPrijatyMail(
       bez prípony; keď je v maile jediné PDF a jediné XML, patria k sebe.
     */
     const kmen = (n?: string | null) => (n ?? "").toLowerCase().replace(/\.[^.]+$/, "");
-    const xmlPrilohy = vsetky.filter((p) => /\.(isdoc|xml)$/i.test(p.filename ?? "") && (p.size ?? 0) < 5_000_000);
-    const pdfPrilohy = doklady.filter((p) => /pdf/i.test(p.content_type ?? "") || /\.pdf$/i.test(p.filename ?? ""));
+    const xmlPrilohy = vsetky.filter(
+      (p) => /\.(isdoc|xml)$/i.test(p.filename ?? "") && (p.size ?? 0) < 5_000_000,
+    );
+    const pdfPrilohy = doklady.filter(
+      (p) => /pdf/i.test(p.content_type ?? "") || /\.pdf$/i.test(p.filename ?? ""),
+    );
     async function zXmlVedla(priloha: ResendPrilohaMeta): Promise<Record<string, unknown> | null> {
       const par =
         xmlPrilohy.find((x) => kmen(x.filename) === kmen(priloha.filename)) ??
-        (xmlPrilohy.length === 1 && pdfPrilohy.length === 1 && pdfPrilohy[0]!.id === priloha.id ? xmlPrilohy[0] : null);
+        (xmlPrilohy.length === 1 && pdfPrilohy.length === 1 && pdfPrilohy[0]!.id === priloha.id
+          ? xmlPrilohy[0]
+          : null);
       if (!par) return null;
       const s = await stiahniPrilohu(par);
       if ("chyba" in s) return null;
@@ -754,7 +791,10 @@ export async function spracujPrijatyMail(
       const meno = priloha.filename ?? `priloha.${pripona}`;
       const cudzi = cudziOdberatel(ai, firmaUdaje);
       if (cudzi) poznamky.push(`${meno}: ${cudzi}`);
-      const odkial = [odosielatel ? `Prišlo e-mailom od ${odosielatel}` : "Prišlo e-mailom", predmet ? `predmet „${predmet.slice(0, 120)}“` : null]
+      const odkial = [
+        odosielatel ? `Prišlo e-mailom od ${odosielatel}` : "Prišlo e-mailom",
+        predmet ? `predmet „${predmet.slice(0, 120)}“` : null,
+      ]
         .filter(Boolean)
         .join(", ");
       try {
@@ -799,7 +839,14 @@ export async function spracujPrijatyMail(
       );
     }
     const spolu = vytvorene.length;
-    await doprav(spolu ? "hotovo" : "chyba", poznamky.join("; ") || null, doklady.length, [], [], vytvorene);
+    await doprav(
+      spolu ? "hotovo" : "chyba",
+      poznamky.join("; ") || null,
+      doklady.length,
+      [],
+      [],
+      vytvorene,
+    );
     return {
       stav: spolu ? "hotovo" : "chyba",
       vytvorenych: spolu,

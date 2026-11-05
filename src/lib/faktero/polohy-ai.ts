@@ -101,6 +101,22 @@ roh — a "page" (číslo strany od 1). Príklad tvaru (súradnice sú len uká�
  "vat_breakdown[0].base": {"page": 1, "box_2d": [610, 520, 626, 600]}}
 Nikdy nedávaj [0, 0, 0, 0]. Pole, ktoré si nevyplnil alebo jeho miesto nevidíš, do "field_locations" nedávaj.`;
 
+/**
+ * Krátky pokyn polôh pre čítanie, na ktoré čaká prehliadač (nginx pretne po 30 s):
+ * len hlavné polia, bez riadkov rozpisu a položiek. Plný `POKYN_POLOH` predĺžil
+ * odpoveď flash modelu z ~20 s na 27–31 s (meranie 5. 11. 2026).
+ */
+export const POKYN_POLOH_KRATKY = `Pridaj "field_locations" — kde presne je na doklade vytlačená hodnota polí ${Object.keys(
+  POLIA_POLOH_AI,
+)
+  .map((k) => `"${k}"`)
+  .join(", ")}.
+Pre každé vyplnené pole odmeraj na obrázku strany ohraničenie samotnej hodnoty (nie popisu pred ňou)
+ako "box_2d": [ymin, xmin, ymax, xmax] — celé čísla 0–1000 voči výške a šírke strany, 0,0 je ľavý horný
+roh — a "page" (číslo strany od 1). Príklad tvaru (súradnice sú len ukážka, nekopíruj ich):
+{"invoice_number": {"page": 1, "box_2d": [88, 702, 104, 861]}, "amount_total": {"page": 1, "box_2d": [655, 790, 676, 905]}}
+Nikdy nedávaj [0, 0, 0, 0]. Pole, ktoré si nevyplnil alebo jeho miesto nevidíš, do "field_locations" nedávaj.`;
+
 /** Miesto jedného údaja podľa AI a hodnota, ktorú AI vtedy prečítala. */
 export type PolohaAi = {
   /**
