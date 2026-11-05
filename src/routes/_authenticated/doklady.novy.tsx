@@ -70,6 +70,9 @@ import { potvrd } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useDizajn } from "@/hooks/useDizajn";
 import { BlocekDetailKompaktny } from "@/components/faktero/BlocekDetailKompaktny";
+import { AutomatickyZaradena } from "@/components/faktero/AutomatickyZaradena";
+import { UpozornenieRozpisuDph } from "@/components/faktero/UpozornenieRozpisuDph";
+import { kontrolaUlozenehoBlocku } from "@/lib/faktero/rozpis-dph-vytazeny";
 import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
 import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
 import { RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
@@ -432,6 +435,22 @@ function NovyDokladPage() {
     (rozpisDph?.length ?? 0) > 1 &&
     (Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.zaklad) || 0), 0) - (Number(form.net_amount) || 0)) >= 0.005 ||
       Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.dph) || 0), 0) - (Number(form.vat_amount) || 0)) >= 0.005);
+  /*
+    Rozpis DPH: sadzba povolená v krajine, daň = základ × sadzba, druh plnenia
+    pri 0 % (mimo DPH, oslobodené, prenesenie). Nesediaci sa neuloží potichu —
+    server doklad označí na kontrolu.
+  */
+  const kontrolaRozpisuDph = kontrolaUlozenehoBlocku(
+    {
+      net_amount: form.net_amount === "" ? null : form.net_amount,
+      vat_amount: form.vat_amount === "" ? null : form.vat_amount,
+      vat_rate: form.vat_rate === "" ? null : form.vat_rate,
+      vat_breakdown: (rozpisDph?.length ?? 0) > 1 ? rozpisDph : null,
+      issue_date: form.issue_date || null,
+      supplier_ic_dph: form.supplier_ic_dph || null,
+    },
+    krajina,
+  );
   const kontrolaSumy = kontrolaSumyBlocku({
     celkom: form.total_amount,
     zaklad: form.net_amount,
@@ -928,6 +947,14 @@ function NovyDokladPage() {
         />
         <PageBody>
           {pasZamku}
+          {ulozeny?.na_kontrolu_dovod ? (
+            <AutomatickyZaradena
+              id={ulozeny.id}
+              tabulka="expense_documents"
+              naKontroluAt={ulozeny.na_kontrolu_at}
+              naKontroluDovod={ulozeny.na_kontrolu_dovod}
+            />
+          ) : null}
           {/*
             Ako nespracovaný doklad a detail faktúr v kompaktnom rozložení:
             náhľad skenu s nástrojmi a panel so sekciami (KompaktnyDetail).
@@ -1073,6 +1100,14 @@ function NovyDokladPage() {
       />
       <PageBody>
         {pasZamku}
+        {ulozeny?.na_kontrolu_dovod ? (
+          <AutomatickyZaradena
+            id={ulozeny.id}
+            tabulka="expense_documents"
+            naKontroluAt={ulozeny.na_kontrolu_at}
+            naKontroluDovod={ulozeny.na_kontrolu_dovod}
+          />
+        ) : null}
         <RozlozenieSNahladom
           className={nahladVedla ? "grid grid-cols-1 gap-5" : "mx-auto max-w-3xl"}
           /* Na lg (1024 so sidebarom) sa 48rem formulára nezmestí a stĺpec náhľadu by
@@ -1413,6 +1448,9 @@ function NovyDokladPage() {
                 value={form.vat_rate}
                 onChange={(v) => updateForm("vat_rate", v)}
               />
+              {!kontrolaRozpisuDph.ok ? (
+                <UpozornenieRozpisuDph className="sm:col-span-2" kontrola={kontrolaRozpisuDph} />
+              ) : null}
               {!kontrolaSumy.sedi || rozpisNesedi ? (
                 <div className="space-y-2 sm:col-span-2">
                   <KontrolaSumyBlocku

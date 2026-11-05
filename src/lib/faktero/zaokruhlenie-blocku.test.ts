@@ -116,7 +116,7 @@ describe("bloček so zaokrúhlením −0,02 € z čítania", () => {
   it("pole „rounding“ → vlastný riadok, súčet sedí", () => {
     const u = udajeZAi(ai({ rounding: -0.02 }), "2026-11-02");
     expect(u.zaokruhlenie).toBe(-0.02);
-    expect(u.rozpis).toEqual([{ sadzba: 23, zaklad: 10, dph: 2.3 }]);
+    expect(u.rozpis).toEqual([{ sadzba: 23, zaklad: 10, dph: 2.3, vat_category: "standard" }]);
     expect(kontrolaSumy(u).sedi).toBe(true);
     expect(rozdielPoloziek(u)).toBeNull();
   });

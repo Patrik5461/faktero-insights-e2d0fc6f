@@ -195,7 +195,7 @@ export function NahladKompaktny({
    * Bez `zvyraznenie` zvonka.
    */
   udaje?: UdajeNespracovaneho | null;
-  aktivnePole?: KlucPola | null;
+  aktivnePole?: string | null;
   onPrepniZvyraznenie?: () => void;
   /** „Zmazať do koša“ v nástrojoch (nespracovaný doklad). */
   onZmaz?: () => void;

@@ -756,6 +756,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.neznamyPredajca": "Unbekannter Händler",
   "app.zDokladuZatvorka": "(aus dem Beleg gelesen)",
   "app.zTohoDph": "davon USt. {suma}",
+  "app.rozpisDphNesedi": "USt.-Aufschlüsselung stimmt nicht — der Beleg wird zur Prüfung markiert",
   "app.bezPripojeniaKratke": "ohne Verbindung",
   "app.bezOdpovede": "keine Antwort",
 

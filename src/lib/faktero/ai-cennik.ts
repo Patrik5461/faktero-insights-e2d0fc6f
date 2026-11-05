@@ -19,6 +19,10 @@ export const CENNIK: Record<string, CenaModelu> = {
   "gemini-3.5-flash-lite": { vstup: 0.1, vystup: 0.4 },
   "gemini-3.5-pro": { vstup: 1.25, vystup: 10 },
   "gemini-2.5-flash": { vstup: 0.3, vystup: 2.5 },
+  // Vyťažovanie dokladov (`modelGeminiVytazenie`) — sadzby do 200 tisíc tokenov vstupu.
+  "gemini-3.1-pro-preview": { vstup: 2, vystup: 12 },
+  "gemini-pro-latest": { vstup: 2, vystup: 12 },
+  "gemini-2.5-pro": { vstup: 1.25, vystup: 10 },
   "gpt-4o": { vstup: 2.5, vystup: 10 },
   "gpt-4o-mini": { vstup: 0.15, vystup: 0.6 },
   "gpt-4.1": { vstup: 2, vystup: 8 },
@@ -139,6 +143,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   "palivova-karta": "Palivové karty (výpisy a faktúry)",
   banka_notifikacia: "Bankové notifikácie (e-mail)",
   "import-dokladov": "Import dokladov",
+  "oprava-rozpisu-dph": "Oprava rozpisu DPH",
   asistent: "AI asistent",
   "faktura-z-textu": "Faktúra z textu",
   "vyber-z-dokladu": "Výber z náhľadu dokladu",

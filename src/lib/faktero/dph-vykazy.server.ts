@@ -3,6 +3,7 @@ import { sadzbyKrajiny, zoradPodlaSadzby } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
 import { rozpisPrijatej } from "./prijate-do-pohody";
+import { ideDoPriznania } from "./rozpis-dph-kontrola";
 /**
  * Doklady za zdaňovacie obdobie pre výkazy k DPH.
  *
@@ -126,7 +127,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi",
         )
         .eq("company_id", companyId)
         /*
@@ -608,7 +609,9 @@ export async function nacitajVstup(
         kv: p.kv_clenenie === "X" ? "X" : "B1",
       });
     }
-    const tuzemske = prenesene.length ? rozpisP.filter((x) => !x.pdp) : null;
+    const tuzemske = prenesene.length
+      ? rozpisP.filter((x: any) => !x.pdp && ideDoPriznania({ rate: x.sadzba, vat_category: x.vat_category }))
+      : null;
     const domaciKod = String(krajinaDane((firmaKody as any)?.country));
     const rezimP =
       (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan, domaciKod);
@@ -698,8 +701,11 @@ export async function nacitajVstup(
       continue;
     }
     const rozpis = Array.isArray(d.vat_breakdown) ? d.vat_breakdown : null;
+    // „Nie je predmetom DPH“ do odpočtu ani KV nejde.
     const riadky: SadzbovyRiadok[] = rozpis?.length
-      ? rozpis.map((r: any) =>
+      ? rozpis
+          .filter((r: any) => ideDoPriznania({ rate: r.sadzba ?? r.rate, vat_category: r.vat_category }))
+          .map((r: any) =>
           // Rozpis z bločku nesie daň v `dph` — predtým sa čítalo len `vat`
           // a `dan`, takže bloček s rozpisom išiel do odpočtu s nulovou daňou.
           riadokZoSum(
@@ -826,10 +832,19 @@ function riadkyPrijatej(
     „priemerná" sadzba (20,65 % → 19 alebo 23 %) a zlé riadky priznania aj KV.
   */
   if (!cudziaMena) {
-    const rozpis = rozpisPrijatej(p).filter((x: any) => !x.pdp);
-    if (rozpis.length > 1) {
+    const vsetky = rozpisPrijatej(p).filter((x: any) => !x.pdp);
+    /*
+      „Nie je predmetom DPH“ (správne a registračné poplatky) do priznania ani
+      KV nepatrí vôbec. Uložený rozpis (`vat_breakdown`) platí aj s jedným
+      riadkom — zo súčtov by sa sadzba dopočítala pomerom (5,61 / 384,39 →
+      „1,46 %“).
+    */
+    const rozpis = vsetky.filter((x: any) => ideDoPriznania({ rate: x.sadzba, vat_category: x.vat_category }));
+    const zRozpisu = Array.isArray(p.vat_breakdown) && p.vat_breakdown.length > 0;
+    if (rozpis.length > 1 || (rozpis.length && (zRozpisu || rozpis.length < vsetky.length))) {
       return rozpis.map((x: any) => ({ sadzba: Number(x.sadzba) || 0, zaklad: x.zaklad, dan: x.dph }));
     }
+    if (vsetky.length && !rozpis.length) return [];
   }
   return [riadokZoSum(zaklad, dan, den)];
 }

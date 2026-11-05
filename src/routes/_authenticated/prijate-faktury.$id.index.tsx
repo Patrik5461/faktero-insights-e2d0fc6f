@@ -689,7 +689,7 @@ function PurchaseInvoiceDetail() {
                   </div>
                 ) : null}
                 {samo && <SamofakturaPanel row={row} onZmena={load} />}
-                <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} />
+                <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} naKontroluDovod={(row as any).na_kontrolu_dovod} />
                 <VazbaZalohyPrijatej row={row} />
                 <UpozornenieKontrolyEfaktury invoiceId={row.id} />
                 <RegistrPlatcuDph
@@ -1214,7 +1214,7 @@ function PurchaseInvoiceDetail() {
       <PageBody>
         {upozornenieCudzej ? <div className="mb-4">{upozornenieCudzej}</div> : null}
         <div className="mb-4 space-y-3 empty:hidden">
-          <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} />
+          <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} naKontroluDovod={(row as any).na_kontrolu_dovod} />
           <UpozornenieKontrolyEfaktury invoiceId={row.id} />
         </div>
         {!navrh && !pdfRozlozenie && <div className="mb-4">{stitkyAStav}</div>}

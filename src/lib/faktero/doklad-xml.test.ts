@@ -133,7 +133,7 @@ describe("údaje faktúry z XML", () => {
     const u = udajeZAi(d, "2026-10-14");
     expect(u.dodavatel.nazov).toBe("Papiernictvo Orava s.r.o.");
     expect(navrhDruhu(d)).toBe("faktura");
-    expect(rozpisZAi(d)).toEqual([{ sadzba: 23, zaklad: 40, dph: 9.2 }]);
+    expect(rozpisZAi(d)).toEqual([{ sadzba: 23, zaklad: 40, dph: 9.2, vat_category: "standard" }]);
   });
 
   it("ZUGFeRD / Factur-X (CII)", () => {

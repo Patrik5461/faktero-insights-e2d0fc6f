@@ -37,9 +37,9 @@ describe("nespracované doklady", () => {
     expect(r.map((x) => x.sadzba)).toEqual([5, 19, 23]);
     // Dorovnanie centov ide ako doteraz najnižšej sadzbe — hodnoty sa nemenia.
     expect(r).toEqual([
-      { sadzba: 5, zaklad: 20.01, dph: 1.01 },
-      { sadzba: 19, zaklad: 50, dph: 9.5 },
-      { sadzba: 23, zaklad: 100, dph: 23 },
+      { sadzba: 5, zaklad: 20.01, dph: 1.01, vat_category: "standard" },
+      { sadzba: 19, zaklad: 50, dph: 9.5, vat_category: "standard" },
+      { sadzba: 23, zaklad: 100, dph: 23, vat_category: "standard" },
     ]);
   });
 
@@ -67,11 +67,11 @@ describe("nespracované doklady", () => {
         ],
       }),
     ).toEqual([
-      { sadzba: 5, zaklad: 20, dph: 1 },
-      { sadzba: 23, zaklad: 100, dph: 23 },
+      { sadzba: 5, zaklad: 20, dph: 1, vat_category: "standard" },
+      { sadzba: 23, zaklad: 100, dph: 23, vat_category: "standard" },
     ]);
     expect(rozpisZAi({ amount_without_vat: 100, vat_amount: 23, amount_total: 123 })).toEqual([
-      { sadzba: 23, zaklad: 100, dph: 23 },
+      { sadzba: 23, zaklad: 100, dph: 23, vat_category: "standard" },
     ]);
   });
 

@@ -219,7 +219,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
         firma?.iban ? [{ iban: firma.iban, nazov: null }] : [],
       ) as { iban: string; nazov: string | null }[];
     }
-    const { polohyZAi } = await import("./polohy-ai");
+    const { doplnokZAi, polohyZAi } = await import("./polohy-ai");
     const ai = (r.ai ?? null) as Record<string, unknown> | null;
     // Odberateľ na doklade je iná firma — upozornenie s voľbami Zmazať / Uložiť aj tak / Presunúť.
     const { nesediNespracovany } = await import("./cudzia-faktura.server");
@@ -246,6 +246,8 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       ibanOdberatela: typeof ai?.buyer_iban === "string" ? (ai.buyer_iban as string) : null,
       /** Kde AI údaje na doklade našla — zvýraznenie na obrázku a skene. */
       polohyAi: polohyZAi(ai),
+      /** Údaje z AI len na zvýraznenie v náhľade (odberateľ, SWIFT, záloha…). */
+      doplnokAi: doplnokZAi(ai) ?? null,
       povinne: (firma?.povinne_polia_dokladu ?? []) as string[],
       varovania,
       id: r.id as string,

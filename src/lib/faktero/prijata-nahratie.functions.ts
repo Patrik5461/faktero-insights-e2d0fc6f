@@ -62,6 +62,8 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
     const ai = await precitajDoklad(bajty.toString("base64"), data.mime, null, {
       ucel: "nespracovane",
       firma: data.company_id,
+      // Prehliadač čaká na odpoveď — vyšší model by nestihol 30 s nginx.
+      synchronne: true,
     });
 
     const { zostavPrijatuFakturu } = await import("./mail-prijem");

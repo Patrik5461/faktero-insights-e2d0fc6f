@@ -12,7 +12,16 @@
 */
 
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
-import { najblizsiaSadzba, zoradPodlaSadzby } from "./vat-rates";
+import { zoradPodlaSadzby } from "./vat-rates";
+import { rozpisZVytazenia, type KontextRozpisu } from "./rozpis-dph-vytazeny";
+import {
+  jeKategoriaDph,
+  kategoriaRiadku,
+  popisChybRozpisu,
+  skontrolujRozpisDph,
+  type KategoriaDph,
+  type VysledokKontroly,
+} from "./rozpis-dph-kontrola";
 import { datum as datumZAi } from "./mail-prijem";
 import {
   bezZaokruhlenia,
@@ -33,7 +42,12 @@ export const DRUHY_NESPRACOVANYCH: { kluc: DruhNespracovaneho; nazov: string }[]
   { kluc: "ostatny", nazov: "Iný doklad (zmluva, list, predpis…)" },
 ];
 
-export type RiadokRozpisu = { sadzba: number; zaklad: number; dph: number };
+/**
+ * Riadok rozpisu DPH. `vat_category` (od 5. 11. 2026): zdaniteľné, nie je
+ * predmetom DPH, oslobodené, prenesenie, na kontrolu — pozri
+ * `rozpis-dph-kontrola.ts`. Chýbajúca sa odvodí zo sadzby (`kategoriaRiadku`).
+ */
+export type RiadokRozpisu = { sadzba: number; zaklad: number; dph: number; vat_category?: KategoriaDph };
 
 export type UdajeNespracovaneho = {
   dodavatel: {
@@ -141,6 +155,15 @@ export type UdajeNespracovaneho = {
   pravidloId?: string;
   /** Polia vyplnené pravidlom (pole → hodnota) — kým sa nezmenia, svieti pri nich hviezdička. */
   zPravidla?: Record<string, string>;
+  /**
+   * Rozpis DPH z vyťaženia neprešiel kontrolou (`rozpis-dph-kontrola.ts`):
+   * sumy dokladu, voči ktorým sa kontroluje, a dôvod. Kým tu je, formulár
+   * ukazuje upozornenie a vytvorený doklad ide „na kontrolu“. Zmaže sa, keď
+   * človek rozpis opraví alebo potvrdí, že je správny.
+   */
+  kontrolaDph?: { bezDph: number; dph: number; dovod: string };
+  /** Človek potvrdil „Rozpis je správny“ — kontrola rozpisu ho už nezastaví. Zmena rozpisu ho zruší. */
+  rozpisPotvrdeny?: boolean;
   /** Faktúra je už zaplatená — vytvorí sa ako uhradená. */
   uhradene?: boolean;
   /**
@@ -246,51 +269,15 @@ export function navrhDruhu(ai: Record<string, unknown> | null | undefined, nazov
 }
 
 /**
- * Rozpis DPH z vyťaženia: z položiek po sadzbách, keď súčet sedí so sumami
- * dokladu; inak jeden riadok so sadzbou dopočítanou zo základu a dane.
+ * Rozpis DPH z vyťaženia — tabuľka rozpisu z dokladu, inak položky po
+ * sadzbách, inak jedna sadzba, pri ktorej daň naozaj vychádza. Celá logika
+ * a kontrola je v `rozpis-dph-vytazeny.ts`.
  */
-export function rozpisZAi(ai: Record<string, unknown> | null | undefined): RiadokRozpisu[] {
-  if (!ai) return [];
-  const zaklad = num(ai.amount_without_vat);
-  const dph = num(ai.vat_amount);
-  const spolu = num(ai.amount_total);
-  const z = zaklad ?? (spolu !== null && dph !== null ? spolu - dph : null);
-  const d = dph ?? (spolu !== null && z !== null ? spolu - z : null);
-  const polozky = Array.isArray(ai.items) ? (ai.items as any[]) : [];
-  if (polozky.length && z !== null) {
-    const po: Record<string, RiadokRozpisu> = {};
-    for (const p of polozky) {
-      // Zaokrúhlenie nie je plnenie v sadzbe 0 % — do rozpisu DPH nepatrí.
-      if (jePolozkaZaokruhlenia(p)) continue;
-      const s = num(p?.vat_rate);
-      const celk = num(p?.total);
-      if (s === null || celk === null) {
-        Object.keys(po).forEach((k) => delete po[k]);
-        break;
-      }
-      const zakl = celk / (1 + s / 100);
-      const k = String(s);
-      po[k] ??= { sadzba: s, zaklad: 0, dph: 0 };
-      po[k].zaklad += zakl;
-      po[k].dph += celk - zakl;
-    }
-    const riadky = Object.values(po)
-      .sort((a, b) => b.sadzba - a.sadzba)
-      .map((r) => ({ sadzba: r.sadzba, zaklad: r2(r.zaklad), dph: r2(r.dph) }));
-    const sucet = riadky.reduce((a, r) => a + r.zaklad, 0);
-    if (riadky.length && Math.abs(sucet - z) <= 0.05 * Math.max(1, riadky.length)) {
-      // Centy dorovná posledný riadok, aby súčty sedeli s dokladom.
-      const posl = riadky[riadky.length - 1]!;
-      posl.zaklad = r2(posl.zaklad + (z - sucet));
-      if (d !== null) posl.dph = r2(posl.dph + (d - riadky.reduce((a, r) => a + r.dph, 0)));
-      // Centy idú (ako doteraz) najnižšej sadzbe; von ide pole zoradené vzostupne.
-      return zoradPodlaSadzby(riadky, "sadzba");
-    }
-  }
-  if (z === null && d === null) return [];
-  const zz = Math.abs(z ?? 0);
-  const dd = Math.abs(d ?? 0);
-  return [{ sadzba: zz ? najblizsiaSadzba((dd / zz) * 100, "SK") : 0, zaklad: zz, dph: dd }];
+export function rozpisZAi(
+  ai: Record<string, unknown> | null | undefined,
+  kontext: KontextRozpisu = {},
+): RiadokRozpisu[] {
+  return rozpisZVytazenia(ai, kontext).rozpis;
 }
 
 /**
@@ -318,7 +305,10 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
   for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania", "ks", "ss", "objednavka", "dodaciList"] as const)
     if (!u[k] && nove[k]) u[k] = nove[k];
   if (!u.vs) u.vs = nove.vs || vsDokladu(null, u.cislo);
-  if (!u.rozpis.length && nove.rozpis.length) u.rozpis = nove.rozpis;
+  if (!u.rozpis.length && nove.rozpis.length) {
+    u.rozpis = nove.rozpis;
+    if (nove.kontrolaDph) u.kontrolaDph = nove.kontrolaDph;
+  }
   if (u.celkom == null && nove.celkom != null) u.celkom = nove.celkom;
   if (!u.polozky.length && nove.polozky.length) u.polozky = nove.polozky;
   return u;
@@ -343,7 +333,12 @@ export function jePrenesenieZAi(
 }
 
 /** Údaje formulára predvyplnené z vyťaženia. */
-export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: string): UdajeNespracovaneho {
+export function udajeZAi(
+  ai: Record<string, unknown> | null | undefined,
+  dnes: string,
+  /** Krajina firmy — podľa nej sa overujú sadzby rozpisu DPH. */
+  kontext: { krajina?: string | null } = {},
+): UdajeNespracovaneho {
   const u = prazdneUdaje();
   if (!ai) return u;
   const vystavenie = datum(ai.issue_date);
@@ -371,7 +366,15 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
   u.datumDodania = datum(ai.delivery_date) || vystavenie || dnes;
   u.splatnost = datum(ai.due_date) || datum(ai.other_due_date);
   u.mena = (t(ai.currency, 3) || "EUR").toUpperCase();
-  u.rozpis = rozpisZAi(ai);
+  const vytazeny = rozpisZVytazenia(ai, { krajina: kontext.krajina, datumDodania: u.datumDodania || null });
+  u.rozpis = vytazeny.rozpis;
+  // Rozpis nesedí so sumami či sadzbami dokladu — doklad čaká na kontrolu človekom.
+  if (!vytazeny.kontrola.ok && vytazeny.sumy)
+    u.kontrolaDph = {
+      bezDph: vytazeny.sumy.bezDph,
+      dph: vytazeny.sumy.dph,
+      dovod: popisChybRozpisu(vytazeny.kontrola),
+    };
   const spolu = num(ai.amount_total);
   u.celkom = spolu === null ? null : Math.abs(spolu);
   u.polozky = (Array.isArray(ai.items) ? (ai.items as any[]) : [])
@@ -393,7 +396,7 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
     const z = num(ai.rounding);
     if (z && Math.abs(z) <= 0.05) u.zaokruhlenie = r2(z);
   }
-  u.prenesenie = jePrenesenieZAi(ai, u.polozky);
+  u.prenesenie = jePrenesenieZAi(ai, u.polozky) || vytazeny.prenesenie;
   /*
     Sumy vyťažené v domácej mene, ceny položiek v inej (uprednostnená domáca
     mena, pozri `vytazenie-mena.ts`): položky by so sumami nesedeli — doklad
@@ -420,6 +423,58 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
   };
   u.poznamka = t(ai.summary, 1000);
   return u;
+}
+
+/**
+ * Kontrola rozpisu DPH vo formulári: každý riadok (daň = základ × sadzba,
+ * sadzba platná v deň dodania) a — kým čaká kontrola z vyťaženia — súčty
+ * voči sumám vytlačeným na doklade. Bez nej sa porovnáva len so súčtami
+ * samotného rozpisu, ktoré sedia vždy.
+ */
+export function kontrolaRozpisuUdajov(
+  u: Pick<UdajeNespracovaneho, "rozpis" | "kontrolaDph" | "rozpisPotvrdeny" | "datumDodania" | "datumVystavenia">,
+  krajina?: string | null,
+): VysledokKontroly {
+  if (!u.rozpis?.length || u.rozpisPotvrdeny) return { ok: true, chyby: [] };
+  const vlastne = {
+    bezDph: r2(u.rozpis.reduce((a, r) => a + (Number(r.zaklad) || 0), 0)),
+    dph: r2(u.rozpis.reduce((a, r) => a + (Number(r.dph) || 0), 0)),
+  };
+  return skontrolujRozpisDph(
+    u.rozpis.map((r) => ({
+      rate: Number(r.sadzba) || 0,
+      base: Number(r.zaklad) || 0,
+      vat: Number(r.dph) || 0,
+      vat_category: r.vat_category ?? null,
+    })),
+    u.kontrolaDph ? { bezDph: u.kontrolaDph.bezDph, dph: u.kontrolaDph.dph } : vlastne,
+    { krajina: krajina ?? "SK", datumDodania: u.datumDodania || u.datumVystavenia || null },
+  );
+}
+
+/**
+ * Opravil človek v Nespracovaných rozpis DPH oproti vyťaženiu? Porovná sa
+ * rozpis a súčty so stavom, aký by dalo samotné `udajeZAi(ai)` — vytvorený
+ * doklad potom nesie `rucne_upravene_at` a opravný skript ho neprepíše.
+ */
+export function rozpisUpravenyClovekom(
+  u: Pick<UdajeNespracovaneho, "rozpis">,
+  ai: Record<string, unknown> | null | undefined,
+  dnes: string,
+  krajina?: string | null,
+): boolean {
+  if (!ai) return u.rozpis.length > 0;
+  const povodny = udajeZAi(ai, dnes, { krajina }).rozpis;
+  const kluc = (r: RiadokRozpisu[]) =>
+    JSON.stringify(
+      zoradPodlaSadzby(r, "sadzba").map((x) => [
+        Number(x.sadzba) || 0,
+        r2(Math.abs(Number(x.zaklad) || 0)),
+        r2(Math.abs(Number(x.dph) || 0)),
+        kategoriaRiadku({ rate: x.sadzba, vat_category: x.vat_category }),
+      ]),
+    );
+  return kluc(u.rozpis) !== kluc(povodny);
 }
 
 /** Súčty rozpisu (kladné). */
@@ -622,9 +677,25 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   const dph = Math.abs(Number(p.vat_amount ?? 0));
   const rozpis = Array.isArray(p.vat_breakdown) ? p.vat_breakdown : null;
   u.rozpis = rozpis?.length
-    ? zoradPodlaSadzby(rozpis.map((r: any) => ({ sadzba: Number(r.sadzba) || 0, zaklad: Math.abs(Number(r.zaklad) || 0), dph: Math.abs(Number(r.dph) || 0) })), "sadzba")
+    ? zoradPodlaSadzby(
+        rozpis.map((r: any) => ({
+          sadzba: Number(r.sadzba) || 0,
+          zaklad: Math.abs(Number(r.zaklad) || 0),
+          dph: Math.abs(Number(r.dph) || 0),
+          ...(jeKategoriaDph(r.vat_category) ? { vat_category: r.vat_category } : {}),
+        })),
+        "sadzba",
+      )
     : zaklad || dph
-      ? [{ sadzba: zaklad ? najblizsiaSadzba((dph / zaklad) * 100, "SK") : 0, zaklad, dph }]
+      ? // Sadzba sa nedopočítava z pomeru — len povolená, pri ktorej daň sedí, inak na kontrolu.
+        rozpisZVytazenia({
+          amount_without_vat: zaklad,
+          vat_amount: dph,
+          items: p.items,
+          supplier_ic_dph: p.supplier_ic_dph,
+          reverse_charge: p.reverse_charge === true,
+          delivery_date: p.delivery_date || p.issue_date,
+        }).rozpis
       : [];
   u.celkom = p.amount_total != null ? Math.abs(Number(p.amount_total)) : null;
   u.platba = s(p.payment_method);
@@ -685,6 +756,19 @@ export function prijataZUdajov(
     amount_without_vat: r2(zn * s.zaklad),
     vat_amount: r2(zn * s.dph),
     amount_total: r2(zn * s.celkom),
+    /*
+      Rozpis DPH po sadzbách tak, ako ho človek skontroloval — bez neho by
+      faktúra bez položiek padla na jednu sadzbu dopočítanú z pomeru DPH
+      a základu (0 % + 23 % → „19 %“). Dobropis so znamienkom dokladu.
+    */
+    vat_breakdown: u.rozpis.length
+      ? zoradPodlaSadzby(u.rozpis, "sadzba").map((x) => ({
+          sadzba: Number(x.sadzba) || 0,
+          zaklad: r2(zn * Math.abs(Number(x.zaklad) || 0)) || 0,
+          dph: r2(zn * Math.abs(Number(x.dph) || 0)) || 0,
+          vat_category: kategoriaRiadku({ rate: x.sadzba, vat_category: x.vat_category }),
+        }))
+      : null,
     currency: (u.mena || "EUR").toUpperCase(),
     payment_method: u.platba || "prevod",
     type: druh === "zalohova" ? "proforma" : "regular",
@@ -730,7 +814,9 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     vat_amount: s.dph,
     total_amount: s.celkom,
     vat_rate: sadzby.length === 1 ? sadzby[0] : null,
-    vat_breakdown: u.rozpis.length ? u.rozpis : null,
+    vat_breakdown: u.rozpis.length
+      ? u.rozpis.map((r) => ({ ...r, vat_category: kategoriaRiadku({ rate: r.sadzba, vat_category: r.vat_category }) }))
+      : null,
     currency: (u.mena || "EUR").toUpperCase(),
     payment_method: u.platba || "karta",
     category: prazdne(u.kategoria),

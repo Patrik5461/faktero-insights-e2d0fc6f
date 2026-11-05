@@ -14,7 +14,7 @@
  */
 
 import { zmeraj } from "./ai-merac.server";
-import { modelGemini, modelOpenAi } from "./ai-modely";
+import { modelGeminiVytazenie, modelGemini, modelOpenAi } from "./ai-modely";
 
 export type AiNastavenie = {
   /** Strop odpovede. Dlhý splátkový kalendár sa do predvoleného nezmestí. */
@@ -37,6 +37,13 @@ export type AiNastavenie = {
    * údajov na doklade vie presne len Gemini — OpenAI si ich vymýšľa.
    */
   odpovedal?: (poskytovatel: "gemini" | "openai") => void;
+  /**
+   * Vyťažovanie dokladu — číta sa vyšším modelom (`modelGeminiVytazenie`).
+   * `limitMs`: koľko času vyšší model dostane, potom (aj pri chybe) sa číta
+   * bežným modelom. Kde na odpoveď čaká prehliadač (nginx pretne po 30 s),
+   * volajúci vyšší model nepýta vôbec (`false`).
+   */
+  vytazenie?: { limitMs?: number } | boolean;
 };
 
 /**
@@ -245,6 +252,39 @@ export async function aiVision(
   if (!maGemini()) {
     if (!maOpenAi()) bezPoskytovatela();
     return naOpenAi();
+  }
+
+  /*
+    Vyťažovanie dokladu: najprv vyšší model. Keď nestihne limit alebo zlyhá
+    (kvóta, preťaženie, náhľadový model zrušený), číta sa bežným modelom —
+    meranie zapíše každé volanie so skutočne použitým modelom.
+  */
+  const vyssi = nastavenie?.vytazenie ? modelGeminiVytazenie() : null;
+  if (vyssi && vyssi !== modelGemini()) {
+    const limitMs = typeof nastavenie?.vytazenie === "object" ? nastavenie.vytazenie.limitMs : undefined;
+    try {
+      const { geminiVision } = await import("./gemini.server");
+      return await zmeraj(
+        { poskytovatel: "gemini", model: vyssi, ucel: nastavenie?.ucel, firma: nastavenie?.firma },
+        async (ohlasTokeny) => {
+          const odpoved = await geminiVision(
+            base64,
+            mimeType,
+            pokyn,
+            // Vyšší model uvažuje vždy — vypnuté uvažovanie by odmietol.
+            { ...nastavenie, bezUvazovania: false, model: vyssi, ...(limitMs ? { limitMs } : {}) },
+            ohlasTokeny,
+          );
+          nastavenie?.odpovedal?.("gemini");
+          return odpoved;
+        },
+      );
+    } catch (e) {
+      console.warn(
+        `[ai] ${vyssi} zlyhal, čítam modelom ${modelGemini()}:`,
+        String((e as Error)?.message ?? e).slice(0, 200),
+      );
+    }
   }
 
   try {

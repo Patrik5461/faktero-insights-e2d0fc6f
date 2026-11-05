@@ -747,6 +747,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.neznamyPredajca": "Ismeretlen eladó",
   "app.zDokladuZatvorka": "(a bizonylatról beolvasva)",
   "app.zTohoDph": "ebből áfa: {suma}",
+  "app.rozpisDphNesedi": "Az áfabontás nem stimmel — a bizonylat ellenőrzésre kerül",
   "app.bezPripojeniaKratke": "nincs kapcsolat",
   "app.bezOdpovede": "nincs válasz",
 

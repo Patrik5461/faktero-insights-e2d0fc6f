@@ -15,7 +15,7 @@ import { riadkyPreIds } from "@/lib/faktero/strankovanie";
 
 /** Prijaté faktúry (`purchase_invoices`) bez `items`. */
 export const SELECT_PRIJATYCH =
-  "id,company_id,supplier_name,supplier_ico,supplier_dic,supplier_ic_dph,invoice_number,issue_date,received_date,due_date,payment_date,payment_method,amount_without_vat,vat_amount,amount_total,currency,status,note,file_path,file_mime,file_size,created_by,deleted_at,created_at,updated_at,supplier_iban,variable_symbol,constant_symbol,specific_symbol,job_id,source,dph_rezim,delivery_date,odpocet,opravuje_cislo,exchange_rate,type,advance_invoice_id,samofakturacia,samofakturacia_stav,customer_id,supplier_street,supplier_city,supplier_zip,supplier_country,reverse_charge,reverse_charge_type,eu_plnenie,intro_note,discount_total,advance_amount,povodna_splatnost,category,pohoda_predkontacia,pohoda_clenenie_dph,pravidlo_id,zauctovane_at,zauctoval,exported_at,pohoda_cislo,export_job_id,rozuctovanie,kv_clenenie,stredisko,cinnost,pohoda_rad,int_poznamka,pdf_token,order_number,delivery_note_number,locked_at,predmet_mailu,stitky,inbox_message_id,vyuctovanie_id,pohoda_verzia,spracoval,spracovane_at,vehicle_id,zauctovanie_zdroj,zauctovanie_istota,auto_uctovanie_navrh,odosielatel_mailu,stav_id,komentar,prvy_export_at,pocet_exportov,export_cesta,vratene_z_pohody_at,oprava_zauctovania_at,oprava_zauctovania_povodne,odberatel_nesedi,na_kontrolu_at,nahrane_at,naposledy_zauctoval,naposledy_zauctovane_at";
+  "id,company_id,supplier_name,supplier_ico,supplier_dic,supplier_ic_dph,invoice_number,issue_date,received_date,due_date,payment_date,payment_method,amount_without_vat,vat_amount,amount_total,currency,status,note,file_path,file_mime,file_size,created_by,deleted_at,created_at,updated_at,supplier_iban,variable_symbol,constant_symbol,specific_symbol,job_id,source,dph_rezim,delivery_date,odpocet,opravuje_cislo,exchange_rate,type,advance_invoice_id,samofakturacia,samofakturacia_stav,customer_id,supplier_street,supplier_city,supplier_zip,supplier_country,reverse_charge,reverse_charge_type,eu_plnenie,intro_note,discount_total,advance_amount,povodna_splatnost,category,pohoda_predkontacia,pohoda_clenenie_dph,pravidlo_id,zauctovane_at,zauctoval,exported_at,pohoda_cislo,export_job_id,rozuctovanie,kv_clenenie,stredisko,cinnost,pohoda_rad,int_poznamka,pdf_token,order_number,delivery_note_number,locked_at,predmet_mailu,stitky,inbox_message_id,vyuctovanie_id,pohoda_verzia,spracoval,spracovane_at,vehicle_id,zauctovanie_zdroj,zauctovanie_istota,auto_uctovanie_navrh,odosielatel_mailu,stav_id,komentar,prvy_export_at,pocet_exportov,export_cesta,vratene_z_pohody_at,oprava_zauctovania_at,oprava_zauctovania_povodne,odberatel_nesedi,na_kontrolu_at,na_kontrolu_dovod,nahrane_at,naposledy_zauctoval,naposledy_zauctovane_at";
 
 /** Doklady/bločky (`expense_documents`) bez `items` a `vat_breakdown`. */
 export const SELECT_DOKLADOV =
@@ -34,8 +34,8 @@ export async function sPolozkami<T extends { id: string }>(
   riadky: T[],
 ): Promise<(T & { items: unknown; vat_breakdown?: unknown })[]> {
   if (!riadky.length) return [];
-  // Bločky nesú rozpis DPH po sadzbách vo `vat_breakdown` — Excel ho rozpíše do stĺpcov.
-  const stlpce = tabulka === "expense_documents" ? "id, items, vat_breakdown" : "id, items";
+  // Rozpis DPH po sadzbách je vo `vat_breakdown` (prijaté od 5. 11. 2026) — Excel ho rozpíše do stĺpcov.
+  const stlpce = "id, items, vat_breakdown";
   const polozky = await riadkyPreIds<{ id: string; items: unknown; vat_breakdown?: unknown }>(
     riadky.map((r) => r.id),
     (kus, od, po) =>
@@ -47,7 +47,7 @@ export async function sPolozkami<T extends { id: string }>(
     return {
       ...r,
       items: p?.items ?? null,
-      ...(tabulka === "expense_documents" ? { vat_breakdown: p?.vat_breakdown ?? null } : {}),
+      vat_breakdown: p?.vat_breakdown ?? null,
     };
   });
 }

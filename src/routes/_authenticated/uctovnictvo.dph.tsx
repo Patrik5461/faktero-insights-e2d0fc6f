@@ -191,7 +191,7 @@ function DphPage() {
           supabase
             .from("purchase_invoices")
             .select(
-              "id, invoice_number, issue_date, delivery_date, received_date, dph_rezim, reverse_charge, opravuje_cislo, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur, samofakturacia, samofakturacia_stav",
+              "id, invoice_number, issue_date, delivery_date, received_date, dph_rezim, reverse_charge, opravuje_cislo, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur, vat_breakdown, samofakturacia, samofakturacia_stav",
             )
             .eq("company_id", cid)
             .or(

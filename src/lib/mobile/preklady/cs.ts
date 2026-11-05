@@ -741,6 +741,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.neznamyPredajca": "Neznámý prodejce",
   "app.zDokladuZatvorka": "(přečteno z dokladu)",
   "app.zTohoDph": "z toho DPH {suma}",
+  "app.rozpisDphNesedi": "Rozpis DPH nesedí — doklad půjde ke kontrole",
   "app.bezPripojeniaKratke": "bez připojení",
   "app.bezOdpovede": "bez odpovědi",
 

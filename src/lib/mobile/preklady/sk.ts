@@ -755,6 +755,7 @@ export const sk = {
   "app.neznamyPredajca": "Neznámy predajca",
   "app.zDokladuZatvorka": "(prečítané z dokladu)",
   "app.zTohoDph": "z toho DPH {suma}",
+  "app.rozpisDphNesedi": "Rozpis DPH nesedí — doklad pôjde na kontrolu",
   "app.bezPripojeniaKratke": "bez pripojenia",
   "app.bezOdpovede": "bez odpovede",
 

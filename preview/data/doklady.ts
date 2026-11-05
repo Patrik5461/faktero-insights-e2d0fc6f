@@ -1437,6 +1437,49 @@ export function naplnDoklady(db: DemoDb) {
       });
     }
   }
+  /* Rozpis DPH z vyťaženia nesedí (5. 11.: registračný poplatok mimo DPH
+     + 23 %, AI dala „1,46 %“) — detail ukáže upozornenie a výber druhu plnenia. */
+  {
+    const id = uid("nesprac:rozpis-dph");
+    nesprac.push({
+      id,
+      company_id: FIRMA,
+      created_by: MAJITEL,
+      zdroj: "nahratie",
+      stav: "vytazene",
+      druh: "faktura",
+      file_name: "registracny-poplatok.pdf",
+      file_mime: "application/pdf",
+      file_size: 31200,
+      file_path: `${FIRMA}/nespracovane/${id}.pdf`,
+      ai: { supplier_name: "Register Demo s.r.o.", amount_without_vat: 384.39, vat_amount: 5.61, amount_total: 390 },
+      udaje: {
+        dodavatel: { nazov: "Register Demo s.r.o.", ico: "12345678", dic: "", icDph: "SK2020000000", iban: "", ulica: "", mesto: "", psc: "", krajina: "SK", email: "" },
+        cislo: "2026-REG-1",
+        vs: "2026001",
+        popis: "",
+        datumVystavenia: "2026-10-20",
+        datumDodania: "2026-10-20",
+        splatnost: "2026-11-03",
+        mena: "EUR",
+        rozpis: [{ sadzba: 0, zaklad: 384.39, dph: 5.61, vat_category: "needs_review" }],
+        kontrolaDph: { bezDph: 384.39, dph: 5.61, dovod: "Rozpis DPH nesedí: demo." },
+        celkom: 390,
+        platba: "prevod",
+        kategoria: "",
+        opravuje: "",
+        jobId: "",
+        poznamka: "",
+        ostatny: { druh: "", predmet: "", lehota: "" },
+        kody: { predkontacia: "", clenenie: "", kv: "", stredisko: "", cinnost: "", rad: "", intPoznamka: "" },
+        polozky: [],
+      },
+      chyba: null,
+      inbox_message_id: null,
+      created_at: cas(0, 12, 5),
+      updated_at: cas(0, 12, 5),
+    });
+  }
   db.vloz("nespracovane_doklady", nesprac);
 
   /* ================================================= ostatné doklady */

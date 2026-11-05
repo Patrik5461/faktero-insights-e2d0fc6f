@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Copy, Crosshair, Loader2, X } from "lucide-react";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import {
+  LegendaZvyraznenia,
   ObrazokSoZvyraznenim,
   PrepinacZvyraznenia,
   usePosunNaAktivne,
@@ -39,7 +40,7 @@ import {
   type SlovoNahladu,
 } from "@/lib/faktero/vyber-z-dokladu";
 import { POLIA_VYBERU } from "@/lib/faktero/vyber-z-dokladu";
-import { preloz } from "@/lib/i18n/jazyk";
+import { poleZPopisu, popisPola } from "@/lib/faktero/pole-formulara";
 import { useT } from "@/lib/i18n/useT";
 
 /**
@@ -124,43 +125,7 @@ function useJeDesktop(): boolean {
 
 /* ------------------------------------------------ pomôcky pre formulár */
 
-/** Popis poľa formulára — aria-label, inak text nad ním v `<label>`. */
-export function popisPola(el: Element | null): string | null {
-  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return null;
-  return (
-    el.getAttribute("aria-label") || el.closest("label")?.querySelector("span")?.textContent || null
-  );
-}
-
-/**
- * Pole podľa popisu — aj keď je formulár preložený do nemčiny či češtiny. Popisy
- * polí v `POLIA_VYBERU` sú slovenské; preložený popis sa preto najprv vráti na
- * slovenský (dlhší preklad má prednosť) a až potom sa porovná.
- */
-function poleZPopisu(popis: string | null): KlucPola | null {
-  const priamo = polePodlaPopisu(popis);
-  if (priamo || !popis) return priamo;
-  const text = popis.trim().toLowerCase();
-  let najlepsie: { sk: string; de: string } | null = null;
-  for (const p of POLIA_VYBERU)
-    for (const sk of p.popisy)
-      for (const jazyk of ["de", "cs"] as const) {
-        const de = preloz(jazyk, sk);
-        if (de === sk) continue;
-        const z = de.toLowerCase();
-        if (
-          (text === z || (text.startsWith(z) && !/[\p{L}\d]/u.test(text[z.length] ?? ""))) &&
-          (!najlepsie || de.length > najlepsie.de.length)
-        )
-          najlepsie = { sk, de };
-      }
-  return najlepsie ? polePodlaPopisu(najlepsie.sk + popis.trim().slice(najlepsie.de.length)) : null;
-}
-
-/** Ktoré pole výberu je to, do ktorého človek klikol (null = žiadne). */
-export function poleZPrvku(el: EventTarget | null): KlucPola | null {
-  return poleZPopisu(popisPola(el as Element | null));
-}
+export { popisPola, poleZPrvku } from "@/lib/faktero/pole-formulara";
 
 /** Krátko zvýrazní pole formulára, do ktorého sa práve zapísalo. */
 export function zablikajPole(kontajner: HTMLElement | null, kluc: KlucPola) {
@@ -717,6 +682,9 @@ function Vyber({
         </div>
       )}
 
+      {zobrazitZvyraznenie && zvyraznenia.length ? (
+        <LegendaZvyraznenia zvyraznenia={zvyraznenia} className="pb-2" />
+      ) : null}
       <div ref={obal} className="bg-muted/20">
         {jePdf ? (
           strany.map((s, i) => (
@@ -745,7 +713,7 @@ function Vyber({
               hotovo={poslednyVyber?.strana === i ? poslednyVyber.r : null}
               zvyraznenia={
                 zobrazitZvyraznenie ? (
-                  <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={i} aktivne={aktivne} />
+                  <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={i} aktivne={aktivne} klik={!pole} />
                 ) : null
               }
               obdlznik={obdlznik}
@@ -771,7 +739,7 @@ function Vyber({
             hotovo={poslednyVyber?.strana === 0 ? poslednyVyber.r : null}
             zvyraznenia={
               zobrazitZvyraznenie && strany.length ? (
-                <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={0} aktivne={aktivne} />
+                <ZvyrazneniaStrany zvyraznenia={zvyraznenia} strana={0} aktivne={aktivne} klik={!pole} />
               ) : null
             }
             obdlznik={obdlznik}

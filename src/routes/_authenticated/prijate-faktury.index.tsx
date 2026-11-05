@@ -1273,7 +1273,7 @@ function PurchaseInvoicesPage() {
                   )}
                   {r.na_kontrolu_at ? (
                     <StavOdznak ton="pozor" maly
-                      title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}>
+                      title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}>
                       {t("Na kontrolu")}
                     </StavOdznak>
                   ) : null}
@@ -1429,7 +1429,7 @@ function PurchaseInvoicesPage() {
                     {/* eFaktúra zaradená automaticky, ktorú ešte nikto neotvoril — hromadný príkaz ju vynechá. */}
                     {r.na_kontrolu_at ? (
                       <StavOdznak ton="pozor" maly className="mr-1.5 align-middle"
-                        title={t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}>
+                        title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : t("Zaradila sa automaticky z eFaktúry — kým ju neotvoríte a neskontrolujete, hromadný príkaz na úhradu ju vynechá.")}>
                         {t("Na kontrolu")}
                       </StavOdznak>
                     ) : null}

@@ -40,7 +40,11 @@ import { useT } from "@/lib/i18n/useT";
 import { DatumPrijatiaInfo } from "./DatumPrijatiaInfo";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
-import { zoradSadzby } from "@/lib/faktero/vat-rates";
+import { UpozornenieRozpisuDph } from "./UpozornenieRozpisuDph";
+import { popisyRiadkuDph, VolbaSadzbyDph } from "./VolbaSadzbyDph";
+import type { VysledokKontroly } from "@/lib/faktero/rozpis-dph-kontrola";
+
+
 
 /*
   Rozloženie nespracovaného dokladu kompaktné: veľký náhľad s
@@ -64,6 +68,7 @@ export function NespracovanyKompaktny({
   chyby,
   sucty,
   sadzby,
+  kontrolaRozpisu = null,
   busy,
   onVytvor,
   onUloz,
@@ -90,6 +95,8 @@ export function NespracovanyKompaktny({
   chyby: string[];
   sucty: { zaklad: number; dph: number; celkom: number };
   sadzby: number[];
+  /** Kontrola rozpisu DPH (`kontrolaRozpisuUdajov`) — upozornenie v „Čiastka a DPH“. */
+  kontrolaRozpisu?: VysledokKontroly | null;
   busy: boolean;
   onVytvor: () => void;
   onUloz: () => void;
@@ -120,8 +127,13 @@ export function NespracovanyKompaktny({
   const set = (z: Partial<UdajeNespracovaneho>) => setU({ ...u, ...z });
   const setDod = (z: Partial<UdajeNespracovaneho["dodavatel"]>) =>
     setU({ ...u, dodavatel: { ...u.dodavatel, ...z } });
+  // Zmena rozpisu ruší „Rozpis je správny“ — kontrola beží znova.
   const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
-    set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null });
+    set({
+      rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)),
+      celkom: null,
+      rozpisPotvrdeny: false,
+    });
   // Bloček: základ + DPH + zaokrúhlenie musí sedieť so sumou na cent.
   const kontrola = kontrolaSumy(u);
   const sumaSedi = blocek
@@ -455,8 +467,11 @@ export function NespracovanyKompaktny({
               </Pole>
             </div>
             {u.rozpis.map((r, i) => (
-              <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-center gap-3">
-                <Pole popis={t("Základ dane {sadzba} %", { sadzba: r.sadzba })}>
+              <div
+                key={i}
+                className="grid grid-cols-2 items-center gap-3"
+              >
+                <Pole popis={popisyRiadkuDph(r, t).zaklad}>
                   <DesatinnePole
                     hodnota={r.zaklad}
                     naZmenu={(z) => {
@@ -465,27 +480,25 @@ export function NespracovanyKompaktny({
                     className={ram("")}
                   />
                 </Pole>
-                <Pole popis={t("Daň {sadzba} %", { sadzba: r.sadzba })}>
+                <Pole popis={popisyRiadkuDph(r, t).dan}>
                   <DesatinnePole
                     hodnota={r.dph}
                     naZmenu={(v) => setRozpis(i, { dph: v })}
                     className={ram("")}
                   />
                 </Pole>
-                <select
-                  aria-label={t("Sadzba")}
-                  value={String(r.sadzba)}
-                  onChange={(e) => setRozpis(i, { sadzba: Number(e.target.value) })}
-                  className="h-10 rounded-lg border border-input bg-background px-1 text-xs"
-                >
-                  {zoradSadzby([...new Set([...sadzby, 0, Number(r.sadzba)])]).map((x) => (
-                    <option key={x} value={x}>
-                      {x} %
-                    </option>
-                  ))}
-                </select>
+                <VolbaSadzbyDph
+                  riadok={r}
+                  sadzby={sadzby}
+                  onChange={(z) => setRozpis(i, z)}
+                  className="col-span-2 h-10 rounded-lg border border-input bg-background px-2 text-xs"
+                />
               </div>
             ))}
+            <UpozornenieRozpisuDph
+              kontrola={kontrolaRozpisu}
+              onPotvrd={() => set({ kontrolaDph: undefined, rozpisPotvrdeny: true })}
+            />
             <div className="flex items-center justify-between text-xs">
               <button
                 type="button"
