@@ -10,6 +10,7 @@ import { naplnZaklad } from "./zaklad";
 import { naplnKontakty } from "./kontakty";
 import { naplnFaktury } from "./faktury";
 import { naplnSklad } from "./sklad";
+import { naplnCennikImport } from "./cennik-import";
 import { naplnZakazky } from "./zakazky";
 import { naplnDoklady } from "./doklady";
 import { naplnBanka } from "./banka";
@@ -27,6 +28,7 @@ const MODULY: [string, (db: DemoDb) => void][] = [
   ["kontakty a produkty", naplnKontakty],
   ["faktúry, ponuky, objednávky", naplnFaktury],
   ["sklad a cenník", naplnSklad],
+  ["cenové hladiny pre import cenníka", naplnCennikImport],
   ["zákazky", naplnZakazky],
   ["doklady", naplnDoklady],
   ["banka a pokladňa", naplnBanka],

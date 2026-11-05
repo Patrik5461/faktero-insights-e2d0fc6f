@@ -4,7 +4,16 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Pencil, Trash2, RotateCcw, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, Package, Download, Upload } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CennikImportOkno } from "@/components/faktero/CennikImportOkno";
+import { exportCennika, exportDoCsv, exportDoXlsx } from "@/lib/faktero/cennik-import";
+import { MIME_CSV, MIME_XLSX, nacitajCennikFirmy, stiahniBajty } from "@/lib/faktero/cennik-data";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -86,6 +95,28 @@ function ProductsPage() {
       setBulkHardDelete(false);
     }
   }
+  const [importCennika, setImportCennika] = useState(false);
+  const [exportujem, setExportujem] = useState(false);
+
+  /** Cenník so základnou cenou a cenami všetkých živých hladín — dá sa nahrať späť bez úprav. */
+  async function exportujCennik(format: "xlsx" | "csv") {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setExportujem(true);
+    try {
+      const c = await nacitajCennikFirmy(cid);
+      const e = exportCennika(c.produkty, c.hladiny, c.ceny);
+      const meno = `cennik-${new Date().toISOString().slice(0, 10)}`;
+      if (format === "csv") stiahniBajty(`${meno}.csv`, exportDoCsv(e), MIME_CSV);
+      else stiahniBajty(`${meno}.xlsx`, (await exportDoXlsx(e)) as BlobPart, MIME_XLSX);
+      toast.success(t("Cenník exportovaný ({n} produktov)", { n: e.riadky.length }));
+    } catch (err: any) {
+      toast.error(t("Cenník sa nepodarilo exportovať: {chyba}", { chyba: err?.message ?? "" }));
+    } finally {
+      setExportujem(false);
+    }
+  }
+
   const trackFn = useServerFn(setProductStockTracking);
   const zosuladFn = useServerFn(zosuladPredajnuCenu);
 
@@ -188,12 +219,39 @@ function ProductsPage() {
           "Cenník na faktúry — tovar aj služby. Pri tovare zapnite „Sledovať sklad“ a Faktero mu založí skladovú kartu.",
         )}
         action={
-          <button
-            onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) })}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
-          >
-            <Plus className="h-4 w-4" /> {t("Nová položka")}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={exportujem}
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" />{" "}
+                  {exportujem ? t("Exportujem…") : t("Exportovať cenník")}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => exportujCennik("xlsx")}>
+                  {t("Excel (.xlsx)")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => exportujCennik("csv")}>
+                  {t("CSV (.csv, oddeľovač ;)")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              onClick={() => setImportCennika(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary"
+            >
+              <Upload className="h-4 w-4" /> {t("Importovať cenník")}
+            </button>
+            <button
+              onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) })}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+            >
+              <Plus className="h-4 w-4" /> {t("Nová položka")}
+            </button>
+          </div>
         }
       />
       <PageBody>
@@ -513,6 +571,15 @@ function ProductsPage() {
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
       />
+      {importCennika && getActiveCompanyId() && (
+        <CennikImportOkno
+          companyId={getActiveCompanyId()!}
+          predvolenaSadzba={zakladnaSadzbaRezimu(rezim)}
+          mena={mena.kod}
+          onClose={() => setImportCennika(false)}
+          onHotovo={() => list.reload()}
+        />
+      )}
     </>
   );
 }

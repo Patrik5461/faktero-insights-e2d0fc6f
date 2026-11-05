@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -126,14 +127,21 @@ function NewOrder() {
       .is("deleted_at", null)
       .order("name")
       .then(({ data }) => setCustomers(data ?? []));
-    supabase
-      .from("products")
-      .select("id, name, unit, unit_price, vat_rate, description")
-      .eq("company_id", cid)
-      .is("deleted_at", null)
-      .eq("active", true)
-      .order("name")
-      .then(({ data }) => setProducts(data ?? []));
+    // Celý katalóg po stránkach — PostgREST vráti najviac 1 000 riadkov a produkt
+    // za tisíckou by sa na doklad nedal vybrať (ani by nedostal cenu hladiny).
+    vsetkyRiadky((od, po) =>
+      supabase
+        .from("products")
+        .select("id, name, unit, unit_price, vat_rate, description")
+        .eq("company_id", cid)
+        .is("deleted_at", null)
+        .eq("active", true)
+        .order("name")
+        .order("id")
+        .range(od, po),
+    )
+      .then((data) => setProducts(data))
+      .catch(() => setProducts([]));
   }, [cid]);
 
   // Úprava existujúcej objednávky

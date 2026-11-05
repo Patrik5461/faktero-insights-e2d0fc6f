@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Podklady } from "./ceny";
+import { vsetkyRiadky } from "./strankovanie";
 
 /**
  * Cenník — cenové skupiny, dohodnuté ceny a cenové akcie.
@@ -349,11 +350,15 @@ export const getPriceContext = createServerFn({ method: "POST" })
     if (data.customer_id) {
       const { data: c } = await context.supabase
         .from("customers")
-        .select("id, discount_percent, price_group_id, price_groups(discount_percent)")
+        .select("id, discount_percent, price_group_id, price_groups(discount_percent, deleted_at)")
         .eq("id", data.customer_id)
         .eq("company_id", data.company_id)
         .maybeSingle();
       odberatel = c;
+      // Zmazaná hladina sa už neuplatní — ani jej ceny, ani jej zľava.
+      if (odberatel?.price_groups?.deleted_at) {
+        odberatel = { ...odberatel, price_group_id: null, price_groups: null };
+      }
     }
 
     // Dohodnuté ceny sa sťahujú len tie, ktoré sa tohto odberateľa môžu týkať.
@@ -361,13 +366,18 @@ export const getPriceContext = createServerFn({ method: "POST" })
     if (odberatel) {
       const filtre = [`customer_id.eq.${odberatel.id}`];
       if (odberatel.price_group_id) filtre.push(`price_group_id.eq.${odberatel.price_group_id}`);
-      const { data: rows } = await context.supabase
-        .from("product_prices")
-        .select("product_id, customer_id, price_group_id, unit_price, min_quantity")
-        .eq("company_id", data.company_id)
-        .or(filtre.join(","))
-        .limit(5000);
-      ceny = rows ?? [];
+      // Po stránkach: PostgREST vráti najviac 1 000 riadkov a hladina s celým
+      // cenníkom (tisíc produktov) by inak pri zvyšných produktoch ticho
+      // spadla na základnú cenu mínus zľavu hladiny.
+      ceny = await vsetkyRiadky((od, po) =>
+        context.supabase
+          .from("product_prices")
+          .select("id, product_id, customer_id, price_group_id, unit_price, min_quantity")
+          .eq("company_id", data.company_id)
+          .or(filtre.join(","))
+          .order("id")
+          .range(od, po),
+      );
     }
 
     // `valid_to.is.null` musí byť v tom istom `or` ako horná hranica, inak by
