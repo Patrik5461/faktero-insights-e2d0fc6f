@@ -18,7 +18,7 @@ const kod = z.string().trim().max(30).nullable();
 const akcia = z.discriminatedUnion("typ", [
   z.object({ typ: z.literal("predkontacia"), kod }),
   z.object({ typ: z.literal("clenenie"), kod }),
-  z.object({ typ: z.literal("kv"), kod: z.string().trim().max(5).nullable() }),
+  z.object({ typ: z.literal("kv"), kod: z.string().trim().max(10).nullable() }),
   z.object({ typ: z.literal("platba"), kod: z.string().trim().max(30).nullable() }),
   z.object({ typ: z.literal("uctovnaPoznamka"), text: z.string().max(240).nullable() }),
   z.object({ typ: z.literal("komentar"), text: z.string().max(1000).nullable() }),

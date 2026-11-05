@@ -39,6 +39,7 @@ import {
   type TypDokladuPolozky,
 } from "@/lib/faktero/predkontacie";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { kvAutoPrijatej, textKv, textKvAuto } from "@/lib/faktero/kv-auto";
 import { KodPohody } from "./KodPohody";
 import {
@@ -74,6 +75,8 @@ export type Navrhy = {
   predvoleneClenenie: string | null;
   /** Predvolené členenie KV DPH firmy pre bežný doklad. */
   predvoleneKv?: string | null;
+  /** Členenie KV DPH z číselníka firmy pre smer dokladu (prázdne = systémový zoznam). */
+  kv?: { kod: string; nazov: string }[];
   maCiselnik?: boolean;
   /** Firma je platiteľ DPH (`companies.vat_payer`). */
   platitel?: boolean;
@@ -146,6 +149,8 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
   priklady?: { predkontacia?: string; clenenie?: string };
 }) {
   const { t } = useT();
+  // Číselník KV firmy (import z obrázka), bez neho systémový zoznam.
+  const kvPonuka = moznostiKv(navrhy?.kv, kvMoznosti, hodnoty.kv);
   const predkontacie = doklad
     ? zoradPodlaDokladu(navrhy?.predkontacie ?? [], doklad)
     : (navrhy?.predkontacie ?? []);
@@ -216,7 +221,7 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
               >
                 <option value="">{hromadne ? t("nemeniť") : textKvAuto(t, kvAuto)}</option>
                 {hromadne && <option value="auto">{t("automaticky")}</option>}
-                {kvMoznosti.map((k) => (
+                {kvPonuka.map((k) => (
                   <option key={k.kod} value={k.kod}>
                     {t(k.nazov)}
                   </option>
@@ -381,7 +386,7 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
           >
             <option value="">{hromadne ? t("nemeniť") : textKvAuto(t, kvAuto)}</option>
             {hromadne && <option value="auto">{t("automaticky")}</option>}
-            {kvMoznosti.map((k) => (
+            {kvPonuka.map((k) => (
               <option key={k.kod} value={k.kod}>
                 {t(k.nazov)}
               </option>
@@ -1196,7 +1201,7 @@ export function ZauctovaniePanel({
               className={vstupK}
             >
               <option value="">{textKvAuto(t, kvAuto)}</option>
-              {KV_PRIJATE.map((k) => (
+              {moznostiKv(navrhy?.kv, KV_PRIJATE, h.kv).map((k) => (
                 <option key={k.kod} value={k.kod}>
                   {t(k.nazov)}
                 </option>

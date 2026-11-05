@@ -27,6 +27,29 @@ import { jeNezahrnovat } from "./uctovanie-agenda";
 /** Členenia, ktoré má zmysel ručne zvoliť na vystavenom doklade. */
 export const KV_KODY_VYSTAVENE = ["A1", "A2", "C1", "D1", "D2", "X"];
 
+/**
+ * Hlavná sekcia výkazu pre kód z číselníka firmy (Pohoda): A2CN → A2,
+ * B1-0 → B1, C2B1-0 → C2, KN (nezahŕňať) → X. Do Pohody ide kód presne,
+ * výkaz Faktera počíta so sekciou. Neznámy kód = null.
+ */
+export function kvSekcia(kod: unknown): string | null {
+  const k = String(kod ?? "")
+    .trim()
+    .toUpperCase();
+  if (!k) return null;
+  if (k === "X" || k === "KN") return "X";
+  if (/^(A1|B2|B3|D1|D2)$/.test(k)) return k;
+  const m = /^(A2|B1|C1|C2)(?:[A-Z0-9][A-Z0-9-]*|-[A-Z0-9-]+)?$/.exec(k);
+  return m ? m[1] : null;
+}
+
+/** Kód pre výkaz Faktera: podkód z číselníka firmy zaradí do hlavnej sekcie, ostatné nechá. */
+export function kvPreVykaz(kod: string | null | undefined): string | null {
+  const k = String(kod ?? "").trim();
+  if (!k) return kod ?? null;
+  return kvSekcia(k) ?? k;
+}
+
 /** Ručne zvolené členenie: „X“ (nezahŕňať) = "", prázdne = automaticky (null). */
 export function rucneKv(kod: unknown): string | null {
   const k = String(kod ?? "")
@@ -77,8 +100,10 @@ export function kvVystavenehoDokladu(o: KvVystavenehoVstup): string {
     faktúry občanovi do D.2. Ručné A.1/A.2 (skopírované z faktúry alebo
     z pravidla pre vystavené faktúry) preto rozhodne automatika.
   */
-  if (r !== null && jeOpravnyVystaveny(o) && (r === "A1" || r === "A2")) return kvAuto(o);
-  if (r !== null) return r === "" || KV_KODY_VYSTAVENE.includes(r) ? r : kvAuto(o);
+  // Podkód z číselníka firmy (A2CN, C1IO…) sa posudzuje podľa sekcie, vráti sa presne (Pohoda ho pozná).
+  const sekcia = r ? kvSekcia(r) : r;
+  if (r !== null && jeOpravnyVystaveny(o) && (sekcia === "A1" || sekcia === "A2")) return kvAuto(o);
+  if (r !== null) return r === "" || (sekcia !== null && KV_KODY_VYSTAVENE.includes(sekcia)) ? r : kvAuto(o);
   return kvAuto(o);
 }
 

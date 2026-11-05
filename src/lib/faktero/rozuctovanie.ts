@@ -161,7 +161,7 @@ export function ocisti(riadky: RiadokRozuctovania[]): RiadokRozuctovania[] {
     zaklad: r2(Number(r.zaklad) || 0),
     dph: r2(Number(r.dph) || 0),
     text: String(r.text ?? "").trim().slice(0, 90) || null,
-    kv: String(r.kv ?? "").trim().slice(0, 5) || null,
+    kv: String(r.kv ?? "").trim().slice(0, 10) || null,
     ...strediskoACinnost(r),
   }));
 }

@@ -7,7 +7,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useServerFn } from "@tanstack/react-start";
 import { navrhPredvolenychVystavenychFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { toast } from "sonner";
-import { BookOpen, Download, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { BookOpen, Download, ImageUp, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { ImportZObrazkaOkno } from "@/components/faktero/ImportZObrazkaOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KodPohody } from "@/components/faktero/KodPohody";
@@ -92,11 +93,13 @@ type Zaznam = {
   druhy_dokladov: string[];
   kategoria: string | null;
   pomer: PomerHodnota;
-  typ_dokladu: TypDokladuPolozky | null;
+  typ_dokladu: TypDokladuPolozky | "vydane" | "prijate" | null;
   typ_platby: TypPlatbyPolozky | null;
 };
 
-const ZDROJ: Record<string, string> = { pohoda: "Pohoda", subor: "súbor", rucne: "ručne" };
+const ZDROJ: Record<string, string> = { pohoda: "Pohoda", subor: "súbor", rucne: "ručne", obrazok: "obrázok" };
+/** Smer pri členení DPH a KV (typ_dokladu vydane/prijate). */
+const SMER_DOKLADU: Record<string, string> = { vydane: "vydané doklady", prijate: "prijaté doklady" };
 const vstup = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const kedy = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "medium", timeStyle: "short" }) : "";
@@ -1007,7 +1010,7 @@ function Import({
               onChange={(e) => setDruhSuboru(e.target.value as DruhCiselnika)}
               className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
             >
-              {DRUHY_CISELNIKA.map((d) => (
+              {DRUHY_CISELNIKA.filter((d) => d.kod !== "kv_clenenie").map((d) => (
                 <option key={d.kod} value={d.kod}>
                   {t(d.nazov)}
                 </option>
@@ -1055,7 +1058,7 @@ const PRAZDNY = {
   druhy_dokladov: [] as string[],
   kategoria: "",
   pomer: null as PomerHodnota,
-  typ_dokladu: null as TypDokladuPolozky | null,
+  typ_dokladu: null as TypDokladuPolozky | "vydane" | "prijate" | null,
   typ_platby: null as TypPlatbyPolozky | null,
 };
 
@@ -1082,6 +1085,7 @@ function Ciselnik({
   const [vsetky, setVsetky] = useState(false);
   const [form, setForm] = useState<typeof PRAZDNY | null>(null);
   const [busy, setBusy] = useState(false);
+  const [zObrazka, setZObrazka] = useState(false);
 
   const formular = useRef<HTMLDivElement>(null);
   const formZRiadku = (z: (typeof zaznamy)[number]): typeof PRAZDNY => ({
@@ -1257,13 +1261,38 @@ function Ciselnik({
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setForm({ ...PRAZDNY })}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
-        >
-          <Plus className="h-4 w-4" /> {t("Pridať {co}", { co: t(jednotne) })}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setZObrazka(true)}
+            data-import-z-obrazka-tlacidlo=""
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
+          >
+            <ImageUp className="h-4 w-4" /> {t("Importovať z obrázka")}
+          </button>
+          <button
+            onClick={() => setForm({ ...PRAZDNY })}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+          >
+            <Plus className="h-4 w-4" /> {t("Pridať {co}", { co: t(jednotne) })}
+          </button>
+        </div>
       </div>
+      {zObrazka && (
+        <ImportZObrazkaOkno
+          companyId={companyId}
+          existujuce={zaznamy.map((z) => ({ ...z, agenda: z.agenda ?? "" }))}
+          // Z predvolenej záložky Predkontácie sa druh rozpozná sám (obrázok býva členenie KV).
+          predvolenyDruh={druh === "predkontacia" ? undefined : druh}
+          onClose={() => setZObrazka(false)}
+          onUlozene={(d) => {
+            setDruh(d);
+            setAgenda("");
+            setForm(null);
+            onZmena();
+          }}
+        />
+      )}
 
       {form && (
         <div ref={formular} className="mt-4 grid gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 sm:grid-cols-6 sm:p-4">
@@ -1563,7 +1592,11 @@ function Ciselnik({
                     ) : null}
                   </td>
                   <td className="py-1.5 pr-3 text-muted-foreground">
-                    {druh === "predkontacia" ? t(nazovAgendy(z.agenda)) : z.agenda || "—"}
+                    {druh === "predkontacia"
+                      ? t(nazovAgendy(z.agenda))
+                      : druh === "kv_clenenie"
+                        ? z.kategoria || "—"
+                        : z.agenda || "—"}
                   </td>
                   {druh === "predkontacia" && (
                     <td className="py-1.5 pr-3 font-mono text-xs">
@@ -1580,7 +1613,11 @@ function Ciselnik({
                       <span className="block">
                         {[
                           z.typ_dokladu &&
-                            t(TYPY_DOKLADU_POLOZKY.find((x) => x.kod === z.typ_dokladu)?.nazov ?? z.typ_dokladu),
+                            t(
+                              TYPY_DOKLADU_POLOZKY.find((x) => x.kod === z.typ_dokladu)?.nazov ??
+                                SMER_DOKLADU[z.typ_dokladu] ??
+                                z.typ_dokladu,
+                            ),
                           z.typ_platby &&
                             t(TYPY_PLATBY_POLOZKY.find((x) => x.kod === z.typ_platby)?.nazov ?? z.typ_platby),
                         ]
@@ -1588,7 +1625,7 @@ function Ciselnik({
                           .join(" · ")}
                       </span>
                     ) : null}
-                    {z.kategoria ? (
+                    {z.kategoria && druh !== "kv_clenenie" ? (
                       <span className="block text-foreground">
                         {t("kategória:")}{" "}
                         {t(

@@ -17,6 +17,7 @@ import { kodClenenia, odvodClenenia, type KodCiselnika } from "./auto-uctovanie"
 import { kvOpravnehoZPovodnej, kvVystavenehoDokladu } from "./kv-urcenie";
 import { ZAKLADNE_CLENENIA_DPH } from "./predkontacie";
 import { rezimFirmy } from "./dph-rezim";
+import { kvKodFirmy } from "./ciselnik-obrazok";
 
 export type ZdrojClenenia = "pravidlo" | "firma" | "rezim";
 
@@ -177,6 +178,12 @@ export type KontextClenenia = {
   ciselnik?: { kod: string; popis?: string | null; agenda?: string | null }[];
   /** Predkontácia, ktorú firma na vystavených dokladoch ustálene používa (`odhadPredkontacie`). */
   odhad?: { faktura?: string | null; dobropis?: string | null } | null;
+  /**
+   * Kódy členenia KV DPH z číselníka firmy (druh kv_clenenie, vydané + KN).
+   * Automaticky určená sekcia sa zapíše kódom firmy (A1 → A1, jediný podkód
+   * sekcie → ten podkód); prázdne = systémové kódy.
+   */
+  kvCiselnik?: string[];
 };
 
 type Pole = "clenenie" | "kv" | "predkontacia";
@@ -343,7 +350,7 @@ export function resolveVatClassification(
     else if (!platitel) kv = null;
     else {
       const zPovodnej = pov ? kvOpravnehoZPovodnej(pov.kv_clenenie) : "";
-      if (zPovodnej) [kv, zdrojKv] = [zPovodnej, "povodna"];
+      if (zPovodnej) [kv, zdrojKv] = [kvKodFirmy(zPovodnej, ctx.kvCiselnik), "povodna"];
       else {
         const predvolene = typ === "regular" || typ === "advance_payment" ? txt(company.kv_clenenie_faktura) : null;
         const k = kvVystavenehoDokladu({
@@ -359,7 +366,11 @@ export function resolveVatClassification(
           dicOdberatela: invoice.customer_dic,
           clenenieDph: clenenieFinal,
         });
-        if (k) [kv, zdrojKv] = [k, predvolene && k === predvolene.toUpperCase() ? "firma" : "system"];
+        if (k)
+          [kv, zdrojKv] = [
+            kvKodFirmy(k, ctx.kvCiselnik),
+            predvolene && k === predvolene.toUpperCase() ? "firma" : "system",
+          ];
       }
     }
   }
