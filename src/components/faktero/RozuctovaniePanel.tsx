@@ -15,6 +15,15 @@ import {
   type RozpisSadzby,
 } from "@/lib/faktero/rozuctovanie";
 import { KodPohody } from "./KodPohody";
+import {
+  BunkaPolozky,
+  PodriadokPolozky,
+  POLE_POLOZKY,
+  PolozkyHlavicka,
+  PolozkyKontajner,
+  RiadokPolozky,
+  VYBER_POLOZKY,
+} from "./PolozkyResponzivne";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import type { Navrhy } from "./ZauctovaniePanel";
 import { formatujCislo } from "@/lib/faktero/mena";
@@ -164,20 +173,13 @@ export function RozuctovaniePanel({
     );
   }
 
-  const vstup = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm";
-  /*
-    Úzky stĺpec panela (detail s náhľadom PDF): bez spodnej šírky by tabuľka
-    ovládacie prvky zmačkala — sumy („100“) boli vidno len ako „1“. Každé pole
-    má preto spodnú šírku; tabuľka sa radšej posúva vodorovne vo svojom ráme.
-  */
-  const kodVstup = `${vstup} min-w-[8rem]`;
   return (
-    <div className="mt-3 rounded-md border border-border p-3">
+    <div className="mt-3 min-w-0 rounded-md border border-border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-sm font-medium">
           <Split className="h-4 w-4" /> {t("Rozúčtovanie")}
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="min-w-0 text-xs text-muted-foreground">
           {t("Doklad:")}{" "}
           {rozpis
             .map((r) =>
@@ -190,160 +192,172 @@ export function RozuctovaniePanel({
             .join(" · ")}
         </div>
       </div>
-      <div className="mt-2 overflow-x-auto">
-        <table className={`w-full text-sm ${sStrediskom ? "min-w-[1200px]" : "min-w-[940px]"}`}>
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground">
-              <th className="py-1 pr-2 font-medium">{t("Predkontácia")}</th>
-              <th className="py-1 pr-2 font-medium">{t("Členenie DPH")}</th>
-              <th className="py-1 pr-2 font-medium">{t("KV DPH")}</th>
+      {/*
+        Úzky bočný panel (~360 px): riadok je karta — kódy, potom sadzba a sumy,
+        potom KV, stredisko, činnosť, text a akcie. Široko (od 560 px kontajnera)
+        je hlavný riadok Predkontácia | Členenie | Sadzba | Základ | DPH a pod ním
+        ostatné polia s vlastnými popismi. Nič sa neposúva vodorovne.
+      */}
+      <PolozkyKontajner
+        className="mt-2 text-sm"
+        stlpce="minmax(0,1fr) minmax(0,1fr) 5.25rem 6.5rem 5.75rem"
+      >
+        <PolozkyHlavicka
+          stlpce={[
+            { text: t("Predkontácia") },
+            { text: t("Členenie DPH") },
+            { text: t("Sadzba") },
+            { text: t("Základ"), vpravo: true },
+            { text: t("DPH"), vpravo: true },
+          ]}
+        />
+        {riadky.map((r, i) => (
+          <RiadokPolozky key={i} className="items-start">
+            <BunkaPolozky popis={t("Predkontácia")} uzky={6}>
+              <KodPohody
+                ariaLabel={t("Predkontácia riadku {n}", { n: i + 1 })}
+                value={r.predkontacia ?? ""}
+                onChange={(v) => zmen(i, { predkontacia: v })}
+                moznosti={navrhy?.predkontacie ?? []}
+                placeholder={kody.predkontacia ?? ""}
+                className={POLE_POLOZKY}
+                vyber
+              />
+            </BunkaPolozky>
+            <BunkaPolozky popis={t("Členenie DPH")} uzky={6}>
+              <KodPohody
+                ariaLabel={t("Členenie DPH riadku {n}", { n: i + 1 })}
+                value={r.clenenie ?? ""}
+                onChange={(v) => zmen(i, { clenenie: v })}
+                moznosti={navrhy?.clenenia ?? []}
+                vyber
+                placeholder={kody.clenenie ?? ""}
+                className={POLE_POLOZKY}
+              />
+            </BunkaPolozky>
+            <BunkaPolozky popis={t("Sadzba")} uzky={3}>
+              <select
+                value={r.sadzba}
+                onChange={(e) => zmen(i, { sadzba: Number(e.target.value) })}
+                className={VYBER_POLOZKY}
+                aria-label={t("Sadzba riadku {n}", { n: i + 1 })}
+              >
+                {sadzby.map((s) => (
+                  <option key={s} value={s}>
+                    {s} %
+                  </option>
+                ))}
+              </select>
+            </BunkaPolozky>
+            <BunkaPolozky popis={t("Základ")} uzky={5}>
+              <input
+                type="number"
+                step="0.01"
+                value={r.zaklad}
+                onChange={(e) => zmen(i, { zaklad: Number(e.target.value) })}
+                className={`${POLE_POLOZKY} text-right tabular-nums`}
+                aria-label={t("Základ riadku {n}", { n: i + 1 })}
+              />
+            </BunkaPolozky>
+            <BunkaPolozky popis={t("DPH")} uzky={4}>
+              <input
+                type="number"
+                step="0.01"
+                value={r.dph}
+                onChange={(e) => zmen(i, { dph: Number(e.target.value) })}
+                className={`${POLE_POLOZKY} text-right tabular-nums`}
+                aria-label={t("DPH riadku {n}", { n: i + 1 })}
+              />
+            </BunkaPolozky>
+            <PodriadokPolozky className="items-start">
+              <BunkaPolozky
+                popis={t("KV DPH")}
+                uzky={sStrediskom ? 4 : 5}
+                siroky={sStrediskom ? 2 : 3}
+                vzdyPopis
+              >
+                <select
+                  value={r.kv ?? ""}
+                  onChange={(e) => zmen(i, { kv: e.target.value || null })}
+                  className={VYBER_POLOZKY}
+                  aria-label={t("Členenie KV riadku {n}", { n: i + 1 })}
+                >
+                  <option value="">{t("z dokladu")}</option>
+                  {kvMoznosti.map((k) => (
+                    <option key={k.kod} value={k.kod} title={t(k.nazov)}>
+                      {k.kod === "X" ? t("nezahŕňať") : k.kod}
+                    </option>
+                  ))}
+                </select>
+              </BunkaPolozky>
               {sStrediskom ? (
                 <>
-                  <th className="py-1 pr-2 font-medium">{t("Stredisko")}</th>
-                  <th className="py-1 pr-2 font-medium">{t("Činnosť")}</th>
+                  <BunkaPolozky popis={t("Stredisko")} uzky={4} siroky={2} vzdyPopis>
+                    <KodPohody
+                      ariaLabel={t("Stredisko riadku {n}", { n: i + 1 })}
+                      value={r.stredisko ?? ""}
+                      onChange={(v) => zmen(i, { stredisko: v })}
+                      moznosti={navrhy?.strediska ?? []}
+                      placeholder={kody.stredisko ?? ""}
+                      className={POLE_POLOZKY}
+                      vyber
+                    />
+                  </BunkaPolozky>
+                  <BunkaPolozky popis={t("Činnosť")} uzky={4} siroky={2} vzdyPopis>
+                    <KodPohody
+                      ariaLabel={t("Činnosť riadku {n}", { n: i + 1 })}
+                      value={r.cinnost ?? ""}
+                      onChange={(v) => zmen(i, { cinnost: v })}
+                      moznosti={navrhy?.cinnosti ?? []}
+                      placeholder={kody.cinnost ?? ""}
+                      className={POLE_POLOZKY}
+                      vyber
+                    />
+                  </BunkaPolozky>
                 </>
               ) : null}
-              <th className="py-1 pr-2 font-medium">{t("Sadzba")}</th>
-              <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
-              <th className="py-1 pr-2 text-right font-medium">{t("DPH")}</th>
-              <th className="py-1 pr-2 font-medium">{t("Text")}</th>
-              <th>
-                <span className="sr-only">{t("Akcie")}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {riadky.map((r, i) => (
-              <tr key={i} className="align-top">
-                <td className="py-1 pr-2 w-36">
-                  <KodPohody
-                    ariaLabel={t("Predkontácia riadku {n}", { n: i + 1 })}
-                    value={r.predkontacia ?? ""}
-                    onChange={(v) => zmen(i, { predkontacia: v })}
-                    moznosti={navrhy?.predkontacie ?? []}
-                    placeholder={kody.predkontacia ?? ""}
-                    className={kodVstup}
-                    vyber
-                  />
-                </td>
-                <td className="py-1 pr-2 w-32">
-                  <KodPohody
-                    ariaLabel={t("Členenie DPH riadku {n}", { n: i + 1 })}
-                    value={r.clenenie ?? ""}
-                    onChange={(v) => zmen(i, { clenenie: v })}
-                    moznosti={navrhy?.clenenia ?? []}
-                    vyber
-                    placeholder={kody.clenenie ?? ""}
-                    className={kodVstup}
-                  />
-                </td>
-                <td className="py-1 pr-2 w-24">
-                  <select
-                    value={r.kv ?? ""}
-                    onChange={(e) => zmen(i, { kv: e.target.value || null })}
-                    className={`${vstup} min-w-[5.5rem]`}
-                    aria-label={t("Členenie KV riadku {n}", { n: i + 1 })}
-                  >
-                    <option value="">{t("z dokladu")}</option>
-                    {kvMoznosti.map((k) => (
-                      <option key={k.kod} value={k.kod} title={t(k.nazov)}>
-                        {k.kod === "X" ? t("nezahŕňať") : k.kod}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                {sStrediskom ? (
-                  <>
-                    <td className="py-1 pr-2 w-32">
-                      <KodPohody
-                        ariaLabel={t("Stredisko riadku {n}", { n: i + 1 })}
-                        value={r.stredisko ?? ""}
-                        onChange={(v) => zmen(i, { stredisko: v })}
-                        moznosti={navrhy?.strediska ?? []}
-                        placeholder={kody.stredisko ?? ""}
-                        className={kodVstup}
-                        vyber
-                      />
-                    </td>
-                    <td className="py-1 pr-2 w-32">
-                      <KodPohody
-                        ariaLabel={t("Činnosť riadku {n}", { n: i + 1 })}
-                        value={r.cinnost ?? ""}
-                        onChange={(v) => zmen(i, { cinnost: v })}
-                        moznosti={navrhy?.cinnosti ?? []}
-                        placeholder={kody.cinnost ?? ""}
-                        className={kodVstup}
-                        vyber
-                      />
-                    </td>
-                  </>
-                ) : null}
-                <td className="py-1 pr-2 w-20">
-                  <select
-                    value={r.sadzba}
-                    onChange={(e) => zmen(i, { sadzba: Number(e.target.value) })}
-                    className={`${vstup} min-w-[5rem]`}
-                    aria-label={t("Sadzba riadku {n}", { n: i + 1 })}
-                  >
-                    {sadzby.map((s) => (
-                      <option key={s} value={s}>
-                        {s} %
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="py-1 pr-2 w-24">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={r.zaklad}
-                    onChange={(e) => zmen(i, { zaklad: Number(e.target.value) })}
-                    className={`${vstup} min-w-[6.5rem] text-right tabular-nums`}
-                    aria-label={t("Základ riadku {n}", { n: i + 1 })}
-                  />
-                </td>
-                <td className="py-1 pr-2 w-24">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={r.dph}
-                    onChange={(e) => zmen(i, { dph: Number(e.target.value) })}
-                    className={`${vstup} min-w-[6.5rem] text-right tabular-nums`}
-                    aria-label={t("DPH riadku {n}", { n: i + 1 })}
-                  />
-                </td>
-                <td className="py-1 pr-2">
-                  <input
-                    value={r.text ?? ""}
-                    onChange={(e) => zmen(i, { text: e.target.value })}
-                    placeholder={t("nepovinné")}
-                    className={`${vstup} min-w-[8rem]`}
-                    aria-label={t("Text riadku {n}", { n: i + 1 })}
-                  />
-                </td>
-                <td className="py-1 whitespace-nowrap">
-                  <button
-                    type="button"
-                    title={t("Doplniť sem zvyšok sadzby")}
-                    onClick={() => setRiadky((rs) => dorovnaj(rs, rozpis, i))}
-                    className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-secondary"
-                  >
-                    {t("= zvyšok")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRiadky((rs) => rs.filter((_, j) => j !== i))}
-                    className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                    aria-label={t("Zmazať riadok {n}", { n: i + 1 })}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              <BunkaPolozky
+                popis={t("Text")}
+                uzky={sStrediskom ? 12 : 7}
+                siroky={sStrediskom ? 3 : 6}
+                vzdyPopis
+              >
+                <input
+                  value={r.text ?? ""}
+                  onChange={(e) => zmen(i, { text: e.target.value })}
+                  placeholder={t("nepovinné")}
+                  className={POLE_POLOZKY}
+                  aria-label={t("Text riadku {n}", { n: i + 1 })}
+                />
+              </BunkaPolozky>
+              <BunkaPolozky
+                popis={t("Akcie")}
+                skrytyPopis
+                uzky={12}
+                siroky={3}
+                className="flex-row items-center justify-end gap-1 self-end"
+              >
+                <button
+                  type="button"
+                  title={t("Doplniť sem zvyšok sadzby")}
+                  onClick={() => setRiadky((rs) => dorovnaj(rs, rozpis, i))}
+                  className="h-8 whitespace-nowrap rounded px-1.5 text-xs text-muted-foreground hover:bg-secondary"
+                >
+                  {t("= zvyšok")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRiadky((rs) => rs.filter((_, j) => j !== i))}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-destructive"
+                  aria-label={t("Zmazať riadok {n}", { n: i + 1 })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </BunkaPolozky>
+            </PodriadokPolozky>
+          </RiadokPolozky>
+        ))}
+      </PolozkyKontajner>
       <button
         type="button"
         onClick={pridaj}

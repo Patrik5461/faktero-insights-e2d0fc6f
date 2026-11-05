@@ -17,6 +17,14 @@ import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno"
 import { VyberPravidla } from "@/components/faktero/VyberPravidla";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { KodPohody } from "@/components/faktero/KodPohody";
+import {
+  BunkaPolozky,
+  PodriadokPolozky,
+  POLE_POLOZKY,
+  PolozkyHlavicka,
+  PolozkyKontajner,
+  RiadokPolozky,
+} from "@/components/faktero/PolozkyResponzivne";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
@@ -1295,58 +1303,75 @@ function NovyDokladPage() {
                 vlastnú predkontáciu. Predkontácia s pomerom (napr. nafta 50/50)
                 rozúčtuje len túto položku; prázdna = predkontácia dokladu.
               */}
-              <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/30 text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th className="px-5 py-2 font-medium">{t("Položka")}</th>
-                    <th className="px-3 py-2 text-right font-medium">{t("Množstvo × cena")}</th>
-                    <th className="px-3 py-2 text-right font-medium">{t("Sadzba DPH")}</th>
-                    <th className="px-3 py-2 text-right font-medium">{t("Spolu s DPH")}</th>
-                    <th className="px-5 py-2 font-medium">{t("Predkontácia")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {polozky.map((p, i) => (
-                    <tr key={i} className="border-t border-border">
-                      <td className="px-5 py-2">{p.name || "—"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+              {/*
+                Úzky panel: položka je karta (názov, potom množstvo × cena |
+                sadzba | spolu, potom predkontácia). Široko riadok tabuľky a
+                predkontácia v podriadku — nič sa neposúva vodorovne.
+              */}
+              <PolozkyKontajner
+                className="px-5 pt-2 text-sm"
+                stlpce="minmax(0,1fr) minmax(0,9rem) 5rem minmax(0,7rem)"
+              >
+                <PolozkyHlavicka
+                  stlpce={[
+                    { text: t("Položka") },
+                    { text: t("Množstvo × cena"), vpravo: true },
+                    { text: t("Sadzba DPH"), vpravo: true },
+                    { text: t("Spolu s DPH"), vpravo: true },
+                  ]}
+                />
+                {polozky.map((p, i) => (
+                  <RiadokPolozky key={i} className="items-start">
+                    <BunkaPolozky>
+                      <span className="break-words">{p.name || "—"}</span>
+                    </BunkaPolozky>
+                    <BunkaPolozky popis={t("Množstvo × cena")} uzky={5} vpravo>
+                      <span className="tabular-nums text-muted-foreground">
                         {formatujMnozstvo(p.quantity, lokalJazyka(jazyk))} ×{" "}
                         {formatovacMeny(form.currency || "EUR", "sk-SK")(p.unit_price)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium">
-                          {p.vat_rate} %
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums font-medium">
+                      </span>
+                    </BunkaPolozky>
+                    <BunkaPolozky popis={t("Sadzba DPH")} uzky={3} vpravo>
+                      <span className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium tabular-nums">
+                        {p.vat_rate} %
+                      </span>
+                    </BunkaPolozky>
+                    <BunkaPolozky popis={t("Spolu s DPH")} uzky={4} vpravo>
+                      <span className="whitespace-nowrap font-medium tabular-nums">
                         {formatovacMeny(
                           form.currency || "EUR",
                           "sk-SK",
                         )(p.total ?? p.quantity * p.unit_price)}
-                      </td>
-                      <td className="min-w-[11rem] px-5 py-1.5">
+                      </span>
+                    </BunkaPolozky>
+                    <PodriadokPolozky>
+                      <BunkaPolozky popis={t("Predkontácia")} uzky={12} siroky={6} vzdyPopis>
                         <KodPohody
                           ariaLabel={t("Predkontácia položky {n}", { n: i + 1 })}
                           value={p.predkontacia ?? ""}
                           onChange={(v) =>
-                            setPolozky(polozky.map((x, j) => (j === i ? { ...x, predkontacia: v || null } : x)))
+                            setPolozky(
+                              polozky.map((x, j) =>
+                                j === i ? { ...x, predkontacia: v || null } : x,
+                              ),
+                            )
                           }
                           moznosti={kody?.predkontacie ?? []}
                           vyber
                           bezPopisu
                           placeholder={t("ako doklad")}
-                          className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                          className={POLE_POLOZKY}
                         />
                         {p.predkontacia && kody?.pomerove?.includes(p.predkontacia) ? (
-                          <span className="mt-0.5 block text-[11px] text-primary">{t("rozúčtuje sa pomerom")}</span>
+                          <span className="block text-[11px] text-primary">
+                            {t("rozúčtuje sa pomerom")}
+                          </span>
                         ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
+                      </BunkaPolozky>
+                    </PodriadokPolozky>
+                  </RiadokPolozky>
+                ))}
+              </PolozkyKontajner>
               {rozpisDph && rozpisDph.length > 0 && (
                 <div className="border-t border-border bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
                   {t("Rozpis DPH:")}{" "}

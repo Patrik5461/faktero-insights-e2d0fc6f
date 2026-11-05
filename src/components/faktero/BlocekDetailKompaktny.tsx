@@ -20,6 +20,7 @@ import type { PoleZauctovaniaDokladu } from "@/lib/faktero/zauctovanie-dokladu";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { Kopirovat, ZbaleneK } from "./DetailDokladuKompaktny";
+import { PolozkyNaCitanie } from "./PolozkyNaCitanie";
 import {
   BEZ_RAMU,
   Hodnota,
@@ -31,7 +32,6 @@ import {
   Sekcia,
   TLACIDLO_DRUHE,
   TLACIDLO_HLAVNE,
-  ZoznamPoloziek,
   ramik,
   type SuborKompaktny,
 } from "./KompaktnyDetail";
@@ -198,8 +198,11 @@ export function BlocekDetailKompaktny({
     try {
       const r = await zauctuj({ data: data as any });
       if (r.duplicity?.length)
-        toast.error(t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže."));
-      else if (r.preskocenych) toast.error(t("Doklad je odovzdaný do Pohody — zmena sa neuložila."));
+        toast.error(
+          t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže."),
+        );
+      else if (r.preskocenych)
+        toast.error(t("Doklad je odovzdaný do Pohody — zmena sa neuložila."));
       else {
         ponukaPravidlaToast(r.ponukaPravidla, t, navigate);
         toast.success(t("Zaúčtované"));
@@ -571,7 +574,7 @@ export function BlocekDetailKompaktny({
         </Sekcia>
 
         <Sekcia nadpis="Položky">
-          <ZoznamPoloziek polozky={polozky} mena={menaDokladu} />
+          <PolozkyNaCitanie polozky={polozky} mena={menaDokladu} />
         </Sekcia>
 
         {/* Karty s vlastným nadpisom — v paneli bez druhého rámu; dlaždice príloh po troch. */}

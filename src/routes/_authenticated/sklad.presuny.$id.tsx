@@ -12,7 +12,13 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
-import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import {
+  BunkaPolozky,
+  PolozkyHlavicka,
+  PolozkyKontajner,
+  RiadokPolozky,
+} from "@/components/faktero/PolozkyResponzivne";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: ({ match }) => ({
@@ -41,6 +47,7 @@ function TransferDetailPage() {
   const fetchDetail = useServerFn(getTransferDetail);
   const complete = useServerFn(completeTransfer);
   const cancelFn = useServerFn(cancelTransfer);
+  const klik = useKlikNaRiadok();
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -181,7 +188,9 @@ function TransferDetailPage() {
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-muted-foreground">{t("Zo skladu")}</div>
-                <div className="break-words font-semibold">{whMap[transfer.warehouse_from_id]?.name ?? "—"}</div>
+                <div className="break-words font-semibold">
+                  {whMap[transfer.warehouse_from_id]?.name ?? "—"}
+                </div>
                 <div className="text-xs text-muted-foreground">
                   {coMap[transfer.company_id]?.name ?? ""}
                 </div>
@@ -200,72 +209,87 @@ function TransferDetailPage() {
               </div>
             </div>
             {transfer.note && (
-              <div className="mt-3 break-words border-t border-border pt-3 text-sm text-muted-foreground">{transfer.note}</div>
+              <div className="mt-3 break-words border-t border-border pt-3 text-sm text-muted-foreground">
+                {transfer.note}
+              </div>
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="p-3">{t("Položka")}</th>
-                  <th className="p-3">{t("Kód")}</th>
-                  <th className="p-3 text-right">{t("Množstvo")}</th>
-                  <th className="p-3 text-right">{t("Jedn. cena")}</th>
-                  <th className="p-3 text-right">{t("Spolu")}</th>
-                  {transfer.target_company_id && (
-                    <th className="p-3">{t("Cieľ. položka")}</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {items.map((it: any) => {
-                  const src = siMap[it.source_stock_item_id];
-                  const tgt = it.target_stock_item_id ? siMap[it.target_stock_item_id] : null;
-                  const name = src?.product_id ? prodMap[src.product_id]?.name : null;
-                  return (
-                    <KlikatelnyRiadok
-                      key={it.id}
-                      ciel={
-                        src?.product_id
-                          ? { to: "/sklad/produkty/$id", params: { id: src.product_id } }
-                          : null
-                      }
-                    >
-                      <td className="p-3 font-medium">{name ?? "—"}</td>
-                      <td className="whitespace-nowrap p-3 text-muted-foreground">{src?.sku ?? "—"}</td>
-                      <td className="whitespace-nowrap p-3 text-right tabular-nums">
-                        {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}
-                      </td>
-                      <td className="suma p-3 text-right font-normal">
-                        {formatujJednotkovuCenu(it.unit_price, mena.kod)}
-                      </td>
-                      <td className="suma p-3 text-right">
-                        {formatujMenu(Number(it.quantity) * Number(it.unit_price), mena.kod)}
-                      </td>
+          {/* Položky podľa šírky kontajnera (PolozkyResponzivne): úzko karta, široko riadok — bez vodorovného posúvania. */}
+          <div className="rounded-xl border border-border bg-card px-4 py-2 sm:px-5">
+            <PolozkyKontajner
+              stlpce={`minmax(0,1fr) minmax(4rem,auto) minmax(4.5rem,auto) minmax(5.5rem,auto) minmax(6rem,auto)${transfer.target_company_id ? " minmax(6rem,auto)" : ""}`}
+              className="text-sm"
+            >
+              <PolozkyHlavicka
+                stlpce={[
+                  { text: t("Položka") },
+                  { text: t("Kód") },
+                  { text: t("Množstvo"), vpravo: true },
+                  { text: t("Jedn. cena"), vpravo: true },
+                  { text: t("Spolu"), vpravo: true },
+                  ...(transfer.target_company_id ? [{ text: t("Cieľ. položka") }] : []),
+                ]}
+              />
+              {items.map((it: any) => {
+                const src = siMap[it.source_stock_item_id];
+                const tgt = it.target_stock_item_id ? siMap[it.target_stock_item_id] : null;
+                const name = src?.product_id ? prodMap[src.product_id]?.name : null;
+                const riadok = klik(
+                  src?.product_id
+                    ? { to: "/sklad/produkty/$id", params: { id: src.product_id } }
+                    : null,
+                );
+                return (
+                  <div key={it.id} {...riadok}>
+                    <RiadokPolozky className="items-start @min-[560px]:items-center">
+                      <BunkaPolozky popis={t("Položka")} uzky={8} poradie={1} skrytyPopis>
+                        <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
+                          {name ?? "—"}
+                        </span>
+                      </BunkaPolozky>
+                      <BunkaPolozky popis={t("Kód")} uzky={4} poradie={3}>
+                        <span className="text-muted-foreground [overflow-wrap:anywhere]">
+                          {src?.sku ?? "—"}
+                        </span>
+                      </BunkaPolozky>
+                      <BunkaPolozky popis={t("Množstvo")} uzky={4} poradie={4} vpravo>
+                        <span className="tabular-nums [overflow-wrap:anywhere]">
+                          {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}
+                        </span>
+                      </BunkaPolozky>
+                      <BunkaPolozky popis={t("Jedn. cena")} uzky={4} poradie={5} vpravo>
+                        <span className="suma font-normal [overflow-wrap:anywhere]">
+                          {formatujJednotkovuCenu(it.unit_price, mena.kod)}
+                        </span>
+                      </BunkaPolozky>
+                      <BunkaPolozky popis={t("Spolu")} uzky={4} poradie={2} vpravo skrytyPopis>
+                        <span className="suma [overflow-wrap:anywhere]">
+                          {formatujMenu(Number(it.quantity) * Number(it.unit_price), mena.kod)}
+                        </span>
+                      </BunkaPolozky>
                       {transfer.target_company_id && (
-                        <td className="p-3 text-muted-foreground">
-                          {tgt
-                            ? (tgt.sku ?? tgt.id.slice(0, 8))
-                            : transfer.status === "draft"
-                              ? t("Bude priradená pri dokončení")
-                              : "—"}
-                        </td>
+                        <BunkaPolozky popis={t("Cieľ. položka")} poradie={6}>
+                          <span className="text-muted-foreground [overflow-wrap:anywhere]">
+                            {tgt
+                              ? (tgt.sku ?? tgt.id.slice(0, 8))
+                              : transfer.status === "draft"
+                                ? t("Bude priradená pri dokončení")
+                                : "—"}
+                          </span>
+                        </BunkaPolozky>
                       )}
-                    </KlikatelnyRiadok>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-border bg-muted/40 font-semibold">
-                  <td className="p-3" colSpan={4}>
-                    {t("Spolu")}
-                  </td>
-                  <td className="suma p-3 text-right">{formatujMenu(total, mena.kod)}</td>
-                  {transfer.target_company_id && <td />}
-                </tr>
-              </tfoot>
-            </table>
+                    </RiadokPolozky>
+                  </div>
+                );
+              })}
+              <div className="flex items-baseline justify-between gap-3 border-t border-border py-2 font-semibold">
+                <span>{t("Spolu")}</span>
+                <span className="suma [overflow-wrap:anywhere]">
+                  {formatujMenu(total, mena.kod)}
+                </span>
+              </div>
+            </PolozkyKontajner>
           </div>
         </div>
       </PageBody>

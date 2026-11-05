@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -417,7 +418,7 @@ function NewQuote() {
               )}
             </MriezkaDokladu>
           </section>
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="@container min-w-0 rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-semibold">{t("Položky")}</h2>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -450,17 +451,18 @@ function NewQuote() {
               {items.map((it, idx) => (
                 <div
                   key={idx}
-                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[2fr_70px_70px_100px_80px_80px_120px_auto] sm:items-end"
+                  className="grid grid-cols-6 items-end gap-2 rounded-md border border-border p-3 @min-[860px]:grid-cols-[2fr_70px_70px_100px_80px_80px_120px_auto]"
                 >
-                  <In label={t("Názov")} value={it.name} onChange={(v) => setItem(idx, { name: v })} />
+                  <In className="col-span-5 @min-[860px]:col-span-1" label={t("Názov")} value={it.name} onChange={(v) => setItem(idx, { name: v })} />
                   <In
+                    className="col-span-2 @min-[860px]:col-span-1"
                     label={t("Mn.")}
                     type="number"
                     value={String(it.quantity)}
                     onChange={(v) => setItem(idx, { quantity: Number(v) })}
                   />
-                  <In label={t("MJ")} value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
-                  <div>
+                  <In className="col-span-2 @min-[860px]:col-span-1" label={t("MJ")} value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
+                  <div className="col-span-2 min-w-0 @min-[860px]:col-span-1">
                     <In
                       label={t("Cena")}
                       type="number"
@@ -475,18 +477,20 @@ function NewQuote() {
                     )}
                   </div>
                   <In
+                    className="col-span-2 @min-[860px]:col-span-1"
                     label={t("Zľava %")}
                     type="number"
                     value={String(it.discount_percent ?? 0)}
                     onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
                   />
                   <In
+                    className="col-span-2 @min-[860px]:col-span-1"
                     label={t("DPH %")}
                     type="number"
                     value={String(it.vat_rate)}
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
-                  <div className="suma text-right text-sm">
+                  <div className="suma col-span-2 min-w-0 pb-2 text-right text-sm @min-[860px]:col-span-1 @min-[860px]:pb-0">
                     {formatujMenu(
                       zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
                         (1 + it.vat_rate / 100),
@@ -496,7 +500,7 @@ function NewQuote() {
                   <button aria-label={t("Odstrániť")}
                     type="button"
                     onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                    className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                    className="col-start-6 row-start-1 justify-self-end rounded p-1.5 text-destructive hover:bg-destructive/10 @min-[860px]:col-auto @min-[860px]:row-auto"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -619,6 +623,7 @@ function In({
   type = "text",
   step,
   required,
+  className,
 }: {
   label: string;
   value: string;
@@ -626,9 +631,10 @@ function In({
   type?: string;
   step?: string;
   required?: boolean;
+  className?: string;
 }) {
   return (
-    <label className="block">
+    <label className={cn("block min-w-0", className)}>
       <span className="text-[13px] font-semibold text-foreground">{label}</span>
       <input
         type={type}

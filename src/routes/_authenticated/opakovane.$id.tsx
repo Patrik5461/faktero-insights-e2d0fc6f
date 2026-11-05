@@ -309,7 +309,7 @@ function RecurringDetail() {
             />
           </label>
 
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="@container min-w-0 rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold">{t("Položky")}</h3>
               <button
@@ -340,17 +340,19 @@ function RecurringDetail() {
               {items.map((it, idx) => (
                 <div
                   key={idx}
-                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[2fr_80px_80px_100px_80px_120px_auto] sm:items-end"
+                  className="grid grid-cols-6 items-end gap-2 rounded-md border border-border p-3 @min-[860px]:grid-cols-[2fr_80px_80px_100px_80px_120px_auto]"
                 >
-                  <In label={t("Názov")} value={it.name} onChange={(v) => setItem(idx, { name: v })} />
+                  <In className="col-span-5 @min-[860px]:col-span-1" label={t("Názov")} value={it.name} onChange={(v) => setItem(idx, { name: v })} />
                   <In
+                    className="col-span-2 @min-[860px]:col-span-1"
                     label={t("Mn.")}
                     type="number"
                     value={String(it.quantity)}
                     onChange={(v) => setItem(idx, { quantity: Number(v) })}
                   />
-                  <In label={t("MJ")} value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
+                  <In className="col-span-2 @min-[860px]:col-span-1" label={t("MJ")} value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
                   <In
+                    className="col-span-2 @min-[860px]:col-span-1"
                     label={t("Cena")}
                     type="number"
                     step={KROK_CENY}
@@ -358,12 +360,13 @@ function RecurringDetail() {
                     onChange={(v) => setItem(idx, { unit_price: Number(v) })}
                   />
                   <In
+                    className="col-span-3 @min-[860px]:col-span-1"
                     label={t("DPH %")}
                     type="number"
                     value={String(it.vat_rate)}
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
-                  <div className="suma text-right text-sm">
+                  <div className="suma col-span-3 min-w-0 pb-2 text-right text-sm @min-[860px]:col-span-1 @min-[860px]:pb-0">
                     {formatujMenu(
                       it.quantity * it.unit_price * (1 + it.vat_rate / 100),
                       rec.currency,
@@ -372,7 +375,7 @@ function RecurringDetail() {
                   <button aria-label={t("Odstrániť")}
                     type="button"
                     onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                    className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                    className="col-start-6 row-start-1 justify-self-end rounded p-1.5 text-destructive hover:bg-destructive/10 @min-[860px]:col-auto @min-[860px]:row-auto"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -468,15 +471,17 @@ function In({
   onChange,
   type = "text",
   step,
+  className,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
   step?: string;
+  className?: string;
 }) {
   return (
-    <label className="block">
+    <label className={cn("block min-w-0", className)}>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <input
         type={type}

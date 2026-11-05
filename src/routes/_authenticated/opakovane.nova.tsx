@@ -344,9 +344,9 @@ function NewRecurring() {
             </label>
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5">
+          <section className="@container min-w-0 rounded-xl border border-border bg-card p-5">
             <SectionHeader icon={Package} title={t("Položky")} />
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden @min-[860px]:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
@@ -429,7 +429,7 @@ function NewRecurring() {
             </div>
 
             {/* Mobil: karta na riadok, rovnako ako na faktúre. */}
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 @min-[860px]:hidden">
               {items.map((it, idx) => (
                 <div key={idx} className="rounded-lg border border-border p-3">
                   <input
@@ -466,7 +466,7 @@ function NewRecurring() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     />
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-sm">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="suma">
                       {formatujMenu(
                         it.quantity * it.unit_price * (1 + it.vat_rate / 100),

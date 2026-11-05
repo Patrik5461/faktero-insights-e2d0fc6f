@@ -410,7 +410,7 @@ function NewOrder() {
             </MriezkaDokladu>
           </section>
 
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="@container min-w-0 rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="text-sm font-semibold">{t("Položky")}</div>
               {products.length > 0 && (
@@ -432,7 +432,7 @@ function NewOrder() {
             </div>
 
             {/* Na mobile sa šesť stĺpcov nezmestí — položky sú karty s popiskami polí pod sebou. */}
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 @min-[860px]:hidden">
               {polozky.map((p, i) => (
                 <div key={i} className="space-y-2 rounded-md border border-border p-3">
                   <div className="flex items-start gap-2">
@@ -519,7 +519,7 @@ function NewOrder() {
               ))}
             </div>
 
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden @min-[860px]:block">
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground [&_th]:whitespace-nowrap">
                   <tr className="border-b border-border">

@@ -1,4 +1,4 @@
-import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { preloz } from "@/lib/i18n/jazyk";
 import { obdobieOdpoctu, prijatieSkorNezVystavenie } from "@/lib/faktero/datum-prijatia";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
@@ -36,6 +36,7 @@ import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { ZauctovaniePanel } from "@/components/faktero/ZauctovaniePanel";
+import { PolozkyNaCitanie } from "@/components/faktero/PolozkyNaCitanie";
 import { skocNaZauctovanie } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
@@ -82,7 +83,7 @@ import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { KomentarDokladu, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { DokladPoradie } from "@/components/faktero/DokladPoradie";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
-import { formatovacMeny, formatujMnozstvo } from "@/lib/faktero/mena";
+import { formatovacMeny } from "@/lib/faktero/mena";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DetailSNahladom, useNahladVDetaile } from "@/components/faktero/BocnyNahlad";
@@ -121,7 +122,9 @@ const PAY_ERRORS: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/$id/")({
-  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Detail prijatej faktúry — Faktero") }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Detail prijatej faktúry — Faktero") }],
+  }),
   component: PurchaseInvoiceDetail,
 });
 
@@ -334,7 +337,12 @@ function PurchaseInvoiceDetail() {
 
   const doNespracovanych = useServerFn(prijataDoNespracovanychFn);
   async function vratitDoNespracovanych() {
-    if (!(await potvrd(t("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova.")))) return;
+    if (
+      !(await potvrd(
+        t("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova."),
+      ))
+    )
+      return;
     try {
       const r = await doNespracovanych({ data: { id } });
       toast.success(t("Faktúra je späť v Nespracovaných"));
@@ -349,7 +357,10 @@ function PurchaseInvoiceDetail() {
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("purchase_invoices")
-      .update({ locked_at: zamknut ? new Date().toISOString() : null, locked_by: zamknut ? (u.user?.id ?? null) : null } as any)
+      .update({
+        locked_at: zamknut ? new Date().toISOString() : null,
+        locked_by: zamknut ? (u.user?.id ?? null) : null,
+      } as any)
       .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(
@@ -485,11 +496,15 @@ function PurchaseInvoiceDetail() {
             {row.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
           </MenuAkcia>
         )}
-        {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
-          <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("received")}>
-            {t("Označiť ako prijaté")}
-          </MenuAkcia>
-        )}
+        {!navrh &&
+          !row.zauctovane_at &&
+          row.status !== "received" &&
+          row.status !== "paid" &&
+          row.status !== "cancelled" && (
+            <MenuAkcia ikona={CheckCircle2} onClick={() => setStatus("received")}>
+              {t("Označiť ako prijaté")}
+            </MenuAkcia>
+          )}
         {row.exported_at && (
           <MenuAkcia
             ikona={SendHorizontal}
@@ -510,17 +525,17 @@ function PurchaseInvoiceDetail() {
         )}
       </MenuSkupina>
       <MenuSkupina label={t("Ostatné")}>
-      <MenuAkcia
-        ikona={ExternalLink}
-        onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
-      >
-        {t("Otvoriť v novej karte")}
-      </MenuAkcia>
-      {row.file_path ? (
-        <MenuAkcia ikona={Printer} onClick={downloadPdf}>
-          {t("Vytlačiť / stiahnuť PDF")}
+        <MenuAkcia
+          ikona={ExternalLink}
+          onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
+        >
+          {t("Otvoriť v novej karte")}
         </MenuAkcia>
-      ) : null}
+        {row.file_path ? (
+          <MenuAkcia ikona={Printer} onClick={downloadPdf}>
+            {t("Vytlačiť / stiahnuť PDF")}
+          </MenuAkcia>
+        ) : null}
         {(row as any).inbox_message_id && (
           <MenuAkcia ikona={Mail} onClick={() => setZdrojovyMail(true)}>
             {t("Zdrojový e-mail")}
@@ -530,7 +545,9 @@ function PurchaseInvoiceDetail() {
           <MenuAkcia
             ikona={Paperclip}
             onClick={() => setPresunPrilohy(true)}
-            title={t("Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha")}
+            title={t(
+              "Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha",
+            )}
           >
             {t("Presunúť ako prílohu")}
           </MenuAkcia>
@@ -569,7 +586,9 @@ function PurchaseInvoiceDetail() {
   );
   const stavOdznak = (
     <>
-      <WebStav ton={TON_PRIJATEJ[row.status] ?? "neutralny"}>{t(STATUS_LABEL[row.status] ?? row.status)}</WebStav>
+      <WebStav ton={TON_PRIJATEJ[row.status] ?? "neutralny"}>
+        {t(STATUS_LABEL[row.status] ?? row.status)}
+      </WebStav>
       {/* Čiastočná úhrada nie je hodnota `status` — počíta sa z úhrad faktúry. */}
       {uhradyFaktury.stav.stav === "ciastocne" &&
       row.status !== "paid" &&
@@ -584,7 +603,10 @@ function PurchaseInvoiceDetail() {
     const zmena = vypnut
       ? { items: [], polozky_vypnute: row.items }
       : { items: row.polozky_vypnute ?? [], polozky_vypnute: null };
-    const { error } = await supabase.from("purchase_invoices").update(zmena as any).eq("id", row.id);
+    const { error } = await supabase
+      .from("purchase_invoices")
+      .update(zmena as any)
+      .eq("id", row.id);
     if (error) return toast.error(error.message);
     toast.success(
       vypnut
@@ -636,7 +658,9 @@ function PurchaseInvoiceDetail() {
                   ikona={MessageSquare}
                   label={t("Komentáre")}
                   onClick={() =>
-                    document.getElementById("komentare")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    document
+                      .getElementById("komentare")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
                   }
                 />
               ) : null}
@@ -647,7 +671,9 @@ function PurchaseInvoiceDetail() {
                   companyId={row.company_id}
                   id={row.id}
                   createdAt={row.created_at}
-                  onOtvor={(dalsi) => navigate({ to: "/prijate-faktury/$id", params: { id: dalsi } })}
+                  onOtvor={(dalsi) =>
+                    navigate({ to: "/prijate-faktury/$id", params: { id: dalsi } })
+                  }
                 />
               ) : null}
             </>
@@ -676,7 +702,9 @@ function PurchaseInvoiceDetail() {
                     />
                     {ciselnikyFirmy.stavy.length ? (
                       <label className="block w-full sm:w-64">
-                        <span className="mb-1 block text-xs text-muted-foreground">{t("Stav dokladu")}</span>
+                        <span className="mb-1 block text-xs text-muted-foreground">
+                          {t("Stav dokladu")}
+                        </span>
                         <VyberStavuDokladu
                           key={row.id}
                           tabulka="purchase_invoices"
@@ -689,7 +717,11 @@ function PurchaseInvoiceDetail() {
                   </div>
                 ) : null}
                 {samo && <SamofakturaPanel row={row} onZmena={load} />}
-                <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} naKontroluDovod={(row as any).na_kontrolu_dovod} />
+                <AutomatickyZaradena
+                  id={row.id}
+                  naKontroluAt={(row as any).na_kontrolu_at}
+                  naKontroluDovod={(row as any).na_kontrolu_dovod}
+                />
                 <VazbaZalohyPrijatej row={row} />
                 <UpozornenieKontrolyEfaktury invoiceId={row.id} />
                 <RegistrPlatcuDph
@@ -699,7 +731,12 @@ function PurchaseInvoiceDetail() {
                   iban={row.supplier_iban}
                 />
                 {!navrh && (
-                  <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
+                  <SchvalovaniePanel
+                    companyId={row.company_id}
+                    agenda="prijata"
+                    id={row.id}
+                    onZmena={load}
+                  />
                 )}
               </>
             }
@@ -727,9 +764,17 @@ function PurchaseInvoiceDetail() {
                   </div>
                 )}
                 <div className="empty:hidden">
-                  <JobPicker value={row.job_id ?? ""} onChange={(v) => nastavZakazku(v)} label={t("Zákazka")} />
+                  <JobPicker
+                    value={row.job_id ?? ""}
+                    onChange={(v) => nastavZakazku(v)}
+                    label={t("Zákazka")}
+                  />
                 </div>
-                {accounts.length > 0 && row.status !== "cancelled" && row.status !== "paid" && !navrh && row.supplier_iban ? (
+                {accounts.length > 0 &&
+                row.status !== "cancelled" &&
+                row.status !== "paid" &&
+                !navrh &&
+                row.supplier_iban ? (
                   <div className="space-y-2 rounded-lg border border-border p-3">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
@@ -865,15 +910,12 @@ function PurchaseInvoiceDetail() {
         {t("Zrušiť väzbu")}
       </button>
     </div>
-
   ) : null;
   /* `sVazbou` — väzba na úhradu z banky; pri náhľade je v platbe, inak pri dátumoch. */
   const kartaStrany = (sVazbou: boolean) => (
     <div className="grid min-w-0 gap-6 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-6">
       <div className="min-w-0 break-words">
-        <div className="text-sm font-semibold">
-          {t("Dodávateľ")}
-        </div>
+        <div className="text-sm font-semibold">{t("Dodávateľ")}</div>
         <div className="mt-1 font-medium">{row.supplier_name}</div>
         {(row.supplier_street || row.supplier_city) && (
           <div className="text-sm text-muted-foreground">
@@ -890,9 +932,7 @@ function PurchaseInvoiceDetail() {
             {t("IČ DPH")}: {row.supplier_ic_dph}
           </div>
         )}
-        {row.supplier_iban && (
-          <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>
-        )}
+        {row.supplier_iban && <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>}
         {vsPrijatej(row) && (
           <div className="text-sm text-muted-foreground">
             {t("VS")}: {vsPrijatej(row)}
@@ -996,7 +1036,6 @@ function PurchaseInvoiceDetail() {
     <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
       {row.note}
     </div>
-
   ) : null;
   const kartaUhradyPrijatej = (
     <>
@@ -1068,7 +1107,9 @@ function PurchaseInvoiceDetail() {
                   <span className="font-semibold tabular-nums">
                     {/* Po čiastočných úhradách sa platí len zvyšok — rovnako počíta server. */}
                     {fmt(
-                      uhradyFaktury.nacitane ? uhradyFaktury.stav.zostava : Number(row.amount_total),
+                      uhradyFaktury.nacitane
+                        ? uhradyFaktury.stav.zostava
+                        : Number(row.amount_total),
                       row.currency,
                     )}
                   </span>
@@ -1106,16 +1147,16 @@ function PurchaseInvoiceDetail() {
                 {paying ? t("Pripravujem…") : t("Zaplatiť cez banku")}
               </button>
               <p className="mt-2 text-xs text-muted-foreground">
-                {t("Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu nepodpíšete.")}
+                {t(
+                  "Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu nepodpíšete.",
+                )}
               </p>
             </>
           )}
 
           {payments.length > 0 && (
             <div className="mt-4 border-t border-primary/20 pt-3">
-              <div className="text-sm font-semibold">
-                {t("História platieb")}
-              </div>
+              <div className="text-sm font-semibold">{t("História platieb")}</div>
               <ul className="mt-2 space-y-2">
                 {payments.map((p) => (
                   <li key={p.id} className="flex items-start justify-between gap-2 text-sm">
@@ -1214,13 +1255,21 @@ function PurchaseInvoiceDetail() {
       <PageBody>
         {upozornenieCudzej ? <div className="mb-4">{upozornenieCudzej}</div> : null}
         <div className="mb-4 space-y-3 empty:hidden">
-          <AutomatickyZaradena id={row.id} naKontroluAt={(row as any).na_kontrolu_at} naKontroluDovod={(row as any).na_kontrolu_dovod} />
+          <AutomatickyZaradena
+            id={row.id}
+            naKontroluAt={(row as any).na_kontrolu_at}
+            naKontroluDovod={(row as any).na_kontrolu_dovod}
+          />
           <UpozornenieKontrolyEfaktury invoiceId={row.id} />
         </div>
         {!navrh && !pdfRozlozenie && <div className="mb-4">{stitkyAStav}</div>}
         <DetailSNahladom
           zobrazit={nahladDetail.zapnuty && !!row.file_path}
-          subor={nahlad ? { url: nahlad, obrazok: (row.file_mime ?? "").startsWith("image/") } : undefined}
+          subor={
+            nahlad
+              ? { url: nahlad, obrazok: (row.file_mime ?? "").startsWith("image/") }
+              : undefined
+          }
           nazov={[row.invoice_number, row.supplier_name].filter(Boolean).join(" · ")}
           onSkryt={() => nahladDetail.prepni(false)}
           naMobile
@@ -1235,86 +1284,115 @@ function PurchaseInvoiceDetail() {
             </button>
           }
         >
-        {pdfRozlozenie ? (
-          <div className="min-w-0 space-y-4">
-            <UdajePreUctovnika u={udajeUctovnika} />
-            {kartaUhradyPrijatej}
-            {/* Zaúčtovanie pred platobnými údajmi — je pre účtovníka dôležitejšie. */}
-            {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
-            {kartaPlatba(true)}
-            {kartaBanka}
-            {kartaZakazka}
-            {kartyHore}
-            {!navrh && (
-              <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
-            )}
-            {stitkyAStav && (
-              <div className="rounded-xl border border-border bg-card p-4">{stitkyAStav}</div>
-            )}
-            {kartaPrilohy}
-            {kartaKomentare}
-            {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
-            <ZbaleneK nadpis="Údaje faktúry">
-              <div className="space-y-4">
-                {kartaStrany(false)}
+          {pdfRozlozenie ? (
+            <div className="min-w-0 space-y-4">
+              <UdajePreUctovnika u={udajeUctovnika} />
+              {kartaUhradyPrijatej}
+              {/* Zaúčtovanie pred platobnými údajmi — je pre účtovníka dôležitejšie. */}
+              {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+              {kartaPlatba(true)}
+              {kartaBanka}
+              {kartaZakazka}
+              {kartyHore}
+              {!navrh && (
+                <SchvalovaniePanel
+                  companyId={row.company_id}
+                  agenda="prijata"
+                  id={row.id}
+                  onZmena={load}
+                />
+              )}
+              {stitkyAStav && (
+                <div className="rounded-xl border border-border bg-card p-4">{stitkyAStav}</div>
+              )}
+              {kartaPrilohy}
+              {kartaKomentare}
+              {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
+              <ZbaleneK nadpis="Údaje faktúry">
+                <div className="space-y-4">
+                  {kartaStrany(false)}
+                  {kartaPolozky}
+                  {kartaPoznamka}
+                </div>
+              </ZbaleneK>
+              {!navrh && (
+                <HistoriaDokladu
+                  companyId={row.company_id}
+                  agenda="prijata"
+                  id={row.id}
+                  row={row}
+                />
+              )}
+            </div>
+          ) : (
+            /* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="min-w-0 space-y-6">
+                {kartyHore}
+                {kartaStrany(true)}
+
+                {!navrh && (
+                  <SchvalovaniePanel
+                    companyId={row.company_id}
+                    agenda="prijata"
+                    id={row.id}
+                    onZmena={load}
+                  />
+                )}
+                {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+                {kartaKomentare}
+                {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
+                {!navrh && (
+                  <HistoriaDokladu
+                    companyId={row.company_id}
+                    agenda="prijata"
+                    id={row.id}
+                    row={row}
+                  />
+                )}
+                {kartaPrilohy}
+
                 {kartaPolozky}
+
+                {/* Na širokej obrazovke je doklad vľavo; tu ostáva pre mobil a pre toho, kto ho skryl. */}
+                <div className={nahladDetail.zapnuty ? "lg:hidden" : ""}>
+                  <NahladPrilohy
+                    url={nahlad}
+                    mime={row.file_mime}
+                    maPrilohu={!!row.file_path}
+                    stiahni={downloadPdf}
+                    zobrazitVedla={
+                      nahladDetail.zapnuty ? undefined : () => nahladDetail.prepni(true)
+                    }
+                    udaje={udajeZPrijatej(row).udaje}
+                  />
+                </div>
+
                 {kartaPoznamka}
               </div>
-            </ZbaleneK>
-            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} row={row} />}
-          </div>
-        ) : (
-        /* `grid-cols-1` + `min-w-0`: bez nich stĺpec na mobile rástol podľa najširšej tabuľky a stránka sa orezávala. */
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0 space-y-6">
-            {kartyHore}
-            {kartaStrany(true)}
 
-            {!navrh && (
-              <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
-            )}
-            {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
-            {kartaKomentare}
-            {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
-            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} row={row} />}
-            {kartaPrilohy}
-
-            {kartaPolozky}
-
-            {/* Na širokej obrazovke je doklad vľavo; tu ostáva pre mobil a pre toho, kto ho skryl. */}
-            <div className={nahladDetail.zapnuty ? "lg:hidden" : ""}>
-              <NahladPrilohy
-                url={nahlad}
-                mime={row.file_mime}
-                maPrilohu={!!row.file_path}
-                stiahni={downloadPdf}
-                zobrazitVedla={nahladDetail.zapnuty ? undefined : () => nahladDetail.prepni(true)}
-                udaje={udajeZPrijatej(row).udaje}
-              />
+              <aside className="min-w-0 space-y-4">
+                {kartaUhradyPrijatej}
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <div className="text-sm font-semibold">{t("Sumár")}</div>
+                  <div className="mt-3 space-y-1 text-sm">
+                    <Row
+                      label={t("Bez DPH")}
+                      value={fmt(Number(row.amount_without_vat), row.currency)}
+                    />
+                    <Row label={t("DPH")} value={fmt(Number(row.vat_amount), row.currency)} />
+                  </div>
+                  <div className="suma mt-3 border-t border-border pt-3 text-lg">
+                    {fmt(Number(row.amount_total), row.currency)}
+                  </div>
+                </div>
+                {/* Platba hneď pod sumárom — doteraz bola až pod zákazkou. */}
+                {kartaPlatba(false)}
+                {kartaZakazka}
+                {kartaBanka}
+              </aside>
             </div>
-
-            {kartaPoznamka}
-          </div>
-
-          <aside className="min-w-0 space-y-4">
-            {kartaUhradyPrijatej}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="text-sm font-semibold">{t("Sumár")}</div>
-              <div className="mt-3 space-y-1 text-sm">
-                <Row label={t("Bez DPH")} value={fmt(Number(row.amount_without_vat), row.currency)} />
-                <Row label={t("DPH")} value={fmt(Number(row.vat_amount), row.currency)} />
-              </div>
-              <div className="suma mt-3 border-t border-border pt-3 text-lg">
-                {fmt(Number(row.amount_total), row.currency)}
-              </div>
-            </div>
-            {/* Platba hneď pod sumárom — doteraz bola až pod zákazkou. */}
-            {kartaPlatba(false)}
-            {kartaZakazka}
-            {kartaBanka}
-          </aside>
-        </div>
-        )}
+          )}
         </DetailSNahladom>
       </PageBody>
     </>
@@ -1354,12 +1432,11 @@ function PolozkyDokladu({
   mozeMenit?: boolean;
   onPrepni?: (vypnut: boolean) => void;
 }) {
-  const { t, jazyk } = useT();
-  const jeVypnute = Array.isArray(vypnute) && vypnute.length > 0 && (!Array.isArray(items) || items.length === 0);
+  const { t } = useT();
+  const jeVypnute =
+    Array.isArray(vypnute) && vypnute.length > 0 && (!Array.isArray(items) || items.length === 0);
   const zoznam = (jeVypnute ? vypnute : items) as any[];
   if (!Array.isArray(zoznam) || zoznam.length === 0) return null;
-  const cena = (n: unknown) =>
-    typeof n === "number" && Number.isFinite(n) ? formatovacMeny(mena || "EUR", "sk-SK")(n) : "—";
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -1397,40 +1474,25 @@ function PolozkyDokladu({
           )}
         </div>
       </div>
-      <div className={`overflow-x-auto ${jeVypnute ? "opacity-50" : ""}`}>
-        <table className="w-full min-w-[34rem] text-sm">
-          <thead className="whitespace-nowrap bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
-            <tr>
-              <th className="p-3">{t("Položka")}</th>
-              <th className="p-3 text-right">{t("Množstvo")}</th>
-              <th className="p-3 text-right">{t("Cena za kus")}</th>
-              <th className="p-3 text-right">{t("DPH")}</th>
-              <th className="p-3 text-right">{t("Spolu")}</th>
-            </tr>
-          </thead>
-          <tbody className={`divide-y divide-border ${jeVypnute ? "line-through" : ""}`}>
-            {zoznam.map((p, i) => (
-              <tr key={i}>
-                <td className="p-3">{p?.name ?? "—"}</td>
-                <td className="p-3 text-right tabular-nums">
-                  {p?.quantity != null ? `${formatujMnozstvo(p.quantity, lokalJazyka(jazyk))}${p?.unit ? ` ${p.unit}` : ""}` : "—"}
-                </td>
-                <td className="p-3 text-right tabular-nums">{cena(p?.unit_price)}</td>
-                <td className="p-3 text-right tabular-nums">
-                  {p?.vat_rate != null ? `${p.vat_rate} %` : "—"}
-                </td>
-                <td className="suma p-3 text-right">{cena(p?.total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Karty v úzkom paneli, tabuľka od 560 px kontajnera — bez vodorovného posúvania. */}
+      <PolozkyNaCitanie
+        polozky={zoznam}
+        mena={mena || "EUR"}
+        vypnute={jeVypnute}
+        className="px-5 pt-3 pb-1"
+      />
       <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
         {samo
-          ? t("Položky samofaktúry určujú jej sumy a DPH po sadzbách. Skladové položky sa po odsúhlasení dajú prijať na sklad.")
+          ? t(
+              "Položky samofaktúry určujú jej sumy a DPH po sadzbách. Skladové položky sa po odsúhlasení dajú prijať na sklad.",
+            )
           : jeVypnute
-            ? t("Položky sú vypnuté — zaúčtovanie, export do Pohody aj výkazy k DPH idú len podľa súčtov a rozpisu DPH v hlavičke dokladu.")
-            : t("Rozhodujú sumy v hlavičke dokladu. Položky sa použijú pri rozúčtovaní a v exporte do Pohody, ak sedia so súčtami — keď sú vyčítané zle, vypnite ich.")}
+            ? t(
+                "Položky sú vypnuté — zaúčtovanie, export do Pohody aj výkazy k DPH idú len podľa súčtov a rozpisu DPH v hlavičke dokladu.",
+              )
+            : t(
+                "Rozhodujú sumy v hlavičke dokladu. Položky sa použijú pri rozúčtovaní a v exporte do Pohody, ak sedia so súčtami — keď sú vyčítané zle, vypnite ich.",
+              )}
       </p>
     </div>
   );
@@ -1490,7 +1552,9 @@ function NahladPrilohy({
         </button>
       </div>
       {!url ? (
-        <div className="p-8 text-center text-sm text-muted-foreground">{t("Načítavam náhľad…")}</div>
+        <div className="p-8 text-center text-sm text-muted-foreground">
+          {t("Načítavam náhľad…")}
+        </div>
       ) : jeObrazok ? (
         <ObrazokSoZvyraznenim
           url={url}

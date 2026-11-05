@@ -776,9 +776,9 @@ function EditInvoice() {
             />
           </section>
 
-          <section className="rounded-xl border border-border bg-card p-5">
+          <section className="@container min-w-0 rounded-xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold text-foreground">{t("Položky")}</h3>
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden @min-[860px]:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground">
@@ -934,11 +934,11 @@ function EditInvoice() {
               </table>
             </div>
 
-            <p className="mt-3 text-xs text-muted-foreground md:mt-0">
+            <p className="mt-3 text-xs text-muted-foreground @min-[860px]:mt-0">
               {t("Do stĺpca „Spolu s DPH“ sa dá napísať suma, na ktorej ste sa dohodli — jednotková cena bez dane sa dopočíta sama.")}
             </p>
 
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 @min-[860px]:hidden">
               {items.map((it, idx) => (
                 <div
                   key={idx}
@@ -1057,9 +1057,9 @@ function EditInvoice() {
                     </select>
                     </label>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-sm">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-foreground">{t("Spolu s DPH")}</span>
+                      <span className="whitespace-nowrap text-[13px] font-semibold text-foreground">{t("Spolu s DPH")}</span>
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *

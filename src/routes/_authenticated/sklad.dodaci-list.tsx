@@ -6,6 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import {
+  BunkaPolozky,
+  POLE_POLOZKY,
+  PolozkyHlavicka,
+  PolozkyKontajner,
+  RiadokPolozky,
+  VYBER_POLOZKY,
+} from "@/components/faktero/PolozkyResponzivne";
+import {
   importDeliveryNoteFn,
   type DeliveryNoteItem,
 } from "@/lib/faktero/ai-delivery-note.functions";
@@ -515,7 +523,9 @@ function DeliveryNoteScanPage() {
               <FileText className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-base font-semibold">{t("Nahrajte alebo odfoťte dodací list")}</div>
+              <div className="text-base font-semibold">
+                {t("Nahrajte alebo odfoťte dodací list")}
+              </div>
               <div className="mt-1 text-sm text-muted-foreground">
                 {t("JPG, PNG, WebP (max 5 MB) alebo PDF (max 10 MB)")}
               </div>
@@ -577,7 +587,10 @@ function DeliveryNoteScanPage() {
 
             <div className="min-w-0 space-y-4">
               {scanError && !parsing && (
-                <div role="alert" className="flex flex-wrap items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm">
+                <div
+                  role="alert"
+                  className="flex flex-wrap items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm"
+                >
                   <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-destructive">{t("Skenovanie zlyhalo")}</div>
@@ -633,7 +646,9 @@ function DeliveryNoteScanPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-semibold text-muted-foreground">{t("Číslo DL")}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {t("Číslo DL")}
+                  </span>
                   <input
                     value={deliveryNumber}
                     onChange={(e) => setDeliveryNumber(e.target.value)}
@@ -662,94 +677,95 @@ function DeliveryNoteScanPage() {
                       : t("Žiadne položky. Pridajte manuálne alebo nahrajte iný súbor.")}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/40 text-xs text-muted-foreground">
-                        <tr>
-                          <th className="px-2 py-2.5 text-left">{t("Názov / produkt v sklade")}</th>
-                          <th className="px-2 py-2.5 text-left">{t("Kód")}</th>
-                          <th className="px-2 py-2.5 text-right">{t("Množstvo")}</th>
-                          <th className="px-2 py-2.5 text-left">{t("MJ")}</th>
-                          <th className="px-2 py-2.5 text-right">{t("Cena/ks")}</th>
-                          <th className="px-2 py-2.5">
-                            <span className="sr-only">{t("Akcie")}</span>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {rows.map((r, i) => (
-                          <tr key={i}>
-                            <td className="min-w-[14rem] p-1.5">
-                              <input
-                                value={r.name}
-                                onChange={(e) => updateRow(i, { name: e.target.value })}
-                                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                              />
-                              <select
-                                value={r.existing_product_id ?? ""}
-                                onChange={(e) =>
-                                  updateRow(i, { existing_product_id: e.target.value || null })
-                                }
-                                className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
-                              >
-                                <option value="">{t("— vytvoriť nový / auto-priradiť —")}</option>
-                                {products.map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.name}
-                                    {p.code ? ` (${p.code})` : ""}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                value={r.code ?? ""}
-                                onChange={(e) => updateRow(i, { code: e.target.value || null })}
-                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm"
-                              />
-                            </td>
-                            <td className="p-1.5 text-right">
-                              <input
-                                type="number"
-                                step="0.001"
-                                value={r.quantity}
-                                onChange={(e) => updateRow(i, { quantity: Number(e.target.value) })}
-                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm tabular-nums"
-                              />
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                value={r.unit}
-                                onChange={(e) => updateRow(i, { unit: e.target.value })}
-                                className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
-                              />
-                            </td>
-                            <td className="p-1.5 text-right">
-                              <input
-                                type="number"
-                                step={KROK_CENY}
-                                value={r.unit_price ?? 0}
-                                onChange={(e) =>
-                                  updateRow(i, { unit_price: Number(e.target.value) })
-                                }
-                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm tabular-nums"
-                              />
-                            </td>
-                            <td className="p-1.5 text-right">
-                              <button
-                                onClick={() => removeRow(i)}
-                                aria-label={t("Odstrániť riadok")}
-                                title={t("Odstrániť riadok")}
-                                className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  /* Položky podľa šírky kontajnera (PolozkyResponzivne): úzko karta, široko riadok — bez vodorovného posúvania. */
+                  <PolozkyKontajner
+                    stlpce="minmax(0,1fr) minmax(5rem,7rem) minmax(5rem,7rem) minmax(3.5rem,4.5rem) minmax(5.5rem,7rem) 2.25rem"
+                    className="px-4 pb-2 pt-2 text-sm sm:px-5"
+                  >
+                    <PolozkyHlavicka
+                      stlpce={[
+                        { text: t("Názov / produkt v sklade") },
+                        { text: t("Kód") },
+                        { text: t("Množstvo"), vpravo: true },
+                        { text: t("MJ") },
+                        { text: t("Cena/ks"), vpravo: true },
+                        { text: t("Akcie"), skryty: true },
+                      ]}
+                    />
+                    {rows.map((r, i) => (
+                      <RiadokPolozky key={i} className="items-start">
+                        <BunkaPolozky popis={t("Názov / produkt v sklade")} poradie={1}>
+                          <input
+                            value={r.name}
+                            onChange={(e) => updateRow(i, { name: e.target.value })}
+                            aria-label={t("Názov / produkt v sklade")}
+                            className={POLE_POLOZKY}
+                          />
+                          <select
+                            value={r.existing_product_id ?? ""}
+                            onChange={(e) =>
+                              updateRow(i, { existing_product_id: e.target.value || null })
+                            }
+                            className={`${VYBER_POLOZKY} mt-1 text-xs text-muted-foreground`}
+                          >
+                            <option value="">{t("— vytvoriť nový / auto-priradiť —")}</option>
+                            {products.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                                {p.code ? ` (${p.code})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </BunkaPolozky>
+                        <BunkaPolozky popis={t("Kód")} uzky={10} poradie={5} ako="label">
+                          <input
+                            value={r.code ?? ""}
+                            onChange={(e) => updateRow(i, { code: e.target.value || null })}
+                            className={POLE_POLOZKY}
+                          />
+                        </BunkaPolozky>
+                        <BunkaPolozky popis={t("Množstvo")} uzky={4} poradie={2} ako="label">
+                          <input
+                            type="number"
+                            step="0.001"
+                            value={r.quantity}
+                            onChange={(e) => updateRow(i, { quantity: Number(e.target.value) })}
+                            className={`${POLE_POLOZKY} text-right tabular-nums`}
+                          />
+                        </BunkaPolozky>
+                        <BunkaPolozky popis={t("MJ")} uzky={3} poradie={3} ako="label">
+                          <input
+                            value={r.unit}
+                            onChange={(e) => updateRow(i, { unit: e.target.value })}
+                            className={POLE_POLOZKY}
+                          />
+                        </BunkaPolozky>
+                        <BunkaPolozky popis={t("Cena/ks")} uzky={5} poradie={4} ako="label">
+                          <input
+                            type="number"
+                            step={KROK_CENY}
+                            value={r.unit_price ?? 0}
+                            onChange={(e) => updateRow(i, { unit_price: Number(e.target.value) })}
+                            className={`${POLE_POLOZKY} text-right tabular-nums`}
+                          />
+                        </BunkaPolozky>
+                        <BunkaPolozky
+                          uzky={2}
+                          poradie={6}
+                          className="items-end self-end @min-[560px]:self-start"
+                        >
+                          <button
+                            onClick={() => removeRow(i)}
+                            aria-label={t("Odstrániť riadok")}
+                            title={t("Odstrániť riadok")}
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </BunkaPolozky>
+                      </RiadokPolozky>
+                    ))}
+                  </PolozkyKontajner>
                 )}
               </div>
 

@@ -1,7 +1,13 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import {
+  BunkaPolozky,
+  PolozkyHlavicka,
+  PolozkyKontajner,
+  RiadokPolozky,
+} from "@/components/faktero/PolozkyResponzivne";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, Loader2, Plus, Trash2, X } from "lucide-react";
@@ -46,7 +52,9 @@ import {
 import { dnesBratislava, prvyDenMesiacaBratislava } from "@/lib/faktero/datum-vystavenia";
 type Hladanie = { blocky?: string; prijate?: string };
 export const Route = createFileRoute("/_authenticated/doklady/vyuctovania/$id")({
-  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vyúčtovanie výdavkov — Faktero") }] }),
+  head: ({ match }) => ({
+    meta: [{ title: preloz(match.context.jazyk, "Vyúčtovanie výdavkov — Faktero") }],
+  }),
   validateSearch: (s: Record<string, unknown>): Hladanie => ({
     blocky: typeof s.blocky === "string" ? s.blocky : undefined,
     prijate: typeof s.prijate === "string" ? s.prijate : undefined,
@@ -84,6 +92,7 @@ type Form = {
 
 function Detail() {
   const { t } = useT();
+  const klik = useKlikNaRiadok();
   const { id } = Route.useParams();
   const hladanie = Route.useSearch();
   const navigate = useNavigate();
@@ -262,7 +271,9 @@ function Detail() {
 
   async function zmazat() {
     if (!f?.id || !cid) return;
-    if (!(await potvrd(t("Zmazať vyúčtovanie?\nDoklady v ňom ostanú, len sa z vyúčtovania uvoľnia."))))
+    if (
+      !(await potvrd(t("Zmazať vyúčtovanie?\nDoklady v ňom ostanú, len sa z vyúčtovania uvoľnia.")))
+    )
       return;
     await zmaz({ data: { company_id: cid, id: f.id } });
     toast.success(t("Vyúčtovanie zmazané"));
@@ -452,35 +463,41 @@ function Detail() {
               {polozky.length === 0 ? (
                 <p className="mt-3 text-sm text-muted-foreground">{t("Zatiaľ žiadny doklad.")}</p>
               ) : (
-                <div className="mt-3 overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
-                      <tr>
-                        <th className="py-1 pr-2">{t("Dátum")}</th>
-                        <th className="py-1 pr-2">{t("Dodávateľ")}</th>
-                        <th className="py-1 pr-2">{t("Doklad")}</th>
-                        <th className="py-1 pr-2 text-right">{t("Spolu")}</th>
-                        <th><span className="sr-only">{t("Akcie")}</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...polozky]
-                        .sort((a, b) => String(a.datum ?? "").localeCompare(String(b.datum ?? "")))
-                        .map((p) => (
-                          <KlikatelnyRiadok
-                            key={p.druh + p.id}
-                            ciel={
-                              p.druh === "prijata"
-                                ? { to: "/prijate-faktury/$id", params: { id: p.id } }
-                                : { to: "/doklady/novy", search: { id: p.id } as any }
-                            }
-                            className="border-t border-border"
-                          >
-                            <td className="py-1.5 pr-2 whitespace-nowrap">
-                              {datumNaDoklade(p.datum)}
-                            </td>
-                            <td className="py-1.5 pr-2">{p.dodavatel ?? "—"}</td>
-                            <td className="py-1.5 pr-2">
+                <PolozkyKontajner
+                  stlpce="minmax(5.5rem,auto) minmax(0,1fr) minmax(0,1fr) minmax(6rem,auto) 2rem"
+                  className="mt-3 text-sm"
+                >
+                  <PolozkyHlavicka
+                    stlpce={[
+                      { text: t("Dátum") },
+                      { text: t("Dodávateľ") },
+                      { text: t("Doklad") },
+                      { text: t("Spolu"), vpravo: true },
+                      { text: t("Akcie"), skryty: true },
+                    ]}
+                  />
+                  {[...polozky]
+                    .sort((a, b) => String(a.datum ?? "").localeCompare(String(b.datum ?? "")))
+                    .map((p) => (
+                      <div
+                        key={p.druh + p.id}
+                        {...klik(
+                          p.druh === "prijata"
+                            ? { to: "/prijate-faktury/$id", params: { id: p.id } }
+                            : { to: "/doklady/novy", search: { id: p.id } as any },
+                        )}
+                      >
+                        <RiadokPolozky className="items-start @min-[560px]:items-center">
+                          <BunkaPolozky popis={t("Dátum")} uzky={4} poradie={3}>
+                            <span className="whitespace-nowrap">{datumNaDoklade(p.datum)}</span>
+                          </BunkaPolozky>
+                          <BunkaPolozky popis={t("Dodávateľ")} uzky={8} poradie={1} skrytyPopis>
+                            <span className="min-w-0 font-medium [overflow-wrap:anywhere] @min-[560px]:font-normal">
+                              {p.dodavatel ?? "—"}
+                            </span>
+                          </BunkaPolozky>
+                          <BunkaPolozky popis={t("Doklad")} uzky={6} poradie={4}>
+                            <span className="min-w-0 [overflow-wrap:anywhere]">
                               {p.druh === "prijata" ? (
                                 <Link
                                   to="/prijate-faktury/$id"
@@ -501,36 +518,40 @@ function Detail() {
                               <span className="ml-1 text-xs text-muted-foreground">
                                 {p.druh === "prijata" ? t("faktúra") : t("bloček")}
                               </span>
-                            </td>
-                            <td className="suma py-1.5 pr-2 text-right">
+                            </span>
+                          </BunkaPolozky>
+                          <BunkaPolozky popis={t("Spolu")} uzky={4} poradie={2} vpravo skrytyPopis>
+                            <span className="suma font-semibold [overflow-wrap:anywhere] @min-[560px]:font-normal">
                               {formatujMenu(p.spolu, p.mena)}
-                            </td>
-                            <td className="py-1.5 text-right">
-                              <button
-                                type="button"
-                                aria-label={t("Vybrať z vyúčtovania")}
-                                onClick={() =>
-                                  setPolozky((x) =>
-                                    x.filter((y) => !(y.id === p.id && y.druh === p.druh)),
-                                  )
-                                }
-                                className="rounded p-1 text-muted-foreground hover:bg-secondary"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </td>
-                          </KlikatelnyRiadok>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+                            </span>
+                          </BunkaPolozky>
+                          <BunkaPolozky uzky={2} poradie={5} vpravo>
+                            <button
+                              type="button"
+                              aria-label={t("Vybrať z vyúčtovania")}
+                              onClick={() =>
+                                setPolozky((x) =>
+                                  x.filter((y) => !(y.id === p.id && y.druh === p.druh)),
+                                )
+                              }
+                              className="rounded p-1 text-muted-foreground hover:bg-secondary"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </BunkaPolozky>
+                        </RiadokPolozky>
+                      </div>
+                    ))}
+                </PolozkyKontajner>
               )}
             </section>
 
             <section className="rounded-xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold">{t("Účtovné nastavenia")}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("Predkontácia, členenie DPH a KV sa doplnia dokladom vo vyúčtovaní, ktoré ich ešte nemajú a neodišli do účtovníctva (napr. náklad voči záväzku zamestnancovi, 5xx/335).")}
+                {t(
+                  "Predkontácia, členenie DPH a KV sa doplnia dokladom vo vyúčtovaní, ktoré ich ešte nemajú a neodišli do účtovníctva (napr. náklad voči záväzku zamestnancovi, 5xx/335).",
+                )}
               </p>
               <div className="mt-3 grid max-w-2xl grid-cols-1 gap-3 [&>*]:min-w-0">
                 <label className="block text-sm">
@@ -616,9 +637,13 @@ function Detail() {
                 {f.typ === "karta"
                   ? t("Platené firemnou kartou — nič sa nedopláca.")
                   : s.rozdiel > 0
-                    ? t("Firma doplatí zamestnancovi {suma}.", { suma: formatujMenu(Math.abs(s.rozdiel), f.mena) })
+                    ? t("Firma doplatí zamestnancovi {suma}.", {
+                        suma: formatujMenu(Math.abs(s.rozdiel), f.mena),
+                      })
                     : s.rozdiel < 0
-                      ? t("Zamestnanec vráti firme {suma}.", { suma: formatujMenu(Math.abs(s.rozdiel), f.mena) })
+                      ? t("Zamestnanec vráti firme {suma}.", {
+                          suma: formatujMenu(Math.abs(s.rozdiel), f.mena),
+                        })
                       : t("Vyrovnané — nikto nikomu nič nedlhuje.")}
               </p>
               {s.inaMena ? (
@@ -760,7 +785,10 @@ function VyberDokladov({
   );
   const kluc = (k: PolozkaVyuctovania) => `${k.druh}:${k.id}`;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 dk-prekrytie p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 dk-prekrytie p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -772,10 +800,13 @@ function VyberDokladov({
           <h3 className="text-lg font-semibold">{t("Pridať doklady")}</h3>
           <p className="mt-1 text-xs text-muted-foreground">
             {od || doDna
-              ? t("Bločky a prijaté faktúry z obdobia {od} – {do}, ktoré nie sú v inom vyúčtovaní.", {
-                  od: od || "…",
-                  do: doDna || "…",
-                })
+              ? t(
+                  "Bločky a prijaté faktúry z obdobia {od} – {do}, ktoré nie sú v inom vyúčtovaní.",
+                  {
+                    od: od || "…",
+                    do: doDna || "…",
+                  },
+                )
               : t("Bločky a prijaté faktúry, ktoré nie sú v inom vyúčtovaní.")}
           </p>
           <input
@@ -791,7 +822,9 @@ function VyberDokladov({
               <Loader2 className="h-4 w-4 animate-spin" /> {t("Načítavam…")}
             </div>
           ) : zobrazene.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("Žiadne voľné doklady v tomto období.")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("Žiadne voľné doklady v tomto období.")}
+            </p>
           ) : (
             <ul className="space-y-1">
               {zobrazene.map((k) => (

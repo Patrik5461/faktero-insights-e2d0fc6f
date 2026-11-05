@@ -18,6 +18,7 @@ import { zadaj } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { ZbaleneK } from "./DetailDokladuKompaktny";
+import { PolozkyNaCitanie } from "./PolozkyNaCitanie";
 import {
   BEZ_RAMU,
   Hodnota,
@@ -26,7 +27,6 @@ import {
   RozlozenieKompaktne,
   Rozsirene,
   Sekcia,
-  ZoznamPoloziek,
 } from "./KompaktnyDetail";
 import { KartaUhrady, UhradyOkno, oznacitUhradenu, useUhradyPrijatej } from "./UhradyPrijatej";
 import { ZauctovaniePanel } from "./ZauctovaniePanel";
@@ -208,7 +208,9 @@ export function PrijataDetailKompaktna({
             {datumNaDoklade(row.delivery_date ?? row.issue_date)}
           </Hodnota>
           {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
-          <Hodnota popis="Dátum prijatia">{row.received_date ? datumNaDoklade(row.received_date) : null}</Hodnota>
+          <Hodnota popis="Dátum prijatia">
+            {row.received_date ? datumNaDoklade(row.received_date) : null}
+          </Hodnota>
           <DatumPrijatiaInfo
             kompaktne
             vystavenie={row.issue_date}
@@ -373,7 +375,7 @@ export function PrijataDetailKompaktna({
               {t("vypnuté")}
             </span>
           ) : null}
-          <ZoznamPoloziek polozky={polozky} mena={menaDokladu} vypnute={polozkyVypnute} />
+          <PolozkyNaCitanie polozky={polozky} mena={menaDokladu} vypnute={polozkyVypnute} />
         </Sekcia>
 
         {/* Karty, ktoré majú vlastný nadpis — v paneli bez druhého rámu; dlaždice príloh po troch. */}

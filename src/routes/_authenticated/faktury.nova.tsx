@@ -2376,7 +2376,7 @@ function NewInvoice() {
 
 
           {/* SECTION 2 — items */}
-          <section className="rounded-xl border border-border bg-card p-5">
+          <section className="@container min-w-0 rounded-xl border border-border bg-card p-5">
             <SectionHeader icon={Package} title={t("Položky")}>
               <ProductSearch
                 products={products}
@@ -2419,7 +2419,7 @@ function NewInvoice() {
             </SectionHeader>
 
             {/* desktop table */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden @min-[860px]:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground">
@@ -2564,7 +2564,7 @@ function NewInvoice() {
             </div>
 
             {/* mobile cards */}
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 @min-[860px]:hidden">
               {items.map((it, idx) => (
                 <div key={idx} className="rounded-lg border border-border p-3">
                   <input
@@ -2653,9 +2653,9 @@ function NewInvoice() {
                     )}
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-sm">
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-foreground">{t("Spolu s DPH")}</span>
+                      <span className="whitespace-nowrap text-[13px] font-semibold text-foreground">{t("Spolu s DPH")}</span>
                       <CellSpolu
                         hodnota={
                           zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *

@@ -232,7 +232,7 @@ export function SchvalovaniePanel({
                 setBusy(false);
               }
             }}
-            className="rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+            className="min-w-0 max-w-full truncate rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
           >
             <option value="">{t("jednoduché schvaľovanie")}</option>
             {d.cesty.map((c: any) => (

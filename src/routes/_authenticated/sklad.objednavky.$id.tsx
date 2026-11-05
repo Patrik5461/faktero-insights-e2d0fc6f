@@ -29,6 +29,12 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { StavOdznak as StavWeb, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { EmptyState } from "@/components/faktero/ListControls";
+import {
+  BunkaPolozky,
+  PolozkyHlavicka,
+  PolozkyKontajner,
+  RiadokPolozky,
+} from "@/components/faktero/PolozkyResponzivne";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Objednávka — Faktero") }] }),
@@ -244,7 +250,9 @@ function PurchaseOrderDetail() {
               <div className="mt-0.5 whitespace-nowrap">{datumNaDoklade(o.order_date)}</div>
             </div>
             <div>
-              <div className="text-xs font-semibold text-muted-foreground">{t("Očakávané dodanie")}</div>
+              <div className="text-xs font-semibold text-muted-foreground">
+                {t("Očakávané dodanie")}
+              </div>
               <div className="mt-0.5 whitespace-nowrap">{o.expected_date ?? "—"}</div>
             </div>
             <div>
@@ -275,64 +283,76 @@ function PurchaseOrderDetail() {
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full min-w-[680px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="p-3">{t("Položka")}</th>
-                  <th className="p-3 text-right">{t("Objednané")}</th>
-                  <th className="p-3 text-right">{t("sklad::Prijaté")}</th>
-                  <th className="p-3 text-right">{t("Zostáva")}</th>
-                  <th className="p-3 text-right">{t("Cena / MJ")}</th>
-                  {otvorena && <th className="p-3 text-right">{t("Prijať teraz")}</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {(data.items ?? []).map((it: any) => (
-                  <tr key={it.id}>
-                    <td className="p-3 font-medium">
+          {/* Položky podľa šírky kontajnera (PolozkyResponzivne): úzko karta, široko riadok — bez vodorovného posúvania. */}
+          <div className="rounded-xl border border-border bg-card px-4 py-2 sm:px-5">
+            <PolozkyKontajner
+              stlpce={`minmax(0,1fr) minmax(5rem,auto) minmax(4.5rem,auto) minmax(4.5rem,auto) minmax(6rem,auto)${otvorena ? " minmax(6.5rem,auto)" : ""}`}
+              className="text-sm"
+            >
+              <PolozkyHlavicka
+                stlpce={[
+                  { text: t("Položka") },
+                  { text: t("Objednané"), vpravo: true },
+                  { text: t("sklad::Prijaté"), vpravo: true },
+                  { text: t("Zostáva"), vpravo: true },
+                  { text: t("Cena / MJ"), vpravo: true },
+                  ...(otvorena ? [{ text: t("Prijať teraz"), vpravo: true }] : []),
+                ]}
+              />
+              {(data.items ?? []).map((it: any) => (
+                <RiadokPolozky key={it.id} className="items-start @min-[560px]:items-center">
+                  <BunkaPolozky popis={t("Položka")} skrytyPopis>
+                    <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
                       {it.name}
                       {!it.stock_item_id && (
                         <StavWeb ton="pozor" maly className="ml-2 align-middle">
                           {t("bez skladovej karty")}
                         </StavWeb>
                       )}
-                    </td>
-                    <td className="whitespace-nowrap p-3 text-right tabular-nums">
+                    </span>
+                  </BunkaPolozky>
+                  <BunkaPolozky popis={t("Objednané")} uzky={4} vpravo>
+                    <span className="tabular-nums [overflow-wrap:anywhere]">
                       {formatujCislo(it.quantity, 0, 2)} {it.unit ?? ""}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">
+                    </span>
+                  </BunkaPolozky>
+                  <BunkaPolozky popis={t("sklad::Prijaté")} uzky={4} vpravo>
+                    <span className="tabular-nums">
                       {formatujCislo(it.received_quantity, 0, 2)}
-                    </td>
-                    <td className="p-3 text-right font-semibold tabular-nums">
+                    </span>
+                  </BunkaPolozky>
+                  <BunkaPolozky popis={t("Zostáva")} uzky={4} vpravo>
+                    <span className="font-semibold tabular-nums">
                       {formatujCislo(it.zostava, 0, 2)}
-                    </td>
-                    <td className="suma p-3 text-right font-normal">
+                    </span>
+                  </BunkaPolozky>
+                  <BunkaPolozky popis={t("Cena / MJ")} uzky={otvorena ? 6 : 12} vpravo>
+                    <span className="suma font-normal [overflow-wrap:anywhere]">
                       {suma(Number(it.unit_price), o.currency)}
-                    </td>
-                    {otvorena && (
-                      <td className="p-3 text-right">
-                        {it.zostava > 0 ? (
-                          <input
-                            type="number"
-                            step="0.001"
-                            min="0"
-                            max={it.zostava}
-                            value={prijem[it.id] ?? 0}
-                            onChange={(e) =>
-                              setPrijem((p) => ({ ...p, [it.id]: Number(e.target.value) }))
-                            }
-                            className="input w-24 text-right"
-                          />
-                        ) : (
-                          <span className="text-xs text-muted-foreground">{t("vybavené")}</span>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </BunkaPolozky>
+                  {otvorena && (
+                    <BunkaPolozky popis={t("Prijať teraz")} uzky={6} vpravo ako="label">
+                      {it.zostava > 0 ? (
+                        <input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          max={it.zostava}
+                          value={prijem[it.id] ?? 0}
+                          onChange={(e) =>
+                            setPrijem((p) => ({ ...p, [it.id]: Number(e.target.value) }))
+                          }
+                          className="input w-full max-w-28 text-right"
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{t("vybavené")}</span>
+                      )}
+                    </BunkaPolozky>
+                  )}
+                </RiadokPolozky>
+              ))}
+            </PolozkyKontajner>
           </div>
 
           {otvorena && riadkyNaPrijem.length > 0 && (
@@ -345,7 +365,9 @@ function PurchaseOrderDetail() {
               </p>
               <div className="flex flex-wrap items-end gap-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-muted-foreground">{t("Sklad")}</span>
+                  <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+                    {t("Sklad")}
+                  </span>
                   <select
                     value={prijemSklad}
                     onChange={(e) => setPrijemSklad(e.target.value)}
