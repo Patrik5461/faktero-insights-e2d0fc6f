@@ -32,6 +32,9 @@ const arg = (n: string) => {
 };
 const APPLY = process.argv.includes("--apply");
 const AJ_PK = process.argv.includes("--predkontacia");
+/** Vynechá doklady, ktorým by automatika dala UNoslob (0 % bez prenesenia) — posúdi účtovník. */
+const BEZ_OSLOBODENYCH = process.argv.includes("--bez-oslobodenych");
+let vynechaneOslobodene = 0;
 const FIRMA = arg("--firma");
 
 function env(cesta: string) {
@@ -104,6 +107,11 @@ async function main() {
         delete zmena.pohoda_predkontacia;
         delete zmena.predkontacia_zdroj;
       }
+      if (BEZ_OSLOBODENYCH && String(zmena.pohoda_clenenie_dph ?? "").startsWith("UNoslob")) {
+        vynechaneOslobodene++;
+        console.log(`  vynechané (UNoslob, posúdi účtovník): ${f.name} ${r.invoice_number}`);
+        continue;
+      }
       const polia = ["pohoda_clenenie_dph", "kv_clenenie", "pohoda_predkontacia"].filter(
         (x) => x in zmena && zmena[x],
       );
@@ -160,6 +168,7 @@ async function main() {
   );
   console.log("VZORKY (predkontácia / členenie / KV):");
   for (const v of vzorky) console.log(JSON.stringify(v));
+  if (BEZ_OSLOBODENYCH) console.log("Vynechané UNoslob:", vynechaneOslobodene);
   if (APPLY) console.log("Zapísaných:", zapisanych);
 }
 
