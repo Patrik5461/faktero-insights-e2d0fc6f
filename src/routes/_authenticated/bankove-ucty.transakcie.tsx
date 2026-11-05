@@ -199,6 +199,37 @@ function TxPage() {
       );
   }, [txs]);
 
+  /* K pohybom spárovaným s iným dokladom (predpis, výmer…) jeho predmet. */
+  const [ine, setIne] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const ids = txs.map((t: any) => t.matched_other_document_id).filter(Boolean);
+    if (ids.length === 0) return setIne({});
+    supabase
+      .from("other_documents")
+      .select("id, subject, sender")
+      .in("id", ids)
+      .then(({ data }) =>
+        setIne(
+          Object.fromEntries(
+            (data ?? []).map((d: any) => [d.id, d.subject || d.sender || t("iný doklad")]),
+          ),
+        ),
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs]);
+  const odkazInehoDokladu = (tx: any, trieda: string) => (
+    <Link
+      to="/ostatne-doklady/novy"
+      search={{ id: tx.matched_other_document_id }}
+      onClick={(e) => e.stopPropagation()}
+      data-neotvarat=""
+      title={t("Iný doklad uhradený týmto pohybom")}
+      className={trieda}
+    >
+      {ine[tx.matched_other_document_id] ?? t("iný doklad")}
+    </Link>
+  );
+
   async function odparuj(id: string) {
     const cid = getActiveCompanyId();
     if (!cid) return;
@@ -427,6 +458,17 @@ function TxPage() {
                               <Unlink className="h-3.5 w-3.5" />
                             </button>
                           </span>
+                        ) : tx.matched_other_document_id ? (
+                          <span className="inline-flex max-w-[16rem] items-center gap-1.5">
+                            <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            {odkazInehoDokladu(tx, "min-w-0 truncate text-primary hover:underline")}
+                            <button
+                              onClick={() => setDetail(tx.id)}
+                              className="ml-1 shrink-0 text-xs text-muted-foreground hover:underline"
+                            >
+                              {t("detail")}
+                            </button>
+                          </span>
                         ) : (
                           (() => {
                             const stav = stavPohybu(tx);
@@ -516,6 +558,10 @@ function TxPage() {
                           <span className={cn(triedaStavu("uspech", true), "cislo-dokladu")}>
                             {faktury[tx.matched_invoice_id] ?? t("faktúra")}
                           </span>
+                        ) : tx.matched_other_document_id ? (
+                          <span className={cn(triedaStavu("uspech", true), "max-w-[12rem] truncate")}>
+                            {ine[tx.matched_other_document_id] ?? t("iný doklad")}
+                          </span>
                         ) : (
                           <span
                             className={triedaStavu(TON_POHYBU[stav] ?? "informacia", true)}
@@ -526,6 +572,11 @@ function TxPage() {
                       }
                       actions={
                         <div className="flex flex-wrap items-center justify-end gap-1">
+                          {tx.matched_other_document_id &&
+                            odkazInehoDokladu(
+                              tx,
+                              "inline-flex max-w-[14rem] items-center gap-1 truncate rounded px-2 py-1 text-xs text-primary hover:bg-primary/10",
+                            )}
                           {tx.matched_invoice_id && (
                             <>
                               <Link

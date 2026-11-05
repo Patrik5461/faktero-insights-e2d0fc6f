@@ -580,6 +580,7 @@ async function podkladyParovania(supabase: any, companyId: string) {
         .eq("company_id", companyId)
         .is("matched_installment_id", null)
         .is("matched_invoice_id", null)
+        .is("matched_other_document_id", null)
         .lt("amount", 0)
         .gte("booking_date", od)
         .order("id", { ascending: true })

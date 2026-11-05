@@ -89,6 +89,8 @@ describe("rozpoznanie iného dokladu", () => {
       currency: "EUR",
       due_date: null,
       summary: "Zrážky zo mzdy zamestnanca.",
+      variable_symbol: null,
+      iban: null,
     });
     expect(jeRozpoznaniePouzitelne(r)).toBe(true);
   });
@@ -138,6 +140,8 @@ describe("iný doklad z e-mailu", () => {
       amount: 480,
       currency: "EUR",
       due_date: "2027-01-15",
+      variable_symbol: null,
+      iban: null,
       note: "Ročné poistné za auto.\n\nPrišlo e-mailom od noreply@allianz.sk, predmet „Predpis“.",
     });
   });

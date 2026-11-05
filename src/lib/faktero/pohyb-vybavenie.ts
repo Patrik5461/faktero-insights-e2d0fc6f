@@ -98,6 +98,7 @@ export type PohybStav = {
   matched_purchase_invoice_id?: string | null;
   matched_expense_id?: string | null;
   matched_installment_id?: string | null;
+  matched_other_document_id?: string | null;
   vybavenie?: string | null;
 };
 
@@ -106,7 +107,8 @@ export function stavPohybu(p: PohybStav): StavPohybu {
     p.matched_invoice_id ||
     p.matched_purchase_invoice_id ||
     p.matched_expense_id ||
-    p.matched_installment_id
+    p.matched_installment_id ||
+    p.matched_other_document_id
   )
     return "sparovany";
   if (p.vybavenie === "bez_dokladu" || p.vybavenie === "transakcna_dan") return p.vybavenie;

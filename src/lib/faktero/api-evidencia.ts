@@ -330,6 +330,7 @@ export function jeSparovany(
     matched_purchase_invoice_id?: string | null;
     matched_expense_id?: string | null;
     matched_installment_id?: string | null;
+    matched_other_document_id?: string | null;
   },
   poplatkov = 0,
 ): boolean {
@@ -338,6 +339,7 @@ export function jeSparovany(
     p.matched_purchase_invoice_id ||
     p.matched_expense_id ||
     p.matched_installment_id ||
+    p.matched_other_document_id ||
     poplatkov > 0,
   );
 }

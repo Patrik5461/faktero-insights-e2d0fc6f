@@ -3,7 +3,7 @@ import { useT } from "@/lib/i18n/useT";
 import { supabase } from "@/integrations/supabase/client";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
@@ -24,6 +24,15 @@ import {
   type DruhOstatneho,
 } from "@/lib/faktero/ostatne-doklady";
 import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
+import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
+import {
+  navrhniParovanieOstatnych,
+  potvrdParovanieOstatneho,
+  uhradyOstatnych,
+  zrusParovanieOstatneho,
+} from "@/lib/faktero/ostatne-parovanie.functions";
+import type { StavPlatby } from "@/lib/faktero/stav-platby";
+import { ibanNaZobrazenie } from "@/lib/faktero/ostatne-parovanie";
 import {
   STAV_DOKLADU_NAZOV,
   ZALOZKY_DOKLADOV,
@@ -94,8 +103,28 @@ function OstatneDokladyPage() {
   // Priečinky (zmluvy, objednávky…) — filtrujú sa na obrazovke z načítaných dokladov.
   const priecinok = lf.filter("priecinok");
   const stitokFiltra = lf.filter("stitok");
-  // Platba: zatiaľ len „nenájdená“ — väzba iného dokladu na pohyb z účtu neexistuje.
-  const platbaFiltra = lf.filter("platba");
+  // Platba: spárovaná / nájdená (návrh) / nenájdená — počíta sa z väzieb a návrhov.
+  const platbaFiltra = lf.filter("platba") as "" | StavPlatby;
+  /* Väzba na banku: ktorý pohyb doklad uhradil a čo sa ponúka spárovať. */
+  type Uhrada = {
+    datum: string;
+    transactionId: string;
+    suma: number;
+    mena: string | null;
+    protistrana: string | null;
+    vs: string | null;
+    ucet: string | null;
+  };
+  const [uhrady, setUhrady] = useState<Record<string, Uhrada>>({});
+  const [navrhy, setNavrhy] = useState<any[]>([]);
+  const [parujem, setParujem] = useState<string | null>(null);
+  const navrhPodlaDokladu = useMemo(() => {
+    const m = new Map<string, any>();
+    for (const z of navrhy) m.set(z.otherDocumentId, z);
+    return m;
+  }, [navrhy]);
+  const platbaRiadku = (r: any): StavPlatby | null =>
+    stavPlatbyOstatneho(r, { sparovana: !!uhrady[r.id], maNavrh: navrhPodlaDokladu.has(r.id) });
   const cis = useCiselnikyDokladov(cid, null, false);
   // Štítky na výber: číselník firmy a tie, čo sú na načítaných dokladoch.
   const stitkyNaVyber = [...new Set([...cis.stitky, ...rows.flatMap((r) => (r.stitky ?? []) as string[])])].sort();
@@ -107,7 +136,7 @@ function OstatneDokladyPage() {
       (!priecinok ||
         String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok)) &&
       (!stitokFiltra || (r.stitky ?? []).includes(stitokFiltra)) &&
-      (!platbaFiltra || stavPlatbyOstatneho(r) === platbaFiltra) &&
+      (!platbaFiltra || platbaRiadku(r) === platbaFiltra) &&
       (!hladane ||
         [r.sender, r.subject, r.priecinok, ...(r.stitky ?? [])]
           .filter(Boolean)
@@ -159,6 +188,7 @@ function OstatneDokladyPage() {
       });
       setRows(data);
       setSelected(new Set());
+      void nacitajUhrady(data.map((r: any) => r.id));
       void pocetFn({ data: { company_id: cid } })
         .then((v) => setNespracovanych(v.pocet))
         .catch(() => {
@@ -174,6 +204,112 @@ function OstatneDokladyPage() {
   useEffect(() => {
     refresh(); /* eslint-disable-next-line */
   }, [stav, month, druh]);
+
+  const navrhyFn = useServerFn(navrhniParovanieOstatnych);
+  const sparujFn = useServerFn(potvrdParovanieOstatneho);
+  const rozparujFn = useServerFn(zrusParovanieOstatneho);
+  const uhradyFn = useServerFn(uhradyOstatnych);
+
+  async function nacitajUhrady(ids: string[]) {
+    if (!cid || !ids.length) return setUhrady({});
+    try {
+      const kusy: string[][] = [];
+      for (let i = 0; i < ids.length; i += 300) kusy.push(ids.slice(i, i + 300));
+      const v = await Promise.all(kusy.map((kus) => uhradyFn({ data: { company_id: cid, ids: kus } })));
+      setUhrady(Object.assign({}, ...v.map((u) => u?.uhrady ?? {})));
+    } catch {
+      setUhrady({});
+    }
+  }
+  async function nacitajNavrhy() {
+    if (!cid) return;
+    try {
+      const r = await navrhyFn({ data: { company_id: cid } });
+      setNavrhy(r?.zhody ?? []);
+    } catch {
+      // Návrhy sú pomoc navyše — bez nich zoznam funguje ďalej.
+      setNavrhy([]);
+    }
+  }
+  useEffect(() => {
+    void nacitajNavrhy(); /* eslint-disable-next-line */
+  }, [cid]);
+
+  async function sparuj(z: any, ticho = false) {
+    setParujem(z.transactionId);
+    try {
+      await sparujFn({ data: { transaction_id: z.transactionId, other_document_id: z.otherDocumentId } });
+      if (!ticho) toast.success(t("Spárované, doklad je zaplatený."));
+      setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
+      if (!ticho) await refresh();
+      return true;
+    } catch (e: any) {
+      if (!ticho) toast.error(e?.message ?? t("Spárovať sa to nepodarilo."));
+      return false;
+    } finally {
+      setParujem(null);
+    }
+  }
+  /* Návrhy k dokladom v zozname; isté sa dajú potvrdiť jedným klikom (stále človek). */
+  const navrhyVZozname = navrhy.filter((z) =>
+    rows.some((r: any) => r.id === z.otherDocumentId && platbaRiadku(r) === "navrh"),
+  );
+  const isteVZozname = navrhyVZozname.filter((z) => z.istota === "auto");
+  async function sparujVsetkyIste() {
+    let ok = 0;
+    for (const z of [...isteVZozname]) if (await sparuj(z, true)) ok++;
+    toast.success(t("Spárované: {n} z {m}.", { n: ok, m: isteVZozname.length }));
+    await refresh();
+    await nacitajNavrhy();
+  }
+  async function rozparuj(transactionId: string) {
+    try {
+      await rozparujFn({ data: { transaction_id: transactionId } });
+      toast.success(t("Väzba zrušená."));
+      await refresh();
+      await nacitajNavrhy();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Zrušiť sa to nepodarilo."));
+    }
+  }
+
+  /** Ikonka banky s bodkou pri doklade — v tabuľke aj na karte. */
+  function ikonaPlatby(r: any, className?: string) {
+    const stavPl = platbaRiadku(r);
+    if (!stavPl) return null;
+    const u = uhrady[r.id];
+    const z = navrhPodlaDokladu.get(r.id);
+    const pohyb =
+      stavPl === "sparovana" && u
+        ? { datum: u.datum, suma: u.suma, mena: u.mena ?? r.currency, protistrana: u.protistrana, vs: u.vs, ucet: ibanNaZobrazenie(u.ucet), odkaz: "/bankove-ucty/transakcie" }
+        : stavPl === "navrh" && z?.pohyb
+          ? {
+              datum: z.pohyb.booking_date,
+              suma: z.pohyb.amount,
+              mena: z.pohyb.currency ?? r.currency,
+              vs: z.pohyb.variable_symbol,
+              ucet: ibanNaZobrazenie(z.pohyb.counterparty_iban),
+              protistrana: z.pohyb.counterparty,
+              odkaz: "/bankove-ucty/transakcie",
+            }
+          : null;
+    return (
+      <IkonaPlatby
+        stav={stavPl}
+        pohyb={pohyb}
+        dovody={stavPl === "navrh" ? (z?.dovody ?? []).map((x: string) => t(x)) : undefined}
+        ista={z?.istota === "auto"}
+        zaneprazdnene={!!z && parujem === z.transactionId}
+        onSparuj={z ? () => void sparuj(z) : undefined}
+        onNie={z ? () => setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId)) : undefined}
+        onZrus={u ? () => rozparuj(u.transactionId) : undefined}
+        odkazRucne={`/ostatne-doklady/novy?id=${r.id}`}
+        textRucne="Vybrať platbu v detaile"
+        popisNenajdena="Pohyb z účtu, ktorý by k dokladu sedel, sme zatiaľ nenašli. V detaile dokladu ho vyberiete ručne, alebo označíte „Zaplatené bez pohybu“."
+        className={className}
+      />
+    );
+  }
 
   function prepniZalozku(kluc: ZalozkaDokladov) {
     // Hľadanie a filtre z adresy ostávajú aj na inej záložke.
@@ -370,7 +506,11 @@ function OstatneDokladyPage() {
               label: "Platba",
               type: "select",
               allLabel: "Všetky stavy platby",
-              options: [{ value: "nenajdena", label: "Nenájdená" }],
+              options: [
+                { value: "sparovana", label: "Spárovaná" },
+                { value: "navrh", label: "Nájdená" },
+                { value: "nenajdena", label: "Nenájdená" },
+              ],
             },
             ...(stitkyNaVyber.length
               ? [
@@ -443,6 +583,22 @@ function OstatneDokladyPage() {
                 )}
               </button>
             )}
+          </div>
+        )}
+
+        {/*
+          Nájdené platby sú ikonkou v riadku; tu len tenký pás. Nič sa
+          nepáruje potichu — aj istá dvojica čaká na klik človeka.
+        */}
+        {(navrhyVZozname.length > 0 || platbaFiltra === "navrh") && (
+          <div className="mb-4">
+            <PasNavrhovPlatieb
+              pocet={navrhyVZozname.length}
+              istych={isteVZozname.length}
+              lenTieto={platbaFiltra === "navrh"}
+              onLenTieto={(zapnut) => lf.setFilter("platba", zapnut ? "navrh" : "")}
+              onSparujIste={sparujVsetkyIste}
+            />
           </div>
         )}
 
@@ -529,7 +685,7 @@ function OstatneDokladyPage() {
                     status={
                       // Ikonka mimo názvu — názov je odkaz na detail, tlačidlo v ňom by ho otvorilo.
                       <span className="inline-flex items-center gap-1">
-                        <IkonaPlatby stav={stavPlatbyOstatneho(r)} />
+                        {ikonaPlatby(r)}
                         <StavOdznak ton={tonStavu(STAV_TON, r.status)}>
                           {t(
                             STAV_DOKLADU_NAZOV[r.status as keyof typeof STAV_DOKLADU_NAZOV] ??
@@ -637,7 +793,7 @@ function OstatneDokladyPage() {
                               ) : null}
                             </td>
                             <td className="min-w-0 px-3 py-2">
-                              <IkonaPlatby stav={stavPlatbyOstatneho(r)} className="mr-1 align-middle" />
+                              {ikonaPlatby(r, "mr-1 align-middle")}
                               <button
                                 onClick={() =>
                                   navigate({ to: "/ostatne-doklady/novy", search: { id: r.id } })

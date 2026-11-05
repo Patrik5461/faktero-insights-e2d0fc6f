@@ -521,7 +521,7 @@ export async function vybavPohyb(ctx: ApiCtx, id: string): Promise<Odpoved> {
   const { data: p } = await db
     .from("bank_transactions")
     .select(
-      "id, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id",
+      "id, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, matched_other_document_id",
     )
     .eq("company_id", ctx.company_id)
     .eq("id", id)

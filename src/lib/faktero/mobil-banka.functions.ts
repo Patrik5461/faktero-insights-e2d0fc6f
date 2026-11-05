@@ -31,7 +31,7 @@ export const bankaPrehladFn = createServerFn({ method: "POST" })
     let dotazPohyby = supabase
       .from("bank_transactions")
       .select(
-        "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, vybavenie, vybavenie_poznamka, invoices:matched_invoice_id (invoice_number)",
+        "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, matched_other_document_id, vybavenie, vybavenie_poznamka, invoices:matched_invoice_id (invoice_number)",
       )
       .eq("company_id", data.company_id)
       // Dva stĺpce: v jeden deň chodí pohybov viac a samotný dátum ich nezoradí.

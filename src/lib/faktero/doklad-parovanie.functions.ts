@@ -52,6 +52,7 @@ export const navrhniParovanieDokladov = createServerFn({ method: "POST" })
         // Pohyb, ktorý už niečo uhrádza, nemá čo uhrádzať druhýkrát.
         .is("matched_expense_id", null)
         .is("matched_invoice_id", null)
+        .is("matched_other_document_id", null)
         // Transakčná daň či pohyb označený „bez dokladu“ doklad nehľadá.
         .is("vybavenie", null)
         .lt("amount", 0)
@@ -184,6 +185,7 @@ export const potvrdParovanieDokladu = createServerFn({ method: "POST" })
       .eq("id", data.transaction_id)
       .is("matched_expense_id", null)
       .is("matched_invoice_id", null)
+      .is("matched_other_document_id", null)
       .select("id");
     if (error) throw new Error(error.message);
     if (!zmenene?.length) throw new Error("Tento pohyb je už spárovaný s iným dokladom.");

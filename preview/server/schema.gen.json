@@ -84,7 +84,10 @@
           "volitelny": false,
           "povinny": false
         },
-        "stitky": { "druh": "array", "nullable": false, "volitelny": false, "povinny": false }
+        "stitky": { "druh": "array", "nullable": false, "volitelny": false, "povinny": false },
+        "variable_symbol": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "iban": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "paid_at": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false }
       },
       "vztahy": [
         {
@@ -559,6 +562,7 @@
           "volitelny": false,
           "povinny": false
         },
+        "matched_other_document_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "matched_invoice_id": {
           "druh": "text",
           "nullable": true,

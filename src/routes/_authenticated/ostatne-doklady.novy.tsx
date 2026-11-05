@@ -17,6 +17,7 @@ import {
   vazbyOstatnychFn,
 } from "@/lib/faktero/ostatne-doklady.functions";
 import {
+  DRUHY_NA_UHRADU,
   DRUHY_OSTATNYCH,
   MAX_VELKOST_PRILOHY,
   POVOLENE_TYPY_PRILOH,
@@ -36,6 +37,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { KtoKedyDokladu } from "@/components/faktero/KtoKedyDokladu";
 import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { PlatbaOstatneho } from "@/components/faktero/ostatne/PlatbaOstatneho";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
@@ -71,6 +73,8 @@ type Form = {
   note: string;
   employee_id: string;
   financing_contract_id: string;
+  variable_symbol: string;
+  iban: string;
 };
 
 const PRAZDNY: Form = {
@@ -84,6 +88,8 @@ const PRAZDNY: Form = {
   note: "",
   employee_id: "",
   financing_contract_id: "",
+  variable_symbol: "",
+  iban: "",
 };
 
 function velkost(b: number | null | undefined): string {
@@ -177,6 +183,8 @@ function OstatnyDokladPage() {
           note: d.note ?? "",
           employee_id: d.employee_id ?? "",
           financing_contract_id: d.financing_contract_id ?? "",
+          variable_symbol: d.variable_symbol ?? "",
+          iban: d.iban ?? "",
         });
         setStav(d.status);
         setStitky(d.stitky ?? []);
@@ -226,6 +234,14 @@ function OstatnyDokladPage() {
     if (!f.due_date && r.due_date) {
       zmeny.due_date = r.due_date;
       doplnene.push(t("lehota"));
+    }
+    if (!f.variable_symbol.trim() && r.variable_symbol) {
+      zmeny.variable_symbol = r.variable_symbol;
+      doplnene.push(t("variabilný symbol"));
+    }
+    if (!f.iban.trim() && r.iban) {
+      zmeny.iban = r.iban;
+      doplnene.push(t("IBAN"));
     }
     if (!f.note.trim() && r.summary) {
       zmeny.note = r.summary;
@@ -361,6 +377,8 @@ function OstatnyDokladPage() {
             note: form.note || null,
             employee_id: form.employee_id || null,
             financing_contract_id: form.financing_contract_id || null,
+            variable_symbol: form.variable_symbol.trim() || null,
+            iban: form.iban.trim() || null,
           },
           prilohy: nahrate,
         },
@@ -399,6 +417,18 @@ function OstatnyDokladPage() {
   }
 
   const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
+  const naUhradu = DRUHY_NA_UHRADU.includes(form.kind);
+
+  /** Uložená príloha → súbor na prečítanie AI (napr. dočítať VS a IBAN). */
+  async function precitajUlozenu(fileId: string, meno: string, mime: string | null) {
+    try {
+      const { url } = await odkazFn({ data: { id: fileId } });
+      const blob = await (await fetch(url)).blob();
+      await precitaj(new File([blob], meno, { type: mime || blob.type || "application/pdf" }));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Prílohu sa nepodarilo otvoriť."));
+    }
+  }
 
   return (
     <>
@@ -513,6 +543,35 @@ function OstatnyDokladPage() {
                     className={pole}
                   />
                 </label>
+                {/* Platobné údaje predpisu či výmeru — podľa nich sa hľadá platba v banke. */}
+                {(naUhradu || form.variable_symbol || form.iban) && (
+                  <>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-xs text-muted-foreground">
+                        {t("Variabilný symbol (nepovinné)")}
+                      </span>
+                      <input
+                        inputMode="numeric"
+                        maxLength={10}
+                        value={form.variable_symbol}
+                        onChange={(e) => nastav("variable_symbol", e.target.value.replace(/\D/g, ""))}
+                        className={`${pole} font-mono`}
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-xs text-muted-foreground">
+                        {t("IBAN na úhradu (nepovinné)")}
+                      </span>
+                      <input
+                        value={form.iban}
+                        maxLength={42}
+                        onChange={(e) => nastav("iban", e.target.value.toUpperCase())}
+                        placeholder="SK00 0000 0000 0000 0000 0000"
+                        className={`${pole} font-mono`}
+                      />
+                    </label>
+                  </>
+                )}
                 {(form.kind === "exekucia" || form.employee_id) && vazby.zamestnanci.length > 0 && (
                   <label className="block text-sm sm:col-span-2">
                     <span className="mb-1 block text-xs text-muted-foreground">
@@ -564,6 +623,25 @@ function OstatnyDokladPage() {
               </div>
             </div>
 
+            <div className="flex min-w-0 flex-col gap-6">
+            {!novy && riadok && cid ? (
+              <PlatbaOstatneho
+                companyId={cid}
+                doklad={{
+                  id,
+                  kind: riadok.kind,
+                  amount: riadok.amount,
+                  currency: riadok.currency,
+                  due_date: riadok.due_date,
+                  status: riadok.status,
+                  paid_at: riadok.paid_at ?? null,
+                }}
+                onZmena={async () => {
+                  const d: any = await detailFn({ data: { id } });
+                  setRiadok(d);
+                }}
+              />
+            ) : null}
             <div className="min-w-0 rounded-xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold">{t("Prílohy")}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -648,6 +726,15 @@ function OstatnyDokladPage() {
                       </button>
                       <span className="shrink-0 text-xs text-muted-foreground">{velkost(p.size)}</span>
                       <button
+                        onClick={() => void precitajUlozenu(p.id, p.name, p.mime)}
+                        disabled={citanie?.stav === "bezi"}
+                        title={t("Doplniť prázdne polia z tejto prílohy (aj VS a IBAN)")}
+                        aria-label={t("Prečítať {nazov}", { nazov: p.name })}
+                        className="rounded p-1 text-primary hover:bg-primary/10 disabled:opacity-40"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={() => odober(p.id)}
                         aria-label={t("Odstrániť {nazov}", { nazov: p.name })}
                         className="rounded p-1 hover:bg-destructive/10"
@@ -685,6 +772,7 @@ function OstatnyDokladPage() {
                   ))}
                 </ul>
               )}
+            </div>
             </div>
 
             {/* Tlačidlá až za prílohami — na mobile je karta Prílohy pod formulárom a patrí pred uloženie.

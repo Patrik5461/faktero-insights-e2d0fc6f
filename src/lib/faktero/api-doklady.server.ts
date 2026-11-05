@@ -323,7 +323,7 @@ export async function bankovePohyby(ctx: ApiCtx) {
   let q = (ctx.supabase as any)
     .from("bank_transactions")
     .select(
-      "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, transaction_reference, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, vybavenie, vybavenie_poznamka, vybavene_at, created_at",
+      "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, transaction_reference, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, matched_other_document_id, vybavenie, vybavenie_poznamka, vybavene_at, created_at",
       { count: "exact" },
     )
     .eq("company_id", ctx.company_id);
@@ -341,6 +341,7 @@ export async function bankovePohyby(ctx: ApiCtx) {
       "matched_purchase_invoice_id",
       "matched_expense_id",
       "matched_installment_id",
+      "matched_other_document_id",
     ];
     if (stav === "sparovany") q = q.or(SPAROVANE.map((s) => `${s}.not.is.null`).join(","));
     else if (["bez_dokladu", "transakcna_dan", "nesparovany"].includes(stav)) {

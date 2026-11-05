@@ -50,6 +50,8 @@ export type VlastnostiIkonyPlatby = {
   odkazRucne?: string | null;
   /** Pri 'nenajdena' — vlastný text namiesto predvolenej vety o Banke (už preložený alebo kľúč pre `t()`). */
   popisNenajdena?: string;
+  /** Text tlačidla k `odkazRucne` (kľúč pre `t()`), predvolene „Spárovať ručne v Banke“. */
+  textRucne?: string;
   className?: string;
 };
 
@@ -111,6 +113,7 @@ export function ObsahPlatby({
   onZrus,
   odkazRucne,
   popisNenajdena,
+  textRucne,
   onZavri,
   idNadpisu,
 }: Omit<VlastnostiIkonyPlatby, "className" | "stav"> & {
@@ -247,7 +250,7 @@ export function ObsahPlatby({
         )}
         {stav === "nenajdena" && odkazRucne && (
           <Button size="sm" variant="outline" asChild>
-            <a href={odkazRucne}>{t("Spárovať ručne v Banke")}</a>
+            <a href={odkazRucne}>{t(textRucne ?? "Spárovať ručne v Banke")}</a>
           </Button>
         )}
         {odkazPohybu && <span className="ml-auto">{odkazPohybu}</span>}
@@ -339,6 +342,7 @@ export function IkonaPlatby(p: VlastnostiIkonyPlatby) {
       onZrus={p.onZrus}
       odkazRucne={p.odkazRucne}
       popisNenajdena={p.popisNenajdena}
+      textRucne={p.textRucne}
       onZavri={zavri}
       idNadpisu={idNadpisu}
     />

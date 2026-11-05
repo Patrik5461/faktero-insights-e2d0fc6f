@@ -121,6 +121,9 @@ export type Database = {
           priecinok: string | null
           inbox_message_id: string | null
           stitky: string[]
+          variable_symbol: string | null
+          iban: string | null
+          paid_at: string | null
         }
         Insert: {
           nahrane_at?: string | null
@@ -147,6 +150,9 @@ export type Database = {
           priecinok?: string | null
           inbox_message_id?: string | null
           stitky?: string[]
+          variable_symbol?: string | null
+          iban?: string | null
+          paid_at?: string | null
         }
         Update: {
           nahrane_at?: string | null
@@ -173,6 +179,9 @@ export type Database = {
           priecinok?: string | null
           inbox_message_id?: string | null
           stitky?: string[]
+          variable_symbol?: string | null
+          iban?: string | null
+          paid_at?: string | null
         }
         Relationships: [
           {
@@ -846,6 +855,7 @@ export type Database = {
           id: string
           matched_expense_id: string | null
           matched_installment_id: string | null
+          matched_other_document_id: string | null
           matched_invoice_id: string | null
           matched_purchase_invoice_id: string | null
           transaction_reference: string | null
@@ -870,6 +880,7 @@ export type Database = {
           id?: string
           matched_expense_id?: string | null
           matched_installment_id?: string | null
+          matched_other_document_id?: string | null
           matched_invoice_id?: string | null
           matched_purchase_invoice_id?: string | null
           transaction_reference?: string | null
@@ -894,6 +905,7 @@ export type Database = {
           id?: string
           matched_expense_id?: string | null
           matched_installment_id?: string | null
+          matched_other_document_id?: string | null
           matched_invoice_id?: string | null
           matched_purchase_invoice_id?: string | null
           transaction_reference?: string | null

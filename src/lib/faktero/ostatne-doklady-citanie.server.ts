@@ -27,12 +27,14 @@ ${DRUHY_PRE_AI}
 - amount — suma, ktorú treba zaplatiť alebo ktorej sa dokument týka, ako číslo ("1 234,56" → 1234.56). Ak žiadna nie je, null.
 - currency — kód meny (EUR, CZK…).
 - due_date — lehota alebo splatnosť (YYYY-MM-DD), ak je v dokumente.
+- variable_symbol — variabilný symbol, pod ktorým sa má suma zaplatiť (predpis Sociálnej či zdravotnej poisťovne, platobný výmer, pokuta, výzva), len číslice. Ak nie je, null.
+- iban — IBAN účtu, na ktorý sa má zaplatiť (účet úradu, poisťovne, exekútora), nie účet firmy-adresáta. Ak nie je, null.
 - summary — 1 až 3 vety pre účtovníka: čo z dokumentu vyplýva a čo treba urobiť.
 - Pri druhu "leasing_uver" napíš do summary aj číslo zmluvy a pri kontokorente aj IBAN účtu, ku ktorému je rámec — podľa nich sa doklad priradí k zmluve.
 
 Čo v dokumente nie je, daj null. Nič si nevymýšľaj.
 Vráť VÝHRADNE JSON:
-{"kind":string,"sender":string|null,"subject":string|null,"document_date":"YYYY-MM-DD"|null,"amount":number|null,"currency":string|null,"due_date":"YYYY-MM-DD"|null,"summary":string|null}`;
+{"kind":string,"sender":string|null,"subject":string|null,"document_date":"YYYY-MM-DD"|null,"amount":number|null,"currency":string|null,"due_date":"YYYY-MM-DD"|null,"variable_symbol":string|null,"iban":string|null,"summary":string|null}`;
 
 export async function precitajOstatny(
   base64: string,

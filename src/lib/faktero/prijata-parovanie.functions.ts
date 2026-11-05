@@ -92,6 +92,7 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
           .is("matched_expense_id", null)
           .is("matched_invoice_id", null)
           .is("matched_installment_id", null)
+          .is("matched_other_document_id", null)
           .is("vybavenie", null)
           .order("booking_date", { ascending: false })
           .limit(1000)
@@ -176,6 +177,7 @@ export const potvrdParovaniePrijatej = createServerFn({ method: "POST" })
       .update({ matched_purchase_invoice_id: data.purchase_invoice_id })
       .eq("id", data.transaction_id)
       .is("matched_purchase_invoice_id", null)
+      .is("matched_other_document_id", null)
       .select("id");
     if (error) throw new Error(error.message);
     if (!zmenene?.length) throw new Error("Tento pohyb je už spárovaný s inou faktúrou.");

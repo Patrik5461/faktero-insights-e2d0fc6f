@@ -23,6 +23,8 @@ import { zrusParovanie } from "@/lib/faktero/parovanie.functions";
 import { zrusParovaniePrijatej } from "@/lib/faktero/prijata-parovanie.functions";
 import { zrusParovanieDokladu } from "@/lib/faktero/doklad-parovanie.functions";
 import { zrusSparovanieSplatkyFn } from "@/lib/faktero/financovanie.functions";
+import { zrusParovanieOstatneho } from "@/lib/faktero/ostatne-parovanie.functions";
+import { SparovatSInymDokladom } from "@/components/faktero/ostatne/SparovatSInymDokladom";
 
 type Detail = Awaited<ReturnType<typeof detailPohybuFn>>;
 
@@ -32,6 +34,7 @@ const DRUH_DOKLADU: Record<DokladPohybu["druh"], string> = {
   doklad: "Doklad",
   splatka: "Splátka",
   poplatok: "Úrok alebo poplatok z úveru",
+  ostatny: "Iný doklad",
 };
 
 /**
@@ -57,6 +60,7 @@ export function DetailPohybu({
   const zrusPrijatu = useServerFn(zrusParovaniePrijatej);
   const zrusDoklad = useServerFn(zrusParovanieDokladu);
   const zrusSplatku = useServerFn(zrusSparovanieSplatkyFn);
+  const zrusOstatny = useServerFn(zrusParovanieOstatneho);
 
   const [d, setD] = useState<Detail | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
@@ -121,6 +125,8 @@ export function DetailPohybu({
         return zrusDoklad({ data: { transaction_id: pohybId } });
       case "splatka":
         return zrusSplatku({ data: { company_id: companyId, installment_id: doklad.id } });
+      case "ostatny":
+        return zrusOstatny({ data: { transaction_id: pohybId } });
       default:
         return null;
     }
@@ -162,6 +168,14 @@ export function DetailPohybu({
       <Link
         to="/prijate-faktury/$id"
         params={{ id: x.id }}
+        className="text-primary hover:underline"
+      >
+        {t("Detail")}
+      </Link>
+    ) : x.druh === "ostatny" ? (
+      <Link
+        to="/ostatne-doklady/novy"
+        search={{ id: x.id }}
         className="text-primary hover:underline"
       >
         {t("Detail")}
@@ -328,6 +342,18 @@ export function DetailPohybu({
                     {t("Zrušiť označenie")}
                   </button>
                 </div>
+              )}
+
+              {stav === "nesparovany" && suma < 0 && (
+                <SparovatSInymDokladom
+                  companyId={companyId}
+                  pohybId={pohybId}
+                  mena={mena}
+                  onSparovane={async () => {
+                    onZmena();
+                    await nacitaj();
+                  }}
+                />
               )}
 
               {stav === "nesparovany" && (

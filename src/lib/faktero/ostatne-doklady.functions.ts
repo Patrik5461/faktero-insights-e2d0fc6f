@@ -1,7 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { DRUHY_KLUCE, bezpecneMeno, jeCestaDokladu, jeRozpoznaniePouzitelne } from "./ostatne-doklady";
+import {
+  DRUHY_KLUCE,
+  bezpecneMeno,
+  jeCestaDokladu,
+  jeRozpoznaniePouzitelne,
+  upravIban,
+  upravVs,
+} from "./ostatne-doklady";
 import { nazovDruhuFinancovania } from "./kontokorent";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
@@ -23,6 +30,9 @@ const Udaje = z.object({
   note: z.string().trim().max(5000).nullable().optional(),
   employee_id: z.string().uuid().nullable().optional(),
   financing_contract_id: z.string().uuid().nullable().optional(),
+  /** Platobné údaje — chýbajúce (staré appky) sa neprepisujú. */
+  variable_symbol: z.string().trim().max(20).nullable().optional(),
+  iban: z.string().trim().max(40).nullable().optional(),
 });
 
 const Priloha = z.object({
@@ -126,7 +136,14 @@ export const ulozOstatnyFn = createServerFn({ method: "POST" })
       currency: data.udaje.currency ?? "EUR",
       employee_id: data.udaje.employee_id ?? null,
       financing_contract_id: data.udaje.financing_contract_id ?? null,
+      // `undefined` = klient pole nepozná, stĺpec ostane; prázdne = zmazať.
+      variable_symbol:
+        data.udaje.variable_symbol === undefined ? undefined : upravVs(data.udaje.variable_symbol),
+      iban: data.udaje.iban === undefined ? undefined : upravIban(data.udaje.iban),
     };
+    if (data.udaje.variable_symbol && !udaje.variable_symbol)
+      throw new Error("Variabilný symbol môže mať najviac 10 číslic.");
+    if (data.udaje.iban && !udaje.iban) throw new Error("IBAN nemá správny tvar.");
     if (data.novy) {
       const { error } = await supabase.from("other_documents").insert({
         id: data.id,

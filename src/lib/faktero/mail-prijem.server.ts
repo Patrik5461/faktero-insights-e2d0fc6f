@@ -131,6 +131,8 @@ Keď si nie si istý, daj "faktura".
 Pri "ostatny" vyplň aj "other_kind" (jeden z kľúčov nižšie), "other_subject" (o čom dokument je,
 jednou vetou po slovensky), "other_due_date" (lehota, YYYY-MM-DD) a "summary" (1–3 vety pre
 účtovníka, čo z dokumentu vyplýva). Odosielateľa daj do "supplier_name" a sumu do "amount_total".
+Ak sa má podľa dokumentu platiť (predpis poistného, platobný výmer, pokuta), daj variabilný symbol
+do "variable_symbol" a IBAN účtu, na ktorý sa platí, do "supplier_iban".
 Kľúče pre "other_kind":
 ${DRUHY_PRE_AI}
 Do JSON pridaj: "document_type", "other_kind", "other_subject", "other_due_date", "summary".

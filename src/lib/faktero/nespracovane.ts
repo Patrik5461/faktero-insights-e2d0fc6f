@@ -23,6 +23,7 @@ import {
   type VysledokKontroly,
 } from "./rozpis-dph-kontrola";
 import { datum as datumZAi } from "./mail-prijem";
+import { upravIban, upravVs } from "./ostatne-doklady";
 import {
   bezZaokruhlenia,
   jePolozkaZaokruhlenia,
@@ -853,6 +854,9 @@ export function ostatnyZUdajov(u: UdajeNespracovaneho, dnes: string) {
     amount: s.celkom || null,
     currency: (u.mena || "EUR").toUpperCase(),
     due_date: u.ostatny.lehota || u.splatnost || null,
+    // Platobné údaje predpisu či výmeru — podľa nich sa hľadá platba v banke.
+    variable_symbol: upravVs(u.vs),
+    iban: upravIban(u.dodavatel?.iban),
     note: prazdne(u.poznamka),
   };
 }

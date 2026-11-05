@@ -67,6 +67,20 @@ export function stavLehoty(dueDate: string | null | undefined, dnes: string): "p
 }
 
 
+/** IBAN z AI či formulára: bez medzier, veľkými, a len keď vyzerá ako IBAN. */
+export function upravIban(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const i = v.replace(/\s+/g, "").toUpperCase();
+  return /^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(i) ? i : null;
+}
+
+/** VS z AI či formulára: len číslice, najviac 10 (SEPA VS), inak nič. */
+export function upravVs(v: unknown): string | null {
+  if (typeof v !== "string" && typeof v !== "number") return null;
+  const c = String(v).replace(/\D/g, "");
+  return c && c.length <= 10 ? c : null;
+}
+
 /** Čo AI prečítala z iného dokladu — už uprataté na hodnoty pre formulár. */
 export type RozpoznanyOstatny = {
   kind: DruhOstatneho;
@@ -77,6 +91,10 @@ export type RozpoznanyOstatny = {
   currency: string | null;
   due_date: string | null;
   summary: string | null;
+  /** Variabilný symbol na úhradu (predpis SP/ZP, platobný výmer). */
+  variable_symbol: string | null;
+  /** IBAN, na ktorý sa platí. */
+  iban: string | null;
 };
 
 function textAI(v: unknown, max: number): string | null {
@@ -104,6 +122,8 @@ export function normalizujRozpoznanie(raw: unknown): RozpoznanyOstatny {
     currency: mena && /^[A-Z]{3}$/.test(mena) ? mena : null,
     due_date: datum(r.due_date),
     summary: textAI(r.summary, 1000),
+    variable_symbol: upravVs(r.variable_symbol),
+    iban: upravIban(r.iban),
   };
 }
 
@@ -140,6 +160,9 @@ export function ostatnyZMailu(args: {
     currency: ai.currency,
     due_date: ai.other_due_date ?? ai.due_date,
     summary: ai.summary,
+    variable_symbol: ai.variable_symbol,
+    // Pri inom doklade je „účet dodávateľa“ účet úradu či poisťovne na úhradu.
+    iban: ai.other_iban ?? ai.supplier_iban,
   });
   const zMailu = [
     args.odosielatel ? `Prišlo e-mailom od ${args.odosielatel}` : "Prišlo e-mailom",
@@ -155,6 +178,8 @@ export function ostatnyZMailu(args: {
     amount: r.amount,
     currency: r.currency ?? "EUR",
     due_date: r.due_date,
+    variable_symbol: r.variable_symbol,
+    iban: r.iban,
     note: [r.summary, `${zMailu}.`].filter(Boolean).join("\n\n"),
   };
 }
@@ -243,25 +268,34 @@ export const DRUHY_NA_UHRADU: readonly DruhOstatneho[] = [
 ];
 
 /**
- * Stav platby iného dokladu pre ikonku banky. Väzba na pohyb z účtu zatiaľ
- * neexistuje (`bank_transactions` nemá stĺpec na iný doklad), takže doklad
- * nemôže byť spárovaný ani mať návrh — ukazuje sa len „nenájdená“ pri doklade,
- * ktorý sa má platiť: druh na úhradu, kladná suma a lehota. Odovzdaný doklad
- * je u účtovníka uzavretý, ikonku nemá (inak by svietil načerveno navždy).
+ * Stav platby iného dokladu pre ikonku banky.
+ *
+ * - `sparovana` — pohyb z účtu má väzbu na doklad (`matched_other_document_id`),
+ * - `navrh` — párovanie našlo pohyb, čaká na potvrdenie človekom,
+ * - `nenajdena` — doklad na úhradu (druh, kladná suma, lehota), nezaplatený.
+ *
+ * Zaplatený bez pohybu (`paid_at`, napr. v hotovosti na pošte) ikonku nemá —
+ * nie je čo hľadať. Odovzdaný doklad je u účtovníka uzavretý: ukáže sa len
+ * spárovaná platba, nie červená „nenájdená“ (svietila by navždy).
  */
-export function stavPlatbyOstatneho(r: {
-  kind?: string | null;
-  amount?: number | string | null;
-  due_date?: string | null;
-  status?: string | null;
-}): StavPlatby | null {
+export function stavPlatbyOstatneho(
+  r: {
+    kind?: string | null;
+    amount?: number | string | null;
+    due_date?: string | null;
+    status?: string | null;
+    paid_at?: string | null;
+  },
+  vazba: { sparovana?: boolean; maNavrh?: boolean } = {},
+): StavPlatby | null {
   const suma = Number(r.amount ?? 0);
+  const naUhradu = DRUHY_NA_UHRADU.includes(r.kind as DruhOstatneho) && Number.isFinite(suma) && suma > 0;
+  const odovzdany = r.status === "exported";
   return stavPlatby({
-    sparovana: false,
-    maNavrh: false,
-    platiSaPrevodom:
-      DRUHY_NA_UHRADU.includes(r.kind as DruhOstatneho) && Number.isFinite(suma) && suma > 0 && !!r.due_date,
-    uhradena: false,
-    aktivna: r.status !== "exported",
+    sparovana: !!vazba.sparovana,
+    maNavrh: !odovzdany && naUhradu && !!vazba.maNavrh,
+    platiSaPrevodom: naUhradu && !!r.due_date,
+    uhradena: !!r.paid_at,
+    aktivna: !!vazba.sparovana || !odovzdany,
   });
 }

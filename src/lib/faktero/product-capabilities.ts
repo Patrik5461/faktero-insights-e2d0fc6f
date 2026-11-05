@@ -392,6 +392,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Príjem e-mailom na rovnakú adresu ako doklady",
       "Väzba na zamestnanca alebo na leasingovú zmluvu",
       "Upozornenia na lehoty",
+      "Párovanie predpisov, výmerov a pokút s platbou z účtu podľa sumy, VS a IBAN — najprv návrh, potvrdzuje človek; aj „Zaplatené bez pohybu“",
     ],
     routes: ["/ostatne-doklady"],
   },

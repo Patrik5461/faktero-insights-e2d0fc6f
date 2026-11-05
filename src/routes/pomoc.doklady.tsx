@@ -344,6 +344,17 @@ const sections: HelpSection[] = [
           dní alebo už uplynula, upozorní zvonček, kým doklad neodovzdáte účtovníkovi.
         </p>
         <p>
+          <strong>Platba.</strong> Pri predpise poistného, platobnom výmere či pokute AI prečíta aj{" "}
+          <strong>variabilný symbol</strong> a <strong>IBAN</strong> na úhradu. Faktero potom v Banke
+          hľadá odchádzajúcu platbu s rovnakou sumou okolo lehoty a nájdenú vám najprv{" "}
+          <strong>navrhne</strong> — ikonkou banky pri doklade, pásom nad zoznamom a v detaile v karte{" "}
+          <strong>Platba</strong>; spáruje sa až po kliknutí na <strong>Spárovať</strong>. Pohyb
+          vyberiete aj ručne cez <strong>Vybrať pohyb z účtu</strong>, doklad zaplatený v hotovosti
+          označíte <strong>Zaplatené bez pohybu</strong> a v detaile pohybu v Banke ho priradíte cez{" "}
+          <strong>Spárovať s iným dokladom</strong>. Filter <strong>Platba</strong> ukáže spárované,
+          nájdené a nenájdené.
+        </p>
+        <p>
           Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad pozrie
           a klikne na <strong>Spracovať</strong>. Iné doklady sa do Pohody neposielajú, sú
           podkladom. V mesačnom balíku pre účtovníka sú v priečinku <strong>ostatne-doklady</strong>{" "}

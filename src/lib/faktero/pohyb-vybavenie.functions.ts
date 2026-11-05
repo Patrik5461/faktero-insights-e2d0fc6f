@@ -13,7 +13,7 @@ import { overPristup } from "./over-pristup";
 const Id = z.object({ company_id: z.string().uuid(), id: z.string().uuid() });
 
 export type DokladPohybu = {
-  druh: "faktura" | "prijata" | "doklad" | "splatka" | "poplatok";
+  druh: "faktura" | "prijata" | "doklad" | "splatka" | "poplatok" | "ostatny";
   id: string;
   cislo: string | null;
   partner: string | null;
@@ -36,7 +36,7 @@ export const detailPohybuFn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!p) throw new Error("Pohyb sa nenašiel.");
 
-    const [ucet, faktura, platby, prijata, doklad, splatka, poplatky, pravidlo] = await Promise.all(
+    const [ucet, faktura, platby, prijata, doklad, splatka, poplatky, pravidlo, iny] = await Promise.all(
       [
         p.bank_account_id
           ? sb
@@ -89,6 +89,13 @@ export const detailPohybuFn = createServerFn({ method: "POST" })
               .eq("id", p.vybavenie_pravidlo_id)
               .maybeSingle()
           : { data: null },
+        p.matched_other_document_id
+          ? sb
+              .from("other_documents")
+              .select("id, kind, sender, subject, amount, currency")
+              .eq("id", p.matched_other_document_id)
+              .maybeSingle()
+          : { data: null },
       ],
     );
 
@@ -139,6 +146,16 @@ export const detailPohybuFn = createServerFn({ method: "POST" })
         suma: Number(s.paid_amount ?? s.amount ?? 0),
         mena: s.financing_contracts?.currency ?? null,
       });
+    const o = iny.data as any;
+    if (o)
+      doklady.push({
+        druh: "ostatny",
+        id: o.id,
+        cislo: o.subject ?? null,
+        partner: o.sender ?? null,
+        suma: Number(o.amount || 0),
+        mena: o.currency ?? null,
+      });
     for (const c of (poplatky.data ?? []) as any[])
       doklady.push({
         druh: "poplatok",
@@ -171,7 +188,7 @@ export const oznacPohybFn = createServerFn({ method: "POST" })
     const { data: p } = await supabaseAdmin
       .from("bank_transactions")
       .select(
-        "id, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id",
+        "id, matched_invoice_id, matched_purchase_invoice_id, matched_expense_id, matched_installment_id, matched_other_document_id",
       )
       .eq("id", data.id)
       .eq("company_id", data.company_id)
@@ -188,6 +205,7 @@ export const oznacPohybFn = createServerFn({ method: "POST" })
         p.matched_purchase_invoice_id ||
         p.matched_expense_id ||
         p.matched_installment_id ||
+        p.matched_other_document_id ||
         (count ?? 0) > 0
       )
         throw new Error("Pohyb je spárovaný s dokladom — najprv zrušte párovanie.");

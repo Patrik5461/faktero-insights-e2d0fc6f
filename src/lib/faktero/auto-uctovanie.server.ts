@@ -627,7 +627,8 @@ export async function navrhPohybu(sb: Klient, id: string): Promise<NavrhZauctova
     p.matched_invoice_id ||
     p.matched_purchase_invoice_id ||
     p.matched_expense_id ||
-    p.matched_installment_id,
+    p.matched_installment_id ||
+    p.matched_other_document_id,
   );
   const zaklad: NavrhZauctovania = {
     predkontacia: null,
@@ -668,7 +669,9 @@ export async function navrhPohybu(sb: Klient, id: string): Promise<NavrhZauctova
         ? "úhrada prijatej faktúry"
         : p.matched_expense_id
           ? "úhrada dokladu"
-          : "splátka";
+          : p.matched_other_document_id
+            ? "úhrada iného dokladu"
+            : "splátka";
     return {
       ...zaklad,
       predkontacia: String(firma!.pohoda_predkontacia_banka).trim(),

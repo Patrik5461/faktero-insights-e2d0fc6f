@@ -228,6 +228,7 @@ export async function podkladyKontokorentu(
         .is("matched_invoice_id", null)
         .is("matched_purchase_invoice_id", null)
         .is("matched_expense_id", null)
+        .is("matched_other_document_id", null)
         .lt("amount", 0)
         .gte("booking_date", od)
         .order("id", { ascending: true })
