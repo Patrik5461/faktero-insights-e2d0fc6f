@@ -23,15 +23,25 @@ export function usePredvyplnenieKv(
   typ?: string,
   /** false = predvolené má volajúci z vlastných návrhov kódov (nenačítava sa znova). */
   nacitatPredvolene = true,
-): { predvolene: string | null; pravidlo: { nazov: string; kv: string } | null } {
+): {
+  predvolene: string | null;
+  pravidlo: { nazov: string; kv: string } | null;
+  /** Členenie KV z číselníka firmy (import z obrázka); prázdne = systémový zoznam. */
+  kvFirmy: { kod: string; nazov: string }[];
+} {
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const [predvolene, setPredvolene] = useState<string | null>(null);
+  const [kvFirmy, setKvFirmy] = useState<{ kod: string; nazov: string }[]>([]);
   const [pravidla, setPravidla] = useState<(Pravidlo & { id: string })[]>([]);
   useEffect(() => {
     if (!companyId || !nacitatPredvolene) return;
     let zive = true;
     nacitajNavrhy({ data: { company_id: companyId, pre, ...(typ ? { typ } : {}) } })
-      .then((n) => zive && setPredvolene(((n as any)?.predvoleneKv as string | null) ?? null))
+      .then((n) => {
+        if (!zive) return;
+        setPredvolene(((n as any)?.predvoleneKv as string | null) ?? null);
+        setKvFirmy(Array.isArray((n as any)?.kv) ? (n as any).kv : []);
+      })
       .catch(() => {});
     return () => {
       zive = false;
@@ -60,7 +70,7 @@ export function usePredvyplnenieKv(
     return p && kv ? { nazov: p.nazov, kv } : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pravidla, kluc]);
-  return { predvolene, pravidlo };
+  return { predvolene, pravidlo, kvFirmy };
 }
 
 /**

@@ -42,13 +42,15 @@ export type KontextFirmyClenenia = {
   ciselnik: NonNullable<KontextClenenia["ciselnik"]>;
   pravidla: (Pravidlo & { id: string })[];
   odhad: { faktura: string | null; dobropis: string | null };
+  /** Členenie KV DPH z číselníka firmy pre vydané doklady (prázdne = systémové). */
+  kvCiselnik?: string[];
 };
 
 export async function nacitajKontextClenenia(
   sb: Klient,
   companyId: string,
 ): Promise<KontextFirmyClenenia> {
-  const [{ data: firma }, { data: kody }, { data: pravidla }, { data: faktury }] = await Promise.all([
+  const [{ data: firma }, { data: kody }, { data: pravidla }, { data: faktury }, kvKody] = await Promise.all([
     sb.from("companies").select(STLPCE_FIRMY).eq("id", companyId).maybeSingle(),
     sb
       .from("predkontacie")
@@ -65,6 +67,7 @@ export async function nacitajKontextClenenia(
       .not("pohoda_predkontacia", "is", null)
       .order("created_at", { ascending: false })
       .limit(300),
+    kvCiselnikFirmy(sb, companyId),
   ]);
   // Kód obmedzený v číselníku len na iné druhy dokladov (prijaté, bločky) sa vydanému neponúkne.
   const preVydane = ((kody ?? []) as Riadok[]).filter(
@@ -78,7 +81,24 @@ export async function nacitajKontextClenenia(
     ciselnik: ciselnikVystavenych(preVydane as never),
     pravidla: (pravidla ?? []) as KontextFirmyClenenia["pravidla"],
     odhad: odhadPredkontacie((faktury ?? []) as Riadok[]),
+    kvCiselnik: kvKody,
   };
+}
+
+/** Kódy KV DPH z číselníka firmy pre vydané doklady — chyba čítania = systémové kódy. */
+async function kvCiselnikFirmy(sb: Klient, companyId: string): Promise<string[]> {
+  try {
+    const { data } = await sb
+      .from("predkontacie")
+      .select("druh, kod, popis, aktivne, typ_dokladu")
+      .eq("company_id", companyId)
+      .eq("druh", "kv_clenenie")
+      .limit(1000);
+    const { ponukaKvFirmy } = await import("./ciselnik-obrazok");
+    return ponukaKvFirmy((data ?? []) as any[], "vydane").map((k) => k.kod);
+  } catch {
+    return [];
+  }
 }
 
 /** Pravidlo pre vystavený doklad — uplatnené spúšťačom, inak prvé zhodné (ako `faktero_pravidlo_pre_doklad`). */
@@ -125,6 +145,7 @@ export async function vyriesClenenieRiadku(
     povodna,
     ciselnik: k.ciselnik,
     odhad: k.odhad,
+    kvCiselnik: k.kvCiselnik,
   });
 }
 

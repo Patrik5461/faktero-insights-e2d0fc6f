@@ -5,6 +5,7 @@ import { BookCheck, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
+import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { upozornenieA1 } from "@/lib/faktero/kv-urcenie";
 import { kvAutoVystavenej, textKvAuto } from "@/lib/faktero/kv-auto";
 import { navrhClenenieVystavenej } from "@/lib/faktero/clenenie-vystavenej";
@@ -303,7 +304,7 @@ export function UctovneNastaveniaFaktury({
                       })
                     : textKvAuto(t, kvAuto)}
                 </option>
-                {KV_VYDANE.map((k) => (
+                {moznostiKv(navrhy?.kv, KV_VYDANE, kody.kv).map((k) => (
                   <option key={k.kod} value={k.kod}>
                     {t(k.nazov)}
                   </option>

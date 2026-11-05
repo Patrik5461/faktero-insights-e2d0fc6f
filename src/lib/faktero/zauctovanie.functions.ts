@@ -156,6 +156,14 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         : doklad
           ? firma?.kv_clenenie_doklady
           : firma?.kv_clenenie_prijata) ?? null) as string | null,
+      /**
+       * Členenie KV DPH z číselníka firmy (import z obrázka) pre smer dokladu;
+       * prázdne = systémový zoznam (KV_PRIJATE / vydané).
+       */
+      kv: (await import("./ciselnik-obrazok")).ponukaKvFirmy(
+        (ciselnik ?? []) as any[],
+        vystavena ? "vydane" : "prijate",
+      ),
       maCiselnik: (ciselnik ?? []).length > 0,
       /** Firma je platiteľ DPH — neplatiteľ dostane predvolené „nezahrnovať do priznania“. */
       platitel: firma?.vat_payer !== false,
@@ -338,7 +346,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
         clenenie: kod,
         kategoria: z.string().trim().max(40).optional().nullable(),
         odpocet: z.boolean().optional(),
-        kv: z.string().max(5).optional().nullable(),
+        kv: z.string().max(10).optional().nullable(),
         stredisko: kod,
         cinnost: kod,
         rad: kod,
@@ -578,7 +586,7 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
         predkontacia: kod,
         clenenie: kod,
         kategoria: z.string().trim().max(40).optional().nullable(),
-        kv: z.string().trim().max(5).optional().nullable(),
+        kv: z.string().trim().max(10).optional().nullable(),
         stredisko: kod,
         cinnost: kod,
         rad: kod,
@@ -693,7 +701,7 @@ const riadokRozuctovania = z.object({
   zaklad: z.number(),
   dph: z.number(),
   text: z.string().max(200).nullable().optional(),
-  kv: z.string().max(5).nullable().optional(),
+  kv: z.string().max(10).nullable().optional(),
   stredisko: z.string().max(30).nullable().optional(),
   cinnost: z.string().max(30).nullable().optional(),
 });
@@ -812,7 +820,7 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         predkontacia: kod,
         clenenie: kod,
-        kv: z.string().trim().max(5).optional().nullable(),
+        kv: z.string().trim().max(10).optional().nullable(),
         stredisko: kod,
         cinnost: kod,
         intPoznamka: z.string().max(240).optional().nullable(),
@@ -822,7 +830,7 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
               id: z.string().uuid(),
               predkontacia: kod,
               clenenie: kod,
-              kv: z.string().trim().max(5).optional().nullable(),
+              kv: z.string().trim().max(10).optional().nullable(),
               stredisko: kod,
               cinnost: kod,
             }),
@@ -1016,7 +1024,7 @@ export const zauctujVystaveneHromadneFn = createServerFn({ method: "POST" })
         ids: z.array(z.string().uuid()).min(1).max(500),
         predkontacia: kod,
         clenenie: kod,
-        kv: z.string().trim().max(5).optional().nullable(),
+        kv: z.string().trim().max(10).optional().nullable(),
       })
       .parse(d),
   )

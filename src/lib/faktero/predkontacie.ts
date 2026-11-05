@@ -18,7 +18,9 @@ export type DruhCiselnika =
   | "ciselny_rad"
   | "pokladna"
   | "zakazka"
-  | "bankovy_ucet";
+  | "bankovy_ucet"
+  /** Členenie kontrolného výkazu DPH z Pohody (A1, A2CN, B1-0 …) — Pohoda ho nevyexportuje, berie sa z obrázka. */
+  | "kv_clenenie";
 
 /** Druhy číselníka v poradí záložiek, s názvom pre ľudí. */
 export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: string }[] = [
@@ -30,6 +32,7 @@ export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: str
   { kod: "pokladna", nazov: "Pokladne", jednotne: "pokladňu" },
   { kod: "zakazka", nazov: "Zákazky", jednotne: "zákazku" },
   { kod: "bankovy_ucet", nazov: "Bankové účty", jednotne: "bankový účet" },
+  { kod: "kv_clenenie", nazov: "Členenie KV DPH", jednotne: "členenie KV" },
 ];
 
 export type ZaznamCiselnika = {

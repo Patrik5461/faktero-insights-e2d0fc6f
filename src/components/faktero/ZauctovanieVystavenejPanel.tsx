@@ -14,6 +14,7 @@ import {
 } from "@/lib/faktero/zauctovanie.functions";
 import { vyriesClenenieFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
+import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { kvAutoVystavenej, textKv } from "@/lib/faktero/kv-auto";
 import { navrhClenenieVystavenej } from "@/lib/faktero/clenenie-vystavenej";
 import { NastavitPredvolene } from "./NastavitPredvolene";
@@ -430,7 +431,7 @@ export function useZauctovanieVystavenej({
                         className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                       >
                         <option value="">{t("z faktúry")}</option>
-                        {KV_VYDANE.map((k) => (
+                        {moznostiKv(navrhy?.kv, KV_VYDANE, p.kv).map((k) => (
                           <option key={k.kod} value={k.kod} title={t(k.nazov)}>
                             {k.kod === "X" ? t("nezahŕňať") : k.kod}
                           </option>
@@ -490,7 +491,7 @@ export function useZauctovanieVystavenej({
             stredisko: h.stredisko || navrhy?.predvoleneStredisko || null,
             cinnost: h.cinnost || null,
           }}
-          kvMoznosti={KV_VYDANE}
+          kvMoznosti={moznostiKv(navrhy?.kv, KV_VYDANE)}
           sStrediskom
           prekazka={prekazkaRozuctovaniaVystavenej(inv, surovePolozky)}
           zamknute={Boolean(stav?.vPohode)}

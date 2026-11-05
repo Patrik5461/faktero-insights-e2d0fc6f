@@ -143,6 +143,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   "faktura-z-textu": "Faktúra z textu",
   "vyber-z-dokladu": "Výber z náhľadu dokladu",
   ai_predkontacia: "Návrh zaúčtovania",
+  "ciselnik-obrazok": "Číselník z obrázka (Pohoda)",
   podpora: "Podpora na webe",
   neznáme: "Neurčené",
 };

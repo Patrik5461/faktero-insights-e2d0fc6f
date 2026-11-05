@@ -574,7 +574,7 @@ export function polozkyNaZapis(polozky: UdajeNespracovaneho["polozky"]): UdajeNe
     const out: UdajeNespracovaneho["polozky"][number] = { ...zvysok };
     const pk = String(predkontacia ?? "").trim().slice(0, 30);
     const cl = String(clenenie ?? "").trim().slice(0, 30);
-    const k = String(kv ?? "").trim().slice(0, 5);
+    const k = String(kv ?? "").trim().slice(0, 10);
     if (pk) out.predkontacia = pk;
     if (cl) out.clenenie = cl;
     if (k) out.kv = k;

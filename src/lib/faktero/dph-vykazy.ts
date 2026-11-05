@@ -15,7 +15,7 @@
 
 import { najblizsiaSadzba, sadzbyKuDnu, zoradPodlaSadzby } from "./vat-rates";
 import type { Oprava53b } from "./dph-nezaplatene";
-import { kvPrijatehoDokladu, kvVystavenehoDokladu, upozornenieA1 } from "./kv-urcenie";
+import { kvPreVykaz, kvPrijatehoDokladu, kvVystavenehoDokladu, upozornenieA1 } from "./kv-urcenie";
 
 export type Obdobie = {
   rok: number;
@@ -324,7 +324,8 @@ const KV_VYSTAVENE = ["A1", "A2", "C1", "D1", "D2", "X"];
 
 /** Ručne zvolené členenie vystavenej faktúry, alebo null = automaticky. */
 export function kvVystavenej(kod: string | null | undefined): string | null {
-  const k = String(kod ?? "").trim().toUpperCase();
+  // Podkód z číselníka firmy (A2CN, C1IO…) ide do svojej sekcie výkazu.
+  const k = kvPreVykaz(String(kod ?? "").trim().toUpperCase()) ?? "";
   return KV_VYSTAVENE.includes(k) ? k : null;
 }
 
@@ -338,8 +339,8 @@ export const HRANICA_B3 = 3000;
  */
 function kodPrijatejFaktury(p: PrijataFaktura): string {
   return kvPrijatehoDokladu({
-    kvDokladu: p.kv,
-    predvolene: p.kvPredvolene,
+    kvDokladu: kvPreVykaz(p.kv),
+    predvolene: kvPreVykaz(p.kvPredvolene),
     blocek: false,
     dobropis: p.dobropis ?? Boolean(p.opravujeCislo),
     pdp: p.rezim === "samozdanenie",
@@ -354,8 +355,8 @@ function kodPrijatejFaktury(p: PrijataFaktura): string {
 /** Riadok KV bločku / zjednodušenej faktúry: B2 = plnohodnotná faktúra, inak B.3. */
 function kodPrijatehoDokladu(d: PrijatyDoklad): string {
   return kvPrijatehoDokladu({
-    kvDokladu: d.kv,
-    predvolene: d.kvPredvolene,
+    kvDokladu: kvPreVykaz(d.kv),
+    predvolene: kvPreVykaz(d.kvPredvolene),
     blocek: true,
     dobropis: false,
     pdp: false,

@@ -109,6 +109,17 @@ export const ZDROJE: Record<Exclude<DruhCiselnika, "zakazka">, ZdrojePouzitia> =
     kluceRozuctovania: [],
     firma: /^pohoda_banka$/,
   },
+  kv_clenenie: {
+    stlpce: [
+      ...naDokladoch("kv_clenenie"),
+      { tabulka: "pravidla_uctovania", stlpec: "kv_clenenie", kde: "pravidla" },
+      { tabulka: "predlohy_uctovania", stlpec: "kv_clenenie", kde: "pravidla" },
+      { tabulka: "vyuctovania_vydavkov", stlpec: "kv_clenenie", kde: "doklady" },
+    ],
+    polozkyFaktur: "kv_clenenie",
+    kluceRozuctovania: ["kv"],
+    firma: /^kv_clenenie_/,
+  },
 };
 
 /** Tabuľky rozúčtovania (`rozuctovanie` jsonb): doklady a pravidlá. */

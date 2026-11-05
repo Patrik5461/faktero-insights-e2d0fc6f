@@ -29,6 +29,7 @@ import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompak
 import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
 import { VyberKvDph, usePredvyplnenieKv } from "@/components/faktero/VyberKvDph";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { kvAutoPrijatej } from "@/lib/faktero/kv-auto";
 import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
@@ -1023,7 +1024,7 @@ export function PrijataFakturaForm({
           <VyberKvDph
             value={kody.kv}
             onChange={(v) => setKody((k) => ({ ...k, kv: v }))}
-            moznosti={KV_PRIJATE}
+            moznosti={moznostiKv(kvPredvyplnenie.kvFirmy, KV_PRIJATE, kody.kv)}
             pravidlo={id || kody.kv ? null : kvPredvyplnenie.pravidlo}
             auto={form.vat_amount.trim() === "" && !form.dph_rezim ? undefined : kvAutoPrijatej(
               {

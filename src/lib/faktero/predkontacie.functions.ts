@@ -63,7 +63,7 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         id: z.string().uuid().optional().nullable(),
-        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad", "pokladna"]),
+        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad", "pokladna", "kv_clenenie"]),
         kod,
         popis: kratke(200),
         agenda: z.string().trim().max(40).optional().nullable(),
@@ -74,7 +74,7 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
         kategoria: kratke(40),
         pomer: z.any().optional().nullable(),
         /** Účtovná položka len pre faktúru či bloček a typ platby (prázdne = všetky). */
-        typ_dokladu: z.enum(["faktura", "blocek"]).optional().nullable(),
+        typ_dokladu: z.enum(["faktura", "blocek", "vydane", "prijate"]).optional().nullable(),
         typ_platby: z.enum(["hotovost", "karta", "prevod"]).optional().nullable(),
       })
       .parse(d),
@@ -89,8 +89,17 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
       pomer,
       druhy_dokladov: data.druhy_dokladov ?? [],
       kategoria: data.kategoria,
-      // Typ dokladu a platby dáva zmysel len pri predkontácii.
-      typ_dokladu: data.druh === "predkontacia" ? (data.typ_dokladu ?? null) : null,
+      // Typ dokladu a platby dáva zmysel len pri predkontácii; členenie DPH a KV si nesie smer (vydané/prijaté).
+      typ_dokladu:
+        data.druh === "predkontacia"
+          ? data.typ_dokladu === "faktura" || data.typ_dokladu === "blocek"
+            ? data.typ_dokladu
+            : null
+          : data.druh === "clenenie_dph" || data.druh === "kv_clenenie"
+            ? data.typ_dokladu === "vydane" || data.typ_dokladu === "prijate"
+              ? data.typ_dokladu
+              : null
+            : null,
       typ_platby: data.druh === "predkontacia" ? (data.typ_platby ?? null) : null,
       company_id: data.company_id,
       druh: data.druh,
@@ -123,6 +132,7 @@ const DRUHY = [
   "pokladna",
   "zakazka",
   "bankovy_ucet",
+  "kv_clenenie",
 ] as const;
 
 /**

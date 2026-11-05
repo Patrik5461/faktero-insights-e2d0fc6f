@@ -81,7 +81,7 @@ const inputSchema = z.object({
   category: z.string().nullable().optional(),
   pohoda_predkontacia: z.string().max(30).nullable().optional(),
   pohoda_clenenie_dph: z.string().max(30).nullable().optional(),
-  kv_clenenie: z.string().max(5).nullable().optional(),
+  kv_clenenie: z.string().max(10).nullable().optional(),
   job_id: z.string().uuid().nullable().optional(),
   stredisko: z.string().max(30).nullable().optional(),
   cinnost: z.string().max(30).nullable().optional(),

@@ -22,6 +22,7 @@ import {
   type PoleOpravy,
 } from "@/lib/faktero/stav-odovzdania";
 import { KV_CLENENIA, KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { nazovProgramuExportu } from "@/lib/faktero/odovzdanie-exportu";
 import { supabase } from "@/integrations/supabase/client";
 import { KodPohody } from "./KodPohody";
@@ -308,7 +309,8 @@ export function OpravitZauctovanie({
 
   const vstup =
     "mt-1 h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm";
-  const kv = druh === "faktura" ? KV_VYDANE : KV_PRIJATE;
+  // Číselník KV firmy (import z obrázka), bez neho systémový zoznam.
+  const kv = moznostiKv((navrhy as any)?.kv, druh === "faktura" ? KV_VYDANE : KV_PRIJATE, h?.kv_clenenie);
   return (
     <>
       <button
