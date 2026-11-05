@@ -55,6 +55,7 @@ import {
   sucty,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
+  textVytvorenia,
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
@@ -351,9 +352,9 @@ function Detail() {
           : r.agenda === "prijata" && r.zauctovana === false
           ? t("Faktúra je vytvorená medzi prijatými faktúrami — čaká na zaúčtovanie (chýba predkontácia alebo členenie DPH)")
           : r.agenda === "prijata"
-          ? t("Doklad je vytvorený a presunutý medzi prijaté faktúry")
+          ? t("Doklad zaúčtovaný — je medzi prijatými faktúrami")
           : r.agenda === "doklad"
-            ? t("Doklad je vytvorený a presunutý medzi doklady")
+            ? t("Doklad zaúčtovaný — je medzi dokladmi")
             : t("Doklad je vytvorený a presunutý medzi iné doklady");
       if (kam) toast.success(kam, {
         action: {
@@ -1043,7 +1044,7 @@ function Detail() {
 
             <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 p-3 pr-24 backdrop-blur">
               <button type="button" disabled={busy || d.stav === "cita"} onClick={() => void vytvorDoklad()} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60">
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Vytvoriť")}
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t(textVytvorenia(druh))}
               </button>
               {druh && druh !== "ostatny" ? (
                 <PravidloZDokladu

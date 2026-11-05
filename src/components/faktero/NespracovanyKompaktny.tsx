@@ -33,6 +33,7 @@ import {
   kontrolaSumy,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
+  textVytvorenia,
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
@@ -163,7 +164,7 @@ export function NespracovanyKompaktny({
         onClick={onVytvor}
         className={TLACIDLO_HLAVNE}
       >
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Vytvoriť")}
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t(textVytvorenia(druh))}
       </button>
       {pravidloZDokladu ? <div className="flex justify-center">{pravidloZDokladu}</div> : null}
     </>

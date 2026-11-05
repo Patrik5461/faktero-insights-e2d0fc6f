@@ -84,7 +84,7 @@ const sections: HelpSection[] = [
           naraz.
         </p>
         <p>
-          V Nespracovaných dokladoch (vedľa tlačidla Vytvoriť) a pri zaúčtovaní prijatej faktúry či
+          V Nespracovaných dokladoch (vedľa tlačidla Zaúčtovať) a pri zaúčtovaní prijatej faktúry či
           bločku je <strong>Vytvoriť pravidlo z tohto dokladu</strong>: predvyplní dodávateľa, kódy
           a ponúkne e-mail a VS z dokladu. Keď podobné pravidlo už máte, otvorí sa to — nevznikne
           druhé.

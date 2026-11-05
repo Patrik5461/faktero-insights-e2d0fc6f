@@ -54,8 +54,9 @@ const sections: HelpSection[] = [
             z appky, nahratie na webe aj doklad z e-mailu idú do Nespracovaných dokladov.
           </li>
           <li>
-            Po kliknutí na <strong>Vytvoriť</strong> sa doklad presunie do Bločkov, Prijatých faktúr
-            alebo Iných dokladov podľa druhu.
+            Po kliknutí na <strong>Zaúčtovať</strong> sa doklad presunie do Bločkov alebo Prijatých
+            faktúr; iný doklad (list, zmluva) tlačidlo <strong>Presunúť do iných dokladov</strong>{" "}
+            odloží medzi Iné doklady.
           </li>
         </ul>
         <ol>
@@ -76,7 +77,7 @@ const sections: HelpSection[] = [
             viac pravidiel, iné vyberiete cez <em>Použiť pravidlo</em>.
           </li>
           <li>
-            Kliknite na <strong>Vytvoriť</strong> — doklad sa presunie medzi prijaté faktúry,
+            Kliknite na <strong>Zaúčtovať</strong> (pri inom doklade <strong>Presunúť do iných dokladov</strong>) — doklad sa presunie medzi prijaté faktúry,
             doklady alebo iné doklady a otvorí sa ďalší nespracovaný. <strong>Uložiť zmeny</strong>{" "}
             ho nechá rozpracovaný na neskôr.
           </li>
@@ -134,7 +135,7 @@ const sections: HelpSection[] = [
         <p>
           Pri každej položke je aj jej zaúčtovanie: <strong>Predkontácia</strong>,{" "}
           <strong>Členenie DPH</strong> a <strong>Členenie KV</strong>. Prázdne pole znamená kód
-          dokladu — aj ten, ktorý doplní pravidlo automatického účtovania alebo návrh AI. Po stlačení Vytvoriť sa
+          dokladu — aj ten, ktorý doplní pravidlo automatického účtovania alebo návrh AI. Po stlačení Zaúčtovať sa
           kódy prenesú s položkami do prijatej faktúry či bločku a export do účtovníctva doklad podľa
           nich rozúčtuje. Dátum prijatia je hneď pri dátumoch dokladu, lebo
           rozhoduje o období odpočtu DPH. Menej používané polia (interné číslo, adresa, krajina a

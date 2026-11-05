@@ -151,7 +151,7 @@ const sections: HelpSection[] = [
         </p>
         <p>
           V Nespracovaných dokladoch sa vtedy nad údajmi ukáže červené upozornenie „Faktúra nepatrí
-          firme …, odberateľ je …“ a pri Vytvoriť máte tri možnosti: faktúru zmazať do koša,
+          firme …, odberateľ je …“ a pri Zaúčtovať máte tri možnosti: faktúru zmazať do koša,
           presunúť k firme, ktorej patrí, alebo ju uložiť aj tak.
         </p>
         <ul>

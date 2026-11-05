@@ -1255,9 +1255,49 @@ function InvoiceDetail() {
     </div>
 
   ) : null;
+  const polozkyNaZobrazenie = items.map((it0) => polozkaNaZobrazenie(inv, it0));
+  const dphPolozky = (it: (typeof polozkyNaZobrazenie)[number]) =>
+    inv.reverse_charge || (it as any).prenesenie ? (
+      <span title={t("Prenesenie daňovej povinnosti — daň priznáva odberateľ")}>{t("PDP")}</span>
+    ) : (
+      `${it.vat_rate}%`
+    );
+  /*
+    Položky sa prispôsobia šírke karty, nie obrazovky: v úzkom stĺpci
+    (kompaktný detail, bočný panel, telefón) idú ako karty pod sebou,
+    od 560 px kontajnera ako tabuľka — nikdy nie s vodorovným posúvaním.
+  */
   const kartaPolozky = (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <table className="w-full text-sm">
+    <div className="@container min-w-0 rounded-xl border border-border bg-card">
+      <ul className="divide-y divide-border text-sm @min-[560px]:hidden">
+        {polozkyNaZobrazenie.map((it) => (
+          <li key={it.id} className="min-w-0 p-3">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0 break-words font-medium">{it.name}</div>
+              <div className="suma shrink-0 whitespace-nowrap text-right font-medium">
+                {formatujCislo(it.total, 2)}
+              </div>
+            </div>
+            {it.description && (
+              <div className="whitespace-pre-line break-words text-xs text-muted-foreground">{it.description}</div>
+            )}
+            {Number((it as any).discount_percent ?? 0) > 0 && (
+              <div className="fk-text-uspech text-xs">
+                {t("Zľava {n} %", { n: Number((it as any).discount_percent) })}
+              </div>
+            )}
+            <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground tabular-nums">
+              <span>
+                {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))} {it.unit} × {formatujJednotkovuCenu(it.unit_price)}
+              </span>
+              <span>
+                {t("DPH")} {dphPolozky(it)}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <table className="hidden w-full text-sm @min-[560px]:table">
         <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground">
           <tr>
             <th className="p-3">{t("Položka")}</th>
@@ -1270,7 +1310,7 @@ function InvoiceDetail() {
         </thead>
         <tbody className="divide-y divide-border">
           {/* Dobropis je v databáze záporný, na detaile sa ukazuje kladne. */}
-          {items.map((it0) => polozkaNaZobrazenie(inv, it0)).map((it) => (
+          {polozkyNaZobrazenie.map((it) => (
             <tr key={it.id}>
               <td className="p-3">
                 <div className="font-medium">{it.name}</div>
@@ -1286,13 +1326,7 @@ function InvoiceDetail() {
               <td className="whitespace-nowrap p-3 text-right tabular-nums">{formatujMnozstvo(it.quantity, lokalJazyka(jazyk))}</td>
               <td className="p-3">{it.unit}</td>
               <td className="whitespace-nowrap p-3 text-right tabular-nums">{formatujJednotkovuCenu(it.unit_price)}</td>
-              <td className="whitespace-nowrap p-3 text-right">
-                {inv.reverse_charge || (it as any).prenesenie ? (
-                  <span title={t("Prenesenie daňovej povinnosti — daň priznáva odberateľ")}>{t("PDP")}</span>
-                ) : (
-                  `${it.vat_rate}%`
-                )}
-              </td>
+              <td className="whitespace-nowrap p-3 text-right">{dphPolozky(it)}</td>
               <td className="suma whitespace-nowrap p-3 text-right font-medium">{formatujCislo(it.total, 2)}</td>
             </tr>
           ))}

@@ -968,3 +968,12 @@ export function hromadnaZmenaUdajov(
   if (h(zmena.clenenie)) kody.clenenie = h(zmena.clenenie);
   return { ...u, kody, ...(h(zmena.jobId) ? { jobId: h(zmena.jobId) } : {}) };
 }
+
+/**
+ * Text hlavného tlačidla v editore nespracovaného dokladu. Faktúry, zálohové,
+ * dobropisy a bločky idú do účtovníctva — „Zaúčtovať". Iný doklad (list,
+ * zmluva, predpis) sa neúčtuje, len odloží medzi iné doklady.
+ */
+export function textVytvorenia(druh: DruhNespracovaneho | "" | null | undefined): string {
+  return druh === "ostatny" ? "Presunúť do iných dokladov" : "Zaúčtovať";
+}

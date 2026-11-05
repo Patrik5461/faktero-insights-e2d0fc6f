@@ -283,9 +283,48 @@ function OrderDetail() {
             {o.note && <p className="mt-3 whitespace-pre-wrap text-muted-foreground">{o.note}</p>}
           </div>
 
-          {/* Položky */}
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
-            <table className="w-full text-sm">
+          {/* Položky — v úzkom kontajneri karty, od 560 px tabuľka (bez vodorovného posúvania). */}
+          <div className="@container min-w-0 rounded-xl border border-border bg-card">
+            <ul className="divide-y divide-border text-sm @min-[560px]:hidden">
+              {polozky.map((p: any) => {
+                const zostava = zostavaVybavit(p);
+                return (
+                  <li key={p.id} className="min-w-0 px-4 py-3">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0 break-words font-medium">{p.name}</div>
+                      <div className="suma shrink-0 whitespace-nowrap text-right font-medium">
+                        {suma(Number(p.quantity) * Number(p.unit_price))}
+                      </div>
+                    </div>
+                    {p.description && (
+                      <div className="break-words text-xs text-muted-foreground">{p.description}</div>
+                    )}
+                    <dl className="mt-1.5 grid grid-cols-3 gap-2 text-xs">
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">{t("Objednané")}</dt>
+                        <dd className="tabular-nums">
+                          {formatujMnozstvo(p.quantity, lokalJazyka(jazyk))} {p.unit}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">{t("Vyfakturované")}</dt>
+                        <dd className="tabular-nums">{formatujMnozstvo(p.invoiced_quantity, lokalJazyka(jazyk))}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">{t("Zostáva")}</dt>
+                        <dd className={`tabular-nums ${zostava > 0 ? "font-medium" : "fk-text-uspech"}`}>
+                          {zostava > 0 ? formatujMnozstvo(zostava, lokalJazyka(jazyk)) : t("vybavené")}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {t("Cena")} <span className="suma">{suma(p.unit_price)}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <table className="hidden w-full text-sm @min-[560px]:table">
               <thead className="bg-muted/40 text-xs text-muted-foreground [&_th]:whitespace-nowrap">
                 <tr className="border-b border-border">
                   <th className="px-4 py-2 text-left font-semibold">{t("Položka")}</th>

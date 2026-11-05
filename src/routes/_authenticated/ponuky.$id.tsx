@@ -429,8 +429,8 @@ function QuoteDetail() {
                 </Link>
               </div>
             )}
-            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-              <div className="space-y-6">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="min-w-0 space-y-6">
                 <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
                   <div>
                     <div className="text-sm font-semibold text-muted-foreground">
@@ -462,8 +462,41 @@ function QuoteDetail() {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-border bg-card">
-                  <table className="w-full text-sm">
+                {/* Položky podľa šírky karty: úzko karty, od 560 px tabuľka — bez vodorovného posúvania. */}
+                <div className="@container min-w-0 rounded-xl border border-border bg-card">
+                  <ul className="divide-y divide-border text-sm @min-[560px]:hidden">
+                    {items.length === 0 && (
+                      <li className="p-6 text-center text-muted-foreground">{t("Žiadne položky.")}</li>
+                    )}
+                    {items.map((it) => (
+                      <li key={it.id} className="min-w-0 p-3">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <div className="min-w-0 break-words font-medium">{it.name}</div>
+                          <div className="suma shrink-0 whitespace-nowrap text-right font-medium">
+                            {formatujCislo(it.total, 2)}
+                          </div>
+                        </div>
+                        {it.description && (
+                          <div className="break-words text-xs text-muted-foreground">{it.description}</div>
+                        )}
+                        {Number(it.discount_percent ?? 0) > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            {t("Zľava {n} %", { n: formatujMnozstvo(Number(it.discount_percent), lokalJazyka(jazyk)) })}
+                          </div>
+                        )}
+                        <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground tabular-nums">
+                          <span>
+                            {formatujMnozstvo(it.quantity, lokalJazyka(jazyk))} {it.unit} ×{" "}
+                            <span className="suma">{formatujJednotkovuCenu(it.unit_price)}</span>
+                          </span>
+                          <span>
+                            {t("DPH")} {it.vat_rate}%
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <table className="hidden w-full text-sm @min-[560px]:table">
                     <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                       <tr>
                         <th className="p-3">{t("Položka")}</th>
@@ -539,7 +572,7 @@ function QuoteDetail() {
                 />
               </div>
 
-              <aside className="space-y-4">
+              <aside className="min-w-0 space-y-4">
                 <div className="rounded-xl border border-border bg-card p-5">
                   <div className="text-sm font-semibold text-foreground">{t("Sumár")}</div>
                   <div className="mt-3 space-y-1 text-sm">
