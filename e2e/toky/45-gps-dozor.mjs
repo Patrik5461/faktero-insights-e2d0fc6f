@@ -336,13 +336,16 @@ export default {
       const sukr = await t.rest.get(
         `trips?company_id=eq.${firma}&external_source=eq.gpsdozor&classification=eq.private&select=id`,
       );
-      t.over(sukr.data?.length === 1, `súkromných jázd ${sukr.data?.length}`);
+      // DEMO účet má aj vlastné súkromné jazdy (TripType true, skrytá adresa) — počet
+      // preto nie je presne 1; podstatné je, že žiadnu súkromnú ďalšia synchronizácia neprepíše.
+      t.over(sukr.data?.length >= 1, `súkromných jázd ${sukr.data?.length}`);
       await p.close();
       const odp = odpovedFunkcie(page, "pripojenieId");
       await page.getByRole("button", { name: "Synchronizovať teraz" }).click();
       await odp;
-      const po = await t.rest.get(`trips?id=eq.${sukr.data[0].id}&select=classification`);
-      t.over(po.data?.[0]?.classification === "private", "synchronizácia prepísala súkromnú jazdu");
+      const ids = sukr.data.map((j) => j.id).join(",");
+      const po = await t.rest.get(`trips?id=in.(${ids})&classification=neq.private&select=id`);
+      t.over(po.data?.length === 0, `synchronizácia prepísala ${po.data?.length} súkromných jázd`);
     });
 
     await t.krok("história synchronizácií", async () => {

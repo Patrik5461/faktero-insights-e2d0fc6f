@@ -201,6 +201,9 @@ async function prihlas(prehliadac) {
   (to isté, čo urobí server po kliknutí na krížik, pozri efaktura-oznam.functions.ts).
   Píše sa jeho vlastnou reláciou (RLS pustí len jeho riadok), iných ľudí sa to netýka.
 */
+/** Id aktívnych oznamov pre všetkých — ich okno toky preskočia (pozri nižšie). */
+let videneOznamy = [];
+
 async function odlozOznamEfaktury(klient, jwt) {
   const userId = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).sub;
   const teraz = new Date().toISOString();
@@ -321,6 +324,13 @@ function vytvorKontext(tok, pokus, prehliadac) {
     });
     konteksty.push(ctx);
     if (podvrh) await podvrhniNastaveniaUctu(ctx, ucet);
+    await ctx.addInitScript((ids) => {
+      try {
+        for (const id of ids) localStorage.setItem(`faktero.oznam-okno.${id}`, "1");
+      } catch {
+        /* bez úložiska */
+      }
+    }, videneOznamy);
     // Firma sa nastaví len pri prvom načítaní karty — prepínač firiem v toku ju potom smie zmeniť.
     await ctx.addInitScript(
       ([id, jazykStranky]) => {
@@ -568,6 +578,13 @@ try {
     return null;
   });
   await odlozOznamEfaktury(rest, jwt).catch((e) => log(`! oznam e-Faktúry: ${e.message}`));
+  // Skutočný oznam pre všetkých (Admin → Oznamy) by okno prekrylo každý tok. Toky ho
+  // berú ako už videný; tok 115 si zakladá vlastný oznam len pre QA účet, ten ostáva.
+  const oznamy = await rest
+    .get("platformove_oznamy?aktivny=eq.true&len_pre_user_id=is.null&select=id")
+    .catch(() => null);
+  videneOznamy = (oznamy?.data ?? []).map((o) => o.id);
+  if (videneOznamy.length) log(`  oznamy pre všetkých (okno sa preskočí): ${videneOznamy.length}`);
 } catch (e) {
   chybaPrihlasenia = `prihlásenie zlyhalo: ${String(e?.message ?? e).slice(0, 300)}`;
   log(chybaPrihlasenia);
