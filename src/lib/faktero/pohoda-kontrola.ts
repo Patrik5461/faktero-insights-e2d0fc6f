@@ -647,3 +647,17 @@ export function holeIdDokladu(id: string): string {
   );
   return m ? m[1] : String(id);
 }
+
+/** Text upozornenia pri daňovom doklade k platbe bez predkontácie (aj v detaile dokladu). */
+export const NASTAVTE_PREDKONTACIU_ZALOHY = "Nastavte predkontáciu pre daňové doklady k platbe";
+
+/**
+ * Daňový doklad k prijatej platbe bez predkontácie — do Pohody by išiel
+ * s „Neviem“. Náhrada predkontáciou faktúr (tržby) sa zámerne nepoužije:
+ * zo zálohy sa účtuje len daň (`resolveVatClassification`).
+ */
+export function varovanieDokladuKPlatbe(inv: Riadok, nastavenia?: Riadok | null): string | null {
+  if (inv?.type !== "advance_payment") return null;
+  if (kod(inv?.pohoda_predkontacia) || kod(nastavenia?.predkontaciaZaloha)) return null;
+  return `${kod(inv?.invoice_number) || "?"} — ${NASTAVTE_PREDKONTACIU_ZALOHY} (Účtovníctvo → Predkontácie → Predkontácia – daňový doklad k platbe), alebo ju vyberte v detaile dokladu`;
+}

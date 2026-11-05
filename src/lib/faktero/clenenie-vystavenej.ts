@@ -118,7 +118,8 @@ export function navrhClenenieVystavenej(o: {
        - EÚ / vývoz / oslobodené → kód z číselníka firmy (inak základné kódy), bez KV,
        - dobropis / ťarchopis → členenie ako pôvodná faktúra, KV C.1 (občan D.2),
          predkontácia z `pohoda_predkontacia_dobropis` (inak faktúry, inak pôvodnej),
-       - daňový doklad k prijatej platbe (`advance_payment`) → ako faktúra,
+       - daňový doklad k prijatej platbe (`advance_payment`) → členenie a KV ako
+         faktúra, predkontácia len `pohoda_predkontacia_zaloha` (bez náhrady),
        - zálohová faktúra (`proforma`) → nič.
 
   „Ručne“ = stĺpec `*_zdroj` je 'rucne'. Starší doklad bez zdroja (NULL): hodnota,
@@ -380,13 +381,22 @@ export function resolveVatClassification(
   let pk: string | null = null;
   let zdrojPk: ZdrojHodnoty | null = null;
   if (!proforma) {
+    /*
+      Daňový doklad k prijatej platbe (záloha) ide do Pohody ako interný
+      doklad a účtuje sa len daň zo zálohy — tržba nie. Predkontácia preto
+      len z `pohoda_predkontacia_zaloha` (alebo z pravidla); predkontácia
+      faktúr ani zvyk firmy („Tržby za služby 311/602“) ako náhrada nesmú
+      (PALIERA 260800002, 5. 11. 2026). Bez nej export upozorní.
+    */
+    const zaloha = typ === "advance_payment";
     const firma = opravnyTyp
       ? (txt(company.pohoda_predkontacia_dobropis) ?? txt(company.pohoda_predkontacia))
-      : typ === "advance_payment"
-        ? (txt(company.pohoda_predkontacia_zaloha) ?? txt(company.pohoda_predkontacia))
+      : zaloha
+        ? txt(company.pohoda_predkontacia_zaloha)
         : txt(company.pohoda_predkontacia);
     if (txt(pr?.predkontacia)) [pk, zdrojPk] = [txt(pr?.predkontacia), "pravidlo"];
     else if (firma) [pk, zdrojPk] = [firma, "firma"];
+    else if (zaloha) pk = null;
     else if (txt(pov?.pohoda_predkontacia)) [pk, zdrojPk] = [txt(pov?.pohoda_predkontacia), "povodna"];
     else {
       const o = opravnyTyp ? (txt(ctx.odhad?.dobropis) ?? txt(ctx.odhad?.faktura)) : txt(ctx.odhad?.faktura);

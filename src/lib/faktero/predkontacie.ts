@@ -104,9 +104,14 @@ export const PREDVOLENE: {
   },
   {
     kluc: "zaloha",
-    nazov: "Zálohová faktúra",
+    /*
+      Stĺpec slúži daňovému dokladu k prijatej platbe (`advance_payment`) —
+      zálohová faktúra (proforma) sa neúčtuje. Do Pohody ide ako interný
+      doklad (nastavenie exportu „ako vydané faktúry“ ako faktúra).
+    */
+    nazov: "Predkontácia – daňový doklad k platbe (záloha)",
     predkontacia: "pohoda_predkontacia_zaloha",
-    agendy: ["issuedAdvanceInvoice", "issuedInvoice"],
+    agendy: ["internalDocument", "issuedInvoice"],
     smer: "vystup",
   },
   {

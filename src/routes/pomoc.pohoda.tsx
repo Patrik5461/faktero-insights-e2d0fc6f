@@ -139,6 +139,13 @@ const sections: HelpSection[] = [
           DPH dokladu — aj s členením DPH PN.
         </p>
         <p>
+          <strong>Daňový doklad k prijatej platbe</strong> (záloha) ide do Pohody ako interný doklad
+          s dátumom dodania a dátumom KV DPH = deň prijatia platby. Predkontáciu berie len z poľa{" "}
+          <em>Predkontácia – daňový doklad k platbe (záloha)</em> v Predvolených — predkontácia
+          faktúr (tržby) sa pri zálohe nepoužije. Kým ju nevyplníte, detail dokladu aj kontrola pred
+          odovzdaním na to upozornia.
+        </p>
+        <p>
           Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému
           doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.
         </p>

@@ -152,4 +152,14 @@ export default {
     "Kürzel",
   "Skratka v Pohode pre":
     "Kürzel in Pohoda für",
+  "Predkontácia – daňový doklad k platbe (záloha)":
+    "Vorkontierung – Steuerbeleg zur Zahlung (Anzahlung)",
+  "prázdne = daňový doklad k platbe pôjde bez predkontácie (tržba sa pri zálohe neúčtuje)":
+    "leer = der Steuerbeleg zur Zahlung wird ohne Vorkontierung übertragen (bei einer Anzahlung wird kein Erlös gebucht)",
+  "Nastavte predkontáciu pre daňové doklady k platbe":
+    "Legen Sie die Vorkontierung für Steuerbelege zu Zahlungen fest",
+  "Účtovníctvo → Predkontácie":
+    "Buchhaltung → Vorkontierungen",
+  "Alebo ju vyberte nižšie z číselníka (interné doklady). Predkontácia faktúr (tržby) sa pri zálohe nepoužije.":
+    "Oder wählen Sie sie unten aus dem Verzeichnis (interne Belege). Die Vorkontierung der Rechnungen (Erlöse) wird bei einer Anzahlung nicht verwendet.",
 };

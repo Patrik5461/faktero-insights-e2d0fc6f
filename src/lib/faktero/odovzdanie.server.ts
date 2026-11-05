@@ -168,12 +168,16 @@ export async function zostavBalik(
 
   // Schvaľovanie: účtovníčke ide len schválené (doklady spred zapnutia áno).
   const { lenSchvalene } = await import("./schvalovanie.server");
-  const { ok: faktury, cakaju: cakajuFaktury } = await lenSchvalene(
+  const { ok: fakturySch, cakaju: cakajuFaktury } = await lenSchvalene(
     supabase,
     vstup.companyId,
     "vystavena",
     (vsetky ?? []).filter((f: Riadok) => !vstup.lenNove || !odovzdaneIds.has(f.id)),
   );
+  // Prázdne kódy tak, ako ich ukazuje detail („automaticky“), doplnené aj na doklad.
+  const faktury = await (
+    await import("./clenenie-vystavenej.server")
+  ).zauctovanieNaExport(supabase, vstup.companyId, fakturySch, { ulozit: true });
 
   const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] =
     await Promise.all([

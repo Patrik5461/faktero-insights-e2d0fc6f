@@ -290,3 +290,75 @@ export async function uplatniClenenieFronty(
   }
   return { spracovanych, zostava: (data ?? []).length >= (o.naraz ?? 100) };
 }
+
+/*
+  Jedna pravda pre detail aj export do Pohody (pripomienka 5. 11. 2026,
+  PALIERA 260800002): detail ukazoval „Tržby za služby 311000/602000 ·
+  automaticky“, v `invoices.pohoda_predkontacia` bolo NULL a do Pohody nešlo
+  nič („Neviem“). Export preto pred skladaním XML doplní prázdne kódy tou
+  istou funkciou ako detail (`resolveVatClassification`) a — keď smie —
+  ich na doklad aj uloží, aby bol zaúčtovaný natrvalo.
+
+  Nikdy nemení: odovzdaný doklad (`exported_at`; vrátený z Pohody ho má
+  prázdny), zálohovú faktúru (proforma — do Pohody nejde) a vyplnené pole.
+*/
+const POLIA_EXPORTU = [
+  ["pohoda_predkontacia", "predkontacia_zdroj"],
+  ["pohoda_clenenie_dph", "clenenie_zdroj"],
+  ["kv_clenenie", "kv_zdroj"],
+] as const;
+
+/** Prázdne kódy, ktoré doklad z automatiky dostane (bez zápisu). */
+export function doplnokZauctovania(row: Riadok, v: Pick<VysledokClenenia, (typeof POLIA_EXPORTU)[number][0]>): Riadok {
+  const out: Riadok = {};
+  if (!row || row.exported_at || row.deleted_at || row.type === "proforma") return out;
+  for (const [stlpec, zdroj] of POLIA_EXPORTU) {
+    const teraz = String(row[stlpec] ?? "").trim();
+    const nova = String(v[stlpec] ?? "").trim();
+    if (!teraz && nova) {
+      out[stlpec] = nova;
+      out[zdroj] = "auto";
+    }
+  }
+  return out;
+}
+
+/**
+ * Faktúry pre export s doplnenými kódmi (to isté, čo ukazuje detail).
+ * `ulozit` — zapísať doplnené kódy na doklad (export, balík, konektor);
+ * kontrola a porovnanie s Pohodou len čítajú. Chyba zápisu export nezastaví.
+ */
+export async function zauctovanieNaExport(
+  sb: Klient,
+  companyId: string,
+  rows: Riadok[],
+  o: { ulozit: boolean },
+): Promise<Riadok[]> {
+  const kandidati = rows.filter((r) => !r.exported_at && !r.deleted_at && r.type !== "proforma");
+  if (!kandidati.length) return rows;
+  let k: KontextFirmyClenenia;
+  try {
+    k = await nacitajKontextClenenia(sb, companyId);
+  } catch {
+    return rows;
+  }
+  const doplnky = new Map<string, Riadok>();
+  for (const r of kandidati) {
+    try {
+      const d = doplnokZauctovania(r, await vyriesClenenieRiadku(sb, r, k));
+      if (Object.keys(d).length) doplnky.set(r.id, d);
+    } catch {
+      /* doklad ide tak, ako je */
+    }
+  }
+  if (o.ulozit) {
+    for (const [id, d] of doplnky) {
+      // Len prázdne pole a len neodovzdaný doklad — zámok Pohody to stráži aj v DB.
+      let q = sb.from("invoices").update(d).eq("id", id).eq("company_id", companyId).is("exported_at", null);
+      for (const [stlpec] of POLIA_EXPORTU) if (stlpec in d) q = q.is(stlpec, null);
+      const { error } = await q;
+      if (error) console.warn("[clenenie] export", id, String(error.message).slice(0, 200));
+    }
+  }
+  return rows.map((r) => (doplnky.has(r.id) ? { ...r, ...doplnky.get(r.id) } : r));
+}

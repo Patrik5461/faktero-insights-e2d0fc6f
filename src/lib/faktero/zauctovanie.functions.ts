@@ -83,7 +83,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
     const doklad = data.pre === "doklad";
     const vystavena = data.pre === "vystavena";
     const predvolenaPredkontacia: string | null = vystavena
-      ? (data.typ === "proforma"
+      ? (data.typ === "proforma" || data.typ === "advance_payment"
           ? firma?.pohoda_predkontacia_zaloha
           : data.typ === "credit_note"
             ? firma?.pohoda_predkontacia_dobropis
@@ -103,12 +103,15 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
     const agendy = vystavena
       ? data.typ === "proforma"
         ? ["issuedAdvanceInvoice", "issuedInvoice"]
-        : ["issuedInvoice"]
+        : data.typ === "advance_payment"
+          ? // Daňový doklad k platbe ide do Pohody ako interný doklad.
+            ["internalDocument", "issuedInvoice"]
+          : ["issuedInvoice"]
       : doklad
         ? ["receivedInvoice", "cashPaid", "commitment", "internalDocument"]
         : ["receivedInvoice"];
     const kluc = vystavena
-      ? data.typ === "proforma"
+      ? data.typ === "proforma" || data.typ === "advance_payment"
         ? "zaloha"
         : data.typ === "credit_note"
           ? "dobropis"

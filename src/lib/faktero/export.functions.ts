@@ -104,6 +104,17 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     // Položky, čísla opravovaných faktúr a odpočty záloh — rovnako ako
     // prehľad „Rozdiely oproti Pohode“ (`export-priprava.server.ts`).
     const { pripravFaktury, nastaveniaFaktur } = await import("./export-priprava.server");
+    // Prázdne kódy tak, ako ich ukazuje detail („automaticky“) — doplnené aj na doklad.
+    invs.splice(
+      0,
+      invs.length,
+      ...(await (await import("./clenenie-vystavenej.server")).zauctovanieNaExport(
+        supabase,
+        data.companyId,
+        invs as any[],
+        { ulozit: true },
+      )),
+    );
     const { bundle, zalohy } = await pripravFaktury(supabase, data.companyId, invs);
 
     const built = await strategy.build({

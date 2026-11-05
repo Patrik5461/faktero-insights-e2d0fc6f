@@ -144,4 +144,14 @@ export default {
     "zkratka",
   "Skratka v Pohode pre":
     "Zkratka v Pohodě pro",
+  "Predkontácia – daňový doklad k platbe (záloha)":
+    "Předkontace – daňový doklad k platbě (záloha)",
+  "prázdne = daňový doklad k platbe pôjde bez predkontácie (tržba sa pri zálohe neúčtuje)":
+    "prázdné = daňový doklad k platbě půjde bez předkontace (tržba se u zálohy neúčtuje)",
+  "Nastavte predkontáciu pre daňové doklady k platbe":
+    "Nastavte předkontaci pro daňové doklady k platbě",
+  "Účtovníctvo → Predkontácie":
+    "Účetnictví → Předkontace",
+  "Alebo ju vyberte nižšie z číselníka (interné doklady). Predkontácia faktúr (tržby) sa pri zálohe nepoužije.":
+    "Nebo ji vyberte níže z číselníku (interní doklady). Předkontace faktur (tržby) se u zálohy nepoužije.",
 };

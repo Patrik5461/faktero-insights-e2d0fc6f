@@ -5,7 +5,8 @@ import {
   RiadokPolozky,
   VYBER_POLOZKY,
 } from "@/components/faktero/PolozkyResponzivne";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { NASTAVTE_PREDKONTACIU_ZALOHY } from "@/lib/faktero/pohoda-kontrola";
 import { MAX_UCTOVNEJ_POZNAMKY } from "@/lib/faktero/uctovna-poznamka";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { useEffect, useRef, useState } from "react";
@@ -269,6 +270,12 @@ export function useZauctovanieVystavenej({
     if (String(inv.pohoda_predkontacia ?? "").trim() || !navrhPredkontacie) return;
     setH((x) => (x.predkontacia.trim() ? x : { ...x, predkontacia: navrhPredkontacie }));
   }, [stav, vPohode, zauctovana, neuctuje, inv.status, inv.pohoda_predkontacia, navrhPredkontacie]);
+  /*
+    Daňový doklad k prijatej platbe bez predkontácie zálohy: náhrada
+    predkontáciou faktúr (tržby) sa nepoužije — upozorní sa a ponúkne výber.
+  */
+  const chybaPredkontaciaZalohy =
+    inv.type === "advance_payment" && !de && !neuctuje && !h.predkontacia.trim() && !navrhPredkontacie;
   /* Štítok „automaticky“ pri poli, ktoré drží hodnotu automatiky. */
   const oznacenia: OznaceniaNavrhu = {
     ...(navrhClenenia && h.clenenie.trim() === navrhClenenia ? { clenenie: "auto" as const } : {}),
@@ -635,7 +642,22 @@ export function useZauctovanieVystavenej({
     vyberPravidla,
     poPolozkachANapoveda,
     prehladRozuctovania,
+    chybaPredkontaciaZalohy,
   };
+}
+
+/** Upozornenie pri daňovom doklade k platbe bez predkontácie (odkaz na predvolené). */
+function UpozorneniePredkontacieZalohy() {
+  const { t } = useT();
+  return (
+    <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+      {t(NASTAVTE_PREDKONTACIU_ZALOHY)} —{" "}
+      <Link to="/uctovnictvo/predkontacie" className="font-medium underline">
+        {t("Účtovníctvo → Predkontácie")}
+      </Link>
+      . {t("Alebo ju vyberte nižšie z číselníka (interné doklady). Predkontácia faktúr (tržby) sa pri zálohe nepoužije.")}
+    </p>
+  );
 }
 
 export type ZauctovanieVystavenej = ReturnType<typeof useZauctovanieVystavenej>;
@@ -672,6 +694,7 @@ export function ZauctovanieVystavenejPanel({
     kvAuto,
     vyriesene,
     oznacenia,
+    chybaPredkontaciaZalohy,
   } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
   // Koncept sa nezaúčtuje.
   if (inv.status === "draft") return null;
@@ -795,6 +818,7 @@ export function ZauctovanieVystavenejPanel({
         </>
       ) : (
         <>
+          {chybaPredkontaciaZalohy && !vPohode ? <UpozorneniePredkontacieZalohy /> : null}
           <PoliaZauctovania
             navrhy={navrhy}
             hodnoty={de ? { ...h, kv: undefined } : h}
@@ -972,6 +996,7 @@ export function PoliaZauctovaniaVystavenej({
       ) : null}
       {neuctuje ? null : (
         <fieldset disabled={Boolean(vPohode)} className="min-w-0 space-y-3.5 disabled:opacity-70">
+          {z.chybaPredkontaciaZalohy && !vPohode ? <UpozorneniePredkontacieZalohy /> : null}
           <PoliaZauctovania
             navrhy={navrhy}
             hodnoty={{

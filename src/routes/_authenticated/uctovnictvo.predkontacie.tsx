@@ -366,6 +366,11 @@ function Predvolene({
                       {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph")}
                     </span>
                   ) : null}
+                  {p.kluc === "zaloha" && !h[p.predkontacia] ? (
+                    <span className="block text-xs text-warning">
+                      {t("prázdne = daňový doklad k platbe pôjde bez predkontácie (tržba sa pri zálohe neúčtuje)")}
+                    </span>
+                  ) : null}
                   {p.kluc === "doklady" && !h[p.predkontacia] && h.pohoda_predkontacia_prijata ? (
                     <span className="block text-xs text-muted-foreground">
                       {t("prázdne = ako prijatá faktúra")}

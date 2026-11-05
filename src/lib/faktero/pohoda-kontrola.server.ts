@@ -11,7 +11,7 @@ import {
   nastaveniaFaktur,
   pripravFaktury,
 } from "./export-priprava.server";
-import { prekazkaDokladu, varovanieDokladu } from "./pohoda-kontrola";
+import { prekazkaDokladu, varovanieDokladu, varovanieDokladuKPlatbe } from "./pohoda-kontrola";
 import { poliaDokladovXml, rozdielyPoli, type RozdielPola } from "./pohoda-rozdiely";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
@@ -112,7 +112,11 @@ export async function zastaveneDoklady(
   ]);
 
   if (faktury.data?.length) {
-    const { bundle } = await pripravFaktury(supabase, companyId, faktury.data);
+    // Kódy tak, ako ich doplní export (bez zápisu — kontrola len číta).
+    const doplnene = await (
+      await import("./clenenie-vystavenej.server")
+    ).zauctovanieNaExport(supabase, companyId, faktury.data, { ulozit: false });
+    const { bundle } = await pripravFaktury(supabase, companyId, doplnene);
     const nast: PohodaNastavenia = {
       ...nastaveniaFaktur(company),
       // Skratky predkontácií (mapa z číselníka a nastavení exportu).
@@ -126,9 +130,11 @@ export async function zastaveneDoklady(
       if (dovod)
         out.push({ druh: "faktura", id: invoice.id, cislo: invoice.invoice_number, dovod });
       else {
-        const varovanie = varovanieChybajucejSkratky(invoice.invoice_number, nast, (n) =>
-          buildPohodaInvoiceXml({ company: bezOdkazov(company), invoices: [{ invoice, items }] as any, nastavenia: n }),
-        );
+        const varovanie =
+          varovanieDokladuKPlatbe(invoice, nast as any) ??
+          varovanieChybajucejSkratky(invoice.invoice_number, nast, (n) =>
+            buildPohodaInvoiceXml({ company: bezOdkazov(company), invoices: [{ invoice, items }] as any, nastavenia: n }),
+          );
         if (varovanie)
           out.push({
             druh: "faktura",

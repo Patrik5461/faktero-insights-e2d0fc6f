@@ -239,7 +239,10 @@ export async function zostavDavku(
     "vystavena",
     (vsetkyFaktury ?? []).filter((f: Riadok) => !odovzdane.has(f.id)),
   );
-  const faktury = vCasti(fakturySch, "issue_date");
+  // Prázdne kódy tak, ako ich ukazuje detail („automaticky“), doplnené aj na doklad.
+  const faktury = await (
+    await import("./clenenie-vystavenej.server")
+  ).zauctovanieNaExport(supabase, vstup.companyId, vCasti(fakturySch, "issue_date"), { ulozit: true });
 
   const [{ data: dokladyNeschvalene }, { data: pokladnicaVsetko }] = await Promise.all([
     supabase

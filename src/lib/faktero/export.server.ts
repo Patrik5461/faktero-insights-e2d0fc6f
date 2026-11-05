@@ -1637,7 +1637,8 @@ function dokladKPlatbeAkoDoklad(
     _typPohody: "danovyDokladKPlatbe",
     _povodneCislo: inv.invoice_number,
     _symVar: vsVystavenej(inv),
-    _datumDph: inv.delivery_date || inv.issue_date,
+    // Dátum dodania = deň prijatia platby (§ 19 ods. 4) — `delivery_date`, inak zaplatenie, inak vystavenie.
+    _datumDph: inv.delivery_date || String(inv.paid_at ?? "").slice(0, 10) || inv.issue_date,
     _text: `${cz ? "Daňový doklad k přijaté platbě" : "Daňový doklad k prijatej platbe"} ${inv.invoice_number ?? ""}`.trim(),
   } as DokladRow;
 }
@@ -1816,16 +1817,28 @@ export function polozkyDokladov(opts: {
         u typů … Zálohová faktura“ (`isAccountingDocument`).
       */
       const zalohovaPrijata = !isAccountingDocument(d?._typPohody);
-      const podlaKat = zalohovaPrijata ? null : nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+      /*
+        Daňový doklad k prijatej platbe je náš vystavený doklad — predkontácia
+        a členenie sú jeho vlastné (`dokladKPlatbeAkoDoklad`: doklad, inak
+        predkontácia zálohy). Náhrada pre prijaté doklady (náklad, PD) by ho
+        zaúčtovala ako nákup; bez predkontácie ide radšej bez nej a kontrola
+        pred exportom upozorní.
+      */
+      const kPlatbe = d?._typPohody === "danovyDokladKPlatbe";
+      const podlaKat = zalohovaPrijata || kPlatbe ? null : nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
       const predkontaciaJedna = zalohovaPrijata
         ? null
-        : String(d?.pohoda_predkontacia ?? "").trim() ||
+        : kPlatbe
+          ? String(d?.pohoda_predkontacia ?? "").trim() || null
+          : String(d?.pohoda_predkontacia ?? "").trim() ||
           podlaKat?.predkontacia ||
           (blocek ? nastavenia?.predkontaciaDoklady : null) ||
           nastavenia?.predkontaciaPrijata;
       const clenenieJedno = zalohovaPrijata
         ? null
-        : String(d?.pohoda_clenenie_dph ?? "").trim() ||
+        : kPlatbe
+          ? String(d?.pohoda_clenenie_dph ?? "").trim() || null
+          : String(d?.pohoda_clenenie_dph ?? "").trim() ||
           podlaKat?.clenenie ||
           (blocek ? nastavenia?.clenenieDphDoklady : null) ||
           nastavenia?.clenenieDphPrijata ||
@@ -2299,7 +2312,17 @@ export function polozkyDokladov(opts: {
       const datumDodania = String(d?._datumDph || (blocek ? d?.issue_date : "") || "").trim();
       const datumyVerzie =
         (!prijatyDoklad
-          ? ""
+          ? /*
+              Daňový doklad k prijatej platbe (interný doklad, intDoc.xsd):
+              SK dátum dodania (`dateDelivery`) a dátum KV DPH (`dateKVDPH`),
+              CZ dátum KH DPH (`dateKHDPH`) — všetky deň prijatia platby.
+              Bez nich ich Pohoda nechá prázdne (PALIERA 260800002).
+            */
+            p === "int" && kPlatbe
+            ? cz
+              ? el("int:dateKHDPH", datumDph, "        ")
+              : el("int:dateDelivery", datumDph, "        ") + el("int:dateKVDPH", datumDph, "        ")
+            : ""
           : cz
             ? // Obdobie kontrolného hlásenia = obdobie odpočtu (neskorší z DUZP a prijatia).
               el(`${p}:dateKHDPH`, datumOdpoctu, "        ")
@@ -2406,7 +2429,12 @@ export function polozkyDokladov(opts: {
           p === "inv" ? el("inv:dateDue", d?._splatnost, "        ") : ""
         }${
           p !== "vch"
-            ? el(`${p}:dateAccounting`, zamknutieZ(datumZapisu), "        ")
+            ? el(
+                `${p}:dateAccounting`,
+                // Daňový doklad k platbe: dátum účtovného prípadu vždy (inak ho Pohoda nechá prázdny).
+                zamknutieZ(datumZapisu) || (kPlatbe ? datumZapisu : null),
+                "        ",
+              )
             : ""
         }${el(`${p}:text`, textDokladu, "        ")}${el(
           `${p}:note`,
