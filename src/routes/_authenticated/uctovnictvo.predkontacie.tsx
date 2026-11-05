@@ -173,6 +173,8 @@ function Stranka() {
       {kopirovat && cid ? <KopirovatNastaveniaOkno companyId={cid} onClose={() => setKopirovat(false)} /> : null}
       <PageBody>
         <div className="space-y-4">
+          {/* Číselník (pridávanie predkontácií, členení DPH, KV…) navrchu, pod ním predvolené. */}
+          <Ciselnik companyId={companyId} zaznamy={zaznamy} onZmena={obnov} pridat={pridat} />
           <Predvolene
             companyId={companyId}
             firma={firma}
@@ -181,7 +183,6 @@ function Stranka() {
             onPridat={() => setPridat((n) => n + 1)}
           />
           <NastaveniaExportu companyId={companyId} firma={firma} onUlozene={obnov} />
-          <Ciselnik companyId={companyId} zaznamy={zaznamy} onZmena={obnov} pridat={pridat} />
           <Import companyId={companyId} firma={firma} onZmena={obnov} />
           <StavyAStitkyNastavenia companyId={companyId} />
         </div>
