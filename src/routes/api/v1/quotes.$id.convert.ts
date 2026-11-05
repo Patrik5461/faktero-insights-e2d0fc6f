@@ -83,7 +83,10 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
           } catch (e) {
             console.warn("[webhook] invoice.created trigger zlyhal", e);
           }
-          return ok(inv, 201);
+          // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts).
+          const { uplatniClenenieNovej } = await import("@/lib/faktero/clenenie-vystavenej.server");
+          const kody = await uplatniClenenieNovej(inv.id);
+          return ok(kody ? { ...inv, ...kody } : inv, 201);
         });
       },
     },

@@ -879,6 +879,14 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
         .eq("invoice_id", f.id);
       if (e2) throw new Error(e2.message);
     }
+    /*
+      Automatika rozhodne, čo je ručné (iná hodnota než automatická) a čo
+      automatické (zhodné alebo prázdne pole) — prázdne doplní.
+    */
+    {
+      const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+      await uplatniClenenieNovej(f.id);
+    }
     const ponukaPravidla = await opravaAutomatu(
       "vystavena",
       f,

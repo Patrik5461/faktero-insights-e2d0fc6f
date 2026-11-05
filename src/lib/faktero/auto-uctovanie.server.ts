@@ -430,7 +430,17 @@ export async function navrhPreRiadok(
     (row.pravidlo_id ? pravidla.find((p) => p.id === row.pravidlo_id) : null) ??
     prvePravidlo(pravidla, porovnanie(typ, row, firma.krajina));
 
-  let predkontacia = t(row.pohoda_predkontacia);
+  /*
+    Vystavená: členenie DPH, KV a predkontáciu firmy určí to isté pravidlo,
+    ktoré ich ukladá na doklad (`resolveVatClassification`). Predkontácia,
+    ktorú doplnila automatika, nebráni pravidlu ani zvyku partnera.
+  */
+  const vyriesene =
+    typ === "vystavena"
+      ? await (await import("./clenenie-vystavenej.server")).vyriesClenenieRiadku(sb, row)
+      : null;
+  let predkontacia =
+    typ === "vystavena" && row.predkontacia_zdroj === "auto" ? null : t(row.pohoda_predkontacia);
   let zdroj: NavrhZauctovania["zdroj"] = null;
   let istota = 0;
   let zdovodnenie = "";
@@ -502,18 +512,27 @@ export async function navrhPreRiadok(
     }
   }
 
+  // Predvolená predkontácia firmy (alebo jej ustálený zvyk), keď pravidlo ani zvyk partnera nie sú.
+  if (!predkontacia && vyriesene?.pohoda_predkontacia) {
+    predkontacia = vyriesene.pohoda_predkontacia;
+    zdovodnenie = zdovodnenie || "Predvolená predkontácia firmy";
+  }
+
   // Hodnoty na doklade a v pravidle prebíjajú odvodené členenie.
-  const clenenieDph = t(row.pohoda_clenenie_dph) ?? t(pravidlo?.clenenie_dph) ?? clen.clenenieDph;
+  const clenenieDph = vyriesene
+    ? vyriesene.pohoda_clenenie_dph
+    : (t(row.pohoda_clenenie_dph) ?? t(pravidlo?.clenenie_dph) ?? clen.clenenieDph);
   // Predvolené firmy nahradí len odvodenie bežného dokladu (nie B.1, C.2, A.2).
-  const kvClenenie =
-    t(row.kv_clenenie) ??
-    t(pravidlo?.kv_clenenie) ??
-    kvSPredvolenym(
-      clen.kvClenenie,
-      typ === "vystavena" ? "faktura" : typ === "blocek" ? "doklady" : "prijata",
-      firma.kvPredvolene?.[typ],
-      firma.krajina === "SK",
-    );
+  const kvClenenie = vyriesene
+    ? vyriesene.kv_clenenie
+    : (t(row.kv_clenenie) ??
+      t(pravidlo?.kv_clenenie) ??
+      kvSPredvolenym(
+        clen.kvClenenie,
+        typ === "vystavena" ? "faktura" : typ === "blocek" ? "doklady" : "prijata",
+        firma.kvPredvolene?.[typ],
+        firma.krajina === "SK",
+      ));
   const rezimText = `${NAZVY_REZIMOV[clen.rezim]}${clenenieDph ? ` → ${clenenieDph}` : ""}${kvClenenie ? ` / KV ${kvClenenie}` : ""}`;
 
   const m = TABULKY[typ];
@@ -542,7 +561,8 @@ export async function navrhPreRiadok(
     limit: firma.limit,
     prvyOdPartnera: prvy,
     predkontacia,
-    clenenieDph,
+    // Neplatiteľ členenie DPH na vystavenom doklade nemá — nie je to chyba.
+    clenenieDph: typ === "vystavena" && !firma.platitel ? "—" : clenenieDph,
   });
 
   return {

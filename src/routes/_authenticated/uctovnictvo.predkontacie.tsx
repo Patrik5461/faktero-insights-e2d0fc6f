@@ -5,6 +5,7 @@ import { NastaveniaExportu } from "@/components/faktero/NastaveniaExportu";
 import { StavyAStitkyNastavenia } from "@/components/faktero/StavyAStitkyNastavenia";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { navrhPredvolenychVystavenychFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { toast } from "sonner";
 import { BookOpen, Download, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -206,7 +207,15 @@ function Predvolene({
   // Kontrolný výkaz DPH je len slovenský — inde sa členenie KV nepoužije.
   const kvStlpec = String(firma.country ?? "SK").toUpperCase() === "SK";
   const uloz = useServerFn(ulozPredvoleneFn);
+  const nacitajNavrhPredvolenych = useServerFn(navrhPredvolenychVystavenychFn);
   const [h, setH] = useState<Record<string, string>>({});
+  /*
+    Platiteľ DPH bez predvolených kódov vydaných faktúr: prázdne polia sa
+    predvyplnia návrhom (UD, UDpdp z číselníka, predkontácia z ustáleného zvyku
+    firmy, dobropis ako faktúra). Uložia sa až tlačidlom Uložiť — dovtedy
+    faktúry dostanú to isté automaticky (resolveVatClassification).
+  */
+  const [navrhVydanych, setNavrhVydanych] = useState<Record<string, string>>({});
   const [oznaceni, setOznaceni] = useState<Record<string, string>>({});
   const [blockyAgenda, setBlockyAgenda] = useState<"faktura" | "podla_platby">("podla_platby");
   const [pokladna, setPokladna] = useState("");
@@ -237,6 +246,29 @@ function Predvolene({
     setIne(zFirmy.ine);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, otlacokFirmy]);
+  useEffect(() => {
+    let zive = true;
+    nacitajNavrhPredvolenych({ data: { company_id: companyId } })
+      .then((n) => {
+        if (zive) setNavrhVydanych((n ?? {}) as Record<string, string>);
+      })
+      .catch(() => {});
+    return () => {
+      zive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId, otlacokFirmy]);
+  useEffect(() => {
+    if (!Object.keys(navrhVydanych).length) return;
+    setH((x) => {
+      const y = { ...x };
+      for (const [k, v] of Object.entries(navrhVydanych)) if (!String(y[k] ?? "").trim()) y[k] = v;
+      return y;
+    });
+  }, [navrhVydanych, otlacokFirmy]);
+  const predvyplneneNavrhom = Object.entries(navrhVydanych).filter(
+    ([k, v]) => h[k] === v && !String(firma[k] ?? "").trim(),
+  );
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
     zaznamy.filter((z) => z.druh === druh && z.aktivne && z.druhy_dokladov?.includes(kluc)).length;
@@ -287,6 +319,14 @@ function Predvolene({
         </Link>{" "}
         {t("alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.")}
       </p>
+      {predvyplneneNavrhom.length ? (
+        <p className="mt-1 text-xs text-muted-foreground" data-predvyplnene-navrhom="">
+          {t(
+            "Prázdne kódy vydaných faktúr sú predvyplnené návrhom ({kody}) — uložia sa tlačidlom Uložiť. Kým ich neuložíte, faktúry ich dostanú aj tak automaticky.",
+            { kody: predvyplneneNavrhom.map(([, v]) => v).join(", ") },
+          )}
+        </p>
+      ) : null}
       {kvStlpec ? (
         <p className="mt-1 text-xs text-muted-foreground">
         {t(
@@ -381,7 +421,9 @@ function Predvolene({
                           ? t("automaticky ({kod})", {
                               kod: KV_PREDVOLENE[p.kluc as DruhKvPredvoleneho].standard!,
                             })
-                          : t("automaticky")}
+                          : p.kluc === "faktura"
+                            ? t("automaticky (A1 podnikateľ, D2 občan)")
+                            : t("automaticky")}
                       </option>
                       {KV_PREDVOLENE[p.kluc as DruhKvPredvoleneho].kody.map((k) => (
                         <option key={k} value={k}>

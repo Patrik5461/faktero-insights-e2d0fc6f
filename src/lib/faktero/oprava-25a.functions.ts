@@ -295,5 +295,10 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
       await supabase.from("invoices").delete().eq("id", doklad.id);
       throw new Error(chybaPoloziek.message);
     }
+    // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts).
+    {
+      const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+      await uplatniClenenieNovej(doklad.id);
+    }
     return { id: doklad.id as string, cislo: doklad.invoice_number as string };
   });

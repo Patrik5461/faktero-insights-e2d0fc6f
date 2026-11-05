@@ -150,5 +150,10 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       }
     }
 
+    // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts).
+    {
+      const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+      await uplatniClenenieNovej(created.id);
+    }
     return { id: created.id, invoice_number: newNumber };
   });

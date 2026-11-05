@@ -5656,6 +5656,10 @@ export type Database = {
           zauctoval: string | null
           stredisko: string | null
           cinnost: string | null
+          clenenie_auto_at: string | null
+          clenenie_zdroj: string | null
+          kv_zdroj: string | null
+          predkontacia_zdroj: string | null
           int_poznamka: string | null
           pravidlo_id: string | null
           zasielkovna_id: string | null
@@ -5779,6 +5783,10 @@ export type Database = {
           zauctoval?: string | null
           stredisko?: string | null
           cinnost?: string | null
+          clenenie_auto_at?: string | null
+          clenenie_zdroj?: string | null
+          kv_zdroj?: string | null
+          predkontacia_zdroj?: string | null
           int_poznamka?: string | null
           pravidlo_id?: string | null
           zasielkovna_id?: string | null
@@ -5902,6 +5910,10 @@ export type Database = {
           zauctoval?: string | null
           stredisko?: string | null
           cinnost?: string | null
+          clenenie_auto_at?: string | null
+          clenenie_zdroj?: string | null
+          kv_zdroj?: string | null
+          predkontacia_zdroj?: string | null
           int_poznamka?: string | null
           pravidlo_id?: string | null
           zasielkovna_id?: string | null

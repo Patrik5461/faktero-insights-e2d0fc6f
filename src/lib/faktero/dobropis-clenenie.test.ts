@@ -198,10 +198,10 @@ describe("Návrh členenia DPH vo formulári a v detaile", () => {
       navrhClenenieVystavenej({ platitel: true, krajinaFirmy: "SK", ciselnik, doklad }),
     ).toEqual({ kod: "UD", zdroj: "rezim" });
   });
-  it("neplatiteľ → Nezahrnovať do priznania (UN), aj keď má firma predvolené UD", () => {
+  it("neplatiteľ → bez členenia (nie UN ani predvolené UD firmy) — zadanie 5. 11.", () => {
     expect(
       navrhClenenieVystavenej({ platitel: false, krajinaFirmy: "SK", ciselnik, predvoleneFirmy: "UD", doklad: { opravny: true, dph: 0 } }),
-    ).toEqual({ kod: "UN", zdroj: "rezim" });
+    ).toBeNull();
   });
   it("poradie: pravidlo → prenesenie firmy → predvolené firmy", () => {
     expect(

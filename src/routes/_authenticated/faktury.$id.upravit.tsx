@@ -10,6 +10,7 @@ import { KROK_CENY, MENY, cenaZoSumySDph } from "@/lib/faktero/mena";
 import { sumyFormulara } from "@/lib/faktero/faktura-formular-sumy";
 import { skontrolujDatumy } from "@/lib/faktero/faktura-nalezitosti";
 import { useServerFn } from "@tanstack/react-start";
+import { prepocitajClenenieFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { druhPodlaTypuFaktury, sablonaZCisla, ukazkaCisla } from "@/lib/faktero/ciselne-rady";
 import { pokracujVRaduFn } from "@/lib/faktero/ciselne-rady.functions";
 import { percentoZlavy, zakladRiadku, type TypZlavy } from "@/lib/faktero/zlavy";
@@ -323,6 +324,7 @@ function EditInvoice() {
   }
 
   const pokracujVRade = useServerFn(pokracujVRaduFn);
+  const prepocitajClenenie = useServerFn(prepocitajClenenieFn);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -472,6 +474,10 @@ function EditInvoice() {
           if (insErr) throw insErr;
         }
       }
+
+      // Automatické členenie DPH, KV a predkontácia sa prepočítajú (ručné ostanú).
+      if (inv?.company_id)
+        await prepocitajClenenie({ data: { company_id: inv.company_id, ids: [id] } }).catch(() => {});
 
       /*
         „Pokračovať v tomto rade" — až po uložení dokladu. Keby sa rad zmenil

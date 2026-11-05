@@ -494,7 +494,10 @@ export async function upravFakturu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .maybeSingle();
   if (error) return chybaDb(error);
   if (!data) return err("not_found", "Faktúra nenájdená.", 404);
-  return ok(data);
+  // Členenie DPH, KV a predkontácia sa po úprave prepočítajú (ručné hodnoty ostanú).
+  const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+  const kody = await uplatniClenenieNovej(data.id);
+  return ok(kody ? { ...data, ...kody } : data);
 }
 
 /* ---------------- bankové pohyby: vybavenie bez dokladu ---------------- */

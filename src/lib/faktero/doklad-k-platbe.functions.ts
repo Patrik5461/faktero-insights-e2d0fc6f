@@ -220,6 +220,12 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       throw new Error(chybaPoloziek.message);
     }
 
+    // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts).
+    {
+      const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+      await uplatniClenenieNovej(doklad.id);
+    }
+
     return {
       id: doklad.id,
       invoice_number: doklad.invoice_number,

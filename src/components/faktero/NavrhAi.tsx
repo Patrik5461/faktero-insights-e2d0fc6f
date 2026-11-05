@@ -16,12 +16,23 @@ import { useT } from "@/lib/i18n/useT";
 
 /** Pole formulára → zdroj predvyplnenej hodnoty (len kým ju človek nezmení). */
 export type OznaceniaNavrhu = Partial<
-  Record<PoleNavrhu, Extract<ZdrojNavrhu, "ai" | "navyk" | "pravidlo">>
+  Record<PoleNavrhu, Extract<ZdrojNavrhu, "ai" | "navyk" | "pravidlo"> | "auto">
 >;
 
 /** Štítok pri poli: „Návrh AI", „naučené" alebo hviezdička pravidla automatického účtovania. */
-export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" }) {
+export function StitokNavrhu({ zdroj }: { zdroj: "ai" | "navyk" | "pravidlo" | "auto" }) {
   const { t } = useT();
+  // Automatické členenie / predkontácia vystaveného dokladu (resolveVatClassification).
+  if (zdroj === "auto")
+    return (
+      <span
+        className="ml-1.5 rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground"
+        title={t("Doplnené automaticky podľa pravidla, predvolených kódov firmy a druhu plnenia. Ručná zmena má prednosť a uloží sa.")}
+        data-automaticky=""
+      >
+        {t("automaticky")}
+      </span>
+    );
   if (zdroj === "pravidlo")
     return (
       <span

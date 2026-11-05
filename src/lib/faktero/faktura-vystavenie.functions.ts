@@ -410,6 +410,12 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         .eq("id", rezervacia.id);
     }
 
+    // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts).
+    {
+      const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+      await uplatniClenenieNovej(faktura.id);
+    }
+
     try {
       const { triggerEvent, invoicePayload } = await import("./webhook-trigger.server");
       await triggerEvent({

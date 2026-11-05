@@ -58,6 +58,7 @@ import {
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
+import { prepocitajClenenieFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { triggerEventFn } from "@/lib/faktero/email.functions";
 import { aiParseInvoiceFn } from "@/lib/faktero/ai-invoice.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
@@ -239,6 +240,7 @@ function NewInvoice() {
   const triggerEvt = useServerFn(triggerEventFn);
   const aiParse = useServerFn(aiParseInvoiceFn);
   const prepocitaj = useServerFn(prepocitajFakturuFn);
+  const prepocitajClenenie = useServerFn(prepocitajClenenieFn);
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
   const rezim = useRezimDph();
   const krajina = rezim.krajina;
@@ -1458,6 +1460,9 @@ function NewInvoice() {
           return;
         }
       }
+
+      // Automatické členenie DPH, KV a predkontácia (ručne zvolené ostanú).
+      if (cid) await prepocitajClenenie({ data: { company_id: cid, ids: [inv.id] } }).catch(() => {});
 
       try {
         await triggerEvt({

@@ -12,6 +12,7 @@ import {
   zauctujVystavenuFn,
   zrusZauctovanieVystavenejFn,
 } from "@/lib/faktero/zauctovanie.functions";
+import { vyriesClenenieFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { KV_CLENENIA } from "@/lib/faktero/kv-clenenie";
 import { kvAutoVystavenej, textKv } from "@/lib/faktero/kv-auto";
 import { navrhClenenieVystavenej } from "@/lib/faktero/clenenie-vystavenej";
@@ -26,6 +27,7 @@ import { nacitajRozuctovanie } from "@/lib/faktero/rozuctovanie";
 import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
+import type { OznaceniaNavrhu } from "./NavrhAi";
 import { NapovedaPredkontacii, SekciaZauctovania } from "./DetailDokladu";
 import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
 import { potvrd } from "@/lib/potvrdenie";
@@ -38,6 +40,18 @@ import { lokalJazyka } from "@/lib/i18n/jazyk";
 const KV_VYDANE = KV_CLENENIA.filter((k) => ["A1", "A2", "C1", "D1", "D2", "X"].includes(k.kod));
 const kedy = (iso: string | null | undefined, loc = "sk-SK") =>
   iso ? new Date(iso).toLocaleString(loc, { dateStyle: "medium", timeStyle: "short" }) : "";
+
+type VyrieseneClenenie = {
+  pohoda_clenenie_dph: string | null;
+  kv_clenenie: string | null;
+  pohoda_predkontacia: string | null;
+  auto: {
+    pohoda_clenenie_dph: string | null;
+    kv_clenenie: string | null;
+    pohoda_predkontacia: string | null;
+  };
+  rucne: { clenenie: boolean; kv: boolean; predkontacia: boolean };
+};
 
 type Polozka = {
   id: string;
@@ -81,12 +95,18 @@ export function useZauctovanieVystavenej({
   const de = krajinaFirmy === "DE";
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const nacitajStav = useServerFn(stavVystavenejFn);
+  const nacitajClenenie = useServerFn(vyriesClenenieFn);
   const zauctuj = useServerFn(zauctujVystavenuFn);
   const navigate = useNavigate();
   const zrus = useServerFn(zrusZauctovanieVystavenejFn);
   const vrat = useServerFn(vratVystavenuZPohodyFn);
   const varovanieVratenia = useVarovanieVratenia();
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
+  /*
+    Čo doklad dostane automaticky (resolveVatClassification na serveri) —
+    to isté, čo sa pri uložení zapíše. Pole ho ukáže so štítkom „automaticky“.
+  */
+  const [vyriesene, setVyriesene] = useState<VyrieseneClenenie | null>(null);
   const [stav, setStav] = useState<{
     vPohode: { kedy: string; cislo: string | null; program?: string | null } | null;
   } | null>(null);
@@ -134,6 +154,28 @@ export function useZauctovanieVystavenej({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inv.id]);
   useEffect(() => {
+    let zive = true;
+    nacitajClenenie({ data: { company_id: inv.company_id, id: inv.id } })
+      .then((v) => {
+        if (zive) setVyriesene((v ?? null) as VyrieseneClenenie | null);
+      })
+      .catch(() => {});
+    return () => {
+      zive = false;
+    };
+    // Prepočíta sa po uložení či zmene dokladu (kódy, typ, prenesenie, odberateľ).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    inv.id,
+    inv.updated_at,
+    inv.pohoda_clenenie_dph,
+    inv.kv_clenenie,
+    inv.pohoda_predkontacia,
+    inv.type,
+    inv.reverse_charge,
+    inv.customer_ic_dph,
+  ]);
+  useEffect(() => {
     setH({
       predkontacia: inv.pohoda_predkontacia ?? "",
       clenenie: inv.pohoda_clenenie_dph ?? "",
@@ -165,7 +207,10 @@ export function useZauctovanieVystavenej({
     Uložiť / Zaúčtovať (alebo Potvrdiť návrh).
   */
   const navrhClenenia: string | null = (() => {
-    if (neuctuje || !navrhy) return null;
+    if (neuctuje) return null;
+    // Automatika (to isté, čo sa uloží) — ručne zadané členenie sa nenavrhuje.
+    if (vyriesene && !vyriesene.rucne.clenenie) return vyriesene.auto.pohoda_clenenie_dph;
+    if (!navrhy) return null;
     const ulozeny = String((inv.auto_uctovanie_navrh as any)?.clenenieDph ?? "").trim();
     if (ulozeny) return ulozeny;
     return (
@@ -202,6 +247,27 @@ export function useZauctovanieVystavenej({
     predvyplnene.current = navrhClenenia;
     setH((x) => (x.clenenie.trim() ? x : { ...x, clenenie: navrhClenenia }));
   }, [stav, vPohode, zauctovana, neuctuje, inv.status, inv.pohoda_clenenie_dph, navrhClenenia]);
+  /*
+    Predkontácia z automatiky (predvolená firmy, dobropisu, zvyk firmy) do
+    prázdneho poľa — inak by štítok svietil „Chýba predkontácia“, hoci ju
+    uloženie doplní.
+  */
+  const navrhPredkontacie =
+    !neuctuje && vyriesene && !vyriesene.rucne.predkontacia
+      ? vyriesene.auto.pohoda_predkontacia
+      : null;
+  useEffect(() => {
+    if (!stav || vPohode || zauctovana || neuctuje || inv.status === "draft") return;
+    if (String(inv.pohoda_predkontacia ?? "").trim() || !navrhPredkontacie) return;
+    setH((x) => (x.predkontacia.trim() ? x : { ...x, predkontacia: navrhPredkontacie }));
+  }, [stav, vPohode, zauctovana, neuctuje, inv.status, inv.pohoda_predkontacia, navrhPredkontacie]);
+  /* Štítok „automaticky“ pri poli, ktoré drží hodnotu automatiky. */
+  const oznacenia: OznaceniaNavrhu = {
+    ...(navrhClenenia && h.clenenie.trim() === navrhClenenia ? { clenenie: "auto" as const } : {}),
+    ...(navrhPredkontacie && h.predkontacia.trim() === navrhPredkontacie
+      ? { predkontacia: "auto" as const }
+      : {}),
+  };
   // Pole drží návrh, ktorý ešte nie je uložený — povie to veta pod poliami.
   const clenenieZNavrhu =
     !String(inv.pohoda_clenenie_dph ?? "").trim() &&
@@ -538,6 +604,8 @@ export function useZauctovanieVystavenej({
     de,
     loc,
     navrhy,
+    vyriesene,
+    oznacenia,
     kvAuto,
     h,
     setH,
@@ -588,6 +656,8 @@ export function ZauctovanieVystavenejPanel({
     poPolozkachANapoveda,
     prehladRozuctovania,
     kvAuto,
+    vyriesene,
+    oznacenia,
   } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
   // Koncept sa nezaúčtuje.
   if (inv.status === "draft") return null;
@@ -635,7 +705,7 @@ export function ZauctovanieVystavenejPanel({
         }}
       />
       {!vPohode && !neuctuje && (
-        <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />
+        <AutoZauctovanieOdznak typ="vystavena" row={inv} vyriesene={vyriesene} onZmena={onZmena} />
       )}
 
       {vPohode ? (
@@ -726,6 +796,7 @@ export function ZauctovanieVystavenejPanel({
             }
             kvMoznosti={KV_VYDANE}
             kvAuto={kvAuto}
+            oznacenia={oznacenia}
             popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
             priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
           />
@@ -878,7 +949,7 @@ export function PoliaZauctovaniaVystavenej({
       ) : null}
       {neuctuje ? <NeuctujeSaInfo /> : null}
       {!vPohode && !neuctuje ? (
-        <AutoZauctovanieOdznak typ="vystavena" row={inv} onZmena={onZmena} />
+        <AutoZauctovanieOdznak typ="vystavena" row={inv} vyriesene={z.vyriesene} onZmena={onZmena} />
       ) : null}
       {neuctuje ? null : (
         <fieldset disabled={Boolean(vPohode)} className="min-w-0 space-y-3.5 disabled:opacity-70">
@@ -903,6 +974,7 @@ export function PoliaZauctovaniaVystavenej({
             }
             kvMoznosti={KV_VYDANE}
             kvAuto={z.kvAuto}
+            oznacenia={z.oznacenia}
             popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
             priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
           />

@@ -118,6 +118,11 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
       /* non-fatal */
     }
 
+    // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts).
+    {
+      const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+      await uplatniClenenieNovej(inv.id);
+    }
     return { invoice_id: inv.id, already: false };
   });
 

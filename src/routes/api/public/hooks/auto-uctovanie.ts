@@ -1,5 +1,7 @@
 /**
- * Cron: automatické zaúčtovanie nových dokladov (`spracujAutoUctovanie`).
+ * Cron: automatické členenie DPH, KV a predkontácia vystavených dokladov
+ * (`uplatniClenenieFronty`) a automatické zaúčtovanie nových dokladov
+ * (`spracujAutoUctovanie`).
  * Volaný každú minútu cez pg_cron s hlavičkou
  * `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
  */
@@ -20,9 +22,14 @@ export const Route = createFileRoute("/api/public/hooks/auto-uctovanie")({
         }
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          // Najprv členenie — motor zaúčtovania potom vidí už vyplnené kódy.
+          const { uplatniClenenieFronty } = await import("@/lib/faktero/clenenie-vystavenej.server");
+          const clenenie = await uplatniClenenieFronty(supabaseAdmin, { rozpocetMs: 6_000 }).catch(
+            () => ({ spracovanych: 0, zostava: false }),
+          );
           const { spracujAutoUctovanie } = await import("@/lib/faktero/auto-uctovanie.server");
-          const r = await spracujAutoUctovanie(supabaseAdmin, { rozpocetMs: 20_000 });
-          return new Response(JSON.stringify({ ok: true, ...r }), {
+          const r = await spracujAutoUctovanie(supabaseAdmin, { rozpocetMs: 14_000 });
+          return new Response(JSON.stringify({ ok: true, ...r, clenenie }), {
             status: 200,
             headers: { "content-type": "application/json" },
           });

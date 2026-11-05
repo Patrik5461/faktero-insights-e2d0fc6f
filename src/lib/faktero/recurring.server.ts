@@ -165,6 +165,13 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     throw new Error(itErr.message);
   }
 
+  // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts) — pred PDF a webhookom.
+  {
+    const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+    const kody = await uplatniClenenieNovej(inv.id);
+    if (kody) Object.assign(inv, kody);
+  }
+
   // Generate PDF (best effort, non-fatal)
   try {
     const { ensureInvoicePdf } = await import("./invoice-pdf.server");

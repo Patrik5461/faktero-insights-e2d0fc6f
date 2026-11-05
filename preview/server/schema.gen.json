@@ -4086,8 +4086,6 @@
     "invoice_items": {
       "pohlad": false,
       "stlpce": {
-        "stredisko": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
-        "cinnost": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "prenesenie": {
           "druh": "boolean",
           "nullable": false,
@@ -4135,7 +4133,9 @@
           "volitelny": false,
           "povinny": false
         },
-        "kv_clenenie": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false }
+        "kv_clenenie": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "stredisko": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "cinnost": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false }
       },
       "vztahy": [
         {
@@ -4310,7 +4310,6 @@
     "invoices": {
       "pohlad": false,
       "stlpce": {
-        "rozuctovanie": { "druh": "json", "nullable": true, "volitelny": false, "povinny": false },
         "pokladna_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "naposledy_zauctoval": {
           "druh": "text",
@@ -4628,6 +4627,25 @@
         "zauctoval": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "stredisko": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "cinnost": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "clenenie_auto_at": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
+        "clenenie_zdroj": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
+        "kv_zdroj": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "predkontacia_zdroj": {
+          "druh": "text",
+          "nullable": true,
+          "volitelny": false,
+          "povinny": false
+        },
         "int_poznamka": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "pravidlo_id": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "zasielkovna_id": {
@@ -4730,7 +4748,8 @@
           "nullable": true,
           "volitelny": false,
           "povinny": false
-        }
+        },
+        "rozuctovanie": { "druh": "json", "nullable": true, "volitelny": false, "povinny": false }
       },
       "vztahy": [
         {

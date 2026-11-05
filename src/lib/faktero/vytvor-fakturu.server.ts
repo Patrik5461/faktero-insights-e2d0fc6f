@@ -284,5 +284,8 @@ export async function vytvorFakturu(
   }));
   const { error: itErr } = await supabase.from("invoice_items").insert(itemRows);
   if (itErr) return { ok: false, kod: "db_error", sprava: itErr.message, status: 500 };
-  return { ok: true, faktura: created, nova: true };
+  // Členenie DPH, KV a predkontácia (clenenie-vystavenej.server.ts) — odpoveď ich už nesie.
+  const { uplatniClenenieNovej } = await import("./clenenie-vystavenej.server");
+  const kody = await uplatniClenenieNovej(created.id);
+  return { ok: true, faktura: kody ? { ...created, ...kody } : created, nova: true };
 }

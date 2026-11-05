@@ -145,7 +145,7 @@ export function UctovneNastaveniaFaktury({
   );
 
   /*
-    Návrh členenia DPH: pravidlo → (neplatiteľ: nezahrnovať) → prenesenie →
+    Návrh členenia DPH: pravidlo → (neplatiteľ: nič) → prenesenie →
     predvolené firmy → režim dane. Rovnaký pre faktúru, dobropis aj ťarchopis.
   */
   const opravnyDoklad = Boolean(kvDoklad?.opravny) || typ === "credit_note" || typ === "debit_note";

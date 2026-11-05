@@ -44,10 +44,20 @@ export function useZdrojText() {
 export function AutoZauctovanieOdznak({
   typ,
   row,
+  vyriesene,
   onZmena,
 }: {
   typ: Typ;
   row: any;
+  /**
+   * Vystavená faktúra: kódy, ktoré na doklad dá automatika (resolveVatClassification)
+   * — kým ich fronta nezapíše, štítok ich berie ako vyplnené (nie „Chýba predkontácia“).
+   */
+  vyriesene?: {
+    pohoda_predkontacia: string | null;
+    pohoda_clenenie_dph: string | null;
+    kv_clenenie: string | null;
+  } | null;
   onZmena: () => void;
 }) {
   const { t } = useT();
@@ -64,7 +74,16 @@ export function AutoZauctovanieOdznak({
   */
   const navrh = ulozeny
     ? (() => {
-        const n = aktualnyNavrh(ulozeny, row);
+        const n = aktualnyNavrh(
+          ulozeny,
+          vyriesene
+            ? {
+                pohoda_predkontacia: row.pohoda_predkontacia || vyriesene.pohoda_predkontacia,
+                pohoda_clenenie_dph: row.pohoda_clenenie_dph || vyriesene.pohoda_clenenie_dph,
+                kv_clenenie: row.kv_clenenie || vyriesene.kv_clenenie,
+              }
+            : row,
+        );
         return isAccountingDocument(row.type)
           ? n
           : { ...n, blokatory: n.blokatory.filter((b) => b !== "bez_clenenia") };
