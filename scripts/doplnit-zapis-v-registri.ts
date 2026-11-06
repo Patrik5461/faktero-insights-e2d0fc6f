@@ -62,7 +62,7 @@ async function main() {
     return q;
   });
   const maStlpec = firmy.length > 0 && "registracia_text" in firmy[0];
-  if (APPLY && !maStlpec) throw new Error("Stĺpec companies.registracia_text neexistuje — najprv migrácia 20261106120000_zapis_v_registri.sql.");
+  if (APPLY && !maStlpec) throw new Error("Stĺpec companies.registracia_text neexistuje — najprv migrácia 20261106093835_zapis_v_registri.sql.");
 
   const doplnit: { f: any; zapis: ZapisZRegistra; zdroj: string }[] = [];
   const nie: { f: any; dovod: string }[] = [];
