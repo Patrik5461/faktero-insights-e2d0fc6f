@@ -51,6 +51,8 @@ describe("dobropis v Peppol BIS", () => {
     expect(r.xml).toContain("<cac:CreditNoteLine>");
     expect(r.xml).toMatch(/<cbc:CreditedQuantity unitCode="[A-Z0-9]+">1<\/cbc:CreditedQuantity>/);
     expect(r.xml).not.toContain("<cbc:DueDate>");
+    // Splatnosť dobropisu (BT-9) je v PaymentMeans — inak ju príjemca nemá odkiaľ prečítať.
+    expect(r.xml).toMatch(/<cac:PaymentMeans>\s*<cbc:PaymentMeansCode>[^<]+<\/cbc:PaymentMeansCode>\s*<cbc:PaymentDueDate>2026-10-19<\/cbc:PaymentDueDate>/);
     expect(r.xml).not.toMatch(/>-\d/);
     // BillingReference musí byť pred stranami (poradie prvkov v UBL).
     expect(r.xml.indexOf("BillingReference")).toBeLessThan(r.xml.indexOf("AccountingSupplierParty"));

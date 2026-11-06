@@ -143,7 +143,8 @@ export function generatePeppolBisXml(inv: EN16931Invoice): XmlGenerationResult {
   /*
     Dobropis (381) je v Peppol BIS samostatný dokument CreditNote — v syntaxi
     Invoice typ 381 neprejde. Riadky sú CreditNoteLine s CreditedQuantity a
-    hlavička nemá DueDate.
+    hlavička nemá DueDate — splatnosť (BT-9) ide do PaymentMeans/PaymentDueDate,
+    inak ju príjemca nemá odkiaľ prečítať (SFC → PALIERA, 6. 11. 2026).
   */
   const dobropis = inv.documentType === "381";
   const koren = dobropis ? "CreditNote" : "Invoice";
@@ -196,7 +197,7 @@ ${t.vatCategory === "O" ? "" : `        <cbc:Percent>${t.vatPercent}</cbc:Percen
   const paymentXml = inv.paymentMeans
     ? `  <cac:PaymentMeans>
     <cbc:PaymentMeansCode>${esc(inv.paymentMeans.code)}</cbc:PaymentMeansCode>
-${inv.paymentMeans.reference ? `    <cbc:PaymentID>${esc(inv.paymentMeans.reference)}</cbc:PaymentID>\n` : ""}${
+${dobropis && inv.dueDate ? `    <cbc:PaymentDueDate>${esc(inv.dueDate)}</cbc:PaymentDueDate>\n` : ""}${inv.paymentMeans.reference ? `    <cbc:PaymentID>${esc(inv.paymentMeans.reference)}</cbc:PaymentID>\n` : ""}${
         inv.paymentMeans.iban
           ? `    <cac:PayeeFinancialAccount>
       <cbc:ID>${esc(inv.paymentMeans.iban)}</cbc:ID>

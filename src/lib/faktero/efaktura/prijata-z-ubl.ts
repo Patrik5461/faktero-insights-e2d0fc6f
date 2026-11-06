@@ -314,7 +314,10 @@ export function rozoberPrijatuUbl(xml: string): PrijataZUbl | null {
       text(koren, "cac:InvoicePeriod/cbc:EndDate") ??
       null,
     splatnost:
-      text(koren, "cbc:DueDate") ?? text(koren, "cac:PaymentTerms/cbc:PaymentDueDate") ?? null,
+      text(koren, "cbc:DueDate") ??
+      text(koren, "cac:PaymentMeans/cbc:PaymentDueDate") ??
+      text(koren, "cac:PaymentTerms/cbc:PaymentDueDate") ??
+      null,
     mena,
     dodavatel: {
       nazov:

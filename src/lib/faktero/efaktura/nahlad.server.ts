@@ -207,7 +207,7 @@ export function ublNaPdfVstup(xml: string): { company: any; invoice: any; items:
     status: "issued",
     issue_date: txt(k.IssueDate),
     delivery_date: txt(k.Delivery?.ActualDeliveryDate) ?? txt(k.TaxPointDate) ?? txt(k.IssueDate),
-    due_date: txt(k.DueDate) ?? txt(pole(k.PaymentTerms)[0]?.Note) ?? null,
+    due_date: txt(k.DueDate) ?? txt(platba?.PaymentDueDate) ?? txt(pole(k.PaymentTerms)[0]?.Note) ?? null,
     currency: mena,
     variable_symbol: txt(platba?.PaymentID)?.replace(/\D/g, "").slice(0, 10) || null,
     payment_method: "bank_transfer",

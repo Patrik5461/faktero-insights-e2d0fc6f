@@ -90,7 +90,10 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
   // Prvé cbc:ID mimo BillingReference je číslo dokladu (hlavička je pred referenciami).
   const documentNumber = pick(/<cbc:ID>([^<]+)<\/cbc:ID>/);
   const issueDate = pick(/<cbc:IssueDate>([^<]+)<\/cbc:IssueDate>/);
-  const dueDate = pick(/<cbc:DueDate>([^<]+)<\/cbc:DueDate>/);
+  // Dobropis (CreditNote) nemá cbc:DueDate — splatnosť je v PaymentMeans/PaymentDueDate.
+  const dueDate =
+    pick(/<cbc:DueDate>([^<]+)<\/cbc:DueDate>/) ??
+    pick(/<cbc:PaymentDueDate>([^<]+)<\/cbc:PaymentDueDate>/);
   const currency = pick(/<cbc:DocumentCurrencyCode>([^<]+)<\/cbc:DocumentCurrencyCode>/);
   /*
     Suma faktúry je TaxInclusiveAmount. PayableAmount je len to, čo ostáva
