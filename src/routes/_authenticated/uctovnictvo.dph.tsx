@@ -384,22 +384,24 @@ function DphPage() {
       <PageHeader
         title={t("DPH prehľad")}
         description={t("Informatívny prehľad DPH na výstupe a vstupe")}
+        popisDalej={
+          <>
+              {t("Tento prehľad je informatívny.")}{" "}
+              {t("Doklady sú v období podľa dátumu dodania, rovnako ako v priznaní.")}{" "}
+              <Link to="/uctovnictvo/vykazy" className="text-primary underline underline-offset-2">
+                {t("Výkazy k DPH")}
+              </Link>{" "}
+              {krajina === "CZ"
+                ? t("z tých istých dokladov zostavia přiznání, kontrolní hlášení aj souhrnné hlášení a stiahnu ich v XML pre EPO.")
+                : krajina === "DE"
+                  ? t("z tých istých dokladov zostavia UStVA a súhrnné hlásenie (ZM) pre ELSTER.")
+                  : t(
+                      "z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich v XML pre eDane.",
+                    )}
+          </>
+        }
       />
       <PageBody>
-        <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          {t("Tento prehľad je informatívny.")}{" "}
-          {t("Doklady sú v období podľa dátumu dodania, rovnako ako v priznaní.")}{" "}
-          <Link to="/uctovnictvo/vykazy" className="text-primary underline underline-offset-2">
-            {t("Výkazy k DPH")}
-          </Link>{" "}
-          {krajina === "CZ"
-            ? t("z tých istých dokladov zostavia přiznání, kontrolní hlášení aj souhrnné hlášení a stiahnu ich v XML pre EPO.")
-            : krajina === "DE"
-              ? t("z tých istých dokladov zostavia UStVA a súhrnné hlásenie (ZM) pre ELSTER.")
-              : t(
-                  "z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich v XML pre eDane.",
-                )}
-        </p>
         <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-[color:var(--stav-pozor-plocha)] p-3 text-[color:var(--stav-pozor-text)]">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="text-sm">

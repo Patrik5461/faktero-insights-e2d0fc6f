@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
+import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -37,7 +38,6 @@ import {
   X,
   Zap,
   BookCheck,
-  Eye,
   Send,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -87,6 +87,8 @@ import {
 import { efakturaUzOdisla } from "@/lib/faktero/efaktura/stav-efaktury-texty";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { PasVyberuFiltra, potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
+import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
 import { VyberStavuDokladu, StavDokladuOdznak } from "@/components/faktero/StavDokladu";
 import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyDokladov";
@@ -275,16 +277,12 @@ function InvoicesPage() {
   );
   const cloneFn = useServerFn(cloneInvoiceFn);
   const pdfUrlFn = useServerFn(getInvoicePdfSignedUrl);
-  const [nahlad, setNahlad] = useState<{ url: string; nazov: string } | null>(null);
-  /** Náhľad PDF priamo zo zoznamu — v okne, bez sťahovania. */
-  async function nahladRiadku(i: any) {
-    try {
-      const r = await pdfUrlFn({ data: { invoiceId: i.id } });
-      if (r?.signedUrl) setNahlad({ url: r.signedUrl, nazov: i.invoice_number ?? "faktura" });
-    } catch (e: any) {
-      toast.error(e?.message ?? t("PDF sa nepodarilo pripraviť."));
-    }
-  }
+  /** Náhľad PDF priamo zo zoznamu — v okne so šípkami na ďalšiu faktúru (C1-3). */
+  const okno = useNahladOkna();
+  const nacitajPdf = async (id: string) => {
+    const r = await pdfUrlFn({ data: { invoiceId: id } });
+    return r?.signedUrl ? { url: r.signedUrl } : null;
+  };
   // Náhľad vedľa zoznamu — pri účtovaní netreba otvárať každú faktúru zvlášť.
   const bocny = useBocnyNahlad("faktury");
   const emailFn = useServerFn(sendInvoiceEmailFn);
@@ -404,8 +402,8 @@ function InvoicesPage() {
     }
   }
 
-  const sensitiveSelected = list.rows.filter(
-    (r) => list.selected[r.id] && (r.status === "paid" || r.status === "sent"),
+  const sensitiveSelected = list.selectedRows.filter(
+    (r: any) => r.status === "paid" || r.status === "sent",
   ).length;
 
   const program = useExportDoProgramu();
@@ -500,10 +498,20 @@ function InvoicesPage() {
     }
   }
 
-  const selectedRows = useMemo(
-    () => list.rows.filter((r: any) => list.selected[r.id]),
-    [list.rows, list.selected],
-  );
+  // Označené riadky — zo strany, alebo pri „Označiť všetkých podľa filtra" celý filter.
+  const selectedRows = list.selectedRows;
+  /** Hromadné mazanie z lišty — odovzdané do Pohody a zamknuté sa preskočia. */
+  async function zmazatOznacene() {
+    const m = rozdelNaMazanie(selectedRows, cis.zamknuteDo);
+    if (!(await potvrdHromadneMazanie(t, m, t("Presunúť {n} faktúr do koša?", { n: m.ids.length })))) return;
+    try {
+      await list.softDelete(m.ids);
+      toast.success(t("Vymazané faktúry: {n}", { n: m.ids.length }));
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Chyba"));
+    }
+  }
   /*
     Súčty (P-1007): za označené z načítaných riadkov, za celý filter z
     databázy — zoznam je stránkovaný, súčet stránky by klamal. Kontext povie,
@@ -892,9 +900,14 @@ function InvoicesPage() {
   const rowWarning = rowDelete && (rowDelete.status === "paid" || rowDelete.status === "sent");
   return (
     <>
-      {nahlad && (
-        <NahladPdfOkno url={nahlad.url} nazov={nahlad.nazov} onClose={() => setNahlad(null)} />
-      )}
+      <NahladDokladuOkno
+        okno={okno}
+        idcka={visibleRows.map((r: any) => r.id)}
+        nacitaj={nacitajPdf}
+        nazov={(id) => visibleRows.find((r: any) => r.id === id)?.invoice_number}
+        poznamka={(id) => visibleRows.find((r: any) => r.id === id)?.customer_name}
+        onOtvorit={(id) => navigate({ to: "/faktury/$id", params: { id } })}
+      />
       <PageHeader
         title={
           type === "credit"
@@ -1137,7 +1150,7 @@ function InvoicesPage() {
                   ids={list.selectedIds}
                   onHotovo={() => list.reload()}
                   pdfZip={() => setBulkAction("zip")}
-                  zmazat={() => setBulkDelete(true)}
+                  zmazat={() => void zmazatOznacene()}
                 />
               ) : null}
               {progress && (
@@ -1148,6 +1161,17 @@ function InvoicesPage() {
             </div>
           </div>
         )}
+        {!list.showDeleted ? (
+          <PasVyberuFiltra
+            naStrane={visibleRows.length}
+            celkom={list.total}
+            vsetky={list.allMatchingSelected}
+            stranaOznacena={list.allOnPageSelected}
+            nacitava={list.loadingAllMatching}
+            onVsetky={() => void list.selectAllMatching().catch((e: any) => toast.error(e?.message ?? t("Chyba")))}
+            onZrusit={list.clearSelection}
+          />
+        ) : null}
         <ResponsiveTable
           className="mt-3"
           items={visibleRows}
@@ -1210,6 +1234,7 @@ function InvoicesPage() {
                   </button>
                 ) : (
                   <div className="flex gap-1">
+                    <TlacidloNahladu popis={i.invoice_number} onClick={() => okno.otvor(i.id)} />
                     <button
                       onClick={() => cloneRow(i.id)}
                       className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -1232,10 +1257,7 @@ function InvoicesPage() {
               zapnuty={bocny.zapnuty}
               vybrany={bocny.vybrany}
               nazov={visibleRows.find((r: any) => r.id === bocny.vybrany)?.invoice_number}
-              nacitaj={async (id) => {
-                const r = await pdfUrlFn({ data: { invoiceId: id } });
-                return r?.signedUrl ? { url: r.signedUrl } : null;
-              }}
+              nacitaj={nacitajPdf}
               onOtvorit={(id) => navigate({ to: "/faktury/$id", params: { id } })}
               onZavriet={() => bocny.setVybrany(null)}
             >
@@ -1392,6 +1414,11 @@ function InvoicesPage() {
                             />
                           );
                         })()}
+                        {textClenenia(i.pohoda_clenenie_dph, i.kv_clenenie) ? (
+                          <div className="mt-0.5 text-xs text-muted-foreground" title={t("Členenie DPH · KV DPH")}>
+                            {textClenenia(i.pohoda_clenenie_dph, i.kv_clenenie)}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-2 py-3">
                         <StatusBadge status={jeFakturaPoSplatnosti(i, today) ? "overdue" : i.status} />
@@ -1427,7 +1454,7 @@ function InvoicesPage() {
                         {i.zauctovane_at ? (
                           <div
                             className="mt-1 text-xs fk-text-info"
-                            title={[i.pohoda_predkontacia, i.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
+                            title={textZauctovania(i.pohoda_predkontacia, i.pohoda_clenenie_dph, i.kv_clenenie)}
                           >
                             {t("Zaúčtovaná")}
                             {i.pohoda_predkontacia ? ` · ${i.pohoda_predkontacia}` : ""}
@@ -1452,14 +1479,7 @@ function InvoicesPage() {
                           </button>
                         ) : (
                           <div className="flex justify-end gap-1">
-                            <button
-                              title={t("Náhľad")}
-                              aria-label={i.invoice_number ? t("Náhľad {cislo}", { cislo: i.invoice_number }) : t("Náhľad faktúry")}
-                              onClick={() => nahladRiadku(i)}
-                              className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
+                            <TlacidloNahladu popis={i.invoice_number} onClick={() => okno.otvor(i.id)} />
                             <button
                               title={t("Klonovať")}
                               onClick={() => cloneRow(i.id)}

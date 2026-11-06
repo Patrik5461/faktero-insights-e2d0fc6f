@@ -5,6 +5,40 @@
 */
 import { obdobieOdpoctu, prijatieSkorNezVystavenie } from "@/lib/faktero/datum-prijatia";
 import { useT } from "@/lib/i18n/useT";
+import { NapovedaOtaznik } from "@/components/faktero/NapovedaOtaznik";
+
+/**
+ * Ikona „?“ pri popise poľa „Dátum prijatia“ — formuláre aj detaily prijatých
+ * dokladov, klasické aj kompaktné rozloženie. Pravidlo je v `datum-prijatia.ts`.
+ */
+export function DatumPrijatiaOtaznik({ className = "" }: { className?: string }) {
+  const { t } = useT();
+  return (
+    <NapovedaOtaznik
+      velkost="mala"
+      popis={t("Vysvetlivka: Dátum prijatia")}
+      className={`ml-1 align-[-2px] ${className}`}
+    >
+      <span className="block space-y-1.5">
+        <span className="block">
+          {t(
+            "Deň, keď firma doklad prijala — prišiel e-mailom, bol nahratý alebo doručený poštou.",
+          )}
+        </span>
+        <span className="block">
+          {t(
+            "Rozhoduje o období odpočtu DPH: odpočet patrí do neskoršieho mesiaca z dátumu dodania (DUZP) a dátumu prijatia. Podľa toho istého obdobia sa doklad zaradí do priznania k DPH a do kontrolného výkazu.",
+          )}
+        </span>
+        <span className="block text-muted-foreground">
+          {t(
+            "Používa sa vo výkazoch DPH, v kontrolnom výkaze a v exporte do Pohody. Predvyplní sa dňom doručenia e-mailu alebo nahratia. Pri samozdanení (prenesenie daňovej povinnosti) ostáva odpočet na DUZP.",
+          )}
+        </span>
+      </span>
+    </NapovedaOtaznik>
+  );
+}
 
 export function DatumPrijatiaInfo({
   vystavenie,

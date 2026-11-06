@@ -10,6 +10,8 @@
     hromadná akcia nesmie zasiahnuť nič, čo človek nevidí.
 */
 
+import { dovodZamku } from "./doklady-hromadne";
+
 export type StavHlavicky = "nic" | "cast" | "vsetko";
 
 /** Stav hlavičkového zaškrtávadla podľa viditeľných riadkov. */
@@ -84,4 +86,36 @@ export function zoznamKodov(
 ): string {
   const prve = kody.slice(0, max).join(", ");
   return kody.length > max ? `${prve} ${dalsich(kody.length - max)}` : prve;
+}
+
+/* ------------------------------------------------- hromadné mazanie dokladov */
+
+export type NaMazanie = {
+  /** Doklady, ktoré sa smú zmazať. */
+  ids: string[];
+  /** Odovzdané do Pohody — najprv ich treba vrátiť z Pohody. */
+  odovzdane: number;
+  /** Zamknuté alebo v uzavretom období. */
+  zamknute: number;
+};
+
+/**
+ * Rozdelí označené doklady na tie, ktoré sa smú zmazať, a tie, ktoré
+ * chráni zámok. Databáza by odovzdaný doklad (spúšťač zámku Pohody) ani
+ * doklad v uzavretom období nezmazala — a jeden taký by zhodil celú dávku.
+ */
+export function rozdelNaMazanie(
+  riadky: readonly { id: string; exported_at?: string | null; locked_at?: string | null; issue_date?: string | null }[],
+  zamknuteDo: string | null | undefined,
+): NaMazanie {
+  const ids: string[] = [];
+  let odovzdane = 0;
+  let zamknute = 0;
+  for (const r of riadky) {
+    const d = dovodZamku(r, zamknuteDo);
+    if (d === "odovzdany") odovzdane++;
+    else if (d) zamknute++;
+    else ids.push(r.id);
+  }
+  return { ids, odovzdane, zamknute };
 }

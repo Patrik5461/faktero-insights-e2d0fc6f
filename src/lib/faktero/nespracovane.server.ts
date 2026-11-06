@@ -66,9 +66,42 @@ async function oznacNaKontroluDph(
   companyId: string,
   u: UdajeNespracovaneho,
 ): Promise<void> {
-  const { kontrolaRozpisuUdajov } = await import("./nespracovane");
+  const { kontrolaSadziebUdajov } = await import("./nespracovane");
   const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
-  const k = kontrolaRozpisuUdajov(u, await krajinaFirmy(supabase, companyId));
+  const krajina = await krajinaFirmy(supabase, companyId);
+  /*
+    Človek nesúlad vo formulári vedome potvrdil („Pokračovať aj tak“ / „Rozpis
+    je správny“): na kontrolu nejde a vytvorený doklad nesie podpis potvrdenia,
+    aby sa formulár prijatej faktúry či bločku nepýtal znova.
+  */
+  if (u.rozpisPotvrdeny) {
+    const nepotvrdene = kontrolaSadziebUdajov({ ...u, rozpisPotvrdeny: false }, krajina);
+    if (nepotvrdene.ok) return;
+    const { podpisRozpisu, riadkyUlozenehoDokladu } = await import("./rozpis-dph-kontrola");
+    const stlpce =
+      tabulka === "purchase_invoices"
+        ? "vat_breakdown, amount_without_vat, vat_amount, amount_total"
+        : "vat_breakdown, vat_rate, net_amount, vat_amount, total_amount, items";
+    const { data: row } = await supabase.from(tabulka).select(stlpce).eq("id", id).maybeSingle();
+    if (!row) return;
+    const r: any = row;
+    const { error } = await supabase
+      .from(tabulka)
+      .update({
+        rozpis_dph_potvrdeny: {
+          podpis: podpisRozpisu(
+            riadkyUlozenehoDokladu(r),
+            tabulka === "purchase_invoices" ? r.amount_total : r.total_amount,
+          ),
+          at: new Date().toISOString(),
+          dovod: popisChybRozpisu(nepotvrdene),
+        },
+      } as any)
+      .eq("id", id);
+    if (error) console.warn(`[nespracovane] ${tabulka} potvrdenie rozpisu sa nezapísalo:`, error.message);
+    return;
+  }
+  const k = kontrolaSadziebUdajov(u, krajina);
   if (k.ok) return;
   const { error } = await supabase
     .from(tabulka)

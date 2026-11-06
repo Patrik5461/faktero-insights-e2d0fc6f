@@ -330,6 +330,10 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           }
         : {}),
       ...(rozpisOk && !rozpisFoto.kontrola.ok ? { kontrola_dph: popisChybRozpisu(rozpisFoto.kontrola) } : {}),
+      // Spôsob úhrady z bločku (AI) — len známe hodnoty; človek ho môže zmeniť.
+      ...(ocr.payment_method === "hotovost" || ocr.payment_method === "karta" || ocr.payment_method === "prevod"
+        ? { payment_method: ocr.payment_method }
+        : {}),
       currency: ocr.currency ?? "EUR",
       date: ocr.date ?? undefined,
       document_number: ocr.document_number ?? undefined,

@@ -1,3 +1,4 @@
+import { NapovedaOtaznik } from "@/components/faktero/NapovedaOtaznik";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -438,40 +439,43 @@ function PravidlaPage() {
             <AutopilotKarta companyId={cid} />
           </div>
         )}
-        <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground sm:p-5">
-          {t(
-            "Pravidlo zaberie pri každom novom doklade — naskenovanom, z e-mailu, z appky aj z importu. Dopĺňa len to, čo je prázdne; čo vyplníte sami, neprepíše. Predkontácia a členenie DPH idú do Pohody namiesto spoločných z",
-          )}{" "}
-          <Link to="/uctovnictvo/pohoda" className="text-primary underline underline-offset-2">
-            {t("nastavení prepojenia")}
-          </Link>
-          {t(
-            ". Keď na doklad sedí viac pravidiel, platí to s menším poradím; pravidlo podľa partnera má prednosť pred pravidlom podľa používateľa. Pravidlá pre banku zaberú pri vývoze výpisu do Pohody — majú prednosť pred predkontáciou podľa označenia pohybu.",
-          )}
-        </div>
-
-        <div role="tablist" aria-label={t("Druh pravidla")} className="mt-4 flex flex-wrap gap-1">
-          {ZALOZKY.map((z) => {
-            const pocet = (pravidla ?? []).filter((r) => vZalozke(r, z.kod)).length;
-            return (
-              <button
-                key={z.kod}
-                role="tab"
-                aria-selected={zalozka === z.kod}
-                onClick={() => setZalozka(z.kod)}
-                className={`whitespace-nowrap rounded-md border px-3 py-1.5 text-sm ${
-                  zalozka === z.kod
-                    ? "border-primary/40 bg-primary/10 font-semibold text-primary-hover"
-                    : "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                {t(z.nazov)}
-                {pravidla && z.kod !== "predlohy" ? (
-                  <span className="ml-1 tabular-nums opacity-80">{pocet}</span>
-                ) : null}
-              </button>
-            );
-          })}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div role="tablist" aria-label={t("Druh pravidla")} className="flex flex-wrap gap-1">
+            {ZALOZKY.map((z) => {
+              const pocet = (pravidla ?? []).filter((r) => vZalozke(r, z.kod)).length;
+              return (
+                <button
+                  key={z.kod}
+                  role="tab"
+                  aria-selected={zalozka === z.kod}
+                  onClick={() => setZalozka(z.kod)}
+                  className={`whitespace-nowrap rounded-md border px-3 py-1.5 text-sm ${
+                    zalozka === z.kod
+                      ? "border-primary/40 bg-primary/10 font-semibold text-primary-hover"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  {t(z.nazov)}
+                  {pravidla && z.kod !== "predlohy" ? (
+                    <span className="ml-1 tabular-nums opacity-80">{pocet}</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          <NapovedaOtaznik popis={t("Ako fungujú pravidlá")}>
+            <span className="block">
+              {t(
+                "Pravidlo zaberie pri každom novom doklade — naskenovanom, z e-mailu, z appky aj z importu. Dopĺňa len to, čo je prázdne; čo vyplníte sami, neprepíše. Predkontácia a členenie DPH idú do Pohody namiesto spoločných z",
+              )}{" "}
+              <Link to="/uctovnictvo/pohoda" className="text-primary underline underline-offset-2">
+                {t("nastavení prepojenia")}
+              </Link>
+              {t(
+                ". Keď na doklad sedí viac pravidiel, platí to s menším poradím; pravidlo podľa partnera má prednosť pred pravidlom podľa používateľa. Pravidlá pre banku zaberú pri vývoze výpisu do Pohody — majú prednosť pred predkontáciou podľa označenia pohybu.",
+              )}
+            </span>
+          </NapovedaOtaznik>
         </div>
 
         {zalozka === "predlohy" ? (

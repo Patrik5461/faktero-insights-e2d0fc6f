@@ -39,16 +39,20 @@ export type PrijataEfaktura = {
   received_at: string | null;
   status: string | null;
   matched_supplier_invoice_id: string | null;
+  /** Odložená do Nespracovaných — tam ju počíta odznak Nespracovaných. */
+  nespracovany_id?: string | null;
   /** `parsed_data->>documentKind` (alias v `STLPCE_UPOZORNENIA`). */
   druh?: string | null;
 };
 
 /** Stĺpce, ktoré si upozornenie pýta (bez XML — to môže mať megabajty). */
 export const STLPCE_UPOZORNENIA =
-  "id, sender_name, document_number, total, currency, received_at, status, matched_supplier_invoice_id, druh:parsed_data->>documentKind";
+  "id, sender_name, document_number, total, currency, received_at, status, matched_supplier_invoice_id, nespracovany_id, druh:parsed_data->>documentKind";
 
 export function cakaNaZaevidovanie(r: PrijataEfaktura): boolean {
   if (r.matched_supplier_invoice_id) return false;
+  // V Nespracovaných už čaká tam — inak by ju Moje úlohy rátali dvakrát.
+  if (r.nespracovany_id) return false;
   if (!(STAVY_NA_ZAEVIDOVANIE as readonly string[]).includes(String(r.status ?? ""))) return false;
   return !(r.druh && SAMOFAKTURY.includes(r.druh));
 }
@@ -71,6 +75,7 @@ export function dotazNezaevidovanych(
     .select(stlpce, pocet ? { count: "exact", head: true } : undefined)
     .eq("company_id", companyId)
     .is("matched_supplier_invoice_id", null)
+    .is("nespracovany_id", null)
     .in("status", [...STAVY_NA_ZAEVIDOVANIE])
     .or(
       `parsed_data->>documentKind.is.null,parsed_data->>documentKind.not.in.(${SAMOFAKTURY.join(",")})`,

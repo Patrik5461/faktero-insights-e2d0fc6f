@@ -1,4 +1,5 @@
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { useT } from "@/lib/i18n/useT";
@@ -91,6 +92,8 @@ import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
 import { suhrnZPoloziek } from "@/lib/faktero/suhrn-dph";
 import { polozkaBlocku } from "@/lib/faktero/suhrn-vyberu";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
+import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
 import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { useCiselnikyDokladov, filtreStavuAStitkov, splnaStavAStitok } from "@/hooks/useCiselnikyDokladov";
@@ -99,6 +102,7 @@ import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
+import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
@@ -347,6 +351,17 @@ function DokladyPage() {
     bocny.vybrany,
     bocny.setVybrany,
   );
+  // Náhľad v okne so šípkami (C1-3) — rovnaký súbor ako náhľad vedľa zoznamu.
+  const okno = useNahladOkna();
+  const nacitajSubor = async (id: string) => {
+    const r: any = vsetkyRiadky.find((x: any) => x.id === id);
+    if (!r?.file_path) return null;
+    // Podpísaný odkaz vydá server zo storage `expense-receipts` — sken bločku býva fotka, niekedy PDF.
+    const { url } = await urlFn({ data: { file_path: r.file_path } });
+    if (!url) return null;
+    const pdf = (r.file_mime ?? "").includes("pdf") || /\.pdf$/i.test(r.file_path);
+    return { url, obrazok: !pdf };
+  };
   /** Zmena mesiaca — `?mesiac=` z odkazu sa pri tom zahodí, nech v adrese nie sú dva. */
   function setMonth(m: string) {
     navigate({
@@ -397,11 +412,19 @@ function DokladyPage() {
       toast.error(e?.message ?? t("Predkontáciu sa nepodarilo uložiť"));
     }
   }
-  /** Hromadné mazanie — každý doklad ide do koša rovnako ako jednotlivo. */
+  /**
+   * Hromadné mazanie — každý doklad ide do koša rovnako ako jednotlivo.
+   * Odovzdané do Pohody a zamknuté sa preskočia a okno povie koľko.
+   */
   async function zmazVybrane() {
-    const ids = Array.from(selected);
-    if (!ids.length) return;
-    if (!(await potvrd(t("Presunúť {n} dokladov do koša? Do 90 dní sa dajú obnoviť.", { n: ids.length })))) return;
+    if (!selected.size) return;
+    const m = rozdelNaMazanie(
+      rows.filter((r: any) => selected.has(r.id)),
+      cis.zamknuteDo,
+    );
+    if (!(await potvrdHromadneMazanie(t, m, t("Presunúť {n} dokladov do koša? Do 90 dní sa dajú obnoviť.", { n: m.ids.length }))))
+      return;
+    const ids = m.ids;
     let ok = 0;
     const chyby: string[] = [];
     for (const id of ids) {
@@ -797,15 +820,6 @@ function DokladyPage() {
     ]);
   }
 
-  async function openFile(path: string) {
-    try {
-      const { url } = await urlFn({ data: { file_path: path } });
-      window.open(url, "_blank");
-    } catch (e: any) {
-      toast.error(e?.message ?? t("Nedá sa otvoriť súbor"));
-    }
-  }
-
   async function del(id: string) {
     if (!(await potvrd(t("Presunúť doklad do koša? Do 90 dní sa dá obnoviť.")))) return;
     try {
@@ -819,6 +833,19 @@ function DokladyPage() {
 
   return (
     <>
+      <NahladDokladuOkno
+        okno={okno}
+        idcka={rad.zoradene.filter((r: any) => r.file_path).map((r: any) => r.id)}
+        nacitaj={nacitajSubor}
+        nazov={(id) => {
+          const r: any = vsetkyRiadky.find((x: any) => x.id === id);
+          return r ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček") : null;
+        }}
+        onOtvorit={(id) => {
+          posledny.zapamataj(id);
+          navigate({ to: "/doklady/novy", search: { id } as any });
+        }}
+      />
       <PageHeader
         title={t("Bločky")}
         description={t("Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch.")}
@@ -1159,15 +1186,7 @@ function DokladyPage() {
             const r: any = rows.find((x: any) => x.id === bocny.vybrany);
             return r ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček") : null;
           })()}
-          nacitaj={async (id) => {
-            const r: any = vsetkyRiadky.find((x: any) => x.id === id);
-            if (!r?.file_path) return null;
-            // Podpísaný odkaz vydá server zo storage `expense-receipts` — sken bločku býva fotka, niekedy PDF.
-            const { url } = await urlFn({ data: { file_path: r.file_path } });
-            if (!url) return null;
-            const pdf = (r.file_mime ?? "").includes("pdf") || /\.pdf$/i.test(r.file_path);
-            return { url, obrazok: !pdf };
-          }}
+          nacitaj={nacitajSubor}
           onOtvorit={(id) => {
             posledny.zapamataj(id);
             navigate({ to: "/doklady/novy", search: { id } as any });
@@ -1295,14 +1314,7 @@ function DokladyPage() {
                         </button>
                       )}
                       {r.file_path && (
-                        <button
-                          onClick={() => void openFile(r.file_path)}
-                          aria-label={t("Náhľad dokladu")}
-                          title={t("Náhľad dokladu")}
-                          className="rounded-md p-1.5 hover:bg-secondary"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </button>
+                        <TlacidloNahladu popis={r.document_number} onClick={() => okno.otvor(r.id)} />
                       )}
                       {daSaPresunutMedziPrijate(r) && (
                         <button
@@ -1432,14 +1444,12 @@ function DokladyPage() {
                     {je("cislo") && (
                       <td className="px-3 py-2">
                         <span className="cislo-dokladu">{r.document_number ?? "—"}</span>
-                        {r.pohoda_predkontacia || r.pohoda_clenenie_dph ? (
+                        {r.pohoda_predkontacia || r.pohoda_clenenie_dph || r.kv_clenenie ? (
                           <div
                             className="text-xs text-muted-foreground"
-                            title={t("Predkontácia / členenie DPH pre Pohodu")}
+                            title={t("Predkontácia · členenie DPH · KV DPH pre Pohodu")}
                           >
-                            {[r.pohoda_predkontacia, r.pohoda_clenenie_dph]
-                              .filter(Boolean)
-                              .join(" · ")}
+                            {textZauctovania(r.pohoda_predkontacia, r.pohoda_clenenie_dph, r.kv_clenenie)}
                           </div>
                         ) : null}
                       </td>
@@ -1458,6 +1468,11 @@ function DokladyPage() {
                             />
                           );
                         })()}
+                        {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie) ? (
+                          <div className="mt-0.5 text-xs text-muted-foreground" title={t("Členenie DPH · KV DPH")}>
+                            {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie)}
+                          </div>
+                        ) : null}
                       </td>
                     )}
                     {stlpecStavDokladu && (
@@ -1650,24 +1665,14 @@ function DokladyPage() {
                     )}
                     <td className="px-3 py-2 text-right">
                       {r.file_path && (
-                        <button
-                          onClick={(e) => {
-                            /*
-                              Sken sa ukáže v náhľade vedľa zoznamu (P-1006), nie na
-                              inej stránke. Na úzkej obrazovke bočný náhľad nie je,
-                              tam sa súbor otvorí ako doteraz.
-                            */
-                            e.stopPropagation();
-                            if (window.matchMedia("(min-width: 1024px)").matches) {
-                              if (!bocny.zapnuty) bocny.prepni(true);
-                              bocny.setVybrany(r.id);
-                            } else void openFile(r.file_path);
-                          }}
-                          title={t("Náhľad dokladu")}
-                          className="rounded-md p-1.5 hover:bg-secondary"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </button>
+                        /*
+                          Pri zapnutom náhľade vedľa zoznamu (P-1006) sa sken ukáže tam,
+                          inak v okne so šípkami na ďalší bloček (C1-3) — aj na telefóne.
+                        */
+                        <TlacidloNahladu
+                          popis={r.document_number}
+                          onClick={() => (bocny.aktivny() ? bocny.setVybrany(r.id) : okno.otvor(r.id))}
+                        />
                       )}
                       {/* Bloček z pokladnice faktúrou nie je — presun sa ponúka len tomu, čo ňou byť môže. */}
                       {daSaPresunutMedziPrijate(r) && (

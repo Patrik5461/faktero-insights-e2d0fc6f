@@ -29,6 +29,8 @@ export type OcrBlocek = {
   vat_breakdown?: Array<{ rate: number; base: number; vat: number }> | null;
   /** Zaokrúhlenie sumy na úhradu (hotovosť), napr. -0.02. */
   rounding?: number | null;
+  /** Spôsob úhrady vytlačený na bločku; `null` = na doklade nie je. */
+  payment_method?: "hotovost" | "karta" | "prevod" | string | null;
 };
 
 /*
@@ -50,9 +52,12 @@ Sadzby DPH ${KDE[krajina]} sú ${zoznam} percent — inú nevracaj.
 Dátum vráť tak, ako je na doklade, vo formáte YYYY-MM-DD.
 Keď údaj na doklade nie je, daj null; nič si nevymýšľaj.
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"net_amount":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"vat_breakdown":[{"rate":${vyber},"base":number,"vat":number}],"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"rounding":number|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}
+{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"net_amount":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"vat_breakdown":[{"rate":${vyber},"base":number,"vat":number}],"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"rounding":number|null,"payment_method":"hotovost"|"karta"|"prevod"|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}
 "total" je suma na úhradu (po zaokrúhlení). Zaokrúhlenie („Zaokrúhlenie", napr. -0.02) daj do "rounding",
 nie medzi položky; keď na doklade nie je, null.
+"payment_method" je spôsob úhrady vytlačený na doklade: "hotovost" (hotovosť, v hotovosti, cash,
+vrátené), "karta" (karta, platobná karta, kartou, Visa, Mastercard, Maestro, bezkontaktne,
+Apple/Google Pay) alebo "prevod" (prevodom, na účet, príkazom); keď na doklade nie je, null.
 Do "document_title" daj nadpis dokladu tak, ako je vytlačený. "document_subtype" je "zalohova"
 pri zálohovej, proforma či preddavkovej faktúre (nie je daňový doklad), inak "ostra"; faktúra,
 ktorá len odpočítava zaplatenú zálohu, je "ostra".

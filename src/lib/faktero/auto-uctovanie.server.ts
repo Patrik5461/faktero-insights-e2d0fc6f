@@ -127,7 +127,9 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     sb
       .from("predkontacie")
       .select("id", { count: "exact", head: true })
-      .eq("company_id", companyId),
+      .eq("company_id", companyId)
+      // Systémový číselník členení (B1-1) má každá SK firma — „používa účtovanie“ len vlastné kódy.
+      .neq("zdroj", "system"),
     sb
       .from("pravidla_uctovania")
       .select("id", { count: "exact", head: true })

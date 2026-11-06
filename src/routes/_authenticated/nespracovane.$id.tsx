@@ -1,13 +1,13 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { DesatinnePole } from "@/components/faktero/DesatinnePole";
 import { useT } from "@/lib/i18n/useT";
-import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
+import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu";
 import { nahranieDokladu } from "@/lib/faktero/kto-kedy";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
-import { UpozornenieRozpisuDph } from "@/components/faktero/UpozornenieRozpisuDph";
+import { UpozornenieRozpisuDph, potvrdNesuladRozpisu } from "@/components/faktero/UpozornenieRozpisuDph";
 import { VolbaSadzbyDph } from "@/components/faktero/VolbaSadzbyDph";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
@@ -21,7 +21,7 @@ import type { ZakladPravidlaZDokladu } from "@/lib/faktero/pravidla-uctovania";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
@@ -51,7 +51,8 @@ import {
   chybajuce,
   rozdielPoloziek,
   kontrolaSumy,
-  kontrolaRozpisuUdajov,
+  kontrolaSadziebUdajov,
+  upravCelkomDokladu,
   sucty,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
@@ -101,7 +102,16 @@ function Detail() {
 
   const [d, setD] = useState<Awaited<ReturnType<typeof nacitaj>> | null>(null);
   const [druh, setDruh] = useState<DruhNespracovaneho | "">("");
-  const [u, setU] = useState<UdajeNespracovaneho | null>(null);
+  const [u, setUPriamo] = useState<UdajeNespracovaneho | null>(null);
+  // Každá zmena údajov si drží sumu z dokladu (`celkomDokladu`) — podľa nej sa hlási nesúlad sadzieb.
+  const setU = useCallback(
+    (x: UdajeNespracovaneho | null | ((p: UdajeNespracovaneho | null) => UdajeNespracovaneho | null)) =>
+      setUPriamo((p) => {
+        const n = typeof x === "function" ? x(p) : x;
+        return n ? upravCelkomDokladu(p, n) : n;
+      }),
+    [],
+  ) as React.Dispatch<React.SetStateAction<UdajeNespracovaneho | null>>;
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [busy, setBusy] = useState(false);
   const [nenajdene, setNenajdene] = useState<string | null>(null);
@@ -214,7 +224,8 @@ function Detail() {
   const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
     set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null, rozpisPotvrdeny: false });
   // Rozpis DPH: daň = základ × sadzba, platná sadzba, súčty voči sumám z dokladu.
-  const kontrolaRozpisu = kontrolaRozpisuUdajov(u, krajinaFirmy);
+  // + súčet podľa sadzieb voči sume dokladu (0,01 € na sadzbu).
+  const kontrolaRozpisu = kontrolaSadziebUdajov(u, krajinaFirmy);
 
   /*
     Smer faktúry podľa IBAN-u — nastavenie „Automaticky určiť typ faktúry
@@ -292,6 +303,7 @@ function Detail() {
   }
 
   async function vytvorDoklad(ajDuplicitu = false, ajCudziu = false) {
+    let udaje = u;
     if (chyby.length) {
       toast.error(
         t("Doplňte: {polia}", { polia: chyby.map((k) => t(NAZVY_POLI[k] ?? k)).join(", ") }),
@@ -310,15 +322,10 @@ function Detail() {
       alebo vedome vytvorí doklad, ktorý pôjde na kontrolu.
     */
     if (druh && druh !== "ostatny" && !kontrolaRozpisu.ok && !ajDuplicitu && !ajCudziu) {
-      const ano = await potvrd(
-        t("Rozpis DPH nesedí — skontrolujte ho podľa dokladu") +
-          "\n" +
-          kontrolaRozpisu.chyby.map((c) => c.sprava).join("\n") +
-          "\n" +
-          t("Vytvoriť doklad aj tak? Pôjde na kontrolu."),
-        { potvrdit: t("Vytvoriť na kontrolu"), zrusit: t("Opraviť rozpis") },
-      );
-      if (!ano) return;
+      // „Pokračovať aj tak“ sa zapíše (rozpisPotvrdeny) — vytvorený doklad nejde na kontrolu a už sa nepýta.
+      if (!(await potvrdNesuladRozpisu(kontrolaRozpisu, t))) return;
+      if (udaje) udaje = { ...udaje, rozpisPotvrdeny: true };
+      setU(udaje);
     }
     // Pri opakovaní kvôli duplicite už človek vlastnú faktúru potvrdil.
     if (vlastnyUcet && !ajDuplicitu) {
@@ -334,7 +341,7 @@ function Detail() {
     setBusy(true);
     try {
       const r = await vytvor({
-        data: { id, druh: druh as DruhNespracovaneho, udaje: u as any, ajDuplicitu, ajCudziu },
+        data: { id, druh: druh as DruhNespracovaneho, udaje: udaje as any, ajDuplicitu, ajCudziu },
       });
       /*
         Poistka: duplicita sa už nevytvorí (vytvorDoklad), ale keby ju server
@@ -821,7 +828,7 @@ function Detail() {
                         </label>
                         {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
                         <label className="block text-sm">
-                          <span className="text-xs text-muted-foreground">{t("Dátum prijatia")}</span>
+                          <span className="text-xs text-muted-foreground">{t("Dátum prijatia")}<DatumPrijatiaOtaznik /></span>
                           <input type="date" aria-label={t("Dátum prijatia")} value={u.datumPrijatia ?? ""} onChange={(e) => set({ datumPrijatia: e.target.value })} className={`${vstup} border-input`} />
                           <DatumPrijatiaInfo
                             vystavenie={u.datumVystavenia}

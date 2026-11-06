@@ -111,6 +111,10 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
         amount_without_vat: zaklad,
         vat_amount: dph,
         amount_total: celkom,
+        // Rozpis DPH po sadzbách z bločku — bez neho by viac sadzieb splynulo do jednej (audit 6. 11.).
+        ...({
+          vat_breakdown: Array.isArray(doklad.vat_breakdown) && doklad.vat_breakdown.length ? doklad.vat_breakdown : null,
+        } as any),
         currency: doklad.currency ?? "EUR",
         payment_method: doklad.payment_method ?? "prevod",
         note: poznamka || null,

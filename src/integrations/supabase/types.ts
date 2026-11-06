@@ -4089,6 +4089,10 @@ export type Database = {
           variable_symbol: string | null
           vat_rate: number
           vehicle_id: string | null
+          kv_clenenie: string | null
+          pohoda_clenenie_dph: string | null
+          pohoda_predkontacia: string | null
+          pohoda_rad: string | null
         }
         Insert: {
           account_iban?: string | null
@@ -4131,6 +4135,10 @@ export type Database = {
           variable_symbol?: string | null
           vat_rate?: number
           vehicle_id?: string | null
+          kv_clenenie?: string | null
+          pohoda_clenenie_dph?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_rad?: string | null
         }
         Update: {
           account_iban?: string | null
@@ -4173,6 +4181,10 @@ export type Database = {
           variable_symbol?: string | null
           vat_rate?: number
           vehicle_id?: string | null
+          kv_clenenie?: string | null
+          pohoda_clenenie_dph?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_rad?: string | null
         }
         Relationships: [
           {
@@ -4344,6 +4356,11 @@ export type Database = {
           remaining_principal: number
           updated_at: string
           vat_amount: number
+          exported_at: string | null
+          insurance_part: number
+          kv_clenenie: string | null
+          pohoda_clenenie_dph: string | null
+          pohoda_predkontacia: string | null
         }
         Insert: {
           amount: number
@@ -4362,6 +4379,11 @@ export type Database = {
           remaining_principal?: number
           updated_at?: string
           vat_amount?: number
+          exported_at?: string | null
+          insurance_part?: number
+          kv_clenenie?: string | null
+          pohoda_clenenie_dph?: string | null
+          pohoda_predkontacia?: string | null
         }
         Update: {
           amount?: number
@@ -4380,6 +4402,11 @@ export type Database = {
           remaining_principal?: number
           updated_at?: string
           vat_amount?: number
+          exported_at?: string | null
+          insurance_part?: number
+          kv_clenenie?: string | null
+          pohoda_clenenie_dph?: string | null
+          pohoda_predkontacia?: string | null
         }
         Relationships: [
           {
@@ -5647,6 +5674,7 @@ export type Database = {
           public_token: string | null
           reminders_enabled: boolean
           reverse_charge: boolean
+          pdp_druh: string | null
           reverse_charge_type: string | null
           rounding_mode: string | null
           sales_order_id: string | null
@@ -5774,6 +5802,7 @@ export type Database = {
           public_token?: string | null
           reminders_enabled?: boolean
           reverse_charge?: boolean
+          pdp_druh?: string | null
           reverse_charge_type?: string | null
           rounding_mode?: string | null
           sales_order_id?: string | null
@@ -5901,6 +5930,7 @@ export type Database = {
           public_token?: string | null
           reminders_enabled?: boolean
           reverse_charge?: boolean
+          pdp_druh?: string | null
           reverse_charge_type?: string | null
           rounding_mode?: string | null
           sales_order_id?: string | null

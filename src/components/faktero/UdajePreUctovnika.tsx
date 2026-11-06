@@ -1,3 +1,4 @@
+import { DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
 import type { ReactNode } from "react";
 import { CheckCircle2, ClipboardList, Lock } from "lucide-react";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
@@ -7,6 +8,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { popiskyIdentifikatorov } from "@/lib/faktero/firma-de";
+import { textClenenia } from "@/lib/faktero/clenenie-text";
 
 export type UdajeUctovnika = {
   cislo: string | null | undefined;
@@ -25,6 +27,11 @@ export type UdajeUctovnika = {
   vystavenie: string | null | undefined;
   /** Dátum dodania (DUZP); prázdny = ako vystavenie. */
   dodanie: string | null | undefined;
+  /**
+   * Dátum prijatia (len prijaté doklady) — rozhoduje o období odpočtu DPH.
+   * `undefined` = riadok sa neukáže (vystavené doklady).
+   */
+  prijatie?: string | null;
   /** Popis splatnosti (popisSplatnosti), aj s predĺžením. */
   splatnost: string | null | undefined;
   vs: string | null | undefined;
@@ -111,6 +118,18 @@ export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
         <Udaj popis={t(popisky.icDph)}>{u.strana.icDph || "—"}</Udaj>
         <Udaj popis={t("Vystavenie")}>{datum(u.vystavenie)}</Udaj>
         <Udaj popis={t("Dodanie (DUZP)")}>{datum(u.dodanie || u.vystavenie)}</Udaj>
+        {u.prijatie !== undefined ? (
+          <Udaj
+            popis={
+              <>
+                {t("Prijatie")}
+                <DatumPrijatiaOtaznik />
+              </>
+            }
+          >
+            {u.prijatie ? datum(u.prijatie) : "—"}
+          </Udaj>
+        ) : null}
         <Udaj popis={t("Splatnosť")}>{u.splatnost || "—"}</Udaj>
         <Udaj popis={t("VS")}>
           <span className="font-mono">{u.vs || "—"}</span>
@@ -183,15 +202,13 @@ export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
             <Udaj popis={t("Predkontácia")}>
               <span className="font-mono">{u.zauctovanie.predkontacia || "—"}</span>
             </Udaj>
-            <Udaj popis={t("Členenie DPH")}>
-              <span className="font-mono">{u.zauctovanie.clenenie || "—"}</span>
+            {/* Členenie DPH a KV DPH spolu („PD · B2“) — účtovníčka ich kontroluje naraz. */}
+            <Udaj popis={t("Členenie DPH · KV DPH")}>
+              <span className="font-mono" data-clenenie-kv="">
+                {textClenenia(u.zauctovanie.clenenie, u.zauctovanie.kv) || "—"}
+              </span>
             </Udaj>
-            {u.zauctovanie.kv ? (
-              <Udaj popis={t("Členenie KV DPH")}>
-                <span className="font-mono">{u.zauctovanie.kv}</span>
-              </Udaj>
-            ) : null}
-            <Udaj popis={t("Zaúčtovanie")} cela={!u.zauctovanie.kv}>
+            <Udaj popis={t("Zaúčtovanie")} cela>
               <span className="inline-flex flex-wrap items-center justify-end gap-x-1.5">
                 {t(u.zauctovanie.text)}
                 {u.zauctovanie.kedy ? ` ${datumNaDoklade(u.zauctovanie.kedy)}` : ""}

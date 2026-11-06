@@ -10,9 +10,33 @@ import {
   type Pokladna,
 } from "./pokladne";
 
-const EUR: Pokladna = { id: "p-eur", nazov: "Pokladňa", mena: "EUR", kod_pohoda: "HP", predvolena: true, aktivna: true, poradie: 0 };
-const CZK: Pokladna = { id: "p-czk", nazov: "Pokladňa CZK", mena: "CZK", kod_pohoda: "HPCZ", predvolena: false, aktivna: true, poradie: 1 };
-const STARA: Pokladna = { id: "p-old", nazov: "Stará", mena: "EUR", kod_pohoda: null, predvolena: false, aktivna: false, poradie: 2 };
+const EUR: Pokladna = {
+  id: "p-eur",
+  nazov: "Pokladňa",
+  mena: "EUR",
+  kod_pohoda: "HP",
+  predvolena: true,
+  aktivna: true,
+  poradie: 0,
+};
+const CZK: Pokladna = {
+  id: "p-czk",
+  nazov: "Pokladňa CZK",
+  mena: "CZK",
+  kod_pohoda: "HPCZ",
+  predvolena: false,
+  aktivna: true,
+  poradie: 1,
+};
+const STARA: Pokladna = {
+  id: "p-old",
+  nazov: "Stará",
+  mena: "EUR",
+  kod_pohoda: null,
+  predvolena: false,
+  aktivna: false,
+  poradie: 2,
+};
 
 describe("výber predvolenej pokladne", () => {
   it("predvolená je tá označená, inak prvá aktívna", () => {
@@ -31,6 +55,22 @@ describe("výber predvolenej pokladne", () => {
     expect(pokladnaDoFormulara([])).toBe("");
   });
 
+  it("bez doterajšej voľby sa vyberie pokladňa v mene dokladu", () => {
+    expect(pokladnaDoFormulara([CZK, EUR], null, "CZK")).toBe("p-czk");
+    expect(pokladnaDoFormulara([CZK, EUR], null, "czk")).toBe("p-czk");
+    expect(pokladnaDoFormulara([CZK, EUR], null, "EUR")).toBe("p-eur");
+    // Mena bez pokladne → predvolená.
+    expect(pokladnaDoFormulara([CZK, EUR], null, "USD")).toBe("p-eur");
+    // Doterajšia voľba vyhrá aj nad menou.
+    expect(pokladnaDoFormulara([CZK, EUR], "p-eur", "CZK")).toBe("p-eur");
+    // Archivovaná pokladňa v mene sa nevyberie sama.
+    const czkStara = { ...CZK, id: "p-czk-old", aktivna: false };
+    expect(pokladnaDoFormulara([EUR, czkStara], null, "CZK")).toBe("p-eur");
+    // Pri dvoch v tej istej mene má prednosť predvolená.
+    const eur2 = { ...EUR, id: "p-eur2", nazov: "Predajňa", predvolena: false, poradie: -1 };
+    expect(pokladnaDoFormulara([eur2, EUR], null, "EUR")).toBe("p-eur");
+  });
+
   it("výber sa ukáže len pri viac ako jednej aktívnej pokladni", () => {
     expect(ukazatVyberPokladne([EUR])).toBe(false);
     expect(ukazatVyberPokladne([EUR, STARA])).toBe(false);
@@ -40,15 +80,60 @@ describe("výber predvolenej pokladne", () => {
 
 describe("zostatky po pokladniach", () => {
   const doklady = [
-    { id: "1", entry_number: "PD1", entry_date: "2026-10-01", type: "prijem", amount: "500", description: "Vklad", pokladna_id: "p-eur" },
-    { id: "2", entry_number: "PD2", entry_date: "2026-10-02", type: "prijem", amount: "4000", description: "Vklad Kč", pokladna_id: "p-czk" },
-    { id: "3", entry_number: "PD3", entry_date: "2026-11-03", type: "vydaj", amount: "250", description: "Poštovné Kč", pokladna_id: "p-czk" },
+    {
+      id: "1",
+      entry_number: "PD1",
+      entry_date: "2026-10-01",
+      type: "prijem",
+      amount: "500",
+      description: "Vklad",
+      pokladna_id: "p-eur",
+    },
+    {
+      id: "2",
+      entry_number: "PD2",
+      entry_date: "2026-10-02",
+      type: "prijem",
+      amount: "4000",
+      description: "Vklad Kč",
+      pokladna_id: "p-czk",
+    },
+    {
+      id: "3",
+      entry_number: "PD3",
+      entry_date: "2026-11-03",
+      type: "vydaj",
+      amount: "250",
+      description: "Poštovné Kč",
+      pokladna_id: "p-czk",
+    },
     // Starý pohyb bez pokladne patrí predvolenej.
-    { id: "4", entry_number: "PD4", entry_date: "2026-11-02", type: "prijem", amount: "20", description: "Tržba" },
+    {
+      id: "4",
+      entry_number: "PD4",
+      entry_date: "2026-11-02",
+      type: "prijem",
+      amount: "20",
+      description: "Tržba",
+    },
   ];
   const vydavky = [
-    { id: "d1", issue_date: "2026-11-01", total_amount: "45.20", payment_method: "hotovost", supplier_name: "Benzínka", pokladna_id: "p-eur" },
-    { id: "d2", issue_date: "2026-11-01", total_amount: "300", payment_method: "karta", supplier_name: "Kartou", pokladna_id: "p-eur" },
+    {
+      id: "d1",
+      issue_date: "2026-11-01",
+      total_amount: "45.20",
+      payment_method: "hotovost",
+      supplier_name: "Benzínka",
+      pokladna_id: "p-eur",
+    },
+    {
+      id: "d2",
+      issue_date: "2026-11-01",
+      total_amount: "300",
+      payment_method: "karta",
+      supplier_name: "Kartou",
+      pokladna_id: "p-eur",
+    },
   ];
 
   it("každá pokladňa má vlastný zostatok v svojej mene", () => {
@@ -67,12 +152,24 @@ describe("zostatky po pokladniach", () => {
       ["CZK", 3750],
     ]);
     // Riadky oboch pokladní, najnovšie navrchu, zostatok v rámci svojej pokladne.
-    expect(k.riadky[0]).toMatchObject({ id: "3", pokladna: "Pokladňa CZK", mena: "CZK", zostatok: 3750 });
+    expect(k.riadky[0]).toMatchObject({
+      id: "3",
+      pokladna: "Pokladňa CZK",
+      mena: "CZK",
+      zostatok: 3750,
+    });
     expect(k.riadky).toHaveLength(5);
   });
 
   it("vybraná pokladňa — len jej riadky a súčet, počiatočný stav mesiaca", () => {
-    const k = knihaPokladni({ pokladne: [EUR, CZK], doklady, vydavky, vybrana: "p-czk", mesiac: "2026-11", domaca: "EUR" });
+    const k = knihaPokladni({
+      pokladne: [EUR, CZK],
+      doklady,
+      vydavky,
+      vybrana: "p-czk",
+      mesiac: "2026-11",
+      domaca: "EUR",
+    });
     expect(k.riadky.map((r) => r.id)).toEqual(["3"]);
     expect(k.sucty).toHaveLength(1);
     expect(k.sucty[0]).toMatchObject({ mena: "CZK", pociatocny: 4000, zostatok: 3750 });
@@ -82,7 +179,17 @@ describe("zostatky po pokladniach", () => {
     const druha: Pokladna = { ...CZK, id: "p-2", nazov: "Predajňa", mena: "EUR" };
     const k = knihaPokladni({
       pokladne: [EUR, druha],
-      doklady: [{ id: "x", entry_number: "PD9", entry_date: "2026-10-01", type: "prijem", amount: 100, description: "x", pokladna_id: "p-2" }],
+      doklady: [
+        {
+          id: "x",
+          entry_number: "PD9",
+          entry_date: "2026-10-01",
+          type: "prijem",
+          amount: 100,
+          description: "x",
+          pokladna_id: "p-2",
+        },
+      ],
       vydavky: [],
       domaca: "EUR",
     });
@@ -93,11 +200,16 @@ describe("zostatky po pokladniach", () => {
     const k = knihaPokladni({ pokladne: [], doklady, vydavky, domaca: "CZK" });
     expect(k.pokladne).toHaveLength(1);
     expect(k.sucty).toHaveLength(1);
-    expect(k.sucty[0]).toMatchObject({ mena: "CZK", zostatok: centy(500 + 4000 - 250 + 20 - 45.2) });
+    expect(k.sucty[0]).toMatchObject({
+      mena: "CZK",
+      zostatok: centy(500 + 4000 - 250 + 20 - 45.2),
+    });
   });
 
   it("neznáma vybraná pokladňa = všetky", () => {
-    expect(knihaPokladni({ pokladne: [EUR, CZK], doklady, vydavky, vybrana: "cudzia" }).vybrana).toBeNull();
+    expect(
+      knihaPokladni({ pokladne: [EUR, CZK], doklady, vydavky, vybrana: "cudzia" }).vybrana,
+    ).toBeNull();
   });
 });
 

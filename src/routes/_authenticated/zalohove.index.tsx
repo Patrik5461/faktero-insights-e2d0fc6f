@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
+import { getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useState } from "react";
@@ -8,7 +10,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { Plus, Trash2, RotateCcw, Hash, Download, Undo2 } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash, Download, Undo2, X } from "lucide-react";
 import { vratVystavenuZPohodyFn } from "@/lib/faktero/zauctovanie.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useServerFn } from "@tanstack/react-start";
@@ -28,6 +30,10 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
 import { useSuhrnVystavenych } from "@/hooks/useSuhrnVystavenych";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
+import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { PasVyberuFiltra, potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
+import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vydané zálohové faktúry — Faktero") }] }),
@@ -79,6 +85,10 @@ function ProformaListPage() {
     Record<string, { id: string; invoice_number: string }>
   >({});
   const [rowDelete, setRowDelete] = useState<any | null>(null);
+  // Náhľad PDF v okne so šípkami (C1-3).
+  const okno = useNahladOkna();
+  const navigate = useNavigate();
+  const pdfUrlFn = useServerFn(getInvoicePdfSignedUrl);
 
   /*
     Ktoré zálohy sú už zúčtované. Väzba je v `invoice_advances` — faktúra si
@@ -153,7 +163,10 @@ function ProformaListPage() {
   const exportovatelne = list.rows.filter(
     (r: any) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled",
   );
-  const vybraneIds = exportovatelne.filter((r: any) => list.selected[r.id]).map((r: any) => r.id);
+  // Označené (aj celý filter naprieč stránkami) — bez konceptov a stornovaných.
+  const vybraneIds = list.selectedRows
+    .filter((r: any) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled")
+    .map((r: any) => r.id);
   const naExport = vybraneIds.length ? vybraneIds : exportovatelne.map((r: any) => r.id);
   async function exportujDoPohody(v: VolbyExportu) {
     const cid = getActiveCompanyId();
@@ -210,7 +223,7 @@ function ProformaListPage() {
     exporte pôjdu znova. V Pohode ich treba zmazať ručne.
   */
   const vratFn = useServerFn(vratVystavenuZPohodyFn);
-  const vybraneOdovzdane = list.rows.filter((r: any) => list.selected[r.id] && r.exported_at);
+  const vybraneOdovzdane = list.selectedRows.filter((r: any) => r.exported_at);
   async function vratitVybrane() {
     const cid = getActiveCompanyId();
     if (!cid || !vybraneOdovzdane.length) return;
@@ -240,6 +253,20 @@ function ProformaListPage() {
     }
   }
 
+  /* Hromadné akcie — tá istá lišta ako pri faktúrach (predkontácia, členenie, KV, stav, štítky, mazanie). */
+  const cis = useCiselnikyDokladov(getActiveCompanyId(), "vystavena", false);
+  async function zmazatOznacene() {
+    const m = rozdelNaMazanie(list.selectedRows, cis.zamknuteDo);
+    if (!(await potvrdHromadneMazanie(t, m, t("Presunúť {n} zálohových faktúr do koša?", { n: m.ids.length })))) return;
+    try {
+      await list.softDelete(m.ids);
+      toast.success(t("Vymazané zálohové faktúry: {n}", { n: m.ids.length }));
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Chyba"));
+    }
+  }
+
   return (
     <>
       {volbyExportu ? (
@@ -250,6 +277,17 @@ function ProformaListPage() {
           onExport={exportujDoPohody}
         />
       ) : null}
+      <NahladDokladuOkno
+        okno={okno}
+        idcka={list.rows.map((r: any) => r.id)}
+        nacitaj={async (id) => {
+          const r = await pdfUrlFn({ data: { invoiceId: id } });
+          return r?.signedUrl ? { url: r.signedUrl } : null;
+        }}
+        nazov={(id) => (list.rows as any[]).find((r) => r.id === id)?.invoice_number}
+        poznamka={(id) => (list.rows as any[]).find((r) => r.id === id)?.customer_name}
+        onOtvorit={(id) => navigate({ to: "/faktury/$id", params: { id } })}
+      />
       <PageHeader
         title={t("Vydané zálohové faktúry")}
         description={t("Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre.")}
@@ -311,6 +349,42 @@ function ProformaListPage() {
             { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
           ]}
         />
+        {list.selectedIds.length > 0 && !list.showDeleted && getActiveCompanyId() ? (
+          <div
+            role="region"
+            aria-label={t("Hromadné akcie")}
+            className="sticky top-16 z-20 mt-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur"
+          >
+            <span className="mr-1 font-semibold">
+              {t("Označené:")} <span className="tabular-nums">{list.selectedIds.length}</span>
+            </span>
+            <HromadnaAkciaDokladov
+              companyId={getActiveCompanyId()!}
+              agenda="vystavena"
+              ids={list.selectedIds}
+              onHotovo={() => list.reload()}
+              zmazat={() => void zmazatOznacene()}
+            />
+            <button
+              type="button"
+              onClick={list.clearSelection}
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" /> {t("Zrušiť výber")}
+            </button>
+          </div>
+        ) : null}
+        {!list.showDeleted ? (
+          <PasVyberuFiltra
+            naStrane={list.rows.length}
+            celkom={list.total}
+            vsetky={list.allMatchingSelected}
+            stranaOznacena={list.allOnPageSelected}
+            nacitava={list.loadingAllMatching}
+            onVsetky={() => void list.selectAllMatching().catch((e: any) => toast.error(e?.message ?? t("Chyba")))}
+            onZrusit={list.clearSelection}
+          />
+        ) : null}
         <ResponsiveTable
           className="mt-3"
           items={list.rows}
@@ -355,12 +429,15 @@ function ProformaListPage() {
                       <RotateCcw className="h-3.5 w-3.5" /> {t("Obnoviť")}
                     </button>
                   ) : (
-                    <button
-                      onClick={() => setRowDelete(i)}
-                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať")}
-                    </button>
+                    <div className="flex gap-1">
+                      <TlacidloNahladu popis={i.invoice_number} onClick={() => okno.otvor(i.id)} />
+                      <button
+                        onClick={() => setRowDelete(i)}
+                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať")}
+                      </button>
+                    </div>
                   )
                 }
               />
@@ -491,13 +568,16 @@ function ProformaListPage() {
                               <RotateCcw className="h-4 w-4" />
                             </button>
                           ) : (
-                            <button
-                              title={t("Vymazať")}
-                              onClick={() => setRowDelete(i)}
-                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="flex justify-end gap-1">
+                              <TlacidloNahladu popis={i.invoice_number} onClick={() => okno.otvor(i.id)} />
+                              <button
+                                title={t("Vymazať")}
+                                onClick={() => setRowDelete(i)}
+                                className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </KlikatelnyRiadok>

@@ -689,10 +689,10 @@ export function textMoznosti(m: Pick<MoznostKodu, "kod" | "popis" | "ucty">): st
 }
 
 /**
- * Základné členenia DPH slovenskej Pohody — ponúkajú sa, kým si firma
- * nenačíta vlastný číselník z Pohody (ten má potom prednosť). Len kódy
- * overené v dokumentácii Stormware SK; ostatné doplní import číselníka
- * alebo voľba „Iný kód…".
+ * Základné členenia DPH slovenskej Pohody — náhradná ponuka, keď firma
+ * v číselníku nemá žiadne aktívne členenie (česká firma, všetko skryté).
+ * Slovenská firma má od B1-1 celý systémový číselník
+ * (`predkontacie-systemove.ts`), ktorý sa ponúka namiesto tohto.
  */
 export const ZAKLADNE_CLENENIA_DPH: { kod: string; popis: string; smer: "vydane" | "prijate" }[] = [
   { kod: "UD", popis: "Tuzemské plnenie", smer: "vydane" },
@@ -710,6 +710,15 @@ export const ZAKLADNE_CLENENIA_DPH: { kod: string; popis: string; smer: "vydane"
 
 /** Druhy dokladov, ktoré sú výstupom (vydané); ostatné sú prijaté. */
 const VYDANE_DRUHY = ["faktura", "pdp", "zaloha", "dobropis"];
+const PRIJATE_DRUHY = ["prijata", "prijata_pdp", "doklady"];
+
+/** Smer dokladu podľa kľúča z PREDVOLENE (pokladňa, banka a neznáme = bez smeru). */
+export function smerDokladu(preDoklad?: string | null): "vydane" | "prijate" | null {
+  if (!preDoklad) return null;
+  if (VYDANE_DRUHY.includes(preDoklad)) return "vydane";
+  if (PRIJATE_DRUHY.includes(preDoklad)) return "prijate";
+  return null;
+}
 
 /**
  * Členenia na výber: z číselníka firmy, a keď ho firma nemá, základné
@@ -750,9 +759,16 @@ export function ponuka(
     return 1;
   };
   const videne = new Set<string>();
+  /*
+    Členenie DPH a KV so smerom (systémový číselník: U… vydané, P…/D…
+    prijaté) sa dokladu opačného smeru neponúkne — UD do prijatej faktúry
+    nepatrí. Kód bez smeru (z Pohody, ručný) sa ponúka všade ako doteraz.
+  */
+  const smer = druh === "clenenie_dph" || druh === "kv_clenenie" ? smerDokladu(preDoklad) : null;
   return zaznamy
     .filter((z) => z.druh === druh && z.aktivne !== false)
     .filter((z) => !preDoklad || !z.druhy_dokladov?.length || z.druhy_dokladov.includes(preDoklad))
+    .filter((z) => !smer || !(z.typ_dokladu === "vydane" || z.typ_dokladu === "prijate") || z.typ_dokladu === smer)
     .sort((a, b) => vhodne(a) - vhodne(b) || a.kod.localeCompare(b.kod, "sk"))
     .filter((z) => (videne.has(z.kod) ? false : (videne.add(z.kod), true)))
     .map((z) => ({

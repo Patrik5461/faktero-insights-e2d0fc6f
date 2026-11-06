@@ -142,6 +142,8 @@ export default {
   "— aj ich načítanie z Pohody — sú na stránke":
     "— auch deren Import aus Pohoda — finden Sie auf der Seite",
   Predkontácie: "Vorkontierungen",
+  "Použije sa, keď predvolená pokladňa nemá vlastnú skratku. Viac pokladní (napr. HP EUR, HP CZK) pridáte nižšie v časti Pokladne.":
+    "Wird verwendet, wenn die Standardkasse kein eigenes Kürzel hat. Weitere Kassen (z. B. HP EUR, HP CZK) fügen Sie unten im Abschnitt Kassen hinzu.",
   "Pokladňa v Pohode": "Kasse in Pohoda",
   "Bankový účet v Pohode": "Bankkonto in Pohoda",
   "Členenie skladu v Pohode": "Lagergliederung in Pohoda",

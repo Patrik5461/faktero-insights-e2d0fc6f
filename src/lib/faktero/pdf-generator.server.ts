@@ -1,6 +1,7 @@
 import { PDFDocument, PDFString, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { riadkySoZlavou } from "./zlavy";
+import { textPreneseniaDokladu } from "./veta-prenesenia";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
 import { paymeOdkaz, textQrPlatby } from "./qr-platba";
@@ -18,10 +19,7 @@ import {
   localeDokladu,
   popisky,
   datumNaDoklade,
-  vetyPreneseniaCz,
-  vetaPreneseniaCz,
   vetyDe,
-  vetaPreneseniaDe,
   predvolenyJazykFirmy,
   jednotkaNaDoklade,
   type JazykDokladu,
@@ -492,44 +490,8 @@ async function vykresliFakturu(
   // Vystavovateľ mimo Slovenska (samofaktúra za dodávateľa z EÚ): odkaz na smernicu.
   const cudziVystavovatel =
     Boolean(invoice.samofakturacia) && String(company.country ?? "SK").toUpperCase() !== "SK";
-  // Česká firma cituje český zákon o DPH (235/2004 Sb.), nie slovenský 222/2004.
-  const vetyCz =
-    !cudziVystavovatel && krajinaDane(company.country) === "CZ" ? vetyPreneseniaCz(jazyk) : null;
-  // Nemecká firma cituje UStG (§ 13b, § 4 Nr. 1a/1b, § 3a Abs. 2).
-  const jeDe = !cudziVystavovatel && krajinaDane(company.country) === "DE";
-  const kuDe = jeDe && kuFirma;
-  // Zmiešaná faktúra: prenesenie len pri niektorých položkách — veta o tuzemskom prenesení.
-  const pdpPolozky = !invoice.reverse_charge && items.some((x: any) => x.prenesenie);
-  const textPrenesenia = !invoice.reverse_charge
-    ? pdpPolozky
-      ? `${t.polozkyPdp} ${vetyCz ? vetyCz.tuzemsko : jeDe ? vetyDe(jazyk).tuzemsko : t.prenosTuzemsko}`
-      : null
-    : kuDe
-      ? /*
-          Kleinunternehmer oslobodené dodanie do EÚ ani prenesenie podľa § 13b
-          neuplatňuje (§ 19 Abs. 1 UStG) — na doklade je len veta § 19 nižšie.
-          Výnimkou je služba podnikateľovi v EÚ: daň tam platí odberateľ.
-        */
-        invoice.reverse_charge_type === "eu_b2b" && invoice.eu_plnenie === "sluzba"
-        ? vetyDe(jazyk).euSluzba
-        : null
-    : jeDe
-      ? (vetaPreneseniaDe(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk) ?? vetyDe(jazyk).tuzemsko)
-    : vetyCz
-      ? vetaPreneseniaCz(invoice.reverse_charge_type, invoice.eu_plnenie, jazyk)
-      : invoice.reverse_charge_type === "eu_b2b"
-      ? cudziVystavovatel
-        ? invoice.eu_plnenie === "sluzba"
-          ? t.prenosEuSluzbaSmernica
-          : t.prenosEuTovarSmernica
-        : invoice.eu_plnenie === "sluzba"
-          ? t.prenosEuSluzba
-          : t.prenosEu
-      : invoice.reverse_charge_type === "export"
-        ? invoice.eu_plnenie === "sluzba"
-          ? t.prenosMimoEuSluzba
-          : t.prenosVyvoz
-        : t.prenosTuzemsko;
+  // Veta o prenesení / oslobodení — spoločná s verejným odkazom (veta-prenesenia.ts).
+  const textPrenesenia = textPreneseniaDokladu({ invoice, company, items, jazyk });
 
   /*
     Veta o prenesení daňovej povinnosti musí byť na prvej strane — pri dlhšej
@@ -786,7 +748,8 @@ async function vykresliFakturu(
   // Každý odpočet zálohy má nad sebou riadok s číslom dokladu k platbe.
   const vyskaSuctov = (riadkovRozpisu: number) =>
     totalsRows * 18 +
-    (riadkovRozpisu ? 11 + riadkovRozpisu * 11.5 + 2 : 0) +
+    // + súčtový riadok „Spolu“ pod sadzbami (16 bodov).
+    (riadkovRozpisu ? 11 + riadkovRozpisu * 11.5 + 16 + 2 : 0) +
     rozpisDph.filter((r) => r.odpocet).length * 11.5 +
     8 +
     60;
@@ -893,6 +856,35 @@ async function vykresliFakturu(
       drawAligned(cur, font, san(fmt(r.zaklad + (r.pdp ? 0 : r.dph), invoice.currency)), pravy, ty, 8.5, farba, "right");
       ty -= 11.5;
     }
+    /*
+      Súčtový riadok rekapitulácie — základy, DPH a spolu v tých istých
+      stĺpcoch ako sadzby (checklist účtovníčky B2-6). Odpočty záloh sú
+      v súčte so svojím znamienkom, takže sedí so sumou dokladu.
+    */
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    const spoluZaklad = r2(rozpisDph.reduce((a, r) => a + r.zaklad, 0));
+    const spoluDph = r2(rozpisDph.reduce((a, r) => a + (r.pdp ? 0 : r.dph), 0));
+    cur.drawLine({
+      start: { x: totalsX, y: ty + 6 },
+      end: { x: pravy, y: ty + 6 },
+      thickness: 0.5,
+      color: sub,
+    });
+    ty -= 4;
+    cur.drawText(san(t.spolu), { x: totalsX, y: ty, size: 9, font: bold, color: ink });
+    drawAligned(cur, bold, san(fmt(spoluZaklad, invoice.currency)), stlpecZaklad, ty, 8.5, ink, "right");
+    drawAligned(
+      cur,
+      bold,
+      san(rcNaDoklade && !oslobodenieDe ? "—" : fmt(spoluDph, invoice.currency)),
+      stlpecDph,
+      ty,
+      8.5,
+      ink,
+      "right",
+    );
+    drawAligned(cur, bold, san(fmt(r2(spoluZaklad + spoluDph), invoice.currency)), pravy, ty, 8.5, ink, "right");
+    ty -= 11.5;
     ty -= 2;
   }
   // Celková suma dane patrí na faktúru vždy (§ 74 ods. 1), aj pod rozpis.

@@ -7,7 +7,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useServerFn } from "@tanstack/react-start";
 import { navrhPredvolenychVystavenychFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { toast } from "sonner";
-import { BookOpen, Download, ImageUp, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { BookOpen, Download, Eye, EyeOff, ImageUp, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { bezZdvojenychSystemovych, jeSystemovy } from "@/lib/faktero/predkontacie-systemove";
 import { ImportZObrazkaOkno } from "@/components/faktero/ImportZObrazkaOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -97,7 +98,13 @@ type Zaznam = {
   typ_platby: TypPlatbyPolozky | null;
 };
 
-const ZDROJ: Record<string, string> = { pohoda: "Pohoda", subor: "súbor", rucne: "ručne", obrazok: "obrázok" };
+const ZDROJ: Record<string, string> = {
+  pohoda: "Pohoda",
+  subor: "súbor",
+  rucne: "ručne",
+  obrazok: "obrázok",
+  system: "systémový",
+};
 /** Smer pri členení DPH a KV (typ_dokladu vydane/prijate). */
 const SMER_DOKLADU: Record<string, string> = { vydane: "vydané doklady", prijate: "prijaté doklady" };
 const vstup = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -1070,7 +1077,7 @@ const PRAZDNY = {
 
 function Ciselnik({
   companyId,
-  zaznamy,
+  zaznamy: zaznamyVsetky,
   onZmena,
   pridat = 0,
 }: {
@@ -1081,6 +1088,8 @@ function Ciselnik({
   pridat?: number;
 }) {
   const { t } = useT();
+  // Systémový kód, ktorý firma má aj z Pohody či ručne, sa ukáže len raz (vlastný riadok).
+  const zaznamy = useMemo(() => bezZdvojenychSystemovych(zaznamyVsetky), [zaznamyVsetky]);
   const uloz = useServerFn(ulozPredkontaciuFn);
   const sekcia = useRef<HTMLElement>(null);
   const zmaz = useServerFn(zmazKodyCiselnikaFn);
@@ -1094,6 +1103,7 @@ function Ciselnik({
   const [zObrazka, setZObrazka] = useState(false);
 
   const formular = useRef<HTMLDivElement>(null);
+  const upravujemSystemovy = Boolean(form?.id && zaznamy.some((z) => z.id === form.id && jeSystemovy(z)));
   const formZRiadku = (z: (typeof zaznamy)[number]): typeof PRAZDNY => ({
     id: z.id,
     kod: z.kod,
@@ -1287,7 +1297,7 @@ function Ciselnik({
       {zObrazka && (
         <ImportZObrazkaOkno
           companyId={companyId}
-          existujuce={zaznamy.map((z) => ({ ...z, agenda: z.agenda ?? "" }))}
+          existujuce={zaznamyVsetky.map((z) => ({ ...z, agenda: z.agenda ?? "" }))}
           // Z predvolenej záložky Predkontácie sa druh rozpozná sám (obrázok býva členenie KV).
           predvolenyDruh={druh === "predkontacia" ? undefined : druh}
           onClose={() => setZObrazka(false)}
@@ -1307,7 +1317,10 @@ function Ciselnik({
             <input
               value={form.kod}
               onChange={(e) => setForm({ ...form, kod: e.target.value })}
-              className={vstup}
+              // Systémový kód je spoločný pre všetky firmy — meniť sa dá popis, nie skratka.
+              readOnly={upravujemSystemovy}
+              title={upravujemSystemovy ? t("Systémový kód sa nedá premenovať — pridajte vlastný.") : undefined}
+              className={`${vstup} ${upravujemSystemovy ? "bg-muted text-muted-foreground" : ""}`}
               placeholder={
                 druh === "predkontacia"
                   ? "1Fp"
@@ -1524,6 +1537,13 @@ function Ciselnik({
           {t("aj vypnuté")}
         </label>
       </div>
+      {(druh === "clenenie_dph" || druh === "kv_clenenie") && zaznamy.some((z) => z.druh === druh && jeSystemovy(z)) && (
+        <p className="mt-2 text-xs text-muted-foreground" data-systemovy-ciselnik="">
+          {t(
+            "Štandardné kódy slovenskej Pohody (zdroj „systémový“) má každá firma automaticky. Nedajú sa zmazať, len skryť; vlastné analytické skratky pridáte tlačidlom „Pridať“.",
+          )}
+        </p>
+      )}
 
       <PouziteNaDeaktivaciu
         polozky={pouzite.map((p) => ({ kod: p.kod, kde: p.kde.map((k) => t(NAZOV_KDE[k])).join(", ") }))}
@@ -1660,13 +1680,25 @@ function Ciselnik({
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button
-                      onClick={() => zmazat([z])}
-                      className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                      aria-label={t("Zmazať {kod}", { kod: z.kod })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {jeSystemovy(z) ? (
+                      // Systémový kód sa nemaže — skryje sa odškrtnutím „Aktívne“.
+                      <button
+                        onClick={() => prepniAktivne(z)}
+                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        aria-label={z.aktivne ? t("Skryť {kod}", { kod: z.kod }) : t("Zobraziť {kod}", { kod: z.kod })}
+                        title={t("Systémový kód sa nedá zmazať, len skryť")}
+                      >
+                        {z.aktivne ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => zmazat([z])}
+                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                        aria-label={t("Zmazať {kod}", { kod: z.kod })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </td>
                 </KlikatelnyRiadok>
               ))}

@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -55,7 +56,6 @@ import {
   uhradyPrijatych,
   zrusParovaniePrijatej,
 } from "@/lib/faktero/prijata-parovanie.functions";
-import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
 import { formatovacMeny, formatujMenu } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
@@ -86,6 +86,8 @@ import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/o
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
+import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
 import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyDokladov";
@@ -97,6 +99,7 @@ import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { stavPlatby, type StavPlatby } from "@/lib/faktero/stav-platby";
 import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
 import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
+import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
   validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
@@ -281,6 +284,15 @@ function PurchaseInvoicesPage() {
     bocny.vybrany,
     bocny.setVybrany,
   );
+  // Náhľad v okne so šípkami (C1-3) — rovnaký súbor ako náhľad vedľa zoznamu.
+  const okno = useNahladOkna();
+  const nacitajSubor = async (id: string) => {
+    const r: any = rows.find((x: any) => x.id === id);
+    if (!r?.file_path) return null;
+    const { data } = await supabase.storage.from("purchase-invoices").createSignedUrl(r.file_path, 600);
+    if (!data?.signedUrl) return null;
+    return { url: data.signedUrl, obrazok: /\.(jpe?g|png|webp|gif|heic)$/i.test(r.file_path) };
+  };
   // Súčty do pätičky zoznamu — vybrané a tie, čo čakajú na odovzdanie.
   const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
   const naExport = rad.zoradene.filter(
@@ -293,7 +305,6 @@ function PurchaseInvoicesPage() {
   const naUhraduPocet = vybraneSuhrn.filter((p) => p.naUhradu).length;
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);
-  const [mazanie, setMazanie] = useState(false);
   const [prikaz, setPrikaz] = useState(false);
   const [navrhyAi, setNavrhyAi] = useState(false);
   /** Meno k `created_by`; profily číta server, RLS pustí každého len k sebe. */
@@ -727,12 +738,20 @@ function PurchaseInvoicesPage() {
     }
   }
 
-  /** Mäkké mazanie — doklad ostáva v databáze kvôli exportom a auditu. */
+  /**
+   * Mäkké mazanie — doklad ostáva v databáze kvôli exportom a auditu.
+   * Odovzdané do Pohody a zamknuté sa preskočia (databáza by zhodila celú dávku).
+   */
   async function hromadneVymazat() {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const ids = rows.filter((r) => selected.has(r.id)).map((r) => r.id);
-    if (!ids.length) return;
+    const m = rozdelNaMazanie(rows.filter((r) => selected.has(r.id)), cis.zamknuteDo);
+    const otazka =
+      m.ids.length === 1
+        ? t("Vymazať faktúru? Doklad sa presunie do koša.")
+        : t("Vymazať {n} faktúr? Doklady sa presunú do koša.", { n: m.ids.length });
+    if (!(await potvrdHromadneMazanie(t, m, otazka))) return;
+    const ids = m.ids;
     setHromadneBusy(true);
     try {
       const { error } = await supabase
@@ -745,7 +764,6 @@ function PurchaseInvoicesPage() {
         ids.length === 1 ? t("Faktúra vymazaná") : t("Vymazané faktúry: {n}", { n: ids.length }),
       );
       setSelected(new Set());
-      setMazanie(false);
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? t("Nepodarilo sa"));
@@ -1000,6 +1018,14 @@ function PurchaseInvoicesPage() {
 
   return (
     <>
+      <NahladDokladuOkno
+        okno={okno}
+        idcka={rad.zoradene.filter((r: any) => r.file_path).map((r: any) => r.id)}
+        nacitaj={nacitajSubor}
+        nazov={(id) => rows.find((r: any) => r.id === id)?.invoice_number}
+        poznamka={(id) => rows.find((r: any) => r.id === id)?.supplier_name}
+        onOtvorit={(id) => navigate({ to: "/prijate-faktury/$id", params: { id } })}
+      />
       {volbyExportu ? (
         <VolbyExportuOkno
           pocet={selected.size}
@@ -1162,7 +1188,7 @@ function PurchaseInvoicesPage() {
                 ids={Array.from(selected)}
                 onHotovo={() => void load()}
                 pdfZip={() => void runBulkZip()}
-                zmazat={() => setMazanie(true)}
+                zmazat={() => void hromadneVymazat()}
               />
             ) : null}
             {getActiveCompanyId() ? (
@@ -1215,7 +1241,7 @@ function PurchaseInvoicesPage() {
                 : t("XML pre Pohodu")}
             </button>
             <button
-              onClick={() => setMazanie(true)}
+              onClick={() => void hromadneVymazat()}
               disabled={hromadneBusy}
               className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
             >
@@ -1302,6 +1328,11 @@ function PurchaseInvoicesPage() {
               }
               meta={`${datumNaDoklade(r.issue_date)} · ${t("splat.")} ${datumNaDoklade(r.due_date)}`}
               amount={fmtMoney(Number(r.amount_total ?? 0), r.currency)}
+              actions={
+                r.file_path ? (
+                  <TlacidloNahladu popis={r.invoice_number} onClick={() => okno.otvor(r.id)} />
+                ) : undefined
+              }
             />
           )}
           desktop={
@@ -1312,13 +1343,7 @@ function PurchaseInvoicesPage() {
             const r: any = rows.find((x: any) => x.id === bocny.vybrany);
             return r ? `${r.invoice_number ?? ""} · ${r.supplier_name ?? ""}` : null;
           })()}
-          nacitaj={async (id) => {
-            const r: any = rows.find((x: any) => x.id === id);
-            if (!r?.file_path) return null;
-            const { data } = await supabase.storage.from("purchase-invoices").createSignedUrl(r.file_path, 600);
-            if (!data?.signedUrl) return null;
-            return { url: data.signedUrl, obrazok: /\.(jpe?g|png|webp|gif|heic)$/i.test(r.file_path) };
-          }}
+          nacitaj={nacitajSubor}
           onOtvorit={(id) => navigate({ to: "/prijate-faktury/$id", params: { id } })}
           onZavriet={() => bocny.setVybrany(null)}
         >
@@ -1415,6 +1440,9 @@ function PurchaseInvoicesPage() {
                     <span className="ml-1.5 inline-flex align-middle">
                       <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                     </span>
+                    {r.file_path && (
+                      <TlacidloNahladu popis={r.invoice_number} onClick={() => okno.otvor(r.id)} className="ml-1 align-middle" />
+                    )}
                     {duplicity.has(r.id) && (
                       <StavOdznak ton="pozor" maly className="ml-2"
                         title={t("Rovnaká faktúra (číslo aj dodávateľ) je v zozname viackrát — skontrolujte, či nejde o duplicitu.")}>
@@ -1518,7 +1546,11 @@ function PurchaseInvoicesPage() {
                           />
                         );
                       })()}
-                      {r.pohoda_clenenie_dph ? <div className="mt-0.5">{r.pohoda_clenenie_dph}</div> : null}
+                      {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie) ? (
+                        <div className="mt-0.5" title={t("Členenie DPH · KV DPH")}>
+                          {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie)}
+                        </div>
+                      ) : null}
                     </td>
                   )}
                   {stlpecStavDokladu && (
@@ -1601,11 +1633,9 @@ function PurchaseInvoicesPage() {
                         </span>
                       ) : null}
                       {/* Účtovnú položku netreba opakovať, keď má vlastný stĺpec. */}
-                      {!je("predkontacia") && (r.pohoda_predkontacia || r.pohoda_clenenie_dph) && (
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                          {[r.pohoda_predkontacia, r.pohoda_clenenie_dph]
-                            .filter(Boolean)
-                            .join(" · ")}
+                      {!je("predkontacia") && (r.pohoda_predkontacia || r.pohoda_clenenie_dph || r.kv_clenenie) && (
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground" title={t("Predkontácia · členenie DPH · KV DPH")}>
+                          {textZauctovania(r.pohoda_predkontacia, r.pohoda_clenenie_dph, r.kv_clenenie)}
                         </span>
                       )}
                       {r.samofakturacia && (
@@ -1659,19 +1689,6 @@ function PurchaseInvoicesPage() {
         />
       </PageBody>
 
-      <ConfirmDialog
-        open={mazanie}
-        title={
-          selected.size === 1
-            ? t("Vymazať faktúru?")
-            : t("Vymazať {n} faktúr?", { n: selected.size })
-        }
-        message={t("Doklady sa presunú do koša — v exportoch ani v prehľadoch sa už neobjavia.")}
-        confirmLabel={t("Vymazať")}
-        onCancel={() => setMazanie(false)}
-        onConfirm={hromadneVymazat}
-        busy={hromadneBusy}
-      />
       {zauctovanie && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dk-prekrytie p-4"

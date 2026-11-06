@@ -19,6 +19,7 @@ import {
   kategoriaRiadku,
   popisChybRozpisu,
   skontrolujRozpisDph,
+  sNesuladomDokladu,
   type KategoriaDph,
   type VysledokKontroly,
 } from "./rozpis-dph-kontrola";
@@ -165,6 +166,12 @@ export type UdajeNespracovaneho = {
   kontrolaDph?: { bezDph: number; dph: number; dovod: string };
   /** Človek potvrdil „Rozpis je správny“ — kontrola rozpisu ho už nezastaví. Zmena rozpisu ho zruší. */
   rozpisPotvrdeny?: boolean;
+  /**
+   * Suma spolu vytlačená na doklade (z vyťaženia alebo ručne zadaná). Na rozdiel
+   * od `celkom` sa zmenou rozpisu nezmaže — formulár podľa nej hlási, keď
+   * základ + DPH podľa sadzieb nesedí s dokladom (`nesuladSDokladom`).
+   */
+  celkomDokladu?: number | null;
   /** Faktúra je už zaplatená — vytvorí sa ako uhradená. */
   uhradene?: boolean;
   /**
@@ -311,6 +318,7 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
     if (nove.kontrolaDph) u.kontrolaDph = nove.kontrolaDph;
   }
   if (u.celkom == null && nove.celkom != null) u.celkom = nove.celkom;
+  if (u.celkomDokladu == null && nove.celkomDokladu != null) u.celkomDokladu = nove.celkomDokladu;
   if (!u.polozky.length && nove.polozky.length) u.polozky = nove.polozky;
   return u;
 }
@@ -378,6 +386,7 @@ export function udajeZAi(
     };
   const spolu = num(ai.amount_total);
   u.celkom = spolu === null ? null : Math.abs(spolu);
+  u.celkomDokladu = u.celkom;
   u.polozky = (Array.isArray(ai.items) ? (ai.items as any[]) : [])
     .filter((p) => t(p?.name))
     .map((p) => ({
@@ -450,6 +459,68 @@ export function kontrolaRozpisuUdajov(
     })),
     u.kontrolaDph ? { bezDph: u.kontrolaDph.bezDph, dph: u.kontrolaDph.dph } : vlastne,
     { krajina: krajina ?? "SK", datumDodania: u.datumDodania || u.datumVystavenia || null },
+  );
+}
+
+/**
+ * Suma dokladu pri zmene údajov vo formulári: zmena rozpisu nastaví `celkom`
+ * na null (prepočíta sa), no suma z dokladu ostáva v `celkomDokladu` — podľa
+ * nej sa hlási nesúlad sadzieb. Ručne prepísaná suma spolu je nová suma
+ * dokladu a ruší potvrdenie rozpisu.
+ */
+export function upravCelkomDokladu(
+  pred: UdajeNespracovaneho | null,
+  po: UdajeNespracovaneho,
+): UdajeNespracovaneho {
+  if (!pred) return po.celkomDokladu == null && po.celkom != null ? { ...po, celkomDokladu: po.celkom } : po;
+  if (po === pred) return po;
+  if (po.celkom != null && po.celkom !== pred.celkom)
+    return {
+      ...po,
+      celkomDokladu: Number(po.celkom),
+      rozpisPotvrdeny: po.rozpisPotvrdeny && pred.rozpisPotvrdeny ? false : po.rozpisPotvrdeny,
+    };
+  const doklad = po.celkomDokladu ?? pred.celkomDokladu ?? pred.celkom ?? null;
+  return doklad === (po.celkomDokladu ?? null) ? po : { ...po, celkomDokladu: doklad };
+}
+
+/**
+ * Kontrola rozpisu (`kontrolaRozpisuUdajov`) doplnená o súčet podľa sadzieb
+ * voči sume dokladu (`nesuladSDokladom`, 0,01 € na sadzbu). Suma dokladu je
+ * `celkomDokladu` (zmenou rozpisu sa nemaže), inak `celkom`; zaokrúhlenie
+ * bločku sa z nej odpočíta. Potvrdený rozpis sa nehlási.
+ */
+export function kontrolaSadziebUdajov(
+  u: Pick<
+    UdajeNespracovaneho,
+    | "rozpis"
+    | "kontrolaDph"
+    | "rozpisPotvrdeny"
+    | "datumDodania"
+    | "datumVystavenia"
+    | "celkom"
+    | "celkomDokladu"
+    | "zaokruhlenie"
+    | "mena"
+    | "platba"
+  >,
+  krajina?: string | null,
+): VysledokKontroly {
+  const k = kontrolaRozpisuUdajov(u, krajina);
+  if (!u.rozpis?.length || u.rozpisPotvrdeny) return k;
+  const doklad = u.celkomDokladu ?? u.celkom;
+  if (doklad == null || (doklad as unknown) === "") return k;
+  return sNesuladomDokladu(
+    k,
+    u.rozpis.map((r) => ({
+      rate: Number(r.sadzba) || 0,
+      base: Number(r.zaklad) || 0,
+      vat: Number(r.dph) || 0,
+      vat_category: r.vat_category ?? null,
+    })),
+    r2(Math.abs(Number(doklad)) - (Number(u.zaokruhlenie) || 0)),
+    u.mena,
+    u.platba === "hotovost",
   );
 }
 

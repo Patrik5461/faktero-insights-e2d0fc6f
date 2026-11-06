@@ -98,6 +98,14 @@ export function usePagedList({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  /*
+    „Označiť všetkých N podľa filtra" — riadky celého filtra naprieč
+    stránkami. Načítajú sa po tisícke (strop PostgREST), každá dávka je nový
+    dotaz so stabilným poradím. Zmena filtra, hľadania či koša výber zruší;
+    prechod na inú stranu nie — výber patrí filtru, nie stránke.
+  */
+  const [vsetkyFiltra, setVsetkyFiltra] = useState<any[] | null>(null);
+  const [nacitavamVsetky, setNacitavamVsetky] = useState(false);
   const [nonce, setNonce] = useState(0);
 
   // Riadené adresou: hodnoty a nastavovače idú z `useListFilters`.
@@ -122,6 +130,30 @@ export function usePagedList({
   useEffect(() => {
     setSelected({});
   }, [pageV, pageSizeV, searchV, showDeleted, nonce, filterKey]);
+  // Výber celého filtra prežije len prechod medzi stranami.
+  useEffect(() => {
+    setVsetkyFiltra(null);
+  }, [searchV, showDeleted, nonce, filterKey, JSON.stringify(equals ?? {})]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Ten istý dotaz ako zoznam (filter, hľadanie, kôš) — bez zoradenia a stránky. */
+  function zostavDotaz(cid: string, select: string, pocitat = false) {
+    let q = supabase
+      .from(resource as any)
+      .select(select, pocitat ? { count: "exact" } : undefined)
+      .eq("company_id", cid);
+    if (equals) {
+      for (const [k, v] of Object.entries(equals)) {
+        q = v === null ? q.is(k, null) : Array.isArray(v) ? q.in(k, v) : q.eq(k, v);
+      }
+    }
+    q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+    if (upravDotaz) q = upravDotaz(q);
+    if (searchV.trim() && searchColumns.length) {
+      const term = searchV.trim().replace(/[%_,]/g, "");
+      q = q.or(searchColumns.map((c) => `${c}.ilike.%${term}%`).join(","));
+    }
+    return q;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -136,21 +168,7 @@ export function usePagedList({
       setLoading(true);
       const from = (pageV - 1) * pageSizeV;
       const to = from + pageSizeV - 1;
-      let q = supabase
-        .from(resource as any)
-        .select(stlpce, { count: "exact" })
-        .eq("company_id", cid);
-      if (equals) {
-        for (const [k, v] of Object.entries(equals)) {
-          q = v === null ? q.is(k, null) : Array.isArray(v) ? q.in(k, v) : q.eq(k, v);
-        }
-      }
-      q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
-      if (upravDotaz) q = upravDotaz(q);
-      if (searchV.trim() && searchColumns.length) {
-        const term = searchV.trim().replace(/[%_,]/g, "");
-        q = q.or(searchColumns.map((c) => `${c}.ilike.%${term}%`).join(","));
-      }
+      let q = zostavDotaz(cid, stlpce, true);
       // Prázdne hodnoty (napr. faktúra bez dátumu dodania) vždy na koniec.
       q = q.order(sortV.column, { ascending: !!sortV.ascending, nullsFirst: false });
       // Druhé kritérium drží poradie stabilné, keď má viac dokladov rovnaký
@@ -194,21 +212,60 @@ export function usePagedList({
     zasiahnuť doklad, ktorý človek nevidí — po prenačítaní so zmeneným
     filtrom by inak v `selected` ostali skryté ID.
   */
-  const selectedIds = useMemo(() => vybraneZRiadkov(rows, selected), [rows, selected]);
-  const allOnPageSelected = rows.length > 0 && rows.every((r) => selected[r.id]);
+  const naStrane = useMemo(() => rows.filter((r) => selected[r.id]), [rows, selected]);
+  const selectedRows: any[] = vsetkyFiltra ?? naStrane;
+  const selectedIds = useMemo(
+    () => (vsetkyFiltra ? vsetkyFiltra.map((r) => r.id as string) : vybraneZRiadkov(rows, selected)),
+    [vsetkyFiltra, rows, selected],
+  );
+  // Pri výbere celého filtra je označený každý riadok, aj na stranách, kam sa človek ešte len preklikne.
+  const selectedOut = useMemo(
+    () => (vsetkyFiltra ? Object.fromEntries(vsetkyFiltra.map((r) => [r.id as string, true])) : selected),
+    [vsetkyFiltra, selected],
+  );
+  const allOnPageSelected = !!vsetkyFiltra || (rows.length > 0 && rows.every((r) => selected[r.id]));
 
   function toggleSelect(id: string, on?: boolean) {
+    // Klik na riadok vo výbere celého filtra ho zúži na označené riadky tejto strany.
+    if (vsetkyFiltra) {
+      setVsetkyFiltra(null);
+      setSelected({ ...Object.fromEntries(rows.map((r) => [r.id, true])), [id]: on ?? false });
+      return;
+    }
     setSelected((prev) => ({ ...prev, [id]: on ?? !prev[id] }));
   }
   /** „Vybrať všetko“ — zobrazené riadky stránky; `ids` obmedzí výber na tie, ktoré zoznam naozaj kreslí. */
   function toggleAllOnPage(on: boolean, ids?: string[]) {
+    setVsetkyFiltra(null);
     if (on) {
       const viditelne = ids ?? rows.map((r) => r.id as string);
       setSelected(Object.fromEntries(viditelne.map((id) => [id, true])));
     } else setSelected({});
   }
   function clearSelection() {
+    setVsetkyFiltra(null);
     setSelected({});
+  }
+  /** Označí všetky riadky aktuálneho filtra (aj na ďalších stranách) — po tisícke, stabilne podľa id. */
+  async function selectAllMatching() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setNacitavamVsetky(true);
+    try {
+      const vsetky: any[] = [];
+      for (let strana = 0; strana < 100; strana++) {
+        const zac = strana * 1000;
+        const { data, error } = await zostavDotaz(cid, stlpce)
+          .order("id", { ascending: true })
+          .range(zac, zac + 999);
+        if (error) throw error;
+        vsetky.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      setVsetkyFiltra(vsetky);
+    } finally {
+      setNacitavamVsetky(false);
+    }
   }
 
   async function softDelete(ids: string[]) {
@@ -265,9 +322,14 @@ export function usePagedList({
     setSort: setSortV,
     showDeleted,
     setShowDeleted,
-    selected,
+    selected: selectedOut as Record<string, boolean>,
     selectedIds,
+    selectedRows,
     allOnPageSelected,
+    /** Označené sú všetky riadky filtra naprieč stránkami. */
+    allMatchingSelected: !!vsetkyFiltra,
+    selectAllMatching,
+    loadingAllMatching: nacitavamVsetky,
     toggleSelect,
     toggleAllOnPage,
     clearSelection,

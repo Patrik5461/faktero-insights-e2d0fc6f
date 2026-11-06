@@ -59,7 +59,11 @@ const nacitajFakturu = createServerFn({ method: "POST" })
       hotový text, nie celý riadok firmy.
     */
     const [{ data: firmaVsetko }, { menoAutora }] = await Promise.all([
-      supabaseAdmin.from("companies").select("*").eq("id", (f as any).company_id).maybeSingle(),
+      supabaseAdmin
+        .from("companies")
+        .select("*")
+        .eq("id", (f as any).company_id)
+        .maybeSingle(),
       import("@/lib/faktero/invoice-pdf.server"),
     ]);
     const { textZapisuVRegistri } = await import("@/lib/faktero/zapis-v-registri");
@@ -92,8 +96,54 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     // Dobropis je v databáze záporný — odberateľ ho vidí bez mínusu ako v PDF.
     const { dokladNaZobrazenie, polozkaNaZobrazenie } =
       await import("@/lib/faktero/dobropis-zobrazenie");
+    /*
+      Rekapitulácia DPH so súčtovým riadkom a veta o prenesení — ako v PDF.
+      Celé riadky (`*`) sa čítajú len tu na serveri; von ide hotový rozpis
+      a text, nie stĺpce faktúry ani položiek.
+    */
+    const [{ data: fakturaVsetko }, { data: polozkyVsetko }] = await Promise.all([
+      supabaseAdmin
+        .from("invoices")
+        .select("*")
+        .eq("id", (f as any).id)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("invoice_items")
+        .select("*")
+        .eq("invoice_id", (f as any).id)
+        .order("position", { ascending: true }),
+    ]);
+    const { rozpisPodlaSadzieb } = await import("@/lib/faktero/rozpis-dph");
+    const { riadkySoZlavou } = await import("@/lib/faktero/zlavy");
+    const { textPreneseniaDokladu } = await import("@/lib/faktero/veta-prenesenia");
+    const { sumaNaZobrazenie } = await import("@/lib/faktero/dobropis-zobrazenie");
+    const fv: any = fakturaVsetko ?? f;
+    const jazyk = jazykFaktury(f as any, firma);
+    // Zálohová faktúra nie je daňový doklad — rozpis len pri viacerých sadzbách (ako PDF).
+    const skupiny = rozpisPodlaSadzieb(
+      riadkySoZlavou((polozkyVsetko ?? []) as any[], fv.discount_total).map((it: any) => ({
+        vat_rate: it.vat_rate,
+        subtotal: it.subtotal,
+        vat_amount: it.vat_amount,
+        prenesenie: Boolean(fv.reverse_charge || it.prenesenie),
+      })),
+      { subtotal: fv.subtotal, vat_total: fv.vat_total },
+    ).map((g) => ({
+      ...g,
+      zaklad: sumaNaZobrazenie(fv, g.zaklad),
+      dan: sumaNaZobrazenie(fv, g.dan),
+    }));
+    const rozpis = fv.type === "proforma" && skupiny.length < 2 ? [] : skupiny;
+    const textPrenesenia = textPreneseniaDokladu({
+      invoice: fv,
+      company: firmaVsetko ?? firma ?? {},
+      items: (polozkyVsetko ?? []) as any[],
+      jazyk,
+    });
     return {
-      jazyk: jazykFaktury(f as any, firma),
+      jazyk,
+      rozpis,
+      textPrenesenia,
       doklad: dokladNaZobrazenie(doklad),
       vetyUprav: vetyNaDoklad({
         danZPrijatejPlatby: (firma as any)?.dan_z_prijatej_platby,
@@ -179,7 +229,8 @@ function velkymPrve(s: string): string {
 
 function VerejnaFaktura() {
   const { t: tWebu } = useT();
-  const { doklad, polozky, firma, pata, textDph, vetyUprav, jazyk } = Route.useLoaderData();
+  const { doklad, polozky, firma, pata, textDph, vetyUprav, jazyk, rozpis, textPrenesenia } =
+    Route.useLoaderData();
   /*
     Slovenský doklad ostáva v jazyku webu (návštevník si ho môže prepnúť);
     doklad v inom jazyku sa ukáže v jazyku dokladu, s popiskami z PDF.
@@ -192,6 +243,9 @@ function VerejnaFaktura() {
     Dobropis: velkymPrve(P.dobropis),
     Ťarchopis: velkymPrve(P.tarchopis),
     "Zálohová faktúra": velkymPrve(P.zalohovaFaktura),
+    "Daňový doklad k prijatej platbe": velkymPrve(P.dokladKPlatbe),
+    Sadzba: P.sadzba,
+    "Základ dane": P.zakladDane,
     Faktúra: velkymPrve(P.faktura),
     "Na úhradu": velkymPrve(P.spoluKUhrade),
     Uhradené: velkymPrve(P.uhradene),
@@ -230,7 +284,9 @@ function VerejnaFaktura() {
         ? "Ťarchopis"
         : doklad.type === "proforma"
           ? "Zálohová faktúra"
-          : "Faktúra";
+          : doklad.type === "advance_payment"
+            ? "Daňový doklad k prijatej platbe"
+            : "Faktúra";
 
   return (
     <Obal>
@@ -337,6 +393,70 @@ function VerejnaFaktura() {
           <span className="tabular-nums">{suma(doklad.total)}</span>
         </div>
       </div>
+
+      {/* Rekapitulácia DPH podľa sadzieb so súčtovým riadkom „Spolu“ — ako v PDF. */}
+      {rozpis.length > 0 && (
+        <div className="mt-4 overflow-x-auto sm:ml-auto sm:w-96">
+          <table className="w-full text-xs tabular-nums">
+            <thead>
+              <tr className="text-muted-foreground">
+                <th className="py-1 text-left font-normal">{t("Sadzba")}</th>
+                <th className="py-1 text-right font-normal">{t("Základ dane")}</th>
+                <th className="py-1 text-right font-normal">{t("DPH")}</th>
+                <th className="py-1 text-right font-normal">{t("Spolu")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rozpis.map((g: any) => (
+                <tr
+                  key={`${g.prenesenie ? "p" : "s"}${g.sadzba}`}
+                  className="border-t border-border/60"
+                >
+                  <td className="py-1">
+                    {g.prenesenie ? P.pdp : `${String(g.sadzba).replace(".", ",")} %`}
+                  </td>
+                  <td className="py-1 text-right">{suma(g.zaklad)}</td>
+                  <td className="py-1 text-right">{g.prenesenie ? "—" : suma(g.dan)}</td>
+                  <td className="py-1 text-right">
+                    {suma(Math.round((g.zaklad + g.dan) * 100) / 100)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-border font-semibold">
+                <td className="py-1">{t("Spolu")}</td>
+                <td className="py-1 text-right">
+                  {suma(
+                    Math.round(rozpis.reduce((a: number, g: any) => a + g.zaklad, 0) * 100) / 100,
+                  )}
+                </td>
+                <td className="py-1 text-right">
+                  {doklad.reverse_charge
+                    ? "—"
+                    : suma(
+                        Math.round(rozpis.reduce((a: number, g: any) => a + g.dan, 0) * 100) / 100,
+                      )}
+                </td>
+                <td className="py-1 text-right">
+                  {suma(
+                    Math.round(
+                      rozpis.reduce((a: number, g: any) => a + g.zaklad + g.dan, 0) * 100,
+                    ) / 100,
+                  )}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {/* Prenesenie daňovej povinnosti s celým ustanovením — rovnaká veta ako v PDF. */}
+      {textPrenesenia && (
+        <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+          {textPrenesenia}
+        </p>
+      )}
 
       <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
         <Riadok k={t("Dátum vystavenia")} v={datumNaDoklade(doklad.issue_date, jazyk)} />

@@ -38,8 +38,20 @@ import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import type { CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { odkazNaZaradenie } from "@/lib/faktero/efaktura/zaevidovanie-efaktury";
+import { cakaNaZaevidovanie } from "@/lib/faktero/efaktura/upozornenie-prijatej";
+
+/** Zaevidovaná = má prijatú faktúru alebo čaká v Nespracovaných. */
+function jeZaevidovana(r: { matched_supplier_invoice_id?: string | null; nespracovany_id?: string | null }) {
+  return Boolean(r.matched_supplier_invoice_id || r.nespracovany_id);
+}
 import { StavOdznak, TON_EFAKTURY, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { useHromadnyVyber } from "@/hooks/useHromadnyVyber";
+import {
+  ListaHromadnychAkcii,
+  ZaskrtavadloRiadku,
+  ZaskrtavadloVsetkych,
+} from "@/components/faktero/HromadnyVyber";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté eFaktúry — Faktero") }] }),
@@ -296,6 +308,10 @@ function ReceivedPage() {
   const lf = useListFilters();
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const podla = lf.filter("podla") || "vystavenie";
+  /* Zaevidované / Nezaevidované a dodávateľ — účtovníčka si vyberá, čo ešte
+     treba zaevidovať. „Nezaevidované“ = to isté, čo ráta odznak v menu. */
+  const filterZaevidovania = lf.filter("zaevidovanie");
+  const filterDodavatela = lf.filter("dodavatel");
 
   async function otvorNahlad(receivedId: string) {
     if (!companyId) return;
@@ -450,11 +466,74 @@ function ReceivedPage() {
       : "";
     if (obdobieOd && (!den || den < obdobieOd)) return false;
     if (obdobieDo && (!den || den > obdobieDo)) return false;
+    if (filterZaevidovania === "nie" && !cakaNaZaevidovanie(r)) return false;
+    if (filterZaevidovania === "ano" && !jeZaevidovana(r)) return false;
+    if (filterDodavatela && String(r.sender_name ?? "").trim() !== filterDodavatela) return false;
     if (!hladane) return true;
     return [r.document_number, r.sender_name, r.sender_participant_id]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(hladane));
   });
+
+  /*
+    Hromadný výber — len zobrazené podľa filtra (zoznam je načítaný celý).
+    eFaktúry sa nemažú (auditná stopa), hromadne sa dajú zaevidovať a
+    stiahnuť v pôvodnom XML pre Pohodu.
+  */
+  const vyber = useHromadnyVyber(zobrazene.map((r) => r.id as string));
+  const oznacene = zobrazene.filter((r) => vyber.jeOznaceny(r.id));
+  const naZaevidovanie = oznacene.filter((r) => !r.matched_supplier_invoice_id && !r.nespracovany_id);
+  const [hromadneBusy, setHromadneBusy] = useState<null | "zaevidovat" | "bis">(null);
+  async function zaevidujOznacene() {
+    if (!companyId || !naZaevidovanie.length) return;
+    const sChybami = naZaevidovanie.filter((r) => Number(kontroly.get(r.id)?.kontrola_chyby ?? 0) > 0);
+    let ciele = naZaevidovanie;
+    if (sChybami.length) {
+      const aj = await potvrd(
+        t("Zaevidovať aj eFaktúry s chybami kontroly ({n})?\nAutomatická kontrola v nich našla chyby — sumy, DPH alebo povinné údaje nemusia byť správne. Bez nich sa zaeviduje {m}.", {
+          n: sChybami.length,
+          m: naZaevidovanie.length - sChybami.length,
+        }),
+        { potvrdit: t("Zaevidovať aj tie"), zrusit: t("Len bez chýb") },
+      );
+      if (!aj) ciele = naZaevidovanie.filter((r) => !sChybami.includes(r));
+    }
+    if (!ciele.length) return;
+    setHromadneBusy("zaevidovat");
+    let ok = 0;
+    const chyby: string[] = [];
+    for (const r of ciele) {
+      try {
+        await zaeviduj({ data: { company_id: companyId, received_id: r.id } });
+        ok++;
+      } catch (e) {
+        chyby.push(`${r.document_number ?? r.id}: ${(e as Error).message}`);
+      }
+    }
+    setHromadneBusy(null);
+    if (ok) toast.success(t("Zaevidované eFaktúry: {n}", { n: ok }));
+    const preskocene = oznacene.length - naZaevidovanie.length;
+    if (preskocene) toast(t("Už zaevidované sa preskočili: {n}", { n: preskocene }));
+    if (chyby.length)
+      toast.warning(t("Nezaevidované: {n}", { n: chyby.length }), { description: chyby.slice(0, 5).join("\n") });
+    vyber.zrus();
+    q.refetch();
+    void kontrolyQ.refetch();
+    obnovPoctyMenu();
+  }
+  async function stiahniBisOznacene() {
+    if (!companyId || !oznacene.length) return;
+    setHromadneBusy("bis");
+    try {
+      const r = await bisFn({ data: { company_id: companyId, ids: oznacene.map((x: any) => x.id) } });
+      downloadFile(r.fileName, r.content, "application/zip", "base64");
+      toast.success(t("Stiahnuté eFaktúry: {n}. V Pohode: Súbor → Dátová komunikácia → Import z BIS.", { n: r.pocet }));
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Stiahnutie zlyhalo"));
+    } finally {
+      setHromadneBusy(null);
+    }
+  }
 
   /* Firma „len odosielanie“ prijíma u iného poskytovateľa — tu nič nepribudne. */
   const profilQ = useQuery({
@@ -462,7 +541,7 @@ function ReceivedPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("efaktura_profiles")
-        .select("rezim, prijem_poskytovatel")
+        .select("rezim, prijem_poskytovatel, prijem_ciel")
         .eq("company_id", companyId!)
         .maybeSingle();
       return data ?? null;
@@ -471,6 +550,15 @@ function ReceivedPage() {
   });
   const lenOdosielanie = profilQ.data?.rezim === "len_odosielanie";
   const poskytovatel = profilQ.data?.prijem_poskytovatel ?? null;
+  const doNespracovanych = (profilQ.data as any)?.prijem_ciel === "nespracovane";
+  /** Čo spraví „Zaevidovať do účtovníctva“ — podľa nastavenia príjmu firmy. */
+  const popisZaevidovania = doNespracovanych
+    ? t("Zaevidovať do účtovníctva: eFaktúra sa odloží do Nespracovaných dokladov (s PDF a údajmi z XML). Po kontrole z nej vznikne prijatá faktúra s predkontáciou a členením DPH a KV DPH, pripravená na export do Pohody.")
+    : t("Zaevidovať do účtovníctva: z eFaktúry sa vytvorí prijatá faktúra (aj s PDF). Predkontáciu a členenie DPH a KV DPH doplní pravidlo, zvyk dodávateľa alebo AI a doklad bude pripravený na export do Pohody.");
+  const dodavatelia = [...new Set(riadky.map((r) => String(r.sender_name ?? "").trim()).filter(Boolean))].sort(
+    (a, b) => a.localeCompare(b, "sk"),
+  );
+  const pocetNezaevidovanych = riadky.filter(cakaNaZaevidovanie).length;
 
   /** Kam vedie klik na riadok: zaevidovaný doklad, inak Nespracované. */
   function cielRiadku(r: any): CielDetailu | null {
@@ -524,10 +612,11 @@ function ReceivedPage() {
           <button
             onClick={() => zaevidujDoklad(r.id)}
             disabled={evidujem === r.id}
+            title={popisZaevidovania}
             className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
           >
             <FileInput className="h-3.5 w-3.5" />{" "}
-            {evidujem === r.id ? t("Evidujem…") : t("Zaevidovať")}
+            {evidujem === r.id ? t("Evidujem…") : t("Zaevidovať do účtovníctva")}
           </button>
         )}
       </>
@@ -594,6 +683,23 @@ function ReceivedPage() {
             searchPlaceholder="Hľadať dodávateľa alebo číslo"
             filters={[
               {
+                key: "zaevidovanie",
+                label: "Zaevidovanie",
+                type: "select",
+                allLabel: "Všetky",
+                options: [
+                  { value: "nie", label: "Nezaevidované" },
+                  { value: "ano", label: "Zaevidované" },
+                ],
+              },
+              {
+                key: "dodavatel",
+                label: "Dodávateľ",
+                type: "select",
+                allLabel: "Všetci dodávatelia",
+                options: dodavatelia.map((d) => ({ value: d, label: d })),
+              },
+              {
                 key: "obdobie",
                 label: "Obdobie",
                 type: "dateRange",
@@ -606,6 +712,17 @@ function ReceivedPage() {
             ]}
           />
         )}
+        {pocetNezaevidovanych > 0 && (
+          <div data-popis-zaevidovania="" className="fk-oznam fk-oznam-info mb-4 flex items-start gap-2 rounded-xl p-3 text-sm">
+            <FileInput className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="min-w-0">
+              <span className="font-semibold">
+                {t("Na zaevidovanie čaká: {n}.", { n: pocetNezaevidovanych })}
+              </span>{" "}
+              {popisZaevidovania}
+            </p>
+          </div>
+        )}
         {!q.isLoading && riadky.length === 0 ? (
           lenOdosielanie ? null : (
           <div className="rounded-xl border border-border bg-card">
@@ -617,7 +734,31 @@ function ReceivedPage() {
           </div>
           )
         ) : (
+          <>
+          <ListaHromadnychAkcii pocet={vyber.pocet} onZrusit={vyber.zrus} busy={hromadneBusy ? "zmazat" : null}>
+            <button
+              type="button"
+              onClick={() => void zaevidujOznacene()}
+              disabled={!!hromadneBusy || !naZaevidovanie.length}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
+            >
+              <FileInput className="h-3.5 w-3.5" />{" "}
+              {hromadneBusy === "zaevidovat"
+                ? t("Evidujem…")
+                : t("Zaevidovať do účtovníctva ({n})", { n: naZaevidovanie.length })}
+            </button>
+            <button
+              type="button"
+              onClick={() => void stiahniBisOznacene()}
+              disabled={!!hromadneBusy}
+              title={t("Pôvodné XML označených eFaktúr pre Pohodu: Súbor → Dátová komunikácia → Import z BIS")}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2.5 py-1 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" /> {t("XML pre Pohodu (BIS)")}
+            </button>
+          </ListaHromadnychAkcii>
           <ResponsiveTable
+            className="mt-3"
             items={zobrazene}
             loading={q.isLoading}
             emptyText="Nič nevyhovuje filtru."
@@ -626,6 +767,9 @@ function ReceivedPage() {
                 <MobileListCard
                   ciel={cielRiadku(r)}
                   onClick={nahladRiadku(r)}
+                  vybrane={vyber.jeOznaceny(r.id)}
+                  onVyber={() => vyber.prepni(r.id)}
+                  vyberPopis={t("Označiť {kod}", { kod: r.document_number ?? "" })}
                   title={r.document_number ?? "—"}
                   subtitle={r.sender_name ?? "—"}
                   status={<StavDokladu stav={r.status} />}
@@ -655,6 +799,9 @@ function ReceivedPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs font-semibold text-muted-foreground [&_th]:whitespace-nowrap">
                 <tr>
+                  <th className="w-8 px-2 py-3">
+                    <ZaskrtavadloVsetkych vyber={vyber} />
+                  </th>
                   <th className="px-2 py-3">{t("Doručené")}</th>
                   <th className="px-2 py-3">{t("Dodávateľ")}</th>
                   <th className="px-2 py-3">{t("Doklad")}</th>
@@ -669,14 +816,14 @@ function ReceivedPage() {
               <tbody className="divide-y divide-border">
                 {q.isLoading && (
                   <tr>
-                    <td colSpan={9} className="p-6 text-center text-muted-foreground">
+                    <td colSpan={10} className="p-6 text-center text-muted-foreground">
                       {t("Načítavam…")}
                     </td>
                   </tr>
                 )}
                 {riadky.length > 0 && zobrazene.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="p-6 text-center text-muted-foreground">
+                    <td colSpan={10} className="p-6 text-center text-muted-foreground">
                       {t("Nič nevyhovuje filtru.")}
                     </td>
                   </tr>
@@ -684,6 +831,9 @@ function ReceivedPage() {
                 {zobrazene.map((r) => (
                   <Fragment key={r.id}>
                   <KlikatelnyRiadok ciel={cielRiadku(r)} naKlik={nahladRiadku(r)}>
+                    <td className="w-8 px-2 py-3">
+                      <ZaskrtavadloRiadku vyber={vyber} id={r.id} popis={r.document_number ?? r.id} />
+                    </td>
                     <td className="px-2 py-3 text-xs text-muted-foreground tabular-nums">
                       {r.received_at ? new Date(r.received_at).toLocaleString("sk-SK") : "—"}
                     </td>
@@ -724,7 +874,7 @@ function ReceivedPage() {
                   </KlikatelnyRiadok>
                   {rozbalene === r.id && (
                     <tr className="bg-muted/20">
-                      <td colSpan={9} className="px-2 py-3">
+                      <td colSpan={10} className="px-2 py-3">
                         <NalezyPrijatej receivedId={r.id} />
                       </td>
                     </tr>
@@ -736,6 +886,7 @@ function ReceivedPage() {
           </TabulkaZoznamu>
             }
           />
+          </>
         )}
       </PageBody>
       {prilohyOkno && companyId && (

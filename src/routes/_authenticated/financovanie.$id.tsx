@@ -17,11 +17,12 @@ import {
   zrusSparovanieSplatkyFn,
 } from "@/lib/faktero/financovanie.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
-import { Check, FileText, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { Car, Check, FileText, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
 import { DetailKontokorentu } from "@/components/faktero/DetailKontokorentu";
 import { SadzbaZmluvy } from "@/components/faktero/SadzbaZmluvy";
+import { SplatkyDoPohody } from "@/components/faktero/SplatkyDoPohody";
 import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 import { Button } from "@/components/ui/button";
@@ -44,8 +45,14 @@ type Splatka = {
   principal_part: number;
   interest_part: number;
   vat_amount: number;
+  insurance_part?: number;
   remaining_principal: number;
   paid_at: string | null;
+  /* Zaúčtovanie do Pohody (migrácia 20261106210300) — prázdne = ako kalendár. */
+  pohoda_predkontacia?: string | null;
+  pohoda_clenenie_dph?: string | null;
+  kv_clenenie?: string | null;
+  exported_at?: string | null;
   paid_amount: number | null;
   bank_transaction_id: string | null;
 };
@@ -83,6 +90,8 @@ function Stranka() {
   const [pohyby, setPohyby] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [upravujem, setUpravujem] = useState(false);
+  // Vybrané splátky na hromadný export do Pohody a vlastné kódy.
+  const [vybrane, setVybrane] = useState<string[]>([]);
   // Keď zmluva neexistuje, servírka vyhodí chybu — bez tohto by na stránke
   // ostal navždy nápis „Načítavam…" a toast by medzitým zmizol.
   const [nenajdene, setNenajdene] = useState(false);
@@ -156,6 +165,11 @@ function Stranka() {
   const dnes = dnesBratislava();
   const cid = getActiveCompanyId()!;
   const kontokorent = z.kind === "kontokorent";
+  const vozidlo: { id: string; nazov: string } | null = data.vozidlo ?? null;
+  const sPoistenim = splatky.some((r) => Number(r.insurance_part ?? 0) > 0);
+  const vsetkyVybrane = splatky.length > 0 && vybrane.length === splatky.length;
+  const prepniVyber = (sid: string) =>
+    setVybrane((v) => (v.includes(sid) ? v.filter((x) => x !== sid) : [...v, sid]));
 
   return (
     <>
@@ -171,6 +185,13 @@ function Stranka() {
           .join(" · ")}
         action={
           <div className="flex flex-wrap gap-2">
+            {vozidlo && (
+              <Button variant="outline" asChild>
+                <Link to="/vozovy-park/$id" params={{ id: vozidlo.id }}>
+                  <Car className="h-4 w-4" /> {vozidlo.nazov}
+                </Link>
+              </Button>
+            )}
             {z.document_path && (
               <Button variant="outline" onClick={() => void otvorDokument(z.document_path, t)}>
                 <FileText className="h-4 w-4" /> {t("Zmluva")}
@@ -348,17 +369,36 @@ function Stranka() {
               </div>
             )}
 
+            <SplatkyDoPohody
+              key={z.updated_at}
+              cid={cid}
+              zmluva={z}
+              vybrane={vybrane}
+              pocetSplatok={splatky.length}
+              onZmena={obnov}
+            />
+
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full min-w-[46rem] text-sm">
                 <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                   <tr>
+                    <th className="w-8 p-3 text-left">
+                      <input
+                        type="checkbox"
+                        aria-label={t("Vybrať všetky splátky")}
+                        checked={vsetkyVybrane}
+                        onChange={() => setVybrane(vsetkyVybrane ? [] : splatky.map((r) => r.id))}
+                      />
+                    </th>
                     <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Č.")}</th>
                     <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Splatnosť")}</th>
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Splátka")}</th>
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Istina")}</th>
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Úrok")}</th>
-                    {Number(z.vat_rate) > 0 && <th className="p-3 text-right font-semibold whitespace-nowrap">{t("DPH")}</th>}
+                    {sPoistenim && <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Poistenie")}</th>}
+                    {(Number(z.vat_rate) > 0 || splatky.some((r) => r.vat_amount > 0)) && <th className="p-3 text-right font-semibold whitespace-nowrap">{t("DPH")}</th>}
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Zostatok istiny")}</th>
+                    <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Pohoda")}</th>
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Stav")}</th>
                   </tr>
                 </thead>
@@ -367,6 +407,14 @@ function Stranka() {
                     const poSplatnosti = !r.paid_at && r.due_date < dnes;
                     return (
                       <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/30">
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            aria-label={t("Vybrať splátku č. {n}", { n: r.number })}
+                            checked={vybrane.includes(r.id)}
+                            onChange={() => prepniVyber(r.id)}
+                          />
+                        </td>
                         <td className="p-3 tabular-nums text-muted-foreground">{r.number}</td>
                         <td
                           className={`whitespace-nowrap p-3 ${poSplatnosti ? "font-semibold text-destructive" : ""}`}
@@ -382,13 +430,39 @@ function Stranka() {
                         <td className="suma p-3 text-right font-normal text-muted-foreground">
                           {formatujSumu(r.interest_part, z.currency)}
                         </td>
-                        {Number(z.vat_rate) > 0 && (
+                        {sPoistenim && (
+                          <td className="suma p-3 text-right font-normal text-muted-foreground">
+                            {formatujSumu(Number(r.insurance_part ?? 0), z.currency)}
+                          </td>
+                        )}
+                        {(Number(z.vat_rate) > 0 || splatky.some((x) => x.vat_amount > 0)) && (
                           <td className="suma p-3 text-right font-normal text-muted-foreground">
                             {formatujSumu(r.vat_amount, z.currency)}
                           </td>
                         )}
                         <td className="suma p-3 text-right font-normal text-muted-foreground">
                           {formatujSumu(r.remaining_principal, z.currency)}
+                        </td>
+                        <td className="p-3 text-xs">
+                          <div className="flex flex-wrap items-center gap-1">
+                            {[r.pohoda_predkontacia, r.pohoda_clenenie_dph, r.kv_clenenie].some(Boolean) && (
+                              <span
+                                title={t("Vlastné kódy splátky (prebíjajú kalendár)")}
+                                className="whitespace-nowrap font-mono text-foreground"
+                              >
+                                {[r.pohoda_predkontacia, r.pohoda_clenenie_dph, r.kv_clenenie]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                            )}
+                            {r.exported_at ? (
+                              <StavOdznak ton="informacia" maly className="whitespace-nowrap">
+                                {t("exportovaná {d}", { d: datum(r.exported_at.slice(0, 10), jazyk) })}
+                              </StavOdznak>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3 text-right">
                           {r.paid_at ? (

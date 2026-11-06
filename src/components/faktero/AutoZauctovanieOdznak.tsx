@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { textZauctovania } from "@/lib/faktero/clenenie-text";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -156,13 +157,8 @@ export function AutoZauctovanieOdznak({
     );
   }
 
-  const kody = [
-    navrh.predkontacia,
-    navrh.clenenieDph,
-    navrh.kvClenenie ? `KV ${navrh.kvClenenie}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // „501/321 · PD · B2“ — členenie DPH a KV DPH vedľa seba ako všade inde.
+  const kody = textZauctovania(navrh.predkontacia, navrh.clenenieDph, navrh.kvClenenie);
   return (
     <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center gap-2">

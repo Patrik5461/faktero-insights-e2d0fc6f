@@ -36,7 +36,7 @@ import { KomentarePanel } from "./KomentarePanel";
 import { KomentarDokladu } from "./StavDokladu";
 import { HromadnyPrikaz } from "./HromadnyPrikaz";
 import { PravidloZDokladu } from "./PravidloZDokladu";
-import { DatumPrijatiaInfo } from "./DatumPrijatiaInfo";
+import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "./DatumPrijatiaInfo";
 import { jeSamozdanenie } from "@/lib/faktero/datum-prijatia";
 import { KtoKedyDokladu } from "./KtoKedyDokladu";
 
@@ -208,7 +208,7 @@ export function PrijataDetailKompaktna({
             {datumNaDoklade(row.delivery_date ?? row.issue_date)}
           </Hodnota>
           {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
-          <Hodnota popis="Dátum prijatia">
+          <Hodnota popis="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
             {row.received_date ? datumNaDoklade(row.received_date) : null}
           </Hodnota>
           <DatumPrijatiaInfo

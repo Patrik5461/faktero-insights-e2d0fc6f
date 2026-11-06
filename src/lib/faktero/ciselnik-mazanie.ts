@@ -17,7 +17,7 @@
 import type { DruhCiselnika } from "./predkontacie";
 
 /** Kde je kód použitý — kľúč textu v hláške. */
-export type KdePouzite = "doklady" | "pravidla" | "nastavenia" | "ciselnik" | "ucty";
+export type KdePouzite = "doklady" | "pravidla" | "nastavenia" | "ciselnik" | "ucty" | "system";
 
 export const NAZOV_KDE: Record<KdePouzite, string> = {
   doklady: "doklady",
@@ -25,6 +25,8 @@ export const NAZOV_KDE: Record<KdePouzite, string> = {
   nastavenia: "predvolené nastavenia firmy",
   ciselnik: "pomer inej predkontácie",
   ucty: "bankové účty firmy",
+  // Systémové členenie DPH a KV (B1-1) sa nemaže, dá sa len skryť.
+  system: "systémový číselník — dá sa len skryť",
 };
 
 /** Stĺpec s kódom v tabuľke, ktorá má `company_id`. */
@@ -146,7 +148,7 @@ export function kodyVJson(json: unknown, kluce: readonly string[], out = new Set
   return out;
 }
 
-export type RiadokCiselnika = { id: string; kod: string; druh: string };
+export type RiadokCiselnika = { id: string; kod: string; druh: string; zdroj?: string | null };
 export type PouzityKod = { id: string; kod: string; kde: KdePouzite[] };
 
 /**
@@ -165,6 +167,10 @@ export function rozdelNaMazanie(
   const zmazat: string[] = [];
   const pouzite: PouzityKod[] = [];
   for (const r of vybrane) {
+    if (r.zdroj === "system") {
+      pouzite.push({ id: r.id, kod: r.kod, kde: ["system"] });
+      continue;
+    }
     const kde = pouzitie.get(r.kod.trim());
     if (kde && kde.size && !ostaneKod.has(r.kod.trim())) pouzite.push({ id: r.id, kod: r.kod, kde: [...kde] });
     else zmazat.push(r.id);

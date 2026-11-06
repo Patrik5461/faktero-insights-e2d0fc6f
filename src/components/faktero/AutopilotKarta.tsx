@@ -1,3 +1,4 @@
+import { NapovedaOtaznik } from "@/components/faktero/NapovedaOtaznik";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -58,16 +59,19 @@ export function AutopilotKarta({ companyId }: { companyId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="autopilot-nadpis" className="flex items-center gap-2 text-base font-semibold">
           <Bot className="h-4 w-4 text-primary" /> {t("Automatické zaúčtovanie")}
+          <NapovedaOtaznik popis={t("Vysvetlivka: Automatické zaúčtovanie")}>
+            {t(
+              "Nový doklad dostane predkontáciu z pravidla, zo zvyku partnera alebo od AI; členenie DPH a KV sa odvodí z režimu dane. Doklad s blokátorom (nesedí súčet, chýba overenie IČ DPH, suma nad limitom, prvý doklad od partnera) vždy čaká na vás.",
+            )}
+          </NapovedaOtaznik>
         </h2>
-        <Link to="/uctovnictvo/na-kontrolu" className="text-sm font-semibold text-primary hover:underline">
+        <Link
+          to="/uctovnictvo/na-kontrolu"
+          className="text-sm font-semibold text-primary hover:underline"
+        >
           {t("Doklady na kontrolu")}
         </Link>
       </div>
-      <p className="mt-1 max-w-prose text-muted-foreground">
-        {t(
-          "Nový doklad dostane predkontáciu z pravidla, zo zvyku partnera alebo od AI; členenie DPH a KV sa odvodí z režimu dane. Doklad s blokátorom (nesedí súčet, chýba overenie IČ DPH, suma nad limitom, prvý doklad od partnera) vždy čaká na vás.",
-        )}
-      </p>
       <fieldset className="mt-3 grid gap-2 sm:grid-cols-3" disabled={!stav.mozemMenit || busy}>
         <legend className="sr-only">{t("Režim autopilota")}</legend>
         {REZIMY_AUTOPILOTA.map((r) => (

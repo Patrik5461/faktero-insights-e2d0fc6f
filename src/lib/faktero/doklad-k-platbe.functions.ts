@@ -184,6 +184,8 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
           customer_country: zf.customer_country,
           reverse_charge: zf.reverse_charge,
           reverse_charge_type: zf.reverse_charge_type,
+          // Druh prenesenia (§ 69 ods. 12 písm.) len keď je — stĺpec z migrácie 20261106210600.
+          ...(zf.pdp_druh ? { pdp_druh: zf.pdp_druh } : {}),
           eu_plnenie: zf.eu_plnenie,
           oss: zf.oss,
           oss_country: zf.oss_country,

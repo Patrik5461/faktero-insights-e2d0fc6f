@@ -2,7 +2,7 @@ import { useT } from "@/lib/i18n/useT";
 import { formatujMenu } from "@/lib/faktero/mena";
 import type { SkupinaRozpisu } from "@/lib/faktero/rozpis-dph";
 
-/** Tabuľka sadzba · základ dane · DPH pod súčtami dokladu. */
+/** Tabuľka sadzba · základ dane · DPH · spolu pod súčtami dokladu, so súčtovým riadkom „Spolu“. */
 export function RozpisDph({
   skupiny,
   mena,
@@ -15,6 +15,10 @@ export function RozpisDph({
 }) {
   const { t } = useT();
   if (!skupiny.length) return null;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const m = mena ?? "EUR";
+  const spoluZaklad = r2(skupiny.reduce((a, g) => a + g.zaklad, 0));
+  const spoluDan = r2(skupiny.reduce((a, g) => a + g.dan, 0));
   return (
     <table className="mt-2 w-full text-xs tabular-nums">
       <thead>
@@ -22,6 +26,7 @@ export function RozpisDph({
           <th className="py-1 text-left font-normal">{t("Sadzba DPH")}</th>
           <th className="py-1 text-right font-normal">{t("Základ dane")}</th>
           <th className="py-1 text-right font-normal">{t("DPH")}</th>
+          <th className="py-1 text-right font-normal">{t("Spolu")}</th>
         </tr>
       </thead>
       <tbody>
@@ -33,10 +38,20 @@ export function RozpisDph({
             <td className="py-1 text-right">
               {formatujMenu(naZobrazenie(g.zaklad), mena ?? "EUR")}
             </td>
-            <td className="py-1 text-right">{formatujMenu(naZobrazenie(g.dan), mena ?? "EUR")}</td>
+            <td className="py-1 text-right">{formatujMenu(naZobrazenie(g.dan), m)}</td>
+            <td className="py-1 text-right">{formatujMenu(naZobrazenie(r2(g.zaklad + g.dan)), m)}</td>
           </tr>
         ))}
       </tbody>
+      {/* Súčet rekapitulácie v tých istých stĺpcoch (checklist B2-6). */}
+      <tfoot>
+        <tr className="border-t border-border font-semibold">
+          <td className="py-1">{t("Spolu")}</td>
+          <td className="py-1 text-right">{formatujMenu(naZobrazenie(spoluZaklad), m)}</td>
+          <td className="py-1 text-right">{formatujMenu(naZobrazenie(spoluDan), m)}</td>
+          <td className="py-1 text-right">{formatujMenu(naZobrazenie(r2(spoluZaklad + spoluDan)), m)}</td>
+        </tr>
+      </tfoot>
     </table>
   );
 }

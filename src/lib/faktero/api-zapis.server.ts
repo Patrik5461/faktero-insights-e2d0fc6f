@@ -640,7 +640,40 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
     .select(STL_BLOCKU)
     .single();
   if (error) return chybaZapisuDokladu(error);
+  await rozpisBlockuNaKontrolu(ctx, data.id);
   return ok({ objekt: "receipt", ...data }, 201);
+}
+
+/**
+ * Rozpis DPH z API, ktorý nesedí (súčet základov voči sume bez DPH, daň voči
+ * sadzbe, sadzba v krajine neplatí), sa neuloží potichu — bloček ide na
+ * kontrolu s dôvodom ako pri zápise z webu (`expenses.functions.ts`).
+ * Len doplnok: chyba kontroly zápis nezastaví.
+ */
+async function rozpisBlockuNaKontrolu(ctx: ApiCtx, id: string | undefined): Promise<void> {
+  if (!id) return;
+  try {
+    const db = ctx.supabase as any;
+    const { data: row } = await db
+      .from("expense_documents")
+      .select("id, net_amount, vat_amount, vat_rate, vat_breakdown, issue_date, supplier_ic_dph")
+      .eq("company_id", ctx.company_id)
+      .eq("id", id)
+      .maybeSingle();
+    if (!row) return;
+    const { data: firma } = await db.from("companies").select("country").eq("id", ctx.company_id).maybeSingle();
+    const { kontrolaUlozenehoBlocku } = await import("./rozpis-dph-vytazeny");
+    const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
+    const k = kontrolaUlozenehoBlocku(row, firma?.country ?? null);
+    if (k.ok) return;
+    const { error } = await db
+      .from("expense_documents")
+      .update({ na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: popisChybRozpisu(k) })
+      .eq("id", id);
+    if (error) console.warn("[api] bloček na kontrolu sa nezapísal:", error.message);
+  } catch (e: any) {
+    console.warn("[api] kontrola rozpisu DPH:", e?.message ?? e);
+  }
 }
 
 export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
@@ -683,6 +716,7 @@ export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .maybeSingle();
   if (error) return chybaDb(error);
   if (!data) return err("not_found", "Bloček sa nenašiel.", 404);
+  if ("vat_breakdown" in riadok) await rozpisBlockuNaKontrolu(ctx, id);
   return ok({ objekt: "receipt", ...data });
 }
 

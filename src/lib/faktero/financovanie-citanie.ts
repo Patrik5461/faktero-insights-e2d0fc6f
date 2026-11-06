@@ -14,6 +14,8 @@ export type PrecitanaSplatka = {
   principal_part: number;
   interest_part: number;
   vat_amount: number;
+  /** Poistenie v splátke (havarijné, PZP…), inak 0. */
+  insurance_part: number;
   remaining_principal: number;
 };
 
@@ -108,6 +110,7 @@ export function normalizujSplatky(surove: unknown): PrecitanaSplatka[] {
       principal_part: cislo(r?.principal_part) ?? 0,
       interest_part: cislo(r?.interest_part) ?? 0,
       vat_amount: cislo(r?.vat_amount) ?? 0,
+      insurance_part: cislo(r?.insurance_part) ?? 0,
       remaining_principal: cislo(r?.remaining_principal) ?? 0,
       poradie: cislo(r?.number) ?? 0,
     }))
@@ -122,6 +125,7 @@ export function normalizujSplatky(surove: unknown): PrecitanaSplatka[] {
       principal_part: centy(r.principal_part),
       interest_part: centy(r.interest_part),
       vat_amount: centy(r.vat_amount),
+      insurance_part: centy(r.insurance_part),
       remaining_principal: centy(r.remaining_principal),
     }));
 }

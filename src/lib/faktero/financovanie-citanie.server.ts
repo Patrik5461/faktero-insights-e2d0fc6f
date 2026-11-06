@@ -32,6 +32,8 @@ Pravidlá:
 - "istina" = principal_part, "úrok" = interest_part, "zostatok istiny"/"nesplatená istina" = remaining_principal.
 - amount je celková splátka za daný riadok tak, ako ju klient platí (stĺpec Spolu / Celkom / Splátka).
 - Ak splátka obsahuje DPH, daj ju do vat_amount; inak 0.
+- Ak splátka obsahuje poistenie (havarijné, PZP, poistenie schopnosti splácať), daj jeho sumu do insurance_part; inak 0. Poistenie nepripočítavaj k istine ani k úroku.
+- Ostatné časti splátky (poplatok za správu a pod.) nikam nerozpisuj — ostanú v rozdiele medzi amount a súčtom častí.
 - principal = financovaná suma (istina po odpočítaní akontácie), NIE obstarávacia cena.
 - down_payment = akontácia / prvá zvýšená splátka, residual_value = zostatková cena splatná na konci.
 - interest_from = deň čerpania / poskytnutia úveru, teda odkedy banka počíta úrok.
@@ -60,7 +62,7 @@ Iba pri kontokorente (inak null):
 - interest_period = "mesacne" alebo "stvrtrocne" — ako často banka úrok strhne.
 
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"kind":"leasing"|"uver"|"kontokorent"|null,"product_name":string|null,"provider_name":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"credit_limit":number|null,"account_iban":string|null,"reference_rate_name":string|null,"reference_rate_value":number|null,"interest_margin":number|null,"index_floor":number|null,"fixing_rule":string|null,"fixing_offset_days":number|null,"rate_reset_period":"mesacne"|"stvrtrocne"|"polrocne"|"rocne"|null,"day_count":"ACT/360"|"ACT/365"|"30E/360"|null,"limit_fee":number|null,"limit_fee_period":"mesacne"|"stvrtrocne"|"rocne"|null,"limit_fee_percent":number|null,"valid_until":"YYYY-MM-DD"|null,"interest_period":"mesacne"|"stvrtrocne"|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"remaining_principal":number}]}`;
+{"kind":"leasing"|"uver"|"kontokorent"|null,"product_name":string|null,"provider_name":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"credit_limit":number|null,"account_iban":string|null,"reference_rate_name":string|null,"reference_rate_value":number|null,"interest_margin":number|null,"index_floor":number|null,"fixing_rule":string|null,"fixing_offset_days":number|null,"rate_reset_period":"mesacne"|"stvrtrocne"|"polrocne"|"rocne"|null,"day_count":"ACT/360"|"ACT/365"|"30E/360"|null,"limit_fee":number|null,"limit_fee_period":"mesacne"|"stvrtrocne"|"rocne"|null,"limit_fee_percent":number|null,"valid_until":"YYYY-MM-DD"|null,"interest_period":"mesacne"|"stvrtrocne"|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"insurance_part":number,"remaining_principal":number}]}`;
 
 export async function precitajZmluvu(base64: string, mimeType: string): Promise<PrecitanaZmluva> {
   const { aiVision } = await import("./ai.server");

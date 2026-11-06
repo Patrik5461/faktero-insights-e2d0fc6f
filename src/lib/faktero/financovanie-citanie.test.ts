@@ -49,6 +49,15 @@ describe("normalizujSplatky", () => {
     expect(r[0].principal_part).toBe(0);
     expect(r[0].interest_part).toBe(0);
     expect(r[0].remaining_principal).toBe(0);
+    expect(r[0].insurance_part).toBe(0);
+  });
+
+  it("poistenie v splátke prečíta ako samostatnú časť", () => {
+    const r = normalizujSplatky([
+      { number: 1, due_date: "2026-06-19", amount: "512,40", principal_part: 430.1, interest_part: 62.3, insurance_part: "20" },
+    ]);
+    expect(r[0].insurance_part).toBe(20);
+    expect(r[0].amount).toBe(512.4);
   });
 
   it("z nezmyslu urobí prázdny kalendár, nie výnimku", () => {
@@ -65,6 +74,7 @@ describe("vyhradyKuKalendaru", () => {
     principal_part: istina,
     interest_part: 10,
     vat_amount: 0,
+    insurance_part: 0,
     remaining_principal: 0,
   });
 
@@ -106,6 +116,7 @@ describe("vyhradyKuKalendaru", () => {
           principal_part: 0,
           interest_part: 0,
           vat_amount: 0,
+          insurance_part: 0,
           remaining_principal: 0,
         },
       ],

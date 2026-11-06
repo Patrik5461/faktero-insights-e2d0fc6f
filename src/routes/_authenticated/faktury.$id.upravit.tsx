@@ -40,6 +40,7 @@ import {
 } from "@/lib/faktero/odberatel-faktury";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { VyberDruhuPdp } from "@/components/faktero/VyberDruhuPdp";
 import {
   riadkySDphNeplatitela,
   sadzbaNovehoRiadku,
@@ -115,6 +116,8 @@ function EditInvoice() {
   const [pokracovatVRade, setPokracovatVRade] = useState(false);
   const [inv, setInv] = useState<any>(null);
   const [items, setItems] = useState<Item[]>([]);
+  /* Písmeno § 69 ods. 12 (CZ § 92b–92f) — doklad podľa neho vytlačí celé ustanovenie. */
+  const [pdpDruh, setPdpDruh] = useState("");
   const [originalLocked, setOriginalLocked] = useState<
     Array<{ id: string; stock_item_id: string; quantity: number; name: string }>
   >([]);
@@ -177,6 +180,7 @@ function EditInvoice() {
         return;
       }
       setInv(i);
+      setPdpDruh(String((i as any).pdp_druh ?? ""));
       const o = odberatelZFaktury(i);
       setOdberatel(o);
       setPovodnyOdberatel(o);
@@ -408,6 +412,8 @@ function EditInvoice() {
         ...(form.predkontacia.trim() !== (inv?.pohoda_predkontacia ?? "")
           ? { pohoda_predkontacia: form.predkontacia.trim() || null }
           : {}),
+        // Druh prenesenia len pri zmene (stĺpec z migrácie 20261106210600; RPC neznámy stĺpec preskočí).
+        ...(pdpDruh !== String((inv as any)?.pdp_druh ?? "") ? { pdp_druh: pdpDruh || null } : {}),
         ...(form.clenenie.trim() !== (inv?.pohoda_clenenie_dph ?? "")
           ? { pohoda_clenenie_dph: form.clenenie.trim() || null }
           : {}),
@@ -1227,6 +1233,14 @@ function EditInvoice() {
               onVyber={(text) => setForm((f) => ({ ...f, notes: vlozDoPoznamky(f.notes, text) }))}
             />
           </section>
+
+          {(rezim.krajina === "SK" || rezim.krajina === "CZ") &&
+            ((inv.reverse_charge && (inv.reverse_charge_type || "domestic_69") === "domestic_69") ||
+              items.some((x) => x.prenesenie)) && (
+              <section className="rounded-xl border border-border bg-card p-5">
+                <VyberDruhuPdp krajina={rezim.krajina} value={pdpDruh} onChange={setPdpDruh} />
+              </section>
+            )}
 
           <UctovneNastaveniaFaktury
             companyId={inv.company_id}
