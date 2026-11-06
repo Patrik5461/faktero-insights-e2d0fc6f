@@ -278,7 +278,9 @@ async function vykresliFakturu(
   const surfaceAlt = rgb(0.985, 0.989, 0.987);
   const white = rgb(1, 1, 1);
 
-  let y = height - margin;
+  // Prvá strana začína o 8 bodov vyššie než ďalšie — pri desiatich položkách
+  // s platobnými údajmi rozhodovali o jednej strane práve tieto body.
+  let y = height - margin + 8;
 
   // ── Header: thin emerald accent bar + logo (L) / title block (R) ──
   page.drawRectangle({ x: margin, y: y - 2, width: 56, height: 3, color: primary });
@@ -348,7 +350,9 @@ async function vykresliFakturu(
   });
   const navyse = Math.max(0, podCislom.length - 1) * 11;
 
-  y = Math.min(headerLogoBottom, y - 50 - navyse) - 18;
+  // Medzery v hlavičke sú úsporné (2026-11-06) — každý bod chýbal pri desiatich
+  // položkách na jednej strane.
+  y = Math.min(headerLogoBottom, y - 40 - (podCislom.length ? 8 : 0) - navyse) - 12;
 
   // ── Parties: side-by-side cards ──
   const gap = 16;
@@ -399,7 +403,7 @@ async function vykresliFakturu(
   );
   // Medzery medzi blokmi sú úsporné — o pár bodov viac posielalo platobné
   // údaje bežnej faktúry s textom nad položkami na druhú stranu.
-  y -= Math.max(partyH, partyH2) + 16;
+  y -= Math.max(partyH, partyH2) + 12;
 
   // ── Meta strip (compact, divided) ──
   // A paid invoice must not look like a payment request (double-payment risk):
@@ -422,7 +426,7 @@ async function vykresliFakturu(
           [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
           [t.formaUhrady, sposobUhrady(invoice.payment_method)],
         ]);
-  const metaBoxH = 46;
+  const metaBoxH = 40;
   page.drawRectangle({
     x: margin,
     y: y - metaBoxH,
@@ -435,8 +439,8 @@ async function vykresliFakturu(
   const metaW = innerW / meta.length;
   meta.forEach(([k, v], i) => {
     const x = margin + i * metaW + 12;
-    page.drawText(san(k.toUpperCase()), { x, y: y - 14, size: 7, font: bold, color: muted });
-    page.drawText(san(String(v)), { x, y: y - 30, size: 10.5, font: bold, color: ink });
+    page.drawText(san(k.toUpperCase()), { x, y: y - 13, size: 7, font: bold, color: muted });
+    page.drawText(san(String(v)), { x, y: y - 27, size: 10.5, font: bold, color: ink });
     if (i > 0) {
       page.drawLine({
         start: { x: margin + i * metaW, y: y - 8 },
@@ -446,18 +450,18 @@ async function vykresliFakturu(
       });
     }
   });
-  y -= metaBoxH + 16;
+  y -= metaBoxH + 12;
 
   // ── Items table ──
   // Fixed column widths (sum = innerW = 507.28pt). Right-aligned numeric.
   const cols = computeCols(innerW);
   const PAD = 8;
-  const FOOTER_RESERVE = 66; // pätička (čiara na 55) + medzera nad ňou
+  const FOOTER_RESERVE = 60; // pätička (čiara na 55) + medzera nad ňou
   const BOTTOM_LIMIT = FOOTER_RESERVE;
   const NAME_SIZE = 10,
     DESC_SIZE = 8.5,
     ROW_LINE_H = 12;
-  const ROW_PAD_Y = 8;
+  const ROW_PAD_Y = 5.5;
 
   const pages: PDFPage[] = [page];
   let cur = page;
@@ -469,7 +473,7 @@ async function vykresliFakturu(
   };
 
   const drawTableHeader = (p: PDFPage, top: number): number => {
-    const headerH = 26;
+    const headerH = 22;
     p.drawRectangle({
       x: margin,
       y: top - headerH,
@@ -477,7 +481,7 @@ async function vykresliFakturu(
       height: headerH,
       color: rgb(0.96, 0.97, 0.965),
     });
-    const baseY = top - 17;
+    const baseY = top - 14.5;
     p.drawText(t.polozka, { x: cols.name.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
     drawAligned(p, bold, t.mnozstvo, cols.qty.x + cols.qty.w - PAD, baseY, 8.5, sub, "right");
     p.drawText(t.mj, { x: cols.unit.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
@@ -538,7 +542,7 @@ async function vykresliFakturu(
       cur.drawText(ln, { x: margin, y, size: 9.5, font, color: sub });
       y -= 12;
     });
-    y -= 10;
+    y -= 8;
   }
 
   /*
@@ -572,7 +576,7 @@ async function vykresliFakturu(
     const textH =
       nameLines.length * (NAME_SIZE + 2) +
       (descLines.length ? 2 + descLines.length * (DESC_SIZE + 2) : 0);
-    const rowH = Math.max(28, textH + ROW_PAD_Y * 2);
+    const rowH = Math.max(23, textH + ROW_PAD_Y * 2);
 
     // Page break if row would overflow the safe area
     if (y - rowH < BOTTOM_LIMIT) {
@@ -658,7 +662,7 @@ async function vykresliFakturu(
     });
   }
 
-  y -= 16;
+  y -= 12;
 
   // ── Totals (right-aligned block, full width below table) ──
   const totalsBlockW = 260;
@@ -746,29 +750,56 @@ async function vykresliFakturu(
   const totalsRows =
     (rozpisDph.length ? 1 : 2) + (discount > 0 ? 2 : 0) + (zalohaNezdanena > 0 ? 2 : 0);
   // Každý odpočet zálohy má nad sebou riadok s číslom dokladu k platbe.
+  /*
+    Presne podľa kreslenia nižšie (2026-11-06): hlavička rozpisu 11, sadzba
+    11,5, súčtový riadok „Spolu“ 17,5, čiara 4, rámik „k úhrade“ HERO_H a pri
+    uhradenej faktúre veta o úhrade pod ním. Odhad s rezervou 12 bodov
+    posielal blok súčtov na ďalšiu stranu, hoci sa zmestil.
+  */
+  const HERO_H = 48;
   const vyskaSuctov = (riadkovRozpisu: number) =>
     totalsRows * 18 +
-    // + súčtový riadok „Spolu“ pod sadzbami (16 bodov).
-    (riadkovRozpisu ? 11 + riadkovRozpisu * 11.5 + 16 + 2 : 0) +
+    (riadkovRozpisu ? 11 + riadkovRozpisu * 11.5 + 17.5 : 0) +
     rozpisDph.filter((r) => r.odpocet).length * 11.5 +
-    8 +
-    60;
+    4 +
+    HERO_H +
+    (isPaid ? 20 : 2);
   /*
     Nulové sadzby (19 % a 0 % bez základu) sú v rozpise len pre prehľad. Keď
     by kvôli nim blok súčtov odišiel na novú stranu, vynechajú sa — doklad na
     jednej strane je dôležitejší (QA 30. 10.: tri položky, zľava a päť riadkov
     textu skončili na dvoch stranách o 8 bodov).
   */
+  /*
+    Doklad podľa § 25a je len daňová oprava — nič sa podľa neho neplatí
+    (zníženie) alebo sa už zaplatilo (vrátenie). Bez „k úhrade“ a bez
+    platobných údajov, inak by odberateľa naviedol zaplatiť ešte raz.
+  */
+  const lenOprava = Boolean((invoice as any).oprava_25a);
+  const naUhradu = zostavaUhradit(invoice.total, zalohaSpolu);
+  // Platobné údaje (karta vľavo vedľa súčtov) a ich QR.
+  const kresliPlatbu = !input.hidePayment && !isPaid && !lenOprava;
+  // Dobropis QR nemá nikdy (ani starší, kladne uložený) — pozri nižšie.
+  const kresliQr = Boolean(company.iban) && naUhradu > 0 && !dobropis;
+  /*
+    Platobné údaje s QR sú vždy v karte vľavo vedľa súčtov (od 2026-11-06).
+    Pod súčtami zaberala karta celú šírku a 150 bodov výšky — faktúra s
+    jednou položkou, prenesením a pečiatkou alebo s desiatimi položkami tak
+    poslala QR samotný na druhú stranu. Súčty a karta sú jeden blok: na
+    stranu sa zmestia spolu, alebo spolu idú na ďalšiu.
+  */
+  const PLATBA_VYSKA = 110;
+  const vyskaBloku = (riadkovRozpisu: number) =>
+    Math.max(vyskaSuctov(riadkovRozpisu), kresliPlatbu ? PLATBA_VYSKA - 2 : 0);
   const bezNulovych = rozpisDph.filter((r) => r.zaklad || r.dph || r.pdp);
   if (
     bezNulovych.length &&
     bezNulovych.length < rozpisDph.length &&
-    y - vyskaSuctov(rozpisDph.length) < BOTTOM_LIMIT &&
-    y - vyskaSuctov(bezNulovych.length) >= BOTTOM_LIMIT
+    y - vyskaBloku(rozpisDph.length) < BOTTOM_LIMIT &&
+    y - vyskaBloku(bezNulovych.length) >= BOTTOM_LIMIT
   )
     rozpisDph = bezNulovych;
-  const totalsH = vyskaSuctov(rozpisDph.length);
-  ensureSpace(totalsH);
+  ensureSpace(vyskaBloku(rozpisDph.length));
 
   const totalsTop = y;
   let ty = y;
@@ -920,8 +951,6 @@ async function vykresliFakturu(
     );
     ty -= 18;
   }
-  // Zúčtovaná záloha znižuje sumu na úhradu — odberateľ ju už zaplatil.
-  const zaloha = zalohaSpolu;
   if (zalohaNezdanena > 0) {
     drawTotalRow(
       cur,
@@ -948,7 +977,6 @@ async function vykresliFakturu(
     );
     ty -= 18;
   }
-  const naUhradu = zostavaUhradit(invoice.total, zaloha);
   cur.drawLine({
     start: { x: totalsX, y: ty + 6 },
     end: { x: totalsX + totalsBlockW, y: ty + 6 },
@@ -957,7 +985,7 @@ async function vykresliFakturu(
   });
   ty -= 4;
 
-  const heroH = 56;
+  const heroH = HERO_H;
   cur.drawRectangle({
     x: totalsX,
     y: ty - heroH,
@@ -966,16 +994,10 @@ async function vykresliFakturu(
     color: primary,
   });
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: 4, height: heroH, color: primaryDark });
-  /*
-    Doklad podľa § 25a je len daňová oprava — nič sa podľa neho neplatí
-    (zníženie) alebo sa už zaplatilo (vrátenie). Bez „k úhrade“ a bez
-    platobných údajov, inak by odberateľa naviedol zaplatiť ešte raz.
-  */
-  const lenOprava = Boolean((invoice as any).oprava_25a);
   // Dobropis sa neuhrádza — kladná suma pod „K úhrade“ by vyzerala ako výzva zaplatiť.
   cur.drawText(isPaid ? t.uhradene : lenOprava || dobropis ? t.celkom : t.spoluKUhrade, {
     x: totalsX + 16,
-    y: ty - 22,
+    y: ty - 18,
     size: 9,
     font: bold,
     color: rgb(0.85, 0.95, 0.9),
@@ -985,7 +1007,7 @@ async function vykresliFakturu(
     bold,
     fmt(naUhradu, invoice.currency),
     totalsX + totalsBlockW - 16,
-    ty - 42,
+    ty - 37,
     16,
     white,
     "right",
@@ -1001,25 +1023,23 @@ async function vykresliFakturu(
     });
   }
 
-  /*
-    Pečiatka firmy do voľného miesta vľavo od súčtov — tam sa na papierovej
-    faktúre pečiatkuje a podpisuje, a nikdy kvôli nej nevznikne ďalšia strana.
-    Zmestí sa do výšky bloku súčtov a najviac 150 bodov šírky, pomer strán
-    obrázka ostane zachovaný.
-  */
   /* Faktúra si môže pečiatku zapnúť či vypnúť sama; bez voľby rozhoduje nastavenie firmy. */
   const peciatkaZapnuta =
     typeof (invoice as any).zobrazit_peciatku === "boolean"
       ? (invoice as any).zobrazit_peciatku
       : (company as any).invoice_show_stamp !== false;
   const kresliPeciatku = Boolean(input.stampBytes && input.stampMime && peciatkaZapnuta);
-  if (kresliPeciatku && input.stampBytes && input.stampMime) {
+  /*
+    Pečiatka firmy s čiarou a popisom „Pečiatka a podpis“. Obrázok stojí na
+    `spodok + 16` a je vysoký najviac `maxH`, široký najviac 150 bodov; pomer
+    strán obrázka ostane zachovaný.
+  */
+  const kresliObrazokPeciatky = async (spodok: number, maxH: number) => {
+    if (!input.stampBytes || !input.stampMime) return;
     try {
       const img = input.stampMime.includes("png")
         ? await doc.embedPng(input.stampBytes)
         : await doc.embedJpg(input.stampBytes);
-      const spodok = ty - heroH;
-      const maxH = totalsTop - spodok - 16;
       const maxW = Math.min(150, totalsX - margin - 24);
       const mierka = Math.min(maxW / img.width, maxH / img.height, 1);
       const sw = img.width * mierka;
@@ -1039,124 +1059,8 @@ async function vykresliFakturu(
     } catch {
       /* poškodený obrázok pečiatky nesmie zabrániť vystaveniu dokladu */
     }
-  }
+  };
 
-  /*
-    Prenesenie daňovej povinnosti vľavo vedľa súčtov, kde je inak prázdno
-    (ak tam nesedí pečiatka). Pod platobnými údajmi rámik pridával vlastný
-    riadok výšky a faktúra s textom nad položkami kvôli nemu mala dve strany.
-  */
-  if (textPrenesenia && !kresliPeciatku && !prenesenieHotove) {
-    const sirka = totalsX - margin - 20;
-    const riadky = wrapLines(textPrenesenia, bold, 9, sirka - 16);
-    const vyska = riadky.length * 11.5 + 14;
-    const dostupne = totalsTop - (ty - heroH);
-    if (sirka >= 160 && vyska <= dostupne) {
-      const hore = totalsTop + 4;
-      cur.drawRectangle({
-        x: margin,
-        y: hore - vyska,
-        width: sirka,
-        height: vyska,
-        color: rgb(0.98, 0.94, 0.84),
-        borderColor: rgb(0.85, 0.7, 0.3),
-        borderWidth: 0.7,
-      });
-      let ry = hore - 13;
-      for (const ln of riadky) {
-        cur.drawText(ln, { x: margin + 8, y: ry, size: 9, font: bold, color: rgb(0.4, 0.28, 0.05) });
-        ry -= 11.5;
-      }
-      prenesenieHotove = true;
-      if (cur !== page) prenesenieMimoPrvejStrany = true;
-    }
-  }
-
-  /*
-    Vety pod súčtami (§ 68d/§ 65/§ 66, režim DPH) a poznámky do voľného
-    miesta vľavo vedľa súčtov, keď sa tam zmestia — pod platobnými údajmi
-    posúvali zálohovú faktúru na druhú stranu. (Predtým tu bol rámik
-    „Faktúra online“ s QR; ten sa už nekreslí.)
-  */
-  const vetyPodSuctami = vetyNaDoklad({
-    danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
-    osobitnaUprava: invoice.osobitna_uprava,
-    // Nemecká firma: § 14a Abs. 6 (Differenzbesteuerung) a § 14 Abs. 4 Nr. 9 UStG.
-    krajina: cudziVystavovatel ? null : krajinaDane(company.country),
-    upozornenieUschova: (invoice as any).de_hinweis_aufbewahrung,
-  });
-  const rezimVystavovatela = rezimFirmy(company as FirmaDph);
-  const textDph =
-    Number(invoice.vat_total ?? 0) > 0
-      ? null
-      : rezimVystavovatela.schema === "de_kleinunternehmer"
-        ? vetyDe(jazyk).kleinunternehmer
-        : rezimVystavovatela.textNaDoklad;
-  let poznamkyHotove = false;
-  if (!kresliPeciatku && !prenesenieHotove) {
-    const sirka = totalsX - margin - 20;
-    const tucne = [...vetyPodSuctami, ...(textDph ? [textDph] : [])].flatMap((v) =>
-      wrapLines(v, bold, 9, sirka),
-    );
-    const pozn = invoice.notes ? wrapLines(String(invoice.notes), font, 9, sirka) : [];
-    const vyska =
-      tucne.length * 11 + (tucne.length && pozn.length ? 6 : 0) + (pozn.length ? 13 + pozn.length * 11 : 0);
-    const dostupne = totalsTop - (ty - heroH);
-    if (sirka >= 160 && vyska > 0 && vyska <= dostupne) {
-      let ly = totalsTop - 2;
-      for (const ln of tucne) {
-        cur.drawText(ln, { x: margin, y: ly, size: 9, font: bold, color: sub });
-        ly -= 11;
-      }
-      if (pozn.length) {
-        if (tucne.length) ly -= 6;
-        cur.drawText(t.poznamky, { x: margin, y: ly, size: 8, font: bold, color: muted });
-        ly -= 13;
-        for (const ln of pozn) {
-          cur.drawText(ln, { x: margin, y: ly, size: 9, font, color: sub });
-          ly -= 11;
-        }
-      }
-      poznamkyHotove = true;
-    }
-  }
-
-  /*
-    Faktúra v cudzej mene musí mať daň vyčíslenú aj v domácej mene firmy
-    (vysvetlenie pri kreslení nižšie). Text sa počíta vopred, lebo od jeho
-    výšky závisí, či sa platobná karta zmestí pod súčty.
-  */
-  const riadkyPrepoctu =
-    trebaPrepocet(invoice.currency, domacaMena(company.country)) &&
-    invoice.exchange_rate &&
-    invoice.vat_total_eur != null &&
-    Number(invoice.vat_total ?? 0) !== 0
-      ? wrapLines(
-          textPrepoctu(
-            String(invoice.currency),
-            Number(invoice.exchange_rate),
-            String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
-            Number(invoice.vat_total_eur),
-            krajinaDane(company.country) === "CZ" ? "cz" : krajinaDane(company.country) === "DE" ? "de" : "sk",
-            krajinaKurzu(company.country),
-            (invoice as any).exchange_rate_source,
-          ),
-          font,
-          9,
-          innerW,
-        )
-      : [];
-
-  // Platobné údaje (karta pod súčtami alebo vedľa nich) a ich QR.
-  const kresliPlatbu = !input.hidePayment && !isPaid && !lenOprava;
-  // Dobropis QR nemá nikdy (ani starší, kladne uložený) — pozri nižšie.
-  const kresliQr = Boolean(company.iban) && naUhradu > 0 && !dobropis;
-  const riadkyPlatby: [string, string][] = [
-    [t.iban, company.iban ?? "—"],
-    [t.swift, company.swift ?? "—"],
-    [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
-    [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
-  ];
   /*
     QR na platbu a odkaz PAYME. Formát QR podľa krajiny firmy: slovenská
     banka číta PAY by square, česká SPD. Dovtedy sa aj slovenským firmám
@@ -1213,76 +1117,198 @@ async function vykresliFakturu(
   };
 
   /*
-    Platobné údaje vedľa súčtov. Rozpis DPH so všetkými sadzbami krajiny
-    zväčšil blok súčtov o tri riadky a pri troch-štyroch položkách sa pod
-    neho už nezmestila ani kompaktná karta — platobné údaje osamoteli na
-    druhej strane. Keď je vľavo od súčtov voľno (bez pečiatky, prenesenia
-    a viet) a karta pod súčty nevojde, nakreslí sa tam užšia karta: údaje
-    pod sebou, QR vpravo.
+    Ľavý stĺpec vedľa súčtov. Zhora ho berie platobná karta (údaje pod sebou,
+    QR vpravo), pod ňou ostáva voľné miesto pre pečiatku, prenesenie alebo
+    vety a poznámky. Karta sa kreslí na tej istej strane ako súčty — QR tak
+    nikdy neostane sám na ďalšej strane.
   */
-  let platbaVedla = false;
-  if (kresliPlatbu && !kresliPeciatku && !prenesenieHotove && !poznamkyHotove) {
-    const yPod = ty - heroH - 18 - (riadkyPrepoctu.length ? riadkyPrepoctu.length * 11 + 8 : 0);
-    const kompaktPod = (kresliQr ? 102 : 92) + 12;
-    const nezmestiSaPod = yPod + 8 - kompaktPod < BOTTOM_LIMIT;
+  const spodokSuctov = ty - heroH;
+  const lavaSirka = totalsX - margin - 20;
+  let lavyHore = totalsTop + 4;
+  let platbaSpodok = Number.POSITIVE_INFINITY;
+  const riadkyPlatby: [string, string][] = [
+    [t.iban, company.iban ?? "—"],
+    [t.swift, company.swift ?? "—"],
+    [t.variabilnySymbol, vsVystavenej(invoice) || "—"],
+    [t.datumSplatnosti, datumNaDoklade(invoice.due_date, jazyk)],
+  ];
+  if (kresliPlatbu) {
     const vX = margin;
-    const vW = totalsX - margin - 20;
-    const vQr = 64;
-    const vH = 4 * 21 + 30;
+    const vW = lavaSirka;
+    const vQr = 68;
+    const vH = PLATBA_VYSKA;
     const vHore = totalsTop + 4;
-    const dostupne = vHore - (ty - heroH);
-    if (nezmestiSaPod && vW >= 200 && vH <= dostupne) {
-      platbaVedla = true;
+    cur.drawRectangle({
+      x: vX,
+      y: vHore - vH,
+      width: vW,
+      height: vH,
+      color: white,
+      borderColor: hairline,
+      borderWidth: 0.7,
+    });
+    cur.drawRectangle({ x: vX, y: vHore - vH, width: 3, height: vH, color: primary });
+    cur.drawText(t.platobneUdaje, { x: vX + 12, y: vHore - 16, size: 8, font: bold, color: muted });
+    const stlpecW = vW - 12 - (kresliQr ? vQr + 18 : 12);
+    riadkyPlatby.forEach(([k, v], i) => {
+      const ry = vHore - 28 - i * 20;
+      cur.drawText(String(k), { x: vX + 12, y: ry, size: 7, font, color: muted });
+      // IBAN sa nesmie skrátiť — radšej menšie písmo.
+      let vel = 9;
+      while (vel > 7 && bold.widthOfTextAtSize(String(v), vel) > stlpecW) vel -= 0.25;
+      cur.drawText(ellipsize(String(v), bold, vel, stlpecW), { x: vX + 12, y: ry - 9.5, size: vel, font: bold, color: ink });
+    });
+    /*
+      QR na platbu len keď je čo platiť: dobropis vracia peniaze opačným smerom
+      a QR na IBAN vystavovateľa by odberateľa naviedol poslať ich ešte raz.
+    */
+    if (kresliQr) {
+      try {
+        const { png, payme } = await pripravQr();
+        const qrX = vX + vW - vQr - 10;
+        const qrY = vHore - 20 - vQr;
+        const qrPopisW = bold.widthOfTextAtSize(t.qrPlatba, 7);
+        cur.drawText(t.qrPlatba, { x: vX + vW - 8 - qrPopisW, y: vHore - 16, size: 7, font: bold, color: muted });
+        cur.drawImage(png, { x: qrX, y: qrY, width: vQr, height: vQr });
+        if (payme) {
+          const bw = bold.widthOfTextAtSize(PAYME_POPIS, 7.5) + 14;
+          kresliPayme(Math.min(qrX, vX + vW - bw - 6), vHore - vH + 5, payme);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    platbaSpodok = vHore - vH;
+    lavyHore = platbaSpodok - 10;
+  }
+  /** Výška voľného miesta vľavo pod kartou (alebo vedľa celých súčtov). */
+  const lavoDostupne = lavyHore - 4 - spodokSuctov;
+  let lavyObsadeny = false;
+
+  /*
+    Pečiatka do voľného miesta vľavo od súčtov — tam sa na papierovej faktúre
+    pečiatkuje a podpisuje. Keď je miesto pod platobnou kartou príliš nízke,
+    pečiatka ide pod celý blok (nižšie, `peciatkaNaKonci`).
+  */
+  let peciatkaNaKonci = false;
+  if (kresliPeciatku) {
+    const maxH = lavyHore - spodokSuctov - 16;
+    if (!kresliPlatbu || maxH >= 40) {
+      await kresliObrazokPeciatky(spodokSuctov, maxH);
+      lavyObsadeny = true;
+    } else peciatkaNaKonci = true;
+  }
+
+  /*
+    Prenesenie daňovej povinnosti vľavo vedľa súčtov, kde je inak prázdno
+    (ak tam nesedí pečiatka). Pod platobnými údajmi rámik pridával vlastný
+    riadok výšky a faktúra s textom nad položkami kvôli nemu mala dve strany.
+  */
+  if (textPrenesenia && !lavyObsadeny && !prenesenieHotove) {
+    const sirka = lavaSirka;
+    const riadky = wrapLines(textPrenesenia, bold, 9, sirka - 16);
+    const vyska = riadky.length * 11.5 + 14;
+    if (sirka >= 160 && vyska <= lavoDostupne) {
+      const hore = lavyHore;
       cur.drawRectangle({
-        x: vX,
-        y: vHore - vH,
-        width: vW,
-        height: vH,
-        color: white,
-        borderColor: hairline,
+        x: margin,
+        y: hore - vyska,
+        width: sirka,
+        height: vyska,
+        color: rgb(0.98, 0.94, 0.84),
+        borderColor: rgb(0.85, 0.7, 0.3),
         borderWidth: 0.7,
       });
-      cur.drawRectangle({ x: vX, y: vHore - vH, width: 3, height: vH, color: primary });
-      cur.drawText(t.platobneUdaje, { x: vX + 12, y: vHore - 16, size: 8, font: bold, color: muted });
-      const stlpecW = vW - 12 - (kresliQr ? vQr + 18 : 12);
-      riadkyPlatby.forEach(([k, v], i) => {
-        const ry = vHore - 30 - i * 21;
-        cur.drawText(String(k), { x: vX + 12, y: ry, size: 7, font, color: muted });
-        // IBAN sa nesmie skrátiť — radšej menšie písmo.
-        let vel = 9;
-        while (vel > 7 && bold.widthOfTextAtSize(String(v), vel) > stlpecW) vel -= 0.25;
-        cur.drawText(ellipsize(String(v), bold, vel, stlpecW), { x: vX + 12, y: ry - 10, size: vel, font: bold, color: ink });
-      });
-      if (kresliQr) {
-        try {
-          const { png, payme } = await pripravQr();
-          const qrX = vX + vW - vQr - 10;
-          const qrY = vHore - 22 - vQr;
-          const qrPopisW = bold.widthOfTextAtSize(t.qrPlatba, 7);
-          cur.drawText(t.qrPlatba, { x: vX + vW - 8 - qrPopisW, y: vHore - 16, size: 7, font: bold, color: muted });
-          cur.drawImage(png, { x: qrX, y: qrY, width: vQr, height: vQr });
-          if (payme) {
-            const bw = bold.widthOfTextAtSize(PAYME_POPIS, 7.5) + 14;
-            kresliPayme(Math.min(qrX, vX + vW - bw - 6), vHore - vH + 6, payme);
-          }
-        } catch {
-          /* ignore */
-        }
+      let ry = hore - 13;
+      for (const ln of riadky) {
+        cur.drawText(ln, { x: margin + 8, y: ry, size: 9, font: bold, color: rgb(0.4, 0.28, 0.05) });
+        ry -= 11.5;
       }
+      prenesenieHotove = true;
+      lavyObsadeny = true;
+      if (cur !== page) prenesenieMimoPrvejStrany = true;
     }
   }
 
-  y = ty - heroH - (isPaid ? 38 : 18);
-  /** Kde končí blok súčtov — medzeru pod ním smie kompaktná platobná karta zúžiť. */
-  const yPodSuctami = y;
+  /*
+    Vety pod súčtami (§ 68d/§ 65/§ 66, režim DPH) a poznámky do voľného
+    miesta vľavo vedľa súčtov, keď sa tam zmestia; inak idú pod blok súčtov.
+  */
+  const vetyPodSuctami = vetyNaDoklad({
+    danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
+    osobitnaUprava: invoice.osobitna_uprava,
+    // Nemecká firma: § 14a Abs. 6 (Differenzbesteuerung) a § 14 Abs. 4 Nr. 9 UStG.
+    krajina: cudziVystavovatel ? null : krajinaDane(company.country),
+    upozornenieUschova: (invoice as any).de_hinweis_aufbewahrung,
+  });
+  const rezimVystavovatela = rezimFirmy(company as FirmaDph);
+  const textDph =
+    Number(invoice.vat_total ?? 0) > 0
+      ? null
+      : rezimVystavovatela.schema === "de_kleinunternehmer"
+        ? vetyDe(jazyk).kleinunternehmer
+        : rezimVystavovatela.textNaDoklad;
+  let poznamkyHotove = false;
+  if (!lavyObsadeny) {
+    const sirka = lavaSirka;
+    const tucne = [...vetyPodSuctami, ...(textDph ? [textDph] : [])].flatMap((v) =>
+      wrapLines(v, bold, 9, sirka),
+    );
+    const pozn = invoice.notes ? wrapLines(String(invoice.notes), font, 9, sirka) : [];
+    const vyska =
+      tucne.length * 11 + (tucne.length && pozn.length ? 6 : 0) + (pozn.length ? 13 + pozn.length * 11 : 0);
+    if (sirka >= 160 && vyska > 0 && vyska <= lavoDostupne) {
+      let ly = lavyHore - 6;
+      for (const ln of tucne) {
+        cur.drawText(ln, { x: margin, y: ly, size: 9, font: bold, color: sub });
+        ly -= 11;
+      }
+      if (pozn.length) {
+        if (tucne.length) ly -= 6;
+        cur.drawText(t.poznamky, { x: margin, y: ly, size: 8, font: bold, color: muted });
+        ly -= 13;
+        for (const ln of pozn) {
+          cur.drawText(ln, { x: margin, y: ly, size: 9, font, color: sub });
+          ly -= 11;
+        }
+      }
+      poznamkyHotove = true;
+    }
+  }
+
+  /*
+    Faktúra v cudzej mene musí mať daň vyčíslenú aj v domácej mene firmy
+    (vysvetlenie pri kreslení nižšie).
+  */
+  const riadkyPrepoctu =
+    trebaPrepocet(invoice.currency, domacaMena(company.country)) &&
+    invoice.exchange_rate &&
+    invoice.vat_total_eur != null &&
+    Number(invoice.vat_total ?? 0) !== 0
+      ? wrapLines(
+          textPrepoctu(
+            String(invoice.currency),
+            Number(invoice.exchange_rate),
+            String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
+            Number(invoice.vat_total_eur),
+            krajinaDane(company.country) === "CZ" ? "cz" : krajinaDane(company.country) === "DE" ? "de" : "sk",
+            krajinaKurzu(company.country),
+            (invoice as any).exchange_rate_source,
+          ),
+          font,
+          9,
+          innerW,
+        )
+      : [];
+
+  y = Math.min(ty - heroH - (isPaid ? 38 : 18), platbaSpodok - 18);
 
   /*
     Faktúra v cudzej mene musí mať daň vyčíslenú aj v domácej mene firmy:
     slovenská v eurách kurzom ECB zo dňa pred dodaním (§ 26 ods. 1 zákona o
     DPH), česká v korunách kurzom ČNB ke dni plnění (§ 4 odst. 5 ZDPH).
     Bez tejto vety je doklad neúplný, hoci sumy v nej sedia. Stojí hneď pod
-    súčtami (ku ktorým patrí) — za platobnými údajmi sama odpadávala na
-    druhú stranu.
+    súčtami (ku ktorým patrí).
   */
   if (riadkyPrepoctu.length) {
     const lines = riadkyPrepoctu;
@@ -1294,106 +1320,7 @@ async function vykresliFakturu(
     y -= 8;
   }
 
-  // ── Payment card (full width, two columns: data | QR) ──
-  if (kresliPlatbu && !platbaVedla) {
-    /*
-      Výška karty je tesne na štyri riadky údajov a QR s popiskom. Pôvodných
-      140 bodov s QR v strede nechávalo prázdny pás, pre ktorý sa faktúra s
-      textom nad položkami a prenesením nezmestila na jednu stranu.
-    */
-    /*
-      Keď sa plná karta na stranu tesne nezmestí, nakreslí sa kompaktná
-      (menší QR, hustejšie riadky) — inak by platobné údaje osamoteli na
-      druhej strane.
-    */
-    const plnaH = kresliQr ? 126 : 116;
-    const kompaktH = kresliQr ? 102 : 92;
-    // Hneď pod súčtami (nič medzi nimi) sa smie medzera zúžiť o 8 bodov.
-    const posun = y === yPodSuctami ? 8 : 0;
-    const kompakt =
-      y - (plnaH + 12) < BOTTOM_LIMIT && y + posun - (kompaktH + 12) >= BOTTOM_LIMIT;
-    if (kompakt && y - (kompaktH + 12) < BOTTOM_LIMIT) y += posun;
-    const payH = kompakt ? kompaktH : plnaH;
-    const rStart = kompakt ? 34 : 42;
-    const rKrok = kompakt ? 15 : 20;
-    ensureSpace(payH + 12);
-    const payX = margin;
-    const payY = y;
-    const payW = innerW;
-    const qrSize = kompakt ? 72 : 100;
-    const qrGap = 24; // gap between data column and QR
-    const qrCol = qrSize + 32; // right column width with padding
-    const dataColW = payW - qrCol - qrGap;
-
-    cur.drawRectangle({
-      x: payX,
-      y: payY - payH,
-      width: payW,
-      height: payH,
-      color: white,
-      borderColor: hairline,
-      borderWidth: 0.7,
-    });
-    cur.drawRectangle({ x: payX, y: payY - payH, width: 3, height: payH, color: primary });
-    cur.drawText(t.platobneUdaje, {
-      x: payX + 16,
-      y: payY - 20,
-      size: 8,
-      font: bold,
-      color: muted,
-    });
-
-    const rows = riadkyPlatby;
-    const labelColW = 110;
-    const valueColW = Math.max(80, dataColW - labelColW - 16);
-    rows.forEach(([k, v], i) => {
-      const ry = payY - rStart - i * rKrok;
-      cur.drawText(String(k), { x: payX + 16, y: ry, size: 8.5, font, color: muted });
-      // Truncate value to fit value column
-      const valStr = ellipsize(String(v), bold, 10, valueColW);
-      cur.drawText(valStr, { x: payX + 16 + labelColW, y: ry, size: 10, font: bold, color: ink });
-    });
-
-    /*
-      QR na platbu len keď je čo platiť: dobropis vracia peniaze opačným smerom
-      a QR na IBAN vystavovateľa by odberateľa naviedol poslať ich ešte raz.
-    */
-    if (kresliQr) {
-      try {
-        /*
-          Formát podľa krajiny firmy: slovenská banka číta PAY by square,
-          česká SPD. Dovtedy sa aj slovenským firmám kreslil český SPD, takže
-          QR vyzeral funkčne a banka ho prečítať nemusela.
-        */
-        const { png, payme } = await pripravQr();
-        const qrX = payX + payW - qrSize - 16;
-        const qrY = payY - payH + 10;
-        cur.drawImage(png, { x: qrX, y: qrY, width: qrSize, height: qrSize });
-        cur.drawText(t.qrPlatba, {
-          x: qrX,
-          y: qrY + qrSize + 6,
-          size: 7,
-          font: bold,
-          color: muted,
-        });
-        /*
-          Tlačidlo PAYME — v mobile otvorí bankovú aplikáciu s vyplneným
-          príkazom (Tatra banka, Slovenská sporiteľňa). Len slovenské firmy
-          a eurá; je to klikateľný odkaz v PDF.
-        */
-        if (payme) {
-          // V riadku splatnosti, hneď za dátumom — karta sa nezväčší.
-          const datum = datumNaDoklade(invoice.due_date, jazyk);
-          const bx = payX + 16 + 110 + bold.widthOfTextAtSize(datum, 10) + 12;
-          const by = payY - rStart - 3 * rKrok - 3.5;
-          kresliPayme(bx, by, payme);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    y = payY - payH - 24;
-
+  if (kresliPlatbu) {
     // ── GoPay online payment card (only when a payment link is available) ──
     if (input.paymentLinkUrl) {
       const gpH = 130;
@@ -1479,11 +1406,10 @@ async function vykresliFakturu(
 
   // ── Reverse charge legal text (keď sa nezmestil vedľa súčtov) ──
   if (textPrenesenia && !prenesenieHotove) {
-    if (cur !== page || y - (18 + wrapLines(textPrenesenia, bold, 9.5, innerW - 16).length * 12 + 16) < BOTTOM_LIMIT)
-      prenesenieMimoPrvejStrany = true;
     const rcText = textPrenesenia;
     const rcLines = wrapLines(rcText, bold, 9.5, innerW - 16);
-    const needed = 18 + rcLines.length * 12 + 16;
+    const needed = rcLines.length * 12 + 16;
+    if (cur !== page || y - needed < BOTTOM_LIMIT) prenesenieMimoPrvejStrany = true;
     ensureSpace(needed);
     cur.drawRectangle({
       x: margin,
@@ -1515,7 +1441,7 @@ async function vykresliFakturu(
   */
   for (const veta of poznamkyHotove ? [] : vetyPodSuctami) {
     const lines = wrapLines(veta, bold, 9.5, innerW);
-    ensureSpace(14 + lines.length * 12 + 6);
+    ensureSpace(lines.length * 12);
     lines.forEach((ln) => {
       cur.drawText(ln, { x: margin, y, size: 9.5, font: bold, color: sub });
       y -= 12;
@@ -1533,7 +1459,7 @@ async function vykresliFakturu(
   */
   if (textDph && !poznamkyHotove) {
     const lines = wrapLines(textDph, bold, 9.5, innerW);
-    ensureSpace(18 + lines.length * 12 + 8);
+    ensureSpace(lines.length * 12);
     lines.forEach((ln) => {
       cur.drawText(ln, { x: margin, y, size: 9.5, font: bold, color: sub });
       y -= 12;
@@ -1543,15 +1469,39 @@ async function vykresliFakturu(
 
   if (invoice.notes && !poznamkyHotove) {
     const noteLines = wrapLines(String(invoice.notes), font, 9.5, innerW);
-    const needed = 18 + noteLines.length * 12 + 12;
-    ensureSpace(needed);
+    /*
+      Poznámka je obyčajný text — dlhá sa zalomí na ďalšiu stranu po riadkoch.
+      Celá naraz by pre pár riadkov posunula na novú stranu aj krátky začiatok.
+      Nadpis ostáva aspoň s dvoma riadkami.
+    */
+    ensureSpace(14 + Math.min(2, noteLines.length) * 12);
     cur.drawText(t.poznamky, { x: margin, y, size: 8, font: bold, color: muted });
     y -= 14;
     noteLines.forEach((ln) => {
+      ensureSpace(12);
       cur.drawText(ln, { x: margin, y, size: 9.5, font, color: sub });
       y -= 12;
     });
     y -= 12;
+  }
+
+  /*
+    Pečiatka, ktorá sa nezmestila pod platobnú kartu vedľa súčtov, ide pod
+    celý blok vľavo — tak ako podpis na konci papierovej faktúry. Na
+    poslednej strane sa radšej zmenší (do 40 bodov), než aby kvôli nej
+    vznikla nová strana.
+  */
+  if (peciatkaNaKonci) {
+    const PECIATKA_MAX = 72;
+    const PECIATKA_MIN = 40;
+    let vyska = Math.min(PECIATKA_MAX, y - 20 - BOTTOM_LIMIT);
+    if (vyska < PECIATKA_MIN) {
+      ensureSpace(PECIATKA_MAX + 20);
+      vyska = PECIATKA_MAX;
+    }
+    const spodok = y - 20 - vyska;
+    await kresliObrazokPeciatky(spodok, vyska);
+    y = spodok - 8;
   }
 
   /*
@@ -1861,23 +1811,23 @@ function drawPartyCard(
   popis: { ico: string; dic: string; icDph: string },
 ): number {
   const padX = 16;
-  const padTop = 16;
+  const padTop = 14;
   let cy = y - padTop;
 
   // Label
   page.drawText(san(label), { x: x + padX, y: cy - 4, size: 8, font: bold, color: c.primary });
-  cy -= 18;
+  cy -= 16;
 
   // Name
   if (p.name) {
     page.drawText(san(p.name), { x: x + padX, y: cy - 12, size: 13, font: bold, color: c.ink });
-    cy -= 20;
+    cy -= 18;
   }
 
   // Address lines
   p.lines.forEach((l) => {
     page.drawText(san(l), { x: x + padX, y: cy - 10, size: 9.5, font, color: c.sub });
-    cy -= 13;
+    cy -= 12.5;
   });
 
   // Tax IDs (compact)
@@ -1886,14 +1836,14 @@ function drawPartyCard(
   if (p.dic) ids.push([popis.dic, String(p.dic)]);
   if (p.ic_dph) ids.push([popis.icDph, String(p.ic_dph)]);
   if (ids.length) {
-    cy -= 6;
+    cy -= 5;
     page.drawLine({
       start: { x: x + padX, y: cy },
       end: { x: x + w - padX, y: cy },
       color: c.hairline,
       thickness: 0.5,
     });
-    cy -= 4;
+    cy -= 3;
     ids.forEach(([k, v]) => {
       page.drawText(san(k), { x: x + padX, y: cy - 10, size: 8.5, font, color: c.muted });
       /*
@@ -1909,7 +1859,7 @@ function drawPartyCard(
         font: bold,
         color: c.ink,
       });
-      cy -= 13;
+      cy -= 12.5;
     });
   }
 
@@ -1932,7 +1882,7 @@ function drawPartyCard(
     cy -= 12;
   }
 
-  const cardH = y - cy + 12;
+  const cardH = y - cy + 10;
   // Background card (draw behind by overlay-rect with low cover? pdf-lib draws in z-order; we draw rect now ON TOP — workaround: draw lighter alt fill by using border only)
   page.drawRectangle({
     x,

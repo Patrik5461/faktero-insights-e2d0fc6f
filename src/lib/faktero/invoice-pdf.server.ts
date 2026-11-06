@@ -43,8 +43,11 @@ export async function menoAutora(userId: string | null | undefined): Promise<str
         dodávateľa.
     3 — 2026-11-06: súčtový riadok „Spolu“ v rekapitulácii DPH, veta
         o prenesení s celým ustanovením (§ 69 ods. 12 písm. a–j, CZ § 92b–92f).
+    4 — 2026-11-06: platobné údaje s QR vľavo vedľa súčtov (jeden blok, QR
+        nikdy sám na ďalšej strane), úspornejšie medzery — bežný doklad
+        s desiatimi položkami je na jednej strane.
 */
-export const VERZIA_SABLONY_PDF = 3;
+export const VERZIA_SABLONY_PDF = 4;
 
 /*
   Dobropis sa od 2026-10 kreslí s kladnými sumami. Obsah faktúry sa nezmenil,
