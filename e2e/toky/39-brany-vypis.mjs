@@ -163,7 +163,7 @@ export default {
     // ------------------------------------------------------------ Výpis do Pohody
     let pohoda;
     await t.krok("Výpis z platobnej brány: XML pre Pohodu prejde schémou", async () => {
-      await t.go("/uctovnictvo/vypis-do-pohody?zdroj=brana");
+      await t.go("/uctovnictvo/konvertory?tab=brana");
       await page.locator('input[type="file"]').setInputFiles(subor);
       await page.getByText(/Prečítané z exportu Stripe/).waitFor({ timeout: 30000 });
       await page.getByPlaceholder(/napr\. TB/).fill("STR");

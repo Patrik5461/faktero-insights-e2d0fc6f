@@ -165,8 +165,8 @@ export default {
   "Pri výpadku sa vystavenie samo zopakuje a faktúra nikdy nevznikne dvakrát":
     "Bei einem Ausfall wird die Ausstellung automatisch wiederholt, und eine Rechnung entsteht nie doppelt",
   "A potom aj platby": "Und dann auch die Zahlungen",
-  "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Výpis z platobnej brány) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.":
-    "Den Export aus Stripe, PayPal oder GoPay laden Sie in Faktero hoch (Buchhaltung → Auszug vom Zahlungsanbieter) und die Zahlungen werden anhand der Bestellnummer mit den Rechnungen abgeglichen. Gebühren des Anbieters und Auszahlungen aufs Konto gehen getrennt in die Buchhaltung.",
+  "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.":
+    "Den Export aus Stripe, PayPal oder GoPay laden Sie in Faktero hoch (Buchhaltung → Konverter, Reiter Zahlungsanbieter → Pohoda) und die Zahlungen werden anhand der Bestellnummer mit den Rechnungen abgeglichen. Gebühren des Anbieters und Auszahlungen aufs Konto gehen getrennt in die Buchhaltung.",
   "Platby cez Stripe, PayPal a GoPay": "Zahlungen über Stripe, PayPal und GoPay",
   "Export z platobnej brány ako bankový výpis — platby, poplatky a výbery na účet zvlášť.":
     "Export vom Zahlungsanbieter als Kontoauszug — Zahlungen, Gebühren und Auszahlungen aufs Konto getrennt.",
@@ -183,8 +183,8 @@ export default {
   "Pre účtovníčku dávka do Pohody alebo SEPA XML (camt.053)":
     "Für die Buchhalterin ein Stapel für Pohoda oder SEPA-XML (camt.053)",
   "Ktoré brány": "Welche Anbieter",
-  "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Výpis z platobnej brány.":
-    "Stripe, PayPal, GoPay, Comgate, Barion, Mollie und Packeta — es genügt der CSV-Export aus deren Administration; andere Anbieter über eine allgemeine Vorlage. Sie finden das unter Buchhaltung → Auszug vom Zahlungsanbieter.",
+  "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda.":
+    "Stripe, PayPal, GoPay, Comgate, Barion, Mollie und Packeta — es genügt der CSV-Export aus deren Administration; andere Anbieter über eine allgemeine Vorlage. Sie finden das unter Buchhaltung → Konverter, Reiter Zahlungsanbieter → Pohoda.",
   "Hromadný príkaz na úhradu": "Sammelüberweisung",
   "Prijaté faktúry zaplatíte naraz jedným súborom pre internetbanking.":
     "Eingangsrechnungen bezahlen Sie auf einmal mit einer Datei fürs Online-Banking.",

@@ -215,7 +215,8 @@ export function AutoZauctovanieOdznak({
         </ul>
       )}
       <Link
-        to="/uctovnictvo/na-kontrolu"
+        to="/uctovnictvo/zauctovanie"
+        search={{ tab: "kontrola" } as any}
         className="mt-1 inline-block text-xs text-primary hover:underline"
       >
         {t("Všetky doklady na kontrolu")}
@@ -248,8 +249,9 @@ export function ponukaPravidlaToast(
       label: t("Vytvoriť pravidlo"),
       onClick: () =>
         navigate({
-          to: "/uctovnictvo/pravidla",
+          to: "/uctovnictvo/zauctovanie",
           search: {
+            tab: "pravidla",
             novy: p.druh,
             nazov: p.text ?? p.nazov,
             ico: p.ico ?? undefined,

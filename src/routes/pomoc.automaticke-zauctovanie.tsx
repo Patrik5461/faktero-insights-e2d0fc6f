@@ -39,7 +39,10 @@ const sections: HelpSection[] = [
             <strong>Pravidlo automatického účtovania</strong> (istota 100 %) — podľa partnera,
             textu, spôsobu úhrady, predmetu či odosielateľa e-mailu, krajiny, variabilného symbolu
             alebo typu dokladu. Pravidlá spravujete v{" "}
-            <Link to="/uctovnictvo/pravidla">Účtovníctvo → Automatické účtovanie</Link>.
+            <Link to="/uctovnictvo/zauctovanie" search={{ tab: "pravidla" }}>
+              Účtovníctvo → Automatické účtovanie
+            </Link>
+            .
           </li>
           <li>
             <strong>Zvyk partnera</strong> — keď ste aspoň tri z posledných desiatich dokladov od
@@ -110,10 +113,12 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
-          Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke{" "}
-          <Link to="/uctovnictvo/na-kontrolu">Zaúčtovanie na kontrolu</Link> alebo pri pravidlách
-          automatického účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé
-          nezaúčtujú.
+          Režim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky{" "}
+          <Link to="/uctovnictvo/zauctovanie" search={{ tab: "kontrola" }}>
+            Účtovníctvo → Automatické účtovanie
+          </Link>
+          , nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov —
+          staré sa samé nezaúčtujú.
         </p>
       </>
     ),
@@ -142,13 +147,17 @@ const sections: HelpSection[] = [
   },
   {
     id: "na-kontrolu",
-    title: "Stránka Na kontrolu",
+    title: "Záložka Na kontrolu",
     body: (
       <>
         <p>
-          V <Link to="/uctovnictvo/na-kontrolu">Účtovníctvo → Zaúčtovanie na kontrolu</Link> sú
-          všetky nezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa
-          druhu, blokátora a zdroja, vyberiete a potvrdíte návrhy naraz.
+          V{" "}
+          <Link to="/uctovnictvo/zauctovanie" search={{ tab: "kontrola" }}>
+            Účtovníctvo → Automatické účtovanie
+          </Link>
+          , na záložke Na kontrolu, sú všetky nezaúčtované doklady s návrhom, zdrojom a dôvodom,
+          prečo čakajú. Filtrujete podľa druhu, blokátora a zdroja, vyberiete a potvrdíte návrhy
+          naraz.
         </p>
         <p>
           Tlačidlo <strong>Navrhnúť zaúčtovanie pre nezaúčtované</strong> pripraví návrhy aj pre

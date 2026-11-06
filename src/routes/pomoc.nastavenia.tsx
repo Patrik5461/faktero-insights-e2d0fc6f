@@ -215,8 +215,8 @@ const SEKCIE: HelpSection[] = [
           </li>
           <li>
             <strong>Podľa druhu a podľa adresátov</strong> — koľko čoho odišlo, komu koľko a kedy
-            naposledy; pri adrese je aj odberateľ z dokladu. Vidno aj to, kto e-maily odosielal a
-            čo odišlo automaticky (upomienky, API, appka).
+            naposledy; pri adrese je aj odberateľ z dokladu. Vidno aj to, kto e-maily odosielal a čo
+            odišlo automaticky (upomienky, API, appka).
           </li>
           <li>
             <strong>Posledné odoslania</strong> — každý e-mail s odkazom na faktúru, ponuku či
@@ -260,8 +260,8 @@ const SEKCIE: HelpSection[] = [
           faktúry je potom tlačidlo <em>Poslať cez Zásielkovňu</em>: výdajné miesto vyberiete na
           mape (alebo zadáte id dopravcu pri doručení na adresu), hmotnosť a dobierku vo výške
           faktúry. Štítok stiahnete ako PDF a stav zásielky si viete kedykoľvek obnoviť. Vybrané
-          dobierky nahráte z exportu faktúr Packety v <em>Účtovníctvo → Výpis z platobnej brány</em>
-          .
+          dobierky nahráte z exportu faktúr Packety v{" "}
+          <em>Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda</em>.
         </p>
       </>
     ),

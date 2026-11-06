@@ -114,15 +114,15 @@ const sections: HelpSection[] = [
       <>
         <p>
           Firma môže mať <strong>viac hotovostných pokladní</strong> — napríklad pokladňu v eurách a
-          druhú v korunách, alebo jednu na predajňu a druhú v kancelárii. Spravujú sa tlačidlom{" "}
-          <strong>Pokladne</strong> na stránke <Link to="/pokladna">Pokladňa</Link>: názov, mena,
-          skratka pokladne v Pohode, predvolená pokladňa a archivovanie. Zmazať sa dá len pokladňa
-          bez pohybov; s pohybmi ju archivujte.
+          druhú v korunách, alebo jednu na predajňu a druhú v kancelárii. Spravujú sa v{" "}
+          <Link to="/uctovnictvo/pokladne">Účtovníctvo → Pokladne</Link>: názov, mena, skratka
+          pokladne v Pohode, predvolená pokladňa a archivovanie. Zmazať sa dá len pokladňa bez
+          pohybov; s pohybmi ju archivujte.
         </p>
         <p>
           Každá pokladňa má <strong>vlastný zostatok a pokladničnú knihu</strong>. Nad tabuľkou si
-          vyberiete pokladňu alebo <strong>Všetky pokladne</strong> — vtedy sú súčty po menách,
-          eurá a koruny sa nesčítavajú.
+          vyberiete pokladňu alebo <strong>Všetky pokladne</strong> — vtedy sú súčty po menách, eurá
+          a koruny sa nesčítavajú.
         </p>
         <p>
           Pri novom pokladničnom doklade aj pri doklade platenom hotovosťou sa{" "}

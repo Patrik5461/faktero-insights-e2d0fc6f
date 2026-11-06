@@ -51,8 +51,8 @@ export function PravidloZDokladu({
     : "inline-flex items-center gap-1 text-xs text-primary hover:underline";
   return (
     <Link
-      to="/uctovnictvo/pravidla"
-      search={hladaniePravidlaZDokladu(zaklad, podobne) as any}
+      to="/uctovnictvo/zauctovanie"
+      search={{ ...hladaniePravidlaZDokladu(zaklad, podobne), tab: "pravidla" } as any}
       className={trieda}
       title={
         podobne

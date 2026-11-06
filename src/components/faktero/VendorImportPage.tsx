@@ -34,6 +34,9 @@ export function VendorImportPage(props: {
   guide: ReactNode;
   /** Rozbaľovačka zdroja — na stránke „Účtovné importy". Jednotlivé stránky ju nemajú. */
   selector?: ReactNode;
+  /** Záložky stránky (Import | História) — kreslia sa hneď pod hlavičkou a
+   *  nahrádzajú tlačidlo „História importov“ v hlavičke. */
+  zalozky?: ReactNode;
 }) {
   const { t } = useT();
   const createUrl = useServerFn(createImportUploadUrl);
@@ -113,16 +116,20 @@ export function VendorImportPage(props: {
         title={t(props.title)}
         description={t(props.description)}
         action={
-          <Link
-            to="/importy"
-            className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
-          >
-            <History className="h-4 w-4" /> {t("História importov")}
-          </Link>
+          props.zalozky ? undefined : (
+            <Link
+              to="/importy/novy"
+              search={{ tab: "historia" }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+            >
+              <History className="h-4 w-4" /> {t("História importov")}
+            </Link>
+          )
         }
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-6">
+          {props.zalozky}
           {step === 1 && (
             <>
               {props.selector}
@@ -289,7 +296,8 @@ export function VendorImportPage(props: {
                   {t("Prejsť na faktúry")}
                 </Link>
                 <Link
-                  to="/importy"
+                  to="/importy/novy"
+                  search={{ tab: "historia" }}
                   className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
                 >
                   {t("História importov")}

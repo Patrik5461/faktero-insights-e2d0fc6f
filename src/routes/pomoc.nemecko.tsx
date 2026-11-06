@@ -333,7 +333,12 @@ const sections: HelpSection[] = [
           doklady.
         </p>
         <p>
-          Pred prvým exportom otvorte <strong>Nastavenia pre DATEV</strong> a vyplňte:
+          Pred prvým exportom vyplňte v{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Účtovníctvo → Predkontácie a členenie DPH/KV
+          </Link>
+          , sekcia <strong>Nastavenia exportu</strong> (tlačidlo{" "}
+          <strong>Nastavenia pre DATEV</strong> v Účtovných exportoch vás tam zavedie):
         </p>
         <ul>
           <li>
@@ -360,9 +365,9 @@ const sections: HelpSection[] = [
         <p>
           Daň si DATEV rozpočíta sám: výnosy a nákupy v prenesení idú na automatické účty, bežné
           náklady s BU-Schlüssel. Účet z predkontácie (
-          <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>) má prednosť pred
-          predvoleným účtom osnovy. V časti <strong>Prepis účtov</strong> môžete ktorýkoľvek
-          predvolený účet nahradiť vlastným.
+          <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie a členenie DPH/KV</Link>)
+          má prednosť pred predvoleným účtom osnovy. V časti <strong>Prepis účtov</strong> môžete
+          ktorýkoľvek predvolený účet nahradiť vlastným.
         </p>
         <p>
           Bežné účty (výnosy 19 % a 7 %, odberatelia, dodávatelia, nákupy) zodpovedajú osnove SKR03

@@ -213,7 +213,7 @@ export function NastaveniaExportu({
           "partneri",
           "Export partnera do adresára Pohody",
           PARTNERI,
-          "Pri párovaní ide karta partnera z adresára Faktera do Pohody pred dokladom a doklad sa na ňu odvolá. Celý adresár naraz sa zapína v Prepojení s Pohodou.",
+          "Pri párovaní ide karta partnera z adresára Faktera do Pohody pred dokladom a doklad sa na ňu odvolá. Celý adresár naraz sa zapína nižšie v časti Čo sa do Pohody posiela.",
         )}
       </fieldset>
 

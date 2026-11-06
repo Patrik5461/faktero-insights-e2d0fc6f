@@ -57,8 +57,8 @@ export default {
   "<0>Zmazať sa dá len zákazka bez dokladov.</0> Ak sú na ňu naviazané faktúry alebo pohyby, Faktero mazanie odmietne — inak by tie doklady stratili súvislosť.":
     "<0>Smazat lze jen zakázku bez dokladů.</0> Pokud jsou na ni navázané faktury nebo pohyby, Faktero mazání odmítne — jinak by tyto doklady ztratily souvislost.",
   "Zákazky v Pohode": "Zakázky v Pohodě",
-  "Zákazky sa dajú posielať aj do Pohody a faktúra tam potom nesie zákazku, takže je z účtovníctva vidieť výnos po zákazkách. Zapína sa to vo <0>Účtovníctvo → Prepojenie s Pohodou</0>, podrobnosti sú v <1>manuáli k Pohode</1>.":
-    "Zakázky lze posílat i do Pohody a faktura tam pak nese zakázku, takže je z účetnictví vidět výnos po zakázkách. Zapíná se to v <0>Účetnictví → Propojení s Pohodou</0>, podrobnosti jsou v <1>manuálu k Pohodě</1>.",
+  "Zákazky sa dajú posielať aj do Pohody a faktúra tam potom nesie zákazku, takže je z účtovníctva vidieť výnos po zákazkách. Zapína sa to v <0>Účtovníctvo → Predkontácie a členenie DPH/KV</0>, sekcia Nastavenia exportu, podrobnosti sú v <1>manuáli k Pohode</1>.":
+    "Zakázky lze posílat i do Pohody a faktura tam pak nese zakázku, takže je z účetnictví vidět výnos po zakázkách. Zapíná se to v <0>Účetnictví → Předkontace a členění DPH/KH</0>, sekce Nastavení exportu, podrobnosti jsou v <1>manuálu k Pohodě</1>.",
   "Zákazka odchádza <0>raz</0> — Pohoda ju vie založiť, ale nie prepísať. Keď jej neskôr zmeníte názov, prepíšte ho aj tam.":
     "Zakázka odchází <0>jednou</0> — Pohoda ji umí založit, ale ne přepsat. Když jí později změníte název, přepište ho i tam.",
 } satisfies Record<string, string>;

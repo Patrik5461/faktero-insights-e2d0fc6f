@@ -16,7 +16,7 @@ import {
   Users,
   Warehouse,
 } from "lucide-react";
-import { oblastPodlaCesty, vidiOblast } from "@/lib/faktero/opravnenia";
+import { vidiOdkaz } from "@/lib/faktero/opravnenia";
 import type { ActiveProduct } from "@/lib/faktero/active-product";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
 import { nedostupneAgendy } from "@/lib/faktero/agendy-krajiny";
@@ -38,6 +38,12 @@ type NavChild = {
   search?: Record<string, string>;
   label: string;
   companyAdminOnly?: boolean;
+  /**
+   * Podsekcia, do ktorej položka patrí (Účtovníctvo → „Uzávierky a DPH“).
+   * Položky jednej podsekcie idú v `children` za sebou; nadpis sa kreslí pri
+   * zmene hodnoty. Podsekcia s jedinou položkou rovnakého mena nadpis nemá.
+   */
+  skupina?: string;
 };
 export type NavGroup = {
   key: string;
@@ -230,29 +236,32 @@ export const NAV: NavGroup[] = [
     label: "Účtovníctvo",
     icon: FileSpreadsheet,
     match: ["/pokladna", "/exporty", "/importy", "/uctovnictvo"],
+    /*
+      Štruktúra schválená 2026-11: podsekcie (`skupina`) sú v kompaktnom
+      rozložení skupiny v lište nad obsahom, v klasickom nadpisy v rozbalenej
+      sekcii. Každá stránka je v menu raz — história exportov a importov, druhá
+      záložka pravidiel aj tri konvertory sú záložky svojej stránky, nie
+      samostatné položky. Názov položky = nadpis stránky.
+    */
     children: [
-      { to: "/pokladna", label: "Pokladňa" },
-      { to: "/uctovnictvo/dph", label: "DPH prehľad" },
-      { to: "/uctovnictvo/vykazy", label: "Výkazy k DPH (priznanie, KV, SV)" },
-      { to: "/uctovnictvo/oss", label: "OSS — predaj do EÚ" },
-      { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
-      { to: "/exporty", label: "Účtovné exporty" },
-      { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
+      { to: "/uctovnictvo/zauctovanie", label: "Automatické účtovanie", skupina: "Zaúčtovanie" },
+      { to: "/pokladna", label: "Pokladňa", skupina: "Pokladňa" },
+      { to: "/uctovnictvo/dph", label: "DPH prehľad", skupina: "Uzávierky a DPH" },
+      { to: "/uctovnictvo/vykazy", label: "Výkazy k DPH", skupina: "Uzávierky a DPH" },
+      { to: "/uctovnictvo/oss", label: "OSS", skupina: "Uzávierky a DPH" },
+      { to: "/uctovnictvo/uzavierka", label: "Uzávierka", skupina: "Uzávierky a DPH" },
+      { to: "/exporty", label: "Účtovné exporty", skupina: "Exporty a importy" },
       /* Jedna položka na všetky programy — odkiaľ sa importuje, si človek
          vyberie na stránke, rovnako ako formát pri exportoch. */
-      { to: "/importy/novy", label: "Účtovné importy" },
-      { to: "/importy", label: "História importov" },
-      { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou" },
-      { to: "/uctovnictvo/vypis-do-pohody", label: "Bankový výpis do Pohody" },
+      { to: "/importy/novy", label: "Účtovné importy", skupina: "Exporty a importy" },
+      { to: "/uctovnictvo/konvertory", label: "Konvertory", skupina: "Exporty a importy" },
       {
-        to: "/uctovnictvo/vypis-do-pohody",
-        search: { zdroj: "brana" },
-        label: "Výpis z platobnej brány",
+        to: "/uctovnictvo/predkontacie",
+        label: "Predkontácie a členenie DPH/KV",
+        skupina: "Nastavenie účtovania",
       },
-      { to: "/uctovnictvo/konvertor", label: "Konvertor Excel → Pohoda" }, // rovnaký nadpis má stránka (E-19)
-      { to: "/uctovnictvo/predkontacie", label: "Predkontácie a členenie DPH" },
-      { to: "/uctovnictvo/na-kontrolu", label: "Zaúčtovanie na kontrolu" },
-      { to: "/uctovnictvo/pravidla", label: "Automatické účtovanie" },
+      { to: "/uctovnictvo/pokladne", label: "Pokladne", skupina: "Nastavenie účtovania" },
+      { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou", skupina: "Nastavenie účtovania" },
     ],
   },
   {
@@ -410,17 +419,9 @@ const LEN_SK = ["/pokladna", "/efaktura"];
 // Agendy, ktoré nemecká firma nedostane — zdieľané s nástenkou, zvončekom a e-mailom.
 export { NIE_PRE_DE, nedostupneAgendy, agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
 
-/** Názov položky Výkazy k DPH podľa krajiny firmy. */
-export function nazovVykazov(krajina: KrajinaDane): string {
-  if (krajina === "CZ") return "Výkazy k DPH (přiznání, kontrolní hlášení)";
-  if (krajina === "DE") return "Výkazy k DPH (UStVA, ZM)";
-  return "Výkazy k DPH (priznanie, KV, SV)";
-}
-
 /** Vidí človek stránku podľa oblasti jej cesty? Stránky mimo oblastí vidí každý. */
 function vidiOblastCesty(to: string, rola: string | null, opravnenia: unknown): boolean {
-  const o = oblastPodlaCesty(String(to).split("?")[0]!);
-  return !o || vidiOblast(rola, opravnenia, o);
+  return vidiOdkaz(rola, opravnenia, String(to));
 }
 
 /** Je cesta pre firmu v danej krajine? (slovenské agendy, nemecké výnimky) */
@@ -506,12 +507,9 @@ export function filterNav(
           ? g
           : {
               ...g,
-              children: g.children
-                .filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x)))
-                // Česká firma podáva přiznání a kontrolní hlášení, nemecká UStVA a ZM — nie KV a SV (B-15).
-                .map((c) =>
-                  c.to === "/uctovnictvo/vykazy" ? { ...c, label: nazovVykazov(krajina) } : c,
-                ),
+              /* „Výkazy k DPH“ je bez zoznamu tlačív — česká firma podáva přiznání
+                 a kontrolní hlášení, nemecká UStVA a ZM, nie KV a SV (B-15). */
+              children: g.children.filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x))),
             },
       )
       // Nemecká firma: bez pokladne, knihy jázd a zamestnancov (slovenské predpisy).
@@ -573,11 +571,15 @@ export const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/uctovnictvo/dph", to: "/pomoc/dph" },
   { prefix: "/uctovnictvo/uzavierka", to: "/pomoc/uzavierka" },
   { prefix: "/uctovnictvo/pohoda", to: "/pomoc/pohoda" },
+  { prefix: "/uctovnictvo/konvertory", to: "/pomoc/pohoda" },
+  { prefix: "/uctovnictvo/zauctovanie", to: "/pomoc/automaticke-zauctovanie" },
+  { prefix: "/uctovnictvo/predkontacie", to: "/pomoc/pohoda" },
+  { prefix: "/uctovnictvo/pokladne", to: "/pomoc/pokladna" },
+  // Staré adresy len presmerujú; manuál nech ukazujú aj počas presmerovania.
   { prefix: "/uctovnictvo/vypis-do-pohody", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/konvertor", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/pravidla", to: "/pomoc/automaticke-zauctovanie" },
   { prefix: "/uctovnictvo/na-kontrolu", to: "/pomoc/automaticke-zauctovanie" },
-  { prefix: "/uctovnictvo/predkontacie", to: "/pomoc/pohoda" },
   { prefix: "/podpora", to: "/pomoc/podpora" },
   { prefix: "/exporty", to: "/pomoc/exporty" },
   { prefix: "/importy", to: "/pomoc/exporty" },

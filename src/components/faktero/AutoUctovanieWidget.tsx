@@ -20,7 +20,8 @@ export function AutoUctovanieWidget({ companyId }: { companyId: string }) {
   return (
     <div className="mb-6">
       <Link
-        to="/uctovnictvo/na-kontrolu"
+        to="/uctovnictvo/zauctovanie"
+        search={{ tab: "kontrola" } as any}
         className="group flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent/60"
       >
         <div className="flex min-w-0 items-center gap-4">

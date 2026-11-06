@@ -144,8 +144,8 @@ export function VyberPravidla({
       ) : null}
       {pouzite ? (
         <Link
-          to="/uctovnictvo/pravidla"
-          search={{ upravit: pouzite.id } as any}
+          to="/uctovnictvo/zauctovanie"
+          search={{ tab: "pravidla", upravit: pouzite.id } as any}
           className="inline-flex items-center gap-1 text-primary hover:underline"
         >
           <Pencil className="h-3.5 w-3.5" /> {t("Upraviť pravidlo")}
@@ -171,7 +171,11 @@ export function VyberPravidla({
         />
       ) : null}
       {/* Samotné „pravidlá“ viselo osamote bez súvislosti — povedz, kam odkaz vedie. */}
-      <Link to="/uctovnictvo/pravidla" className="text-primary hover:underline">
+      <Link
+        to="/uctovnictvo/zauctovanie"
+        search={{ tab: "pravidla" } as any}
+        className="text-primary hover:underline"
+      >
         {t("Automatické účtovanie →")}
       </Link>
     </div>

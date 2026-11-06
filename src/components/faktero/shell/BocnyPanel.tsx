@@ -26,7 +26,29 @@ export type PolozkaPanela = {
   label: string;
   /** Počet, ktorý čaká na vybavenie (napr. nespracované doklady). */
   pocet?: number;
+  /** Podsekcia (nadpis nad skupinou položiek) — pozri `NavChild.skupina`. */
+  skupina?: string;
 };
+
+/**
+ * Položky rozdelené na podsekcie v poradí, v akom idú. Podsekcia s jedinou
+ * položkou rovnakého mena (Účtovníctvo → Pokladňa) nadpis nedostane — bol by
+ * to ten istý text dvakrát pod sebou.
+ */
+export function podsekciePoloziek<P extends { label: string; skupina?: string }>(
+  polozky: P[],
+): { nadpis: string | null; polozky: P[] }[] {
+  const out: { kluc: string | undefined; nadpis: string | null; polozky: P[] }[] = [];
+  for (const p of polozky) {
+    const posledna = out[out.length - 1];
+    if (posledna && posledna.kluc === p.skupina) posledna.polozky.push(p);
+    else out.push({ kluc: p.skupina, nadpis: p.skupina ?? null, polozky: [p] });
+  }
+  return out.map(({ nadpis, polozky: pp }) => ({
+    nadpis: nadpis && !(pp.length === 1 && pp[0]!.label === nadpis) ? nadpis : null,
+    polozky: pp,
+  }));
+}
 
 export type SekciaPanela = {
   key: string;
@@ -213,38 +235,61 @@ export function SekcieNavigacie({
 
             {rozbalena && (
               /* Odsadenie nesie zvislá linka — bez nej sa podpoložky opticky
-                 miešajú s hlavnými sekciami. */
+                 miešajú s hlavnými sekciami. Podsekcie (Účtovníctvo) majú
+                 nadpis malým písmom a medzeru nad sebou. */
               <ul className="ml-[19px] mt-0.5 space-y-0.5 border-l border-border pl-2">
-                {s.polozky.map((p) => {
-                  const je = aktivnaPolozka === p.to + p.label;
-                  return (
-                    <li key={p.to + p.label}>
-                      <Link
-                        to={p.to as any}
-                        search={p.search as any}
-                        onClick={onPrejdi}
-                        aria-current={je ? "page" : undefined}
-                        data-w-polozka-menu
-                        data-w-aktivna={je ? "" : undefined}
-                        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
-                          je
-                            ? "bg-primary/10 font-semibold text-primary-hover"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        }`}
-                      >
-                        <span className="min-w-0 flex-1 leading-snug" title={t(p.label)}>
-                          {t(p.label)}
-                        </span>
-                        {p.pocet ? (
-                          <span
-                            data-w-pocet
-                            className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
-                            aria-label={t("{n} čaká", { n: p.pocet })}
-                          >
-                            {p.pocet > 99 ? "99+" : p.pocet}
+                {podsekciePoloziek(s.polozky).map((g, gi) => {
+                  const maPodsekcie = s.polozky.some((p) => p.skupina);
+                  const polozky = g.polozky.map((p) => {
+                    const je = aktivnaPolozka === p.to + p.label;
+                    return (
+                      <li key={p.to + p.label}>
+                        <Link
+                          to={p.to as any}
+                          search={p.search as any}
+                          onClick={onPrejdi}
+                          aria-current={je ? "page" : undefined}
+                          data-w-polozka-menu
+                          data-w-aktivna={je ? "" : undefined}
+                          className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
+                            je
+                              ? "bg-primary/10 font-semibold text-primary-hover"
+                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          }`}
+                        >
+                          <span className="min-w-0 flex-1 leading-snug" title={t(p.label)}>
+                            {t(p.label)}
                           </span>
-                        ) : null}
-                      </Link>
+                          {p.pocet ? (
+                            <span
+                              data-w-pocet
+                              className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
+                              aria-label={t("{n} čaká", { n: p.pocet })}
+                            >
+                              {p.pocet > 99 ? "99+" : p.pocet}
+                            </span>
+                          ) : null}
+                        </Link>
+                      </li>
+                    );
+                  });
+                  if (!maPodsekcie) return polozky;
+                  return (
+                    <li key={`podsekcia-${gi}`} className={gi > 0 ? "pt-2" : undefined}>
+                      {g.nadpis && (
+                        <div
+                          data-w-podsekcia-menu
+                          className="px-2 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80"
+                        >
+                          {t(g.nadpis)}
+                        </div>
+                      )}
+                      <ul
+                        aria-label={g.nadpis ? t(g.nadpis) : undefined}
+                        className="space-y-0.5"
+                      >
+                        {polozky}
+                      </ul>
                     </li>
                   );
                 })}

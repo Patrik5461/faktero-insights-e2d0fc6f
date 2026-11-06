@@ -166,8 +166,11 @@ const sections: HelpSection[] = [
       <>
         <p>
           Zákazky sa dajú posielať aj do Pohody a faktúra tam potom nesie zákazku, takže je z
-          účtovníctva vidieť výnos po zákazkách. Zapína sa to vo{" "}
-          <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link>, podrobnosti sú v{" "}
+          účtovníctva vidieť výnos po zákazkách. Zapína sa to v{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Účtovníctvo → Predkontácie a členenie DPH/KV
+          </Link>
+          , sekcia Nastavenia exportu, podrobnosti sú v{" "}
           <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
         </p>
         <p>

@@ -9,7 +9,6 @@ import {
   aktivnaVListe,
   filterNav,
   filtrujPolozky,
-  nazovVykazov,
   NAV,
   QUICK_CREATE,
 } from "./nav";
@@ -112,14 +111,13 @@ describe("názvy podľa krajiny (B-15, E-19)", () => {
       filterNav("invoicing", true, k)
         .flatMap((g) => g.children)
         .find((c) => c.to === "/uctovnictvo/vykazy")?.label;
-    expect(vykazy("SK")).toBe("Výkazy k DPH (priznanie, KV, SV)");
-    expect(vykazy("CZ")).toBe("Výkazy k DPH (přiznání, kontrolní hlášení)");
-    expect(vykazy("DE")).toBe("Výkazy k DPH (UStVA, ZM)");
-    expect(nazovVykazov("DE")).not.toContain("přiznání");
+    // Názov = nadpis stránky; tlačivá podľa krajiny sú až na nej (B-15).
+    for (const k of ["SK", "CZ", "DE"] as const) expect(vykazy(k)).toBe("Výkazy k DPH");
+    expect(vykazy("CZ")).not.toContain("KV");
   });
 
-  it("konvertor má v menu ten istý názov ako stránka", () => {
-    const c = NAV.flatMap((g) => g.children).find((x) => x.to === "/uctovnictvo/konvertor");
-    expect(c?.label).toBe("Konvertor Excel → Pohoda");
+  it("konvertory majú v menu ten istý názov ako stránka", () => {
+    const c = NAV.flatMap((g) => g.children).find((x) => x.to === "/uctovnictvo/konvertory");
+    expect(c?.label).toBe("Konvertory");
   });
 });

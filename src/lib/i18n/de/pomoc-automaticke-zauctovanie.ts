@@ -19,8 +19,8 @@ export default {
     "<0>Sicher</0> (Standard) — kontiert selbst Belege, die zu einer Regel oder einer festen Gewohnheit mit einer Sicherheit von mindestens 95 % passen. KI-Vorschläge warten auf Sie.",
   "<0>Plný</0> — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":
     "<0>Voll</0> — kontiert zusätzlich KI-Vorschläge mit einer Sicherheit von mindestens 90 %.",
-  "Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke <0>Zaúčtovanie na kontrolu</0> alebo pri pravidlách automatického účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
-    "Modus und Betragslimit stellt der Inhaber oder Admin des Unternehmens auf der Seite <0>Kontierung zur Prüfung</0> oder bei den Regeln der automatischen Buchung ein. Nach dem Einschalten betrifft es nur neue Belege — alte werden nicht von selbst kontiert.",
+  "Režim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky <0>Účtovníctvo → Automatické účtovanie</0>, nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
+    "Modus und Betragslimit stellt der Inhaber oder Admin des Unternehmens oben auf der Seite <0>Buchhaltung → Automatische Buchung</0> ein, über den Reitern Zur Prüfung, Regeln und Vorlagen. Nach dem Einschalten betrifft es nur neue Belege — alte werden nicht von selbst kontiert.",
   "Kedy doklad čaká na vás": "Wann ein Beleg auf Sie wartet",
   "Doklad sa nezaúčtuje sám nikdy, keď:": "Ein Beleg wird nie von selbst kontiert, wenn:",
   "súčet položiek alebo základ s DPH nesedí so sumou dokladu,":
@@ -36,9 +36,9 @@ export default {
     "er an die Buchhaltung übergeben oder gesperrt ist — ein solcher wird gar nicht geändert.",
   "Ručne zaúčtovaný doklad automat nikdy neprepíše. Hodnoty, ktoré na doklade už sú, majú vždy prednosť pred návrhom.":
     "Einen manuell kontierten Beleg überschreibt der Automat nie. Werte, die bereits am Beleg stehen, haben immer Vorrang vor dem Vorschlag.",
-  "Stránka Na kontrolu": "Die Seite Zur Prüfung",
-  "V <0>Účtovníctvo → Zaúčtovanie na kontrolu</0> sú všetky nezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa druhu, blokátora a zdroja, vyberiete a potvrdíte návrhy naraz.":
-    "Unter <0>Buchhaltung → Kontierung zur Prüfung</0> stehen alle nicht kontierten Belege mit Vorschlag, Quelle und dem Grund, warum sie warten. Sie filtern nach Art, Hindernis und Quelle, wählen aus und bestätigen die Vorschläge auf einmal.",
+  "Záložka Na kontrolu": "Der Reiter Zur Prüfung",
+  "V <0>Účtovníctvo → Automatické účtovanie</0>, na záložke Na kontrolu, sú všetky nezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa druhu, blokátora a zdroja, vyberiete a potvrdíte návrhy naraz.":
+    "Unter <0>Buchhaltung → Automatische Buchung</0>, im Reiter Zur Prüfung, stehen alle nicht kontierten Belege mit Vorschlag, Quelle und dem Grund, warum sie warten. Sie filtern nach Art, Hindernis und Quelle, wählen aus und bestätigen die Vorschläge auf einmal.",
   "Tlačidlo <0>Navrhnúť zaúčtovanie pre nezaúčtované</0> pripraví návrhy aj pre doklady spred zapnutia — nič pritom nezaúčtuje.":
     "Die Schaltfläche <0>Kontierung für nicht kontierte vorschlagen</0> bereitet Vorschläge auch für Belege von vor dem Einschalten vor — kontiert dabei nichts.",
   "Na detaile dokladu": "Am Beleg",

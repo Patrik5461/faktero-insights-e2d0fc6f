@@ -38,20 +38,21 @@ const sections: HelpSection[] = [
           <li>
             <strong>Bloček s QR kódom</strong> (eKasa) ide rovno do{" "}
             <Link to="/doklady">Bločkov</Link> — údaje sú z Finančnej správy. Kto chce aj tieto
-            kontrolovať, zapne v Účtovníctvo → Predkontácie voľbu „Bločky s QR kódom ukladať do
-            Nespracovaných dokladov“.
+            kontrolovať, zapne v Účtovníctvo → Predkontácie a členenie DPH/KV voľbu „Bločky s QR
+            kódom ukladať do Nespracovaných dokladov“.
           </li>
           <li>
-            <strong>Bloček uložený v appke</strong> ide tiež rovno do <Link to="/doklady">Bločkov</Link>{" "}
-            — aj s fotkou a s tým, čo sa z QR kódu alebo z fotky prečítalo. Bez fotky ho appka
-            neuloží: po načítaní QR kódu si fotku hneď vypýta. Voľba „Bločky s QR kódom ukladať do
-            Nespracovaných dokladov“ platí aj pre bločky z appky a bloček bez sumy alebo dátumu
-            počká v Nespracovaných.
+            <strong>Bloček uložený v appke</strong> ide tiež rovno do{" "}
+            <Link to="/doklady">Bločkov</Link> — aj s fotkou a s tým, čo sa z QR kódu alebo z fotky
+            prečítalo. Bez fotky ho appka neuloží: po načítaní QR kódu si fotku hneď vypýta. Voľba
+            „Bločky s QR kódom ukladať do Nespracovaných dokladov“ platí aj pre bločky z appky a
+            bloček bez sumy alebo dátumu počká v Nespracovaných.
           </li>
           <li>
             <strong>Bloček bez QR</strong> nahratý na webe (parkovanie, zahraničný),{" "}
-            <strong>faktúra</strong>, <strong>zálohová faktúra</strong> a <strong>iný doklad</strong>{" "}
-            z appky, nahratie na webe aj doklad z e-mailu idú do Nespracovaných dokladov.
+            <strong>faktúra</strong>, <strong>zálohová faktúra</strong> a{" "}
+            <strong>iný doklad</strong> z appky, nahratie na webe aj doklad z e-mailu idú do
+            Nespracovaných dokladov.
           </li>
           <li>
             Po kliknutí na <strong>Zaúčtovať</strong> sa doklad presunie do Bločkov alebo Prijatých
@@ -72,12 +73,16 @@ const sections: HelpSection[] = [
           <li>
             Rovno <strong>zaúčtujte</strong>: predkontácia, členenie DPH a kontrolného výkazu,
             stredisko, činnosť, zákazka, kategória. Keď na dodávateľa sedí{" "}
-            <Link to="/uctovnictvo/pravidla">pravidlo automatického účtovania</Link>, jeho kódy sa doplnia samy a
-            pri poli svieti hviezdička. Po zmene dodávateľa sa pravidlo vyhodnotí znova; keď sedí
-            viac pravidiel, iné vyberiete cez <em>Použiť pravidlo</em>.
+            <Link to="/uctovnictvo/zauctovanie" search={{ tab: "pravidla" }}>
+              pravidlo automatického účtovania
+            </Link>
+            , jeho kódy sa doplnia samy a pri poli svieti hviezdička. Po zmene dodávateľa sa
+            pravidlo vyhodnotí znova; keď sedí viac pravidiel, iné vyberiete cez{" "}
+            <em>Použiť pravidlo</em>.
           </li>
           <li>
-            Kliknite na <strong>Zaúčtovať</strong> (pri inom doklade <strong>Presunúť do iných dokladov</strong>) — doklad sa presunie medzi prijaté faktúry,
+            Kliknite na <strong>Zaúčtovať</strong> (pri inom doklade{" "}
+            <strong>Presunúť do iných dokladov</strong>) — doklad sa presunie medzi prijaté faktúry,
             doklady alebo iné doklady a otvorí sa ďalší nespracovaný. <strong>Uložiť zmeny</strong>{" "}
             ho nechá rozpracovaný na neskôr.
           </li>
@@ -135,18 +140,18 @@ const sections: HelpSection[] = [
         <p>
           Pri každej položke je aj jej zaúčtovanie: <strong>Predkontácia</strong>,{" "}
           <strong>Členenie DPH</strong> a <strong>Členenie KV</strong>. Prázdne pole znamená kód
-          dokladu — aj ten, ktorý doplní pravidlo automatického účtovania alebo návrh AI. Po stlačení Zaúčtovať sa
-          kódy prenesú s položkami do prijatej faktúry či bločku a export do účtovníctva doklad podľa
-          nich rozúčtuje. Dátum prijatia je hneď pri dátumoch dokladu, lebo
+          dokladu — aj ten, ktorý doplní pravidlo automatického účtovania alebo návrh AI. Po
+          stlačení Zaúčtovať sa kódy prenesú s položkami do prijatej faktúry či bločku a export do
+          účtovníctva doklad podľa nich rozúčtuje. Dátum prijatia je hneď pri dátumoch dokladu, lebo
           rozhoduje o období odpočtu DPH. Menej používané polia (interné číslo, adresa, krajina a
           e-mail dodávateľa) sú pod <strong>Zobraziť viac</strong>.
         </p>
         <p>
-          V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>, časť{" "}
-          <em>Export a spracovanie dokladov</em>, si nastavíte správanie Nespracovaných dokladov: či
-          je vytvorená faktúra rovno zaúčtovaná, či sa po vytvorení otvorí ďalší doklad, kontrolu
-          splatnosti, toleranciu zaokrúhlenia položiek v centoch, používanie vyťažených položiek
-          faktúr a bločkov a preberanie čísla dodacieho listu.
+          V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie a členenie DPH/KV</Link>
+          , časť <em>Export a spracovanie dokladov</em>, si nastavíte správanie Nespracovaných
+          dokladov: či je vytvorená faktúra rovno zaúčtovaná, či sa po vytvorení otvorí ďalší
+          doklad, kontrolu splatnosti, toleranciu zaokrúhlenia položiek v centoch, používanie
+          vyťažených položiek faktúr a bločkov a preberanie čísla dodacieho listu.
         </p>
         <p>
           Voľba <strong>Uprednostniť domácu menu pri vyťažovaní</strong> je predvolene zapnutá. Keď
@@ -249,8 +254,8 @@ const sections: HelpSection[] = [
           Uložený doklad sa otvorí s <strong>náhľadom bločku</strong> vedľa formulára a so sumárom
           po sadzbách DPH. V <strong>kompaktnom rozložení</strong> sa otvorí ako detail: hlavička s
           obchodníkom a sumou, účtovanie priamo na stránke (každá zmena sa hneď uloží), prílohy,
-          položky, ostatné údaje k bločku vrátane ID bločku z eKasy, sumár a história. Všetky
-          údaje sa dajú zmeniť po kliknutí na ceruzku.
+          položky, ostatné údaje k bločku vrátane ID bločku z eKasy, sumár a história. Všetky údaje
+          sa dajú zmeniť po kliknutí na ceruzku.
         </p>
         <p>
           Náhľad je predvolene vľavo. Ak ho chcete <strong>napravo</strong>, kliknite na ikonu
@@ -346,14 +351,14 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Platba.</strong> Pri predpise poistného, platobnom výmere či pokute AI prečíta aj{" "}
-          <strong>variabilný symbol</strong> a <strong>IBAN</strong> na úhradu. Faktero potom v Banke
-          hľadá odchádzajúcu platbu s rovnakou sumou okolo lehoty a nájdenú vám najprv{" "}
-          <strong>navrhne</strong> — ikonkou banky pri doklade, pásom nad zoznamom a v detaile v karte{" "}
-          <strong>Platba</strong>; spáruje sa až po kliknutí na <strong>Spárovať</strong>. Pohyb
-          vyberiete aj ručne cez <strong>Vybrať pohyb z účtu</strong>, doklad zaplatený v hotovosti
-          označíte <strong>Zaplatené bez pohybu</strong> a v detaile pohybu v Banke ho priradíte cez{" "}
-          <strong>Spárovať s iným dokladom</strong>. Filter <strong>Platba</strong> ukáže spárované,
-          nájdené a nenájdené.
+          <strong>variabilný symbol</strong> a <strong>IBAN</strong> na úhradu. Faktero potom v
+          Banke hľadá odchádzajúcu platbu s rovnakou sumou okolo lehoty a nájdenú vám najprv{" "}
+          <strong>navrhne</strong> — ikonkou banky pri doklade, pásom nad zoznamom a v detaile v
+          karte <strong>Platba</strong>; spáruje sa až po kliknutí na <strong>Spárovať</strong>.
+          Pohyb vyberiete aj ručne cez <strong>Vybrať pohyb z účtu</strong>, doklad zaplatený v
+          hotovosti označíte <strong>Zaplatené bez pohybu</strong> a v detaile pohybu v Banke ho
+          priradíte cez <strong>Spárovať s iným dokladom</strong>. Filter <strong>Platba</strong>{" "}
+          ukáže spárované, nájdené a nenájdené.
         </p>
         <p>
           Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad pozrie
@@ -421,7 +426,7 @@ const sections: HelpSection[] = [
           účtovnú položku, typ platby, členenie DPH a KV, účtovnú poznámku, komentár, vlastný stav,
           štítky aj označenie úhrady. Odovzdané, zamknuté doklady a doklady v uzavretom období sa
           pri účtovných zmenách preskočia. Vlastné <strong>stavy dokladov</strong> (napr. „Čaká na
-          doklad od klienta“) a štítky si nastavíte v Účtovníctvo → Predkontácie;{" "}
+          doklad od klienta“) a štítky si nastavíte v Účtovníctvo → Predkontácie a členenie DPH/KV;{" "}
           <strong>komentár</strong> sa na rozdiel od účtovnej poznámky do účtovníctva nikdy
           neprenáša.
         </p>
@@ -529,11 +534,11 @@ const sections: HelpSection[] = [
           účtovníčka s klientmi), nemusí si pamätať adresu každej. V karte <em>Rozdeľovač</em> na
           tej istej stránke je vaša osobná adresa v tvare{" "}
           <code>rozdelovac-…@doklady.faktero.sk</code>. Faktero z každej prílohy prečíta odberateľa
-          — IČO, IČ DPH a DIČ; až keď na doklade nie sú, IBAN platiteľa alebo názov — a doklad
-          pošle do <em>Nespracovaných</em> tej z vašich firiem, na ktorú je vystavený, s poznámkou,
-          podľa čoho ho zaradil. Jeden mail tak môže rozdeliť faktúry aj medzi viac firiem. Vyberá
-          sa len z firiem, v ktorých smiete upravovať doklady, a firma, ktorá doklad sama vystavila,
-          sa za odberateľa nepovažuje. Doklad, ktorý nesedí na žiadnu vašu firmu, sedí na viac firiem
+          — IČO, IČ DPH a DIČ; až keď na doklade nie sú, IBAN platiteľa alebo názov — a doklad pošle
+          do <em>Nespracovaných</em> tej z vašich firiem, na ktorú je vystavený, s poznámkou, podľa
+          čoho ho zaradil. Jeden mail tak môže rozdeliť faktúry aj medzi viac firiem. Vyberá sa len
+          z firiem, v ktorých smiete upravovať doklady, a firma, ktorá doklad sama vystavila, sa za
+          odberateľa nepovažuje. Doklad, ktorý nesedí na žiadnu vašu firmu, sedí na viac firiem
           alebo si jeho údaje odporujú, sa naslepo nezaradí: počká v zozname{" "}
           <em>Nepriradené doklady</em> (firmy, na ktoré sedí, sú vo výbere označené hviezdičkou),
           kde vyberiete firmu a kliknete na <strong>Priradiť</strong>, prípadne{" "}
@@ -675,9 +680,9 @@ const sections: HelpSection[] = [
           Schvaľovať sa dajú aj <strong>nespracované doklady</strong> (bloček či faktúra z nich
           vznikne až po schválení) a <strong>vyúčtovanie výdavkov</strong> (schvaľuje sa po
           uzavretí). V tabuľke <strong>Povolenia používateľov</strong> nastavíte každému zvlášť
-          Schvaľovanie, Zrušenie schválenia, Vrátenie a Zamietnutie; majiteľ má vždy všetko.
-          Keď je zapnuté odoslanie až po schválení, neschválenú vystavenú faktúru server neodošle
-          ani z appky, ani cez API.
+          Schvaľovanie, Zrušenie schválenia, Vrátenie a Zamietnutie; majiteľ má vždy všetko. Keď je
+          zapnuté odoslanie až po schválení, neschválenú vystavenú faktúru server neodošle ani z
+          appky, ani cez API.
         </p>
         <p>
           <strong>Moje úlohy</strong> (v menu hneď pod Prehľadom, s počtom) zhrnú na jednej stránke
@@ -754,8 +759,8 @@ const sections: HelpSection[] = [
           vystavenej faktúre — pôvodný záznam ide do koša.
         </p>
         <p>
-          <strong>Pravidlo automatického účtovania</strong> doplní kódy samo; doklad, ktorý ich má z pravidla, má
-          pri zaúčtovaní hviezdičku. Keď má dodávateľ pravidiel viac, vyberiete iné cez{" "}
+          <strong>Pravidlo automatického účtovania</strong> doplní kódy samo; doklad, ktorý ich má z
+          pravidla, má pri zaúčtovaní hviezdičku. Keď má dodávateľ pravidiel viac, vyberiete iné cez{" "}
           <em>Použiť pravidlo</em>. Zoznam sa dá zoradiť kliknutím na hlavičku stĺpca a stiahnuť do
           Excelu.
         </p>

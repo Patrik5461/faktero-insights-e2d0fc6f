@@ -395,7 +395,7 @@ function ZasielkovnaPanel({
           </h2>
           <p className="mt-1 max-w-[75ch] text-sm text-muted-foreground">
             {t(
-              "Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány (Účtovníctvo → Výpis z platobnej brány).",
+              "Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány (Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda).",
             )}
           </p>
           {!stav ? (

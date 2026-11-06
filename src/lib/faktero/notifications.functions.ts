@@ -566,11 +566,8 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
         jeAdminRola(clen?.role)),
   );
   if (clen?.role !== "custom") return preKrajinu;
-  const { oblastPodlaCesty, vidiOblast } = await import("./opravnenia");
-  return preKrajinu.filter((n) => {
-    const o = oblastPodlaCesty(String(n.to ?? "").split("?")[0]!);
-    return !o || vidiOblast(clen.role, clen.permissions, o);
-  });
+  const { vidiOdkaz } = await import("./opravnenia");
+  return preKrajinu.filter((n) => vidiOdkaz(clen.role, clen.permissions, String(n.to ?? "")));
 }
 
 /** Čo má firma práve teraz na stole, aj s tým, čo si už používateľ prečítal. */

@@ -177,8 +177,11 @@ const sections: HelpSection[] = [
           nefakturujete. Zmenený kontakt sa <strong>prepíše</strong>, nezaloží sa druhý.
         </p>
         <p>
-          Zapína sa to v <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> —
-          viac v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
+          Zapína sa to v{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Účtovníctvo → Predkontácie a členenie DPH/KV
+          </Link>
+          , sekcia Nastavenia exportu — viac v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
         </p>
       </>
     ),

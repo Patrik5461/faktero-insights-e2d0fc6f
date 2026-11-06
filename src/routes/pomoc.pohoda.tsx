@@ -54,8 +54,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie a členenie DPH</Link> si
-          načítajte <strong>číselník predkontácií</strong> (napr. <code>1Fp</code> — nákup
+          V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie a členenie DPH/KV</Link>{" "}
+          si načítajte <strong>číselník predkontácií</strong> (napr. <code>1Fp</code> — nákup
           materiálu, 501/321) a <strong>členení DPH</strong> (napr. <code>PD</code>) priamo z Pohody
           účtovníčky. Tri cesty:
         </p>
@@ -96,10 +96,10 @@ const sections: HelpSection[] = [
         <p>
           <strong>Bločky do Pohody</strong> idú buď všetky ako prijaté faktúry, alebo{" "}
           <em>podľa spôsobu platby</em>: hotovosť ako výdavkový pokladničný doklad, karta do
-          Ostatných záväzkov, prevod ako prijatá faktúra. Prepína sa to na stránke Predkontácie. Na
-          doklade sa dá vybrať aj <strong>členenie kontrolného výkazu</strong> (B1, B2, B3, C2 alebo
-          „nezahŕňať“); bloček označený B2 ide aj vo Fakteri do časti B.2 s číslom a IČ DPH
-          dodávateľa.
+          Ostatných záväzkov, prevod ako prijatá faktúra. Prepína sa to na stránke Predkontácie a
+          členenie DPH/KV. Na doklade sa dá vybrať aj <strong>členenie kontrolného výkazu</strong>{" "}
+          (B1, B2, B3, C2 alebo „nezahŕňať“); bloček označený B2 ide aj vo Fakteri do časti B.2 s
+          číslom a IČ DPH dodávateľa.
         </p>
         <p>
           Z Pohody sa načítajú aj <strong>strediská, činnosti a číselné rady</strong> (záložky v
@@ -121,22 +121,23 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Účtovná kancelária nastaví jednu firmu a ostatným ju skopíruje: tlačidlo{" "}
-          <strong>Kopírovať do iných firiem</strong> na stránke Predkontácie prenesie číselník (aj s
-          účtami a pomermi) a predvolené kódy do vybraných firiem, najviac desiatich naraz.
+          <strong>Kopírovať do iných firiem</strong> na stránke Predkontácie a členenie DPH/KV
+          prenesie číselník (aj s účtami a pomermi) a predvolené kódy do vybraných firiem, najviac
+          desiatich naraz.
         </p>
         <p>
           Doklad z <strong>uzamknutého obdobia</strong> dostane v Pohode dátum zaúčtovania prvý deň
-          po uzávierke. Viac pokladní (záložka Pokladne) a voľbu posielať aj položky dokladu nájdete
-          tiež na stránke Predkontácie.
+          po uzávierke. Voľbu posielať aj položky dokladu nájdete na stránke Predkontácie a členenie
+          DPH/KV, viac pokladní spravujete v Účtovníctvo → Pokladne.
         </p>
         <p>
           Pohoda pozná predkontáciu len podľa <strong>skratky</strong> (napr. <code>1Fp</code>), nie
           podľa účtov. Ak máte predkontácie pomenované účtami (napr. <code>501000 325000</code> po
           prechode z Doklada), Faktero ich preloží na skratku z číselníka Pohody s rovnakými účtami,
           inak podľa tabuľky <strong>Skratky predkontácií v Pohode</strong> na stránke Predkontácie
-          (Export). Bez skratky pôjde doklad bez predkontácie a kontrola pred odovzdaním na to
-          upozorní. Položka „ako doklad“ dostane predkontáciu dokladu a každá položka aj členenie KV
-          DPH dokladu — aj s členením DPH PN.
+          a členenie DPH/KV (sekcia Nastavenia exportu). Bez skratky pôjde doklad bez predkontácie a
+          kontrola pred odovzdaním na to upozorní. Položka „ako doklad“ dostane predkontáciu dokladu
+          a každá položka aj členenie KV DPH dokladu — aj s členením DPH PN.
         </p>
         <p>
           <strong>Daňový doklad k prijatej platbe</strong> (záloha) ide do Pohody ako interný doklad
@@ -326,7 +327,10 @@ const sections: HelpSection[] = [
             <strong>pokladňa</strong> — príjmové a výdavkové doklady
           </li>
         </ul>
-        <p>Naviac, keď si ich zapnete v Účtovníctvo → Prepojenie s Pohodou:</p>
+        <p>
+          Naviac, keď si ich zapnete v Účtovníctvo → Predkontácie a členenie DPH/KV, sekcia
+          Nastavenia exportu (IČO z mena v Prepojení s Pohodou):
+        </p>
         <ul>
           <li>
             <strong>adresár</strong> — odberatelia idú do Pohody aj vtedy, keď im ten mesiac nič
@@ -362,9 +366,11 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          <Link to="/uctovnictvo/vypis-do-pohody">Účtovníctvo → Bankový výpis do Pohody</Link> vezme
-          výpis stiahnutý z internetbankingu a vyrobí z neho súbor, ktorý POHODA načíta ako bankové
-          doklady.
+          <Link to="/uctovnictvo/konvertory" search={{ tab: "vypis" }}>
+            Účtovníctvo → Konvertory
+          </Link>
+          , záložka Bankový výpis → Pohoda, vezme výpis stiahnutý z internetbankingu a vyrobí z neho
+          súbor, ktorý POHODA načíta ako bankové doklady.
         </p>
         <p>
           <strong>Keď banka ponúka XML, nahrajte XML</strong> — v internetbankingu mu hovoria{" "}
@@ -407,7 +413,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Na tej istej stránke nahrajte namiesto bankového výpisu{" "}
+          Na vedľajšej záložke Platobná brána → Pohoda nahrajte namiesto bankového výpisu{" "}
           <strong>CSV export z brány</strong>. Faktero z neho spraví výpis, aký by poslala banka:
           každá platba zákazníka je príjem, poplatok brány je samostatný výdaj s označením{" "}
           <em>Bankový poplatok</em> a výber na váš bankový účet je výdaj s označením{" "}
@@ -469,9 +475,11 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          <Link to="/uctovnictvo/pravidla">Účtovníctvo → Automatické účtovanie</Link>: napríklad
-          „keď dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a predkontáciu PHM“
-          alebo „platené kartou v reštaurácii → bez odpočtu DPH“.
+          <Link to="/uctovnictvo/zauctovanie" search={{ tab: "pravidla" }}>
+            Účtovníctvo → Automatické účtovanie
+          </Link>
+          : napríklad „keď dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a
+          predkontáciu PHM“ alebo „platené kartou v reštaurácii → bez odpočtu DPH“.
         </p>
         <ul>
           <li>
@@ -615,8 +623,8 @@ const sections: HelpSection[] = [
           pokladne. V ZIP-e je ten zoznam aj v súbore pohoda-nevyvezene.txt.
         </p>
         <p>
-          Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie</Link> v časti{" "}
-          <em>Export a spracovanie dokladov</em> nastavíte:
+          Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie a členenie DPH/KV</Link> v
+          časti <em>Export a spracovanie dokladov</em> nastavíte:
         </p>
         <ul>
           <li>dobropis vždy s kladnými sumami,</li>
@@ -649,8 +657,11 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie</Link> v časti{" "}
-          <em>Export do účtovného programu</em> nastavíte, ako doklady prídu do Pohody. Predvolené
+          Na stránke{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Predkontácie a členenie DPH/KV
+          </Link>{" "}
+          v sekcii <em>Nastavenia exportu</em> nastavíte, ako doklady prídu do Pohody. Predvolené
           voľby posielajú doklady tak ako doteraz.
         </p>
         <ul>
@@ -695,9 +706,13 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/uctovnictvo/konvertor">Účtovníctvo → Konvertor Excel → Pohoda</Link> si
-          stiahnete šablónu pre vydané faktúry, prijaté faktúry alebo bločky, vyplníte ju v Exceli a
-          nahráte späť. Faktero z nej poskladá dávku XML s predkontáciami a nastaveniami firmy.
+          V{" "}
+          <Link to="/uctovnictvo/konvertory" search={{ tab: "excel" }}>
+            Účtovníctvo → Konvertory
+          </Link>
+          , záložka Excel → Pohoda, si stiahnete šablónu pre vydané faktúry, prijaté faktúry alebo
+          bločky, vyplníte ju v Exceli a nahráte späť. Faktero z nej poskladá dávku XML s
+          predkontáciami a nastaveniami firmy.
         </p>
         <p>
           Riadky s rovnakým číslom dokladu sa spoja do jedného dokladu. Do Faktera sa nič neukladá —
@@ -738,9 +753,11 @@ const sections: HelpSection[] = [
       <>
         <p>
           Skladové karty samy o sebe idú do Pohody s nulovým stavom. Množstvá tam vznikajú
-          príjemkami a výdajkami — a tie vieme posielať tiež, keď vo{" "}
-          <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> zapnete{" "}
-          <strong>skladové pohyby</strong>.
+          príjemkami a výdajkami — a tie vieme posielať tiež, keď v{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Účtovníctvo → Predkontácie a členenie DPH/KV
+          </Link>
+          , sekcia Nastavenia exportu, zapnete <strong>skladové pohyby</strong>.
         </p>
         <p>
           Pohyby z jedného dňa sa zlejú do jedného dokladu, takže z väčšieho príjmu nevznikne stovka
@@ -781,11 +798,11 @@ const sections: HelpSection[] = [
           tomu ho Pohoda spáruje so zálohovou faktúrou a nezaúčtuje ako ďalšie plnenie.
         </p>
         <p>
-          Samotná zálohová faktúra — vydaná aj prijatá — ide do Pohody <strong>bez DPH</strong>:
-          nie je daňový doklad, takže položky majú sadzbu „bez DPH“ so sumou na úhradu a doklad
-          nenesie predkontáciu, členenie DPH ani KV. Daň prinesie až daňový doklad k prijatej
-          platbe alebo vyúčtovacia faktúra. Po exporte je zálohová odovzdaná a zamknutá ako
-          faktúra; opraviť ju ide cez <em>Vrátiť z Pohody (opraviť)</em>.
+          Samotná zálohová faktúra — vydaná aj prijatá — ide do Pohody <strong>bez DPH</strong>: nie
+          je daňový doklad, takže položky majú sadzbu „bez DPH“ so sumou na úhradu a doklad nenesie
+          predkontáciu, členenie DPH ani KV. Daň prinesie až daňový doklad k prijatej platbe alebo
+          vyúčtovacia faktúra. Po exporte je zálohová odovzdaná a zamknutá ako faktúra; opraviť ju
+          ide cez <em>Vrátiť z Pohody (opraviť)</em>.
         </p>
         <p>
           Všetky tri sa odvolávajú na číslo, ktoré doklad dostal v Pohode. Kým sa jeho import
@@ -855,9 +872,9 @@ const sections: HelpSection[] = [
           <strong>Pohoda XML nenačíta alebo hlási chybu.</strong> Najčastejšie nesedí{" "}
           <strong>IČO</strong> — Pohoda prijme súbor len do účtovnej jednotky s rovnakým IČO, aké má
           firma vo Fakteri. Ďalej skontrolujte, či skratky v predkontáciách, číselných radoch,
-          pokladni a bankovom účte (Účtovníctvo → Predkontácie a Prepojenie s Pohodou) naozaj v
-          Pohode existujú; neznámu skratku Pohoda odmietne. Výsledok importu ukáže Pohoda v okne XML
-          importu, pri konektore je aj v <code>protokol.txt</code>.
+          pokladni a bankovom účte (Účtovníctvo → Predkontácie a členenie DPH/KV, Pokladne a
+          Prepojenie s Pohodou) naozaj v Pohode existujú; neznámu skratku Pohoda odmietne. Výsledok
+          importu ukáže Pohoda v okne XML importu, pri konektore je aj v <code>protokol.txt</code>.
         </p>
         <p>
           <strong>Funguje to s mojou radou Pohody?</strong> Áno, aj so základnou. Nepoužívame

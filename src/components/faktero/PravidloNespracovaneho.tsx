@@ -171,8 +171,8 @@ export function PravidloNespracovaneho({
       ) : null}
       {pouzite ? (
         <Link
-          to="/uctovnictvo/pravidla"
-          search={{ upravit: pouzite.id } as any}
+          to="/uctovnictvo/zauctovanie"
+          search={{ tab: "pravidla", upravit: pouzite.id } as any}
           className="inline-flex items-center gap-1 text-primary hover:underline"
         >
           <Pencil className="h-3.5 w-3.5" /> {t("Upraviť pravidlo")}

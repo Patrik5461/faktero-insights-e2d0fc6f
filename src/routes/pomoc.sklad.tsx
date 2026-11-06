@@ -341,9 +341,12 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to vo{" "}
-          <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> a treba k tomu
-          vyplniť členenie skladu.
+          Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to v{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Účtovníctvo → Predkontácie a členenie DPH/KV
+          </Link>
+          , sekcia Nastavenia exportu, a treba k tomu vyplniť členenie skladu v{" "}
+          <Link to="/uctovnictvo/pohoda">Prepojení s Pohodou</Link>.
         </p>
         <p>
           Posiela sa <strong>číselník zásob, nie stav skladu</strong>. Množstvá v Pohode vznikajú

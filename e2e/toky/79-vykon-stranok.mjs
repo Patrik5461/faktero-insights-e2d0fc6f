@@ -19,7 +19,7 @@ const STRANKY = [
   "/nespracovane",
   "/odberatelia",
   "/bankove-ucty/transakcie",
-  "/uctovnictvo/na-kontrolu",
+  "/uctovnictvo/zauctovanie",
 ];
 const STROP_POZIADAVKY_MS = 1000;
 const STROP_STRANKY_MS = 3000;

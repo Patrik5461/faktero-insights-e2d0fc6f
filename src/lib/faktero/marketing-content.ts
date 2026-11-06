@@ -340,7 +340,7 @@ export const funkcie: HubContent = {
         {
           type: "section",
           title: "A potom aj platby",
-          body: "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Výpis z platobnej brány) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.",
+          body: "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.",
         },
       ],
     },
@@ -369,7 +369,7 @@ export const funkcie: HubContent = {
         {
           type: "section",
           title: "Ktoré brány",
-          body: "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Výpis z platobnej brány.",
+          body: "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda.",
         },
       ],
     },

@@ -74,8 +74,8 @@ export default {
   "Posledná chyba: {chyba}": "Poslední chyba: {chyba}",
   "Zásielkovňa pripojená — zásielku vytvoríte na detaile faktúry.":
     "Zásilkovna připojena — zásilku vytvoříte na detailu faktury.",
-  "Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány (Účtovníctvo → Výpis z platobnej brány).":
-    "Na detailu faktury vytvoříte zásilku na výdejní místo nebo na adresu, i s dobírkou ve výši faktury, a vytisknete štítek. Vybrané dobírky pak nahrajete jako výpis z brány (Účetnictví → Výpis z platební brány).",
+  "Na detaile faktúry vytvoríte zásielku na výdajné miesto alebo na adresu, aj s dobierkou vo výške faktúry, a vytlačíte štítok. Vybrané dobierky potom nahráte ako výpis z brány (Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda).":
+    "Na detailu faktury vytvoříte zásilku na výdejní místo nebo na adresu, i s dobírkou ve výši faktury, a vytisknete štítek. Vybrané dobírky pak nahrajete jako výpis z brány (Účetnictví → Konvertory, záložka Platební brána → Pohoda).",
   "API heslo (klientská sekcia Zásielkovne → Nastavenia API)":
     "API heslo (klientská sekce Zásilkovny → Nastavení API)",
   "Označenie odosielateľa (e-shop v klientskej sekcii)":

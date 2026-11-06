@@ -111,7 +111,12 @@ const CESTY: [string, Oblast][] = [
   ["/pokladna", "pokladna"],
   ["/uctovnictvo", "uctovnictvo"],
   // Návrhy zaúčtovania sú nad prijatými dokladmi — server overuje „doklady“ (E-26).
+  // Stará adresa; dnes záložka `/uctovnictvo/zauctovanie?tab=kontrola` (pozri `oblastOdkazu`).
   ["/uctovnictvo/na-kontrolu", "doklady"],
+  // Pravidlá a predlohy patria účtovníctvu; záložku Na kontrolu stráži `oblastOdkazu`.
+  ["/uctovnictvo/zauctovanie", "uctovnictvo"],
+  // Správa pokladní: tabuľku pokladní stráži v databáze oblasť pokladne.
+  ["/uctovnictvo/pokladne", "pokladna"],
   ["/exporty", "uctovnictvo"],
   ["/importy", "uctovnictvo"],
   ["/jazdy", "jazdy"],
@@ -126,6 +131,30 @@ export function oblastPodlaCesty(cesta: string): Oblast | null {
     }
   }
   return najlepsia?.[1] ?? null;
+}
+
+/**
+ * Oblasti odkazu aj s parametrami — stačí jedna z nich. Automatické účtovanie
+ * spája frontu na kontrolu (oblasť „doklady“, server overuje doklady) s
+ * pravidlami („uctovnictvo“): záložka `tab=kontrola` patrí dokladom, samotná
+ * stránka bez záložky ukáže kontrolu, takže ju vidí ten, kto má aspoň jedno.
+ */
+export function oblastiOdkazu(odkaz: string): Oblast[] {
+  const [cesta = "", dotaz = ""] = String(odkaz).split("?");
+  if (cesta === "/uctovnictvo/zauctovanie") {
+    const tab = new URLSearchParams(dotaz).get("tab");
+    if (tab === "kontrola") return ["doklady"];
+    if (tab === "pravidla" || tab === "predlohy") return ["uctovnictvo"];
+    return ["doklady", "uctovnictvo"];
+  }
+  const o = oblastPodlaCesty(cesta);
+  return o ? [o] : [];
+}
+
+/** Vidí človek cieľ odkazu (menu, zvonček)? Stránky mimo oblastí vidí každý. */
+export function vidiOdkaz(rola: string | null | undefined, opr: unknown, odkaz: string): boolean {
+  const o = oblastiOdkazu(odkaz);
+  return o.length === 0 || o.some((x) => vidiOblast(rola, opr, x));
 }
 
 /**

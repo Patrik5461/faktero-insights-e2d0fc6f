@@ -4,7 +4,7 @@
   1. /importy/doklady: 25 súborov naraz → do zoznamu ide 20 a upozornenie
      „Najviac 20 súborov naraz; 5 sa nepridalo.“ (predtým sa ticho zahodili).
      Súbory sa len vyberú, „Načítať“ sa nestlačí — nič sa nenahrá.
-  2. /importy: filter Zdroj ponúka zdroje z IMPORT_ZDROJE (nie CSV/XML, ktoré sa
+  2. /importy/novy?tab=historia: filter Zdroj ponúka zdroje z IMPORT_ZDROJE (nie CSV/XML, ktoré sa
      nikdy nezapisovali) a po výbere „Pohoda a mPohoda“ stránka nespadne;
      stav v tabuľke nie je surový anglický kód („completed“).
   3. Výpis z platobnej brány má vlastný titulok karty.
@@ -35,7 +35,7 @@ export default {
     });
 
     await t.krok("história importov: filter Zdroj zo zoznamu zdrojov", async () => {
-      await t.go("/importy", page);
+      await t.go("/importy/novy?tab=historia", page);
       const zdroj = page.locator("label", { hasText: /zdroj/i }).locator("select").first();
       await zdroj.waitFor({ timeout: 30000 });
       const moznosti = (await zdroj.locator("option").allTextContents()).map((s) => s.trim());
@@ -53,11 +53,14 @@ export default {
       t.over(surove === 0, "stav importu sa zobrazuje surovo (completed/failed…)");
     });
 
-    await t.krok("titulok výpisu z platobnej brány", async () => {
+    await t.krok("stará adresa výpisu z platobnej brány otvorí záložku brány", async () => {
       await t.go("/uctovnictvo/vypis-do-pohody?zdroj=brana", page);
-      await page.waitForFunction(() => document.title.includes("platobnej brány"), null, {
+      await page.waitForURL((u) => u.pathname === "/uctovnictvo/konvertory" && u.searchParams.get("tab") === "brana", {
         timeout: 15000,
       });
+      await page
+        .getByRole("tab", { name: "Platobná brána → Pohoda", selected: true })
+        .waitFor({ timeout: 15000 });
     });
   },
 };

@@ -1,0 +1,313 @@
+import { Link } from "@tanstack/react-router";
+import { lokalJazyka } from "@/lib/i18n/jazyk";
+import React, { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getImportFileUrl } from "@/lib/faktero/import-superfaktura.functions";
+import { Download, FileText, Upload as UploadIcon } from "lucide-react";
+import { toast } from "sonner";
+import { useT } from "@/lib/i18n/useT";
+import { usePagedLogs } from "@/hooks/usePagedLogs";
+import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
+import {
+  KLUCE_ZDROJOV,
+  NAZVY_ZDROJOV,
+  hodnotyZdrojaPreFilter,
+  nazovDruhuLogu,
+  nazovStavuImportu,
+  nazovZdrojaImportu,
+  type KlucZdroja,
+} from "@/lib/faktero/import-zdroj";
+import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
+import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
+
+/**
+ * História importov — záložka „História“ na stránke Účtovné importy
+ * (`/importy/novy?tab=historia`). Hlavičku kreslí stránka; tu je len popis,
+ * odkazy, ktoré boli v hlavičke pôvodnej stránky `/importy`, a zoznam.
+ */
+export function HistoriaImportov() {
+  const { t, jazyk } = useT();
+  const [logs, setLogs] = useState<Record<string, any[]>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [status, setStatus] = useState("all");
+  const [source, setSource] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const getUrl = useServerFn(getImportFileUrl);
+  const {
+    rows: jobs,
+    total,
+    loading,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    search,
+    setSearch,
+  } = usePagedLogs({
+    resource: "import_jobs",
+    searchColumns: ["file_name", "source", "status"],
+    filters: {
+      status: status === "all" ? null : status,
+      // Zdroj je kľúč z IMPORT_ZDROJE; staršie riadky majú v `source` text („Pohoda“).
+      source: source === "all" ? null : hodnotyZdrojaPreFilter(source as KlucZdroja),
+    },
+    dateFrom: dateFrom || null,
+    dateTo: dateTo || null,
+    pageSizeKey: "import_jobs",
+  });
+
+  async function toggleLogs(jobId: string) {
+    if (openId === jobId) {
+      setOpenId(null);
+      return;
+    }
+    setOpenId(jobId);
+    if (!logs[jobId]) {
+      const { data } = await supabase
+        .from("import_logs")
+        .select("*")
+        .eq("import_job_id", jobId)
+        .order("row_number")
+        .limit(200);
+      setLogs((p) => ({ ...p, [jobId]: data ?? [] }));
+    }
+  }
+
+  async function downloadOriginal(jobId: string) {
+    try {
+      const r = await getUrl({ data: { jobId } });
+      window.open(r.signedUrl, "_blank");
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Chyba"));
+    }
+  }
+
+  return (
+    <>
+      <div className="mx-auto mb-4 flex max-w-5xl flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {t("Prehľad všetkých importov vo vašej firme.")}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/importy/doklady"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+          >
+            <UploadIcon className="h-4 w-4" /> {t("Prijaté doklady")}
+          </Link>
+          <Link
+            to="/importy/novy"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+          >
+            <UploadIcon className="h-4 w-4" /> {t("Nový import")}
+          </Link>
+        </div>
+      </div>
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-4">
+          <LogsToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder={t("Hľadať podľa názvu súboru…")}
+            selects={[
+              {
+                label: t("Stav"),
+                value: status,
+                onChange: setStatus,
+                options: [
+                  { value: "all", label: t("Všetky") },
+                  { value: "completed", label: t("Dokončené") },
+                  { value: "running", label: t("Bežiace") },
+                  { value: "uploaded", label: t("Nahraté") },
+                  { value: "failed", label: t("Zlyhané") },
+                ],
+              },
+              {
+                label: t("Zdroj"),
+                value: source,
+                onChange: setSource,
+                options: [
+                  { value: "all", label: t("Všetky") },
+                  ...KLUCE_ZDROJOV.map((k) => ({ value: k, label: NAZVY_ZDROJOV[k] })),
+                ],
+              },
+            ]}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onReset={() => {
+              setSearch("");
+              setStatus("all");
+              setSource("all");
+              setDateFrom("");
+              setDateTo("");
+            }}
+          />
+        </div>
+
+        {!loading && jobs.length === 0 && (
+          <div className="rounded-xl border border-border bg-card text-center text-sm text-muted-foreground">
+            <EmptyState
+              icon={UploadIcon}
+              title={t("Žiadne importy")}
+              description={t(
+                "Zatiaľ neboli vykonané žiadne importy alebo žiadne nevyhovujú filtrom.",
+              )}
+              action={
+                <Link
+                  to="/importy/novy"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+                >
+                  <UploadIcon className="h-4 w-4" /> {t("Spustiť nový import")}
+                </Link>
+              }
+            />
+          </div>
+        )}
+        {jobs.length > 0 && (
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="whitespace-nowrap px-4 py-2 text-left">{t("Dátum")}</th>
+                    <th className="px-4 py-2 text-left">{t("Zdroj")}</th>
+                    <th className="px-4 py-2 text-left">{t("Súbor")}</th>
+                    <th className="px-4 py-2 text-left">{t("Stav")}</th>
+                    <th className="px-4 py-2 text-right">{t("Faktúry")}</th>
+                    <th className="px-4 py-2 text-right">{t("Odberatelia")}</th>
+                    <th className="px-4 py-2 text-right">{t("Chyby")}</th>
+                    <th className="px-4 py-2">
+                      <span className="sr-only">{t("Akcie")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jobs.map((j) => (
+                    <React.Fragment key={j.id}>
+                      <KlikatelnyRiadok
+                        naKlik={() => void toggleLogs(j.id)}
+                        className="border-t border-border"
+                      >
+                        <td className="px-4 py-2 whitespace-nowrap tabular-nums">
+                          {new Date(j.created_at).toLocaleString(lokalJazyka(jazyk))}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {t(nazovZdrojaImportu(j.source))}
+                        </td>
+                        <td className="px-4 py-2 max-w-[240px] truncate" title={j.file_name}>
+                          {j.file_name ?? "—"}
+                        </td>
+                        <td className="px-4 py-2">
+                          <StatusPill status={j.status} />
+                        </td>
+                        <td className="px-4 py-2 text-right tabular-nums">{j.imported_invoices}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">
+                          {j.imported_customers}
+                        </td>
+                        <td className="px-4 py-2 text-right tabular-nums">{j.failed_rows}</td>
+                        <td className="whitespace-nowrap px-4 py-2 text-right">
+                          <button
+                            onClick={() => downloadOriginal(j.id)}
+                            title={t("Stiahnuť pôvodný súbor")}
+                            className="rounded-md p-1.5 hover:bg-secondary"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => toggleLogs(j.id)}
+                            title={t("Zobraziť logy")}
+                            className="rounded-md p-1.5 hover:bg-secondary"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </KlikatelnyRiadok>
+                      {openId === j.id && (
+                        <tr className="border-t border-border bg-muted/30">
+                          <td colSpan={8} className="p-4">
+                            <div className="max-h-72 overflow-auto rounded-md border border-border bg-background">
+                              <table className="w-full text-xs">
+                                <thead className="bg-muted/40 text-muted-foreground">
+                                  <tr>
+                                    <th className="px-2 py-1 text-right">#</th>
+                                    <th className="px-2 py-1 text-left">{t("Typ")}</th>
+                                    <th className="px-2 py-1 text-left">{t("Stav")}</th>
+                                    <th className="px-2 py-1 text-left">{t("Správa")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(logs[j.id] ?? []).map((l) => (
+                                    <tr key={l.id} className="border-t border-border">
+                                      <td className="px-2 py-1 text-right tabular-nums">
+                                        {l.row_number}
+                                      </td>
+                                      <td className="px-2 py-1">
+                                        {t(nazovDruhuLogu(l.entity_type))}
+                                      </td>
+                                      <td className="px-2 py-1">
+                                        <StatusPill status={l.status} />
+                                      </td>
+                                      <td className="min-w-[16rem] px-2 py-1 break-words">
+                                        {l.message}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {(logs[j.id] ?? []).length === 0 && (
+                                    <tr>
+                                      <td
+                                        colSpan={4}
+                                        className="px-2 py-3 text-center text-muted-foreground"
+                                      >
+                                        {t("Žiadne logy.")}
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <ListFooter
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** Stav importu aj riadku logu — text z nazovStavuImportu, mení sa len tón. */
+const TON_IMPORTU: Record<string, TonStavu> = {
+  completed: "uspech",
+  success: "uspech",
+  running: "priebeh",
+  uploaded: "neutralny",
+  failed: "chyba",
+  error: "chyba",
+  duplicate: "pozor",
+  warning: "pozor",
+};
+
+function StatusPill({ status }: { status: string }) {
+  const { t } = useT();
+  return (
+    <StavOdznak ton={TON_IMPORTU[status] ?? "neutralny"} maly>
+      {t(nazovStavuImportu(status))}
+    </StavOdznak>
+  );
+}

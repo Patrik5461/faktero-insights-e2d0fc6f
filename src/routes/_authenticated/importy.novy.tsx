@@ -1,18 +1,37 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
-import { History, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { VendorImportPage, type VendorId } from "@/components/faktero/VendorImportPage";
 import { IMPORT_ZDROJE, PREDVOLENY_ZDROJ, zdrojPodlaId } from "@/components/faktero/import-zdroje";
+import { ZalozkyStranky } from "@/components/faktero/ZalozkyStranky";
+import { HistoriaImportov } from "@/components/faktero/uctovnictvo/HistoriaImportov";
+
+type Zalozka = "import" | "historia";
+const ZALOZKY: { kod: Zalozka; nazov: string }[] = [
+  { kod: "import", nazov: "Import" },
+  { kod: "historia", nazov: "História" },
+];
 
 export const Route = createFileRoute("/_authenticated/importy/novy")({
   head: ({ match }) => ({
-    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Účtovné importy — Faktero") }],
+    meta: [
+      {
+        title: preloz(
+          match.context.jazyk ?? "sk",
+          match.search.tab === "historia"
+            ? "História importov — Faktero"
+            : "Účtovné importy — Faktero",
+        ),
+      },
+    ],
   }),
-  /** Zdroj drží adresa, nie stav — dá sa naň odkázať aj ho obnoviť. */
-  validateSearch: (s: Record<string, unknown>): { zdroj?: string } => ({
+  /** Zdroj aj záložku drží adresa, nie stav — dá sa na ne odkázať aj ich obnoviť.
+   *  `tab=historia` je História (sem vedie aj stará adresa `/importy`). */
+  validateSearch: (s: Record<string, unknown>): { zdroj?: string; tab?: Zalozka } => ({
     zdroj: typeof s.zdroj === "string" ? s.zdroj : undefined,
+    tab: s.tab === "historia" || s.tab === "import" ? s.tab : undefined,
   }),
   component: Page,
 });
@@ -45,30 +64,50 @@ function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void
 
 function Page() {
   const { t } = useT();
-  const { zdroj } = Route.useSearch();
+  const { zdroj, tab } = Route.useSearch();
   const navigate = useNavigate();
+  const aktivna: Zalozka = tab === "historia" ? "historia" : "import";
   const z = zdrojPodlaId(zdroj ?? PREDVOLENY_ZDROJ);
-  const zmen = (v: string) => navigate({ to: "/importy/novy", search: { zdroj: v } });
+  const zmen = (v: string) =>
+    navigate({ to: "/importy/novy", search: (s: { zdroj?: string; tab?: Zalozka }) => ({ ...s, zdroj: v }) });
+  const zalozky = (
+    <ZalozkyStranky
+      zalozky={ZALOZKY}
+      aktivna={aktivna}
+      popis="Časti stránky Účtovné importy"
+      onZmena={(kod) =>
+        navigate({
+          to: "/importy/novy",
+          search: (s: { zdroj?: string; tab?: Zalozka }) => ({ ...s, tab: kod === "import" ? undefined : kod }),
+          replace: true,
+        })
+      }
+    />
+  );
+  const nadpis = t("Účtovné importy");
+  const popis = t("Prechod do Faktera z iného fakturačného alebo účtovného programu.");
+
+  if (aktivna === "historia") {
+    return (
+      <>
+        <PageHeader title={nadpis} description={popis} />
+        <PageBody>
+          <div className="mx-auto mb-4 max-w-5xl">{zalozky}</div>
+          <HistoriaImportov />
+        </PageBody>
+      </>
+    );
+  }
 
   /* Zdroje s vlastnou stránkou sem formulár nedostanú — SuperFaktúra si pýta
      priradenie stĺpcov a prijaté doklady berú viac súborov naraz. */
   if (z.cesta) {
     return (
       <>
-        <PageHeader
-          title={t("Účtovné importy")}
-          description={t("Prechod do Faktera z iného fakturačného alebo účtovného programu.")}
-          action={
-            <Link
-              to="/importy"
-              className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
-            >
-              <History className="h-4 w-4" /> {t("História importov")}
-            </Link>
-          }
-        />
+        <PageHeader title={nadpis} description={popis} />
         <PageBody>
           <div className="mx-auto max-w-4xl space-y-6">
+            {zalozky}
             <VyberZdroja id={z.id} onZmena={zmen} />
             <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
               <h2 className="text-base font-semibold">{t(z.title)}</h2>
@@ -94,11 +133,12 @@ function Page() {
          súbor a náhľad z predchádzajúceho programu. */
       key={z.id}
       source={z.id as VendorId}
-      title={t("Účtovné importy")}
-      description={t("Prechod do Faktera z iného fakturačného alebo účtovného programu.")}
+      title={nadpis}
+      description={popis}
       accept={z.accept!}
       selector={<VyberZdroja id={z.id} onZmena={zmen} />}
       guide={z.guide}
+      zalozky={zalozky}
     />
   );
 }

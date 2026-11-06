@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { KopirovatNastaveniaOkno } from "@/components/faktero/KopirovatNastaveniaOkno";
 import { PredponyObjednavky } from "@/components/faktero/PredponyObjednavky";
-import { NastaveniaExportu } from "@/components/faktero/NastaveniaExportu";
+import {
+  ID_NASTAVENI_EXPORTU,
+  NastaveniaExportuSekcia,
+} from "@/components/faktero/uctovnictvo/NastaveniaExportuSekcia";
 import { StavyAStitkyNastavenia } from "@/components/faktero/StavyAStitkyNastavenia";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -73,11 +76,18 @@ import { preloz } from "@/lib/i18n/jazyk";
  */
 export const Route = createFileRoute("/_authenticated/uctovnictvo/predkontacie")({
   head: ({ match }) => ({
-    meta: [{ title: preloz(match.context.jazyk ?? "sk", "Predkontácie — Faktero") }],
+    meta: [
+      {
+        title: preloz(match.context.jazyk ?? "sk", "Predkontácie a členenie DPH/KV — Faktero"),
+      },
+    ],
   }),
   // ?pridat=1 otvorí rovno formulár novej predkontácie (odkaz zo zaúčtovania).
-  validateSearch: (s: Record<string, unknown>): { pridat?: string } =>
-    s.pridat ? { pridat: String(s.pridat) } : {},
+  // ?nastavenia=<program> zroluje k Nastaveniam exportu s tým programom (odkaz z Účtovných exportov).
+  validateSearch: (s: Record<string, unknown>): { pridat?: string; nastavenia?: string } => ({
+    ...(s.pridat ? { pridat: String(s.pridat) } : {}),
+    ...(s.nastavenia ? { nastavenia: String(s.nastavenia) } : {}),
+  }),
   component: Stranka,
 });
 
@@ -118,7 +128,7 @@ function Stranka() {
   const [zaznamy, setZaznamy] = useState<Zaznam[] | null>(null);
   const [firma, setFirma] = useState<Record<string, any>>({});
   const [kopirovat, setKopirovat] = useState(false);
-  const { pridat: pridatZOdkazu } = Route.useSearch();
+  const { pridat: pridatZOdkazu, nastavenia: programZAdresy } = Route.useSearch();
   // Každé stlačenie „Pridať predkontáciu“ zvýši číslo — číselník otvorí formulár.
   const [pridat, setPridat] = useState(pridatZOdkazu ? 1 : 0);
   const cid = companyId;
@@ -139,10 +149,26 @@ function Stranka() {
     obnov();
   }, [obnov]);
 
+  // Odkaz s ?nastavenia=… alebo #nastavenia-exportu zroluje k Nastaveniam exportu,
+  // keď je stránka načítaná (sekcia je pod číselníkom).
+  const nacitane = zaznamy !== null;
+  useEffect(() => {
+    if (!nacitane) return;
+    if (!programZAdresy && window.location.hash !== `#${ID_NASTAVENI_EXPORTU}`) return;
+    const id = window.setTimeout(
+      () =>
+        document
+          .getElementById(ID_NASTAVENI_EXPORTU)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50,
+    );
+    return () => window.clearTimeout(id);
+  }, [nacitane, programZAdresy]);
+
   if (!companyId || zaznamy === null)
     return (
       <>
-        <PageHeader title={t("Predkontácie")} />
+        <PageHeader title={t("Predkontácie a členenie DPH/KV")} />
         <PageBody>
           <div className="rounded-xl border border-border bg-card">
             <NacitavanieStav />
@@ -154,9 +180,9 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title={t("Predkontácie")}
+        title={t("Predkontácie a členenie DPH/KV")}
         description={t(
-          "Číselník predkontácií a členení DPH z Pohody a čo sa predvolene použije pri faktúrach, prijatých faktúrach, bločkoch, pokladni a banke.",
+          "Číselník predkontácií a členení DPH z Pohody, čo sa predvolene použije pri faktúrach, prijatých faktúrach, bločkoch, pokladni a banke, a nastavenia exportu do účtovného programu.",
         )}
         action={
           <div className="flex flex-wrap gap-2">
@@ -189,7 +215,13 @@ function Stranka() {
             onUlozene={obnov}
             onPridat={() => setPridat((n) => n + 1)}
           />
-          <NastaveniaExportu companyId={companyId} firma={firma} predkontacie={zaznamy} onUlozene={obnov} />
+          <NastaveniaExportuSekcia
+            companyId={companyId}
+            firma={firma}
+            predkontacie={zaznamy}
+            onUlozene={obnov}
+            programZAdresy={programZAdresy}
+          />
           <Import companyId={companyId} firma={firma} onZmena={obnov} />
           <StavyAStitkyNastavenia companyId={companyId} />
         </div>
@@ -325,7 +357,7 @@ function Predvolene({
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {t("Použije sa, keď doklad nemá vlastnú predkontáciu — tú mu dá")}{" "}
-        <Link to="/uctovnictvo/pravidla" className="underline">
+        <Link to="/uctovnictvo/zauctovanie" search={{ tab: "pravidla" } as never} className="underline">
           {t("pravidlo automatického účtovania")}
         </Link>{" "}
         {t("alebo človek pri zaúčtovaní. Prázdne pole = Pohoda doklad nechá nezaúčtovaný.")}
@@ -825,7 +857,7 @@ function Predvolene({
         </summary>
         <p className="mt-2 text-xs text-muted-foreground">
           {t("Pri")}{" "}
-          <Link to="/uctovnictvo/vypis-do-pohody" className="underline">
+          <Link to="/uctovnictvo/konvertory" search={{ tab: "vypis" } as never} className="underline">
             {t("bankovom výpise")}
           </Link>{" "}
           {t(
@@ -1294,6 +1326,16 @@ function Ciselnik({
           </button>
         </div>
       </div>
+      {druh === "pokladna" && (
+        // Toto je len číselník skratiek pokladní z Pohody; pokladne firmy sú inde.
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("Pokladne firmy spravujete na stránke")}{" "}
+          <Link to="/uctovnictvo/pokladne" className="text-primary underline">
+            {t("Pokladne")}
+          </Link>
+          .
+        </p>
+      )}
       {zObrazka && (
         <ImportZObrazkaOkno
           companyId={companyId}

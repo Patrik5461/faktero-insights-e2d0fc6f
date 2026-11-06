@@ -240,14 +240,17 @@ import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
 import { Route as AuthenticatedUctovnictvoKonvertorRouteImport } from './routes/_authenticated/uctovnictvo.konvertor'
+import { Route as AuthenticatedUctovnictvoKonvertoryRouteImport } from './routes/_authenticated/uctovnictvo.konvertory'
 import { Route as AuthenticatedUctovnictvoNaKontroluRouteImport } from './routes/_authenticated/uctovnictvo.na-kontrolu'
 import { Route as AuthenticatedUctovnictvoOssRouteImport } from './routes/_authenticated/uctovnictvo.oss'
 import { Route as AuthenticatedUctovnictvoPohodaRouteImport } from './routes/_authenticated/uctovnictvo.pohoda'
+import { Route as AuthenticatedUctovnictvoPokladneRouteImport } from './routes/_authenticated/uctovnictvo.pokladne'
 import { Route as AuthenticatedUctovnictvoPravidlaRouteImport } from './routes/_authenticated/uctovnictvo.pravidla'
 import { Route as AuthenticatedUctovnictvoPredkontacieRouteImport } from './routes/_authenticated/uctovnictvo.predkontacie'
 import { Route as AuthenticatedUctovnictvoUzavierkaRouteImport } from './routes/_authenticated/uctovnictvo.uzavierka'
 import { Route as AuthenticatedUctovnictvoVykazyRouteImport } from './routes/_authenticated/uctovnictvo.vykazy'
 import { Route as AuthenticatedUctovnictvoVypisDoPohodyRouteImport } from './routes/_authenticated/uctovnictvo.vypis-do-pohody'
+import { Route as AuthenticatedUctovnictvoZauctovanieRouteImport } from './routes/_authenticated/uctovnictvo.zauctovanie'
 import { Route as AuthenticatedVozovyParkIndexRouteImport } from './routes/_authenticated/vozovy-park.index'
 import { Route as AuthenticatedVozovyParkIdRouteImport } from './routes/_authenticated/vozovy-park.$id'
 import { Route as AuthenticatedVozovyParkNoveRouteImport } from './routes/_authenticated/vozovy-park.nove'
@@ -1645,6 +1648,12 @@ const AuthenticatedUctovnictvoKonvertorRoute =
     path: '/uctovnictvo/konvertor',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedUctovnictvoKonvertoryRoute =
+  AuthenticatedUctovnictvoKonvertoryRouteImport.update({
+    id: '/uctovnictvo/konvertory',
+    path: '/uctovnictvo/konvertory',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUctovnictvoNaKontroluRoute =
   AuthenticatedUctovnictvoNaKontroluRouteImport.update({
     id: '/uctovnictvo/na-kontrolu',
@@ -1661,6 +1670,12 @@ const AuthenticatedUctovnictvoPohodaRoute =
   AuthenticatedUctovnictvoPohodaRouteImport.update({
     id: '/uctovnictvo/pohoda',
     path: '/uctovnictvo/pohoda',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUctovnictvoPokladneRoute =
+  AuthenticatedUctovnictvoPokladneRouteImport.update({
+    id: '/uctovnictvo/pokladne',
+    path: '/uctovnictvo/pokladne',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedUctovnictvoPravidlaRoute =
@@ -1691,6 +1706,12 @@ const AuthenticatedUctovnictvoVypisDoPohodyRoute =
   AuthenticatedUctovnictvoVypisDoPohodyRouteImport.update({
     id: '/uctovnictvo/vypis-do-pohody',
     path: '/uctovnictvo/vypis-do-pohody',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUctovnictvoZauctovanieRoute =
+  AuthenticatedUctovnictvoZauctovanieRouteImport.update({
+    id: '/uctovnictvo/zauctovanie',
+    path: '/uctovnictvo/zauctovanie',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedVozovyParkIndexRoute =
@@ -2730,14 +2751,17 @@ export interface FileRoutesByFullPath {
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
+  '/uctovnictvo/konvertory': typeof AuthenticatedUctovnictvoKonvertoryRoute
   '/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
+  '/uctovnictvo/pokladne': typeof AuthenticatedUctovnictvoPokladneRoute
   '/uctovnictvo/pravidla': typeof AuthenticatedUctovnictvoPravidlaRoute
   '/uctovnictvo/predkontacie': typeof AuthenticatedUctovnictvoPredkontacieRoute
   '/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  '/uctovnictvo/zauctovanie': typeof AuthenticatedUctovnictvoZauctovanieRoute
   '/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
   '/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
   '/vozovy-park/palivove-karty': typeof AuthenticatedVozovyParkPalivoveKartyRoute
@@ -3110,14 +3134,17 @@ export interface FileRoutesByTo {
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
+  '/uctovnictvo/konvertory': typeof AuthenticatedUctovnictvoKonvertoryRoute
   '/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
+  '/uctovnictvo/pokladne': typeof AuthenticatedUctovnictvoPokladneRoute
   '/uctovnictvo/pravidla': typeof AuthenticatedUctovnictvoPravidlaRoute
   '/uctovnictvo/predkontacie': typeof AuthenticatedUctovnictvoPredkontacieRoute
   '/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  '/uctovnictvo/zauctovanie': typeof AuthenticatedUctovnictvoZauctovanieRoute
   '/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
   '/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
   '/vozovy-park/palivove-karty': typeof AuthenticatedVozovyParkPalivoveKartyRoute
@@ -3501,14 +3528,17 @@ export interface FileRoutesById {
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/_authenticated/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
+  '/_authenticated/uctovnictvo/konvertory': typeof AuthenticatedUctovnictvoKonvertoryRoute
   '/_authenticated/uctovnictvo/na-kontrolu': typeof AuthenticatedUctovnictvoNaKontroluRoute
   '/_authenticated/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/_authenticated/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
+  '/_authenticated/uctovnictvo/pokladne': typeof AuthenticatedUctovnictvoPokladneRoute
   '/_authenticated/uctovnictvo/pravidla': typeof AuthenticatedUctovnictvoPravidlaRoute
   '/_authenticated/uctovnictvo/predkontacie': typeof AuthenticatedUctovnictvoPredkontacieRoute
   '/_authenticated/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/_authenticated/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
   '/_authenticated/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  '/_authenticated/uctovnictvo/zauctovanie': typeof AuthenticatedUctovnictvoZauctovanieRoute
   '/_authenticated/vozovy-park/$id': typeof AuthenticatedVozovyParkIdRoute
   '/_authenticated/vozovy-park/nove': typeof AuthenticatedVozovyParkNoveRoute
   '/_authenticated/vozovy-park/palivove-karty': typeof AuthenticatedVozovyParkPalivoveKartyRoute
@@ -3892,14 +3922,17 @@ export interface FileRouteTypes {
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
     | '/uctovnictvo/konvertor'
+    | '/uctovnictvo/konvertory'
     | '/uctovnictvo/na-kontrolu'
     | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
+    | '/uctovnictvo/pokladne'
     | '/uctovnictvo/pravidla'
     | '/uctovnictvo/predkontacie'
     | '/uctovnictvo/uzavierka'
     | '/uctovnictvo/vykazy'
     | '/uctovnictvo/vypis-do-pohody'
+    | '/uctovnictvo/zauctovanie'
     | '/vozovy-park/$id'
     | '/vozovy-park/nove'
     | '/vozovy-park/palivove-karty'
@@ -4272,14 +4305,17 @@ export interface FileRouteTypes {
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
     | '/uctovnictvo/konvertor'
+    | '/uctovnictvo/konvertory'
     | '/uctovnictvo/na-kontrolu'
     | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
+    | '/uctovnictvo/pokladne'
     | '/uctovnictvo/pravidla'
     | '/uctovnictvo/predkontacie'
     | '/uctovnictvo/uzavierka'
     | '/uctovnictvo/vykazy'
     | '/uctovnictvo/vypis-do-pohody'
+    | '/uctovnictvo/zauctovanie'
     | '/vozovy-park/$id'
     | '/vozovy-park/nove'
     | '/vozovy-park/palivove-karty'
@@ -4662,14 +4698,17 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/vydaj'
     | '/_authenticated/uctovnictvo/dph'
     | '/_authenticated/uctovnictvo/konvertor'
+    | '/_authenticated/uctovnictvo/konvertory'
     | '/_authenticated/uctovnictvo/na-kontrolu'
     | '/_authenticated/uctovnictvo/oss'
     | '/_authenticated/uctovnictvo/pohoda'
+    | '/_authenticated/uctovnictvo/pokladne'
     | '/_authenticated/uctovnictvo/pravidla'
     | '/_authenticated/uctovnictvo/predkontacie'
     | '/_authenticated/uctovnictvo/uzavierka'
     | '/_authenticated/uctovnictvo/vykazy'
     | '/_authenticated/uctovnictvo/vypis-do-pohody'
+    | '/_authenticated/uctovnictvo/zauctovanie'
     | '/_authenticated/vozovy-park/$id'
     | '/_authenticated/vozovy-park/nove'
     | '/_authenticated/vozovy-park/palivove-karty'
@@ -6637,6 +6676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUctovnictvoKonvertorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/uctovnictvo/konvertory': {
+      id: '/_authenticated/uctovnictvo/konvertory'
+      path: '/uctovnictvo/konvertory'
+      fullPath: '/uctovnictvo/konvertory'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoKonvertoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/uctovnictvo/na-kontrolu': {
       id: '/_authenticated/uctovnictvo/na-kontrolu'
       path: '/uctovnictvo/na-kontrolu'
@@ -6656,6 +6702,13 @@ declare module '@tanstack/react-router' {
       path: '/uctovnictvo/pohoda'
       fullPath: '/uctovnictvo/pohoda'
       preLoaderRoute: typeof AuthenticatedUctovnictvoPohodaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/uctovnictvo/pokladne': {
+      id: '/_authenticated/uctovnictvo/pokladne'
+      path: '/uctovnictvo/pokladne'
+      fullPath: '/uctovnictvo/pokladne'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoPokladneRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/uctovnictvo/pravidla': {
@@ -6691,6 +6744,13 @@ declare module '@tanstack/react-router' {
       path: '/uctovnictvo/vypis-do-pohody'
       fullPath: '/uctovnictvo/vypis-do-pohody'
       preLoaderRoute: typeof AuthenticatedUctovnictvoVypisDoPohodyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/uctovnictvo/zauctovanie': {
+      id: '/_authenticated/uctovnictvo/zauctovanie'
+      path: '/uctovnictvo/zauctovanie'
+      fullPath: '/uctovnictvo/zauctovanie'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoZauctovanieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/vozovy-park/': {
@@ -7917,14 +7977,17 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrijateFakturySamofakturaRoute: typeof AuthenticatedPrijateFakturySamofakturaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
   AuthenticatedUctovnictvoKonvertorRoute: typeof AuthenticatedUctovnictvoKonvertorRoute
+  AuthenticatedUctovnictvoKonvertoryRoute: typeof AuthenticatedUctovnictvoKonvertoryRoute
   AuthenticatedUctovnictvoNaKontroluRoute: typeof AuthenticatedUctovnictvoNaKontroluRoute
   AuthenticatedUctovnictvoOssRoute: typeof AuthenticatedUctovnictvoOssRoute
   AuthenticatedUctovnictvoPohodaRoute: typeof AuthenticatedUctovnictvoPohodaRoute
+  AuthenticatedUctovnictvoPokladneRoute: typeof AuthenticatedUctovnictvoPokladneRoute
   AuthenticatedUctovnictvoPravidlaRoute: typeof AuthenticatedUctovnictvoPravidlaRoute
   AuthenticatedUctovnictvoPredkontacieRoute: typeof AuthenticatedUctovnictvoPredkontacieRoute
   AuthenticatedUctovnictvoUzavierkaRoute: typeof AuthenticatedUctovnictvoUzavierkaRoute
   AuthenticatedUctovnictvoVykazyRoute: typeof AuthenticatedUctovnictvoVykazyRoute
   AuthenticatedUctovnictvoVypisDoPohodyRoute: typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
+  AuthenticatedUctovnictvoZauctovanieRoute: typeof AuthenticatedUctovnictvoZauctovanieRoute
   AuthenticatedVozovyParkIdRoute: typeof AuthenticatedVozovyParkIdRoute
   AuthenticatedVozovyParkNoveRoute: typeof AuthenticatedVozovyParkNoveRoute
   AuthenticatedVozovyParkPalivoveKartyRoute: typeof AuthenticatedVozovyParkPalivoveKartyRoute
@@ -8052,10 +8115,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
   AuthenticatedUctovnictvoKonvertorRoute:
     AuthenticatedUctovnictvoKonvertorRoute,
+  AuthenticatedUctovnictvoKonvertoryRoute:
+    AuthenticatedUctovnictvoKonvertoryRoute,
   AuthenticatedUctovnictvoNaKontroluRoute:
     AuthenticatedUctovnictvoNaKontroluRoute,
   AuthenticatedUctovnictvoOssRoute: AuthenticatedUctovnictvoOssRoute,
   AuthenticatedUctovnictvoPohodaRoute: AuthenticatedUctovnictvoPohodaRoute,
+  AuthenticatedUctovnictvoPokladneRoute: AuthenticatedUctovnictvoPokladneRoute,
   AuthenticatedUctovnictvoPravidlaRoute: AuthenticatedUctovnictvoPravidlaRoute,
   AuthenticatedUctovnictvoPredkontacieRoute:
     AuthenticatedUctovnictvoPredkontacieRoute,
@@ -8064,6 +8130,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUctovnictvoVykazyRoute: AuthenticatedUctovnictvoVykazyRoute,
   AuthenticatedUctovnictvoVypisDoPohodyRoute:
     AuthenticatedUctovnictvoVypisDoPohodyRoute,
+  AuthenticatedUctovnictvoZauctovanieRoute:
+    AuthenticatedUctovnictvoZauctovanieRoute,
   AuthenticatedVozovyParkIdRoute: AuthenticatedVozovyParkIdRoute,
   AuthenticatedVozovyParkNoveRoute: AuthenticatedVozovyParkNoveRoute,
   AuthenticatedVozovyParkPalivoveKartyRoute:
