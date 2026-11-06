@@ -1328,7 +1328,7 @@ function NewInvoice() {
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
-          // Len keď je zvolené — stĺpec pribudol migráciou 20261106210600.
+          // Len keď je zvolené — stĺpec pribudol migráciou 20261106123919.
           ...(form.pdp_druh &&
           ((form.reverse_charge && (form.reverse_charge_type || "domestic_69") === "domestic_69") ||
             items.some((x: any) => x.prenesenie))

@@ -91,7 +91,7 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       delivery_method: src.delivery_method,
       reverse_charge: src.reverse_charge,
       reverse_charge_type: src.reverse_charge_type,
-      // Druh prenesenia (§ 69 ods. 12 písm.) len keď je — stĺpec z migrácie 20261106210600.
+      // Druh prenesenia (§ 69 ods. 12 písm.) len keď je — stĺpec z migrácie 20261106123919.
       ...(src.pdp_druh ? { pdp_druh: src.pdp_druh } : {}),
       rounding_mode: src.rounding_mode,
       type: src.type,

@@ -17,7 +17,7 @@
   (a kontrolní hlášení iné riadky) a overený zoznam z ostrej CZ Pohody nemáme
   — CZ firma si kódy načíta z Pohody alebo pridá ručne.
 
-  Databáza má ten istý zoznam v migrácii 20261106210000 (funkcia
+  Databáza má ten istý zoznam v migrácii 20261106123911 (funkcia
   `predkontacie_systemove_zoznam`); test drží zhodu.
 */
 

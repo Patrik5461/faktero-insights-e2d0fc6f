@@ -412,7 +412,7 @@ function EditInvoice() {
         ...(form.predkontacia.trim() !== (inv?.pohoda_predkontacia ?? "")
           ? { pohoda_predkontacia: form.predkontacia.trim() || null }
           : {}),
-        // Druh prenesenia len pri zmene (stĺpec z migrácie 20261106210600; RPC neznámy stĺpec preskočí).
+        // Druh prenesenia len pri zmene (stĺpec z migrácie 20261106123919; RPC neznámy stĺpec preskočí).
         ...(pdpDruh !== String((inv as any)?.pdp_druh ?? "") ? { pdp_druh: pdpDruh || null } : {}),
         ...(form.clenenie.trim() !== (inv?.pohoda_clenenie_dph ?? "")
           ? { pohoda_clenenie_dph: form.clenenie.trim() || null }

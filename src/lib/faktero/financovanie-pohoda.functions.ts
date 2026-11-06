@@ -25,12 +25,12 @@ const prazdneNaNull = (v: string | null | undefined) => {
   return t ? t : null;
 };
 
-/** Chýbajúci stĺpec = migrácia 20261106210300 ešte nie je v databáze. */
+/** Chýbajúci stĺpec = migrácia 20261106123915 ešte nie je v databáze. */
 function chybaStlpca(chyba: { message?: string; code?: string } | null): boolean {
   return Boolean(chyba && (chyba.code === "42703" || chyba.code === "PGRST204" || /column/i.test(chyba.message ?? "")));
 }
 const BEZ_MIGRACIE =
-  "Zaúčtovanie splátok ešte nie je v databáze zapnuté (chýba migrácia 20261106210300).";
+  "Zaúčtovanie splátok ešte nie je v databáze zapnuté (chýba migrácia 20261106123915).";
 
 /** Predkontácia, členenie DPH, KV a rad pre celý kalendár. */
 export const ulozZauctovanieKalendaraFn = createServerFn({ method: "POST" })

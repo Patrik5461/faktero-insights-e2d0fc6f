@@ -48,7 +48,7 @@ type Splatka = {
   insurance_part?: number;
   remaining_principal: number;
   paid_at: string | null;
-  /* Zaúčtovanie do Pohody (migrácia 20261106210300) — prázdne = ako kalendár. */
+  /* Zaúčtovanie do Pohody (migrácia 20261106123915) — prázdne = ako kalendár. */
   pohoda_predkontacia?: string | null;
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;

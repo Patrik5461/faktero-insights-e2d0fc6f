@@ -314,7 +314,7 @@ async function zapisKalendarZoZmluvy(
     if (zaplatene.has(r.number)) continue;
     /*
       Poistenie sa zapisuje len keď v splátke je — stĺpec `insurance_part`
-      pribudol migráciou 20261106210300 a kalendár bez poistenia sa tak dá
+      pribudol migráciou 20261106123915 a kalendár bez poistenia sa tak dá
       uložiť aj do databázy bez nej.
     */
     const { insurance_part, ...bezPoistenia } = r;

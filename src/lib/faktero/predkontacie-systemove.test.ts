@@ -12,7 +12,7 @@ import {
 import { ponuka, ponukaClenenia } from "./predkontacie";
 import { rozdelNaMazanie } from "./ciselnik-mazanie";
 
-const MIGRACIA = join(__dirname, "../../../supabase/migrations/20261106210000_systemovy_ciselnik_clenenia.sql");
+const MIGRACIA = join(__dirname, "../../../supabase/migrations/20261106123911_systemovy_ciselnik_clenenia.sql");
 
 /** Riadky VALUES z funkcie `predkontacie_systemove_zoznam` v migrácii. */
 function zMigracie(): string[][] {

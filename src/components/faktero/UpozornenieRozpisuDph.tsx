@@ -33,7 +33,7 @@ export async function potvrdNesuladRozpisu(k: VysledokKontroly | null | undefine
   Človek dal „Pokračovať aj tak“: podpis rozpisu ide do `rozpis_dph_potvrdeny`
   (formulár sa potom nepýta, kým sa rozpis či suma nezmení) a kontrola
   rozpisu „na kontrolu“ sa zruší — človek ju práve urobil. Zvlášť od zápisu
-  dokladu: chýbajúci stĺpec (migrácia 20261106210100) uloženie nezastaví.
+  dokladu: chýbajúci stĺpec (migrácia 20261106123913) uloženie nezastaví.
 */
 export async function ulozPotvrdenieRozpisu(
   tabulka: "purchase_invoices" | "expense_documents",
