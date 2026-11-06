@@ -62,7 +62,7 @@ function Page() {
       const { data, error } = await supabase
         .from("platformove_oznamy")
         .select(
-          "id, typ, text, zaciatok, trvanie_min, plati_do, aktivny, created_at, len_pre_user_id",
+          "id, typ, text, zaciatok, trvanie_min, plati_do, aktivny, created_at, len_pre_user_id, nadpis, text_okno",
         )
         .order("zaciatok", { ascending: false })
         .limit(50);
@@ -78,6 +78,9 @@ function Page() {
   const [trvanie, setTrvanie] = useState(1);
   const [text, setText] = useState("");
   const [textUpraveny, setTextUpraveny] = useState(false);
+  /** Len info: okno, ktoré sa každému ukáže raz (prázdny text = len pás). */
+  const [nadpis, setNadpis] = useState("");
+  const [textOkna, setTextOkna] = useState("");
 
   const zaciatokMs = Date.parse(zaciatok);
   const predvoleny =
@@ -98,7 +101,10 @@ function Page() {
       const { error } = await supabase.from("platformove_oznamy").insert({
         typ,
         zaciatok: new Date(zaciatokMs).toISOString(),
-        trvanie_min: Math.max(1, Math.min(240, Math.round(trvanie) || 1)),
+        // Info oznam (napr. údržba) môže visieť dlhšie — najviac týždeň.
+        trvanie_min: Math.max(1, Math.min(typ === "info" ? 10080 : 240, Math.round(trvanie) || 1)),
+        nadpis: typ === "info" ? nadpis.trim() || null : null,
+        text_okno: typ === "info" ? textOkna.trim() || null : null,
         // Predvolený text sa neukladá — používateľ ho tak dostane vo svojom jazyku.
         text: typ === "aktualizacia" && vlastny === predvoleny ? null : vlastny || null,
         plati_do:
@@ -111,6 +117,8 @@ function Page() {
     onSuccess: () => {
       toast.success("Oznam pridaný");
       setTextUpraveny(false);
+      setNadpis("");
+      setTextOkna("");
       setZaciatok(doVstupu(predvolenyZaciatok()));
       obnov();
     },
@@ -184,7 +192,7 @@ function Page() {
             <input
               type="number"
               min={1}
-              max={240}
+              max={typ === "info" ? 10080 : 240}
               className={vstup}
               value={trvanie}
               onChange={(e) => setTrvanie(Number(e.target.value) || 1)}
@@ -208,6 +216,33 @@ function Page() {
             }}
           />
         </label>
+        {typ === "info" && (
+          <div className="mt-3 space-y-3 rounded-md border border-dashed border-border p-3">
+            <p className="text-xs text-muted-foreground">
+              Vyskakovacie okno (nepovinné) — každému sa ukáže raz aj bez obnovenia stránky, potom
+              ostane pás. Bez textu okna sa ukáže len pás.
+            </p>
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Nadpis okna</span>
+              <input
+                className={vstup}
+                maxLength={120}
+                placeholder="Oznam"
+                value={nadpis}
+                onChange={(e) => setNadpis(e.target.value)}
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Text okna (nový riadok = nový odsek)</span>
+              <textarea
+                className={`${vstup} min-h-[7rem]`}
+                maxLength={2000}
+                value={textOkna}
+                onChange={(e) => setTextOkna(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-3">
           <button
             type="submit"
@@ -271,6 +306,11 @@ function Page() {
                     <td className="whitespace-nowrap px-3 py-2">{o.trvanie_min} min</td>
                     <td className="min-w-[14rem] px-3 py-2 text-muted-foreground">
                       {o.text ?? <span className="italic">predvolený</span>}
+                      {o.text_okno && (
+                        <div className="mt-1 text-xs">
+                          okno: <span className="font-medium">{o.nadpis || "Oznam"}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2">
                       {!o.aktivny
