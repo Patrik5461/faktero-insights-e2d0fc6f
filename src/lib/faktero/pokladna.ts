@@ -14,6 +14,8 @@ export type TypPohybu = "prijem" | "vydaj";
 
 export type PokladnicnyDoklad = {
   id?: string;
+  /** Kedy doklad odišiel do Pohody (konektor); null = neodovzdaný. */
+  exported_at?: string | null;
   entry_number?: string | null;
   entry_date?: string | null;
   type?: string | null;
@@ -59,6 +61,8 @@ export type Riadok = {
   suma: number;
   zdroj: "pokladnicny" | "doklad";
   zostatok: number;
+  /** Pokladničný doklad odovzdaný do Pohody — kedy (inak chýba). */
+  odovzdane?: string | null;
 };
 
 /**
@@ -83,6 +87,7 @@ export function priebehPokladne(
       typ,
       suma: centy(Math.abs(cislo(d.amount))),
       zdroj: "pokladnicny",
+      ...(d.exported_at ? { odovzdane: d.exported_at } : {}),
     });
   }
 

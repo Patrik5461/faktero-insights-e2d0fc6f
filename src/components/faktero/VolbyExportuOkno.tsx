@@ -36,7 +36,7 @@ export function VolbyExportuOkno({
   pocet: number;
   nazov: string;
   ponukaOznacit?: boolean;
-  /** Či je „Označiť ako odovzdané“ na začiatku zaškrtnuté (zálohové: nie — stiahnutie nesmie zamknúť). */
+  /** Či je „Označiť ako odovzdané“ na začiatku zaškrtnuté (predvolene áno — aj pri zálohových). */
   predvoleneOznacit?: boolean;
   /** Bločky: ponúknuť „Exportovať položky dokladu" (hodnota = nastavenie firmy). */
   ponukaPolozky?: { predvolene: boolean };

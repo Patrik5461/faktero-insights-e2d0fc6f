@@ -395,6 +395,8 @@ describe("česká Pohoda dostane české texty", () => {
           items: [polozka({ vat_rate: 21, vat_amount: 21, total: 121 })],
         },
       ],
+      // Doklad k platbe bez predkontácie sa do Pohody nepustí (checklist A1.5).
+      nastavenia: { predkontaciaZaloha: "ZAL" } as any,
     });
     expect(xml).toContain("Daňový doklad k přijaté platbě DDP1");
     expect(xml).toContain("<inv:text>Faktura FA2</inv:text>");

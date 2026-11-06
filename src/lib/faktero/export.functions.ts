@@ -29,6 +29,14 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
        * (staršie volania z detailu a zoznamu faktúr).
        */
       oznacit?: boolean;
+      /**
+       * Dátum zaúčtovania (Pohoda `dateAccounting`) pre doklady z uzavretého
+       * obdobia — ako pri prijatých faktúrach (VolbyExportuOkno). Prázdne =
+       * dátum dokladu.
+       */
+      datumZauctovania?: string | null;
+      /** Poradie faktúr v dávke. */
+      radenie?: "datum" | "cislo" | "nahratie" | null;
     }) => input,
   )
   .handler(async ({ data, context }) => {
@@ -115,7 +123,14 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         { ulozit: true },
       )),
     );
+    if (data.radenie) {
+      const { zoradNaExport } = await import("./export-radenie");
+      invs.splice(0, invs.length, ...zoradNaExport(invs as any[], data.radenie));
+    }
     const { bundle, zalohy } = await pripravFaktury(supabase, data.companyId, invs);
+    const datumZauctovania = /^\d{4}-\d{2}-\d{2}$/.test(String(data.datumZauctovania ?? ""))
+      ? String(data.datumZauctovania)
+      : null;
 
     const built = await strategy.build({
       company,
@@ -125,6 +140,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         ...nastaveniaFaktur(company),
         // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
         ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
+        ...(datumZauctovania ? { datumZauctovaniaPevny: datumZauctovania } : {}),
       },
     });
 

@@ -949,33 +949,9 @@ export const vratVystavenuZPohodyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ company_id: z.string().uuid(), id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const supabase = context.supabase as any;
-    // Faktúru musí prihlásený vidieť (RLS) — až potom sa história mení
-    // servisným kľúčom; členovia ju meniť nesmú (len čítať a zapisovať).
-    const { data: f } = await supabase
-      .from("invoices")
-      .select("id")
-      .eq("company_id", data.company_id)
-      .eq("id", data.id)
-      .maybeSingle();
-    if (!f) throw new Error("Faktúra sa nenašla.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("export_logs")
-      .update({ status: "returned" })
-      .eq("company_id", data.company_id)
-      .eq("invoice_id", data.id)
-      .eq("status", "ok");
-    if (error) throw new Error(error.message);
-    await supabase
-      .from("invoices")
-      .update({ zauctovane_at: null, zauctoval: null })
-      .eq("company_id", data.company_id)
-      .eq("id", data.id);
-    // Oprava pôjde do Pohody pod novým id — inak by ju kontrola duplicity odmietla.
-    const { zvysVerziuPohody } = await import("./pohoda-odoslane-xml.server");
-    await zvysVerziuPohody(supabase, "invoices", [data.id]);
-    return { ok: true };
+    const { vratVystavenuZPohody } = await import("./vratenie-z-pohody.server");
+    return vratVystavenuZPohody(context as any, supabaseAdmin, data);
   });
 
 /** Stav pre panel: je v Pohode, kedy a pod akým číslom. */

@@ -665,6 +665,34 @@ function textVystavenej(invoice: InvoiceRow, ex: NastaveniaExportu, cz = false):
   return auto;
 }
 
+/**
+ * Položky vydanej zálohovej faktúry bez DPH: suma na úhradu (s daňou) ako
+ * základ v nulovej sadzbe. Jednotková cena je cena za jednotku s daňou; keď
+ * sa ňou množstvo nedá vyjadriť na cent, ide riadok ako 1 × celá suma
+ * (množstvo ostane v texte), aby Pohoda neprepočítala inú sumu.
+ */
+export function polozkyZalohyBezDph(items: ItemRow[]): ItemRow[] {
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  return items.map((it) => {
+    const spolu = r2(Number(it.total ?? 0));
+    const q = Number(it.quantity ?? 0);
+    const jednotkova = q ? r2(spolu / q) : spolu;
+    const sedi = q && Math.abs(jednotkova * q - spolu) < 0.005;
+    return {
+      ...it,
+      quantity: sedi ? q : 1,
+      name: sedi ? it.name : `${it.name ?? ""} (${q} ${it.unit ?? "ks"})`.trim(),
+      unit_price: sedi ? jednotkova : spolu,
+      discount_percent: 0,
+      vat_rate: 0,
+      subtotal: spolu,
+      vat_amount: 0,
+      total: spolu,
+      prenesenie: false,
+    } as ItemRow;
+  });
+}
+
 export function polozkyFaktur(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
@@ -718,8 +746,17 @@ export function polozkyFaktur(opts: {
         z položiek. Bez rozpočítania by riadky dali vyššiu sumu než doklad a
         import by spadol na nesúlade.
       */
-      const items = riadkySoZlavou(povodneRiadky, (invoice as any).discount_total);
       const typ = String(invoice.type ?? "regular");
+      /*
+        Zálohová faktúra nie je daňový doklad — do Pohody ide celá BEZ DPH
+        (rovnako ako prijatá zálohová, `zalohovaAkoDoklad`): položky v sadzbe
+        `none` so sumou na úhradu, súhrn v `priceNone`. DPH prinesie až daňový
+        doklad k prijatej platbe (alebo vyúčtovacia faktúra).
+      */
+      const items =
+        typ === "proforma"
+          ? polozkyZalohyBezDph(riadkySoZlavou(povodneRiadky, (invoice as any).discount_total))
+          : riadkySoZlavou(povodneRiadky, (invoice as any).discount_total);
       const opravny = typ === "credit_note" || typ === "debit_note";
       /*
         Opravný doklad podľa § 25a (`oprava_25a`) je v DB `credit_note`, ale
@@ -919,10 +956,16 @@ export function polozkyFaktur(opts: {
         // Položka v prenesení na inak bežnej faktúre: členenie DPH pre prenesenie
         // a riadok kontrolného výkazu (SK A.2) / hlášení (CZ A.1) priamo na položke.
         const pdpRiadok = !invoice.reverse_charge && Boolean((it as any).prenesenie);
+        /*
+          Členenie DPH na každej položke — vlastné, položka v prenesení
+          dostane členenie pre prenesenie, inak členenie dokladu (ručné alebo
+          automatické z `zauctovanieNaExport`/predvolené). Pohoda ho z hlavičky
+          do položiek sama nedoplní (checklist účtovníčky A1.1).
+        */
         const cl = zalohova
           ? ""
           : String((it as any).pohoda_clenenie_dph ?? "").trim() ||
-            (pdpRiadok ? clenenieVydanejPdp(nastavenia, company as any) : "");
+            (pdpRiadok ? clenenieVydanejPdp(nastavenia, company as any) : clenenie);
         /*
           KV DPH na každej položke (len SK; CZ verzia element nemá — kontrolné
           hlásenie si Pohoda odvodí z členenia DPH): vlastné, položka
@@ -946,7 +989,8 @@ export function polozkyFaktur(opts: {
           písm. f) až i) ako 4-miestny kód colného sadzobníka (stĺpec TK);
           pri stavebných prácach sa nevypĺňa, preto len keď ho položka má.
         */
-        const pdpPolozka = tuzemskePdp || pdpRiadok;
+        // Zálohová ide bez DPH — príznak prenesenia nemá na čo sa vzťahovať.
+        const pdpPolozka = !zalohova && (tuzemskePdp || pdpRiadok);
         const kodTovaru = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 4);
         // Stredisko a činnosť položky (invoice.xsd: po CodePDP, pred intrastatItem) — len pri rozúčtovaní.
         const centre = poPolozkach ? odkazIds("inv:centre", strediskoPolozky(it), "          ") : "";
@@ -1335,7 +1379,7 @@ export function polozkyPokladne(opts: {
       );
 
       return `
-  <dat:dataPackItem id="${esc(p?.id ?? `POK${idx + 1}`)}" version="2.0">
+  <dat:dataPackItem id="${esc(p?.id ? idDokladuPohody(p.id, (p as any).pohoda_verzia) : `POK${idx + 1}`)}" version="2.0">
     <vch:voucher version="2.0">
       <vch:voucherHeader>
         <vch:voucherType>${druh}</vch:voucherType>
@@ -2076,7 +2120,14 @@ export function polozkyDokladov(opts: {
         ? `
       <${p}:${koren}Detail>${polozkyFaktury
         .map((x: any) => {
-          const cl = x.pdp ? clenenieprijatejPdp(nastavenia, cz) || x.clenenie : x.clenenie;
+          /*
+            Členenie DPH položky: vlastné, prenesená položka členenie pre
+            prenesenie, inak členenie dokladu (zaúčtovanie, predvolené firmy
+            či podľa zákona) — Pohoda ho z hlavičky do položiek nedoplní.
+          */
+          const cl = x.pdp
+            ? clenenieprijatejPdp(nastavenia, cz) || x.clenenie
+            : x.clenenie || clenenie;
           // KV na položke s DPH — Pohoda ho z hlavičky do položiek nevezme (aj prijatá faktúra).
           const kvx = kvPolozky(x, cl);
           // Položka „ako doklad“ dostane predkontáciu dokladu výslovne — Pohoda ju do položiek sama nedoplní.

@@ -185,17 +185,27 @@ describe("Zálohová faktúra do Pohody bez predkontácie", () => {
     expect(prekazkaVydanej(zf, zfPolozky, paliera, nastPaliera)).toBeNull();
   });
 
-  it("ZF20260001: XML je rovnaké ako pred regresiou, bez účtovných elementov a podľa invoice.xsd", () => {
+  it("ZF20260001: XML ako pred regresiou, ale BEZ DPH (checklist A1.2), bez účtovných elementov a podľa invoice.xsd", () => {
     const r = POHODA_XML.build({
       company: paliera,
       invoices: [{ invoice: zf, items: zfPolozky }],
       nastavenia: nastPaliera,
     }) as { content: string; preskocene?: string[] };
     expect(r.preskocene).toEqual([]);
-    // Jediný rozdiel: po vrátení z Pohody ide doklad ako ďalšia verzia (`id-verzia`, pohoda_verzia = 1).
-    expect(r.content).toBe(
-      PRED_REGRESIOU.replace(`id="${zf.id}"`, `id="${zf.id}-1"`),
-    );
+    /*
+      Rozdiely: po vrátení z Pohody ide doklad ako ďalšia verzia (`id-verzia`,
+      pohoda_verzia = 1) a zálohová ide bez DPH ako prijatá zálohová — položka
+      v sadzbe `none` so sumou na úhradu, súhrn v `priceNone`.
+    */
+    const bezDph = PRED_REGRESIOU.replace(`id="${zf.id}"`, `id="${zf.id}-1"`)
+      .replace("<inv:rateVAT>high</inv:rateVAT>", "<inv:rateVAT>none</inv:rateVAT>")
+      .replace("<typ:unitPrice>1.00</typ:unitPrice>", "<typ:unitPrice>1.23</typ:unitPrice>")
+      .replace("<typ:price>1.00</typ:price>", "<typ:price>1.23</typ:price>")
+      .replace("<typ:priceVAT>0.23</typ:priceVAT>", "<typ:priceVAT>0.00</typ:priceVAT>")
+      .replace("<typ:priceNone>0.00</typ:priceNone>", "<typ:priceNone>1.23</typ:priceNone>")
+      .replace("<typ:priceHigh>1.00</typ:priceHigh>", "<typ:priceHigh>0.00</typ:priceHigh>")
+      .replace("<typ:priceHighVAT>0.23</typ:priceHighVAT>", "<typ:priceHighVAT>0.00</typ:priceHighVAT>");
+    expect(r.content).toBe(bezDph);
     for (const el of UCTOVNE) expect(r.content).not.toContain(el);
     expect(platne(r.content)).toBe(true);
   });

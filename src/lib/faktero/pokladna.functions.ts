@@ -158,6 +158,15 @@ export const deleteCashEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    // Odovzdaný do Pohody sa nezmaže — v Pohode by ostal a u nás by chýbal.
+    const { data: pohyb } = await context.supabase
+      .from("cash_entries")
+      .select("exported_at")
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if ((pohyb as any)?.exported_at)
+      throw new Error("Doklad je už v Pohode — najprv ho vráťte z Pohody (a zmažte ho tam).");
     // Doklad z uzavretého obdobia odmietne trigger `cash_entries_locked_period`.
     const { error } = await context.supabase
       .from("cash_entries")

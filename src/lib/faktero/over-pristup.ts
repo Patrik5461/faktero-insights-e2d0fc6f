@@ -46,3 +46,24 @@ export async function overPristup(
   }
   return rola;
 }
+
+/** Text, keď vracia z Pohody niekto, kto doklady smie len čítať. */
+export const VRATIT_LEN_S_UPRAVOU =
+  "Vrátiť z Pohody môže len ten, kto smie doklady upravovať — vy ich môžete len čítať.";
+
+/**
+ * Vrátenie z Pohody mení doklad (odomkne ho a pošle znova) — vyžaduje právo
+ * upravovať oblasť (`firmy_s_pravom(oblast, true)`), nie len čítať.
+ */
+export async function overPravoVratenia(
+  ctx: Kontext,
+  companyId: string,
+  oblast: Extract<Oblast, "faktury" | "doklady" | "pokladna">,
+): Promise<void> {
+  try {
+    await overPristup(ctx, companyId, { oblast, zapis: true });
+  } catch (e) {
+    if (String((e as Error)?.message ?? "").startsWith("Na túto časť")) throw new Error(VRATIT_LEN_S_UPRAVOU);
+    throw e;
+  }
+}

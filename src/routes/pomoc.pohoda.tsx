@@ -781,6 +781,13 @@ const sections: HelpSection[] = [
           tomu ho Pohoda spáruje so zálohovou faktúrou a nezaúčtuje ako ďalšie plnenie.
         </p>
         <p>
+          Samotná zálohová faktúra — vydaná aj prijatá — ide do Pohody <strong>bez DPH</strong>:
+          nie je daňový doklad, takže položky majú sadzbu „bez DPH“ so sumou na úhradu a doklad
+          nenesie predkontáciu, členenie DPH ani KV. Daň prinesie až daňový doklad k prijatej
+          platbe alebo vyúčtovacia faktúra. Po exporte je zálohová odovzdaná a zamknutá ako
+          faktúra; opraviť ju ide cez <em>Vrátiť z Pohody (opraviť)</em>.
+        </p>
+        <p>
           Všetky tri sa odvolávajú na číslo, ktoré doklad dostal v Pohode. Kým sa jeho import
           nepotvrdí, väzba počká a doklad odíde bez nej — radšej doklad bez väzby než doklad, ktorý
           sa nenaimportuje vôbec.

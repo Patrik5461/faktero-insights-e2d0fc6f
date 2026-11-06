@@ -101,6 +101,8 @@ export type Balik = {
   pocetFaktur: number;
   pocetDokladov: number;
   pocetPokladnicnych: number;
+  /** Pokladničné doklady, ktoré išli v XML (majú skratku pokladne) — označia sa ako odovzdané. */
+  pokladnicaIds?: string[];
   /** Listy, predpisy, exekúcie a zmluvy doručené v mesiaci. */
   pocetOstatnych: number;
   ostatneIds: string[];
@@ -179,7 +181,7 @@ export async function zostavBalik(
     await import("./clenenie-vystavenej.server")
   ).zauctovanieNaExport(supabase, vstup.companyId, fakturySch, { ulozit: true });
 
-  const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] =
+  const [{ data: vsetkyDoklady }, { data: pokladnicaVsetko }, { data: vsetkyOstatne }] =
     await Promise.all([
       vsetkoAkoData((zac, kon) =>
         supabase
@@ -258,6 +260,8 @@ export async function zostavBalik(
   );
   const cakajuNaSchvalenie = cakajuFaktury + cakajuDoklady + cakajuPrijate;
   const ostatne = (vsetkyOstatne ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
+  // Pokladňa ako ostatné doklady: „len nové“ = ešte neodovzdané (konektor ich značí rovnako).
+  const pokladnica = (pokladnicaVsetko ?? []).filter((p: Riadok) => !vstup.lenNove || !p.exported_at);
 
   if (!faktury.length && !doklady.length && !prijate.length && !pokladnica?.length && !ostatne.length) {
     throw new Error(
@@ -603,6 +607,7 @@ export async function zostavBalik(
     );
   }
 
+  const pokladnicaDoXml: Riadok[] = [];
   if (pokladnica?.length) {
     /*
       Pokladničný doklad bez pokladne Pohoda nezaloží (voucher.xsd:
@@ -611,6 +616,8 @@ export async function zostavBalik(
     */
     // Viac pokladní: skratka podľa pokladne pohybu, inak predvolená/firma.
     const bezSkratky = pohybyBezPokladne(pokladnica, nastavenia);
+    const bezSkratkyIds = new Set(bezSkratky.map((p: Riadok) => p.id));
+    pokladnicaDoXml.push(...pokladnica.filter((p: Riadok) => !bezSkratkyIds.has(p.id)));
     if (bezSkratky.length < pokladnica.length)
       zip.file(
         "pohoda-pokladna.xml",
@@ -783,6 +790,7 @@ export async function zostavBalik(
       pocetFaktur: vyvezene.length,
       pocetDokladov: dokladyDoXml.length,
       pocetPokladnicnych: pokladnica?.length ?? 0,
+      pokladnicaIds: pokladnicaDoXml.map((p: Riadok) => p.id),
       pocetOstatnych: ostatne.length,
       ostatneIds: ostatne.map((d: Riadok) => d.id),
       preskocene,
@@ -920,6 +928,13 @@ export async function oznacOdovzdane(
         .from("purchase_invoices")
         .update({ exported_at: kedy, export_job_id: jobPrijatych })
         .in("id", kus),
+    );
+  }
+  // Pokladničné doklady z XML — inak by ich konektor poslal znova a zoznam by ich neukázal ako odovzdané.
+  if (job && balik.pokladnicaIds?.length) {
+    const kedy = new Date().toISOString();
+    await poDavkach(balik.pokladnicaIds, (kus) =>
+      supabase.from("cash_entries").update({ exported_at: kedy, export_job_id: job.id }).in("id", kus),
     );
   }
   if (job && balik.ostatneIds.length) {

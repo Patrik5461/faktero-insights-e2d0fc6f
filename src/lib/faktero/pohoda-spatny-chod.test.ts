@@ -328,7 +328,8 @@ describe("spätný chod — vystavené doklady SK", () => {
     );
     const [f] = vydaneSpat(x);
     expect(f.druh).toBe("proforma");
-    expect([c(f.subtotal), c(f.vatTotal), c(f.total)]).toEqual([100, 23, 123]);
+    // Zálohová ide do Pohody bez DPH (nie je daňový doklad) — celá suma ako základ v nulovej sadzbe.
+    expect([c(f.subtotal), c(f.vatTotal), c(f.total)]).toEqual([123, 0, 123]);
   });
 
   it("dobropis SK: kladný v Pohode, záporný vo Fakteri, s väzbou na opravovanú faktúru", () => {

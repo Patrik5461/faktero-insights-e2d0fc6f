@@ -22,41 +22,14 @@ export const vratZPohodyFn = createServerFn({ method: "POST" })
     z
       .object({
         company_id: z.string().uuid(),
-        druh: z.enum(["prijata", "doklad"]),
+        druh: z.enum(["prijata", "doklad", "pokladna"]),
         ids: z.array(z.string().uuid()).min(1).max(500),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const supabase = context.supabase as any;
-    if (data.druh === "prijata") {
-      // Späť na „prijatú": zaúčtovanie sa zruší, aby ho človek opravil a
-      // zaúčtoval znova — inak by nesprávne kódy odišli rovno ďalšou dávkou.
-      const { data: r, error } = await supabase
-        .from("purchase_invoices")
-        .update({ exported_at: null, pohoda_cislo: null, zauctovane_at: null, zauctoval: null })
-        .eq("company_id", data.company_id)
-        .in("id", data.ids)
-        .select("id, status");
-      if (error) throw new Error(error.message);
-      const zauct = (r ?? []).filter((x: any) => x.status === "booked").map((x: any) => x.id);
-      if (zauct.length)
-        await supabase.from("purchase_invoices").update({ status: "received" }).in("id", zauct);
-      const { zvysVerziuPohody } = await import("./pohoda-odoslane-xml.server");
-      await zvysVerziuPohody(supabase, "purchase_invoices", (r ?? []).map((x: any) => x.id));
-      return { vratenych: (r ?? []).length };
-    }
-    // Doklad sa vráti medzi nespracované — po oprave ho človek spracuje znova.
-    const { data: r, error } = await supabase
-      .from("expense_documents")
-      .update({ exported_at: null, export_job_id: null, pohoda_cislo: null, status: "new" })
-      .eq("company_id", data.company_id)
-      .in("id", data.ids)
-      .select("id");
-    if (error) throw new Error(error.message);
-    const { zvysVerziuPohody } = await import("./pohoda-odoslane-xml.server");
-    await zvysVerziuPohody(supabase, "expense_documents", (r ?? []).map((x: any) => x.id));
-    return { vratenych: (r ?? []).length };
+    const { vratDokladyZPohody } = await import("./vratenie-z-pohody.server");
+    return vratDokladyZPohody(context as any, data);
   });
 
 

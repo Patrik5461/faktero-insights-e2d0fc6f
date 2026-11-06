@@ -15,6 +15,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { ListPagination, ConfirmDialog } from "@/components/faktero/ListControls";
@@ -147,17 +148,41 @@ function ProformaListPage() {
   const exportFn = useServerFn(exportInvoicesFn);
   const program = useExportDoProgramu();
   const [exportujem, setExportujem] = useState(false);
+  // Voľby exportu (dátum zaúčtovania, radenie, označiť) — rovnaké okno ako pri prijatých faktúrach.
+  const [volbyExportu, setVolbyExportu] = useState(false);
   const exportovatelne = list.rows.filter(
     (r: any) => !r.deleted_at && r.status !== "draft" && r.status !== "cancelled",
   );
   const vybraneIds = exportovatelne.filter((r: any) => list.selected[r.id]).map((r: any) => r.id);
   const naExport = vybraneIds.length ? vybraneIds : exportovatelne.map((r: any) => r.id);
-  async function exportujDoPohody() {
+  async function exportujDoPohody(v: VolbyExportu) {
     const cid = getActiveCompanyId();
     if (!cid || !naExport.length) return;
+    /*
+      Bez „Exportovať aj už odovzdané“ idú len neodovzdané. Pri označení ich
+      server vynechá sám (druhýkrát odovzdať nemožno); pri samotnom stiahnutí
+      ich treba vynechať tu.
+    */
+    const odovzdane = new Set(
+      exportovatelne.filter((r: any) => r.exported_at).map((r: any) => r.id as string),
+    );
+    const ids = v.ajOdovzdane || v.oznacit ? naExport : naExport.filter((id: string) => !odovzdane.has(id));
+    if (!ids.length) {
+      toast.error(t("Vybrané zálohové faktúry sú už odovzdané do Pohody."));
+      return;
+    }
     setExportujem(true);
     try {
-      const r = await exportFn({ data: { companyId: cid, invoiceIds: naExport, format: "pohoda_xml" } });
+      const r = await exportFn({
+        data: {
+          companyId: cid,
+          invoiceIds: ids,
+          format: "pohoda_xml",
+          oznacit: v.oznacit,
+          datumZauctovania: v.datumZauctovania,
+          radenie: v.radenie,
+        },
+      });
       const url = URL.createObjectURL(new Blob([r.content], { type: "application/xml;charset=utf-8" }));
       const a = document.createElement("a");
       a.href = url;
@@ -166,9 +191,13 @@ function ProformaListPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(t("XML pre Pohodu: {n} zálohových faktúr", { n: r.invoiceCount }));
+      toast.success(
+        t("XML pre Pohodu: {n} zálohových faktúr", { n: r.invoiceCount }) +
+          (r.oznacene ? t(", označené ako odovzdané") : ""),
+      );
       toastNeodovzdane(t, r.preskocene);
       list.clearSelection();
+      list.reload();
     } catch (e: any) {
       toast.error(e?.message ?? t("Export zlyhal"));
     } finally {
@@ -213,6 +242,14 @@ function ProformaListPage() {
 
   return (
     <>
+      {volbyExportu ? (
+        <VolbyExportuOkno
+          pocet={naExport.length}
+          nazov={t("Vydané zálohové faktúry do Pohody (XML)")}
+          onClose={() => setVolbyExportu(false)}
+          onExport={exportujDoPohody}
+        />
+      ) : null}
       <PageHeader
         title={t("Vydané zálohové faktúry")}
         description={t("Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre.")}
@@ -222,9 +259,9 @@ function ProformaListPage() {
               <button
                 type="button"
                 disabled={exportujem}
-                onClick={() => void exportujDoPohody()}
+                onClick={() => setVolbyExportu(true)}
                 title={t(
-                  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — kvôli úhrade a odpočtu zálohy",
+                  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
                 )}
                 className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
               >

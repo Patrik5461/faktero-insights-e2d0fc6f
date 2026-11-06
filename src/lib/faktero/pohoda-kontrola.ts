@@ -15,7 +15,7 @@ import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
 */
 
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
-import { kodPokladneDokladu } from "./pokladne";
+import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
 import { kvPrijatehoDokladu } from "./kv-urcenie";
 import { skratkaPredkontacie, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
@@ -251,6 +251,16 @@ export function prekazkaVydanej(
     if (dovod) return dovod;
   }
 
+  /*
+    Daňový doklad k prijatej platbe bez predkontácie (vlastnej ani
+    z Predkontácie → daňový doklad k platbe) by išiel do Pohody s „Neviem“ —
+    zastaví sa (predtým len upozornenie).
+  */
+  {
+    const dovod = varovanieDokladuKPlatbe(invoice, nastavenia);
+    if (dovod) return dovod;
+  }
+
   // Prenesenie: odberateľ musí mať IČ DPH (SK KV A.2, CZ KH A.1 chce DIČ).
   if ((tuzemskePdp || pdpPolozky) && !zalohova) {
     const icDph = kod(invoice?.customer_ic_dph) || (cz ? kod(invoice?.customer_dic) : "");
@@ -400,10 +410,17 @@ export function prekazkaDokladu(
     /*
       Bloček v cudzej mene si od 30. 10. 2026 pamätá kurz ECB/ČNB
       (`exchange_rate`) a ide do Pohody ako prijatá faktúra alebo interný
-      doklad v cudzej mene. Hotovosť nie — pokladňa v Pohode je v domácej mene.
+      doklad v cudzej mene. Hotovosť len cez pokladňu v tej istej mene: firma
+      môže mať viac pokladní (tabuľka `pokladne`, mena + skratka pre Pohodu) —
+      bloček v CZK z pokladne „HP CZK“ ide ako pokladničný doklad s jej
+      skratkou a sumami v cudzej mene. Bez pokladne v mene dokladu (alebo bez
+      jej skratky) by sa zapísal do domácej pokladne — zastaví sa.
     */
-    if (blocek && String(d?.payment_method ?? "") === "hotovost")
-      return `${cislo} — hotovostný bloček v mene ${mena} — pokladňa v Pohode je v domácej mene, zadajte ho ručne`;
+    if (blocek && String(d?.payment_method ?? "") === "hotovost") {
+      const menaPokladne = String(menaPokladneDokladu(d as any, nastavenia as any) ?? domaca).toUpperCase();
+      if (menaPokladne !== mena || !kodPokladneDokladu(d as any, nastavenia as any))
+        return `${cislo} — hotovostný bloček v mene ${mena} — pokladňa dokladu v Pohode nie je v mene ${mena} (alebo nemá skratku) — vyberte pokladňu v mene ${mena} so skratkou pre Pohodu, inak ho zadajte ručne`;
+    }
     const kurz = blocek ? Number(d?.exchange_rate) : Number(d?._kurz);
     if (!(kurz > 0))
       return blocek

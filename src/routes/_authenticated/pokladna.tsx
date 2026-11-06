@@ -5,7 +5,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createCashEntry, deleteCashEntry, getCashBook } from "@/lib/faktero/pokladna.functions";
 import { formatujDatum } from "@/lib/faktero/uzavierka";
-import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle, Settings2 } from "lucide-react";
+import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle, Settings2, Undo2 } from "lucide-react";
+import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
 import { SpravaPokladni, VyberPokladne } from "@/components/faktero/Pokladne";
 import { pokladnaDoFormulara, type Pokladna } from "@/lib/faktero/pokladne";
 import { MENY } from "@/lib/faktero/mena";
@@ -52,6 +53,7 @@ function PokladnaPage() {
   const fetchBook = useServerFn(getCashBook);
   const doCreate = useServerFn(createCashEntry);
   const doDelete = useServerFn(deleteCashEntry);
+  const doVrat = useServerFn(vratZPohodyFn);
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +133,57 @@ function PokladnaPage() {
       setBusy(false);
     }
   }
+
+  /*
+    Vrátenie z Pohody: odovzdaný pokladničný doklad sa odomkne (dá sa zmazať
+    a opraviť) a ďalšia dávka ho pošle znova. V Pohode ho treba zmazať ručne.
+  */
+  async function vratit(id: string) {
+    if (
+      !cid ||
+      !(await potvrd(
+        t(
+          "Vrátiť pokladničný doklad z Pohody? Pri ďalšom odovzdaní pôjde znova. V Pohode ho treba zmazať ručne, inak tam bude dvakrát.",
+        ),
+        { potvrdit: t("Vrátiť a opraviť") },
+      ))
+    )
+      return;
+    setBusy(true);
+    setChyba(null);
+    try {
+      await doVrat({ data: { company_id: cid, druh: "pokladna", ids: [id] } });
+      nacitaj();
+    } catch (err: any) {
+      setChyba(err?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  const odznakPohody = (r: any) =>
+    r.odovzdane ? (
+      <span
+        className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800"
+        title={t("Odovzdané do Pohody {kedy}", { kedy: formatujDatum(String(r.odovzdane).slice(0, 10)) })}
+      >
+        {t("V Pohode")}
+      </span>
+    ) : null;
+  const tlacidloVratit = (r: any, trieda: string) => (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={(e) => {
+        e.stopPropagation();
+        void vratit(r.id);
+      }}
+      className={trieda}
+      aria-label={t("Vrátiť z Pohody (opraviť)")}
+      title={t("Vrátiť z Pohody (opraviť)")}
+    >
+      <Undo2 className="h-4 w-4" />
+    </button>
+  );
 
   const stav = data?.stav;
   const pole = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -431,6 +484,7 @@ function PokladnaPage() {
                       <td className="whitespace-nowrap p-3 text-muted-foreground">{formatujDatum(r.datum)}</td>
                       <td className="whitespace-nowrap p-3">
                         {r.cislo ? <span className="cislo-dokladu">{r.cislo}</span> : "—"}
+                        {odznakPohody(r)}
                       </td>
                       <td className="p-3">
                         <span className="inline-flex items-center gap-1.5">
@@ -463,7 +517,10 @@ function PokladnaPage() {
                         {suma(r.zostatok, r.mena)}
                       </td>
                       <td className="p-3 text-right">
-                        {r.zdroj === "pokladnicny" && (
+                        {r.zdroj === "pokladnicny" && r.odovzdane
+                          ? tlacidloVratit(r, "rounded-md p-1 text-muted-foreground hover:bg-secondary disabled:opacity-50")
+                          : null}
+                        {r.zdroj === "pokladnicny" && !r.odovzdane && (
                           <button
                             type="button"
                             disabled={busy}
@@ -512,6 +569,7 @@ function PokladnaPage() {
                     <span className="whitespace-nowrap">
                       {formatujDatum(r.datum)}
                       {r.cislo ? <span className="cislo-dokladu">{` · ${r.cislo}`}</span> : ""}
+                      {odznakPohody(r)}
                     </span>
                     <span className="whitespace-nowrap">
                       {t("Zostatok:")}{" "}
@@ -527,7 +585,10 @@ function PokladnaPage() {
                       <span>{t("Pokladničný doklad")}</span>
                     )}
                     {vsetky && <span className="min-w-0 truncate">{r.pokladna}</span>}
-                    {r.zdroj === "pokladnicny" && (
+                    {r.zdroj === "pokladnicny" && r.odovzdane
+                      ? tlacidloVratit(r, "p-1 text-muted-foreground disabled:opacity-50")
+                      : null}
+                    {r.zdroj === "pokladnicny" && !r.odovzdane && (
                       <button
                         type="button"
                         disabled={busy}

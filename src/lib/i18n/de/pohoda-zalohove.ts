@@ -23,4 +23,16 @@ export default {
     "{n} Anzahlungsrechnungen aus Pohoda zurückholen? Sie werden zur Korrektur entsperrt und beim nächsten Export erneut übertragen. In Pohoda müssen sie manuell gelöscht werden, sonst sind sie doppelt vorhanden.",
   "Vrátené z Pohody: {n}": "Aus Pohoda zurückgeholt: {n}",
   "Vrátiť z Pohody ({n})": "Aus Pohoda zurückholen ({n})",
+  "Vydané zálohové faktúry do Pohody (XML)":
+    "Ausgestellte Anzahlungsrechnungen nach Pohoda (XML)",
+  "Vybrané zálohové faktúry sú už odovzdané do Pohody.":
+    "Die ausgewählten Anzahlungsrechnungen wurden bereits an Pohoda übergeben.",
+  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy":
+    "Ausgewählte (ohne Auswahl alle angezeigten) Anzahlungsrechnungen nach Pohoda (Ausgestellte Anzahlungsrechnungen) — ohne MwSt. und ohne Kontierung, für Zahlung und Anzahlungsabzug",
+  "Odovzdané do Pohody {kedy}":
+    "An Pohoda übergeben {kedy}",
+  "Do Pohody ide ako zálohová faktúra bez DPH — neúčtuje sa, eviduje sa kvôli úhrade a odpočtu zálohy.":
+    "Geht als Anzahlungsrechnung ohne MwSt. nach Pohoda — wird nicht verbucht, nur für Zahlung und Anzahlungsabzug erfasst.",
+  "Vrátiť pokladničný doklad z Pohody? Pri ďalšom odovzdaní pôjde znova. V Pohode ho treba zmazať ručne, inak tam bude dvakrát.":
+    "Kassenbeleg aus Pohoda zurückholen? Bei der nächsten Übergabe wird er erneut übertragen. In Pohoda muss er manuell gelöscht werden, sonst ist er doppelt vorhanden.",
 };

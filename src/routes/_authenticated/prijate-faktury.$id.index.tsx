@@ -616,6 +616,21 @@ function PurchaseInvoiceDetail() {
     load();
   };
 
+  /*
+    Prijatá zálohová faktúra sa neúčtuje (panel zaúčtovania nemá), ale do
+    Pohody ide (bez DPH) — stav odovzdania a „Vrátiť z Pohody (opraviť)“
+    musí mať rovnako ako faktúra.
+  */
+  const kartaPohodaZalohy =
+    (row as any).type === "proforma" && !navrh ? (
+      <OdovzdanieZalohovejPrijatej
+        row={row}
+        onVratit={async () => {
+          if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
+        }}
+      />
+    ) : null;
+
   /* Kompaktné rozloženie: lišta ikon hore a jeden stĺpec kariet. */
   if (kompaktne)
     return (
@@ -717,6 +732,7 @@ function PurchaseInvoiceDetail() {
                   </div>
                 ) : null}
                 {samo && <SamofakturaPanel row={row} onZmena={load} />}
+                {kartaPohodaZalohy}
                 <AutomatickyZaradena
                   id={row.id}
                   naKontroluAt={(row as any).na_kontrolu_at}
@@ -1290,6 +1306,7 @@ function PurchaseInvoiceDetail() {
               {kartaUhradyPrijatej}
               {/* Zaúčtovanie pred platobnými údajmi — je pre účtovníka dôležitejšie. */}
               {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+              {kartaPohodaZalohy}
               {kartaPlatba(true)}
               {kartaBanka}
               {kartaZakazka}
@@ -1340,6 +1357,7 @@ function PurchaseInvoiceDetail() {
                   />
                 )}
                 {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+                {kartaPohodaZalohy}
                 {kartaKomentare}
                 {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
                 {!navrh && (
@@ -1565,6 +1583,55 @@ function NahladPrilohy({
         /* Vlastné vykreslenie — na zabudovaný prehliadač PDF sa spoľahnúť nedá. */
         <NahladPdf url={url} zvyraznenie={zv.zvyraznenie} />
       )}
+    </div>
+  );
+}
+
+/**
+ * Prijatá zálohová faktúra: stav odovzdania do Pohody a vrátenie na opravu
+ * (tá istá operácia ako „Poslať opravu“ v menu). Neúčtuje sa — v Pohode je
+ * bez DPH, eviduje sa kvôli úhrade a odpočtu zálohy.
+ */
+function OdovzdanieZalohovejPrijatej({ row, onVratit }: { row: any; onVratit: () => Promise<void> }) {
+  const { t } = useT();
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 text-sm" data-odovzdanie-zalohy="">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold">{t("Odovzdanie do Pohody")}</h3>
+        {row.exported_at ? (
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+            {t("V Pohode od {kedy}", { kedy: datumNaDoklade(String(row.exported_at).slice(0, 10)) })}
+            {row.pohoda_cislo ? ` · ${t("č. {cislo}", { cislo: row.pohoda_cislo })}` : ""}
+          </span>
+        ) : (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            {t("Neúčtuje sa")}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-muted-foreground">
+        {t("Do Pohody ide ako zálohová faktúra bez DPH — neúčtuje sa, eviduje sa kvôli úhrade a odpočtu zálohy.")}
+      </p>
+      {row.exported_at ? (
+        <div className="mt-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onVratit();
+              } finally {
+                setBusy(false);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+          >
+            <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody (opraviť)")}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

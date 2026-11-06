@@ -23,4 +23,16 @@ export default {
     "Vrátit {n} zálohových faktur z Pohody? Odemknou se k opravě a při dalším exportu půjdou znovu. V Pohodě je třeba je smazat ručně, jinak tam budou dvakrát.",
   "Vrátené z Pohody: {n}": "Vráceno z Pohody: {n}",
   "Vrátiť z Pohody ({n})": "Vrátit z Pohody ({n})",
+  "Vydané zálohové faktúry do Pohody (XML)":
+    "Vydané zálohové faktury do Pohody (XML)",
+  "Vybrané zálohové faktúry sú už odovzdané do Pohody.":
+    "Vybrané zálohové faktury už jsou předané do Pohody.",
+  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy":
+    "Vybrané (nebo bez výběru všechny zobrazené) zálohové faktury do Pohody (Vydané zálohové faktury) — bez DPH a bez zaúčtování, kvůli úhradě a odpočtu zálohy",
+  "Odovzdané do Pohody {kedy}":
+    "Předáno do Pohody {kedy}",
+  "Do Pohody ide ako zálohová faktúra bez DPH — neúčtuje sa, eviduje sa kvôli úhrade a odpočtu zálohy.":
+    "Do Pohody jde jako zálohová faktura bez DPH — neúčtuje se, eviduje se kvůli úhradě a odpočtu zálohy.",
+  "Vrátiť pokladničný doklad z Pohody? Pri ďalšom odovzdaní pôjde znova. V Pohode ho treba zmazať ručne, inak tam bude dvakrát.":
+    "Vrátit pokladní doklad z Pohody? Při dalším předání půjde znovu. V Pohodě je třeba ho smazat ručně, jinak tam bude dvakrát.",
 };

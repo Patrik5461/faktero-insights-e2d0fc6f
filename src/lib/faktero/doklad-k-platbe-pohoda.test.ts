@@ -19,7 +19,7 @@ import { xmlRegisterFsInputProviders } from "libxml2-wasm/lib/nodejs.mjs";
 import { buildPohodaInvoiceXml } from "./export.server";
 import { resolveVatClassification } from "./clenenie-vystavenej";
 import { doplnokZauctovania, zauctovanieNaExport } from "./clenenie-vystavenej.server";
-import { NASTAVTE_PREDKONTACIU_ZALOHY, varovanieDokladuKPlatbe } from "./pohoda-kontrola";
+import { NASTAVTE_PREDKONTACIU_ZALOHY, prekazkaVydanej, varovanieDokladuKPlatbe } from "./pohoda-kontrola";
 import { PREDVOLENE } from "./predkontacie";
 
 xmlRegisterFsInputProviders();
@@ -158,15 +158,14 @@ describe("XML 260800002 — interný doklad v Pohode", () => {
     expect(chybySchemy(xml, "int", "intDoc.xsd")).toEqual([]);
   });
 
-  it("bez predkontácie zálohy ide bez predkontácie — nie s tržbami 311/602 ani nákladovou", () => {
-    const bez = buildPohodaInvoiceXml({
-      company: firma,
-      invoices: [{ invoice: naExport(doklad260800002, firma), items: polozky260800002 }],
-      nastavenia: { predkontacia: "311000 602000", predkontaciaPrijata: "501000 321000" } as any,
-    });
-    expect(bez).not.toContain("<int:accounting>");
-    expect(ids(bez, "int:classificationKVDPH")).toBe("A1");
-    expect(hodnota(bez, "int:dateKVDPH")).toBe("2026-11-02");
+  it("bez predkontácie zálohy sa zastaví — nejde s tržbami 311/602, nákladovou ani s „Neviem“", () => {
+    const nast = { predkontacia: "311000 602000", predkontaciaPrijata: "501000 321000" } as any;
+    const inv = naExport(doklad260800002, firma);
+    // Kontrola pred exportom ho zastaví prekážkou (predtým len upozornila).
+    expect(prekazkaVydanej(inv, polozky260800002, firma, nast)).toContain(NASTAVTE_PREDKONTACIU_ZALOHY);
+    const bez = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: inv, items: polozky260800002 }], nastavenia: nast });
+    expect(bez).not.toContain("<int:intDoc");
+    expect(bez).not.toContain("<inv:invoice ");
   });
 
   it("CZ firma dostane dátum KH DPH", () => {
