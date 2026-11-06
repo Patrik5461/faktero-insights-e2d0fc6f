@@ -1,13 +1,14 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
-import { Download, Plus, RotateCcw, Trash2, Undo2 } from "lucide-react";
+import { Download, Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { exportPrijatychPohodaFn, vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
@@ -27,6 +28,10 @@ import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
+import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
+import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 
 export const Route = createFileRoute("/_authenticated/prijate-zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté zálohové faktúry — Faktero") }] }),
@@ -46,6 +51,8 @@ type Riadok = {
   status: string;
   deleted_at: string | null;
   exported_at: string | null;
+  locked_at?: string | null;
+  file_path: string | null;
 };
 
 /**
@@ -79,7 +86,7 @@ function PrijateZalohovePage() {
         let q = supabase
           .from("purchase_invoices")
           .select(
-            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status, deleted_at, exported_at",
+            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status, deleted_at, exported_at, locked_at, file_path",
           )
           .eq("company_id", cid)
           .eq("type", "proforma");
@@ -173,7 +180,9 @@ function PrijateZalohovePage() {
     });
   const vybraneExport = exportovatelne.filter((r) => vybrane.has(r.id));
   const naExport = vybraneExport.length ? vybraneExport : exportovatelne;
-  const vsetkyVybrane = exportovatelne.length > 0 && exportovatelne.every((r) => vybrane.has(r.id));
+  // „Označiť všetko" = všetky zobrazené podľa filtra (zoznam je načítaný celý, bez stránkovania).
+  const vybraneRiadky = zobrazene.filter((r) => vybrane.has(r.id));
+  const vsetkyVybrane = zobrazene.length > 0 && zobrazene.every((r) => vybrane.has(r.id));
   async function exportujSVolbami(v: VolbyExportu) {
     const cid = getActiveCompanyId();
     if (!cid || !naExport.length) return;
@@ -238,6 +247,24 @@ function PrijateZalohovePage() {
     }
   }
 
+  /* Hromadné akcie — tá istá lišta ako pri prijatých faktúrach. */
+  const cis = useCiselnikyDokladov(getActiveCompanyId(), "prijata", false);
+  async function zmazatOznacene() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const m = rozdelNaMazanie(vybraneRiadky, cis.zamknuteDo);
+    if (!(await potvrdHromadneMazanie(t, m, t("Presunúť {n} zálohových faktúr do koša?", { n: m.ids.length })))) return;
+    const { error } = await supabase
+      .from("purchase_invoices")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("company_id", cid)
+      .in("id", m.ids);
+    if (error) return toast.error(error.message);
+    toast.success(t("Vymazané zálohové faktúry: {n}", { n: m.ids.length }));
+    setVybrane(new Set());
+    await load();
+  }
+
   async function zmaz() {
     if (!mazane) return;
     try {
@@ -268,6 +295,9 @@ function PrijateZalohovePage() {
     await load();
   }
 
+  // Náhľad v okne so šípkami (C1-3).
+  const okno = useNahladOkna();
+  const navigate = useNavigate();
   const akciaRiadku = (r: Riadok, mobil: boolean) =>
     ajVymazane ? (
       <button
@@ -288,6 +318,8 @@ function PrijateZalohovePage() {
         {mobil ? t("Obnoviť") : null}
       </button>
     ) : (
+      <span className="inline-flex items-center gap-1">
+      {r.file_path && <TlacidloNahladu popis={r.invoice_number} onClick={() => okno.otvor(r.id)} />}
       <button
         type="button"
         onClick={(e) => {
@@ -305,10 +337,25 @@ function PrijateZalohovePage() {
         <Trash2 className={mobil ? "h-3.5 w-3.5" : "h-4 w-4"} />
         {mobil ? t("Vymazať") : null}
       </button>
+      </span>
     );
 
   return (
     <>
+      <NahladDokladuOkno
+        okno={okno}
+        idcka={zobrazene.filter((r) => r.file_path).map((r) => r.id)}
+        nacitaj={async (id) => {
+          const r = rows.find((x) => x.id === id);
+          if (!r?.file_path) return null;
+          const { data } = await supabase.storage.from("purchase-invoices").createSignedUrl(r.file_path, 600);
+          if (!data?.signedUrl) return null;
+          return { url: data.signedUrl, obrazok: /\.(jpe?g|png|webp|gif|heic)$/i.test(r.file_path) };
+        }}
+        nazov={(id) => rows.find((r) => r.id === id)?.invoice_number}
+        poznamka={(id) => rows.find((r) => r.id === id)?.supplier_name}
+        onOtvorit={(id) => navigate({ to: "/prijate-faktury/$id", params: { id } })}
+      />
       {volbyExportu ? (
         <VolbyExportuOkno
           pocet={naExport.length}
@@ -393,6 +440,31 @@ function PrijateZalohovePage() {
               { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
             ]}
           />
+          {vybraneRiadky.length > 0 && !ajVymazane && getActiveCompanyId() ? (
+            <div
+              role="region"
+              aria-label={t("Hromadné akcie")}
+              className="sticky top-16 z-20 mb-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur"
+            >
+              <span className="mr-1 font-semibold">
+                {t("Označené:")} <span className="tabular-nums">{vybraneRiadky.length}</span>
+              </span>
+              <HromadnaAkciaDokladov
+                companyId={getActiveCompanyId()!}
+                agenda="prijata"
+                ids={vybraneRiadky.map((r) => r.id)}
+                onHotovo={() => void load()}
+                zmazat={() => void zmazatOznacene()}
+              />
+              <button
+                type="button"
+                onClick={() => setVybrane(new Set())}
+                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" /> {t("Zrušiť výber")}
+              </button>
+            </div>
+          ) : null}
           {loading ? (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
               {t("Načítavam…")}
@@ -429,7 +501,7 @@ function PrijateZalohovePage() {
                               aria-label={t("Vybrať všetky")}
                               checked={vsetkyVybrane}
                               onChange={(e) =>
-                                setVybrane(e.target.checked ? new Set(exportovatelne.map((r) => r.id)) : new Set())
+                                setVybrane(e.target.checked ? new Set(zobrazene.map((r) => r.id)) : new Set())
                               }
                               className="h-4 w-4 accent-primary"
                             />

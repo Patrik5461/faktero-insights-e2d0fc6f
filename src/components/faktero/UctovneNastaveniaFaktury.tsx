@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { textZauctovania } from "@/lib/faktero/clenenie-text";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { BookCheck, ChevronDown, ChevronUp, Star } from "lucide-react";
@@ -232,7 +233,9 @@ export function UctovneNastaveniaFaktury({
     predkontacia: kody.predkontacia || predvolene.predkontacia,
     clenenie: kody.clenenie || predvolene.clenenie,
   };
-  const suhrn = [vysledne.predkontacia, vysledne.clenenie].filter(Boolean).join(" · ");
+  // Súhrn v hlavičke: „311/604 · UD · A1“ — členenie KV DPH vedľa členenia DPH.
+  const kvSuhrn = bezKv ? "" : kody.kv || predvolene.kv || kvAuto || "";
+  const suhrn = textZauctovania(vysledne.predkontacia, vysledne.clenenie, kvSuhrn === "X" ? "" : kvSuhrn);
 
   return (
     <section className="rounded-xl border border-border bg-card">

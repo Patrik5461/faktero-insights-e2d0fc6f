@@ -49,7 +49,8 @@ export type VysledokKontroly = {
       | "riadok_dph"
       | "neplatna_sadzba"
       | "neplatna_kategoria"
-      | "dph_pri_oslobodenom";
+      | "dph_pri_oslobodenom"
+      | "suma_dokladu";
     sprava: string;
     riadok?: number;
   }[];
@@ -220,4 +221,180 @@ export function jePrenesenieZTextu(text: string): boolean {
   if (/§\s*92\s*a\b/.test(t)) return true;
   if (/steuerschuldnerschaft\s+des\s+leistungsempfangers/.test(t)) return true;
   return false;
+}
+
+/* ------------------------------------------------------------------------
+   Súčet podľa sadzieb voči celkovej sume dokladu (Patrik 6. 11., B1-2).
+
+   Keď človek vo formulári zmení sadzbu, základ + DPH podľa sadzieb už
+   nemusí dať sumu, ktorá je vytlačená na doklade. Kontrola rozpisu vyššie
+   to nevidí, lebo porovnáva rozpis so súčtami formulára, ktoré sa s ním
+   prepočítajú. Tu sa preto počíta zo sadzieb: pri zdaniteľnom riadku
+   základ × (1 + sadzba), pri ostatných len základ — a výsledok sa porovná
+   so sumou dokladu. Tolerancia je 0,01 € na každú sadzbu (zaokrúhlenie).
+
+   Ak človek nesúlad vedome potvrdí („Pokračovať aj tak“), ukladá sa podpis
+   rozpisu (`podpisRozpisu`) do `rozpis_dph_potvrdeny`; kým sa rozpis ani suma
+   nezmenia, formulár sa už nepýta znova.
+------------------------------------------------------------------------ */
+
+/** Tolerancia súčtu voči dokladu — 0,01 € na každú sadzbu rozpisu. */
+export const TOLERANCIA_NA_SADZBU = 0.01;
+
+/**
+ * Základ + DPH podľa sadzby (pri nezdaniteľných riadkoch len základ). Daň
+ * z dokladu, ktorá sa od základ × sadzba líši len zaokrúhlením (do 0,02 —
+ * daň po položkách), sa berie tak, ako je; inak sa ráta zo sadzby.
+ */
+export function vypocitanyCelkom(riadky: RiadokDph[]): number {
+  let spolu = 0;
+  for (const r of riadky ?? []) {
+    const base = cislo(r.base);
+    const kategoria = kategoriaRiadku(r);
+    const zoSadzby = (base * cislo(r.rate)) / 100;
+    const vat = Math.abs(cislo(r.vat));
+    const dan =
+      kategoria === "standard" ? (sedi(vat, Math.abs(zoSadzby)) ? vat : zaokruhli(Math.abs(zoSadzby))) : 0;
+    spolu += base + dan;
+  }
+  return zaokruhli(spolu);
+}
+
+const fmtMena = (n: number, mena?: string | null) =>
+  `${fmt(n)} ${!mena || mena.toUpperCase() === "EUR" ? "€" : mena.toUpperCase()}`;
+
+/**
+ * Nesedí základ + DPH podľa sadzieb so sumou dokladu? Vráti chybu
+ * „Sadzba DPH / súčet nesedí s dokladom (doklad: X €, vypočítané: Y €)“,
+ * inak null. Bez sumy dokladu (alebo bez rozpisu) sa nekontroluje.
+ */
+export function nesuladSDokladom(
+  riadky: RiadokDph[],
+  celkomDokladu: number | string | null | undefined,
+  mena?: string | null,
+  /** Hotovosť: suma sa zaokrúhľuje na 5 centov (export to rieši sám) — +0,02 tolerancie. */
+  hotovost = false,
+): VysledokKontroly["chyby"][number] | null {
+  if (!riadky?.length) return null;
+  if (celkomDokladu == null || celkomDokladu === "") return null;
+  const doklad = Math.abs(cislo(celkomDokladu));
+  if (!doklad) return null;
+  const vypocitane = vypocitanyCelkom(riadky.map((r) => ({ ...r, base: Math.abs(cislo(r.base)) })));
+  if (sedi(doklad, vypocitane, TOLERANCIA_NA_SADZBU * riadky.length + (hotovost ? 0.02 : 0))) return null;
+  return {
+    kod: "suma_dokladu",
+    sprava: `Sadzba DPH / súčet nesedí s dokladom (doklad: ${fmtMena(doklad, mena)}, vypočítané: ${fmtMena(vypocitane, mena)}).`,
+  };
+}
+
+/** Kontrola rozpisu doplnená o porovnanie so sumou dokladu (chyba sumy ide prvá). */
+export function sNesuladomDokladu(
+  k: VysledokKontroly,
+  riadky: RiadokDph[],
+  celkomDokladu: number | string | null | undefined,
+  mena?: string | null,
+  hotovost = false,
+): VysledokKontroly {
+  const n = nesuladSDokladom(riadky, celkomDokladu, mena, hotovost);
+  if (!n) return k;
+  return { ok: false, chyby: [n, ...k.chyby] };
+}
+
+/**
+ * Podpis rozpisu a sumy — čo človek potvrdil. Zmena sadzby, základu, DPH
+ * alebo sumy dá iný podpis a kontrola sa ozve znova.
+ */
+export function podpisRozpisu(riadky: RiadokDph[], celkom: number | string | null | undefined): string {
+  const r = [...(riadky ?? [])]
+    .map(
+      (x) =>
+        `${cislo(x.rate)}:${Math.abs(zaokruhli(cislo(x.base))).toFixed(2)}:${Math.abs(zaokruhli(cislo(x.vat))).toFixed(2)}:${kategoriaRiadku(x)}`,
+    )
+    .sort()
+    .join("|");
+  return `${r}#${Math.abs(zaokruhli(cislo(celkom))).toFixed(2)}`;
+}
+
+/** Potvrdenie uložené v `rozpis_dph_potvrdeny` ({ podpis, at, … }) sedí s aktuálnym rozpisom? */
+export function jeRozpisPotvrdeny(ulozene: unknown, podpis: string): boolean {
+  if (!ulozene || typeof ulozene !== "object") return false;
+  return (ulozene as { podpis?: unknown }).podpis === podpis;
+}
+
+/**
+ * Riadky rozpisu uloženého dokladu (prijatá faktúra aj bloček): `vat_breakdown`
+ * v tvare {sadzba, zaklad, dph, pdp?, vat_category?} alebo {rate, base, vat},
+ * inak jedna sadzba z hlavičky (bloček má `vat_rate`). Hodnoty v absolútnej
+ * hodnote — dobropis je v databáze záporný.
+ */
+export function riadkyUlozenehoDokladu(d: {
+  vat_breakdown?: unknown;
+  vat_rate?: unknown;
+  net_amount?: unknown;
+  amount_without_vat?: unknown;
+  vat_amount?: unknown;
+}): RiadokDph[] {
+  const pole = Array.isArray(d.vat_breakdown) ? (d.vat_breakdown as any[]) : [];
+  if (pole.length)
+    return pole.map((r) => ({
+      rate: cislo(r?.sadzba ?? r?.rate),
+      base: Math.abs(cislo(r?.zaklad ?? r?.base)),
+      vat: Math.abs(cislo(r?.dph ?? r?.vat)),
+      vat_category: jeKategoriaDph(r?.vat_category)
+        ? r.vat_category
+        : r?.pdp === true
+          ? "reverse_charge"
+          : null,
+    }));
+  if (d.vat_rate == null || d.vat_rate === "") return [];
+  const zaklad = d.net_amount ?? d.amount_without_vat;
+  if (zaklad == null || zaklad === "") return [];
+  return [
+    { rate: cislo(d.vat_rate), base: Math.abs(cislo(zaklad)), vat: Math.abs(cislo(d.vat_amount)) },
+  ];
+}
+
+/**
+ * Kontrola sadzieb prijatej faktúry — formulár (aj kompaktný) a zaúčtovanie.
+ * Rozpis je uložený `vat_breakdown`; pri jednej sadzbe nasleduje sumy
+ * hlavičky (človek ich mohol vo formulári zmeniť). Bez rozpisu, pri zálohovej
+ * faktúre (nie je daňový doklad) a pri neplatiteľovi bez dane sa nekontroluje.
+ * Vráti aj podpis pre `rozpis_dph_potvrdeny` a či ho človek už potvrdil.
+ */
+export function kontrolaSadziebPrijatej(
+  d: {
+    vat_breakdown?: unknown;
+    amount_without_vat?: unknown;
+    vat_amount?: unknown;
+    amount_total?: unknown;
+    currency?: string | null;
+    delivery_date?: string | null;
+    issue_date?: string | null;
+    type?: string | null;
+    supplier_ic_dph?: string | null;
+    rozpis_dph_potvrdeny?: unknown;
+  },
+  krajina?: string | null,
+): { kontrola: VysledokKontroly; podpis: string; potvrdene: boolean } {
+  const ok: VysledokKontroly = { ok: true, chyby: [] };
+  const pole = Array.isArray(d.vat_breakdown) ? (d.vat_breakdown as any[]) : [];
+  const bezDph = Math.abs(cislo(d.amount_without_vat));
+  const dph = Math.abs(cislo(d.vat_amount));
+  const riadky = riadkyUlozenehoDokladu({
+    vat_breakdown: pole.length === 1 ? [{ ...pole[0], zaklad: bezDph, dph, base: bezDph, vat: dph }] : pole,
+  });
+  const podpis = podpisRozpisu(riadky, d.amount_total as number);
+  if (!riadky.length || d.type === "proforma") return { kontrola: ok, podpis, potvrdene: false };
+  if (!String(d.supplier_ic_dph ?? "").trim() && riadky.every((r) => !r.vat))
+    return { kontrola: ok, podpis, potvrdene: false };
+  const k = sNesuladomDokladu(
+    skontrolujRozpisDph(riadky, { bezDph, dph }, {
+      krajina: krajina ?? "SK",
+      datumDodania: d.delivery_date || d.issue_date || null,
+    }),
+    riadky,
+    d.amount_total as number,
+    d.currency,
+  );
+  return { kontrola: k, podpis, potvrdene: !k.ok && jeRozpisPotvrdeny(d.rozpis_dph_potvrdeny, podpis) };
 }

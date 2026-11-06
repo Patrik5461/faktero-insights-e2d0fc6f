@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { textZauctovania } from "@/lib/faktero/clenenie-text";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -345,13 +346,12 @@ function NaKontroluPage() {
               <tbody>
                 {zobrazene.map((r) => {
                   const n = r.navrh as NavrhZauctovania | null;
-                  const kody = [
+                  // „501/321 · PD · B2“ — členenie DPH a KV DPH vedľa seba.
+                  const kody = textZauctovania(
                     n?.predkontacia ?? r.predkontacia,
                     n?.clenenieDph ?? r.clenenie,
-                    n?.kvClenenie ? `KV ${n.kvClenenie}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
+                    n?.kvClenenie,
+                  );
                   return (
                     <KlikatelnyRiadok
                       key={kluc(r)}

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KonektorPohody } from "@/components/faktero/KonektorPohody";
+import { PokladneVNastaveniach } from "@/components/faktero/Pokladne";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -88,7 +89,6 @@ function Stranka() {
 
   const f = (k: string) => (v: string) => setC({ ...c, [k]: v });
 
-
   return (
     <>
       <PageHeader
@@ -96,13 +96,8 @@ function Stranka() {
         description={t(
           "Čo sa do Pohody posiela, skratky pokladne, banky a skladu a konektor pre účtovníčku.",
         )}
-      />
-      <PageBody>
-        <form
-          onSubmit={save}
-          className="mx-auto grid max-w-5xl gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-5"
-        >
-          <div className="sm:col-span-2 rounded-md border border-primary/25 bg-primary/5 p-3 text-sm text-muted-foreground">
+        popisDalej={
+          <>
             {t("Do Pohody sa dá dostať tromi cestami — mesačným balíkom mailom, XML z")}{" "}
             <Link to="/exporty" className="text-primary underline">
               {t("účtovných exportov")}
@@ -112,12 +107,16 @@ function Stranka() {
               {t("manuáli")}
             </Link>
             .
-          </div>
-
+          </>
+        }
+      />
+      <PageBody>
+        <form
+          onSubmit={save}
+          className="mx-auto grid max-w-5xl gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 sm:p-5"
+        >
           <div className="sm:col-span-2">
-            <h3 className="mb-1 text-base font-semibold text-foreground">
-              {t("Účtovníčka")}
-            </h3>
+            <h3 className="mb-1 text-base font-semibold text-foreground">{t("Účtovníčka")}</h3>
           </div>
           <In
             label={t("E-mail účtovníčky")}
@@ -143,9 +142,7 @@ function Stranka() {
           </label>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-1 text-base font-semibold text-foreground">
-              {t("Účtovanie")}
-            </h3>
+            <h3 className="mb-1 text-base font-semibold text-foreground">{t("Účtovanie")}</h3>
             <p className="mb-3 text-xs text-muted-foreground">
               {t("Skratky pokladne, bankového účtu a skladu z Pohody vašej účtovníčky.")}{" "}
               <strong>{t("Predkontácie a členenia DPH")}</strong>{" "}
@@ -156,12 +153,19 @@ function Stranka() {
               .
             </p>
           </div>
-          <In
-            label={t("Pokladňa v Pohode")}
-            value={c.pohoda_pokladna ?? ""}
-            onChange={f("pohoda_pokladna")}
-            placeholder={t("napr. {x}", { x: "HOT" })}
-          />
+          <div>
+            <In
+              label={t("Pokladňa v Pohode")}
+              value={c.pohoda_pokladna ?? ""}
+              onChange={f("pohoda_pokladna")}
+              placeholder={t("napr. {x}", { x: "HOT" })}
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t(
+                "Použije sa, keď predvolená pokladňa nemá vlastnú skratku. Viac pokladní (napr. HP EUR, HP CZK) pridáte nižšie v časti Pokladne.",
+              )}
+            </span>
+          </div>
           <div>
             <In
               label={t("Bankový účet v Pohode")}
@@ -183,7 +187,6 @@ function Stranka() {
             onChange={f("pohoda_sklad")}
             placeholder={t("napr. {x}", { x: "TOVAR" })}
           />
-
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-1 text-base font-semibold text-foreground">
@@ -314,6 +317,14 @@ function Stranka() {
             </button>
           </div>
         </form>
+
+        {/*
+          Viac pokladní podľa skratiek z Pohody, každá s vlastnou menou — mimo
+          formulára vyššie (má vlastný formulár a ukladá sa hneď). Bloček
+          v hotovosti dostane pokladňu v svojej mene (inak predvolenú) a jej
+          skratka ide do XML ako vch:cashAccount.
+        */}
+        <PokladneVNastaveniach companyId={c.id} className="mx-auto mt-4 max-w-5xl" />
 
         <div className="mx-auto max-w-5xl rounded-xl border border-border bg-card p-4 sm:p-5">
           <KonektorPohody companyId={c.id} />

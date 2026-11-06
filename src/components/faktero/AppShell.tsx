@@ -87,6 +87,7 @@ import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
 import { PrepinacJazyka } from "@/components/faktero/PrepinacJazyka";
 import { useT } from "@/lib/i18n/useT";
+import { NapovedaOtaznik } from "@/components/faktero/NapovedaOtaznik";
 import {
   BocnyPanel,
   SekcieNavigacie,
@@ -352,7 +353,7 @@ export function AppShell({
     label: g.label,
     icon: g.icon,
     cesta: g.match[0],
-    pocet: g.key === "moje-ulohy" ? pocetUloh : undefined,
+    pocet: g.key === "moje-ulohy" ? pocetUloh : g.key === "efaktura" ? pocetEfaktur : undefined,
     polozky: g.children.map((c) => ({
       to: c.to,
       search: c.search,
@@ -850,7 +851,7 @@ function MobileNav({
     label: g.label,
     icon: g.icon,
     cesta: g.match[0],
-    pocet: g.key === "moje-ulohy" ? pocetUloh : undefined,
+    pocet: g.key === "moje-ulohy" ? pocetUloh : g.key === "efaktura" ? pocetEfaktur : undefined,
     polozky: g.children.map((c) => ({
       to: c.to,
       search: c.search,
@@ -1008,9 +1009,21 @@ export function PageHeader({
   action,
   help,
   sirka,
+  popisRezim,
+  popisDalej,
 }: {
   title: string;
+  /**
+   * Vysvetľujúci popis stránky. Predvolene sa ukáže ako ikona „?“ pri nadpise
+   * (bublina pri prejdení myšou, ťuknutí alebo z klávesnice) — dlhé úvodné
+   * odseky tlačili obsah dolu. Detail s parametrom v adrese (`/…/$id`) má v
+   * popise údaje (číslo zmluvy, kód karty), tie ostávajú viditeľné.
+   */
   description?: string;
+  /** Prebije automatiku: „text“ = popis pod nadpisom, „ikona“ = len „?“. */
+  popisRezim?: "ikona" | "text";
+  /** Ďalšie vysvetlenie s odkazmi — ukáže sa v bubline „?“ pod `description`. */
+  popisDalej?: ReactNode;
   action?: ReactNode;
   /**
    * „formular“ = šírka formulára dokladu (72rem obsahu, `max-w-6xl`) —
@@ -1024,6 +1037,10 @@ export function PageHeader({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const manual = help === false ? null : (help ?? manualPre(pathname));
   const { podstranka, spat } = useSpat();
+  const sParametrom = useRouterState({
+    select: (s) => Object.keys(s.matches[s.matches.length - 1]?.params ?? {}).length > 0,
+  });
+  const popisAkoText = popisRezim ? popisRezim === "text" : sParametrom;
 
   return (
     /*
@@ -1052,6 +1069,16 @@ export function PageHeader({
             </button>
           )}
           <h1 data-w-nadpis-stranky className="min-w-0 break-words text-xl font-semibold tracking-tight sm:text-2xl">{t(title)}</h1>
+          {((description && !popisAkoText) || popisDalej) && (
+            <NapovedaOtaznik popis={t("Čo je na tejto stránke: {nazov}", { nazov: t(title) })}>
+              {description && !popisAkoText ? (
+                <span data-w-popis-stranky className="block">
+                  {t(description)}
+                </span>
+              ) : null}
+              {popisDalej ? <span className="mt-1.5 block">{popisDalej}</span> : null}
+            </NapovedaOtaznik>
+          )}
           {manual && (
             <a
               href={manual}
@@ -1065,7 +1092,9 @@ export function PageHeader({
             </a>
           )}
         </div>
-        {description && <p data-w-popis-stranky className="mt-1 text-sm text-muted-foreground">{t(description)}</p>}
+        {description && popisAkoText && (
+          <p data-w-popis-stranky className="mt-1 text-sm text-muted-foreground">{t(description)}</p>
+        )}
       </div>
       {action && (
         <div className="flex w-full flex-wrap gap-2 lg:ml-auto lg:w-auto lg:max-w-full lg:justify-end">{action}</div>

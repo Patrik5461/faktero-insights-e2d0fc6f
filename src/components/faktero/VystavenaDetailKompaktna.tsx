@@ -308,6 +308,21 @@ export function VystavenaDetailKompaktna({
               </Hodnota>
             </div>
           ))}
+          {/* Súčet rekapitulácie pod sadzbami (checklist B2-6) — pri jednej sadzbe by len zopakoval riadok. */}
+          {u.rozpis.length > 1 ? (
+            <div className="grid grid-cols-2 gap-3 font-semibold">
+              <Hodnota popis="Základ dane spolu">
+                <span className="whitespace-nowrap tabular-nums">
+                  {formatujCislo(naZobr(u.rozpis.reduce((a, r) => a + Number(r.zaklad || 0), 0)), 2)}
+                </span>
+              </Hodnota>
+              <Hodnota popis="DPH spolu">
+                <span className="whitespace-nowrap tabular-nums">
+                  {formatujCislo(naZobr(u.rozpis.reduce((a, r) => a + Number(r.dan || 0), 0)), 2)}
+                </span>
+              </Hodnota>
+            </div>
+          ) : null}
           {cudzia ? (
             <Hodnota popis="Kurz">
               {formatujCislo(Number(u.kurz), 2, 4)}

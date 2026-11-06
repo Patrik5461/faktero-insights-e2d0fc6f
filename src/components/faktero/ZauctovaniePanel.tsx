@@ -66,7 +66,9 @@ import type { PoleNavrhu } from "@/lib/faktero/ai-predkontacia";
 import { chybaClenenie, ucinneClenenie } from "@/lib/faktero/clenenie-zauctovania";
 import { jeCudzia } from "@/lib/faktero/cudzia-faktura";
 import { UpozornenieDuplicity, useDuplicitaDokladu } from "./DuplicitaDokladu";
-import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { kontrolaSadziebPrijatej } from "@/lib/faktero/rozpis-dph-kontrola";
+import { potvrdNesuladRozpisu, ulozPotvrdenieRozpisu } from "./UpozornenieRozpisuDph";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -488,6 +490,7 @@ export function ZauctovaniePanel({
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
   const zrus = useServerFn(zrusZauctovanieFn);
+  const krajinaDane = useKrajinaDane();
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [h, setH] = useState<Hodnoty>({
     predkontacia: row.pohoda_predkontacia ?? "",
@@ -672,6 +675,17 @@ export function ZauctovaniePanel({
   }
 
   async function uloz(lenUlozit: boolean) {
+    /*
+      Zaúčtovanie dokladu, ktorého sadzba DPH / súčet nesedí s dokladom:
+      „Pokračovať aj tak“ sa zapíše a znova sa nepýta, „Opraviť“ nezaúčtuje.
+    */
+    if (!lenUlozit) {
+      const s = kontrolaSadziebPrijatej(row, krajinaDane);
+      if (!s.kontrola.ok && !s.potvrdene) {
+        if (!(await potvrdNesuladRozpisu(s.kontrola, t))) return;
+        await ulozPotvrdenieRozpisu("purchase_invoices", row.id, s.podpis, s.kontrola);
+      }
+    }
     setBusy(true);
     try {
       const r = await zauctuj({

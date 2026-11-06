@@ -52,7 +52,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("predkontacie")
           .select(
-            "druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov, kategoria, pomer, typ_dokladu, typ_platby",
+            "druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov, kategoria, pomer, typ_dokladu, typ_platby, zdroj",
           )
           .eq("company_id", data.company_id),
         supabase.from("pravidla_uctovania").select("predkontacia, clenenie_dph").eq("company_id", data.company_id),
@@ -167,7 +167,8 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         (ciselnik ?? []) as any[],
         vystavena ? "vydane" : "prijate",
       ),
-      maCiselnik: (ciselnik ?? []).length > 0,
+      // Systémové členenia (B1-1) má každá SK firma — „číselník je prázdny“ hovorí o vlastných kódoch.
+      maCiselnik: ((ciselnik ?? []) as any[]).some((r) => r.zdroj !== "system"),
       /** Firma je platiteľ DPH — neplatiteľ dostane predvolené „nezahrnovať do priznania“. */
       platitel: firma?.vat_payer !== false,
       strediska: ponuka(ciselnik ?? [], "stredisko"),

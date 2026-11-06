@@ -106,6 +106,7 @@ const Zmluva_ = z
           principal_part: z.number().min(0).max(10_000_000),
           interest_part: z.number().min(0).max(10_000_000),
           vat_amount: z.number().min(0).max(10_000_000),
+          insurance_part: z.number().min(0).max(10_000_000).optional(),
           remaining_principal: z.number().min(0).max(100_000_000),
         }),
       )
@@ -291,6 +292,7 @@ async function zapisKalendarZoZmluvy(
     principal_part: number;
     interest_part: number;
     vat_amount: number;
+    insurance_part?: number;
     remaining_principal: number;
   }>,
 ): Promise<number> {
@@ -310,7 +312,18 @@ async function zapisKalendarZoZmluvy(
 
   for (const r of riadky) {
     if (zaplatene.has(r.number)) continue;
-    const zaznam = { company_id: companyId, contract_id: contractId, ...r };
+    /*
+      Poistenie sa zapisuje len keď v splátke je — stĺpec `insurance_part`
+      pribudol migráciou 20261106210300 a kalendár bez poistenia sa tak dá
+      uložiť aj do databázy bez nej.
+    */
+    const { insurance_part, ...bezPoistenia } = r;
+    const zaznam = {
+      company_id: companyId,
+      contract_id: contractId,
+      ...bezPoistenia,
+      ...(insurance_part && insurance_part > 0 ? { insurance_part } : {}),
+    };
     const id = podlaCisla.get(r.number);
     if (id) await supabase.from("financing_installments").update(zaznam).eq("id", id);
     else await supabase.from("financing_installments").insert(zaznam);
@@ -483,10 +496,34 @@ export const detailZmluvyFn = createServerFn({ method: "POST" })
       principal_part: cislo(r.principal_part),
       interest_part: cislo(r.interest_part),
       vat_amount: cislo(r.vat_amount),
+      insurance_part: cislo(r.insurance_part),
       remaining_principal: cislo(r.remaining_principal),
     }));
 
-    return { zmluva, splatky: riadky, suhrn: suhrn(riadky, zmluva as Zmluva) };
+    /*
+      Vozidlo zo Vozového parku: väzba je z oboch strán (`vehicles.financing_contract_id`
+      aj `financing_contracts.vehicle_id`) — ukáže sa, ktorákoľvek je vyplnená.
+    */
+    let vozidlo: { id: string; nazov: string } | null = null;
+    {
+      const q = (supabase as any)
+        .from("vehicles")
+        .select("id, name, license_plate, financing_contract_id")
+        .eq("company_id", data.company_id);
+      const { data: vozidla } = await (zmluva.vehicle_id
+        ? q.or(`id.eq.${zmluva.vehicle_id},financing_contract_id.eq.${data.id}`)
+        : q.eq("financing_contract_id", data.id)
+      ).limit(1);
+      const v = (vozidla ?? [])[0] as any;
+      if (v) {
+        vozidlo = {
+          id: v.id,
+          nazov: [v.name, v.license_plate].filter(Boolean).join(" · ") || "Vozidlo",
+        };
+      }
+    }
+
+    return { zmluva, splatky: riadky, suhrn: suhrn(riadky, zmluva as Zmluva), vozidlo };
   });
 
 export const zmazZmluvuFn = createServerFn({ method: "POST" })

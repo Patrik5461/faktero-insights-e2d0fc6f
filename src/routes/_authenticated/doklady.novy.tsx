@@ -79,7 +79,17 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useDizajn } from "@/hooks/useDizajn";
 import { BlocekDetailKompaktny } from "@/components/faktero/BlocekDetailKompaktny";
 import { AutomatickyZaradena } from "@/components/faktero/AutomatickyZaradena";
-import { UpozornenieRozpisuDph } from "@/components/faktero/UpozornenieRozpisuDph";
+import {
+  UpozornenieRozpisuDph,
+  potvrdNesuladRozpisu,
+  ulozPotvrdenieRozpisu,
+} from "@/components/faktero/UpozornenieRozpisuDph";
+import {
+  jeRozpisPotvrdeny,
+  podpisRozpisu,
+  riadkyUlozenehoDokladu,
+  sNesuladomDokladu,
+} from "@/lib/faktero/rozpis-dph-kontrola";
 import { kontrolaUlozenehoBlocku } from "@/lib/faktero/rozpis-dph-vytazeny";
 import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
 import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
@@ -224,8 +234,8 @@ function NovyDokladPage() {
   const [ulozeny, setUlozeny] = useState<any>(null);
   // Ten istý bloček v evidencii viackrát — upozornenie v časti Zaúčtovanie (nezaúčtuje sa).
   const duplicityBlocku = useDuplicitaDokladu("blocek", ulozeny);
-  // Predvolená pokladňa sa vyplní sama; pri jednej pokladni sa výber neukazuje.
-  const pokladnaDokladu = pokladnaDoFormulara(pokladne, form.pokladna_id || null);
+  // Pokladňa sa vyplní sama podľa meny dokladu (inak predvolená); pri jednej pokladni sa výber neukazuje.
+  const pokladnaDokladu = pokladnaDoFormulara(pokladne, form.pokladna_id || null, form.currency);
   /*
     Kompaktné rozloženie: uložený doklad sa otvorí ako detail s účtovaním
     priamo na stránke; ceruzka prepne na tento formulár.
@@ -448,7 +458,7 @@ function NovyDokladPage() {
     pri 0 % (mimo DPH, oslobodené, prenesenie). Nesediaci sa neuloží potichu —
     server doklad označí na kontrolu.
   */
-  const kontrolaRozpisuDph = kontrolaUlozenehoBlocku(
+  const kontrolaRozpisuBezSumy = kontrolaUlozenehoBlocku(
     {
       net_amount: form.net_amount === "" ? null : form.net_amount,
       vat_amount: form.vat_amount === "" ? null : form.vat_amount,
@@ -459,6 +469,45 @@ function NovyDokladPage() {
     },
     krajina,
   );
+  /*
+    Rozpis tak, ako sa uloží (jedna sadzba nasleduje polia základ/DPH), a súčet
+    podľa sadzieb voči sume bločku bez zaokrúhlenia — „Sadzba DPH / súčet nesedí
+    s dokladom“. Potvrdený nesúlad (`rozpis_dph_potvrdeny`) sa znova nehlási.
+  */
+  const rozpisNaUlozenie =
+    rozpisDph?.length === 1
+      ? [
+          {
+            ...rozpisDph[0]!,
+            // Jedna sadzba nasleduje aj pole „Sadzba DPH %“ — inak by sa uložila stará sadzba z bločku.
+            ...(form.vat_rate !== "" && Number.isFinite(Number(form.vat_rate)) ? { sadzba: Number(form.vat_rate) } : {}),
+            zaklad: Number(form.net_amount) || 0,
+            dph: Number(form.vat_amount) || 0,
+          },
+        ]
+      : rozpisDph?.length
+        ? rozpisDph
+        : null;
+  const riadkyRozpisu = riadkyUlozenehoDokladu({
+    vat_breakdown: rozpisNaUlozenie,
+    vat_rate: form.vat_rate === "" ? null : form.vat_rate,
+    net_amount: form.net_amount === "" ? null : form.net_amount,
+    vat_amount: form.vat_amount,
+  });
+  // Doklad od neplatiteľa bez dane — sadzba sa nekontroluje (ako v kontrolaUlozenehoBlocku).
+  const bezDaneNeplatitel = !String(form.supplier_ic_dph ?? "").trim() && riadkyRozpisu.every((r) => !r.vat);
+  const kontrolaRozpisuDph =
+    form.total_amount === "" || bezDaneNeplatitel
+      ? kontrolaRozpisuBezSumy
+      : sNesuladomDokladu(
+          kontrolaRozpisuBezSumy,
+          riadkyRozpisu,
+          Math.round((Math.abs(Number(form.total_amount) || 0) - (Number(zaokruhlenie) || 0)) * 100) / 100,
+          form.currency,
+          form.payment_method === "hotovost",
+        );
+  const podpisRozpisuDph = podpisRozpisu(riadkyRozpisu, form.total_amount);
+  const rozpisPotvrdeny = jeRozpisPotvrdeny(ulozeny?.rozpis_dph_potvrdeny, podpisRozpisuDph);
   const kontrolaSumy = kontrolaSumyBlocku({
     celkom: form.total_amount,
     zaklad: form.net_amount,
@@ -733,6 +782,9 @@ function NovyDokladPage() {
       ))
     )
       return;
+    // Zlá sadzba / súčet nesedí s bločkom: „Pokračovať aj tak“ sa zapíše a znova sa nepýta.
+    const potvrdilNesulad = !kontrolaRozpisuDph.ok && !rozpisPotvrdeny;
+    if (potvrdilNesulad && !(await potvrdNesuladRozpisu(kontrolaRozpisuDph, t))) return;
     setSaving(true);
     try {
       const payload = {
@@ -773,12 +825,7 @@ function NovyDokladPage() {
         // je vidieť, za čo sa platilo, aj keď je doklad len jedna suma.
         items: polozky.length ? polozky : null,
         // Rozpis s jednou sadzbou nasleduje polia základ/DPH — inak by export vzal starú sumu.
-        vat_breakdown:
-          rozpisDph?.length === 1
-            ? [{ ...rozpisDph[0]!, zaklad: Number(form.net_amount) || 0, dph: Number(form.vat_amount) || 0 }]
-            : rozpisDph?.length
-              ? rozpisDph
-              : null,
+        vat_breakdown: rozpisNaUlozenie,
       };
       let stav = search.id ? stavDokladu : "new";
       let presunutyDoNespracovanych = false;
@@ -800,7 +847,11 @@ function NovyDokladPage() {
         });
         if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
         presunutyDoNespracovanych = Boolean(novy?.nespracovany_id);
+        if (potvrdilNesulad && novy?.id && !novy?.nespracovany_id)
+          await ulozPotvrdenieRozpisu("expense_documents", novy.id, podpisRozpisuDph, kontrolaRozpisuDph);
       }
+      if (potvrdilNesulad && search.id)
+        await ulozPotvrdenieRozpisu("expense_documents", search.id, podpisRozpisuDph, kontrolaRozpisuDph);
       const rovnoSpracovany = !search.id && stav === "processed";
       if (spracovat && search.id) {
         const v = await stavFn({ data: { company_id: cid, ids: [search.id], stav: "processed" } });
@@ -1474,7 +1525,7 @@ function NovyDokladPage() {
                 onChange={(v) => updateForm("vat_rate", v)}
               />
               {!kontrolaRozpisuDph.ok ? (
-                <UpozornenieRozpisuDph className="sm:col-span-2" kontrola={kontrolaRozpisuDph} />
+                <UpozornenieRozpisuDph className="sm:col-span-2" kontrola={kontrolaRozpisuDph} potvrdene={rozpisPotvrdeny} />
               ) : null}
               {!kontrolaSumy.sedi || rozpisNesedi ? (
                 <div className="space-y-2 sm:col-span-2">

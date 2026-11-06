@@ -56,8 +56,10 @@ import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.function
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { vystavDokladKPlatbeFn } from "@/lib/faktero/doklad-k-platbe.functions";
+import { DokladKPlatbeOkno } from "@/components/faktero/DokladKPlatbeOkno";
 import {
   Download,
+  Receipt,
   FileText,
   RefreshCw,
   Mail,
@@ -239,6 +241,9 @@ function InvoiceDetail() {
   /* Daňový doklad k prijatej platbe, ak už k tejto zálohe existuje. */
   const [dokladKPlatbe, setDokladKPlatbe] = useState<any | null>(null);
   const [vystavujemDoklad, setVystavujemDoklad] = useState(false);
+  /* Okno „Vystaviť daňový doklad k platbe“ (menu „…“ aj karta zálohy). */
+  const [oknoDokladuKPlatbe, setOknoDokladuKPlatbe] = useState(false);
+  const [poslednaUhrada, setPoslednaUhrada] = useState<string | null>(null);
   const vystavDokladFn = useServerFn(vystavDokladKPlatbeFn);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const requestApprovalFn = useServerFn(requestInvoiceApproval);
@@ -468,7 +473,7 @@ function InvoiceDetail() {
     }
   }
 
-  async function vystavDoklad() {
+  async function vystavDoklad(v: { suma: number; datum: string }) {
     if (!inv) return;
     setVystavujemDoklad(true);
     try {
@@ -476,10 +481,13 @@ function InvoiceDetail() {
         data: {
           proforma_id: inv.id,
           // Deň prijatia platby — podľa neho vzniká daňová povinnosť.
-          datum_platby: (inv.paid_at ?? "").slice(0, 10) || dnesBratislava(),
+          datum_platby: v.datum,
+          // Prijatá suma (aj čiastočná úhrada) — server ju rozpočíta na položky.
+          suma: v.suma,
         },
       });
       toast.success(t("Vystavený doklad {cislo}", { cislo: doklad.invoice_number }));
+      setOknoDokladuKPlatbe(false);
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? t("Doklad sa nepodarilo vystaviť."));
@@ -621,9 +629,17 @@ function InvoiceDetail() {
       setReminders(rems ?? []);
       const { data: platby } = await supabase
         .from("payments")
-        .select("amount")
+        .select("amount, paid_at")
         .eq("invoice_id", id);
       setUhradene((platby ?? []).reduce((a: number, p: any) => a + (Number(p.amount) || 0), 0));
+      // Deň poslednej úhrady — predvyplní dátum dokladu k prijatej platbe.
+      setPoslednaUhrada(
+        (platby ?? [])
+          .map((p: any) => String(p.paid_at ?? "").slice(0, 10))
+          .filter(Boolean)
+          .sort()
+          .pop() ?? null,
+      );
     }
   }
 
@@ -989,6 +1005,24 @@ function InvoiceDetail() {
   const isOverdue = akcie.poSplatnosti;
   // Dobropis sa neuhrádza — čiastočná úhrada má zmysel len pri kladnej faktúre.
   const ciastocneUhradena = uhradene > 0.004 && !jeDobropisNaZobrazenie(inv);
+  /*
+    Daňový doklad k prijatej platbe — zo zálohovej faktúry platiteľa DPH už po
+    prvej (aj čiastočnej) úhrade, kým k nej doklad nie je. Daňová povinnosť
+    vzniká prijatím platby (§ 19 ods. 4), nie až úhradou celej zálohy.
+  */
+  const mozeDokladKPlatbe =
+    inv.type === "proforma" &&
+    !inv.deleted_at &&
+    inv.status !== "cancelled" &&
+    inv.status !== "draft" &&
+    company?.vat_payer !== false &&
+    !dokladKPlatbe &&
+    (akcie.dokladKPlatbe || uhradene > 0.004);
+  // Suma a dátum do okna: z úhrad, pri „Označiť ako uhradenú“ bez úhrady celá záloha.
+  const sumaDokladuKPlatbe =
+    uhradene > 0.004 ? Math.min(uhradene, Number(inv.total ?? 0)) : Number(inv.total ?? 0);
+  const datumDokladuKPlatbe =
+    poslednaUhrada || String(inv.paid_at ?? "").slice(0, 10) || dnesBratislava();
   async function obnovFakturu() {
     if (!inv) return;
     setObnovujem(true);
@@ -1656,15 +1690,17 @@ function InvoiceDetail() {
                   {datumNaDoklade(dokladKPlatbe.issue_date)} · <span className="suma">{formatujMenu(dokladKPlatbe.total, dokladKPlatbe.currency)}</span> · {t("daň sa priznáva v tomto období")}
                 </div>
               </div>
-            ) : akcie.dokladKPlatbe ? (
+            ) : mozeDokladKPlatbe ? (
               <div className="mt-2 space-y-2">
                 <p className="text-muted-foreground">
-                  {t("Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej faktúre sa už znovu nepočíta.")}
+                  {inv.status === "paid"
+                    ? t("Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej faktúre sa už znovu nepočíta.")
+                    : t("Záloha je čiastočne uhradená — daňový doklad sa vystaví na prijatú sumu. Daň sa prizná v období platby.")}
                 </p>
                 <button
                   type="button"
                   disabled={vystavujemDoklad}
-                  onClick={vystavDoklad}
+                  onClick={() => setOknoDokladuKPlatbe(true)}
                   className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
                 >
                   {vystavujemDoklad ? t("Vystavujem…") : t("Vystaviť daňový doklad")}
@@ -2154,6 +2190,21 @@ function InvoiceDetail() {
             {/* Dobropis a ťarchopis k bežnej vystavenej faktúre; formulár si
                 odberateľa, väzbu aj položky predvyplní. */}
             <MenuSkupina label={t("Nadväzné doklady")}>
+              {/* Zálohová faktúra: daňový doklad k prijatej platbe — aktívny po úhrade (aj čiastočnej). */}
+              {inv.type === "proforma" && company?.vat_payer !== false && !dokladKPlatbe && (
+                <MenuAkcia
+                  ikona={Receipt}
+                  onClick={() => setOknoDokladuKPlatbe(true)}
+                  disabled={!mozeDokladKPlatbe || vystavujemDoklad}
+                  title={
+                    mozeDokladKPlatbe
+                      ? undefined
+                      : t("Vystaví sa až po úhrade zálohy — daňová povinnosť vzniká prijatím platby.")
+                  }
+                >
+                  {t("Vystaviť daňový doklad k platbe")}
+                </MenuAkcia>
+              )}
               {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
                 <MenuAkcia asChild>
                   <Link to="/faktury/nova" search={{ type: "credit_note", opravuje: id } as any}>
@@ -2369,6 +2420,18 @@ function InvoiceDetail() {
         />
       )}
       {datumOkno.okno}
+      {inv?.type === "proforma" && (
+        <DokladKPlatbeOkno
+          open={oknoDokladuKPlatbe}
+          onOpenChange={setOknoDokladuKPlatbe}
+          predvolenaSuma={sumaDokladuKPlatbe}
+          predvolenyDatum={datumDokladuKPlatbe}
+          celkom={Number(inv.total ?? 0)}
+          mena={inv.currency}
+          busy={vystavujemDoklad}
+          onVystav={(v) => void vystavDoklad(v)}
+        />
+      )}
       {emailOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"

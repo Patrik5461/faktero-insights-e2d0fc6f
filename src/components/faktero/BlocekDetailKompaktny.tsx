@@ -48,6 +48,8 @@ import { PravidloZDokladu } from "./PravidloZDokladu";
 import { PouzitPredlohu } from "./PouzitPredlohu";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KtoKedyDokladu } from "./KtoKedyDokladu";
+import { usePokladne, VyberPokladne } from "./Pokladne";
+import { pokladnaDoFormulara, ukazatVyberPokladne } from "@/lib/faktero/pokladne";
 
 const PLATBY: Record<string, string> = {
   hotovost: "Hotovosťou",
@@ -141,6 +143,9 @@ export function BlocekDetailKompaktny({
   }, [row.id, row.company_id]);
 
   const menaDokladu = row.currency ?? "EUR";
+  // Viac pokladní: výber pri hotovosti (pri jednej pokladni sa neukáže).
+  const { pokladne } = usePokladne(row.company_id);
+  const pokladnaBlocku = pokladnaDoFormulara(pokladne, row.pokladna_id ?? null, menaDokladu);
   const zamknute = Boolean(row.exported_at || row.locked_at);
   // Iný program než Pohoda (Money, Omega…) — null = Pohoda.
   const program = useProgramOdovzdania(row.export_job_id, Boolean(row.exported_at));
@@ -358,9 +363,10 @@ export function BlocekDetailKompaktny({
               }
             />
             {row.payment_method === "hotovost" && (kody?.pokladne?.length ?? 0) > 0 ? (
-              <Pole popis="Pokladňa">
+              // Pri viacerých pokladniach je nižšie aj výber pokladne (zostatok) — toto je len skratka v Pohode.
+              <Pole popis={ukazatVyberPokladne(pokladne) ? "Pokladňa v Pohode" : "Pokladňa"}>
                 <KodPohody
-                  ariaLabel="Pokladňa"
+                  ariaLabel={ukazatVyberPokladne(pokladne) ? "Pokladňa v Pohode" : "Pokladňa"}
                   value={k.pokladna}
                   onChange={(v) => setK((x) => ({ ...x, pokladna: v }))}
                   moznosti={kody?.pokladne ?? []}
@@ -456,6 +462,21 @@ export function BlocekDetailKompaktny({
                 <option value="prevod">{t("Prevodom")}</option>
               </select>
             </Pole>
+            {row.payment_method === "hotovost" && ukazatVyberPokladne(pokladne) ? (
+              <div className="col-span-2">
+                <Pole popis="Pokladňa">
+                  <VyberPokladne
+                    bezPopisu
+                    selectClassName={ramik}
+                    pokladne={pokladne}
+                    value={pokladnaBlocku}
+                    onChange={(id) =>
+                      id && id !== row.pokladna_id && void ulozStlpec({ pokladna_id: id })
+                    }
+                  />
+                </Pole>
+              </div>
+            ) : null}
           </fieldset>
           {/* Kto doklad nahral, uložil a zaúčtoval — viditeľne, s dátumom a časom. */}
           <div className="mt-2">

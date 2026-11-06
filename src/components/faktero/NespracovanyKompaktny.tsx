@@ -38,7 +38,7 @@ import {
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
-import { DatumPrijatiaInfo } from "./DatumPrijatiaInfo";
+import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "./DatumPrijatiaInfo";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
 import { UpozornenieRozpisuDph } from "./UpozornenieRozpisuDph";
@@ -329,7 +329,7 @@ export function NespracovanyKompaktny({
               ) : null}
               {faktura ? (
                 // Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný.
-                <Pole popis="Dátum prijatia">
+                <Pole popis="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
                   <input
                     type="date"
                     aria-label={t("Dátum prijatia")}

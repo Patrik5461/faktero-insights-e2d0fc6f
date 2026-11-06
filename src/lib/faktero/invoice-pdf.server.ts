@@ -41,8 +41,10 @@ export async function menoAutora(userId: string | null | undefined): Promise<str
   verzie ich pri ďalšom otvorení raz pregeneruje.
     2 — 2026-11: pätička Vystavil/Telefón/E-mail/Web, zápis v OR v rámiku
         dodávateľa.
+    3 — 2026-11-06: súčtový riadok „Spolu“ v rekapitulácii DPH, veta
+        o prenesení s celým ustanovením (§ 69 ods. 12 písm. a–j, CZ § 92b–92f).
 */
-export const VERZIA_SABLONY_PDF = 2;
+export const VERZIA_SABLONY_PDF = 3;
 
 /*
   Dobropis sa od 2026-10 kreslí s kladnými sumami. Obsah faktúry sa nezmenil,

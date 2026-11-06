@@ -175,10 +175,33 @@ export function SekcieNavigacie({
                     : "text-foreground/80 hover:bg-secondary hover:text-foreground"
               }`}
             >
-              <Ikona className="h-4 w-4 shrink-0" />
+              <span className="relative shrink-0">
+                <Ikona className="h-4 w-4" />
+                {/* Zbalený panel: počet ako bodka s číslom na ikone (eFaktúry na zaevidovanie). */}
+                {zbaleny && s.pocet ? (
+                  <span
+                    data-w-pocet
+                    className="absolute -right-2.5 -top-2 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums"
+                    aria-label={t("{n} čaká", { n: s.pocet })}
+                  >
+                    {s.pocet > 99 ? "99+" : s.pocet}
+                  </span>
+                ) : null}
+              </span>
               {!zbaleny && (
                 <>
                   <span className="min-w-0 flex-1 truncate">{t(s.label)}</span>
+                  {/* Počet sekcie (napr. nezaevidované eFaktúry) — len kým je zbalená;
+                      rozbalená ho ukazuje pri svojej položke. */}
+                  {!rozbalena && s.pocet ? (
+                    <span
+                      data-w-pocet
+                      className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums"
+                      aria-label={t("{n} čaká", { n: s.pocet })}
+                    >
+                      {s.pocet > 99 ? "99+" : s.pocet}
+                    </span>
+                  ) : null}
                   <ChevronDown
                     className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${
                       rozbalena ? "rotate-180" : ""

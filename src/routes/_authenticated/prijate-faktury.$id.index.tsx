@@ -1,12 +1,13 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { obdobieOdpoctu, prijatieSkorNezVystavenie } from "@/lib/faktero/datum-prijatia";
+import { DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { OknoZdrojovehoMailu } from "@/components/faktero/ZdrojovyMail";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageBody } from "@/components/faktero/AppShell";
@@ -829,6 +830,7 @@ function PurchaseInvoiceDetail() {
     },
     vystavenie: row.issue_date,
     dodanie: row.delivery_date,
+    prijatie: row.received_date ?? null,
     splatnost: row.due_date ? popisSplatnosti(row) : null,
     vs: vsPrijatej(row) || null,
     formaUhrady: row.payment_method ? t(row.payment_method) : null,
@@ -950,7 +952,15 @@ function PurchaseInvoiceDetail() {
               : t("{datum} (ako vystavenie)", { datum: datumNaDoklade(row.issue_date) })
           }
         />
-        <Row label={t("Prijatie")} value={datumNaDoklade(row.received_date)} />
+        <Row
+          label={
+            <>
+              {t("Prijatie")}
+              <DatumPrijatiaOtaznik />
+            </>
+          }
+          value={datumNaDoklade(row.received_date)}
+        />
         {/* Obdobie odpočtu DPH — neskorší z DUZP a prijatia (ako výkazy a Pohoda). */}
         {row.type !== "proforma" && obdobieOdpoctu(row) ? (
           <Row label={t("Odpočet DPH")} value={obdobieOdpoctu(row) ?? ""} />
@@ -1399,7 +1409,7 @@ function PurchaseInvoiceDetail() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string | number }) {
+function Row({ label, value }: { label: ReactNode; value: string | number }) {
   return (
     <div className="flex items-start justify-between gap-3 text-sm">
       <span className="min-w-0 text-muted-foreground">{label}</span>

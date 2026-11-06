@@ -47,9 +47,12 @@ export function Pole({
   popis,
   chyba,
   ok,
+  napoveda,
   children,
 }: {
   popis: string;
+  /** Ikona „?“ za popisom v rámčeku (napr. `DatumPrijatiaOtaznik`). */
+  napoveda?: ReactNode;
   chyba?: boolean;
   ok?: boolean;
   children: ReactNode;
@@ -59,6 +62,7 @@ export function Pole({
     <label className="relative block" data-hodnota={popis}>
       <span className="pointer-events-none absolute -top-2 left-2.5 z-10 bg-card px-1 text-[11px] leading-none text-muted-foreground">
         {t(popis)}
+        {napoveda}
       </span>
       {children}
       {chyba ? (
@@ -78,10 +82,13 @@ export function Hodnota({
   popis,
   ok,
   title,
+  napoveda,
   className = "",
   children,
 }: {
   popis: string;
+  /** Ikona „?“ za popisom v rámčeku. */
+  napoveda?: ReactNode;
   ok?: boolean;
   title?: string;
   className?: string;
@@ -93,6 +100,7 @@ export function Hodnota({
     <div className="relative block" data-hodnota={popis}>
       <span className="pointer-events-none absolute -top-2 left-2.5 z-10 bg-card px-1 text-[11px] leading-none text-muted-foreground">
         {t(popis)}
+        {napoveda}
       </span>
       <div
         title={title}

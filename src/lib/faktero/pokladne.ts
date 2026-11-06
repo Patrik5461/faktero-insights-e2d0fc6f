@@ -59,14 +59,38 @@ export function ukazatVyberPokladne(pokladne: readonly Pokladna[]): boolean {
 }
 
 /**
- * Pokladňa, ktorá sa vo formulári vyplní sama: doterajšia voľba, ak je to
- * stále aktívna pokladňa, inak predvolená. Prázdny reťazec = firma pokladňu
- * ešte nemá (založí ju databáza pri prvom doklade).
+ * Pokladňa pre doklad v danej mene: predvolená, ak má tú menu; inak prvá
+ * aktívna v mene dokladu; inak predvolená. Rovnako vyberá spúšťač
+ * `pokladna_dokladu` v DB (appka, API, importy).
  */
-export function pokladnaDoFormulara(pokladne: readonly Pokladna[], doterajsia?: string | null): string {
+export function pokladnaPodlaMeny<T extends Pokladna>(
+  pokladne: readonly T[],
+  mena?: string | null,
+): T | null {
   const akt = aktivnePokladne(pokladne);
+  const m = String(mena ?? "")
+    .trim()
+    .toUpperCase();
+  if (m) {
+    const vMene = akt.find((p) => String(p.mena ?? "").toUpperCase() === m);
+    if (vMene) return vMene;
+  }
+  return predvolenaPokladna(akt);
+}
+
+/**
+ * Pokladňa, ktorá sa vo formulári vyplní sama: doterajšia voľba, ak ju
+ * firma pozná, inak pokladňa v mene dokladu (predvolená má prednosť), inak
+ * predvolená. Prázdny reťazec = firma pokladňu ešte nemá (založí ju databáza
+ * pri prvom doklade).
+ */
+export function pokladnaDoFormulara(
+  pokladne: readonly Pokladna[],
+  doterajsia?: string | null,
+  mena?: string | null,
+): string {
   if (doterajsia && (pokladne ?? []).some((p) => p.id === doterajsia)) return doterajsia;
-  return predvolenaPokladna(akt)?.id ?? "";
+  return pokladnaPodlaMeny(pokladne, mena)?.id ?? "";
 }
 
 /** Do ktorej pokladne riadok patrí — bez `pokladna_id` do predvolenej. */
@@ -124,8 +148,7 @@ export function knihaPokladni(opts: {
     ? zoradPokladne(opts.pokladne)
     : [{ id: "", nazov: "Pokladňa", mena: domaca, predvolena: true, aktivna: true }];
   const predvolenaId = predvolenaPokladna(zoznam)?.id ?? zoznam[0]!.id;
-  const vybrana =
-    opts.vybrana && zoznam.some((p) => p.id === opts.vybrana) ? opts.vybrana : null;
+  const vybrana = opts.vybrana && zoznam.some((p) => p.id === opts.vybrana) ? opts.vybrana : null;
 
   // Riadok bez pokladne alebo s pokladňou, ktorú nevidíme, patrí predvolenej.
   const zname = new Set(zoznam.map((p) => p.id));
@@ -157,14 +180,25 @@ export function knihaPokladni(opts: {
     if (vybrana && p.id !== vybrana) continue;
     // Archivovaná bez pohybov do „Všetky“ nič neprináša.
     const priebeh = priebehPokladne(d, v);
-    const vMesiaci = opts.mesiac ? priebeh.filter((r) => r.datum.startsWith(opts.mesiac as string)) : priebeh;
+    const vMesiaci = opts.mesiac
+      ? priebeh.filter((r) => r.datum.startsWith(opts.mesiac as string))
+      : priebeh;
     for (const r of vMesiaci) riadky.push({ ...r, pokladna_id: p.id, pokladna: p.nazov, mena });
     if (!p.aktivna && !priebeh.length && !vybrana) continue;
-    const s = sucty.get(mena) ?? { mena, prijmy: 0, vydavky: 0, zostatok: 0, pociatocny: 0, zaporny: false };
+    const s = sucty.get(mena) ?? {
+      mena,
+      prijmy: 0,
+      vydavky: 0,
+      zostatok: 0,
+      pociatocny: 0,
+      zaporny: false,
+    };
     s.prijmy = centy(s.prijmy + stav.prijmy);
     s.vydavky = centy(s.vydavky + stav.vydavky);
     s.zostatok = centy(s.zostatok + stav.zostatok);
-    s.pociatocny = centy(s.pociatocny + (opts.mesiac ? pociatocnyStavMesiaca(priebeh, opts.mesiac) : 0));
+    s.pociatocny = centy(
+      s.pociatocny + (opts.mesiac ? pociatocnyStavMesiaca(priebeh, opts.mesiac) : 0),
+    );
     s.zaporny = s.zaporny || stav.zaporny;
     sucty.set(mena, s);
   }
@@ -182,7 +216,9 @@ export function knihaPokladni(opts: {
     pokladne,
     vybrana,
     riadky,
-    sucty: [...sucty.values()].sort((a, b) => menaDomaca(a.mena) - menaDomaca(b.mena) || a.mena.localeCompare(b.mena)),
+    sucty: [...sucty.values()].sort(
+      (a, b) => menaDomaca(a.mena) - menaDomaca(b.mena) || a.mena.localeCompare(b.mena),
+    ),
   };
 }
 

@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Loader2, Power, PowerOff, Trash2, X } from "lucide-react";
 import type { HromadnyVyber } from "@/hooks/useHromadnyVyber";
-import { MAX_KODOV_V_ZOZNAME } from "@/lib/faktero/hromadny-vyber";
+import { MAX_KODOV_V_ZOZNAME, type NaMazanie } from "@/lib/faktero/hromadny-vyber";
+import { potvrd } from "@/lib/potvrdenie";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 
 /*
@@ -79,8 +81,11 @@ export function ListaHromadnychAkcii({
   onDeaktivovat,
   onZrusit,
   busy,
+  children,
 }: {
   pocet: number;
+  /** Ďalšie akcie zoznamu (export, zaevidovanie…) — kreslia sa pred „Zrušiť výber". */
+  children?: ReactNode;
   onZmazat?: () => void;
   /** Obsluha „Aktivovať označené" — bez nej (alebo `null`, keď nie je čo zapnúť) sa tlačidlo neukáže. */
   onAktivovat?: (() => void) | null;
@@ -121,6 +126,7 @@ export function ListaHromadnychAkcii({
           {toci("aktivovat") ?? <Power className="h-3.5 w-3.5" />} {t("Aktivovať označené")}
         </button>
       ) : null}
+      {children}
       <button
         type="button"
         onClick={onZrusit}
@@ -197,4 +203,83 @@ export function PouziteNaDeaktivaciu({
       </div>
     </div>
   );
+}
+
+/**
+ * Pás pod lištou stránkovaného zoznamu: keď je označená celá strana a filter
+ * má viac riadkov, ponúkne „Označiť všetkých N podľa filtra" (ako Gmail).
+ * Po označení povie, že akcie zasiahnu celý filter, a dá výber zrušiť.
+ */
+export function PasVyberuFiltra({
+  naStrane,
+  celkom,
+  vsetky,
+  stranaOznacena,
+  nacitava,
+  onVsetky,
+  onZrusit,
+}: {
+  /** Riadky na tejto strane. */
+  naStrane: number;
+  /** Riadky celého filtra. */
+  celkom: number;
+  /** Označené sú všetky riadky filtra. */
+  vsetky: boolean;
+  /** Označená je celá strana. */
+  stranaOznacena: boolean;
+  nacitava?: boolean;
+  onVsetky: () => void;
+  onZrusit: () => void;
+}) {
+  const { t } = useT();
+  if (!stranaOznacena || celkom <= naStrane) return null;
+  return (
+    <div
+      role="status"
+      data-pas-vyberu-filtra
+      className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-center text-xs"
+    >
+      {vsetky ? (
+        <>
+          <span>{t("Označených je všetkých {n} dokladov podľa filtra — hromadné akcie zasiahnu všetky.", { n: celkom })}</span>
+          <button type="button" onClick={onZrusit} className="font-semibold text-primary-hover underline-offset-2 hover:underline">
+            {t("Zrušiť výber")}
+          </button>
+        </>
+      ) : (
+        <>
+          <span>{t("Označené sú všetky doklady na tejto strane ({n}).", { n: naStrane })}</span>
+          <button
+            type="button"
+            onClick={onVsetky}
+            disabled={nacitava}
+            className="inline-flex items-center gap-1 font-semibold text-primary-hover underline-offset-2 hover:underline disabled:opacity-60"
+          >
+            {nacitava ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+            {t("Označiť všetkých {n} podľa filtra", { n: celkom })}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Potvrdenie hromadného mazania dokladov. Odovzdané do Pohody a zamknuté
+ * (uzavreté obdobie) sa nemažú — okno povie koľko a prečo. Vráti, či mazať.
+ */
+export async function potvrdHromadneMazanie(
+  t: (k: string, p?: Record<string, string | number>) => string,
+  m: NaMazanie,
+  otazka: string,
+): Promise<boolean> {
+  const dovody: string[] = [];
+  if (m.odovzdane)
+    dovody.push(t("{n} odovzdaných do Pohody sa nevymaže — najprv ich vráťte z Pohody.", { n: m.odovzdane }));
+  if (m.zamknute) dovody.push(t("{n} zamknutých alebo v uzavretom období sa nevymaže.", { n: m.zamknute }));
+  if (!m.ids.length) {
+    toast.warning(t("Z označených dokladov sa nedá vymazať žiadny"), { description: dovody.join(" ") });
+    return false;
+  }
+  return potvrd([otazka, ...dovody].join("\n"), { nebezpecne: true });
 }

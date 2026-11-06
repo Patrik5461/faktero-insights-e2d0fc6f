@@ -410,6 +410,15 @@ export function prijataZUbl(
     amount_without_vat: r2(zn * r.zaklad),
     vat_amount: r2(zn * r.dph),
     amount_total: r2(zn * r.celkom),
+    // Rozpis DPH po sadzbách z TaxSubtotal (dobropis záporne) — inak by viac sadzieb splynulo do jednej.
+    vat_breakdown: r.rozpis.length
+      ? r.rozpis.map((x) => ({
+          sadzba: x.sadzba,
+          zaklad: r2(zn * x.zaklad),
+          dph: r2(zn * x.dph),
+          ...(x.kategoria === "AE" ? { pdp: true } : {}),
+        }))
+      : null,
     advance_amount: zaloha || null,
     currency: r.mena,
     payment_method: r.platba ?? "prevod",

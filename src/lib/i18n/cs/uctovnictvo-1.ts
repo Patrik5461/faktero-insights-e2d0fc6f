@@ -136,6 +136,8 @@ export default {
   "Predkontácie a členenia DPH": "Předkontace a členění DPH",
   "— aj ich načítanie z Pohody — sú na stránke": "— i jejich načtení z Pohody — jsou na stránce",
   Predkontácie: "Předkontace",
+  "Použije sa, keď predvolená pokladňa nemá vlastnú skratku. Viac pokladní (napr. HP EUR, HP CZK) pridáte nižšie v časti Pokladne.":
+    "Použije se, když výchozí pokladna nemá vlastní zkratku. Více pokladen (např. HP EUR, HP CZK) přidáte níže v části Pokladny.",
   "Pokladňa v Pohode": "Pokladna v Pohodě",
   "Bankový účet v Pohode": "Bankovní účet v Pohodě",
   "Členenie skladu v Pohode": "Členění skladu v Pohodě",

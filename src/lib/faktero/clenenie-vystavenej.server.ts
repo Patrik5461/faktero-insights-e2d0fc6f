@@ -257,9 +257,33 @@ export async function uplatniClenenieNovej(
 
 /**
  * Fronta (cron automatického účtovania): faktúry, ktorým spúšťač zhodil
- * `clenenie_auto_at` — nové alebo so zmenenými údajmi.
+ * `clenenie_auto_at` — nové alebo so zmenenými údajmi — a od B1-1 aj
+ * prijaté faktúry a bločky (`clenenie-prijatych.server.ts`).
  */
 export async function uplatniClenenieFronty(
+  admin: Klient,
+  o: { naraz?: number; rozpocetMs?: number } = {},
+): Promise<{ spracovanych: number; zostava: boolean }> {
+  const zaciatok = Date.now();
+  const rozpocet = o.rozpocetMs ?? 8000;
+  const vystavene = await uplatniClenenieFrontyVystavenych(admin, { ...o, rozpocetMs: Math.round(rozpocet * 0.6) });
+  /*
+    Prijaté faktúry a bločky (B1-1) — zvyšok času. Chyba (napr. pred
+    nasadením migrácie) nezastaví vystavené ani automatické účtovanie.
+  */
+  const { uplatniClenenieFrontyPrijatych } = await import("./clenenie-prijatych.server");
+  const prijate = await uplatniClenenieFrontyPrijatych(admin, {
+    naraz: o.naraz,
+    rozpocetMs: Math.max(1000, rozpocet - (Date.now() - zaciatok)),
+  }).catch(() => ({ spracovanych: 0, zostava: false }));
+  return {
+    spracovanych: vystavene.spracovanych + prijate.spracovanych,
+    zostava: vystavene.zostava || prijate.zostava,
+  };
+}
+
+/** Len vystavené faktúry (`invoices`). */
+export async function uplatniClenenieFrontyVystavenych(
   admin: Klient,
   o: { naraz?: number; rozpocetMs?: number } = {},
 ): Promise<{ spracovanych: number; zostava: boolean }> {

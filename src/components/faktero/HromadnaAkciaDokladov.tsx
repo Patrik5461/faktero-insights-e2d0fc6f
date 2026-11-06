@@ -86,7 +86,15 @@ export function HromadnaAkciaDokladov({
     if (!ids.length) return;
     setBusy(true);
     try {
-      const r = await hromadneDokladyFn({ data: { company_id: companyId, agenda, ids, akcia } });
+      // Server berie najviac 500 dokladov naraz — výber celého filtra ide po dávkach.
+      const r = { zmenenych: 0, preskocene: [] as string[] };
+      for (let i = 0; i < ids.length; i += 500) {
+        const d = await hromadneDokladyFn({
+          data: { company_id: companyId, agenda, ids: ids.slice(i, i + 500), akcia },
+        });
+        r.zmenenych += d.zmenenych;
+        r.preskocene.push(...d.preskocene);
+      }
       if (r.zmenenych) toast.success(t("Zmenené doklady: {n}", { n: r.zmenenych }));
       else if (!r.preskocene.length) toast(t("Nebolo čo meniť"));
       if (r.preskocene.length)

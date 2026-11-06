@@ -7,7 +7,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Archive, ArchiveRestore, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { listPokladne, ulozPokladnu, zmazPokladnu } from "@/lib/faktero/pokladna.functions";
+import {
+  getCashBook,
+  listPokladne,
+  ulozPokladnu,
+  zmazPokladnu,
+} from "@/lib/faktero/pokladna.functions";
 import {
   aktivnePokladne,
   ukazatVyberPokladne,
@@ -48,6 +53,8 @@ export function VyberPokladne({
   className,
   disabled,
   label,
+  bezPopisu,
+  selectClassName,
 }: {
   pokladne: readonly Pokladna[];
   value: string;
@@ -55,34 +62,76 @@ export function VyberPokladne({
   className?: string;
   disabled?: boolean;
   label?: string;
+  /** Len samotný výber — popis dodá obal (napr. `Pole` v kompaktnom detaile). */
+  bezPopisu?: boolean;
+  selectClassName?: string;
 }) {
   const { t } = useT();
   if (!ukazatVyberPokladne(pokladne)) return null;
   const akt = aktivnePokladne(pokladne);
   // Archivovaná pokladňa uloženého dokladu ostane vo výbere, nech sa nezmení potichu.
-  const archivovana = value && !akt.some((p) => p.id === value) ? pokladne.find((p) => p.id === value) : null;
+  const archivovana =
+    value && !akt.some((p) => p.id === value) ? pokladne.find((p) => p.id === value) : null;
+  const vyber = (
+    <select
+      aria-label={label ?? t("Pokladňa")}
+      className={
+        selectClassName ?? "w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      }
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {[...akt, ...(archivovana ? [archivovana] : [])].map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.nazov} ({p.mena}){p.predvolena ? ` · ${t("predvolená")}` : ""}
+          {!p.aktivna ? ` · ${t("archivovaná")}` : ""}
+        </option>
+      ))}
+    </select>
+  );
+  if (bezPopisu) return vyber;
   return (
     <label className={cn("block", className)}>
       <span className="mb-1 block text-xs text-muted-foreground">{label ?? t("Pokladňa")}</span>
-      <select
-        aria-label={label ?? t("Pokladňa")}
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {[...akt, ...(archivovana ? [archivovana] : [])].map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.nazov} ({p.mena}){p.predvolena ? ` · ${t("predvolená")}` : ""}
-            {!p.aktivna ? ` · ${t("archivovaná")}` : ""}
-          </option>
-        ))}
-      </select>
+      {vyber}
     </label>
   );
 }
 
 type PokladnaSPoctom = Pokladna & { stav?: { pocet?: number } };
+
+/**
+ * Správa pokladní mimo stránky Pokladňa (Prepojenie s Pohodou). Pokladne
+ * sa načítajú s počtom pohybov — podľa neho sa dá zmeniť mena a zmazať.
+ */
+export function PokladneVNastaveniach({
+  companyId,
+  className,
+}: {
+  companyId: string;
+  className?: string;
+}) {
+  const nacitajFn = useServerFn(getCashBook);
+  const [pokladne, setPokladne] = useState<PokladnaSPoctom[] | null>(null);
+  const obnov = useCallback(() => {
+    // Mesiac len skráti zoznam riadkov; stav (aj počet) pokladne je z celej histórie.
+    const mesiac = new Date().toISOString().slice(0, 7);
+    nacitajFn({ data: { company_id: companyId, month: mesiac, pokladna_id: null } })
+      .then((r: any) => setPokladne(((r?.pokladne ?? []) as PokladnaSPoctom[]).filter((p) => p.id)))
+      .catch(() => setPokladne([]));
+  }, [companyId, nacitajFn]);
+  useEffect(obnov, [obnov]);
+  if (!pokladne) return null;
+  return (
+    <SpravaPokladni
+      companyId={companyId}
+      pokladne={pokladne}
+      onZmena={obnov}
+      className={className}
+    />
+  );
+}
 
 /** Správa pokladní firmy. `onZmena` po každom uložení (obnoví knihu). */
 export function SpravaPokladni({
@@ -102,7 +151,9 @@ export function SpravaPokladni({
   const zmazFn = useServerFn(zmazPokladnu);
   const [busy, setBusy] = useState(false);
   const [nova, setNova] = useState({ nazov: "", mena: domaca as string, kod_pohoda: "" });
-  const [upravy, setUpravy] = useState<Record<string, { nazov: string; mena: string; kod_pohoda: string }>>({});
+  const [upravy, setUpravy] = useState<
+    Record<string, { nazov: string; mena: string; kod_pohoda: string }>
+  >({});
 
   const zoznam = zoradPokladne(pokladne).filter((p) => p.id);
   const hodnota = (p: Pokladna) =>
@@ -125,7 +176,10 @@ export function SpravaPokladni({
 
   const uloz = (p: Pokladna, zmena: Record<string, unknown>, hlaska = t("Pokladňa je uložená")) =>
     vykonaj(
-      () => ulozFn({ data: { company_id: companyId, id: p.id, nazov: hodnota(p).nazov, ...zmena } as any }),
+      () =>
+        ulozFn({
+          data: { company_id: companyId, id: p.id, nazov: hodnota(p).nazov, ...zmena } as any,
+        }),
       hlaska,
     );
 
@@ -149,7 +203,10 @@ export function SpravaPokladni({
 
   async function zmaz(p: PokladnaSPoctom) {
     if (!(await potvrd(t("Naozaj zmazať pokladňu {nazov}?", { nazov: p.nazov })))) return;
-    await vykonaj(() => zmazFn({ data: { company_id: companyId, id: p.id } }), t("Pokladňa je zmazaná"));
+    await vykonaj(
+      () => zmazFn({ data: { company_id: companyId, id: p.id } }),
+      t("Pokladňa je zmazaná"),
+    );
   }
 
   const pole = "w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -174,10 +231,17 @@ export function SpravaPokladni({
         <ul className="divide-y divide-border rounded-lg border border-border">
           {zoznam.map((p) => {
             const h = hodnota(p);
-            const zmenene = h.nazov !== p.nazov || h.mena !== p.mena || h.kod_pohoda !== (p.kod_pohoda ?? "");
+            const zmenene =
+              h.nazov !== p.nazov || h.mena !== p.mena || h.kod_pohoda !== (p.kod_pohoda ?? "");
             const prazdna = !(p.stav?.pocet ?? 0);
             return (
-              <li key={p.id} className={cn("grid gap-2 p-3 sm:grid-cols-[minmax(0,2fr)_6rem_minmax(0,1fr)_auto] sm:items-end", !p.aktivna && "opacity-70")}>
+              <li
+                key={p.id}
+                className={cn(
+                  "grid gap-2 p-3 sm:grid-cols-[minmax(0,2fr)_6rem_minmax(0,1fr)_auto] sm:items-end",
+                  !p.aktivna && "opacity-70",
+                )}
+              >
                 <label className="block min-w-0">
                   <span className="mb-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                     {t("Názov")}
@@ -187,14 +251,18 @@ export function SpravaPokladni({
                       </span>
                     )}
                     {!p.aktivna && (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">{t("archivovaná")}</span>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
+                        {t("archivovaná")}
+                      </span>
                     )}
                   </span>
                   <input
                     className={pole}
                     value={h.nazov}
                     maxLength={80}
-                    onChange={(e) => setUpravy({ ...upravy, [p.id]: { ...h, nazov: e.target.value } })}
+                    onChange={(e) =>
+                      setUpravy({ ...upravy, [p.id]: { ...h, nazov: e.target.value } })
+                    }
                   />
                 </label>
                 <label className="block min-w-0">
@@ -205,7 +273,9 @@ export function SpravaPokladni({
                     // Mena sa po prvom pohybe nemení — sumy pohybov sú v nej.
                     disabled={!prazdna}
                     title={!prazdna ? t("Pokladňa s pohybmi si menu nemení") : undefined}
-                    onChange={(e) => setUpravy({ ...upravy, [p.id]: { ...h, mena: e.target.value } })}
+                    onChange={(e) =>
+                      setUpravy({ ...upravy, [p.id]: { ...h, mena: e.target.value } })
+                    }
                   >
                     {MENY.map((m) => (
                       <option key={m.code} value={m.code}>
@@ -215,13 +285,17 @@ export function SpravaPokladni({
                   </select>
                 </label>
                 <label className="block min-w-0">
-                  <span className="mb-1 block text-xs text-muted-foreground">{t("Skratka v Pohode")}</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">
+                    {t("Skratka v Pohode")}
+                  </span>
                   <input
                     className={pole}
                     value={h.kod_pohoda}
                     maxLength={19}
                     placeholder={t("napr. HP")}
-                    onChange={(e) => setUpravy({ ...upravy, [p.id]: { ...h, kod_pohoda: e.target.value } })}
+                    onChange={(e) =>
+                      setUpravy({ ...upravy, [p.id]: { ...h, kod_pohoda: e.target.value } })
+                    }
                   />
                 </label>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -230,7 +304,9 @@ export function SpravaPokladni({
                       type="button"
                       disabled={busy || !h.nazov.trim()}
                       onClick={async () => {
-                        if (await uloz(p, { mena: h.mena, kod_pohoda: h.kod_pohoda.trim() || null })) {
+                        if (
+                          await uloz(p, { mena: h.mena, kod_pohoda: h.kod_pohoda.trim() || null })
+                        ) {
                           const { [p.id]: _, ...zvysok } = upravy;
                           setUpravy(zvysok);
                         }
@@ -245,7 +321,9 @@ export function SpravaPokladni({
                       type="button"
                       disabled={busy}
                       className={ikona}
-                      onClick={() => uloz(p, { predvolena: true }, t("Predvolená pokladňa je zmenená"))}
+                      onClick={() =>
+                        uloz(p, { predvolena: true }, t("Predvolená pokladňa je zmenená"))
+                      }
                       aria-label={t("Nastaviť ako predvolenú")}
                       title={t("Nastaviť ako predvolenú")}
                     >
@@ -267,7 +345,11 @@ export function SpravaPokladni({
                       aria-label={p.aktivna ? t("Archivovať") : t("Obnoviť")}
                       title={p.aktivna ? t("Archivovať") : t("Obnoviť")}
                     >
-                      {p.aktivna ? <Archive className="h-4 w-4" /> : <ArchiveRestore className="h-4 w-4" />}
+                      {p.aktivna ? (
+                        <Archive className="h-4 w-4" />
+                      ) : (
+                        <ArchiveRestore className="h-4 w-4" />
+                      )}
                     </button>
                   )}
                   {!p.predvolena && prazdna && (
@@ -306,7 +388,11 @@ export function SpravaPokladni({
         </label>
         <label className="block min-w-0">
           <span className="mb-1 block text-xs text-muted-foreground">{t("Mena")}</span>
-          <select className={pole} value={nova.mena} onChange={(e) => setNova({ ...nova, mena: e.target.value })}>
+          <select
+            className={pole}
+            value={nova.mena}
+            onChange={(e) => setNova({ ...nova, mena: e.target.value })}
+          >
             {MENY.map((m) => (
               <option key={m.code} value={m.code}>
                 {m.code}

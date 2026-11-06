@@ -50,3 +50,21 @@ describe("hromadný výber", () => {
     expect(zoznamKodov(["A", "B"], () => "x")).toBe("A, B");
   });
 });
+
+import { rozdelNaMazanie } from "./hromadny-vyber";
+
+describe("rozdelNaMazanie", () => {
+  it("odovzdané a zamknuté preskočí, ostatné pustí", () => {
+    const r = rozdelNaMazanie(
+      [
+        { id: "a" },
+        { id: "b", exported_at: "2026-10-01T10:00:00Z" },
+        { id: "c", locked_at: "2026-10-01T10:00:00Z" },
+        { id: "d", issue_date: "2026-09-30" },
+        { id: "e", issue_date: "2026-10-01" },
+      ],
+      "2026-09-30",
+    );
+    expect(r).toEqual({ ids: ["a", "e"], odovzdane: 1, zamknute: 2 });
+  });
+});

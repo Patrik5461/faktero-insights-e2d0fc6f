@@ -41,6 +41,10 @@ describe("cakaNaZaevidovanie", () => {
     expect(cakaNaZaevidovanie(ef("a", { status: "archived" }))).toBe(false);
   });
 
+  it("odložená do Nespracovaných už nečaká (ráta ju odznak Nespracovaných)", () => {
+    expect(cakaNaZaevidovanie(ef("a", { nespracovany_id: "n" }))).toBe(false);
+  });
+
   it("samofaktúra medzi prijaté nepatrí — v počítadle by visela navždy", () => {
     expect(cakaNaZaevidovanie(ef("a", { druh: "self_billing" }))).toBe(false);
     expect(cakaNaZaevidovanie(ef("a", { druh: "self_billing_credit_note" }))).toBe(false);

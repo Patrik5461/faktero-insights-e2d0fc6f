@@ -20,13 +20,19 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
-import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { kontrolaSadziebPrijatej } from "@/lib/faktero/rozpis-dph-kontrola";
+import {
+  UpozornenieRozpisuDph,
+  potvrdNesuladRozpisu,
+  ulozPotvrdenieRozpisu,
+} from "@/components/faktero/UpozornenieRozpisuDph";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
 import { useT } from "@/lib/i18n/useT";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
-import { DatumPrijatiaInfo } from "@/components/faktero/DatumPrijatiaInfo";
+import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
 import { VyberKvDph, usePredvyplnenieKv } from "@/components/faktero/VyberKvDph";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
@@ -120,6 +126,10 @@ export function PrijataFakturaForm({
     cudziu menu (1 000 Kč ako 1 000 € ≈ 24 000 Kč).
   */
   const menaFirmy = useMenaFirmy();
+  const krajinaDane = useKrajinaDane();
+  /* Uložený rozpis DPH a potvrdený nesúlad — kontrola sadzieb pri sumách (B1-2). */
+  const [rozpisUlozeny, setRozpisUlozeny] = useState<unknown>(null);
+  const [potvrdenieRozpisu, setPotvrdenieRozpisu] = useState<unknown>(null);
   useEffect(() => {
     if (upravujeme) return;
     setForm((f) =>
@@ -359,6 +369,8 @@ export function PrijataFakturaForm({
       kvUlozeneRef.current = (data as any).kv_clenenie ?? "";
       clenenieUlozeneRef.current = (data as any).pohoda_clenenie_dph ?? "";
       setPolozkyDokladu(Array.isArray(data.items) ? (data.items as PolozkaK[]) : []);
+      setRozpisUlozeny((data as any).vat_breakdown ?? null);
+      setPotvrdenieRozpisu((data as any).rozpis_dph_potvrdeny ?? null);
       setNacitavam(false);
     })();
     return () => {
@@ -434,6 +446,27 @@ export function PrijataFakturaForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.amount_without_vat, form.vat_amount]);
 
+  /*
+    Sadzba DPH / súčet podľa sadzieb voči sume dokladu (Patrik 6. 11.): pri
+    nesúlade upozornenie pri sumách a pri uložení „Pokračovať aj tak / Opraviť“.
+    Potvrdený nesúlad sa zapíše (`rozpis_dph_potvrdeny`) a znova sa nehlási.
+  */
+  const sadzbyPrijatej = kontrolaSadziebPrijatej(
+    {
+      vat_breakdown: rozpisUlozeny,
+      amount_without_vat: sumaZPola(form.amount_without_vat || "0") || 0,
+      vat_amount: sumaZPola(form.vat_amount || "0") || 0,
+      amount_total: sumaZPola(form.amount_total || "0") || 0,
+      currency: form.currency,
+      delivery_date: form.delivery_date || null,
+      issue_date: form.issue_date || null,
+      type: form.type,
+      supplier_ic_dph: form.supplier_ic_dph,
+      rozpis_dph_potvrdeny: potvrdenieRozpisu,
+    },
+    krajinaDane,
+  );
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
@@ -443,6 +476,8 @@ export function PrijataFakturaForm({
     // Splatnosť pred vystavením je takmer vždy preklep v roku či mesiaci.
     if (form.due_date && form.issue_date && form.due_date < form.issue_date)
       return toast.error(t("Splatnosť je skôr ako dátum vystavenia — skontrolujte dátumy."));
+    const potvrdilNesulad = !sadzbyPrijatej.kontrola.ok && !sadzbyPrijatej.potvrdene;
+    if (potvrdilNesulad && !(await potvrdNesuladRozpisu(sadzbyPrijatej.kontrola, t))) return;
 
     setBusy(true);
     try {
@@ -594,6 +629,8 @@ export function PrijataFakturaForm({
         if (error) throw error;
         if (!id) await ulozDodavatelaDoAdresara(cid);
         await doplnKurz(cielId);
+        if (potvrdilNesulad)
+          await ulozPotvrdenieRozpisu("purchase_invoices", cielId, sadzbyPrijatej.podpis, sadzbyPrijatej.kontrola);
         idNovejRef.current = null;
         toast.success(id ? t("Zmeny sú uložené") : t("Prijatá faktúra bola uložená"));
         navigate({ to: "/prijate-faktury/$id", params: { id: cielId } });
@@ -867,7 +904,7 @@ export function PrijataFakturaForm({
           {t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
         </span>
       </Field>
-      <Field label="Dátum prijatia">
+      <Field label="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
         <input
           type="date"
           required
@@ -964,6 +1001,13 @@ export function PrijataFakturaForm({
           ))}
         </select>
       </Field>
+      {!sadzbyPrijatej.kontrola.ok ? (
+        <UpozornenieRozpisuDph
+          className="col-span-full"
+          kontrola={sadzbyPrijatej.kontrola}
+          potvrdene={sadzbyPrijatej.potvrdene}
+        />
+      ) : null}
     </>
   );
   const poliaPrilohy = (
@@ -1103,7 +1147,7 @@ export function PrijataFakturaForm({
         priloha={prilohaCesta ? { cesta: prilohaCesta, mime: prilohaMime } : null}
         onSubmit={submit}
         busy={busy}
-        sumaSedi={sumaSedi}
+        sumaSedi={sumaSedi && (sadzbyPrijatej.kontrola.ok || sadzbyPrijatej.potvrdene)}
         ibanOk={ibanOk}
         pravidlo={
           <PravidloZDokladu
@@ -1231,9 +1275,12 @@ function sumaZPola(v: string): number {
 function Field({
   label,
   ramcek,
+  napoveda,
   children,
 }: {
   label: string;
+  /** Ikona „?“ za popisom poľa (napr. `DatumPrijatiaOtaznik`). */
+  napoveda?: React.ReactNode;
   /**
    * Zložené pole (IČO + tlačidlo, začiarkávacie pole): kompaktné rozloženie by
    * popis nechalo nad poľom, lebo nesedí na žiadny zo vzorov v styles.css.
@@ -1249,13 +1296,17 @@ function Field({
       <label className="pole-dokladu block">
         <div className="pole-dokladu-hlavicka mb-1 text-xs font-medium text-muted-foreground">
           <span className="pole-dokladu-popis">{t(label)}</span>
+          {napoveda}
         </div>
         {children}
       </label>
     );
   return (
     <label className="block">
-      <div className="mb-1 text-xs font-medium text-muted-foreground">{t(label)}</div>
+      <div className="mb-1 text-xs font-medium text-muted-foreground">
+        {t(label)}
+        {napoveda}
+      </div>
       {children}
     </label>
   );

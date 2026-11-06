@@ -10,6 +10,7 @@ import type { DemoDb, Riadok } from "../server/db";
 import { FIRMA, MAJITEL, UCTOVNIK } from "./zaklad";
 import { FAKTURY } from "./faktury";
 import { cas, den, pridajDni, uid } from "./pomocne";
+import { systemoveRiadky } from "../../src/lib/faktero/predkontacie-systemove";
 
 type Kod = [
   druh: string,
@@ -212,6 +213,27 @@ export function naplnUctovnictvo(db: DemoDb) {
       created_at: cas(-200 + i),
       updated_at: cas(-60 + (i % 30)),
     })),
+  );
+
+  // Systémový číselník členenia DPH a KV (B1-1) — v ostrej DB ho zakladá migrácia a spúšťač na firme.
+  const uzMa = new Set(CISELNIK.map(([druh, kod, , agenda]) => `${druh}|${kod}|${agenda ?? ""}`));
+  db.vloz(
+    "predkontacie",
+    systemoveRiadky()
+      .filter((r) => !uzMa.has(`${r.druh}|${r.kod}|${r.agenda}`))
+      .map((r) => ({
+        id: uid(`predkontacia-system:${r.druh}:${r.kod}`),
+        company_id: FIRMA,
+        ...r,
+        ucet_md: null,
+        ucet_d: null,
+        zdroj: "system",
+        aktivne: true,
+        pohoda_id: null,
+        druhy_dokladov: [],
+        created_at: cas(-300),
+        updated_at: cas(-300),
+      })),
   );
 
   db.vloz(

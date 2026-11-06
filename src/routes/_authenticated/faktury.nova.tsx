@@ -105,6 +105,7 @@ import {
   sadzbyRezimu,
   zakladnaSadzbaRezimu,
 } from "@/lib/faktero/dph-rezim";
+import { VyberDruhuPdp } from "@/components/faktero/VyberDruhuPdp";
 import {
   druhPlneniaZPoloziek,
   klucNavrhu,
@@ -276,6 +277,8 @@ function NewInvoice() {
     rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
     reverse_charge: false,
     reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
+    /* Písmeno § 69 ods. 12 (CZ § 92b–92f) — doklad podľa neho vytlačí celé ustanovenie. */
+    pdp_druh: "" as string,
     /* Súhrnný výkaz potrebuje vedieť, čo sa do EÚ dodalo — z položiek to nevyplýva. */
     eu_plnenie: "tovar" as "tovar" | "sluzba" | "trojstranny",
     /* Predaj spotrebiteľovi v EÚ — daň sa odvádza cez OSS sadzbou jeho štátu. */
@@ -330,6 +333,26 @@ function NewInvoice() {
     sadzba, ktorú vôbec neuplatňuje. Riadky, ktorých sa človek nedotkol, sa
     prepnú na základnú sadzbu jeho krajiny; ručne vybranú sadzbu neprepisujeme.
   */
+  /*
+    Písmeno § 69 ods. 12 z poslednej faktúry s prenesením — firma zvyčajne
+    prenáša stále to isté plnenie (stavebné práce), nech ho nevyberá zakaždým.
+  */
+  const poslednyDruhPdp = useRef("");
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    void supabase
+      .from("invoices")
+      .select("*")
+      .eq("company_id", cid)
+      .not("pdp_druh" as any, "is", null)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        poslednyDruhPdp.current = String((data?.[0] as any)?.pdp_druh ?? "");
+      });
+  }, []);
   const [items, setItems] = useState<Item[]>(() => {
     // Predvyplnenie zo skenera dokladov. Suma ide ako jedna položka za 1 ks —
     // rozpis položiek z dokladu nemáme, len celkovú sumu.
@@ -508,6 +531,16 @@ function NewInvoice() {
         .eq("id", invoiceId)
         .maybeSingle();
       if (!f) return toast.error(tarchopis ? t("Faktúru na ťarchopis sa nepodarilo načítať") : t("Faktúru na dobropis sa nepodarilo načítať"));
+      // Druh prenesenia opravovanej faktúry — cez `*`, kým stĺpec `pdp_druh` nie je v každej DB.
+      void supabase
+        .from("invoices")
+        .select("*")
+        .eq("id", invoiceId)
+        .maybeSingle()
+        .then(({ data: cela }) => {
+          const druh = String((cela as any)?.pdp_druh ?? "");
+          if (druh) setForm((x) => ({ ...x, pdp_druh: druh }));
+        });
       if ((f as any).type !== "regular")
         return toast.error(tarchopis ? t("Ťarchopis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej.") : t("Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej."));
       setOpravujeCislo(String((f as any).invoice_number ?? ""));
@@ -1295,6 +1328,12 @@ function NewInvoice() {
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
+          // Len keď je zvolené — stĺpec pribudol migráciou 20261106210600.
+          ...(form.pdp_druh &&
+          ((form.reverse_charge && (form.reverse_charge_type || "domestic_69") === "domestic_69") ||
+            items.some((x: any) => x.prenesenie))
+            ? { pdp_druh: form.pdp_druh }
+            : {}),
           // Prvá záloha aj v stĺpci kvôli staršiemu rozhraniu; celý zoznam sa
           // zapisuje nižšie do `invoice_advances`.
           advance_invoice_id: odpocty[0]?.id ?? null,
@@ -2126,6 +2165,9 @@ function NewInvoice() {
                       reverse_charge_type: e.target.checked
                         ? form.reverse_charge_type || "domestic_69"
                         : "",
+                      pdp_druh: e.target.checked
+                        ? form.pdp_druh || poslednyDruhPdp.current
+                        : form.pdp_druh,
                     });
                   }}
                   className="mt-0.5 h-4 w-4 rounded border-input"
@@ -2197,6 +2239,14 @@ function NewInvoice() {
                     <option value="export">{t("Odberateľ mimo EÚ — vývoz tovaru alebo služba mimo EÚ")}</option>
                   </select>
                 </label>
+                {(form.reverse_charge_type || "domestic_69") === "domestic_69" &&
+                  (krajina === "SK" || krajina === "CZ") && (
+                    <VyberDruhuPdp
+                      krajina={krajina}
+                      value={form.pdp_druh}
+                      onChange={(v) => setForm({ ...form, pdp_druh: v })}
+                    />
+                  )}
                 {form.reverse_charge_type === "export" && (
                   <label className="block">
                     <span className="text-[13px] font-semibold text-foreground">{t("Druh plnenia")}</span>

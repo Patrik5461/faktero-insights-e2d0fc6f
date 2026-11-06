@@ -202,7 +202,7 @@ export async function zmazKodyCiselnika(
   const vsetky = await vsetkyRiadky<RiadokCiselnika>((od, po) =>
     supabase
       .from("predkontacie")
-      .select("id, kod, druh")
+      .select("id, kod, druh, zdroj")
       .eq("company_id", vstup.companyId)
       .eq("druh", vstup.druh)
       .order("id")
