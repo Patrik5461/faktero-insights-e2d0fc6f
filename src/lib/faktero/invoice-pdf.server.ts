@@ -118,24 +118,13 @@ export async function ensureInvoicePdf(
     throw new Error("Firma nenájdená");
   }
 
-  let logoBytes: Uint8Array | null = null;
-  let logoMime: string | null = null;
-  if ((company as any).logo_url) {
-    try {
-      const { data: blob } = await supabaseAdmin.storage
-        .from("company-logos")
-        .download((company as any).logo_url);
-      if (blob) {
-        logoBytes = new Uint8Array(await blob.arrayBuffer());
-        logoMime = blob.type;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
   const { stiahniObrazokFirmy } = await import("./firma-obrazky.server");
-  const stamp = await stiahniObrazokFirmy((company as any).stamp_url);
+  const [logo, stamp] = await Promise.all([
+    stiahniObrazokFirmy((company as any).logo_url, company.id),
+    stiahniObrazokFirmy((company as any).stamp_url, company.id),
+  ]);
+  const logoBytes = logo?.bytes ?? null;
+  const logoMime = logo?.mime ?? null;
 
   let paymentLinkUrl: string | null = null;
   try {

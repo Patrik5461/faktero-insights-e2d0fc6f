@@ -361,6 +361,9 @@ export const getBankStatementUrl = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .maybeSingle();
     if (!row || row.status !== "ready" || !row.storage_path) throw new Error("not_ready");
+    // Cestu vie správca firmy v riadku prepísať — podpisuje sa len súbor v priečinku firmy.
+    const { cestaPatriFirme } = await import("./cesta-firmy");
+    if (!cestaPatriFirme(row.storage_path, data.company_id)) throw new Error("not_ready");
     const { data: signed, error } = await supabaseAdmin.storage
       .from("bank-statements")
       .createSignedUrl(row.storage_path, 300);

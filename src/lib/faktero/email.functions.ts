@@ -42,30 +42,48 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
   });
 
 const TriggerInput = z.object({
-  companyId: z.string().uuid(),
-  event: z.enum([
-    "invoice.created",
-    "invoice.sent",
-    "invoice.paid",
-    "invoice.cancelled",
-    "customer.created",
-  ]),
-  data: z.record(z.string(), z.any()),
+  /** Len udalosti bez vplyvu na peniaze; úhradu a storno posiela fronta webhookov. */
+  event: z.enum(["invoice.created", "invoice.sent", "customer.created"]),
+  /** Id faktúry alebo kontaktu — údaje udalosti sa načítajú z databázy. */
+  id: z.string().uuid(),
 });
 
 export const triggerEventFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => TriggerInput.parse(d))
   .handler(async ({ data, context }) => {
-    // Verify caller is a member of this company
-    const { data: cu } = await context.supabase
-      .from("company_users")
-      .select("user_id")
-      .eq("company_id", data.companyId)
-      .eq("user_id", context.userId)
+    const { prekazkaUdalosti } = await import("./webhook-udalost-klienta");
+    const { overPristup } = await import("./over-pristup");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const faktura = data.event !== "customer.created";
+    // Čítanie cez RLS používateľa — cudzí doklad sa nenájde.
+    const { data: riadok } = await (context.supabase as any)
+      .from(faktura ? "invoices" : "customers")
+      .select(faktura ? "*" : "id, company_id, name, email, ico, external_id, created_at")
+      .eq("id", data.id)
       .maybeSingle();
-    if (!cu) throw new Error("Forbidden");
-    const { triggerEvent } = await import("./webhook-trigger.server");
-    await triggerEvent({ company_id: data.companyId, event: data.event, data: data.data });
+    if (!riadok) throw new Error("Doklad sa nenašiel.");
+    await overPristup(context, riadok.company_id, {
+      oblast: faktura ? "faktury" : "kontakty",
+      zapis: true,
+    });
+    const prekazka = prekazkaUdalosti(data.event, riadok);
+    if (prekazka) return { ok: false, dovod: prekazka };
+    // Tá istá udalosť za ten istý doklad odíde len raz.
+    const { count } = await (supabaseAdmin as any)
+      .from("webhook_delivery_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", riadok.company_id)
+      .eq("event_type", data.event)
+      .eq(faktura ? "payload->data->>invoice_id" : "payload->data->>customer_id", riadok.id);
+    if ((count ?? 0) > 0) return { ok: false, dovod: "Udalosť už odišla." };
+    const { triggerEvent, invoicePayload, customerPayload } = await import(
+      "./webhook-trigger.server"
+    );
+    await triggerEvent({
+      company_id: riadok.company_id,
+      event: data.event,
+      data: faktura ? invoicePayload(riadok) : customerPayload(riadok),
+    });
     return { ok: true };
   });

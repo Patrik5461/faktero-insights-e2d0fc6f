@@ -1,3 +1,4 @@
+import { cestaPatriFirme } from "./cesta-firmy";
 /*
   Zostavenie balíka ZIP so všetkými dátami firmy — spoločné pre „Stiahnuť
   všetky dáta“ (`exportFirmyFn`, čaká sa na výsledok) a zálohy firmy
@@ -261,7 +262,7 @@ export async function zostavBalikFirmy(
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const pouzite = new Set<string>();
     // Len súbory z priečinka tejto firmy — cestu v riadku mohol niekto prepísať.
-    const vlastny = (cesta: unknown) => String(cesta ?? "").startsWith(`${data.company_id}/`);
+    const vlastny = (cesta: unknown) => cestaPatriFirme(String(cesta ?? ""), data.company_id);
     // Najprv živé faktúry, potom kôš — strop nesmie zobrať miesto živým.
     const sPdf = [
       ...fakturyKos.zive.map((f) => ({ f, priecinok: "faktury-pdf" })),
@@ -367,7 +368,7 @@ export async function zostavBalikFirmy(
     for (const z of zdroje) {
       const pouzite = new Set<string>();
       for (const r of z.riadky.filter((x) =>
-        String(x[z.cesta] ?? "").startsWith(`${data.company_id}/`),
+        cestaPatriFirme(String(x[z.cesta] ?? ""), data.company_id),
       )) {
         if (skenov >= limity.maxSkenov) break;
         try {

@@ -11,6 +11,7 @@ export const Route = createFileRoute("/api/v1/invoices/$id")({
             .select("*, items:invoice_items(*)")
             .eq("id", params.id)
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .maybeSingle();
           if (error) return err("db_error", error.message, 500);
           if (!data) return err("not_found", "Faktúra nenájdená.", 404);

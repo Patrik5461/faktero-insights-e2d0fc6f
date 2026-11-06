@@ -20,6 +20,7 @@ export const Route = createFileRoute("/api/v1/invoices/$id/mark-paid")({
             .select("status")
             .eq("id", params.id)
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .maybeSingle();
           if (!existing) return err("not_found", "Faktúra nenájdená.", 404);
           if (existing.status === "cancelled")
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/api/v1/invoices/$id/mark-paid")({
             .update({ status: "paid", paid_at: new Date().toISOString() })
             .eq("id", params.id)
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .select()
             .maybeSingle();
           if (error) return err("db_error", error.message, 500);

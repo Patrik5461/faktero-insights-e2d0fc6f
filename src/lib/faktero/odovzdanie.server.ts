@@ -3,6 +3,7 @@ import { bezVzorca } from "@/lib/bezpecny-text";
 import { dokladDoBalika } from "./odovzdanie-faktury";
 import { hodnotaStlpca, kodStlpca, rozpisVystavenej, stlpceRozpisu } from "./rozpis-dph-exportu";
 import { rozpisBlocku } from "./rozuctovanie";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 /**
  * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
@@ -722,6 +723,11 @@ export async function zostavBalik(
         vynechanePrilohy++;
         continue;
       }
+      // Cestu vie člen firmy v riadku prepísať — cudzí súbor do balíka nepatrí.
+      if (!cestaPatriFirme(p.path, company.id)) {
+        vynechanePrilohy++;
+        continue;
+      }
       try {
         const { data: subor } = await supabaseAdmin.storage
           .from("invoice-attachments")
@@ -749,6 +755,10 @@ export async function zostavBalik(
   const skeny = zip.folder("prijate-doklady-skeny")!;
   for (const d of doklady) {
     if (!d.file_path) continue;
+    if (!cestaPatriFirme(d.file_path, company.id)) {
+      vynechanePrilohy++;
+      continue;
+    }
     if (velkost >= strop) {
       vynechanePrilohy++;
       continue;

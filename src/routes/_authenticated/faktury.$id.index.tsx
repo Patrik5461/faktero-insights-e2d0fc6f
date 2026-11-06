@@ -753,32 +753,13 @@ function InvoiceDetail() {
         ? t("Faktúra {cislo} je vystavená.", { cislo: inv?.invoice_number ?? "" })
         : t("Stav aktualizovaný"),
     );
-    // Trigger webhook
-    // invoice.paid posiela fronta webhookov z databázy (aj pri úhrade z banky) — tu by odišiel dvakrát.
-    const event =
-      status === "cancelled"
-          ? "invoice.cancelled"
-          : status === "sent"
-            ? "invoice.sent"
-            : null;
-    if (event && inv?.company_id) {
+    // Webhook: úhradu aj storno posiela fronta webhookov z databázy (spúšťač) —
+    // z prehliadača ide len „odoslaná“, a údaje si server načíta sám.
+    if (status === "sent" && inv?.id) {
       try {
-        await triggerEvt({
-          data: {
-            companyId: inv.company_id,
-            event: event as any,
-            data: {
-              invoice_id: inv.id,
-              invoice_number: inv.invoice_number,
-              status,
-              total: Number(inv.total),
-              currency: inv.currency,
-              external_id: inv.external_id ?? null,
-            },
-          },
-        });
+        await triggerEvt({ data: { event: "invoice.sent", id: inv.id } });
       } catch (e) {
-        console.warn("[webhook] invoice.* trigger zlyhal", e);
+        console.warn("[webhook] invoice.sent trigger zlyhal", e);
       }
     }
     load();

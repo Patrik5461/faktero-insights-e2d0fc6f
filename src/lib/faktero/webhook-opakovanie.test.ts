@@ -122,3 +122,18 @@ describe("zvonček: vzdané webhooky", () => {
     expect(webhookyVzdane([], hooky)).toEqual([]);
   });
 });
+
+describe("podpis webhooku s časovou pečiatkou", () => {
+  it("V2 = HMAC z „t.telo“, pôvodný podpis sa nemení", async () => {
+    const { createHmac } = await import("crypto");
+    const { podpisWebhooku, podpisWebhookuV2 } = await import("./webhook-odoslanie.server");
+    const telo = '{"event":"invoice.paid"}';
+    expect(podpisWebhooku("s", telo)).toBe(createHmac("sha256", "s").update(telo).digest("hex"));
+    const v2 = podpisWebhookuV2("s", telo, 1730900000);
+    expect(v2).toBe(
+      `t=1730900000,v1=${createHmac("sha256", "s").update(`1730900000.${telo}`).digest("hex")}`,
+    );
+    // Iný čas = iný podpis — staré zachytené telo s novým časom neprejde.
+    expect(podpisWebhookuV2("s", telo, 1730900001)).not.toBe(v2);
+  });
+});

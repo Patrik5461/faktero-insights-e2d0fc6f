@@ -29,24 +29,13 @@ export const generateQuotePdf = createServerFn({ method: "POST" })
     if (!company) throw new Error("Firma nenájdená");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let logoBytes: Uint8Array | null = null;
-    let logoMime: string | null = null;
-    if (company.logo_url) {
-      try {
-        const { data: blob } = await supabaseAdmin.storage
-          .from("company-logos")
-          .download(company.logo_url);
-        if (blob) {
-          logoBytes = new Uint8Array(await blob.arrayBuffer());
-          logoMime = blob.type;
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
     const { stiahniObrazokFirmy } = await import("./firma-obrazky.server");
-    const stamp = await stiahniObrazokFirmy((company as any)?.stamp_url);
+    const [logo, stamp] = await Promise.all([
+      stiahniObrazokFirmy(company.logo_url, company.id),
+      stiahniObrazokFirmy((company as any)?.stamp_url, company.id),
+    ]);
+    const logoBytes = logo?.bytes ?? null;
+    const logoMime = logo?.mime ?? null;
     const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
     const { menoAutora } = await import("./invoice-pdf.server");
     const bytes = await generateInvoicePdfBytes({
@@ -96,7 +85,8 @@ export const getQuotePdfSignedUrl = createServerFn({ method: "POST" })
       .single();
     if (error || !quote?.pdf_url) throw new Error("PDF zatiaľ neexistuje");
     // Servisný kľúč podpíše čokoľvek — súbor musí ležať v priečinku tej istej firmy.
-    if (!String(quote.pdf_url).startsWith(`${(quote as any).company_id}/`))
+    const { cestaPatriFirme } = await import("./cesta-firmy");
+    if (!cestaPatriFirme(quote.pdf_url, (quote as any).company_id))
       throw new Error("PDF zatiaľ neexistuje");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signed, error: sErr } = await supabaseAdmin.storage

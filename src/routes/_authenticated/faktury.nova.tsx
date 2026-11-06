@@ -1513,23 +1513,8 @@ function NewInvoice() {
       if (cid) await prepocitajClenenie({ data: { company_id: cid, ids: [inv.id] } }).catch(() => {});
 
       try {
-        await triggerEvt({
-          data: {
-            companyId: cid,
-            event: "invoice.created",
-            data: {
-              invoice_id: inv.id,
-              invoice_number: inv.invoice_number,
-              status: inv.status,
-              total: Number(inv.total),
-              currency: inv.currency,
-              external_id: inv.external_id ?? null,
-              customer_id: inv.customer_id ?? null,
-              customer_name: inv.customer_name,
-              customer_email: inv.customer_email,
-            },
-          },
-        });
+        // Údaje udalosti načíta server z databázy; posiela sa len id.
+        await triggerEvt({ data: { event: "invoice.created", id: inv.id } });
       } catch (e) {
         console.warn("[webhook] invoice.created trigger zlyhal", e);
       }

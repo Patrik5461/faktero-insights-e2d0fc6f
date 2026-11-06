@@ -130,6 +130,7 @@ const sections: HelpSection[] = [
           <li>suma je nad limitom firmy (predvolene 5 000 €),</li>
           <li>je to prvý doklad od tohto partnera,</li>
           <li>chýba predkontácia alebo sa nedá určiť členenie DPH,</li>
+          <li>rozpis DPH je na kontrole (nesedí so sumou dokladu alebo vychádza mimo platných sadzieb) — kým ho neskontrolujete a nepotvrdíte,</li>
           <li>je odovzdaný do účtovníctva alebo zamknutý — taký sa vôbec nemení.</li>
         </ul>
         <p>

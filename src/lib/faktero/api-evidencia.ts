@@ -199,14 +199,119 @@ export const ZAMKNUTE_STLPCE: Record<TabulkaDokladu, readonly string[]> = {
   ],
 };
 
-/** Je doklad odovzdaný do účtovníctva alebo zamknutý? (vystavená faktúra len odovzdaná) */
+/*
+  Uzavreté obdobie (`companies.locked_until`) — rovnaké stĺpce ako spúšťače
+  `guard_locked_period*`. Tie servisný kľúč nepustia, no API ich hlási vopred
+  ako 409 (inak 500 s textom z databázy). Faktúra má navyše `cancelled_at`:
+  storno mení DPH podaného obdobia a spúšťač ho dnes (stav je voľný kvôli
+  úhrade) nestráži — cez API sa faktúra z uzavretého obdobia stornovať nedá.
+*/
+export const OBDOBIE_STLPCE: Record<TabulkaDokladu, { datum: string; stlpce: readonly string[] }> = {
+  invoices: {
+    datum: "issue_date",
+    stlpce: [
+      "issue_date",
+      "delivery_date",
+      "povodna_splatnost",
+      "invoice_number",
+      "type",
+      "currency",
+      "customer_id",
+      "customer_name",
+      "customer_ico",
+      "customer_dic",
+      "customer_ic_dph",
+      "subtotal",
+      "vat_total",
+      "total",
+      "reverse_charge",
+      "reverse_charge_type",
+      "advance_invoice_id",
+      "advance_amount",
+      "deleted_at",
+      "cancelled_at",
+    ],
+  },
+  purchase_invoices: {
+    datum: "issue_date",
+    stlpce: [
+      "issue_date",
+      "received_date",
+      "povodna_splatnost",
+      "invoice_number",
+      "supplier_name",
+      "supplier_ico",
+      "supplier_dic",
+      "supplier_ic_dph",
+      "amount_without_vat",
+      "vat_amount",
+      "amount_total",
+      "vat_breakdown",
+      "currency",
+      "deleted_at",
+    ],
+  },
+  expense_documents: {
+    datum: "issue_date",
+    stlpce: [
+      "issue_date",
+      "document_number",
+      "supplier_name",
+      "supplier_ico",
+      "supplier_ic_dph",
+      "total_amount",
+      "net_amount",
+      "vat_amount",
+      "vat_rate",
+      "vat_breakdown",
+      "currency",
+    ],
+  },
+};
+
+/** Patrí doklad (pôvodný alebo po zmene dátumu) do uzavretého obdobia? */
+export function vUzavretomObdobi(
+  tab: TabulkaDokladu,
+  zamknuteDo: string | null | undefined,
+  ...riadky: (Record<string, unknown> | null | undefined)[]
+): boolean {
+  if (!zamknuteDo) return false;
+  const hranica = String(zamknuteDo).slice(0, 10);
+  const k = OBDOBIE_STLPCE[tab].datum;
+  return riadky.some((r) => {
+    const d = r?.[k];
+    return typeof d === "string" && d.length >= 10 && d.slice(0, 10) <= hranica;
+  });
+}
+
+/**
+ * Je doklad odovzdaný do účtovníctva, zamknutý, alebo v uzavretom období?
+ * (vystavená faktúra nemá `locked_at`, platí pre ňu odovzdanie a obdobie)
+ */
 export function dovodZamkuApi(
   tab: TabulkaDokladu,
-  r: { exported_at?: string | null; locked_at?: string | null },
-): "odovzdany" | "zamknuty" | null {
+  r: { exported_at?: string | null; locked_at?: string | null; [k: string]: unknown },
+  zamknuteDo?: string | null,
+): "odovzdany" | "zamknuty" | "obdobie" | null {
   if (r.exported_at) return "odovzdany";
   if (tab !== "invoices" && r.locked_at) return "zamknuty";
+  if (vUzavretomObdobi(tab, zamknuteDo, r)) return "obdobie";
   return null;
+}
+
+/** Zmenené stĺpce chránené uzavretým obdobím. */
+export function zmenyVObdobi(
+  tab: TabulkaDokladu,
+  stary: Record<string, unknown>,
+  zmena: Record<string, unknown>,
+): string[] {
+  return OBDOBIE_STLPCE[tab].stlpce.filter((s) => s in zmena && !rovnake(stary[s], zmena[s]));
+}
+
+/** Text ako v spúšťači `guard_locked_period`. */
+export function spravaZamkuObdobia(zamknuteDo: string): string {
+  const [r, m, d] = String(zamknuteDo).slice(0, 10).split("-");
+  return `Obdobie je uzamknuté do ${d}.${m}.${r}. Doklad z uzavretého obdobia sa už nedá meniť ani mazať.`;
 }
 
 const rovnake = (a: unknown, b: unknown) => {

@@ -211,18 +211,7 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
         return toast.error(friendlyError(error));
       }
       try {
-        await triggerEvt({
-          data: {
-            companyId: cid,
-            event: "customer.created",
-            data: {
-              customer_id: created.id,
-              name: created.name,
-              email: created.email,
-              ico: created.ico,
-            },
-          },
-        });
+        await triggerEvt({ data: { event: "customer.created", id: created.id } });
       } catch (e) {
         console.warn("[webhook] customer.created trigger zlyhal", e);
       }

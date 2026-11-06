@@ -16,9 +16,11 @@
   funkcie pre prehliadač klientom prihláseného (RLS).
 */
 
+import { jeRozpisNaKontrole } from "./rozpis-na-kontrole";
 import {
   NAZVY_REZIMOV,
   blokatory,
+  kvPreneseniaPrijatej,
   jeRezimAutopilota,
   odvodClenenia,
   polozkyNesedia,
@@ -529,6 +531,8 @@ export async function navrhPreRiadok(
     ? vyriesene.kv_clenenie
     : (t(row.kv_clenenie) ??
       t(pravidlo?.kv_clenenie) ??
+      // Členenie prenesenia (PDsluz, DDsluz…) z dokladu či pravidla → KV B.1, nie „X“ z režimu.
+      (typ !== "vystavena" && firma.krajina === "SK" ? kvPreneseniaPrijatej(clenenieDph) : null) ??
       kvSPredvolenym(
         clen.kvClenenie,
         typ === "vystavena" ? "faktura" : typ === "blocek" ? "doklady" : "prijata",
@@ -549,6 +553,8 @@ export async function navrhPreRiadok(
   const bl = blokatory({
     cudziOdberatel: typ === "prijata" && Boolean(row.odberatel_nesedi),
     duplicita: Boolean(duplicitne),
+    // Rozpis DPH na kontrole (oprava rozpisu / vyťaženie) — autopilot ho nezaúčtuje, nechá návrh.
+    rozpisNaKontrole: typ !== "vystavena" && jeRozpisNaKontrole(row),
     polozkyNesedia:
       typ !== "vystavena" &&
       !(Array.isArray(row.polozky_vypnute) && row.polozky_vypnute.length) &&

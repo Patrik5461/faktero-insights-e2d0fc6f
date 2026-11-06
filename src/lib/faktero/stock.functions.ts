@@ -10,6 +10,7 @@ import { cisloZImportu } from "./sklad-import";
 import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "./vat-rates";
 import { colneUdajeNaZapis, jePlatnyColnyKod } from "./colny-kod";
 import { nazovHlavnehoSkladuFirmy } from "./hlavny-sklad";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
@@ -897,7 +898,7 @@ export const getProductStockDetail = createServerFn({ method: "POST" })
           .maybeSingle();
         supplier = s;
       }
-      if (stockItem.photo_url && stockItem.photo_url.startsWith(`${data.company_id}/`)) {
+      if (cestaPatriFirme(stockItem.photo_url, data.company_id)) {
         const { data: signed } = await supabase.storage
           .from("product-photos")
           .createSignedUrl(stockItem.photo_url, 60 * 60);
@@ -1671,7 +1672,7 @@ export const getProductPhotoSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => PhotoUrlInput.parse(d))
   .handler(async ({ data, context }) => {
-    if (!data.storage_path.startsWith(`${data.company_id}/`)) {
+    if (!cestaPatriFirme(data.storage_path, data.company_id)) {
       throw new Error("Neplatná cesta k fotke.");
     }
     const { data: signed, error } = await context.supabase.storage

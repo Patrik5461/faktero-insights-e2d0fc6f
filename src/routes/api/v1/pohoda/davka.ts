@@ -5,7 +5,7 @@
  * priamo do vstupného priečinka a spustiť `Pohoda.exe /XML`.
  *
  *   GET /api/v1/pohoda/davka           — dávka a zápis do histórie
- *   GET /api/v1/pohoda/davka?nahlad=1  — to isté, ale bez zápisu (na vyskúšanie)
+ *   GET /api/v1/pohoda/davka?nahlad=1  — to isté, ale bez zápisu (na vyskúšanie; jediné, čo smie testovací kľúč)
  *   GET /api/v1/pohoda/davka?od=2026-01-01
  *   GET /api/v1/pohoda/davka?cast=prelom   — len doklady minulých rokov (databáza minulého roka)
  *   GET /api/v1/pohoda/davka?cast=bezny    — len tohtoročné doklady a číselníky
@@ -29,6 +29,16 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
 
         const url = new URL(request.url);
         const nahlad = url.searchParams.get("nahlad") === "1";
+        /*
+          Bez náhľadu dávka zapíše históriu a označí doklady za odovzdané
+          (zamkne ich). Testovací kľúč smie len čítať — dostane len náhľad.
+        */
+        if (kluc.mode === "test" && !nahlad) {
+          return new Response(
+            "Testovací kľúč smie len čítať — skúste ?nahlad=1. Konektor potrebuje live kľúč.",
+            { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } },
+          );
+        }
         const od = url.searchParams.get("od");
         // Prelom rokov: konektor si dávku pýta zvlášť pre minulý a bežný rok.
         const castParam = url.searchParams.get("cast");

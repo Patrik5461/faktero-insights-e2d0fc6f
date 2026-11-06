@@ -40,6 +40,7 @@ export const Route = createFileRoute("/api/v1/invoices/$id/send")({
             .select("id, company_id, customer_email, status")
             .eq("id", params.id)
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .maybeSingle();
           if (!inv) return err("not_found", "Faktúra nenájdená.", 404);
           if (inv.status === "cancelled")

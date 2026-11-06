@@ -6,6 +6,7 @@
  * faktúra naozaj má — id príloh z požiadavky inú firmu neotvoria.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { cestaPatriFirme } from "../cesta-firmy";
 import type { PrilohaNaOdoslanie } from "./epostak-telo";
 import {
   EF_MAX_SUBOR,
@@ -92,6 +93,9 @@ export async function pripravPrilohyEfaktury(
 
   const subory: { r: Riadok; bajty: Buffer; mime: string }[] = [];
   for (const r of riadky) {
+    // Cestu vie člen firmy prepísať a sťahuje sa servisným kľúčom.
+    if (!cestaPatriFirme(r.path, invoice.company_id))
+      throw new Error(`${r.name}: súbor nepatrí k tejto firme.`);
     const { data: blob } = await supabaseAdmin.storage.from("invoice-attachments").download(r.path);
     if (!blob) throw new Error(`${r.name}: súbor sa nepodarilo načítať z úložiska.`);
     const bajty = Buffer.from(await blob.arrayBuffer());

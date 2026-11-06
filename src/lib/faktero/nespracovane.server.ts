@@ -266,6 +266,9 @@ export async function vytazNespracovany(id: string): Promise<void> {
     .maybeSingle();
   if (!r?.file_path) return;
   try {
+    // Cestu vie člen firmy prepísať a tu sa sťahuje servisným kľúčom — cudzí súbor nečítať.
+    const { cestaPatriFirme } = await import("./cesta-firmy");
+    if (!cestaPatriFirme(r.file_path, r.company_id)) throw new Error("Súbor nepatrí k tejto firme.");
     const { data: subor, error } = await supabaseAdmin.storage.from(KOS_NESPRACOVANYCH).download(r.file_path);
     if (error || !subor) throw new Error("Súbor sa nepodarilo načítať.");
     const bajty = Buffer.from(await subor.arrayBuffer());

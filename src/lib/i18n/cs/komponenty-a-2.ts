@@ -149,4 +149,8 @@ export default {
   "Vytvoriť účet zdarma": "Vytvořit účet zdarma",
   "Skúšobné prostredie API": "Zkušební prostředí API",
   "Kontaktovať podporu": "Kontaktovat podporu",
+  "Faktúra z uzavretého obdobia (uzávierka v Účtovníctve) sa nezmení ani nestornuje — 409 locked s reason obdobie a locked_until. Storno odovzdanej faktúry (POST …/cancel) prejde len vtedy, keď ju Pohoda už prijala s vlastným číslom; inak ju najprv vráťte z Pohody.": "Faktura z uzavřeného období (uzávěrka v Účetnictví) se nezmění ani nestornuje — 409 locked s reason obdobie a locked_until. Storno předané faktury (POST …/cancel) projde jen tehdy, když ji Pohoda už přijala s vlastním číslem; jinak ji nejdřív vraťte z Pohody.",
+  "Dávku pre Pohodu (GET /api/v1/pohoda/davka) dostane testovací kľúč len ako náhľad (?nahlad=1) — bez neho by sa doklady označili za odovzdané, preto vráti 403.": "Dávku pro Pohodu (GET /api/v1/pohoda/davka) dostane testovací klíč jen jako náhled (?nahlad=1) — bez něj by se doklady označily za předané, proto vrátí 403.",
+  "Proti prehratiu zachytenej požiadavky slúži hlavička": "Proti přehrání zachyceného požadavku slouží hlavička",
+  "— t je čas odoslania (Unix sekundy, aj v X-Faktero-Timestamp) a v1 je HMAC SHA-256 z reťazca „t.telo“. Odmietnite požiadavku, ktorej t je staršie ako 5 minút, a id doručenia si pamätajte. Pôvodná hlavička X-Faktero-Signature ostáva bez zmeny.": "— t je čas odeslání (Unix sekundy, také v X-Faktero-Timestamp) a v1 je HMAC SHA-256 z řetězce „t.tělo“. Odmítněte požadavek, jehož t je starší než 5 minut, a id doručení si pamatujte. Původní hlavička X-Faktero-Signature zůstává beze změny.",
 } satisfies Record<string, string>;

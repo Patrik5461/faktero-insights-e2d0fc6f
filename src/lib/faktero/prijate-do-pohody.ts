@@ -11,6 +11,7 @@ import { jeSamozdanenie } from "./datum-prijatia";
 import { najblizsiaSadzba, zoradPodlaSadzby } from "./vat-rates";
 import { prepocitajPolozku, sumySamofaktury } from "./samofakturacia";
 import { maPopisPrijatej, textPrijatejFaktury } from "./text-dokladu";
+import { jeRozpisNaKontrole } from "./rozpis-na-kontrole";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
@@ -308,6 +309,8 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     pohoda_verzia: p.pohoda_verzia,
     total_amount: spolu,
     vat_breakdown: rozpisPrijatej(p),
+    // Rozpis DPH čaká na kontrolu človeka — `prekazkaDokladu` doklad zastaví.
+    _rozpisNaKontrole: jeRozpisNaKontrole(p),
     _povodneCislo: p.invoice_number,
     // Položky pre Pohodu — len keď sedia so súčtami faktúry.
     _polozkyPrijatej: polozkyPrijatej(p),

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { overPristup } from "./over-pristup";
+import { overCestuFirmy } from "./cesta-firmy";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -28,9 +29,7 @@ export const createImportUploadUrl = createServerFn({ method: "POST" })
 
 /** Cesta chodí z prehliadača — bez kontroly by sa dal načítať súbor cudzej firmy. */
 function cestaFirmy(companyId: string, path: string): string {
-  if (!path.startsWith(`${companyId}/`) || path.includes(".."))
-    throw new Error("Súbor nepatrí k tejto firme.");
-  return path;
+  return overCestuFirmy(path, companyId);
 }
 
 // --- 2. After upload, parse + preview. Creates an import_job in 'uploaded' state. ---
@@ -180,10 +179,12 @@ export const getImportFileUrl = createServerFn({ method: "POST" })
       .eq("id", data.jobId)
       .single();
     if (error || !job?.file_path) throw new Error("Súbor nenájdený.");
+    // Cestu vie správca v riadku prepísať — podpisuje sa len súbor v priečinku firmy úlohy.
+    const cesta = cestaFirmy(job.company_id, job.file_path);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signed, error: sErr } = await supabaseAdmin.storage
       .from("imports")
-      .createSignedUrl(job.file_path, 600);
+      .createSignedUrl(cesta, 600);
     if (sErr || !signed) throw new Error(sErr?.message ?? "Chyba podpisu URL");
     return { signedUrl: signed.signedUrl };
   });

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { overPristup } from "./over-pristup";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 const VendorEnum = z.enum(["money-s3", "omega", "idoklad", "kros", "pohoda"]);
 
@@ -25,7 +26,7 @@ const ExecuteInput = PreviewInput.extend({
 async function assertMember(ctx: any, companyId: string, path?: string) {
   await overPristup(ctx, companyId, { oblast: "uctovnictvo", zapis: true });
   // Cesta chodí z prehliadača — bez kontroly by sa dal načítať súbor cudzej firmy.
-  if (path !== undefined && (!path.startsWith(`${companyId}/`) || path.includes("..")))
+  if (path !== undefined && !cestaPatriFirme(path, companyId))
     throw new Error("Súbor nepatrí k tejto firme.");
 }
 

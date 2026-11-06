@@ -40,8 +40,10 @@ export const ponukaPodlaTokenuFn = createServerFn({ method: "GET" })
     ]);
 
     // Odkaz na PDF platí hodinu — dosť na pozretie, málo na rozposielanie ďalej.
+    // Cestu vie člen firmy prepísať — podpíše sa len súbor v priečinku firmy ponuky.
+    const { cestaPatriFirme } = await import("./cesta-firmy");
     let pdf: string | null = null;
-    if (q.pdf_url) {
+    if (cestaPatriFirme(q.pdf_url, q.company_id)) {
       const { data: odkaz } = await supabaseAdmin.storage
         .from("invoice-pdfs")
         .createSignedUrl(q.pdf_url, 3600);

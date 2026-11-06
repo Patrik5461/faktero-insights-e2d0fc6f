@@ -6,6 +6,7 @@
  * až pri odovzdaní do Pohody a dá sa vypnúť na stránke Predkontácie.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { cestaPatriFirme } from "@/lib/faktero/cesta-firmy";
 
 const zle = (status: number, text: string) =>
   new Response(text, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/api/public/doklad/$token")({
         if (!zdroj?.cesta) return zle(404, "Odkaz nie je platný.");
         // Cestu k súboru zapisuje prehliadač — bez kontroly by sa cez vlastný
         // doklad dal vytiahnuť sken inej firmy.
-        if (!String(zdroj.cesta).startsWith(`${zdroj.firma}/`)) return zle(404, "Odkaz nie je platný.");
+        if (!cestaPatriFirme(String(zdroj.cesta), zdroj.firma)) return zle(404, "Odkaz nie je platný.");
 
         const { data: subor } = await supabaseAdmin.storage.from(zdroj.bucket).download(zdroj.cesta);
         if (!subor) return zle(404, "Sken sa nenašiel.");

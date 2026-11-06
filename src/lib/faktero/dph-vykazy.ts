@@ -76,7 +76,16 @@ export type PrijataFaktura = {
   dodavatelNazov?: string | null;
   dodavatelIcDph?: string | null;
   dodavatelDic?: string | null;
+  /**
+   * Deň zaradenia do obdobia: pri odpočte neskorší z DUZP a prijatia, pri
+   * samozdanení DUZP. Podľa neho sa určuje aj sadzba.
+   */
   datumDodania: string;
+  /**
+   * Deň dodania (DUZP; bez neho deň vyhotovenia) — do KV B.1/B.2 ide ako „Den“
+   * (dátum vzniku daňovej povinnosti), nie deň prijatia. Chýba = `datumDodania`.
+   */
+  duzp?: string | null;
   rezim: "tuzemsko" | "samozdanenie" | "nadobudnutie" | "dovoz" | "bez_dane";
   odpocet: boolean;
   opravujeCislo?: string | null;
@@ -122,6 +131,12 @@ export type Vstup = {
   doklady: PrijatyDoklad[];
   /** Opravy odpočtu podľa § 53b, ktoré patria do obdobia (r. 29, C.2 ONP). */
   opravy53b?: Oprava53b[];
+  /**
+   * Osoba registrovaná podľa § 7 / § 7a (CZ identifikovaná osoba): nie je
+   * platiteľ, nemá nárok na odpočet a kontrolný výkaz nepodáva (MP ku KV,
+   * časť 1) — priznáva len daň zo samozdanenia a nadobudnutia.
+   */
+  registrovanaOsoba?: boolean;
 };
 
 /** Čo chýba alebo nesedí. Výkaz sa dá pozrieť, ale nemá sa podať naslepo. */
@@ -416,6 +431,8 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
     d2: null,
     vytky: [],
   };
+  // Registrovaná osoba (§ 7 / § 7a) kontrolný výkaz nepodáva — ani prázdny.
+  if (vstup.registrovanaOsoba) return vykaz;
 
   for (const f of vstup.vystavene) {
     if (!doVykazov(f)) continue;
@@ -597,7 +614,8 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       const riadok: KvB1B2 = {
         dod: p.dodavatelIcDph?.trim() || undefined,
         f: p.cislo,
-        den: p.datumDodania,
+        // „Den“ = dátum vzniku daňovej povinnosti (DUZP), nie deň prijatia/odpočtu.
+        den: p.duzp || p.datumDodania,
         z: centy(r.zaklad),
         d: centy(r.dan),
         s: Math.round(r.sadzba),
@@ -887,7 +905,7 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
 
       if (p.opravujeCislo) {
         // Prijatý dobropis: opravuje sa odpočítaná daň (§ 53).
-        if (p.odpocet) pripocitaj("r28", -x.dan);
+        if (p.odpocet && !vstup.registrovanaOsoba) pripocitaj("r28", -x.dan);
         continue;
       }
 
@@ -913,7 +931,8 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
         pripocitaj(rd, x.dan);
       }
 
-      if (!p.odpocet || bezOdpoctu || !pasmo) continue;
+      // Registrovaná osoba (§ 7 / § 7a) nemá nárok na odpočet — len samozdaní.
+      if (!p.odpocet || bezOdpoctu || !pasmo || vstup.registrovanaOsoba) continue;
       const odp = centy(x.dan * (p.podielOdpoctu ?? 1));
       const [celkom, tuzemsko, dovoz] =
         pasmo === "zakladna"
@@ -928,12 +947,12 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
   }
 
   // § 53b — vrátenie odpočtu je r. 29 so znamienkom plus, opätovný odpočet mínus.
-  for (const o of vstup.opravy53b ?? []) {
+  for (const o of vstup.registrovanaOsoba ? [] : (vstup.opravy53b ?? [])) {
     for (const x of o.riadky) pripocitaj("r29", -x.dan);
   }
 
   for (const d of vstup.doklady) {
-    if (!d.odpocet || dokladB2BezUdajov(d)) continue;
+    if (!d.odpocet || dokladB2BezUdajov(d) || vstup.registrovanaOsoba) continue;
     for (const x of d.riadky) {
       if (x.dan === 0) continue;
       // Bloček je vždy tuzemské plnenie; sadzbu posúdi cenník ku dňu dokladu.
@@ -1036,6 +1055,40 @@ export function odvodRezimPrijatej(
   }
   return sDanou ? "tuzemsko" : "bez_dane";
 }
+
+/*
+  Prenesenie daňovej povinnosti na prijatej faktúre podľa zaúčtovania, keď
+  príznak `reverse_charge` ani `dph_rezim` nikto nenastavil (faktúra z mailu,
+  autopilot): členenie DPH Pohody pre plnenie, pri ktorom daň platí príjemca
+  (PDsluz/PKsluz/PBsluz — P07–P09, DDsluz/DDsl§69/DD2odb — D02, D04, D05,
+  …pdp), alebo ručne zvolené KV B.1 (aj podkód B1-0). Bežné PD, PK, PB
+  a „nezahrnovať“ (PN…) prenesením nie sú.
+*/
+const CLENENIE_PRENESENIA = /^(?:P[DKB](?:sluz|pdp)|DD(?:sluz|sl§69|2odb|pdp))$/i;
+/** Prenesenie bez nároku na odpočet (PBsluz, PBpdp, KV B1-0). */
+const PRENESENIE_BEZ_NAROKU = /^PB(?:sluz|pdp)$/i;
+
+export function preneseniePrijatej(o: {
+  clenenieDph?: string | null;
+  kv?: string | null;
+}): { pdp: boolean; bezNaroku: boolean } {
+  const cl = String(o.clenenieDph ?? "").trim();
+  const kv = String(o.kv ?? "").trim().toUpperCase();
+  const zClenenia = CLENENIE_PRENESENIA.test(cl);
+  const zKv = kvPreVykaz(kv) === "B1";
+  return {
+    pdp: zClenenia || zKv,
+    bezNaroku: (zClenenia && PRENESENIE_BEZ_NAROKU.test(cl)) || kv === "B1-0",
+  };
+}
+
+/** Text výtky — aj kľúč prekladu. */
+export const VYTKA_PLATITEL_BEZ_DPH =
+  "Faktúra od platiteľa DPH je bez dane a do priznania ani kontrolného výkazu nevošla. Ak ide o prenesenie daňovej povinnosti (§ 69 ods. 12), označte na faktúre prenesenie (alebo členenie DPH PDsluz / KV B1); ak je plnenie oslobodené alebo nie je predmetom DPH, zvoľte to v rozpise DPH.";
+export const VYTKA_PRENESENIE_KV_X =
+  "Faktúra je v prenesení daňovej povinnosti — samozdanenie je v priznaní (r. 09–10), ale členenie KV „nezahŕňať“ ju vynechalo z časti B.1. Ak to nie je zámer, zmeňte členenie KV na B1.";
+export const VYTKA_ROZPIS_NESEDI =
+  "Rozpis DPH nesedí — sadzba {sadzba} % neplatí (z dane a základu vyšla „priemerná“ sadzba, doklad má asi viac sadzieb). Vo výkaze je v nesprávnom riadku; doplňte rozpis DPH po sadzbách.";
 
 /** Faktúra s DPH iného štátu — do priznania nepatrí, výkaz na ňu upozorní. */
 export function jeCudziaDph(

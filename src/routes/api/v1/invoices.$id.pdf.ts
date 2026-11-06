@@ -11,6 +11,7 @@ export const Route = createFileRoute("/api/v1/invoices/$id/pdf")({
             .select("id")
             .eq("id", params.id)
             .eq("company_id", ctx.company_id)
+            .is("deleted_at", null)
             .maybeSingle();
           if (error) {
             // Neplatné id (22P02) prebalí `chybaNeplatnehoId` na 404 — nie je to chyba servera.

@@ -618,6 +618,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                   <div className="text-base font-semibold">{t("Kontrolný výkaz")}</div>
                   <div className="text-xs text-muted-foreground">{t("Schéma KVDPH 2025")}</div>
                 </div>
+                {!registrovanaOsoba && (
                 <div className="flex gap-2">
                   <button
                     onClick={() =>
@@ -638,7 +639,15 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                     <CheckCircle2 className="h-4 w-4" /> {t("Podané")}
                   </button>
                 </div>
+                )}
               </div>
+              {registrovanaOsoba ? (
+                <p className="px-4 py-6 text-sm text-muted-foreground" data-testid="kv-registrovana">
+                  {t(
+                    "Osoba registrovaná podľa § 7 / § 7a kontrolný výkaz nepodáva — podáva ho len platiteľ.",
+                  )}
+                </p>
+              ) : (
               <ul className="divide-y divide-border text-sm">
                 {[
                   ["A.1 — vystavené faktúry s daňou", data.kv.a1.length],
@@ -657,6 +666,7 @@ function VykazyPage({ uvod }: { uvod?: ReactNode }) {
                   </li>
                 ))}
               </ul>
+              )}
             </section>
 
             {/* Súhrnný výkaz */}

@@ -10,6 +10,7 @@ import {
 } from "./financovanie-parovanie";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { cestaPatriFirme } from "./cesta-firmy";
 /**
  * Leasingy a úvery — serverová časť.
  *
@@ -902,7 +903,7 @@ export const stavCitaniaZmluvyFn = createServerFn({ method: "POST" })
     await overClena(context, data.company_id);
     // Cesta chodí z prehliadača — bez tejto kontroly by sa dal vypýtať výsledok
     // z priečinka cudzej firmy.
-    if (!data.document_path.startsWith(`${data.company_id}/`)) {
+    if (!cestaPatriFirme(data.document_path, data.company_id)) {
       throw new Error("Neplatný dokument.");
     }
     const { data: subor } = await context.supabase.storage

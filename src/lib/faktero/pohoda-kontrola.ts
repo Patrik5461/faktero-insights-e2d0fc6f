@@ -19,6 +19,7 @@ import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
 import { kvPrijatehoDokladu } from "./kv-urcenie";
 import { skratkaPredkontacie, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
+import { DOVOD_ROZPIS_NA_KONTROLE, jeRozpisNaKontrole } from "./rozpis-na-kontrole";
 import { nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
 import { chybaUlozenehoRozuctovaniaVystavenej } from "./rozuctovanie-vystavenej";
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
@@ -434,6 +435,15 @@ export function prekazkaDokladu(
   */
   if (!isAccountingDocument(d?._typPohody as string | undefined)) return null;
 
+  /*
+    Rozpis DPH na kontrole (audit 6. 11. 2026): oprava rozpisu či vyťaženie
+    doklad označili (`na_kontrolu_dovod` „Rozpis DPH…“) a človek ho ešte
+    nepotvrdil — s pochybnou DPH do Pohody nejde. eFaktúra zaradená do firmy
+    (príznak bez dôvodu) sa netýka DPH a ide ďalej.
+  */
+  if (d?._rozpisNaKontrole === true || jeRozpisNaKontrole(d))
+    return `${cislo} — ${DOVOD_ROZPIS_NA_KONTROLE}`;
+
   const krajina = krajinaDane(company?.country);
   const rozpis: { sadzba: number; zaklad: number; dph: number; pdp?: boolean }[] = Array.isArray(
     d?.vat_breakdown,
@@ -444,7 +454,7 @@ export function prekazkaDokladu(
     if (r?.pdp) continue;
     const s = Number(r?.sadzba ?? 0);
     if (!jeZnamaSadzba(s, krajina))
-      return `${cislo} — DPH sa nedá priradiť k sadzbe (vychádza ${r2(s)} %) — rozpíšte DPH podľa sadzieb (alebo zadajte položky)`;
+      return `${cislo} — ${DOVOD_ROZPIS_NA_KONTROLE} (DPH sa nedá priradiť k sadzbe, vychádza ${r2(s)} %) — rozpíšte DPH podľa sadzieb (alebo zadajte položky)`;
     if (!dphSedi(Number(r?.zaklad ?? 0), Number(r?.dph ?? 0), s))
       return `${cislo} — DPH ${r2(Number(r?.dph ?? 0)).toFixed(2)} nesedí so základom ${r2(Number(r?.zaklad ?? 0)).toFixed(2)} pri sadzbe ${s} % — opravte rozpis DPH`;
   }

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 /**
  * Verejná stránka /prilohy/<token> — prílohy dokladu, ktoré sa nezmestili do
@@ -46,7 +47,7 @@ export const prilohyPodlaOdkazuFn = createServerFn({ method: "GET" })
     const zoznam = await Promise.all(
       ((prilohy ?? []) as any[])
         // Cestu by bez kontroly mohol niekto podstrčiť z inej firmy.
-        .filter((p) => String(p.path).startsWith(`${doklad.company_id}/`))
+        .filter((p) => cestaPatriFirme(String(p.path), doklad.company_id))
         .map(async (p) => {
           const { data: s } = await supabaseAdmin.storage
             .from("invoice-attachments")

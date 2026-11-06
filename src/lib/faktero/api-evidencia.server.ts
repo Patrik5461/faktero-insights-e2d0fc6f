@@ -14,6 +14,7 @@
 import { z } from "zod";
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
+import { HLASKA_ZAMKU_FAKTURY, porusenieZamkuFaktury } from "./pohoda-zamok";
 import {
   SPRAVA_ZAMKU,
   STAVY_POHYBU,
@@ -21,6 +22,9 @@ import {
   VybavenieVstup,
   ZnackyVstup,
   dovodZamkuApi,
+  spravaZamkuObdobia,
+  vUzavretomObdobi,
+  zmenyVObdobi,
   jeSparovany,
   normalizujStitky,
   sposobUhradyPrijatej,
@@ -137,12 +141,101 @@ export function strazZamku(
   tab: TabulkaDokladu,
   stary: Record<string, unknown>,
   zmena: Record<string, unknown>,
+  /** `companies.locked_until` — uzavreté obdobie (aj presun dátumu do neho). */
+  zamknuteDo?: string | null,
 ): Odpoved | null {
   const dovod = dovodZamkuApi(tab, stary as any);
-  if (!dovod) return null;
-  const stlpce = zamknuteZmeny(tab, stary, zmena);
-  if (!stlpce.length) return null;
-  return err("locked", SPRAVA_ZAMKU[dovod], 409, { reason: dovod, fields: stlpce });
+  if (dovod === "odovzdany" || dovod === "zamknuty") {
+    const stlpce = zamknuteZmeny(tab, stary, zmena);
+    if (stlpce.length)
+      return err("locked", SPRAVA_ZAMKU[dovod], 409, { reason: dovod, fields: stlpce });
+  }
+  if (zamknuteDo && vUzavretomObdobi(tab, zamknuteDo, stary, zmena)) {
+    const stlpce = zmenyVObdobi(tab, stary, zmena);
+    if (stlpce.length)
+      return err("locked", spravaZamkuObdobia(zamknuteDo), 409, {
+        reason: "obdobie",
+        fields: stlpce,
+        locked_until: String(zamknuteDo).slice(0, 10),
+      });
+  }
+  return null;
+}
+
+/** Dátum uzávierky firmy (`companies.locked_until`) alebo null. */
+export async function zamknuteDoFirmy(ctx: ApiCtx): Promise<string | null> {
+  const { data } = await (ctx.supabase as any)
+    .from("companies")
+    .select("locked_until")
+    .eq("id", ctx.company_id)
+    .maybeSingle();
+  return (data?.locked_until as string | null | undefined) ?? null;
+}
+
+/**
+ * Zámok odovzdanej faktúry pri stave (storno, úhrada) — ako spúšťač
+ * `zamok_odovzdanej_faktury`, ktorý servisný kľúč púšťa. Storno odovzdanej
+ * faktúry prejde len vtedy, keď Pohoda vrátila svoje číslo (storno potom
+ * odíde do Pohody ako stornujúci doklad); inak 409 s textom spúšťača.
+ */
+export async function strazZamkuStavuFaktury(
+  ctx: ApiCtx,
+  stara: Record<string, unknown>,
+  zmena: Record<string, unknown>,
+): Promise<Odpoved | null> {
+  const db = ctx.supabase as any;
+  if (stara.exported_at) {
+    const nova = { ...stara, ...zmena };
+    let stornoDoPohody = false;
+    if (nova.status === "cancelled" && stara.status !== "cancelled") {
+      const { count } = await db
+        .from("export_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("invoice_id", stara.id)
+        .eq("status", "ok")
+        .not("pohoda_cislo", "is", null);
+      stornoDoPohody = (count ?? 0) > 0;
+    }
+    const pole = porusenieZamkuFaktury(stara, nova, false, stornoDoPohody);
+    if (pole) {
+      const { data: hlaska } = await db.rpc("hlaska_zamku_faktury", { _invoice: stara.id });
+      return err("locked", (hlaska as string | null) ?? HLASKA_ZAMKU_FAKTURY, 409, {
+        reason: "odovzdany",
+        fields: [pole],
+      });
+    }
+  }
+  return strazZamku("invoices", { ...stara, exported_at: null }, zmena, await zamknuteDoFirmy(ctx));
+}
+
+/** POST /invoices/{id}/cancel — storno so zámkom odovzdania aj uzavretého obdobia. */
+export async function stornujFakturuApi(ctx: ApiCtx, id: string): Promise<Odpoved> {
+  if (!jeUuid(id)) return err("not_found", "Faktúra nenájdená.", 404);
+  const db = ctx.supabase as any;
+  const { data: stara } = await db
+    .from("invoices")
+    .select("*")
+    .eq("id", id)
+    .eq("company_id", ctx.company_id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!stara) return err("not_found", "Faktúra nenájdená.", 404);
+  if (stara.status === "cancelled") return err("invalid_state", "Faktúra je už stornovaná.", 409);
+  const zmena = { status: "cancelled", cancelled_at: new Date().toISOString() };
+  const zamok = await strazZamkuStavuFaktury(ctx, stara, zmena);
+  if (zamok) return zamok;
+  const { data, error } = await db
+    .from("invoices")
+    .update(zmena)
+    .eq("id", id)
+    .eq("company_id", ctx.company_id)
+    .is("deleted_at", null)
+    .neq("status", "cancelled")
+    .select()
+    .maybeSingle();
+  if (error) return chybaDb(error);
+  if (!data) return err("not_found", "Faktúra nenájdená.", 404);
+  return ok(data);
 }
 
 export async function zoznamStavov(ctx: ApiCtx): Promise<Odpoved> {
@@ -469,6 +562,7 @@ export async function upravFakturu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .select("*")
     .eq("id", id)
     .eq("company_id", ctx.company_id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (e1) return chybaDb(e1);
   if (!stary) return err("not_found", "Faktúra nenájdená.", 404);
@@ -483,13 +577,14 @@ export async function upravFakturu(ctx: ApiCtx, id: string): Promise<Odpoved> {
   if (!zn.ok) return zn.odpoved;
   Object.assign(patch, zn.riadok);
   if (!Object.keys(patch).length) return err("validation_error", "Nič na zmenu.");
-  const zamok = strazZamku("invoices", stary, patch);
+  const zamok = strazZamku("invoices", stary, patch, await zamknuteDoFirmy(ctx));
   if (zamok) return zamok;
   const { data, error } = await db
     .from("invoices")
     .update(patch)
     .eq("id", id)
     .eq("company_id", ctx.company_id)
+    .is("deleted_at", null)
     .select()
     .maybeSingle();
   if (error) return chybaDb(error);

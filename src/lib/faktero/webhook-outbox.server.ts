@@ -1,7 +1,7 @@
 /**
  * Doručenie webhookov z fronty `webhook_outbox`.
  *
- * Udalosti „faktúra uhradená“ a „nový bankový pohyb“ zapisuje databázový
+ * Udalosti „faktúra uhradená“, „faktúra stornovaná“ a „nový bankový pohyb“ zapisuje databázový
  * spúšťač — faktúra sa dá uhradiť z desiatky miest (párovanie s bankou,
  * hromadné označenie, API, detail, e-shop) a každé by inak muselo na webhook
  * pamätať samo. Predtým naň pamätali len dve a integrátor sa o úhrade z banky
@@ -75,6 +75,21 @@ async function dorucJednu(r: Riadok) {
         bank_transaction_id: (pohyb?.id as string | undefined) ?? null,
       },
       push: !pohyb,
+    });
+    return;
+  }
+  if (r.event === "invoice.cancelled") {
+    const { data: inv } = await supabaseAdmin
+      .from("invoices")
+      .select("*")
+      .eq("id", r.entity_id)
+      .maybeSingle();
+    // Faktúru medzitým obnovili — storno už neplatí, udalosť by klamala.
+    if (!inv || inv.status !== "cancelled") return;
+    await triggerEvent({
+      company_id: r.company_id,
+      event: "invoice.cancelled",
+      data: { ...invoicePayload(inv), cancelled_at: inv.cancelled_at ?? null },
     });
     return;
   }

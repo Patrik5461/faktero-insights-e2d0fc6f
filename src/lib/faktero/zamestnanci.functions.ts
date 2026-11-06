@@ -16,6 +16,7 @@ import {
   type KrajinaZamestnancov,
 } from "./zamestnanci";
 import { overCisloUctuCz, overRodneCisloCz } from "./zamestnanci-cz";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 /**
  * Modul Zamestnanci. Ako pri zákazkách ide všetko cez klienta viazaného na
@@ -440,7 +441,7 @@ export const pridajDokument = createServerFn({ method: "POST" })
     const { supabase } = context;
     await overModul(supabase, data.company_id);
     await zamestnanecFirmy(supabase, data.company_id, data.employee_id);
-    if (!data.file_path.startsWith(`${data.company_id}/${data.employee_id}/`)) {
+    if (!data.file_path.startsWith(`${data.company_id}/${data.employee_id}/`) || !cestaPatriFirme(data.file_path, data.company_id)) {
       throw new Error("Súbor nepatrí tomuto zamestnancovi.");
     }
     const { data: r, error } = await supabase

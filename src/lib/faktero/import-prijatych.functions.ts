@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 /*
   Import prijatých dokladov (Doklado, Pohoda, tabuľka, ZIP so skenmi).
@@ -26,7 +27,7 @@ async function stiahni(companyId: string, subory: z.infer<typeof Subory>) {
   const vstupy = [];
   for (const s of subory) {
     // Cesta chodí z prehliadača — bez tejto kontroly by sa dal načítať cudzí súbor.
-    if (!s.path.startsWith(`${companyId}/`) || s.path.includes("..")) throw new Error("Súbor nepatrí k tejto firme.");
+    if (!cestaPatriFirme(s.path, companyId)) throw new Error("Súbor nepatrí k tejto firme.");
     const { data, error } = await supabaseAdmin.storage.from("imports").download(s.path);
     if (error || !data) throw new Error(`${s.meno}: súbor sa nepodarilo načítať.`);
     vstupy.push({ meno: s.meno, bajty: new Uint8Array(await data.arrayBuffer()) });

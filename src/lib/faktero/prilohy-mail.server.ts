@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { cestaPatriFirme } from "./cesta-firmy";
 import { DRUHY_S_PRILOHAMI, type DruhSPrilohou } from "./faktura-prilohy";
 
 /**
@@ -31,9 +32,10 @@ export async function prilohyDoMailu(druh: DruhSPrilohou, companyId: string, dok
       vynechaneId.push(p.id);
       continue;
     }
-    const { data: subor } = await supabaseAdmin.storage
-      .from("invoice-attachments")
-      .download(p.path);
+    // Cestu vie člen firmy prepísať a sťahuje sa servisným kľúčom — cudzí súbor neposlať.
+    const { data: subor } = cestaPatriFirme(p.path, companyId)
+      ? await supabaseAdmin.storage.from("invoice-attachments").download(p.path)
+      : { data: null };
     if (!subor) {
       vynechane.push(p.name);
       vynechaneId.push(p.id);

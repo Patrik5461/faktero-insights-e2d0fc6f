@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { cestaPatriFirme } from "@/lib/faktero/cesta-firmy";
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -189,7 +190,7 @@ export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note")({
             a doklad by sa prečítal aj tak. Rovnaká podmienka stráži fotky
             produktov v `stock.functions.ts`.
           */
-          if (!storage_path.startsWith(`${company_id}/`)) {
+          if (!cestaPatriFirme(storage_path, company_id)) {
             return json(403, { error: "cudzia_cesta" });
           }
 

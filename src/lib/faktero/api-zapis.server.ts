@@ -11,7 +11,7 @@ import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
 import { ZnackyVstup, maZnacky } from "./api-evidencia";
-import { chybaDb, riadokZnaciek, strazZamku } from "./api-evidencia.server";
+import { chybaDb, riadokZnaciek, strazZamku, zamknuteDoFirmy } from "./api-evidencia.server";
 import { chybaUlozenejPrijatej, rozlozChybuBlocku, rozlozChybuPrijatej } from "./duplicita-zauctovania";
 
 type Odpoved = { status: number; body: any };
@@ -454,7 +454,7 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     Object.assign(riadok, zn.riadok);
   }
   // Zámok odovzdaného dokladu: servisný kľúč spúšťač púšťa, stráži ho API.
-  const zamok = strazZamku("purchase_invoices", stary, riadok);
+  const zamok = strazZamku("purchase_invoices", stary, riadok, await zamknuteDoFirmy(ctx));
   if (zamok) return zamok;
   // Faktúra inej firmy (iný odberateľ) sa nezaúčtuje, kým to človek nepotvrdí vo Fakteri.
   if (stary.odberatel_nesedi && riadok.zauctovane_at && !stary.zauctovane_at) {
@@ -693,7 +693,13 @@ export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
     if (!zn.ok) return zn.odpoved;
     Object.assign(riadok, zn.riadok);
   }
-  const zamok = strazZamku("expense_documents", stary, riadok);
+  const zamok = strazZamku(
+    "expense_documents",
+    stary,
+    riadok,
+    // Nespracovaný bloček (status new) nie je v účtovníctve — ako `guard_locked_period_expense`.
+    (stary.status ?? "new") !== "new" ? await zamknuteDoFirmy(ctx) : null,
+  );
   if (zamok) return zamok;
   if (riadok.zauctovane_at && !stary.zauctovane_at) {
     const dup = await strazDuplicity(ctx, "blocek", { ...stary, ...riadok });

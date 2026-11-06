@@ -263,7 +263,7 @@ describe("prijatá faktúra so zápornými zľavami (Telekom)", () => {
   it("bez položiek: DPH, ktorá nesedí so žiadnou sadzbou, doklad zastaví", () => {
     const suhrn = prijataAkoDoklad({ ...telekom, items: [] });
     expect(prekazkaDokladu(suhrn, firma)).toMatch(
-      /^1612869951 — DPH sa nedá priradiť k sadzbe \(vychádza 20.54 %\)/,
+      /^1612869951 — Rozpis DPH je na kontrole — skontrolujte ho a potvrďte \(DPH sa nedá priradiť k sadzbe, vychádza 20.54 %\)/,
     );
     const xml = buildPohodaExpensesXml({ company: firma, doklady: [suhrn as any] });
     expect(xml).not.toContain("dataPackItem");

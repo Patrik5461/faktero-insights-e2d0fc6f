@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { overPristup } from "./over-pristup";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 /*
   Zálohy firmy: „Vytvoriť zálohu“ zabalí na pozadí všetky doklady firmy do
@@ -82,7 +83,7 @@ export const stiahniZalohuFn = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .maybeSingle();
     if (!z1?.cesta || z1.stav !== "hotovo") throw new Error("Záloha nie je pripravená.");
-    if (!z1.cesta.startsWith(`${data.company_id}/`)) throw new Error("Záloha nepatrí tejto firme.");
+    if (!cestaPatriFirme(z1.cesta, data.company_id)) throw new Error("Záloha nepatrí tejto firme.");
     // Krátka platnosť — odkaz je na stiahnutie hneď, nie na zdieľanie.
     const { data: odkaz, error } = await supabaseAdmin.storage
       .from("export-firmy")
@@ -107,7 +108,7 @@ export const zmazZalohuFn = createServerFn({ method: "POST" })
     if (!z1) throw new Error("Záloha sa nenašla.");
     const { bezi } = await import("./zalohy-firmy");
     if (bezi(z1)) throw new Error("Zálohu, ktorá sa ešte vytvára, nemožno zmazať.");
-    if (z1.cesta && z1.cesta.startsWith(`${data.company_id}/`))
+    if (cestaPatriFirme(z1.cesta, data.company_id))
       await supabaseAdmin.storage.from("export-firmy").remove([z1.cesta]);
     await supabaseAdmin.from("zalohy_firmy").delete().eq("id", z1.id);
     return { ok: true };

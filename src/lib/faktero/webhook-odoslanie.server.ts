@@ -11,6 +11,17 @@ export function podpisWebhooku(secret: string, body: string) {
   return createHmac("sha256", secret).update(body).digest("hex");
 }
 
+/**
+ * Podpis s časovou pečiatkou (ochrana proti prehratiu): HMAC z `"<t>.<telo>"`,
+ * hlavička `X-Faktero-Signature-V2: t=<unix s>,v1=<hex>`. Prijímateľ odmietne
+ * starú pečiatku (odporúčame 5 min). Pôvodná `X-Faktero-Signature` ostáva kvôli
+ * existujúcim odberateľom.
+ */
+export function podpisWebhookuV2(secret: string, body: string, casSekundy: number) {
+  const v1 = createHmac("sha256", secret).update(`${casSekundy}.${body}`).digest("hex");
+  return `t=${casSekundy},v1=${v1}`;
+}
+
 export type PokusWebhooku = {
   url: string;
   secret: string | null;
@@ -33,7 +44,9 @@ export type VysledokPokusu = {
 export async function posliPokusWebhooku(
   p: PokusWebhooku,
   fetchFn: typeof fetch = fetch,
+  teraz: () => number = Date.now,
 ): Promise<VysledokPokusu> {
+  const casSekundy = Math.floor(teraz() / 1000);
   const headers: Record<string, string> = {
     "content-type": "application/json",
     "x-faktero-event": p.event,
@@ -42,8 +55,13 @@ export async function posliPokusWebhooku(
     "idempotency-key": p.dorucenieId,
     "x-faktero-delivery-id": p.dorucenieId,
     "x-faktero-attempt": String(p.pokus),
+    // Čas odoslania tohto pokusu (nie udalosti) — v podpise V2.
+    "x-faktero-timestamp": String(casSekundy),
   };
-  if (p.secret) headers["x-faktero-signature"] = podpisWebhooku(p.secret, p.body);
+  if (p.secret) {
+    headers["x-faktero-signature"] = podpisWebhooku(p.secret, p.body);
+    headers["x-faktero-signature-v2"] = podpisWebhookuV2(p.secret, p.body, casSekundy);
+  }
   const ctrl = new AbortController();
   const casovac = setTimeout(() => ctrl.abort(), 10_000);
   const t0 = Date.now();

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizujPreukaz, type PrecitanyPreukaz } from "./vozovy-park";
+import { cestaPatriFirme } from "./cesta-firmy";
 
 const POKYN = `Si asistent pre slovenské a české osvedčenia o evidencii vozidla (technický preukaz, časť I alebo II, „malý“ a „veľký“ TP).
 Z dokumentu prečítaj údaje o vozidle. Polia osvedčenia majú kódy podľa smernice EÚ:
@@ -36,7 +37,7 @@ export const precitajTechnickyPreukazFn = createServerFn({ method: "POST" })
       _user_id: userId,
     });
     if (!clen) throw new Error("Nemáte prístup k firme.");
-    if (!data.file_path.startsWith(`${data.company_id}/`))
+    if (!cestaPatriFirme(data.file_path, data.company_id))
       throw new Error("Dokument nepatrí firme.");
 
     const { data: subor, error } = await supabase.storage

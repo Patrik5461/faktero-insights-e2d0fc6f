@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   blokatory,
   kodClenenia,
+  kvPreneseniaPrijatej,
   odvodClenenia,
   ponukniPravidlo,
   popisZdroja,
@@ -335,5 +336,24 @@ describe("kodClenenia — číselník z Pohody SK (skutočné kódy)", () => {
     expect(kodClenenia("vystup_oslobodene", "vydane", cis)).toBe("UNodpBez");
     expect(kodClenenia("vystup_pdp", "vydane", cis)).toBeNull();
     expect(kodClenenia("vystup_oss", "vydane", cis)).toBe("UN");
+  });
+});
+
+describe("KV podľa členenia prenesenia (audit 6. 11. 2026, BÝVAJLEPŠIE 2026029)", () => {
+  it("PDsluz, DDsluz, DDsl§69, DD2odb → B1, PBsluz → B1-0", () => {
+    for (const k of ["PDsluz", "PKsluz", "DDsluz", "DDsl§69", "DD2odb", "PDpdp", "DDpdp"])
+      expect(kvPreneseniaPrijatej(k)).toBe("B1");
+    expect(kvPreneseniaPrijatej("PBsluz")).toBe("B1-0");
+    expect(kvPreneseniaPrijatej("PBpdp")).toBe("B1-0");
+  });
+  it("bežné členenie KV nemení", () => {
+    for (const k of ["PD", "PK", "PB", "PN", "PDzah", "", null, undefined])
+      expect(kvPreneseniaPrijatej(k as string)).toBeNull();
+  });
+  it("faktúra bez príznaku prenesenia: režim by dal X, členenie PDsluz ho prebije", () => {
+    // Bez reverse_charge a bez DPH je režim mimo tuzemska — samotné odvodenie dá „X“.
+    const c = odvodClenenia(prijata({ dph: 0 }));
+    expect(c.kvClenenie).not.toBe("B1");
+    expect(kvPreneseniaPrijatej("PDsluz") ?? c.kvClenenie).toBe("B1");
   });
 });

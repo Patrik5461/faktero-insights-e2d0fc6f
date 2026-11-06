@@ -369,6 +369,10 @@ curl https://faktero.sk/api/v1/invoices \\
                 {t(
                   "testovací režim — kľúč smie len čítať (GET). Zápis, odoslanie či úhrada vráti 403 s kódom test_key_read_only, takže skúšanie integrácie nič nezmení.",
                 )}
+                {" "}
+                {t(
+                  "Dávku pre Pohodu (GET /api/v1/pohoda/davka) dostane testovací kľúč len ako náhľad (?nahlad=1) — bez neho by sa doklady označili za odovzdané, preto vráti 403.",
+                )}
               </li>
               <li>
                 <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_live_…</code> —{" "}
@@ -604,6 +608,11 @@ curl https://faktero.sk/api/v1/invoices \\
             <p className="mt-2 text-sm text-muted-foreground">
               {t(
                 "Pri vystavení (POST) aj úprave (PUT) môžete poslať dodaci_list: true (faktúra slúži zároveň ako dodací list — iný nadpis a podpisy odovzdania a prevzatia v PDF), zobrazit_peciatku (true alebo false; bez neho podľa nastavenia firmy) a accounting { predkontacia, clenenie_dph, kv_clenenie, stredisko, cinnost, booked }. V odpovedi sú ako pohoda_predkontacia, pohoda_clenenie_dph a kv_clenenie. Faktúra prijíma aj stav, štítky, komentár a účtovnú poznámku (pozri Prijaté doklady a banka). Na faktúre odovzdanej do účtovníctva sa účtovné údaje, sumy ani dátumy nezmenia — API vráti 409 s kódom locked a v details sú dotknuté polia.",
+              )}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t(
+                "Faktúra z uzavretého obdobia (uzávierka v Účtovníctve) sa nezmení ani nestornuje — 409 locked s reason obdobie a locked_until. Storno odovzdanej faktúry (POST …/cancel) prejde len vtedy, keď ju Pohoda už prijala s vlastným číslom; inak ju najprv vráťte z Pohody.",
               )}
             </p>
             <div className="mt-3">
@@ -1175,6 +1184,30 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
     Buffer.from(signatureHeader),
     Buffer.from(expected),
   );
+}`}
+              />
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t("Proti prehratiu zachytenej požiadavky slúži hlavička")}{" "}
+              <code className="font-mono">X-Faktero-Signature-V2: t=1730900000,v1=…</code>{" "}
+              {t(
+                "— t je čas odoslania (Unix sekundy, aj v X-Faktero-Timestamp) a v1 je HMAC SHA-256 z reťazca „t.telo“. Odmietnite požiadavku, ktorej t je staršie ako 5 minút, a id doručenia si pamätajte. Pôvodná hlavička X-Faktero-Signature ostáva bez zmeny.",
+              )}
+            </p>
+            <div className="mt-3">
+              <CodeBlock
+                lang="Node.js"
+                code={`function verifyFakteroV2(rawBody, headerV2, secret, maxAgeSec = 300) {
+  const parts = Object.fromEntries(headerV2.split(",").map((p) => p.split("=")));
+  const t = Number(parts.t);
+  if (!t || Math.abs(Date.now() / 1000 - t) > maxAgeSec) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(\`\${t}.\${rawBody}\`, "utf8")
+    .digest("hex");
+  const a = Buffer.from(parts.v1 ?? "");
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }`}
               />
             </div>

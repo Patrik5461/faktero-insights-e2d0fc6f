@@ -10,6 +10,7 @@
   a zdroj je dosť istý; inak návrh čaká na stránke Na kontrolu.
 */
 
+import { jeRozpisNaKontrole } from "./rozpis-na-kontrole";
 import { KRAJINY_EU, rozdelIcDph } from "./vies";
 
 export type DokladTyp = "prijata" | "blocek" | "vystavena" | "banka";
@@ -53,6 +54,7 @@ export type Blokator =
   | "uzamknuty"
   | "cudzi_odberatel"
   | "duplicita"
+  | "rozpis_dph"
   | "bez_clenenia";
 
 export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
@@ -68,6 +70,7 @@ export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   cudzi_odberatel: "Faktúra nepatrí tejto firme (odberateľ na doklade je iná firma)",
   duplicita: "Duplicitný doklad — rovnaký doklad je v evidencii viackrát; jeden zmažte",
   bez_clenenia: "Na doklade chýba členenie DPH — doplní ho až potvrdenie návrhu",
+  rozpis_dph: "Rozpis DPH je na kontrole — skontrolujte ho a potvrďte",
 };
 
 export type NavrhZauctovania = {
@@ -334,6 +337,27 @@ export function kodClenenia(
   return znamy && zoznam.some((z) => z.kod === znamy) ? znamy : null;
 }
 
+/*
+  Členenie DPH Pohody pre prijaté plnenie, pri ktorom daň platí príjemca
+  (PDsluz/PKsluz/PBsluz — P07–P09, DDsluz/DDsl§69/DD2odb — D02, D04, D05,
+  …pdp). Rovnaký vzor ako `preneseniePrijatej` v dph-vykazy.ts. Audit
+  6. 11. 2026: členenie prišlo z dokladu či pravidla, ale KV sa odvodilo
+  z režimu (faktúra bez `reverse_charge` → „X“) a doklad vypadol z KV B.1
+  (BÝVAJLEPŠIE 2026029).
+*/
+const CLENENIE_PRENESENIA_PRIJATEJ = /^(?:P[DKB](?:sluz|pdp)|DD(?:sluz|sl§69|2odb|pdp))$/i;
+const PRENESENIE_BEZ_NAROKU = /^PB(?:sluz|pdp)$/i;
+
+/**
+ * KV prijatého dokladu podľa členenia prenesenia: B1, pri prenesení bez
+ * nároku na odpočet (PBsluz, PBpdp) B1-0. Iné členenie → `null`.
+ */
+export function kvPreneseniaPrijatej(clenenieDph: string | null | undefined): "B1" | "B1-0" | null {
+  const cl = String(clenenieDph ?? "").trim();
+  if (!CLENENIE_PRENESENIA_PRIJATEJ.test(cl)) return null;
+  return PRENESENIE_BEZ_NAROKU.test(cl) ? "B1-0" : "B1";
+}
+
 /** Riadok kontrolného výkazu (len SK platiteľ; prijaté B1/B2/B3/C2/X, vydané A2 alebo automaticky). */
 function kvPreRezim(rezim: RezimDph, d: VstupClenenia): string | null {
   if (String(d.krajinaFirmy).toUpperCase() !== "SK") return null;
@@ -460,6 +484,8 @@ export type VstupBlokatorov = {
   cudziOdberatel?: boolean;
   /** Ten istý doklad je v evidencii viackrát (duplicita-zauctovania.ts) — nezaúčtuje sa. */
   duplicita?: boolean;
+  /** Rozpis DPH čaká na kontrolu človeka (`jeRozpisNaKontrole`) — do Pohody by nešiel. */
+  rozpisNaKontrole?: boolean;
 };
 
 export function blokatory(v: VstupBlokatorov): Blokator[] {
@@ -467,6 +493,7 @@ export function blokatory(v: VstupBlokatorov): Blokator[] {
   if (v.uzamknuty) return ["uzamknuty"];
   if (v.cudziOdberatel) return ["cudzi_odberatel"];
   if (v.duplicita) out.push("duplicita");
+  if (v.rozpisNaKontrole) out.push("rozpis_dph");
   if (v.polozkyNesedia) out.push("polozky");
   if (v.zaklad != null && v.dph != null && v.celkom != null) {
     const rozdiel = Math.abs(Number(v.zaklad) + Number(v.dph) - Number(v.celkom));
@@ -497,6 +524,10 @@ export function aktualnyNavrh(
     pohoda_predkontacia?: string | null;
     pohoda_clenenie_dph?: string | null;
     kv_clenenie?: string | null;
+    /** Keď riadok nesie príznak kontroly, blokátor rozpisu DPH sa prepočíta podľa neho. */
+    na_kontrolu_at?: string | null;
+    na_kontrolu_dovod?: string | null;
+    rozpis_dph_potvrdeny?: unknown;
   },
 ): NavrhZauctovania {
   const t = (v: unknown) => String(v ?? "").trim() || null;
@@ -507,7 +538,9 @@ export function aktualnyNavrh(
     (b) =>
       b !== "bez_clenenia" &&
       !(b === "predkontacia" && predkontacia) &&
-      !(b === "clenenie" && clenenieDph),
+      !(b === "clenenie" && clenenieDph) &&
+      // Človek rozpis skontroloval (príznak zrušený či potvrdený) — blokátor zmizne.
+      !(b === "rozpis_dph" && "na_kontrolu_at" in row && !jeRozpisNaKontrole(row)),
   );
   if (!t(row.pohoda_clenenie_dph) && clenenieDph && !n.neprepisovat) bl.push("bez_clenenia");
   return { ...n, predkontacia, clenenieDph, kvClenenie, blokatory: bl };

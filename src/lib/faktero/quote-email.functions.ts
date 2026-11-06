@@ -52,7 +52,12 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       .single();
 
     // Ensure PDF
-    let pdfPath = q.pdf_url as string | null;
+    // Cestu vie člen firmy prepísať a sťahuje sa servisným kľúčom — cudzia cesta
+    // sa ignoruje a PDF sa vygeneruje nanovo do priečinka firmy.
+    const { cestaPatriFirme } = await import("./cesta-firmy");
+    let pdfPath = cestaPatriFirme(q.pdf_url as string | null, q.company_id)
+      ? (q.pdf_url as string)
+      : null;
     if (!pdfPath) {
       const { generateQuotePdf } = await import("./quote-pdf.functions");
       void generateQuotePdf; // type only
@@ -60,23 +65,14 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       const [{ data: items }] = await Promise.all([
         supabaseAdmin.from("quote_items").select("*").eq("quote_id", q.id).order("position"),
       ]);
-      let logoBytes: Uint8Array | null = null;
-      let logoMime: string | null = null;
-      if (company?.logo_url) {
-        try {
-          const { data: blob } = await supabaseAdmin.storage
-            .from("company-logos")
-            .download(company.logo_url);
-          if (blob) {
-            logoBytes = new Uint8Array(await blob.arrayBuffer());
-            logoMime = blob.type;
-          }
-        } catch {
-          // logo je voliteľné — cenová ponuka sa vygeneruje aj bez neho
-        }
-      }
+      // Logo aj pečiatka sú voliteľné — cenová ponuka sa vygeneruje aj bez nich.
       const { stiahniObrazokFirmy } = await import("./firma-obrazky.server");
-      const stamp = await stiahniObrazokFirmy((company as any)?.stamp_url);
+      const [logo, stamp] = await Promise.all([
+        stiahniObrazokFirmy(company?.logo_url, q.company_id),
+        stiahniObrazokFirmy((company as any)?.stamp_url, q.company_id),
+      ]);
+      const logoBytes = logo?.bytes ?? null;
+      const logoMime = logo?.mime ?? null;
       const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
       const { menoAutora } = await import("./invoice-pdf.server");
       const bytes = await generateInvoicePdfBytes({
