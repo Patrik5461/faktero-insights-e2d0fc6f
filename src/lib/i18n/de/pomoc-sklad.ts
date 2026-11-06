@@ -125,8 +125,8 @@ export default {
   "<0>Uzamknuté obdobie</0> ( <1>uzávierka</1>) nepustí zmeny do starých dokladov. Ak sa pohyb nedá uložiť spätne, býva to práve toto.":
     "Eine <0>gesperrte Periode</0> ( <1>Abschluss</1>) lässt keine Änderungen an alten Belegen zu. Wenn sich eine Bewegung rückwirkend nicht speichern lässt, liegt es meist genau daran.",
   "Skladové karty do Pohody": "Artikel an Pohoda",
-  "Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to vo <0>Účtovníctvo → Prepojenie s Pohodou</0> a treba k tomu vyplniť členenie skladu.":
-    "Wenn die Buchhalterin das Lager in Pohoda führt, können wir ihr die Artikel direkt senden — das wird unter <0>Buchhaltung → Anbindung an Pohoda</0> aktiviert, und dazu muss die Lagergliederung ausgefüllt werden.",
+  "Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to v <0>Účtovníctvo → Predkontácie a členenie DPH/KV</0>, sekcia Nastavenia exportu, a treba k tomu vyplniť členenie skladu v <1>Prepojení s Pohodou</1>.":
+    "Wenn die Buchhalterin das Lager in Pohoda führt, können wir ihr die Artikel direkt senden — das wird unter <0>Buchhaltung → Vorkontierungen und MwSt.-/KV-Gliederung</0>, Abschnitt Exporteinstellungen, aktiviert, und dazu muss die Lagergliederung unter <1>Anbindung an Pohoda</1> ausgefüllt werden.",
   "Posiela sa <0>číselník zásob, nie stav skladu</0>. Množstvá v Pohode vznikajú príjemkami a výdajkami, takže dosadené číslo by sa s dokladmi rozišlo. Viac v <1>manuáli k Pohode</1>.":
     "Gesendet wird der <0>Artikelstamm, nicht der Lagerbestand</0>. Mengen entstehen in Pohoda durch Wareneingangs- und Warenausgangsbelege, eine eingesetzte Zahl würde also von den Belegen abweichen. Mehr dazu im <1>Handbuch zu Pohoda</1>.",
 } satisfies Record<string, string>;

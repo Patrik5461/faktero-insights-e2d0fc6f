@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { preloz } from "@/lib/i18n/jazyk";
 import { zadaj } from "@/lib/potvrdenie";
 import { useEffect, useState } from "react";
@@ -19,7 +19,7 @@ import {
 } from "@/lib/faktero/odovzdanie.functions";
 import { exportUctovanieFn, programUctovaniaFn } from "@/lib/faktero/uctovanie-export.functions";
 import { PROGRAMY_UCTOVANIA, type AgendaExportu } from "@/lib/faktero/uctovanie-programy";
-import { NastaveniaProgramu } from "@/components/faktero/NastaveniaProgramu";
+import { ZalozkyStranky } from "@/components/faktero/ZalozkyStranky";
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -53,12 +53,24 @@ export const Route = createFileRoute("/_authenticated/exporty")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Účtovné exporty — Faktero") }],
   }),
-  /** História je sekcia tejto istej stránky; `?tab=history` na ňu zroluje. */
-  validateSearch: (s: Record<string, unknown>): { tab?: "history" } => ({
-    tab: s.tab === "history" ? "history" : undefined,
+  /** Záložky Export (bez `tab` alebo `tab=export`) a História (`tab=historia`).
+   *  Starý tvar `?tab=history` (staré odkazy a e-maily) je tiež História. */
+  validateSearch: (s: Record<string, unknown>): { tab?: ZalozkaExportov } => ({
+    tab:
+      s.tab === "historia" || s.tab === "history"
+        ? "historia"
+        : s.tab === "export"
+          ? "export"
+          : undefined,
   }),
   component: ExportsPage,
 });
+
+type ZalozkaExportov = "export" | "historia";
+const ZALOZKY_EXPORTOV: { kod: ZalozkaExportov; nazov: string }[] = [
+  { kod: "export", nazov: "Export" },
+  { kod: "historia", nazov: "História" },
+];
 
 /** Ponuka formátov. `note` vysvetlí, komu ešte súbor sadne. */
 const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
@@ -141,10 +153,14 @@ function ExportsPage() {
   useEffect(() => setAktivnaFirma(getActiveCompanyId()), []);
 
   const { tab } = Route.useSearch();
-  useEffect(() => {
-    if (tab !== "history") return;
-    document.getElementById("historia-exportov")?.scrollIntoView({ behavior: "smooth" });
-  }, [tab]);
+  const navigate = useNavigate();
+  const zalozka: ZalozkaExportov = tab === "historia" ? "historia" : "export";
+  const zmenZalozku = (kod: ZalozkaExportov) =>
+    navigate({
+      to: "/exporty",
+      search: (s: { tab?: ZalozkaExportov }) => ({ ...s, tab: kod === "export" ? undefined : kod }),
+      replace: true,
+    });
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -289,272 +305,15 @@ function ExportsPage() {
         )}
       />
       <PageBody>
-        <ZauctovaneDoProgramu />
-        <OdovzdanieZaMesiac />
-        {aktivnaFirma ? <KontrolaPohody companyId={aktivnaFirma} /> : null}
-        {/* `min-w-0` na stĺpcoch: bez neho má položka mriežky min-width auto,
-            takže široká tabuľka stĺpec roztiahne a na mobile presiahne stránku. */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          {/* LEFT: selector */}
-          <div className="min-w-0 space-y-4">
-            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-              <div className="mb-4 flex flex-wrap items-end gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">{t("Od")}</label>
-                  <input
-                    aria-label={t("Od")}
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">{t("Do")}</label>
-                  <input
-                    aria-label={t("Do")}
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground" htmlFor="exp-podla">
-                    {t("Obdobie podľa")}
-                  </label>
-                  <select
-                    id="exp-podla"
-                    value={podla}
-                    onChange={(e) => setPodla(e.target.value as DatumObdobia)}
-                    className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="vystavenie">{t("dátumu vystavenia")}</option>
-                    <option value="dodanie">{t("dátumu dodania")}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground" htmlFor="exp-typ">
-                    {t("Druh dokladu")}
-                  </label>
-                  <select
-                    id="exp-typ"
-                    value={typDokladu}
-                    onChange={(e) => {
-                      setTypDokladu(e.target.value);
-                      setPicked({});
-                    }}
-                    className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">{t("Všetky doklady")}</option>
-                    <option value="regular">{t("Faktúry")}</option>
-                    <option value="proforma">{t("Zálohové faktúry")}</option>
-                    <option value="advance_payment">{t("Doklady k prijatej platbe")}</option>
-                    <option value="credit_note">{t("Dobropisy")}</option>
-                  </select>
-                </div>
-                <label className="flex items-center gap-2 pb-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={lenNeexportovane}
-                    onChange={(e) => setLenNeexportovane(e.target.checked)}
-                  />
-                  {t("Len ešte neexportované")}
-                </label>
-                <div className="ml-auto flex gap-2">
-                  <button
-                    onClick={() => setPicked(Object.fromEntries(invoices.map((i) => [i.id, true])))}
-                    className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
-                  >
-                    {t("Vybrať všetko")}
-                  </button>
-                  <button
-                    onClick={() => setPicked({})}
-                    className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
-                  >
-                    {t("Zrušiť výber")}
-                  </button>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                    <tr>
-                      <th className="w-10 p-3">
-                        <span className="sr-only">{t("Výber")}</span>
-                      </th>
-                      <th className="p-3">{t("Číslo")}</th>
-                      <th className="p-3">{t("Odberateľ")}</th>
-                      <th className="hidden p-3 md:table-cell">{t("Vystavená")}</th>
-                      <th className="hidden p-3 md:table-cell">{t("Dodaná")}</th>
-                      <th className="hidden p-3 text-right md:table-cell">{t("Suma")}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {invoices.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
-                          {t("Žiadne faktúry v zvolenom období.")}
-                        </td>
-                      </tr>
-                    )}
-                    {invoices.map((i) => (
-                      // Zoznam slúži na výber — klik na riadok ho označí/odznačí, doklad neotvára.
-                      <KlikatelnyRiadok
-                        key={i.id}
-                        naKlik={() => setPicked((p) => ({ ...p, [i.id]: !p[i.id] }))}
-                      >
-                        <td className="p-3">
-                          <input
-                            type="checkbox"
-                            aria-label={t("Vybrať riadok")}
-                            checked={!!picked[i.id]}
-                            onChange={(e) => setPicked({ ...picked, [i.id]: e.target.checked })}
-                          />
-                        </td>
-                        <td className="p-3 font-medium">
-                          <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
-                          {DRUH_DOKLADU_EXPORTU[String(i.type ?? "")] ? (
-                            <StavOdznak
-                              ton="neutralny"
-                              maly
-                              className="ml-2 align-middle"
-                              title={
-                                i.type === "proforma"
-                                  ? t("Do Pohody ide ako zálohová faktúra — neúčtuje sa, eviduje sa kvôli odpočtu zálohy.")
-                                  : undefined
-                              }
-                            >
-                              {t(DRUH_DOKLADU_EXPORTU[String(i.type)])}
-                            </StavOdznak>
-                          ) : null}
-                          {efOdoslane[i.id] ? (
-                            <StavOdznak
-                              ton="priebeh"
-                              maly
-                              className="ml-2 align-middle"
-                              title={t(
-                                "Odišla ako eFaktúra — v Pohode ju cez Peppol znova neposielajte.",
-                              )}
-                            >
-                              {t("eFaktúra")}
-                            </StavOdznak>
-                          ) : null}
-                          {i.exported_at ? (
-                            <span className="ml-2 inline-flex flex-wrap items-center gap-1 align-middle text-xs font-normal">
-                              <StavOdznak ton="uspech" maly>
-                                {/* Faktúra poslaná do Money nie je „v Pohode“ — povie sa, kam odišla. */}
-                                {nazovProgramuExportu(formatOdovzdania[i.id])
-                                  ? t("Odovzdaná ({program})", {
-                                      program: t(nazovProgramuExportu(formatOdovzdania[i.id])!),
-                                    })
-                                  : t("V Pohode")}
-                              </StavOdznak>
-                              {/* Odovzdaná faktúra je zamknutá; „Vrátiť“ ju pustí na opravu. */}
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (await poslatOpravu("faktura", i.company_id, i.id)) load();
-                                }}
-                                className="rounded-md border border-input px-1.5 py-0.5 font-medium hover:bg-secondary"
-                              >
-                                {nazovProgramuExportu(formatOdovzdania[i.id])
-                                  ? t("Vrátiť")
-                                  : t("Vrátiť z Pohody")}
-                              </button>
-                            </span>
-                          ) : null}
-                          <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
-                            {datumNaDoklade(i.issue_date)}
-                            {i.delivery_date && i.delivery_date !== i.issue_date
-                              ? ` · ${t("dodaná")} ${datumNaDoklade(i.delivery_date)}`
-                              : ""}{" "}
-                            · <span className="suma">{formatujMenu(i.total, i.currency)}</span>
-                          </span>
-                        </td>
-                        <td className="min-w-[10rem] p-3 break-words">{i.customer_name ?? "—"}</td>
-                        <td className="hidden whitespace-nowrap p-3 md:table-cell">
-                          {datumNaDoklade(i.issue_date)}
-                        </td>
-                        <td
-                          className={`hidden whitespace-nowrap p-3 md:table-cell ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
-                        >
-                          {datumNaDoklade(datumDodania(i))}
-                        </td>
-                        <td className="suma hidden whitespace-nowrap p-3 text-right md:table-cell">
-                          {formatujMenu(i.total, i.currency)}
-                        </td>
-                      </KlikatelnyRiadok>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {vybraneEfaktury > 0 && (format === "pohoda_xml" || format === "bis_zip") && (
-                <p
-                  role="status"
-                  className="mt-4 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground"
-                >
-                  {t(
-                    "Vybrané faktúry, ktoré už odišli ako eFaktúra: {n}. V Pohode ich cez Peppol znova neposielajte — odberateľ by ich dostal dvakrát. V internej poznámke dokladu to v Pohode uvidíte.",
-                    { n: vybraneEfaktury },
-                  )}
-                </p>
-              )}
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="text-sm text-muted-foreground">
-                  {t("Vybraných:")}{" "}
-                  <span className="font-semibold tabular-nums text-foreground">{selectedIds.length}</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    aria-label={t("Formát exportu")}
-                    value={format}
-                    onChange={(e) => setFormat(e.target.value as ExportFormat)}
-                    className="min-w-0 max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    {FORMATY.map((f) => (
-                      <option key={f.format} value={f.format}>
-                        {t(f.label)}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={runExport}
-                    disabled={busy || !selectedIds.length}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
-                  >
-                    {busy ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <FileCode2 className="h-4 w-4" />
-                    )}
-                    {t("Exportovať")}
-                  </button>
-                </div>
-              </div>
-              <label className="mt-3 flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={oznacit}
-                  onChange={(e) => setOznacit(e.target.checked)}
-                />
-                <span className="min-w-0">
-                  {t("Označiť ako odovzdané (zamknú sa a nepôjdu druhýkrát)")}
-                  {!PROGRAM_FORMATU[format] ? (
-                    <span className="block text-xs text-muted-foreground">
-                      {t(
-                        "Tento formát nie je účtovný program — predvolene sa faktúry neoznačia ani nezamknú.",
-                      )}
-                    </span>
-                  ) : null}
-                </span>
-              </label>
-            </div>
-
-            {/* History */}
+        <ZalozkyStranky
+          zalozky={ZALOZKY_EXPORTOV}
+          aktivna={zalozka}
+          onZmena={zmenZalozku}
+          popis="Časti stránky Účtovné exporty"
+          className="mb-6"
+        />
+        {zalozka === "historia" ? (
+          <div className="max-w-4xl">
             <div id="historia-exportov" className="rounded-xl border border-border bg-card p-4 sm:p-5">
               <h3 className="mb-3 text-base font-semibold">
                 {t("História exportov")}
@@ -606,44 +365,314 @@ function ExportsPage() {
               )}
             </div>
           </div>
-
-          {/* RIGHT: formats sidebar */}
-          <aside aria-label={t("Podporované formáty")} className="min-w-0 space-y-3">
-            <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-              <h3 className="text-base font-semibold">
-                {t("Podporované formáty")}
-              </h3>
-              <ul className="mt-3 space-y-2 text-sm">
-                {FORMATY.map((f) => (
-                  <li
-                    key={f.format}
-                    className={`rounded-lg border px-3 py-2 ${
-                      format === f.format ? "border-primary/40 bg-primary/5" : "border-border"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 font-medium">{t(f.label)}</span>
-                      {format === f.format && (
-                        <span className="shrink-0 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary-hover">
-                          {t("Vybrané")}
-                        </span>
-                      )}
+        ) : (
+          <>
+            <ZauctovaneDoProgramu />
+            <OdovzdanieZaMesiac />
+            {aktivnaFirma ? <KontrolaPohody companyId={aktivnaFirma} /> : null}
+            {/* `min-w-0` na stĺpcoch: bez neho má položka mriežky min-width auto,
+                takže široká tabuľka stĺpec roztiahne a na mobile presiahne stránku. */}
+            <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+              {/* LEFT: selector */}
+              <div className="min-w-0 space-y-4">
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-end gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t("Od")}</label>
+                      <input
+                        aria-label={t("Od")}
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
                     </div>
-                    {f.note && <p className="mt-1 text-xs text-muted-foreground">{t(f.note)}</p>}
-                  </li>
-                ))}
-              </ul>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground">{t("Do")}</label>
+                      <input
+                        aria-label={t("Do")}
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground" htmlFor="exp-podla">
+                        {t("Obdobie podľa")}
+                      </label>
+                      <select
+                        id="exp-podla"
+                        value={podla}
+                        onChange={(e) => setPodla(e.target.value as DatumObdobia)}
+                        className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="vystavenie">{t("dátumu vystavenia")}</option>
+                        <option value="dodanie">{t("dátumu dodania")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground" htmlFor="exp-typ">
+                        {t("Druh dokladu")}
+                      </label>
+                      <select
+                        id="exp-typ"
+                        value={typDokladu}
+                        onChange={(e) => {
+                          setTypDokladu(e.target.value);
+                          setPicked({});
+                        }}
+                        className="mt-1 block rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">{t("Všetky doklady")}</option>
+                        <option value="regular">{t("Faktúry")}</option>
+                        <option value="proforma">{t("Zálohové faktúry")}</option>
+                        <option value="advance_payment">{t("Doklady k prijatej platbe")}</option>
+                        <option value="credit_note">{t("Dobropisy")}</option>
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 pb-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={lenNeexportovane}
+                        onChange={(e) => setLenNeexportovane(e.target.checked)}
+                      />
+                      {t("Len ešte neexportované")}
+                    </label>
+                    <div className="ml-auto flex gap-2">
+                      <button
+                        onClick={() => setPicked(Object.fromEntries(invoices.map((i) => [i.id, true])))}
+                        className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
+                      >
+                        {t("Vybrať všetko")}
+                      </button>
+                      <button
+                        onClick={() => setPicked({})}
+                        className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary"
+                      >
+                        {t("Zrušiť výber")}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                        <tr>
+                          <th className="w-10 p-3">
+                            <span className="sr-only">{t("Výber")}</span>
+                          </th>
+                          <th className="p-3">{t("Číslo")}</th>
+                          <th className="p-3">{t("Odberateľ")}</th>
+                          <th className="hidden p-3 md:table-cell">{t("Vystavená")}</th>
+                          <th className="hidden p-3 md:table-cell">{t("Dodaná")}</th>
+                          <th className="hidden p-3 text-right md:table-cell">{t("Suma")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {invoices.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
+                              {t("Žiadne faktúry v zvolenom období.")}
+                            </td>
+                          </tr>
+                        )}
+                        {invoices.map((i) => (
+                          // Zoznam slúži na výber — klik na riadok ho označí/odznačí, doklad neotvára.
+                          <KlikatelnyRiadok
+                            key={i.id}
+                            naKlik={() => setPicked((p) => ({ ...p, [i.id]: !p[i.id] }))}
+                          >
+                            <td className="p-3">
+                              <input
+                                type="checkbox"
+                                aria-label={t("Vybrať riadok")}
+                                checked={!!picked[i.id]}
+                                onChange={(e) => setPicked({ ...picked, [i.id]: e.target.checked })}
+                              />
+                            </td>
+                            <td className="p-3 font-medium">
+                              <span className="cislo-dokladu whitespace-nowrap">{i.invoice_number}</span>
+                              {DRUH_DOKLADU_EXPORTU[String(i.type ?? "")] ? (
+                                <StavOdznak
+                                  ton="neutralny"
+                                  maly
+                                  className="ml-2 align-middle"
+                                  title={
+                                    i.type === "proforma"
+                                      ? t("Do Pohody ide ako zálohová faktúra — neúčtuje sa, eviduje sa kvôli odpočtu zálohy.")
+                                      : undefined
+                                  }
+                                >
+                                  {t(DRUH_DOKLADU_EXPORTU[String(i.type)])}
+                                </StavOdznak>
+                              ) : null}
+                              {efOdoslane[i.id] ? (
+                                <StavOdznak
+                                  ton="priebeh"
+                                  maly
+                                  className="ml-2 align-middle"
+                                  title={t(
+                                    "Odišla ako eFaktúra — v Pohode ju cez Peppol znova neposielajte.",
+                                  )}
+                                >
+                                  {t("eFaktúra")}
+                                </StavOdznak>
+                              ) : null}
+                              {i.exported_at ? (
+                                <span className="ml-2 inline-flex flex-wrap items-center gap-1 align-middle text-xs font-normal">
+                                  <StavOdznak ton="uspech" maly>
+                                    {/* Faktúra poslaná do Money nie je „v Pohode“ — povie sa, kam odišla. */}
+                                    {nazovProgramuExportu(formatOdovzdania[i.id])
+                                      ? t("Odovzdaná ({program})", {
+                                          program: t(nazovProgramuExportu(formatOdovzdania[i.id])!),
+                                        })
+                                      : t("V Pohode")}
+                                  </StavOdznak>
+                                  {/* Odovzdaná faktúra je zamknutá; „Vrátiť“ ju pustí na opravu. */}
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      if (await poslatOpravu("faktura", i.company_id, i.id)) load();
+                                    }}
+                                    className="rounded-md border border-input px-1.5 py-0.5 font-medium hover:bg-secondary"
+                                  >
+                                    {nazovProgramuExportu(formatOdovzdania[i.id])
+                                      ? t("Vrátiť")
+                                      : t("Vrátiť z Pohody")}
+                                  </button>
+                                </span>
+                              ) : null}
+                              <span className="block whitespace-nowrap text-xs font-normal text-muted-foreground md:hidden">
+                                {datumNaDoklade(i.issue_date)}
+                                {i.delivery_date && i.delivery_date !== i.issue_date
+                                  ? ` · ${t("dodaná")} ${datumNaDoklade(i.delivery_date)}`
+                                  : ""}{" "}
+                                · <span className="suma">{formatujMenu(i.total, i.currency)}</span>
+                              </span>
+                            </td>
+                            <td className="min-w-[10rem] p-3 break-words">{i.customer_name ?? "—"}</td>
+                            <td className="hidden whitespace-nowrap p-3 md:table-cell">
+                              {datumNaDoklade(i.issue_date)}
+                            </td>
+                            <td
+                              className={`hidden whitespace-nowrap p-3 md:table-cell ${i.delivery_date && i.delivery_date !== i.issue_date ? "font-medium" : "text-muted-foreground"}`}
+                            >
+                              {datumNaDoklade(datumDodania(i))}
+                            </td>
+                            <td className="suma hidden whitespace-nowrap p-3 text-right md:table-cell">
+                              {formatujMenu(i.total, i.currency)}
+                            </td>
+                          </KlikatelnyRiadok>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {vybraneEfaktury > 0 && (format === "pohoda_xml" || format === "bis_zip") && (
+                    <p
+                      role="status"
+                      className="mt-4 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground"
+                    >
+                      {t(
+                        "Vybrané faktúry, ktoré už odišli ako eFaktúra: {n}. V Pohode ich cez Peppol znova neposielajte — odberateľ by ich dostal dvakrát. V internej poznámke dokladu to v Pohode uvidíte.",
+                        { n: vybraneEfaktury },
+                      )}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm text-muted-foreground">
+                      {t("Vybraných:")}{" "}
+                      <span className="font-semibold tabular-nums text-foreground">{selectedIds.length}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        aria-label={t("Formát exportu")}
+                        value={format}
+                        onChange={(e) => setFormat(e.target.value as ExportFormat)}
+                        className="min-w-0 max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        {FORMATY.map((f) => (
+                          <option key={f.format} value={f.format}>
+                            {t(f.label)}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={runExport}
+                        disabled={busy || !selectedIds.length}
+                        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+                      >
+                        {busy ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileCode2 className="h-4 w-4" />
+                        )}
+                        {t("Exportovať")}
+                      </button>
+                    </div>
+                  </div>
+                  <label className="mt-3 flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={oznacit}
+                      onChange={(e) => setOznacit(e.target.checked)}
+                    />
+                    <span className="min-w-0">
+                      {t("Označiť ako odovzdané (zamknú sa a nepôjdu druhýkrát)")}
+                      {!PROGRAM_FORMATU[format] ? (
+                        <span className="block text-xs text-muted-foreground">
+                          {t(
+                            "Tento formát nie je účtovný program — predvolene sa faktúry neoznačia ani nezamknú.",
+                          )}
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                </div>
+
+              </div>
+
+              {/* RIGHT: formats sidebar */}
+              <aside aria-label={t("Podporované formáty")} className="min-w-0 space-y-3">
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                  <h3 className="text-base font-semibold">
+                    {t("Podporované formáty")}
+                  </h3>
+                  <ul className="mt-3 space-y-2 text-sm">
+                    {FORMATY.map((f) => (
+                      <li
+                        key={f.format}
+                        className={`rounded-lg border px-3 py-2 ${
+                          format === f.format ? "border-primary/40 bg-primary/5" : "border-border"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 font-medium">{t(f.label)}</span>
+                          {format === f.format && (
+                            <span className="shrink-0 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary-hover">
+                              {t("Vybrané")}
+                            </span>
+                          )}
+                        </div>
+                        {f.note && <p className="mt-1 text-xs text-muted-foreground">{t(f.note)}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-4 sm:p-5 text-sm text-muted-foreground">
+                  <p className="flex items-start gap-2">
+                    <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    {t(
+                      "Vyberte obdobie a faktúry, ktoré chcete preniesť do účtovníctva. Súbor sa stiahne a uloží sa do histórie.",
+                    )}
+                  </p>
+                </div>
+              </aside>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 sm:p-5 text-sm text-muted-foreground">
-              <p className="flex items-start gap-2">
-                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                {t(
-                  "Vyberte obdobie a faktúry, ktoré chcete preniesť do účtovníctva. Súbor sa stiahne a uloží sa do histórie.",
-                )}
-              </p>
-            </div>
-          </aside>
-        </div>
+          </>
+        )}
       </PageBody>
     </>
   );
@@ -971,7 +1000,6 @@ function ZauctovaneDoProgramu() {
   const nacitajProgram = useServerFn(programUctovaniaFn);
   const exportuj = useServerFn(exportUctovanieFn);
   const [program, setProgram] = useState<string>("pohoda");
-  const [nastavenia, setNastavenia] = useState<Record<string, Record<string, unknown>>>({});
   const [agenda, setAgenda] = useState<AgendaExportu>("prijata");
   const [od, setOd] = useState(() => predvolenyZaciatokExportu(1));
   const [doDna, setDoDna] = useState(dnesBratislava());
@@ -981,7 +1009,6 @@ function ZauctovaneDoProgramu() {
   const [lenNove, setLenNove] = useState(true);
   const [podlaZ, setPodlaZ] = useState<DatumObdobia>("vystavenie");
   const [busy, setBusy] = useState(false);
-  const [otvoreneNastavenia, setOtvoreneNastavenia] = useState(false);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -989,7 +1016,6 @@ function ZauctovaneDoProgramu() {
     nacitajProgram({ data: { company_id: cid } })
       .then((r) => {
         setProgram(r.program);
-        setNastavenia(r.nastavenia as any);
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1244,13 +1270,15 @@ function ZauctovaneDoProgramu() {
                 {t("Len ešte neodovzdané")}
               </label>
             )}
-            <button
-              type="button"
-              onClick={() => setOtvoreneNastavenia((o) => !o)}
+            {/* Nastavenia programu sú na jedinom mieste — v Predkontáciách. */}
+            <Link
+              to="/uctovnictvo/predkontacie"
+              search={{ nastavenia: program }}
+              hash="nastavenia-exportu"
               className="ml-auto rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
             >
               {t("Nastavenia pre {program}", { program: kratkyNazov })}
-            </button>
+            </Link>
           </div>
 
           {program === "datev" && (
@@ -1259,20 +1287,6 @@ function ZauctovaneDoProgramu() {
                 "Súbor EXTF_Buchungsstapel… (Windows-1252) načíta DATEV Rechnungswesen cez Bestand → Importieren → ASCII-Daten / DATEV-Format, prípadne ho pošlite poradcovi do DATEV Unternehmen online. Jeden súbor smie obsahovať len doklady z jedného hospodárskeho roka. Pred prvým exportom vyplňte v nastaveniach Beraternummer a Mandantennummer.",
               )}
             </p>
-          )}
-
-          {otvoreneNastavenia && (
-            <NastaveniaProgramu
-              program={program as any}
-              hodnoty={(nastavenia[program] ?? {}) as Record<string, unknown>}
-              onUlozit={async (h) => {
-                const cid = getActiveCompanyId();
-                if (!cid) return;
-                const r = await nacitajProgram({ data: { company_id: cid, nastavenia: h } });
-                setNastavenia(r.nastavenia as any);
-                toast.success(t("Nastavenia sú uložené"));
-              }}
-            />
           )}
 
           <div className="mt-4 max-h-96 overflow-auto rounded-lg border border-border">

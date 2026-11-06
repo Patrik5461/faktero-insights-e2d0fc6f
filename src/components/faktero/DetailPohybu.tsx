@@ -393,14 +393,17 @@ export function DetailPohybu({
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
               <Link
-                to="/uctovnictvo/pravidla"
+                to="/uctovnictvo/zauctovanie"
                 search={
-                  hladaniePravidlaZPohybu({
-                    suma,
-                    protistrana: p.counterparty,
-                    protiucet: p.counterparty_iban,
-                    vs: p.variable_symbol,
-                  }) as never
+                  {
+                    ...hladaniePravidlaZPohybu({
+                      suma,
+                      protistrana: p.counterparty,
+                      protiucet: p.counterparty_iban,
+                      vs: p.variable_symbol,
+                    }),
+                    tab: "pravidla",
+                  } as never
                 }
                 className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm text-primary hover:bg-secondary"
               >

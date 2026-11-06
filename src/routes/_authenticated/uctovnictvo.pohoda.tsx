@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KonektorPohody } from "@/components/faktero/KonektorPohody";
-import { PokladneVNastaveniach } from "@/components/faktero/Pokladne";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -14,8 +13,9 @@ import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
  * Nastavenie účtovania v Pohode a vydanie konektora.
  *
  * Bolo to zapadnuté v strede stránky Firma medzi číslovaním faktúr a pätičkou,
- * kde to nikto nehľadal. Ide o celú agendu — predkontácie, členenia DPH, čo sa
- * posiela a most k Pohode — preto má vlastnú stránku v Účtovníctve. Stĺpce
+ * kde to nikto nehľadal. Zostali tu skratky pokladne, banky a skladu, e-mail
+ * účtovníčky a konektor. Čo sa do Pohody posiela je v Nastaveniach exportu na
+ * stránke Predkontácie, správa pokladní na /uctovnictvo/pokladne. Stĺpce
  * zostávajú na `companies`, takže presun je len o mieste v rozhraní.
  */
 export const Route = createFileRoute("/_authenticated/uctovnictvo/pohoda")({
@@ -25,17 +25,17 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/pohoda")({
   component: Stranka,
 });
 
-/** Ukladá sa len to, čo je na tejto stránke — inak by sa prepísala celá firma. */
+/**
+ * Ukladá sa len to, čo je na tejto stránke — inak by sa prepísala celá firma.
+ * `pohoda_posielat_*` sem nepatria: ukladajú sa v Nastaveniach exportu
+ * (Predkontácie), tu by ich prepísala stará hodnota.
+ */
 const POLIA = [
   "uctovnik_email",
   "odovzdanie_automaticky",
   "pohoda_pokladna",
   "pohoda_banka",
   "pohoda_sklad",
-  "pohoda_posielat_adresar",
-  "pohoda_posielat_sklad",
-  "pohoda_posielat_pohyby",
-  "pohoda_posielat_zakazky",
   "pohoda_odkaz_na_pdf",
   "pohoda_ico_z_mena",
 ] as const;
@@ -94,7 +94,7 @@ function Stranka() {
       <PageHeader
         title={t("Prepojenie s Pohodou")}
         description={t(
-          "Čo sa do Pohody posiela, skratky pokladne, banky a skladu a konektor pre účtovníčku.",
+          "Skratky pokladne, banky a skladu z Pohody, e-mail účtovníčky a konektor.",
         )}
         popisDalej={
           <>
@@ -161,9 +161,12 @@ function Stranka() {
               placeholder={t("napr. {x}", { x: "HOT" })}
             />
             <span className="mt-1 block text-xs text-muted-foreground">
-              {t(
-                "Použije sa, keď predvolená pokladňa nemá vlastnú skratku. Viac pokladní (napr. HP EUR, HP CZK) pridáte nižšie v časti Pokladne.",
-              )}
+              {t("Použije sa, keď predvolená pokladňa nemá vlastnú skratku.")}{" "}
+              {t("Viac pokladní (napr. HP EUR, HP CZK) a ich skratky pridáte na stránke")}{" "}
+              <Link to="/uctovnictvo/pokladne" className="text-primary underline">
+                {t("Pokladne")}
+              </Link>
+              .
             </span>
           </div>
           <div>
@@ -190,89 +193,20 @@ function Stranka() {
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-1 text-base font-semibold text-foreground">
-              {t("Čo sa do Pohody posiela")}
+              {t("Doklady a partneri v Pohode")}
             </h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              {t(
-                "Faktúry, prijaté doklady a pokladňa idú vždy. Ostatné si zapnite podľa toho, čo má účtovníčka viesť.",
-              )}
+              {t("Čo sa do Pohody posiela (adresár, skladové karty a pohyby, zákazky) nastavíte v")}{" "}
+              <Link
+                to="/uctovnictvo/predkontacie"
+                hash="nastavenia-exportu"
+                className="text-primary underline"
+              >
+                {t("Predkontácie a členenie DPH/KV → Nastavenia exportu")}
+              </Link>
+              .
             </p>
           </div>
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40">
-            <input
-              type="checkbox"
-              checked={!!c.pohoda_posielat_adresar}
-              onChange={(e) => setC({ ...c, pohoda_posielat_adresar: e.target.checked })}
-              className="mt-0.5 h-4 w-4"
-            />
-            <span className="min-w-0 text-sm font-medium">
-              {t("Posielať adresár")}
-              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                {t(
-                  "Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme. Zmenený kontakt sa prepíše, nezaloží sa druhý.",
-                )}{" "}
-                {t("Len partnerov z dokladov a ich párovanie s dokladom nastavíte v")}{" "}
-                <Link to="/uctovnictvo/predkontacie" className="text-primary underline">
-                  {t("Predkontáciách")}
-                </Link>
-                .
-              </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40">
-            <input
-              type="checkbox"
-              checked={!!c.pohoda_posielat_sklad}
-              onChange={(e) => setC({ ...c, pohoda_posielat_sklad: e.target.checked })}
-              className="mt-0.5 h-4 w-4"
-            />
-            <span className="min-w-0 text-sm font-medium">
-              {t("Posielať skladové karty")}
-              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                {t("Posiela sa")} <strong>{t("číselník zásob")}</strong>
-                {t(
-                  ", nie stav skladu — ten v Pohode vzniká príjemkami a výdajkami. Potrebuje vyplnené členenie skladu.",
-                )}
-              </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={!!c.pohoda_posielat_pohyby}
-              onChange={(e) => setC({ ...c, pohoda_posielat_pohyby: e.target.checked })}
-              className="mt-0.5 h-4 w-4"
-            />
-            <span className="min-w-0 text-sm font-medium">
-              {t("Posielať skladové pohyby")}
-              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                {t("Príjemky a výdajky, aby v Pohode sedeli")} <strong>{t("stavy")}</strong>{" "}
-                {t(
-                  "skladu, nielen karty. Príjemka ide s príznakom „neúčtovať“, aby sa náklad nezdvojil s prijatým dokladom. Potrebuje zapnuté skladové karty.",
-                )}
-              </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={!!c.pohoda_posielat_zakazky}
-              onChange={(e) => setC({ ...c, pohoda_posielat_zakazky: e.target.checked })}
-              className="mt-0.5 h-4 w-4"
-            />
-            <span className="min-w-0 text-sm font-medium">
-              {t("Posielať zákazky")}
-              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                {t(
-                  "Faktúra potom v Pohode nesie zákazku, takže je z nej vidieť výnos po zákazkách. Zákazka odchádza",
-                )}{" "}
-                <strong>{t("raz")}</strong>{" "}
-                {t(
-                  "— Pohoda ju vie založiť, ale nie prepísať, tak si neskoršiu zmenu názvu prepíšte aj tam.",
-                )}
-              </span>
-            </span>
-          </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3 hover:bg-muted/40 sm:col-span-2">
             <input
               type="checkbox"
@@ -319,12 +253,20 @@ function Stranka() {
         </form>
 
         {/*
-          Viac pokladní podľa skratiek z Pohody, každá s vlastnou menou — mimo
-          formulára vyššie (má vlastný formulár a ukladá sa hneď). Bloček
-          v hotovosti dostane pokladňu v svojej mene (inak predvolenú) a jej
-          skratka ide do XML ako vch:cashAccount.
+          Viac pokladní podľa skratiek z Pohody (každá s vlastnou menou) sa
+          spravuje na /uctovnictvo/pokladne. Bloček v hotovosti dostane
+          pokladňu v svojej mene (inak predvolenú) a jej skratka ide do XML
+          ako vch:cashAccount.
         */}
-        <PokladneVNastaveniach companyId={c.id} className="mx-auto mt-4 max-w-5xl" />
+        <p className="mx-auto mt-4 max-w-5xl rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground sm:p-5">
+          {t(
+            "Viac pokladní s vlastnou menou a skratkou pre Pohodu (napr. HP EUR, HP CZK) spravujete na stránke",
+          )}{" "}
+          <Link to="/uctovnictvo/pokladne" className="text-primary underline">
+            {t("Pokladne")}
+          </Link>
+          .
+        </p>
 
         <div className="mx-auto max-w-5xl rounded-xl border border-border bg-card p-4 sm:p-5">
           <KonektorPohody companyId={c.id} />

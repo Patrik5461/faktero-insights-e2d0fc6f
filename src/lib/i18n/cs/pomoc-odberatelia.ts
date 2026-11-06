@@ -50,8 +50,8 @@ export default {
   "Odberatelia v Pohode": "Odběratelé v Pohodě",
   "Adresár sa dá posielať do Pohody, takže tam odberateľ je aj vtedy, keď mu tento mesiac nič nefakturujete. Zmenený kontakt sa <0>prepíše</0>, nezaloží sa druhý.":
     "Adresář lze posílat do Pohody, takže tam odběratel je i tehdy, když mu tento měsíc nic nefakturujete. Změněný kontakt se <0>přepíše</0>, nezaloží se druhý.",
-  "Zapína sa to v <0>Účtovníctvo → Prepojenie s Pohodou</0> — viac v <1>manuáli k Pohode</1>.":
-    "Zapíná se to v <0>Účetnictví → Propojení s Pohodou</0> — více v <1>manuálu k Pohodě</1>.",
+  "Zapína sa to v <0>Účtovníctvo → Predkontácie a členenie DPH/KV</0>, sekcia Nastavenia exportu — viac v <1>manuáli k Pohode</1>.":
+    "Zapíná se to v <0>Účetnictví → Předkontace a členění DPH/KH</0>, sekce Nastavení exportu — více v <1>manuálu k Pohodě</1>.",
   "Overenie IČ DPH vo VIES": "Ověření IČ DPH ve VIES",
   "Pri odberateľovi z iného členského štátu je vedľa poľa IČ DPH tlačidlo <0>Overiť vo VIES</0>. Register Európskej komisie povie, či je číslo platné, a doplní názov firmy.":
     "U odběratele z jiného členského státu je vedle pole IČ DPH tlačítko <0>Ověřit ve VIES</0>. Registr Evropské komise řekne, zda je číslo platné, a doplní název firmy.",

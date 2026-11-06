@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { NAV, INVOICING_KEYS, LOGBOOK_KEYS, filterNav } from "./nav";
+import { podsekciePoloziek } from "./shell/BocnyPanel";
 
 /**
  * Trasy, ktoré router naozaj pozná. Berú sa z vygenerovaného stromu, nie
@@ -92,10 +93,55 @@ describe("účtovníctvo", () => {
     expect(NAV.some((g) => g.key === "uctovne-importy")).toBe(false);
   });
 
-  it("importy stoja vedľa exportov a obe majú svoju históriu", () => {
+  it("história exportov a importov je záložka stránky, nie položka menu", () => {
     expect(popisy).toContain("Účtovné exporty");
-    expect(popisy).toContain("História exportov");
-    expect(popisy).toContain("História importov");
+    expect(popisy).not.toContain("História exportov");
+    expect(popisy).not.toContain("História importov");
+  });
+
+  /* Schválená štruktúra 2026-11 — poradie aj podsekcie. */
+  it("podsekcie a stránky idú v schválenom poradí", () => {
+    expect(uctovnictvo.children.map((c) => [c.skupina, c.label, c.to])).toEqual([
+      ["Zaúčtovanie", "Automatické účtovanie", "/uctovnictvo/zauctovanie"],
+      ["Pokladňa", "Pokladňa", "/pokladna"],
+      ["Uzávierky a DPH", "DPH prehľad", "/uctovnictvo/dph"],
+      ["Uzávierky a DPH", "Výkazy k DPH", "/uctovnictvo/vykazy"],
+      ["Uzávierky a DPH", "OSS", "/uctovnictvo/oss"],
+      ["Uzávierky a DPH", "Uzávierka", "/uctovnictvo/uzavierka"],
+      ["Exporty a importy", "Účtovné exporty", "/exporty"],
+      ["Exporty a importy", "Účtovné importy", "/importy/novy"],
+      ["Exporty a importy", "Konvertory", "/uctovnictvo/konvertory"],
+      ["Nastavenie účtovania", "Predkontácie a členenie DPH/KV", "/uctovnictvo/predkontacie"],
+      ["Nastavenie účtovania", "Pokladne", "/uctovnictvo/pokladne"],
+      ["Nastavenie účtovania", "Prepojenie s Pohodou", "/uctovnictvo/pohoda"],
+    ]);
+  });
+
+  it("každá stránka je v menu raz a nikam nevedie stará adresa", () => {
+    const ciele = uctovnictvo.children.map((c) => c.to);
+    expect(new Set(ciele).size).toBe(ciele.length);
+    for (const stara of [
+      "/uctovnictvo/na-kontrolu",
+      "/uctovnictvo/pravidla",
+      "/uctovnictvo/konvertor",
+      "/uctovnictvo/vypis-do-pohody",
+      "/importy",
+    ])
+      expect(ciele).not.toContain(stara);
+  });
+
+  it("podsekcie: položky jednej skupiny idú za sebou, Pokladňa bez nadpisu", () => {
+    const g = podsekciePoloziek(uctovnictvo.children);
+    expect(g.map((x) => x.nadpis)).toEqual([
+      "Zaúčtovanie",
+      null,
+      "Uzávierky a DPH",
+      "Exporty a importy",
+      "Nastavenie účtovania",
+    ]);
+    // Žiadna podsekcia sa nerozdelí na dve miesta.
+    const kluce = g.map((x) => x.polozky[0]!.skupina);
+    expect(new Set(kluce).size).toBe(kluce.length);
   });
 });
 

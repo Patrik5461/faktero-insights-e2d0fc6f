@@ -123,8 +123,8 @@ export default {
   "<0>Uzamknuté obdobie</0> ( <1>uzávierka</1>) nepustí zmeny do starých dokladov. Ak sa pohyb nedá uložiť spätne, býva to práve toto.":
     "<0>Uzamčené období</0> ( <1>uzávěrka</1>) nepustí změny do starých dokladů. Pokud pohyb nelze uložit zpětně, bývá to právě tohle.",
   "Skladové karty do Pohody": "Skladové karty do Pohody",
-  "Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to vo <0>Účtovníctvo → Prepojenie s Pohodou</0> a treba k tomu vyplniť členenie skladu.":
-    "Pokud účetní vede sklad v Pohodě, karty jí umíme posílat přímo — zapíná se to v <0>Účetnictví → Propojení s Pohodou</0> a je k tomu třeba vyplnit členění skladu.",
+  "Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to v <0>Účtovníctvo → Predkontácie a členenie DPH/KV</0>, sekcia Nastavenia exportu, a treba k tomu vyplniť členenie skladu v <1>Prepojení s Pohodou</1>.":
+    "Pokud účetní vede sklad v Pohodě, karty jí umíme posílat přímo — zapíná se to v <0>Účetnictví → Předkontace a členění DPH/KH</0>, sekce Nastavení exportu, a je k tomu třeba vyplnit členění skladu v <1>Propojení s Pohodou</1>.",
   "Posiela sa <0>číselník zásob, nie stav skladu</0>. Množstvá v Pohode vznikajú príjemkami a výdajkami, takže dosadené číslo by sa s dokladmi rozišlo. Viac v <1>manuáli k Pohode</1>.":
     "Posílá se <0>číselník zásob, ne stav skladu</0>. Množství v Pohodě vznikají příjemkami a výdejkami, takže dosazené číslo by se s doklady rozešlo. Více v <1>manuálu k Pohodě</1>.",
 } satisfies Record<string, string>;

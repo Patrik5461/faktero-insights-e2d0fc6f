@@ -2,15 +2,15 @@
   Klik na riadok – balík 4 (Banka, Pokladňa, Účtovníctvo, Exporty, Importy).
   Len číta: nič neukladá, neparuje ani neexportuje.
 
-  - /uctovnictvo/na-kontrolu: klik na bunku (nie na číslo) otvorí detail dokladu,
+  - /uctovnictvo/zauctovanie?tab=kontrola: klik na bunku (nie na číslo) otvorí detail dokladu,
     zaškrtávadlo len označí, Ctrl+klik otvorí novú kartu, Enter na riadku detail;
   - /bankove-ucty/transakcie: klik na riadok otvorí okno Detail pohybu;
   - /bankove-ucty: klik na kartu účtu → jeho transakcie;
-  - /uctovnictvo/pravidla: klik na riadok otvorí úpravu pravidla (okno sa zavrie
+  - /uctovnictvo/zauctovanie?tab=pravidla: klik na riadok otvorí úpravu pravidla (okno sa zavrie
     Escape, nič sa neuloží);
   - /uctovnictvo/dph (minulý mesiac): vystavená faktúra → /faktury/$id;
   - /exporty: klik na riadok len prepne výber, doklad neotvorí;
-  - /importy: klik na riadok rozbalí logy;
+  - /importy/novy?tab=historia: klik na riadok rozbalí logy;
   - 390 px: karta účtu v /bankove-ucty.
   Prázdny zoznam vo firme nie je chyba toku — zapíše sa ako upozornenie.
   Proti produkcii prejde až po nasadení klikateľných riadkov.
@@ -38,7 +38,7 @@ export default {
     };
 
     await t.krok("na kontrolu: bunka → detail, zaškrtávadlo nie, Ctrl+klik nová karta, Enter", async () => {
-      await t.go("/uctovnictvo/na-kontrolu", page);
+      await t.go("/uctovnictvo/zauctovanie?tab=kontrola", page);
       if (await prazdne(riadky(), "na-kontrolu")) return;
       const r = riadky().first();
       const pred = cesta();
@@ -58,11 +58,11 @@ export default {
       await nova.close();
       await r.locator("td").nth(2).click();
       await page.waitForURL((u) => u.pathname + u.search === href, { timeout: 15000 });
-      await t.go("/uctovnictvo/na-kontrolu", page);
+      await t.go("/uctovnictvo/zauctovanie?tab=kontrola", page);
       await riadky().first().waitFor({ timeout: 20000 });
       await riadky().first().focus();
       await page.keyboard.press("Enter");
-      await page.waitForURL((u) => !u.pathname.includes("na-kontrolu"), { timeout: 15000 });
+      await page.waitForURL((u) => !u.pathname.includes("zauctovanie"), { timeout: 15000 });
     });
 
     await t.krok("transakcie: klik na riadok → Detail pohybu", async () => {
@@ -84,7 +84,7 @@ export default {
     });
 
     await t.krok("pravidlá: klik na riadok → úprava (bez uloženia)", async () => {
-      await t.go("/uctovnictvo/pravidla", page);
+      await t.go("/uctovnictvo/zauctovanie?tab=pravidla", page);
       if (await prazdne(riadky(), "pravidla")) return;
       await riadky().first().locator("td").nth(2).click();
       await okno().first().waitFor({ timeout: 10000 });
@@ -126,7 +126,7 @@ export default {
     });
 
     await t.krok("importy: klik na riadok rozbalí logy", async () => {
-      await t.go("/importy", page);
+      await t.go("/importy/novy?tab=historia", page);
       if (await prazdne(riadky(), "importy")) return;
       const pocet = await page.locator("tbody tr").count();
       await riadky().first().locator("td").nth(2).click();

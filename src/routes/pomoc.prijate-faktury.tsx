@@ -55,10 +55,10 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Dátum prijatia</strong> sa predvyplní dňom, keď faktúra prišla e-mailom alebo bola
-          nahratá, a dá sa prepísať. Odpočet DPH patrí do obdobia neskoršieho z dátumu dodania
-          a prijatia — formulár ho ukáže pod poľom (napríklad „Odpočet DPH: 09/2026“) a upozorní,
-          keď je dátum prijatia skôr než dátum vystavenia. Rovnaký dátum odpočtu dostane aj export
-          do Pohody.
+          nahratá, a dá sa prepísať. Odpočet DPH patrí do obdobia neskoršieho z dátumu dodania a
+          prijatia — formulár ho ukáže pod poľom (napríklad „Odpočet DPH: 09/2026“) a upozorní, keď
+          je dátum prijatia skôr než dátum vystavenia. Rovnaký dátum odpočtu dostane aj export do
+          Pohody.
         </p>
         <p>
           Faktúru priraďte na <strong>zákazku</strong>, ak patrí ku konkrétnej práci. Ide to aj
@@ -379,11 +379,13 @@ const sections: HelpSection[] = [
           Viac faktúr naraz zaúčtujete v zozname: označte ich a kliknite na <em>Zaúčtovať</em>.
           Vyplnené pole sa nastaví všetkým, prázdne nechá, čo na faktúre je. Opakujúcich sa
           dodávateľov zaúčtuje samo{" "}
-          <Link to="/uctovnictvo/pravidla">pravidlo automatického účtovania</Link> (napríklad
-          „Orange → predkontácia 5Fp, členenie PD“). Keď členenie DPH v okne nevyberiete a faktúra
-          ho nemá, doplní sa z pravidla alebo zo zvyku dodávateľa. Faktúru, pre ktorú sa členenie
-          nedá určiť ani z kategórie, predvolených či rozúčtovania, platiteľ DPH nezaúčtuje — okno
-          ju vymenuje a tlačidlo Zaúčtovať ostane vypnuté.
+          <Link to="/uctovnictvo/zauctovanie" search={{ tab: "pravidla" }}>
+            pravidlo automatického účtovania
+          </Link>{" "}
+          (napríklad „Orange → predkontácia 5Fp, členenie PD“). Keď členenie DPH v okne nevyberiete
+          a faktúra ho nemá, doplní sa z pravidla alebo zo zvyku dodávateľa. Faktúru, pre ktorú sa
+          členenie nedá určiť ani z kategórie, predvolených či rozúčtovania, platiteľ DPH nezaúčtuje
+          — okno ju vymenuje a tlačidlo Zaúčtovať ostane vypnuté.
         </p>
         <p>
           Faktúra vytvorená z <Link to="/nespracovane">Nespracovaných dokladov</Link> je zaúčtovaná

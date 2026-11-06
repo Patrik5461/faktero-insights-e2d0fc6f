@@ -7,7 +7,7 @@ import { createCashEntry, deleteCashEntry, getCashBook } from "@/lib/faktero/pok
 import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle, Settings2, Undo2 } from "lucide-react";
 import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
-import { SpravaPokladni, VyberPokladne } from "@/components/faktero/Pokladne";
+import { VyberPokladne } from "@/components/faktero/Pokladne";
 import { pokladnaDoFormulara, type Pokladna } from "@/lib/faktero/pokladne";
 import { MENY } from "@/lib/faktero/mena";
 import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
@@ -63,7 +63,6 @@ function PokladnaPage() {
   const [otvoreny, setOtvoreny] = useState(false);
   /** Vybraná pokladňa; "" = všetky. */
   const [pokladnaId, setPokladnaId] = useState("");
-  const [sprava, setSprava] = useState(false);
   const [form, setForm] = useState({
     type: "vydaj" as "prijem" | "vydaj",
     amount: "",
@@ -206,14 +205,12 @@ function PokladnaPage() {
         action={
           <div className="flex flex-wrap gap-2">
             <OdkazNaRady />
-            <button
-              type="button"
-              onClick={() => setSprava((v) => !v)}
-              aria-expanded={sprava}
+            <Link
+              to="/uctovnictvo/pokladne"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
             >
-              <Settings2 className="h-4 w-4" /> {t("Pokladne")}
-            </button>
+              <Settings2 className="h-4 w-4" /> {t("Spravovať pokladne")}
+            </Link>
             <button
               type="button"
               onClick={() => setOtvoreny((v) => !v)}
@@ -229,10 +226,6 @@ function PokladnaPage() {
           <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {chyba}
           </div>
-        )}
-
-        {sprava && cid && (
-          <SpravaPokladni companyId={cid} pokladne={pokladne} onZmena={nacitaj} />
         )}
 
         {viac && (

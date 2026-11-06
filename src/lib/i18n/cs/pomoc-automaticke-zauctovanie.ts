@@ -19,8 +19,8 @@ export default {
     "<0>Bezpečný</0> (výchozí) — samo zaúčtuje doklady, které sedí na pravidlo nebo na ustálený zvyk s jistotou alespoň 95 %. Návrhy od AI čekají na vás.",
   "<0>Plný</0> — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":
     "<0>Plný</0> — navíc zaúčtuje i návrhy od AI s jistotou alespoň 90 %.",
-  "Režim a limit sumy nastaví majiteľ alebo admin firmy na stránke <0>Zaúčtovanie na kontrolu</0> alebo pri pravidlách automatického účtovania. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
-    "Režim a limit částky nastaví vlastník nebo admin firmy na stránce <0>Zaúčtování ke kontrole</0> nebo u pravidel automatického účtování. Po zapnutí se týká jen nových dokladů — staré se samy nezaúčtují.",
+  "Režim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky <0>Účtovníctvo → Automatické účtovanie</0>, nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":
+    "Režim a limit částky nastaví vlastník nebo admin firmy nahoře na stránce <0>Účetnictví → Automatické účtování</0>, nad záložkami Ke kontrole, Pravidla a Předlohy. Po zapnutí se týká jen nových dokladů — staré se samy nezaúčtují.",
   "Kedy doklad čaká na vás": "Kdy doklad čeká na vás",
   "Doklad sa nezaúčtuje sám nikdy, keď:": "Doklad se nikdy nezaúčtuje sám, když:",
   "súčet položiek alebo základ s DPH nesedí so sumou dokladu,":
@@ -36,9 +36,9 @@ export default {
     "je předaný do účetnictví nebo zamčený — takový se vůbec nemění.",
   "Ručne zaúčtovaný doklad automat nikdy neprepíše. Hodnoty, ktoré na doklade už sú, majú vždy prednosť pred návrhom.":
     "Ručně zaúčtovaný doklad automat nikdy nepřepíše. Hodnoty, které na dokladu už jsou, mají vždy přednost před návrhem.",
-  "Stránka Na kontrolu": "Stránka Ke kontrole",
-  "V <0>Účtovníctvo → Zaúčtovanie na kontrolu</0> sú všetky nezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa druhu, blokátora a zdroja, vyberiete a potvrdíte návrhy naraz.":
-    "V <0>Účetnictví → Zaúčtování ke kontrole</0> jsou všechny nezaúčtované doklady s návrhem, zdrojem a důvodem, proč čekají. Filtrujete podle druhu, blokace a zdroje, vyberete a potvrdíte návrhy najednou.",
+  "Záložka Na kontrolu": "Záložka Ke kontrole",
+  "V <0>Účtovníctvo → Automatické účtovanie</0>, na záložke Na kontrolu, sú všetky nezaúčtované doklady s návrhom, zdrojom a dôvodom, prečo čakajú. Filtrujete podľa druhu, blokátora a zdroja, vyberiete a potvrdíte návrhy naraz.":
+    "V <0>Účetnictví → Automatické účtování</0>, na záložce Ke kontrole, jsou všechny nezaúčtované doklady s návrhem, zdrojem a důvodem, proč čekají. Filtrujete podle druhu, blokace a zdroje, vyberete a potvrdíte návrhy najednou.",
   "Tlačidlo <0>Navrhnúť zaúčtovanie pre nezaúčtované</0> pripraví návrhy aj pre doklady spred zapnutia — nič pritom nezaúčtuje.":
     "Tlačítko <0>Navrhnout zaúčtování pro nezaúčtované</0> připraví návrhy i pro doklady z doby před zapnutím — nic přitom nezaúčtuje.",
   "Na detaile dokladu": "Na detailu dokladu",

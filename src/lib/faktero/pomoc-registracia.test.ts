@@ -87,4 +87,16 @@ describe("tlačidlo Manuál v hlavičke agendy", () => {
     expect(manualPre("/exporty")).toBe("/pomoc/exporty");
     expect(manualPre("/importy/novy")).toBe("/pomoc/exporty");
   });
+
+  /* Štruktúra Účtovníctva 2026-11: nové stránky aj staré presmerované adresy. */
+  it("stránky Účtovníctva vedú na svoj manuál", () => {
+    expect(manualPre("/uctovnictvo/zauctovanie")).toBe("/pomoc/automaticke-zauctovanie");
+    expect(manualPre("/uctovnictvo/konvertory")).toBe("/pomoc/pohoda");
+    expect(manualPre("/uctovnictvo/predkontacie")).toBe("/pomoc/pohoda");
+    expect(manualPre("/uctovnictvo/pokladne")).toBe("/pomoc/pokladna");
+    expect(manualPre("/uctovnictvo/pohoda")).toBe("/pomoc/pohoda");
+    expect(manualPre("/pokladna")).toBe("/pomoc/pokladna");
+    expect(manualPre("/uctovnictvo/pravidla")).toBe("/pomoc/automaticke-zauctovanie");
+    expect(manualPre("/uctovnictvo/vypis-do-pohody")).toBe("/pomoc/pohoda");
+  });
 });

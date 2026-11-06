@@ -237,7 +237,8 @@ function ImportDokladovPage() {
         )}
         action={
           <Link
-            to="/importy"
+            to="/importy/novy"
+            search={{ tab: "historia" }}
             className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-accent"
           >
             <History className="h-4 w-4" /> {t("História importov")}
@@ -520,7 +521,8 @@ function ImportDokladovPage() {
                       {t("Skúsiť znova zistiť stav")}
                     </button>
                     <Link
-                      to="/importy"
+                      to="/importy/novy"
+                      search={{ tab: "historia" }}
                       className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
                     >
                       <History className="h-4 w-4" /> {t("História importov")}

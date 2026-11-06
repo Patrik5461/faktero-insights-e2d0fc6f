@@ -66,7 +66,8 @@ export function AutopilotKarta({ companyId }: { companyId: string }) {
           </NapovedaOtaznik>
         </h2>
         <Link
-          to="/uctovnictvo/na-kontrolu"
+          to="/uctovnictvo/zauctovanie"
+          search={{ tab: "kontrola" } as any}
           className="text-sm font-semibold text-primary hover:underline"
         >
           {t("Doklady na kontrolu")}

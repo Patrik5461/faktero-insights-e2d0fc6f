@@ -164,8 +164,8 @@ export default {
   "Pri výpadku sa vystavenie samo zopakuje a faktúra nikdy nevznikne dvakrát":
     "Při výpadku se vystavení samo zopakuje a faktura nikdy nevznikne dvakrát",
   "A potom aj platby": "A potom i platby",
-  "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Výpis z platobnej brány) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.":
-    "Výpis ze Stripe, PayPalu či GoPay nahrajete do Faktera (Účetnictví → Výpis z platební brány) a platby se spárují s fakturami podle čísla objednávky. Poplatky brány a výběry na účet půjdou do účetnictví zvlášť.",
+  "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.":
+    "Výpis ze Stripe, PayPalu či GoPay nahrajete do Faktera (Účetnictví → Konvertory, záložka Platební brána → Pohoda) a platby se spárují s fakturami podle čísla objednávky. Poplatky brány a výběry na účet půjdou do účetnictví zvlášť.",
   "Platby cez Stripe, PayPal a GoPay": "Platby přes Stripe, PayPal a GoPay",
   "Export z platobnej brány ako bankový výpis — platby, poplatky a výbery na účet zvlášť.":
     "Export z platební brány jako bankovní výpis — platby, poplatky a výběry na účet zvlášť.",
@@ -182,8 +182,8 @@ export default {
   "Pre účtovníčku dávka do Pohody alebo SEPA XML (camt.053)":
     "Pro účetní dávka do Pohody nebo SEPA XML (camt.053)",
   "Ktoré brány": "Které brány",
-  "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Výpis z platobnej brány.":
-    "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí export CSV z jejich administrace; ostatní brány přes obecnou šablonu. Najdete to v Účetnictví → Výpis z platební brány.",
+  "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí CSV export z ich administrácie; ostatné brány cez všeobecnú šablónu. Nájdete to v Účtovníctvo → Konvertory, záložka Platobná brána → Pohoda.":
+    "Stripe, PayPal, GoPay, Comgate, Barion, Mollie a Packeta — stačí export CSV z jejich administrace; ostatní brány přes obecnou šablonu. Najdete to v Účetnictví → Konvertory, záložka Platební brána → Pohoda.",
   "Hromadný príkaz na úhradu": "Hromadný příkaz k úhradě",
   "Prijaté faktúry zaplatíte naraz jedným súborom pre internetbanking.":
     "Přijaté faktury zaplatíte najednou jedním souborem pro internetové bankovnictví.",

@@ -91,6 +91,7 @@ import { NapovedaOtaznik } from "@/components/faktero/NapovedaOtaznik";
 import {
   BocnyPanel,
   SekcieNavigacie,
+  podsekciePoloziek,
   useRozbalene,
   jeZbaleny,
   ulozZbalenie,
@@ -358,6 +359,7 @@ export function AppShell({
       to: c.to,
       search: c.search,
       label: c.label,
+      skupina: c.skupina,
       pocet: pocetPriPolozke(c.to),
     })),
   }));
@@ -739,24 +741,48 @@ export function AppShell({
             <nav aria-label={t(activeGroup.label)} className="hidden border-t border-border px-4 lg:block lg:px-6">
               <ul className="flex flex-wrap items-center gap-1 py-2">
                 <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{t(activeGroup.label)}</li>
-                {activeGroup.children.map((c) => {
-                  const je = activeKey === c.to + c.label;
+                {podsekciePoloziek(activeGroup.children).map((g, gi) => {
+                  const maPodsekcie = activeGroup.children.some((c) => c.skupina);
+                  const odkazy = g.polozky.map((c) => {
+                    const je = activeKey === c.to + c.label;
+                    return (
+                      <li key={c.to + c.label} className="shrink-0">
+                        <Link
+                          to={c.to as any}
+                          search={c.search as any}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
+                            je ? "bg-primary/10 font-semibold text-primary-hover" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          }`}
+                        >
+                          {t(c.label)}
+                          {pocetPriPolozke(c.to) ? (
+                            <span data-w-pocet className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
+                              {pocetPriPolozke(c.to)! > 99 ? "99+" : pocetPriPolozke(c.to)}
+                            </span>
+                          ) : null}
+                        </Link>
+                      </li>
+                    );
+                  });
+                  if (!maPodsekcie) return odkazy;
+                  /* Podsekcie ako skupiny: oddelené zvislou čiarou, nadpis malým
+                     písmom pred svojimi stránkami. Skupina sa nezalomí na dvoje. */
                   return (
-                    <li key={c.to + c.label} className="shrink-0">
-                      <Link
-                        to={c.to as any}
-                        search={c.search as any}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
-                          je ? "bg-primary/10 font-semibold text-primary-hover" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        }`}
-                      >
-                        {t(c.label)}
-                        {pocetPriPolozke(c.to) ? (
-                          <span data-w-pocet className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
-                            {pocetPriPolozke(c.to)! > 99 ? "99+" : pocetPriPolozke(c.to)}
-                          </span>
-                        ) : null}
-                      </Link>
+                    <li
+                      key={`podsekcia-${gi}`}
+                      className={`flex shrink-0 items-center gap-0.5 ${gi > 0 ? "border-l border-border pl-2" : ""}`}
+                    >
+                      {g.nadpis && (
+                        <span
+                          data-w-podsekcia-menu
+                          className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80"
+                        >
+                          {t(g.nadpis)}
+                        </span>
+                      )}
+                      <ul aria-label={g.nadpis ? t(g.nadpis) : undefined} className="flex items-center gap-0.5">
+                        {odkazy}
+                      </ul>
                     </li>
                   );
                 })}
@@ -856,6 +882,7 @@ function MobileNav({
       to: c.to,
       search: c.search,
       label: c.label,
+      skupina: c.skupina,
       pocet:
         c.to === "/nespracovane"
           ? pocetNespracovanych

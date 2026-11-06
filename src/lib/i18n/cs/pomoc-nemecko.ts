@@ -95,8 +95,8 @@ export default {
   "Export do DATEV": "Export do DATEV",
   "Zaúčtované doklady pre daňového poradcu sa vyvážajú vo formáte DATEV <0>Buchungsstapel</0>. V <1>Účtovné exporty</1> nájdete časť <2>Zaúčtované doklady do vášho programu</2>; ako účtovný program vyberte <3>DATEV (Buchungsstapel)</3> — nemecká firma, ktorá si program ešte nevybrala, ho má predvolený. Potom zvolíte vystavené faktúry, prijaté faktúry alebo bločky, obdobie a doklady.":
     "Zaúčtované doklady pro daňového poradce se exportují ve formátu DATEV <0>Buchungsstapel</0>. V <1>Účetní exporty</1> najdete část <2>Zaúčtované doklady do vašeho programu</2>; jako účetní program vyberte <3>DATEV (Buchungsstapel)</3> — německá firma, která si program ještě nevybrala, ho má jako výchozí. Potom zvolíte vystavené faktury, přijaté faktury nebo účtenky, období a doklady.",
-  "Pred prvým exportom otvorte <0>Nastavenia pre DATEV</0> a vyplňte:":
-    "Před prvním exportem otevřete <0>Nastavení pro DATEV</0> a vyplňte:",
+  "Pred prvým exportom vyplňte v <0>Účtovníctvo → Predkontácie a členenie DPH/KV</0>, sekcia <1>Nastavenia exportu</1> (tlačidlo <2>Nastavenia pre DATEV</2> v Účtovných exportoch vás tam zavedie):":
+    "Před prvním exportem vyplňte v <0>Účetnictví → Předkontace a členění DPH/KH</0>, sekce <1>Nastavení exportu</1> (tlačítko <2>Nastavení pro DATEV</2> v Účetních exportech vás tam dovede):",
   "<0>Beraternummer</0> a <1>Mandantennummer</1> — dá vám ich daňový poradca,":
     "<0>Beraternummer</0> a <1>Mandantennummer</1> — dá vám je daňový poradce,",
   "<0>Účtová osnova</0> — SKR03 alebo SKR04, podľa toho, v ktorej poradca vedie vaše účtovníctvo,":
@@ -107,8 +107,8 @@ export default {
     "<0>Debitoři a kreditoři</0> — sběrné účty 10000 / 70000, nebo osobní účty podle partnera,",
   "prípadne Diktatkürzel, ďalšie automatické účty a BU-Schlüssel, ak ich poradca používa inak než predvolené.":
     "případně Diktatkürzel, další automatické účty a BU-Schlüssel, pokud je poradce používá jinak než výchozí.",
-  "Daň si DATEV rozpočíta sám: výnosy a nákupy v prenesení idú na automatické účty, bežné náklady s BU-Schlüssel. Účet z predkontácie (<0>Účtovníctvo → Predkontácie</0>) má prednosť pred predvoleným účtom osnovy. V časti <1>Prepis účtov</1> môžete ktorýkoľvek predvolený účet nahradiť vlastným.":
-    "Daň si DATEV rozpočítá sám: výnosy a nákupy v přenesení jdou na automatické účty, běžné náklady s BU-Schlüssel. Účet z předkontace (<0>Účetnictví → Předkontace</0>) má přednost před výchozím účtem osnovy. V části <1>Přepis účtů</1> můžete kterýkoli výchozí účet nahradit vlastním.",
+  "Daň si DATEV rozpočíta sám: výnosy a nákupy v prenesení idú na automatické účty, bežné náklady s BU-Schlüssel. Účet z predkontácie (<0>Účtovníctvo → Predkontácie a členenie DPH/KV</0>) má prednosť pred predvoleným účtom osnovy. V časti <1>Prepis účtov</1> môžete ktorýkoľvek predvolený účet nahradiť vlastným.":
+    "Daň si DATEV rozpočítá sám: výnosy a nákupy v přenesení jdou na automatické účty, běžné náklady s BU-Schlüssel. Účet z předkontace (<0>Účetnictví → Předkontace a členění DPH/KH</0>) má přednost před výchozím účtem osnovy. V části <1>Přepis účtů</1> můžete kterýkoli výchozí účet nahradit vlastním.",
   "Bežné účty (výnosy 19 % a 7 %, odberatelia, dodávatelia, nákupy) zodpovedajú osnove SKR03 a SKR04. <0>Menej bežné účty</0> — výnosy Kleinunternehmer, OSS, zálohy so 7 %, oslobodené plnenia a niektoré plnenia podľa § 13b — si pred prvým ostrým importom <1>overte s daňovým poradcom</1> a prípadne ich prepíšte.":
     "Běžné účty (výnosy 19 % a 7 %, odběratelé, dodavatelé, nákupy) odpovídají osnově SKR03 a SKR04. <0>Méně běžné účty</0> — výnosy Kleinunternehmer, OSS, zálohy se 7 %, osvobozená plnění a některá plnění podle § 13b — si před prvním ostrým importem <1>ověřte s daňovým poradcem</1> a případně je přepište.",
   "Stiahnete súbor <0>EXTF_Buchungsstapel…</0> v kódovaní Windows-1252. DATEV Rechnungswesen ho načíta cez <1>Bestand → Importieren → ASCII-Daten / DATEV-Format</1>, prípadne ho pošlite poradcovi do DATEV Unternehmen online. Jeden súbor smie obsahovať len doklady z jedného hospodárskeho roka. Faktero nie je partnerom DATEV ani nemá certifikáciu DATEV — ide o súbor vo verejne opísanom formáte.":

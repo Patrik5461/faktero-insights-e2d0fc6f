@@ -14,7 +14,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 export const Route = createFileRoute("/_authenticated/uctovnictvo/oss")({
   head: ({ match }) => ({
     meta: [
-      { title: preloz(match.context.jazyk, "OSS — predaj do EÚ — Faktero") },
+      { title: preloz(match.context.jazyk, "OSS — Faktero") },
       {
         name: "description",
         content: preloz(
@@ -64,8 +64,10 @@ function OssPage() {
   return (
     <>
       <PageHeader
-        title={t("OSS — predaj spotrebiteľom v EÚ")}
-        description={t("Podklady pre priznanie k jednému kontaktnému miestu za štvrťrok.")}
+        title={t("OSS")}
+        description={t(
+          "Predaj spotrebiteľom v EÚ — podklady pre priznanie k jednému kontaktnému miestu za štvrťrok.",
+        )}
       />
       <PageBody>
         <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 sm:p-5">

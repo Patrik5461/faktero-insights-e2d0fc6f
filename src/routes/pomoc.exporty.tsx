@@ -66,9 +66,13 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Predkontácie a členenia sú pre všetky programy spoločné (
-          <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>) — zadajte ich s
-          rovnakými skratkami, aké má váš program. Pri každom programe treba ešte vyplniť pár vecí v{" "}
-          <em>Nastavenia pre …</em>:
+          <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie a členenie DPH/KV</Link>)
+          — zadajte ich s rovnakými skratkami, aké má váš program. Pri každom programe treba ešte
+          vyplniť pár vecí na tej istej stránke v sekcii{" "}
+          <Link to="/uctovnictvo/predkontacie" hash="nastavenia-exportu">
+            Nastavenia exportu
+          </Link>{" "}
+          — tlačidlo <em>Nastavenia pre …</em> v Účtovných exportoch vás tam zavedie:
         </p>
         <ul>
           <li>
@@ -262,9 +266,10 @@ const sections: HelpSection[] = [
         <ul>
           <li>
             <strong>Pohoda XML</strong> — natívny dátový balík. Predkontácie a členenie DPH sa
-            dopĺňajú podľa nastavenia v <em>Účtovníctvo → Prepojenie s Pohodou</em>; bez nich si ich
-            účtovníčka doklikáva sama. Pohoda si vie doklady aj <strong>vyzdvihnúť sama</strong> —
-            celé je to v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
+            dopĺňajú podľa nastavenia v <em>Účtovníctvo → Predkontácie a členenie DPH/KV</em>; bez
+            nich si ich účtovníčka doklikáva sama. Pohoda si vie doklady aj{" "}
+            <strong>vyzdvihnúť sama</strong> — celé je to v{" "}
+            <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
           </li>
           <li>
             <strong>KROS Omega (TXT)</strong> — textový súbor R00/R01/R02 v kódovaní Windows-1250.{" "}

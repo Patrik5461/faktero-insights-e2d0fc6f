@@ -8,7 +8,7 @@
 */
 import { describe, expect, it } from "vitest";
 import { NAV, QUICK_CREATE } from "./nav";
-import { oblastPodlaCesty } from "@/lib/faktero/opravnenia";
+import { oblastPodlaCesty, oblastiOdkazu, vidiOdkaz } from "@/lib/faktero/opravnenia";
 
 /** Zámerne bez oblasti — nástroje a nastavenia, ktoré vidí každý člen. */
 const BEZ_OBLASTI = new Set(["/podpora", "/ai-asistent", "/firmy", "/predplatne", "/diagnostika", "/dashboard", "/moje-ulohy"]);
@@ -42,6 +42,18 @@ describe("menu vs. mapa oblastí (CESTY)", () => {
     expect(oblastPodlaCesty("/faktury/upomienky")).toBe("faktury");
     expect(oblastPodlaCesty("/uctovnictvo/na-kontrolu")).toBe("doklady");
     expect(oblastPodlaCesty("/uctovnictvo/dph")).toBe("uctovnictvo");
+    expect(oblastPodlaCesty("/uctovnictvo/pokladne")).toBe("pokladna");
+  });
+
+  it("Automatické účtovanie: kontrola patrí dokladom, pravidlá účtovníctvu", () => {
+    expect(oblastiOdkazu("/uctovnictvo/zauctovanie?tab=kontrola")).toEqual(["doklady"]);
+    expect(oblastiOdkazu("/uctovnictvo/zauctovanie?tab=pravidla&novy=1")).toEqual(["uctovnictvo"]);
+    expect(oblastiOdkazu("/uctovnictvo/zauctovanie")).toEqual(["doklady", "uctovnictvo"]);
+    const lenDoklady = { doklady: "edit" };
+    expect(vidiOdkaz("custom", lenDoklady, "/uctovnictvo/zauctovanie")).toBe(true);
+    expect(vidiOdkaz("custom", lenDoklady, "/uctovnictvo/zauctovanie?tab=pravidla")).toBe(false);
+    expect(vidiOdkaz("custom", {}, "/uctovnictvo/zauctovanie")).toBe(false);
+    expect(vidiOdkaz("custom", {}, "/kos")).toBe(true);
     expect(oblastPodlaCesty("/kos")).toBeNull();
   });
 });

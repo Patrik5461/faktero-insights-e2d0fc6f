@@ -1,5 +1,5 @@
 /*
-  Zoznam pravidiel automatického účtovania (/uctovnictvo/pravidla) — čo ukázať pri prázdnej
+  Zoznam pravidiel automatického účtovania (/uctovnictvo/zauctovanie?tab=pravidla) — čo ukázať pri prázdnej
   záložke (E-27) a kedy povedať, že „Sedí na“ počíta len z posledných
   dokladov (E-30).
 */
