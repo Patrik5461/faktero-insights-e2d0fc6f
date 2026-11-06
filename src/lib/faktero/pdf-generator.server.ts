@@ -27,6 +27,8 @@ import {
   type JazykDokladu,
 } from "./faktura-jazyk";
 import { pataFirmyDe } from "./firma-de";
+import { textZapisuVRegistri } from "./zapis-v-registri";
+import { polozkyPaty, vlastnyTextPaty, menoVystavitela } from "./pata-dokladu";
 import { krajinaDane, sadzbyKrajiny, porovnajSadzby } from "./vat-rates";
 import { popisColnychUdajov } from "./colny-kod";
 
@@ -91,6 +93,11 @@ export type InvoicePdfInput = {
    * z nej je už priznaná a odberateľ si ju už odpočítal.
    */
   zalohy?: OdpocetZalohy[] | null;
+  /**
+   * Meno do pätičky „Vystavil“ (profil autora dokladu). Bez neho — doklad
+   * z API, z opakovanej faktúry bez autora — sa vytlačí meno firmy.
+   */
+  vystavil?: string | null;
 };
 
 /**
@@ -362,8 +369,8 @@ async function vykresliFakturu(
       ico: company.ico,
       dic: company.dic,
       ic_dph: company.ic_dph,
-      email: company.email,
-      phone: company.phone,
+      // E-mail a telefón dodávateľa sú od 2026-11 v pätičke, zápis v OR tu.
+      zapis: textZapisuVRegistri(company),
     },
     { ink, sub, muted, hairline, primary, surface },
     { ico: t.ico, dic: t.dic, icDph: t.icDph },
@@ -447,7 +454,7 @@ async function vykresliFakturu(
   // Fixed column widths (sum = innerW = 507.28pt). Right-aligned numeric.
   const cols = computeCols(innerW);
   const PAD = 8;
-  const FOOTER_RESERVE = 72; // space reserved for footer + breathing room
+  const FOOTER_RESERVE = 66; // pätička (čiara na 55) + medzera nad ňou
   const BOTTOM_LIMIT = FOOTER_RESERVE;
   const NAME_SIZE = 10,
     DESC_SIZE = 8.5,
@@ -1577,26 +1584,96 @@ async function vykresliFakturu(
   }
 
   // ── Footer on every page ──
-  const footerText = company.invoice_footer ?? t.vystaveneCez;
+  /*
+    Pätička (od 2026-11): tenká čiara v akcentovej farbe, pod ňou v jednom
+    riadku Vystavil · Telefón · E-mail · Web — každý so sivým popisom nad
+    hodnotou, prázdne sa vynechajú a zvyšné sa rozdelia rovnomerne. Dlhá
+    hodnota sa zalomí (e-mail pred „@“), nikdy nepretečie do suseda.
+    Najspodnejší riadok: text pätičky z Vzhľadu faktúry (bez zopakovaného
+    zápisu v OR, ten je v rámiku dodávateľa), inak „Vystavené cez Faktero“,
+    a číslo strany vpravo. Všetko sa zmestí do FOOTER_RESERVE.
+  */
+  const zapisFirmy = textZapisuVRegistri(company);
+  const pataZNastaveni = String(company.invoice_footer ?? "").trim();
+  const footerText = pataZNastaveni
+    ? vlastnyTextPaty(pataZNastaveni, zapisFirmy)
+    : t.vystaveneCez;
   /*
     Nemecká firma: Registergericht, HRB a Geschäftsführer patria na obchodné
-    listy (§ 35a GmbHG, § 37a HGB) — riadok pod pätičkou, keď sú vyplnené.
+    listy (§ 35a GmbHG, § 37a HGB) — v spodnom riadku, keď sú vyplnené.
   */
   const pataDe = krajinaDane(company.country) === "DE" ? pataFirmyDe(company as any) : null;
   const strana = ({ sk: "Strana", cs: "Strana", en: "Page", de: "Seite", hu: "Oldal" } as Record<string, string>)[jazyk] ?? "Strana";
+  const polozkyPata = polozkyPaty(
+    {
+      vystavil: input.vystavil?.trim() || menoVystavitela(null, company),
+      phone: company.phone,
+      email: company.email,
+      website: company.website,
+    },
+    jazyk,
+  );
+  const PATA_CIARA_Y = 55;
+  const PATA_POPIS_Y = 46;
+  const PATA_HODNOTA_Y = 36.5;
+  const PATA_RIADOK = 8.5;
+  const PATA_VELKOST = 8;
+  const stlpecW = polozkyPata.length ? innerW / polozkyPata.length : innerW;
+  const stlpce = polozkyPata.map((pol, i) => ({
+    ...pol,
+    x: margin + i * stlpecW,
+    riadky: zalomHodnotuPaty(san(pol.hodnota), font, PATA_VELKOST, stlpecW - 10, 3),
+  }));
+  const najviacRiadkov = Math.max(1, ...stlpce.map((s) => s.riadky.length));
+  const spodnyY = Math.min(16, PATA_HODNOTA_Y - najviacRiadkov * PATA_RIADOK - 4);
+  const spodnyText = [footerText, pataDe].filter(Boolean).join(" · ");
   pages.forEach((p, i) => {
     p.drawLine({
-      start: { x: margin, y: 52 },
-      end: { x: width - margin, y: 52 },
-      color: hairline,
-      thickness: 0.5,
+      start: { x: margin, y: PATA_CIARA_Y },
+      end: { x: width - margin, y: PATA_CIARA_Y },
+      color: primary,
+      thickness: 1,
     });
-    p.drawText(footerText, { x: margin, y: 38, size: 7.5, font, color: muted });
-    if (pataDe)
-      p.drawText(ellipsize(pataDe, font, 7.5, innerW), { x: margin, y: 28, size: 7.5, font, color: muted });
+    stlpce.forEach((s) => {
+      p.drawText(san(s.popis), { x: s.x, y: PATA_POPIS_Y, size: 6.5, font, color: muted });
+      s.riadky.forEach((riadok, r) => {
+        p.drawText(riadok, {
+          x: s.x,
+          y: PATA_HODNOTA_Y - r * PATA_RIADOK,
+          size: PATA_VELKOST,
+          font,
+          color: ink,
+        });
+      });
+      if (s.odkaz) {
+        const sirka = Math.max(...s.riadky.map((r) => font.widthOfTextAtSize(r, PATA_VELKOST)));
+        const annot = doc.context.register(
+          doc.context.obj({
+            Type: "Annot",
+            Subtype: "Link",
+            Rect: [
+              s.x,
+              PATA_HODNOTA_Y - (s.riadky.length - 1) * PATA_RIADOK - 2,
+              s.x + sirka,
+              PATA_HODNOTA_Y + PATA_VELKOST,
+            ],
+            Border: [0, 0, 0],
+            A: { Type: "Action", S: "URI", URI: PDFString.of(s.odkaz) },
+          }),
+        );
+        p.node.addAnnot(annot);
+      }
+    });
     const pageLabel = `${strana} ${i + 1} / ${pages.length}`;
-    const plw = font.widthOfTextAtSize(pageLabel, 7.5);
-    p.drawText(pageLabel, { x: width - margin - plw, y: 38, size: 7.5, font, color: muted });
+    const plw = font.widthOfTextAtSize(pageLabel, 7);
+    p.drawText(pageLabel, { x: width - margin - plw, y: spodnyY, size: 7, font, color: muted });
+    if (spodnyText) {
+      const riadky = wrapLines(san(spodnyText), font, 6.5, innerW - plw - 16);
+      const dva = riadky.length > 2 ? [riadky[0], ellipsize(riadky.slice(1).join(" "), font, 6.5, innerW - plw - 16)] : riadky;
+      dva.forEach((riadok, r) => {
+        p.drawText(riadok, { x: margin, y: spodnyY - r * 7.5, size: 6.5, font, color: muted });
+      });
+    }
   });
 
   return { bajty: await doc.save(), prenesenieMimoPrvejStrany };
@@ -1665,6 +1742,50 @@ function wrapLines(text: string, f: PDFFont, size: number, maxW: number): string
     } else line = trial;
   }
   if (line) out.push(line);
+  return out;
+}
+
+/**
+ * Hodnota v stĺpci pätičky: zalomí sa na prirodzenom mieste (pred „@“, za
+ * bodkou, pomlčkou, lomkou, medzerou), inak tvrdo podľa šírky. Viac riadkov,
+ * než sa zmestí, sa skráti trojbodkou — do suseda nikdy nepretečie.
+ */
+function zalomHodnotuPaty(text: string, f: PDFFont, size: number, maxW: number, maxRiadkov: number): string[] {
+  const out: string[] = [];
+  let zvysok = text.trim();
+  const sirka = (s: string) => f.widthOfTextAtSize(s, size);
+  while (zvysok && out.length < maxRiadkov) {
+    if (sirka(zvysok) <= maxW) {
+      out.push(zvysok);
+      zvysok = "";
+      break;
+    }
+    if (out.length === maxRiadkov - 1) {
+      out.push(ellipsize(zvysok, f, size, maxW));
+      zvysok = "";
+      break;
+    }
+    let najdlhsi = 0;
+    for (let i = 1; i < zvysok.length; i++) {
+      if (sirka(zvysok.slice(0, i)) > maxW) break;
+      najdlhsi = i;
+    }
+    // E-mail sa najradšej láme pred „@“ (meno / doména), keď to nenechá riadok poloprázdny.
+    const zavinac = zvysok.indexOf("@");
+    let zlom = zavinac > najdlhsi / 3 && zavinac <= najdlhsi ? zavinac : 0;
+    for (let i = najdlhsi; i > 0 && !zlom; i--) {
+      const ch = zvysok[i];
+      const pred = zvysok[i - 1];
+      if (ch === "@" || ch === " " || /[.\-/_]/.test(pred)) {
+        zlom = i;
+        break;
+      }
+    }
+    // Zlom príliš na začiatku by nechal pol riadka prázdneho — radšej podľa šírky.
+    if (zlom < najdlhsi / 2) zlom = Math.max(1, najdlhsi);
+    out.push(zvysok.slice(0, zlom).trimEnd());
+    zvysok = zvysok.slice(zlom).trimStart();
+  }
   return out;
 }
 
@@ -1740,6 +1861,8 @@ function drawPartyCard(
     ic_dph?: string;
     email?: string;
     phone?: string;
+    /** Zápis v obchodnom registri — pod identifikátormi, menším sivým písmom. */
+    zapis?: string | null;
   },
   c: { ink: any; sub: any; muted: any; hairline: any; primary: any; surface: any },
   /* Popisky identifikátorov v jazyku dokladu — „IČO" Nemcovi nič nepovie. */
@@ -1795,6 +1918,19 @@ function drawPartyCard(
         color: c.ink,
       });
       cy -= 13;
+    });
+  }
+
+  /*
+    Zápis v obchodnom registri (§ 3a ObZ, § 435 OZ) — celý text, aj na dva
+    riadky; nikdy sa neskracuje, je to povinný údaj.
+  */
+  const zapis = san(String(p.zapis ?? "").trim());
+  if (zapis) {
+    cy -= 2;
+    wrapLines(zapis, font, 7.5, w - padX * 2).forEach((riadok) => {
+      page.drawText(riadok, { x: x + padX, y: cy - 8, size: 7.5, font, color: c.muted });
+      cy -= 9;
     });
   }
 

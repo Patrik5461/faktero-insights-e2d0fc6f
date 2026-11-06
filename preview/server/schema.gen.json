@@ -1083,6 +1083,10 @@
     "companies": {
       "pohlad": false,
       "stlpce": {
+        "registracia_text": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "register_sud": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "register_oddiel": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
+        "register_vlozka": { "druh": "text", "nullable": true, "volitelny": false, "povinny": false },
         "kurz_de_zdroj": {
           "druh": "text",
           "nullable": false,

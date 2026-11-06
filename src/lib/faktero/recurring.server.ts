@@ -106,6 +106,8 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     // nepovedala, za čo je.
     intro_note: obdobie(rec.intro_note ?? null),
     status: "issued",
+    // Pätička „Vystavil“: faktúru z cronu podpisuje autor šablóny, nie systém.
+    created_by: rec.created_by ?? null,
   };
   /*
     Faktúra v cudzej mene potrebuje daň aj v domácej mene firmy (kurz ECB/ČNB)

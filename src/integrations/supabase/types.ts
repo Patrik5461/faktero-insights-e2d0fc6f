@@ -1672,6 +1672,10 @@ export type Database = {
           vat_scheme: string | null
           registergericht: string | null
           handelsregister_nr: string | null
+          registracia_text: string | null
+          register_sud: string | null
+          register_oddiel: string | null
+          register_vlozka: string | null
           geschaeftsfuehrer: string | null
           dan_z_prijatej_platby: boolean
           de_dauerfrist: boolean
@@ -1801,6 +1805,10 @@ export type Database = {
           vat_scheme?: string | null
           registergericht?: string | null
           handelsregister_nr?: string | null
+          registracia_text?: string | null
+          register_sud?: string | null
+          register_oddiel?: string | null
+          register_vlozka?: string | null
           geschaeftsfuehrer?: string | null
           dan_z_prijatej_platby?: boolean
           de_dauerfrist?: boolean
@@ -1930,6 +1938,10 @@ export type Database = {
           vat_scheme?: string | null
           registergericht?: string | null
           handelsregister_nr?: string | null
+          registracia_text?: string | null
+          register_sud?: string | null
+          register_oddiel?: string | null
+          register_vlozka?: string | null
           geschaeftsfuehrer?: string | null
           dan_z_prijatej_platby?: boolean
           de_dauerfrist?: boolean

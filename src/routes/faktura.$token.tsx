@@ -11,6 +11,8 @@ import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { pomenovanieDobropisu } from "@/lib/i18n/dobropis-de";
+import { polozkyPaty } from "@/lib/faktero/pata-dokladu";
+import { PataDokladu } from "@/components/faktero/PataDokladu";
 
 /**
  * Faktúra otvorená z QR kódu na doklade.
@@ -29,7 +31,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, exchange_rate_source, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, de_hinweis_aufbewahrung, deleted_at, payment_iban, payment_swift, oprava_25a",
+        "id, company_id, invoice_number, type, status, language, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, exchange_rate_source, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, de_hinweis_aufbewahrung, deleted_at, payment_iban, payment_swift, oprava_25a, created_by",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -51,10 +53,28 @@ const nacitajFakturu = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
 
+    /*
+      Zápis v OR a web do pätičky — ako na PDF. Cez `*`, aby stránka nespadla,
+      kým nový stĺpec `registracia_text` nie je v databáze; von ide len
+      hotový text, nie celý riadok firmy.
+    */
+    const [{ data: firmaVsetko }, { menoAutora }] = await Promise.all([
+      supabaseAdmin.from("companies").select("*").eq("id", (f as any).company_id).maybeSingle(),
+      import("@/lib/faktero/invoice-pdf.server"),
+    ]);
+    const { textZapisuVRegistri } = await import("@/lib/faktero/zapis-v-registri");
+    const pata = {
+      zapis: textZapisuVRegistri(firmaVsetko as any),
+      website: ((firmaVsetko as any)?.website as string | null) ?? null,
+      farba: ((firmaVsetko as any)?.invoice_accent_color as string | null) ?? null,
+      vystavil: (await menoAutora((f as any).created_by)) || ((firma as any)?.name ?? null),
+    };
+
     // `id` ani `company_id` sa von neposielajú — návštevník ich nepotrebuje.
     const {
       id: _id,
       company_id: _c,
+      created_by: _cb,
       deleted_at: _d,
       payment_iban: _pi,
       payment_swift: _ps,
@@ -83,6 +103,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
       }),
       polozky: (polozky ?? []).map((p) => polozkaNaZobrazenie(f as any, p)),
       firma: firma ? sUctomFaktury(firma, f as any) : null,
+      pata,
       textDph,
     };
   });
@@ -158,7 +179,7 @@ function velkymPrve(s: string): string {
 
 function VerejnaFaktura() {
   const { t: tWebu } = useT();
-  const { doklad, polozky, firma, textDph, vetyUprav, jazyk } = Route.useLoaderData();
+  const { doklad, polozky, firma, pata, textDph, vetyUprav, jazyk } = Route.useLoaderData();
   /*
     Slovenský doklad ostáva v jazyku webu (návštevník si ho môže prepnúť);
     doklad v inom jazyku sa ukáže v jazyku dokladu, s popiskami z PDF.
@@ -247,6 +268,9 @@ function VerejnaFaktura() {
             <div className="mt-1 text-xs text-muted-foreground">
               {t("IČO")} {firma.ico}
             </div>
+          )}
+          {pata.zapis && (
+            <div className="mt-1 text-[11px] leading-snug text-muted-foreground">{pata.zapis}</div>
           )}
         </div>
         <div>
@@ -351,6 +375,19 @@ function VerejnaFaktura() {
       {textDph && <p className="mt-4 text-sm font-medium">{textDph}</p>}
 
       {doklad.notes && <p className="mt-4 text-sm text-muted-foreground">{doklad.notes}</p>}
+
+      <PataDokladu
+        farba={pata.farba ?? undefined}
+        polozky={polozkyPaty(
+          {
+            vystavil: pata.vystavil,
+            phone: (firma as any)?.phone,
+            email: (firma as any)?.email,
+            website: pata.website,
+          },
+          jazyk,
+        ).map((p) => ({ ...p, popis: cudzi ? p.popis : tWebu(p.popis) }))}
+      />
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
         {cudzi ? (

@@ -32,6 +32,7 @@ import { jeAdminRola } from "@/lib/faktero/opravnenia";
 import { overZapis, textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { PoleZapisVRegistri } from "@/components/faktero/ZapisVRegistri";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Firma — Faktero") }],
@@ -207,6 +208,13 @@ function CompanyPage() {
                 </ul>
               )}
             </>
+          )}
+          {/* SK/CZ: zápis v OR (§ 3a ObZ, § 435 OZ). DE má vlastné polia Handelsregister vyššie. */}
+          {!jeDe && (
+            <PoleZapisVRegistri
+              firma={c}
+              onZmena={(zmena) => setC((prev: any) => ({ ...prev, ...zmena }))}
+            />
           )}
           <In label="Email" value={c.email ?? ""} onChange={f("email")} />
           <In full label="Ulica" value={c.street ?? ""} onChange={f("street")} />

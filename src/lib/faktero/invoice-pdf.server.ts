@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export function safePdfFileName(s: string): string {
@@ -19,14 +20,49 @@ async function computeHash(invoiceId: string): Promise<string | null> {
   return (data as string | null) ?? null;
 }
 
+/** Meno používateľa do pätičky „Vystavil“; nič → `null` (vytlačí sa meno firmy). */
+export async function menoAutora(userId: string | null | undefined): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const { data } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
+    return String((data as any)?.full_name ?? "").trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/*
+  Verzia vzhľadu PDF. Hash z databázy pozerá len na dáta dokladu a firmy —
+  keď sa zmení šablóna (nie dáta), uložené PDF by ostalo staré. Zvýšenie
+  verzie ich pri ďalšom otvorení raz pregeneruje.
+    2 — 2026-11: pätička Vystavil/Telefón/E-mail/Web, zápis v OR v rámiku
+        dodávateľa.
+*/
+export const VERZIA_SABLONY_PDF = 2;
+
 /*
   Dobropis sa od 2026-10 kreslí s kladnými sumami. Obsah faktúry sa nezmenil,
   takže hash z databázy je rovnaký a uložené PDF so mínusmi by sa ukazovalo
   ďalej. Značka v hashi ho pri dobropise raz pregeneruje; ostatné doklady
   ostávajú v pamäti, ako boli.
 */
-function hashSVerziou(hash: string | null, invoice: { type?: string | null }): string | null {
-  return hash && invoice?.type === "credit_note" ? `${hash}:dobropis-kladne` : hash;
+function hashSVerziou(
+  hash: string | null,
+  invoice: { type?: string | null },
+  vystavil: string | null = null,
+): string | null {
+  if (!hash) return hash;
+  const sDobropisom = invoice?.type === "credit_note" ? `${hash}:dobropis-kladne` : hash;
+  /*
+    Meno vystaviteľa je v profile, nie na doklade ani vo firme — premenovanie
+    by hash z databázy nezachytil. Ide do hashu len ako odtlačok.
+  */
+  const odtlacok = vystavil ? `:${createHash("md5").update(vystavil).digest("hex").slice(0, 8)}` : "";
+  return `${sDobropisom}:v${VERZIA_SABLONY_PDF}${odtlacok}`;
 }
 
 async function objectExists(companyId: string, invoiceId: string) {
@@ -57,7 +93,8 @@ export async function ensureInvoicePdf(
 
   const fileName = safePdfFileName((invoice as any).invoice_number ?? "faktura");
   const path = invoicePdfPath(invoice.company_id, invoice.id);
-  const hash = hashSVerziou(await computeHash(invoice.id), invoice);
+  const vystavil = await menoAutora((invoice as any).created_by);
+  const hash = hashSVerziou(await computeHash(invoice.id), invoice, vystavil);
   const cachedHash = (invoice as any).pdf_source_hash as string | null;
 
   const cacheValid =
@@ -205,6 +242,7 @@ export async function ensureInvoicePdf(
   const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
   const bytes = await generateInvoicePdfBytes({
     zalohy,
+    vystavil,
     company,
     invoice,
     items: items ?? [],
@@ -267,7 +305,7 @@ export async function ensureInvoicePdf(
   }
 
   // Re-read the hash: content may have changed while the PDF was rendering.
-  const finalHash = hashSVerziou(await computeHash(invoice.id), invoice);
+  const finalHash = hashSVerziou(await computeHash(invoice.id), invoice, vystavil);
   await supabaseAdmin
     .from("invoices")
     .update({ pdf_url: path, pdf_source_hash: finalHash } as any)

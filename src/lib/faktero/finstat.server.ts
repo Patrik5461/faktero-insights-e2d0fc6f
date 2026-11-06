@@ -558,8 +558,11 @@ function normalize(d: unknown, ico: string, region: FinstatRegion = "sk"): Norma
     zip,
     country: pickFrom(idx, "Country", "CountryCode") ?? (region === "cz" ? "CZ" : "SK"),
     legalForm: pickFrom(idx, "LegalFormText", "LegalForm", "legalForm"),
+    // FinStat posiela zápis ako `RegisterNumberText` („Obchodný register Okresného
+    // súdu Trnava, oddiel: Sro, vložka č. 51630/T“); ostatné kľúče sú staršie odhady.
     registrationNumber: pickFrom(
       idx,
+      "RegisterNumberText",
       "RegistrationNumberText",
       "RegistrationNumber",
       "registrationNumber",

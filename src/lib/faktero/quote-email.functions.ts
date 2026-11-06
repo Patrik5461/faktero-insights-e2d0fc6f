@@ -78,9 +78,11 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       const { stiahniObrazokFirmy } = await import("./firma-obrazky.server");
       const stamp = await stiahniObrazokFirmy((company as any)?.stamp_url);
       const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
+      const { menoAutora } = await import("./invoice-pdf.server");
       const bytes = await generateInvoicePdfBytes({
         company,
         invoice: q,
+        vystavil: await menoAutora((q as any).created_by),
         items: items ?? [],
         logoBytes,
         logoMime,

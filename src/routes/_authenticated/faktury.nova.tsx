@@ -12,6 +12,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { chybajuceUdajeFirmy } from "@/lib/faktero/udaje-firmy-na-fakture";
+import { UpozornenieZapisVRegistri } from "@/components/faktero/ZapisVRegistri";
 import {
   bezDatumov,
   nacitajRozpisanu,
@@ -1617,6 +1618,7 @@ function NewInvoice() {
       />
       <PageBody>
         <PoznamkaRezimuDph />
+        <UpozornenieZapisVRegistri firma={company} odkaz className="mx-auto mb-4 max-w-6xl" />
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
           {/*
             Základné a platobné údaje vedľa seba. Pod sebou zaberali na

@@ -1,3 +1,4 @@
+import { chybaZapisVRegistri } from "./zapis-v-registri";
 /**
  * Čo chýba na faktúre z údajov vlastnej firmy.
  *
@@ -14,6 +15,11 @@ type Firma = {
   street?: string | null;
   city?: string | null;
   iban?: string | null;
+  name?: string | null;
+  registracia_text?: string | null;
+  register_sud?: string | null;
+  register_oddiel?: string | null;
+  register_vlozka?: string | null;
 };
 
 export function chybajuceUdajeFirmy(
@@ -38,5 +44,7 @@ export function chybajuceUdajeFirmy(
     prazdne(firma.iban)
   )
     von.push("IBAN");
+  // s.r.o./a.s. bez zápisu v OR (§ 3a ObZ). Kým stĺpec v DB nie je, firma ho nemá — mlčať.
+  if ("registracia_text" in firma && chybaZapisVRegistri(firma)) von.push("zápis v obchodnom registri");
   return von;
 }

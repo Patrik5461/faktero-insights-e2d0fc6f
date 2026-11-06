@@ -9,6 +9,9 @@ import { krajinaDane, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { PataDokladu } from "@/components/faktero/PataDokladu";
+import { polozkyPaty, vlastnyTextPaty } from "@/lib/faktero/pata-dokladu";
+import { textZapisuVRegistri } from "@/lib/faktero/zapis-v-registri";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/vzhlad-faktury")({
   head: ({ match }) => {
@@ -375,7 +378,9 @@ function InvoiceAppearancePage() {
             <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
               <h2 className="text-base font-semibold">{t("Pätička dokladu")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {t("Napr. zápis v OR SR, poznámka o prenose daňovej povinnosti, ďakovná veta.")}
+                {t(
+                  "Krátky text pod pätičkou, napr. ďakovná veta. Zápis v obchodnom registri sa vypĺňa v údajoch firmy a tlačí sa v rámiku dodávateľa.",
+                )}
               </p>
               <textarea aria-label={t("Pätička dokladu")}
                 value={c.invoice_footer ?? ""}
@@ -454,8 +459,22 @@ function InvoiceAppearancePage() {
                   <img src={stampPreview} alt={t("Náhľad pečiatky")} className="h-12 object-contain" />
                 </div>
               )}
-              {c.invoice_footer && (
-                <div className="mt-3 text-muted-foreground">{c.invoice_footer}</div>
+              {/* Pätička ako v PDF: Vystavil · Telefón · E-mail · Web pod čiarou v akcentovej farbe. */}
+              <PataDokladu
+                className="mt-3"
+                male
+                farba={accent}
+                polozky={polozkyPaty({
+                  vystavil: c.name,
+                  phone: c.phone,
+                  email: c.email,
+                  website: c.website,
+                }).map((p) => ({ ...p, popis: t(p.popis) }))}
+              />
+              {vlastnyTextPaty(c.invoice_footer, textZapisuVRegistri(c)) && (
+                <div className="mt-1 text-[8px] text-muted-foreground">
+                  {vlastnyTextPaty(c.invoice_footer, textZapisuVRegistri(c))}
+                </div>
               )}
             </div>
           </aside>

@@ -7,6 +7,7 @@ import {
   type SchemaDph,
 } from "./dph-rezim";
 import { krajinaDane } from "./vat-rates";
+import { zapisZFinstatTextu } from "./zapis-v-registri";
 
 export type AutofillTarget = {
   name?: string | null;
@@ -19,6 +20,8 @@ export type AutofillTarget = {
   country?: string | null;
   vat_payer?: boolean | null;
   vat_scheme?: string | null;
+  /** Len formulár vlastnej firmy (`companies`); odberateľ ho nemá. */
+  registracia_text?: string | null;
 };
 
 /**
@@ -107,6 +110,16 @@ function zaklad<T extends AutofillTarget>(
     city: take("city", d.city ?? null),
     zip: take("zip", d.zip ?? null),
     country: take("country", kodKrajiny(d.country) || "SK"),
+    // Zápis v OR dopĺňa len formulár, ktorý to pole má (vlastná firma) — do
+    // odberateľa by sa neznámy stĺpec pri uložení nedostal.
+    ...("registracia_text" in prev
+      ? {
+          registracia_text: take(
+            "registracia_text",
+            zapisZFinstatTextu(d.registrationNumber)?.text ?? null,
+          ),
+        }
+      : {}),
   };
 }
 

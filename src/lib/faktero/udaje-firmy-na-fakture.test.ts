@@ -47,4 +47,15 @@ describe("chybajuceUdajeFirmy", () => {
       "Steuernummer alebo USt-IdNr.",
     ]);
   });
+
+  it("s.r.o. bez zápisu v OR upozorní, len keď stĺpec existuje", () => {
+    const f = { name: "PALIERA s.r.o.", ico: "54613124", street: "A 1", city: "B", iban: "SK1" };
+    const pl = { payment_method: "bank_transfer" };
+    expect(chybajuceUdajeFirmy(f, pl)).toEqual([]);
+    expect(chybajuceUdajeFirmy({ ...f, registracia_text: null }, pl)).toEqual([
+      "zápis v obchodnom registri",
+    ]);
+    expect(chybajuceUdajeFirmy({ ...f, registracia_text: "Obchodný register…" }, pl)).toEqual([]);
+    expect(chybajuceUdajeFirmy({ ...f, name: "Ján Novák", registracia_text: null }, pl)).toEqual([]);
+  });
 });
