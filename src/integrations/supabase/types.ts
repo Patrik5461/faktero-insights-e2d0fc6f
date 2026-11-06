@@ -6298,6 +6298,8 @@ export type Database = {
       }
       platformove_oznamy: {
         Row: {
+          nadpis: string | null
+          text_okno: string | null
           aktivny: boolean
           created_at: string
           created_by: string | null
@@ -6310,6 +6312,8 @@ export type Database = {
           zaciatok: string
         }
         Insert: {
+          nadpis?: string | null
+          text_okno?: string | null
           aktivny?: boolean
           created_at?: string
           created_by?: string | null
@@ -6322,6 +6326,8 @@ export type Database = {
           zaciatok: string
         }
         Update: {
+          nadpis?: string | null
+          text_okno?: string | null
           aktivny?: boolean
           created_at?: string
           created_by?: string | null

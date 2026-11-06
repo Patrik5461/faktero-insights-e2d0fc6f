@@ -52,7 +52,7 @@ export function OznamAktualizacie() {
     try {
       const { data, error } = await supabase
         .from("platformove_oznamy")
-        .select("id, typ, text, zaciatok, trvanie_min, plati_do, aktivny")
+        .select("id, typ, text, zaciatok, trvanie_min, plati_do, aktivny, nadpis, text_okno")
         .eq("aktivny", true)
         .order("zaciatok", { ascending: false })
         .limit(10);
@@ -85,7 +85,7 @@ export function OznamAktualizacie() {
 
   const stav = vyberOznam(oznamy, teraz, NACITANE, (id) => !!videne[id] || videlOkno(id));
   const zavriOkno =
-    stav.faza === "pred" && stav.okno
+    (stav.faza === "pred" || stav.faza === "info") && stav.okno
       ? () => {
           zapamatajOkno(stav.oznam.id);
           setVidene((v) => ({ ...v, [stav.oznam.id]: true }));
@@ -98,6 +98,40 @@ export function OznamAktualizacie() {
   return (
     <>
       <Pas stav={stav} />
+      {zavriOkno && stav.faza === "info" && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 dk-prekrytie p-4"
+          onClick={zavriOkno}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="oznam-info-nadpis"
+            data-oznam-aktualizacie-okno
+            className="w-full max-w-md space-y-4 rounded-xl border border-border bg-card p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <span className="dk-info mt-0.5 shrink-0 rounded-full border p-2">
+                <Info className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 space-y-1.5">
+                <h2 id="oznam-info-nadpis" className="text-lg font-semibold">
+                  {stav.oznam.nadpis?.trim() || t("Oznam")}
+                </h2>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">
+                  {stav.oznam.text_okno}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={zavriOkno} autoFocus>
+                {t("Rozumiem")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {zavriOkno && stav.faza === "pred" && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 dk-prekrytie p-4"

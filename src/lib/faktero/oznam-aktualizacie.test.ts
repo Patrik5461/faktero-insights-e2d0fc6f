@@ -128,3 +128,21 @@ describe("texty", () => {
     );
   });
 });
+
+describe("info s oknom", () => {
+  it("okno raz, potom len pás; bez text_okno okno nie je", () => {
+    const o = oznam({
+      typ: "info",
+      text: "Údržba do 12:30",
+      nadpis: "Údržba",
+      text_okno: "Vážení používatelia…",
+    });
+    const s = stavOznamu(o, ZACIATOK + MIN, RANO, false);
+    expect(s.faza).toBe("info");
+    expect(s.faza !== "nic" && s.okno).toBe(true);
+    const videne = stavOznamu(o, ZACIATOK + MIN, RANO, true);
+    expect(videne.faza !== "nic" && videne.okno).toBe(false);
+    const bez = stavOznamu(oznam({ typ: "info", text: "pás" }), ZACIATOK + MIN, RANO, false);
+    expect(bez.faza !== "nic" && bez.okno).toBe(false);
+  });
+});

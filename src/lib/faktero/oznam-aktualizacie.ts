@@ -10,7 +10,8 @@
  *               „Faktero je aktualizované“ + Obnoviť stránku. Stránka načítaná
  *               až po skončení už nové vydanie má, preto sa jej `po` neukazuje
  *               — vďaka tomu pás zmizne aj po kliknutí na Obnoviť.
- * Typ `info` je len pás s textom od začiatku po `plati_do`.
+ * Typ `info` je pás s textom od začiatku po `plati_do`; keď má `text_okno`,
+ * najprv sa každému raz ukáže okno (nadpis `nadpis`, inak „Oznam“).
  */
 
 export type PlatformovyOznam = {
@@ -21,6 +22,9 @@ export type PlatformovyOznam = {
   trvanie_min: number;
   plati_do: string | null;
   aktivny: boolean;
+  /** Len typ info: nadpis a text okna (bez `text_okno` sa okno neukáže). */
+  nadpis?: string | null;
+  text_okno?: string | null;
 };
 
 export const PRED_ZACIATKOM_MS = 30 * 60_000;
@@ -31,7 +35,7 @@ export type StavOznamu =
   | {
       faza: "pred" | "pocas" | "po" | "info";
       oznam: PlatformovyOznam;
-      /** Okno ukázať (len `pred`, keď ho používateľ k tomuto oznamu ešte nevidel). */
+      /** Okno ukázať (`pred`, alebo `info` s `text_okno`), keď ho používateľ k tomuto oznamu ešte nevidel. */
       okno: boolean;
       zaciatok: number;
       koniec: number;
@@ -64,7 +68,7 @@ export function stavOznamu(
 
   if (o.typ === "info") {
     if (teraz < zaciatok || !o.text?.trim()) return { faza: "nic" };
-    return { faza: "info", oznam: o, okno: false, zaciatok, koniec };
+    return { faza: "info", oznam: o, okno: !!o.text_okno?.trim() && !videneOkno, zaciatok, koniec };
   }
   if (o.typ !== "aktualizacia") return { faza: "nic" };
 
