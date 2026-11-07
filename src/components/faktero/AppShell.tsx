@@ -775,7 +775,7 @@ export function AppShell({
                       {g.nadpis && (
                         <span
                           data-w-podsekcia-menu
-                          className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80"
+                          className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
                         >
                           {t(g.nadpis)}
                         </span>

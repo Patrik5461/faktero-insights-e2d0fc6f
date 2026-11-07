@@ -246,7 +246,7 @@ export function SpravaPokladni({
                   <span className="mb-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                     {t("Názov")}
                     {p.predvolena && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-px text-[11px] font-semibold leading-4 text-foreground">
                         {t("predvolená")}
                       </span>
                     )}

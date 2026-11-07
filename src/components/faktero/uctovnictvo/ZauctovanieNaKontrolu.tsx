@@ -378,7 +378,7 @@ export function ZauctovanieNaKontrolu({
                           })
                         : "—"}
                     </td>
-                    <td className="p-3" title={n?.zdovodnenie || undefined}>
+                    <td className="p-3" title={n?.zdovodnenie ? t(n.zdovodnenie) : undefined}>
                       {kody ? (
                         <span className="font-medium">{kody}</span>
                       ) : (

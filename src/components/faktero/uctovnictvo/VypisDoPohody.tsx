@@ -435,7 +435,7 @@ export function VypisDoPohody({ zdroj: odkial }: { zdroj: "banka" | "brana" }) {
                 {t(
                   "Každá platba bude príjem s variabilným symbolom z čísla objednávky, poplatok brány samostatný výdaj a výber na váš účet prevod medzi vlastnými účtami. Chcete platby aj spárovať s faktúrami vo Fakteri? Ten istý súbor nahrajte v",
                 )}{" "}
-                <Link to="/bankove-ucty/import" className="text-primary hover:underline">
+                <Link to="/bankove-ucty/import" className="text-primary underline underline-offset-2">
                   {t("Bankové účty → Nahrať výpis")}
                 </Link>
                 .

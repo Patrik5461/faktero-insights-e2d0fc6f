@@ -279,7 +279,7 @@ export function SekcieNavigacie({
                       {g.nadpis && (
                         <div
                           data-w-podsekcia-menu
-                          className="px-2 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80"
+                          className="px-2 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
                         >
                           {t(g.nadpis)}
                         </div>

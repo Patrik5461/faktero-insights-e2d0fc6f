@@ -22,6 +22,16 @@ function fmt(n: number): string {
   return (Math.round(n * 100) / 100).toFixed(2);
 }
 
+/**
+ * Cena za jednotku (BT-146/147/148): aspoň 2 a najviac 4 desatinné miesta —
+ * BR-DEC sa na ceny nevzťahuje a čistá cena po zľave či rozpočítanej zľave na
+ * doklad by zaokrúhlená na centy rozbila PEPPOL-EN16931-R120.
+ */
+function fmtCena(n: number): string {
+  const s = (Math.round(n * 1e4) / 1e4).toFixed(4);
+  return s.replace(/(\.\d\d\d?)0+$/, "$1").replace(/(\.\d\d)0$/, "$1");
+}
+
 function partyXml(
   party: EN16931Party,
   role: "AccountingSupplierParty" | "AccountingCustomerParty",
@@ -164,7 +174,16 @@ ${l.vatCategory === "O" ? "" : `        <cbc:Percent>${l.vatPercent}</cbc:Percen
       </cac:ClassifiedTaxCategory>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="${esc(inv.currency)}">${fmt(l.unitPrice)}</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="${esc(inv.currency)}">${fmtCena(l.unitPrice)}</cbc:PriceAmount>${
+        l.priceDiscount
+          ? `
+      <cac:AllowanceCharge>
+        <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+        <cbc:Amount currencyID="${esc(inv.currency)}">${fmtCena(l.priceDiscount.amount)}</cbc:Amount>
+        <cbc:BaseAmount currencyID="${esc(inv.currency)}">${fmtCena(l.priceDiscount.baseAmount)}</cbc:BaseAmount>
+      </cac:AllowanceCharge>`
+          : ""
+      }
     </cac:Price>
   </cac:${riadok}>`,
     )

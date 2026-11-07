@@ -1,3 +1,4 @@
+import { poDavkach } from "@/lib/faktero/po-davkach";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -272,12 +273,16 @@ export function usePagedList({
     if (!ids.length) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const { error } = await supabase
-      .from(resource as any)
-      .update({ deleted_at: new Date().toISOString() } as any)
-      .in("id", ids)
-      .eq("company_id", cid);
-    if (error) throw error;
+    const kedy = new Date().toISOString();
+    // Po dávkach — stovky id v jednom `.in()` pretiahnu URL (400).
+    await poDavkach(ids, async (davka) => {
+      const { error } = await supabase
+        .from(resource as any)
+        .update({ deleted_at: kedy } as any)
+        .in("id", davka)
+        .eq("company_id", cid);
+      if (error) throw error;
+    });
     reload();
   }
   /**
@@ -289,14 +294,16 @@ export function usePagedList({
     if (!ids.length) return;
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const { error } = await supabase
-      .from(resource as any)
-      .delete()
-      .in("id", ids)
-      .eq("company_id", cid)
-      // Poistka: natrvalo sa maže len to, čo už je v koši.
-      .not("deleted_at", "is", null);
-    if (error) throw error;
+    await poDavkach(ids, async (davka) => {
+      const { error } = await supabase
+        .from(resource as any)
+        .delete()
+        .in("id", davka)
+        .eq("company_id", cid)
+        // Poistka: natrvalo sa maže len to, čo už je v koši.
+        .not("deleted_at", "is", null);
+      if (error) throw error;
+    });
     reload();
   }
 

@@ -77,13 +77,31 @@ export const SKUPINY = [
       "ine-doklady-vyber",
       // Len číta (výber súborov bez nahratia, filter histórie importov).
       "importy-zdroj",
+      /*
+        Prehľad: porovnáva súčty prehlad_suhrn vo firme Test pred a po vlastných
+        faktúrach (rozdiel) — za sebou s tokmi, ktoré vo firme Test zakladajú doklady.
+      */
+      "prehlad-suhrn",
     ],
   },
   {
     // Klik na riadok B1–B4: len čítajú zoznamy firmy Test, preto smú bežať
     // súbežne so skupinou „test“ (tá by s nimi nestihla limit behu).
     meno: "klik",
-    toky: ["klik-b1", "klik-b2", "klik-b3", "klik-b4"],
+    toky: [
+      "klik-b1",
+      "klik-b2",
+      "klik-b3",
+      "klik-b4",
+      /*
+        Tiež len čítajú (mobil-zoznamy zoznamy firmy Test, menu-podla-roly
+        podvrhuje rolu v prehliadači). mobil-zoznamy bol v „test2-cz“, ktorá je
+        najdlhšia (~14 min) — 6. 11. pri opakovaní zlyhaných tokov nestihla
+        limit a záverečné sériové toky sa nespustili.
+      */
+      "mobil-zoznamy",
+      "menu-podla-roly",
+    ],
   },
   {
     meno: "test2-cz",
@@ -118,7 +136,6 @@ export const SKUPINY = [
       "cz-vykazy-jazyk",
       "financie-mena-cz",
       "pohoda-cz-spatny-chod",
-      "mobil-zoznamy",
       "banka-tb-notifikacie",
       // B2: test2 sa počas toku prepne na neplatiteľa — preto za sebou v tejto skupine.
       "b2-neplatitel-dph",

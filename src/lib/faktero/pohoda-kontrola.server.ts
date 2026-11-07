@@ -11,7 +11,7 @@ import {
   nastaveniaFaktur,
   pripravFaktury,
 } from "./export-priprava.server";
-import { prekazkaDokladu, varovanieDokladu, varovanieDokladuKPlatbe } from "./pohoda-kontrola";
+import { prekazkaDokladu, varovanieDokladu, varovanieDokladuKPlatbe, varovanieKvVydanej } from "./pohoda-kontrola";
 import { poliaDokladovXml, rozdielyPoli, type RozdielPola } from "./pohoda-rozdiely";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
@@ -132,6 +132,7 @@ export async function zastaveneDoklady(
       else {
         const varovanie =
           varovanieDokladuKPlatbe(invoice, nast as any) ??
+          varovanieKvVydanej(invoice, items as any, company as any) ??
           varovanieChybajucejSkratky(invoice.invoice_number, nast, (n) =>
             buildPohodaInvoiceXml({ company: bezOdkazov(company), invoices: [{ invoice, items }] as any, nastavenia: n }),
           );

@@ -120,7 +120,13 @@ export type EN16931Line = {
   description?: string;
   quantity: number;
   unitCode: string; // UN/ECE Rec. 20 (e.g. "C62" piece, "HUR" hour)
+  /** Čistá cena za jednotku po zľave riadku (BT-146). */
   unitPrice: number;
+  /**
+   * Zľava riadku z ceny (BG-29): hrubá cena (BT-148) a zľava na jednotku
+   * (BT-147) — `cac:Price/cac:AllowanceCharge`. Čistá cena = hrubá − zľava.
+   */
+  priceDiscount?: { baseAmount: number; amount: number };
   lineExtensionAmount: number; // net
   vatCategory: "S" | "Z" | "E" | "AE" | "K" | "G" | "O"; // UNCL5305
   vatPercent: number;

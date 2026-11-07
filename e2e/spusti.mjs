@@ -83,10 +83,11 @@ const args = process.argv.slice(2);
 const OPAKUJ = args.includes("--opakuj") || process.env.E2E_OPAKUJ === "1";
 const vybrane = args.filter((a) => !a.startsWith("--"));
 // Celá sada trvá ~10 min (80 tokov v troch súbežných skupinách + skupina bez prehliadača,
-// 31. 10. 2026; sériovo to bolo ~25 min); po 18 min sa nový tok nespustí (112 tokov od 2. 11.).
-const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1080) * 1000;
+// 31. 10. 2026; sériovo to bolo ~25 min); po 22 min sa nový tok nespustí (113 tokov od 6. 11.;
+// pri 18 min odrezal záverečné sériové toky, keď skupina test2-cz opakovala zlyhané toky).
+const LIMIT_BEHU_MS = Number(process.env.E2E_LIMIT_S ?? 1320) * 1000;
 // Tvrdý koniec behu: tok spustený tesne pred LIMIT_BEHU_MS dostane len zvyšok do tohto času,
-// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 1260).
+// aby celý beh (vrátane upratovania) skončil pred stropom v po-nasadeni.sh (E2E_STROP_S 1500).
 const KONIEC_BEHU_MS = LIMIT_BEHU_MS + Number(process.env.E2E_REZERVA_S ?? 60) * 1000;
 
 function commit() {
@@ -612,6 +613,7 @@ async function spustiZaSebou(zoznam, prehliadac, skupina) {
         popis: tok.popis,
         skupina,
         ok: false,
+        nespusteny: true,
         ms: 0,
         chyba: "nespustený — vypršal čas celého behu",
       });
@@ -710,17 +712,24 @@ if (rest && !chybaPrihlasenia) {
   if (zvysky.length) log(`! po behu ostali dáta so značkou ${ZNACKA}: ${zvysky.join(", ")}`);
 }
 
-const zlyhane = vysledky.filter((v) => !v.ok);
+/*
+  Tok, na ktorý pre časový limit behu neprišiel rad, nezlyhal — hlási sa zvlášť
+  ako „nespustený“. Beh s nespustenými tokmi nie je „všetko prešlo“ (nič o nich
+  nevieme), ale súhrn ich nemieša so zlyhanými.
+*/
+const nespustene = vysledky.filter((v) => v.nespusteny);
+const zlyhane = vysledky.filter((v) => !v.ok && !v.nespusteny);
 const suhrn = {
-  ok: zlyhane.length === 0,
+  ok: zlyhane.length === 0 && nespustene.length === 0,
   base: BASE,
   commit: COMMIT,
   znacka: ZNACKA,
   zaciatok: new Date(zaciatok).toISOString(),
   trvanie_s: Math.round((Date.now() - zaciatok) / 1000),
-  prešlo: vysledky.length - zlyhane.length,
+  prešlo: vysledky.length - zlyhane.length - nespustene.length,
   zlyhalo: zlyhane.length,
   zlyhane: zlyhane.map((v) => v.tok),
+  nespustene: nespustene.map((v) => v.tok),
   nestabilne: vysledky.filter((v) => v.nestabilny).map((v) => v.tok),
   zvysky,
   skupiny: trvanieSkupin,
@@ -729,7 +738,8 @@ const suhrn = {
 };
 writeFileSync(path.join(VYSTUP, "suhrn.json"), JSON.stringify(suhrn, null, 2));
 log(
-  `${suhrn.ok ? "VŠETKO PREŠLO" : "ZLYHALO"}: ${suhrn.prešlo}/${vysledky.length} za ${suhrn.trvanie_s} s` +
-    (zlyhane.length ? ` — ${suhrn.zlyhane.join(", ")}` : ""),
+  `${suhrn.ok ? "VŠETKO PREŠLO" : zlyhane.length ? "ZLYHALO" : "NEÚPLNÉ"}: ${suhrn.prešlo}/${vysledky.length} za ${suhrn.trvanie_s} s` +
+    (zlyhane.length ? ` — ${suhrn.zlyhane.join(", ")}` : "") +
+    (nespustene.length ? ` — nespustené (čas behu): ${suhrn.nespustene.join(", ")}` : ""),
 );
 process.exit(suhrn.ok ? 0 : 1);

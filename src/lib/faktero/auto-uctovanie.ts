@@ -55,7 +55,9 @@ export type Blokator =
   | "cudzi_odberatel"
   | "duplicita"
   | "rozpis_dph"
-  | "bez_clenenia";
+  | "bez_clenenia"
+  | "platitel_bez_dph"
+  | "vlastna_faktura";
 
 export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   polozky: "Súčet položiek nesedí so sumou dokladu",
@@ -71,6 +73,9 @@ export const TEXTY_BLOKATOROV: Record<Blokator, string> = {
   duplicita: "Duplicitný doklad — rovnaký doklad je v evidencii viackrát; jeden zmažte",
   bez_clenenia: "Na doklade chýba členenie DPH — doplní ho až potvrdenie návrhu",
   rozpis_dph: "Rozpis DPH je na kontrole — skontrolujte ho a potvrďte",
+  platitel_bez_dph:
+    "Faktúra od platiteľa DPH je bez dane — overte, či nejde o prenesenie daňovej povinnosti (§ 69 ods. 12), alebo zvoľte oslobodenie či „nie je predmetom DPH“",
+  vlastna_faktura: "Doklad vystavila sama firma — odpočet DPH z neho nie je možný, skontrolujte ho",
 };
 
 export type NavrhZauctovania = {
@@ -101,6 +106,7 @@ export type RezimDph =
   | "blocek"
   | "tuzemsko_bez_odpoctu"
   | "bez_dph"
+  | "bez_dph_platitel"
   | "pdp_tuzemsko"
   | "eu_tovar"
   | "eu_sluzby"
@@ -125,6 +131,7 @@ export const NAZVY_REZIMOV: Record<RezimDph, string> = {
   blocek: "Bloček (zjednodušená faktúra)",
   tuzemsko_bez_odpoctu: "Tuzemsko bez nároku na odpočet",
   bez_dph: "Doklad bez DPH",
+  bez_dph_platitel: "Platiteľ DPH bez dane — overte prenesenie",
   pdp_tuzemsko: "Prenesenie daňovej povinnosti (tuzemsko)",
   eu_tovar: "Nadobudnutie tovaru z EÚ",
   eu_sluzby: "Služby z EÚ (samozdanenie)",
@@ -161,7 +168,47 @@ export type VstupClenenia = {
   odpocet?: boolean | null;
   partnerIcDph?: string | null;
   partnerKrajina?: string | null;
+  /** Základ dane dokladu — 0 € doklad bez dane nie je podozrivý. Bez údaja sa neposudzuje. */
+  zaklad?: number | null;
+  /** Doklad nesie znaky prenesenia (text o prenesení, položka v prenesení) — `znakyPreneseniaPrijatej`. */
+  znakyPrenesenia?: boolean;
 };
+
+/*
+  Znaky prenesenia daňovej povinnosti na prijatej faktúre bez príznaku:
+  položka označená v prenesení (pdp / reverse_charge / kategória rozpisu
+  reverse_charge) alebo text na doklade („prenesenie daňovej povinnosti“,
+  „§ 69 ods. 12“, „daň odvedie príjemca“, „reverse charge“). Audit 7. 11. 2026:
+  bez nich dostala faktúra od SK platiteľa s 0 % automaticky „PN“ a
+  neoznačené prenesenie z priznania ticho vypadlo.
+*/
+const TEXT_PRENESENIA =
+  /prenesen\S*\s+da[nň]ov|§\s*69\s*ods\.?\s*12|da[nň]\s+(?:odvedie|plat[ií]|uhrad[ií])\s+(?:pr[ií]jemca|odberate)|reverse\s*charge|\bPDP\b/i;
+
+export function znakyPreneseniaPrijatej(row: {
+  items?: unknown;
+  note?: unknown;
+  vat_breakdown?: unknown;
+}): boolean {
+  const polozky = Array.isArray(row.items) ? (row.items as Record<string, unknown>[]) : [];
+  const rozpis = Array.isArray(row.vat_breakdown) ? (row.vat_breakdown as Record<string, unknown>[]) : [];
+  if (polozky.some((x) => x?.pdp || x?.reverse_charge || x?.vat_category === "reverse_charge")) return true;
+  if (rozpis.some((x) => x?.pdp || x?.vat_category === "reverse_charge")) return true;
+  const texty = [row.note, ...polozky.map((x) => x?.name ?? x?.description)];
+  return texty.some((t) => TEXT_PRENESENIA.test(String(t ?? "")));
+}
+
+/** Dodávateľ dokladu je samotná firma (rovnaké IČ DPH alebo IČO). */
+export function dodavatelJeFirma(
+  doklad: { supplier_ic_dph?: unknown; supplier_ico?: unknown },
+  firma: { ic_dph?: unknown; ico?: unknown },
+): boolean {
+  const norm = (v: unknown) => String(v ?? "").replace(/\s/g, "").toUpperCase();
+  const icDph = norm(doklad.supplier_ic_dph);
+  const ico = norm(doklad.supplier_ico).replace(/^0+/, "");
+  if (icDph && icDph === norm(firma.ic_dph)) return true;
+  return Boolean(ico) && ico === norm(firma.ico).replace(/^0+/, "");
+}
 
 export type KodCiselnika = {
   druh: string;
@@ -237,6 +284,20 @@ export function rezimDph(d: VstupClenenia): RezimDph {
   // Hotel či palivo v Rakúsku: cudzia DPH do domáceho priznania nepatrí, odpočet nie je.
   if (cudziEu) return "cudzia_dph";
   if (d.odpocet === false) return "tuzemsko_bez_odpoctu";
+  /*
+    Platiteľ z domova bez dane a s nenulovým základom: buď prenesenie (§ 69
+    ods. 12), alebo oslobodené / nie je predmetom DPH. Automatika to nevie
+    rozhodnúť — so znakmi prenesenia ide ako prenesenie, inak ostane bez
+    členenia a doklad čaká na človeka (nie „PN“, ktoré by ho z výkazu skrylo).
+  */
+  if (
+    dph === 0 &&
+    !d.blocek &&
+    !d.opravny &&
+    rozdelIcDph(d.partnerIcDph)?.kod === domov &&
+    (d.zaklad == null || Math.abs(Number(d.zaklad) || 0) >= 0.005)
+  )
+    return d.znakyPrenesenia ? "pdp_tuzemsko" : "bez_dph_platitel";
   if (dph === 0) return "bez_dph";
   return d.blocek ? "blocek" : "tuzemsko";
 }
@@ -374,6 +435,9 @@ function kvPreRezim(rezim: RezimDph, d: VstupClenenia): string | null {
       return d.opravny ? "C2" : "B3";
     case "tuzemsko":
       return d.opravny ? "C2" : "B2";
+    // Nerozhodnuté — „X“ by doklad z KV skryl bez výtky; rozhodne človek.
+    case "bez_dph_platitel":
+      return null;
     default:
       return "X";
   }
@@ -486,6 +550,8 @@ export type VstupBlokatorov = {
   duplicita?: boolean;
   /** Rozpis DPH čaká na kontrolu človeka (`jeRozpisNaKontrole`) — do Pohody by nešiel. */
   rozpisNaKontrole?: boolean;
+  /** Dodávateľ prijatého dokladu je samotná firma (`dodavatelJeFirma`). */
+  vlastnaFaktura?: boolean;
 };
 
 export function blokatory(v: VstupBlokatorov): Blokator[] {
@@ -493,6 +559,7 @@ export function blokatory(v: VstupBlokatorov): Blokator[] {
   if (v.uzamknuty) return ["uzamknuty"];
   if (v.cudziOdberatel) return ["cudzi_odberatel"];
   if (v.duplicita) out.push("duplicita");
+  if (v.vlastnaFaktura) out.push("vlastna_faktura");
   if (v.rozpisNaKontrole) out.push("rozpis_dph");
   if (v.polozkyNesedia) out.push("polozky");
   if (v.zaklad != null && v.dph != null && v.celkom != null) {
@@ -502,6 +569,7 @@ export function blokatory(v: VstupBlokatorov): Blokator[] {
   }
   if (v.rezim && REZIMY_S_VIES.includes(v.rezim) && !v.viesPlatne) out.push("vies");
   if (v.rezim === "tretia_krajina" || v.rezim === "cudzia_dph") out.push("rezim_dph");
+  if (v.rezim === "bez_dph_platitel") out.push("platitel_bez_dph");
   if (v.limit != null && v.sumaEur != null && Math.abs(Number(v.sumaEur)) > Number(v.limit))
     out.push("limit");
   if (v.prvyOdPartnera) out.push("prvy");
@@ -539,6 +607,8 @@ export function aktualnyNavrh(
       b !== "bez_clenenia" &&
       !(b === "predkontacia" && predkontacia) &&
       !(b === "clenenie" && clenenieDph) &&
+      // Človek členenie na doklade zvolil (prenesenie, oslobodenie…) — rozhodol.
+      !(b === "platitel_bez_dph" && t(row.pohoda_clenenie_dph)) &&
       // Človek rozpis skontroloval (príznak zrušený či potvrdený) — blokátor zmizne.
       !(b === "rozpis_dph" && "na_kontrolu_at" in row && !jeRozpisNaKontrole(row)),
   );

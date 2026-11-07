@@ -16,7 +16,8 @@ import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
 
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
 import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
-import { kvPrijatehoDokladu } from "./kv-urcenie";
+import { kvPrijatehoDokladu, kvSekcia } from "./kv-urcenie";
+import { pismenoPreneseniaKv } from "./ciselnik-obrazok";
 import { skratkaPredkontacie, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { DOVOD_ROZPIS_NA_KONTROLE, jeRozpisNaKontrole } from "./rozpis-na-kontrole";
@@ -161,7 +162,7 @@ export function prekazkaPoliVydanej(invoice: Riadok, company: Riadok): string | 
   // KV A.2 (ručne zvolené) chce IČ DPH odberateľa — prenesenie overuje prekazkaVydanej.
   if (
     krajinaDane(company?.country) !== "CZ" &&
-    kod(invoice?.kv_clenenie).toUpperCase() === KV_PDP_VYDANE &&
+    kvSekcia(invoice?.kv_clenenie) === KV_PDP_VYDANE &&
     !kod(invoice?.customer_ic_dph)
   )
     return `${cislo} — členenie KV A.2 bez IČ DPH odberateľa — doplňte IČ DPH alebo zmeňte členenie`;
@@ -269,6 +270,12 @@ export function prekazkaVydanej(
       return `${cislo} — prenesenie daňovej povinnosti bez IČ DPH odberateľa (kontrolný výkaz ${cz ? "A.1" : "A.2"} ho vyžaduje) — doplňte IČ DPH alebo prenesenie zrušte`;
   }
 
+  // KV A.2 bez podkódu (A2SP, A2CN, A2MT, A2IO) — Pohoda všeobecné A2 nepozná.
+  {
+    const dovod = prekazkaKvPrenesenia(invoice, items, company);
+    if (dovod) return dovod;
+  }
+
   // Česká firma: predvolené členenie pre prenesenie nie je (UDpdp je slovenské).
   if (cz && !zalohova) {
     const bezClenenia =
@@ -338,7 +345,7 @@ export function prekazkaVydanej(
   // Členenie pre prenesenie na faktúre s daňou — v Pohode by išla do A.2 bez dane.
   const maDph = Math.abs(Number(invoice?.vat_total ?? 0)) > 0.005;
   if (!invoice?.reverse_charge && maDph && !zalohova) {
-    if (jePdpKod(invoice?.pohoda_clenenie_dph) || kod(invoice?.kv_clenenie) === KV_PDP_VYDANE)
+    if (jePdpKod(invoice?.pohoda_clenenie_dph) || kvSekcia(invoice?.kv_clenenie) === KV_PDP_VYDANE)
       return `${cislo} — členenie pre prenesenie daňovej povinnosti (${kod(invoice?.pohoda_clenenie_dph) || kod(invoice?.kv_clenenie)}), ale faktúra má DPH — opravte zaúčtovanie`;
   }
 
@@ -677,6 +684,59 @@ export function holeIdDokladu(id: string): string {
 
 /** Text upozornenia pri daňovom doklade k platbe bez predkontácie (aj v detaile dokladu). */
 export const NASTAVTE_PREDKONTACIU_ZALOHY = "Nastavte predkontáciu pre daňové doklady k platbe";
+
+/** Opravná faktúra (dobropis, ťarchopis, oprava § 25a) — KV C.1, nie A.2. */
+const jeOpravnaVydana = (inv: Riadok) =>
+  inv?.type === "credit_note" || inv?.type === "debit_note" || Boolean(kod(inv?.opravuje_fakturu_id));
+
+/** Položky v prenesení, ktoré do KV pôjdu s kódom sekcie (A2 / C1) — nie s vlastným podkódom. */
+function bezPodkoduKv(
+  invoice: Riadok,
+  items: Riadok[],
+  company: Riadok,
+  sekcia: "A2" | "C1",
+): boolean {
+  if (krajinaDane(company?.country) === "CZ" || invoice?.type === "proforma") return false;
+  const druh = invoice?.pdp_druh;
+  const opravna = jeOpravnaVydana(invoice);
+  if ((sekcia === "C1") !== opravna) return false;
+  // Kód, ktorý export pošle: všeobecný (alebo prázdny = automatika dá všeobecný).
+  const vseobecny = (v: unknown) => !kod(v) || kod(v).toUpperCase() === sekcia;
+  if (jeTuzemskePdp(invoice, company)) {
+    if (!vseobecny(invoice?.kv_clenenie)) return false;
+    return !pismenoPreneseniaKv(druh, items);
+  }
+  if (opravna || !maPdpPolozky(invoice, items)) return false;
+  const pdp = (items ?? []).filter((it) => it?.prenesenie);
+  // Ručné „nezahŕňať“ na faktúre vypne KV aj na položkách.
+  if (kvSekcia(invoice?.kv_clenenie) === "X") return false;
+  const zFaktury = pismenoPreneseniaKv(druh, pdp);
+  return pdp.some((it) => vseobecny(it?.kv_clenenie) && !(pismenoPreneseniaKv(druh, [it]) ?? zFaktury));
+}
+
+/**
+ * Faktúra v tuzemskom prenesení by išla do KV ako všeobecné „A2“ — číselník
+ * KV Pohody má len podkódy podľa písmena § 69 ods. 12 (A2SP stavebné práce,
+ * A2CN obilniny a kovy, A2MT mobilné telefóny, A2IO integrované obvody).
+ * Písmeno je druh prenesenia na faktúre, inak odhad z colných kódov položiek.
+ */
+export function prekazkaKvPrenesenia(invoice: Riadok, items: Riadok[], company: Riadok): string | null {
+  if (!bezPodkoduKv(invoice, items, company, "A2")) return null;
+  return `${kod(invoice?.invoice_number) || "?"} — ${DOVOD_KV_BEZ_PODKODU}`;
+}
+
+export const DOVOD_KV_BEZ_PODKODU =
+  "doplňte druh prenesenia (písmeno § 69 ods. 12) — KV A.2 vyžaduje podkód (A2SP stavebné práce, A2CN obilniny/kovy, A2MT mobilné telefóny, A2IO integrované obvody)";
+
+/**
+ * Opravná faktúra v prenesení bez písmena § 69 ods. 12 ide do KV ako
+ * všeobecné C1 — správne pri stavebných prácach, pri tovaroch f) až i) patrí
+ * podkód C1CN, C1MT, C1IO. Upozornenie (doklad sa nezastaví).
+ */
+export function varovanieKvVydanej(invoice: Riadok, items: Riadok[], company: Riadok): string | null {
+  if (!bezPodkoduKv(invoice, items, company, "C1")) return null;
+  return `${kod(invoice?.invoice_number) || "?"} — opravná faktúra v prenesení bez druhu prenesenia ide do KV ako C1 — pri tovaroch § 69 ods. 12 písm. f) až i) doplňte druh prenesenia (podkód C1CN, C1MT, C1IO)`;
+}
 
 /**
  * Daňový doklad k prijatej platbe bez predkontácie — do Pohody by išiel

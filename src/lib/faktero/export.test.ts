@@ -373,7 +373,7 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
   it("prenesenie daňovej povinnosti sa dá na doklade spoznať", () => {
     // Z čísel to nevidno — vyzerá to rovnako ako oslobodené plnenie.
     const bezDane = polozky.map((x: any) => ({ ...x, vat_amount: 0, total: x.subtotal }));
-    const h = posli({ ...faktura, reverse_charge: true }, bezDane).invoiceHeader;
+    const h = posli({ ...faktura, reverse_charge: true, pdp_druh: "j" }, bezDane).invoiceHeader;
     expect(String(h.note)).toContain("Prenesenie daňovej povinnosti");
   });
 
@@ -392,7 +392,7 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     // Pri prenesení daňovej povinnosti platí vlastné členenie.
     const bezDane = polozky.map((x: any) => ({ ...x, vat_amount: 0, total: x.subtotal }));
     expect(
-      posli({ ...faktura, reverse_charge: true }, bezDane, { ...n, clenenieDphPdp: "UDpdp9" })
+      posli({ ...faktura, reverse_charge: true, pdp_druh: "j" }, bezDane, { ...n, clenenieDphPdp: "UDpdp9" })
         .invoiceHeader.classificationVAT.ids,
     ).toBe("UDpdp9");
     // Bez nastavenia sa nedopĺňa nič — vymyslený kód by import zhodil.

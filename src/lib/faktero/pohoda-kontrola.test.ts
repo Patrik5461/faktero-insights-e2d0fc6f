@@ -16,6 +16,7 @@ import {
   prekazkaPoliPrijateho,
   prekazkaPoliVydanej,
   varovanieKvPrijatej,
+  varovanieKvVydanej,
   PREDVOLENE_CLENENIE_PDP_VYDANE,
 } from "./pohoda-kontrola";
 import { polozkyPrijatej, prijataAkoDoklad, rozpisPrijatej } from "./prijate-do-pohody";
@@ -57,6 +58,8 @@ const pdpFaktura = {
   customer_ic_dph: "SK2111111111",
   reverse_charge: true,
   reverse_charge_type: "domestic_69",
+  // Druh prenesenia: písm. j) stavebné práce → KV A2SP.
+  pdp_druh: "j",
   subtotal: 4000,
   vat_total: 0,
   total: 4000,
@@ -85,11 +88,75 @@ describe("vydaná faktúra v prenesení daňovej povinnosti", () => {
       `<inv:classificationVAT><typ:ids>${PREDVOLENE_CLENENIE_PDP_VYDANE}</typ:ids></inv:classificationVAT>`,
     );
     expect(xml).toContain(
-      "<inv:classificationKVDPH><typ:ids>A2</typ:ids></inv:classificationKVDPH>",
+      "<inv:classificationKVDPH><typ:ids>A2SP</typ:ids></inv:classificationKVDPH>",
     );
     expect(xml).toContain("<typ:priceNone>4000.00</typ:priceNone>");
     expect(xml).toContain("<typ:priceHighVAT>0.00</typ:priceHighVAT>");
     expect(platne(xml)).toBe(true);
+  });
+
+  it("KV A.2 bez písmena § 69 ods. 12 sa zastaví — Pohoda všeobecné A2 nepozná", () => {
+    const bez = { ...pdpFaktura, pdp_druh: null };
+    expect(prekazkaVydanej(bez, pdpPolozky, firma)).toMatch(
+      /^20260010 — doplňte druh prenesenia \(písmeno § 69 ods\. 12\) — KV A\.2 vyžaduje podkód/,
+    );
+    // Ručné všeobecné A2 tiež; ručný podkód alebo „nezahŕňať“ prejde.
+    expect(prekazkaVydanej({ ...bez, kv_clenenie: "A2" }, pdpPolozky, firma)).toMatch(/KV A\.2 vyžaduje podkód/);
+    expect(prekazkaVydanej({ ...bez, kv_clenenie: "A2SP" }, pdpPolozky, firma)).toBeNull();
+    expect(prekazkaVydanej({ ...bez, kv_clenenie: "X" }, pdpPolozky, firma)).toBeNull();
+    // Česká firma KV A.2 nemá.
+    expect(String(prekazkaVydanej(bez, pdpPolozky, { ...firma, country: "CZ" }))).not.toMatch(/podkód/);
+    // Colné kódy položiek určia písmeno: kapitola 72 → A2CN, 8542 → A2IO, 851713 → A2MT.
+    for (const [kn, kv] of [["72083900", "A2CN"], ["10019900", "A2CN"], ["85423100", "A2IO"], ["85171300", "A2MT"]]) {
+      const it = [{ ...pdpPolozky[0], colny_kod: kn }];
+      expect(prekazkaVydanej(bez, it, firma)).toBeNull();
+      const xml = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: bez, items: it }] });
+      expect(xml).toContain(`<inv:classificationKVDPH><typ:ids>${kv}</typ:ids></inv:classificationKVDPH>`);
+      expect(platne(xml)).toBe(true);
+    }
+    // Kód mimo písmen f) až i) (7401 meď) — písmeno sa neodhadne (PALIERA FA20260005).
+    const zmes = [
+      { ...pdpPolozky[0], colny_kod: "72161000" },
+      { ...pdpPolozky[0], colny_kod: "74010000" },
+    ];
+    expect(prekazkaVydanej(bez, zmes, firma)).toMatch(/KV A\.2 vyžaduje podkód/);
+    const r = POHODA_XML.build({ company: firma, invoices: [{ invoice: bez, items: zmes }, { invoice: { ...pdpFaktura, id: "f9", invoice_number: "20260011" }, items: pdpPolozky }] }) as any;
+    expect(r.preskocene).toHaveLength(1);
+    expect(r.content).not.toContain("<typ:ids>A2</typ:ids>");
+  });
+
+  it("druh prenesenia určí podkód A.2; písm. a) až e) do KV dodávateľa nepatria", () => {
+    for (const [d, kv] of [["f", "A2CN"], ["g", "A2CN"], ["h", "A2MT"], ["i", "A2IO"], ["j", "A2SP"]]) {
+      const xml = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: { ...pdpFaktura, pdp_druh: d }, items: pdpPolozky }] });
+      expect(xml).toContain(`<inv:classificationKVDPH><typ:ids>${kv}</typ:ids></inv:classificationKVDPH>`);
+    }
+    const srot = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: { ...pdpFaktura, pdp_druh: "a" }, items: pdpPolozky }] });
+    expect(srot).not.toContain("classificationKVDPH");
+    // Ručné všeobecné A2 dostane podkód tiež.
+    const rucne = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: { ...pdpFaktura, kv_clenenie: "A2" }, items: pdpPolozky }] });
+    expect(rucne).toContain("<typ:ids>A2SP</typ:ids>");
+    expect(rucne).not.toContain("<typ:ids>A2</typ:ids>");
+  });
+
+  it("položka v prenesení na bežnej faktúre: podkód z jej colného kódu, bez neho prekážka", () => {
+    const f = { ...pdpFaktura, reverse_charge: false, reverse_charge_type: null, pdp_druh: null, vat_total: 23, subtotal: 200, total: 223 };
+    const bezna = { name: "Iné", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 23, subtotal: 100, vat_amount: 23, total: 123 };
+    const mobil = { ...pdpPolozky[0], unit_price: 100, subtotal: 100, total: 100, prenesenie: true, colny_kod: "85171300" };
+    expect(prekazkaVydanej(f, [bezna, mobil], firma)).toBeNull();
+    const xml = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: f, items: [bezna, mobil] }] });
+    expect(xml).toContain("<typ:ids>A2MT</typ:ids>");
+    expect(xml).not.toContain("<typ:ids>A2</typ:ids>");
+    expect(prekazkaVydanej(f, [bezna, { ...mobil, colny_kod: null }], firma)).toMatch(/KV A\.2 vyžaduje podkód/);
+  });
+
+  it("opravná faktúra v prenesení: C1CN/C1MT/C1IO podľa písmena, bez neho upozornenie", () => {
+    const dob = { ...pdpFaktura, type: "credit_note", pdp_druh: "g", subtotal: -4000, total: -4000 };
+    const pol = [{ ...pdpPolozky[0], unit_price: -4000, subtotal: -4000, total: -4000 }];
+    expect(buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: dob, items: pol }] })).toContain("<typ:ids>C1CN</typ:ids>");
+    expect(buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: { ...dob, pdp_druh: "j" }, items: pol }] })).toContain("<typ:ids>C1</typ:ids>");
+    expect(varovanieKvVydanej(dob, pol, firma)).toBeNull();
+    expect(varovanieKvVydanej({ ...dob, pdp_druh: null }, pol, firma)).toMatch(/ide do KV ako C1/);
+    expect(prekazkaVydanej({ ...dob, pdp_druh: null }, pol, firma)).toBeNull();
   });
 
   it("členenie firmy a vlastné KV majú prednosť", () => {
@@ -378,7 +445,7 @@ describe("rozdiely oproti Pohode", () => {
     const pole = Object.fromEntries(r.map((x) => [x.pole, x]));
     expect(pole.dateTax).toMatchObject({ vPohode: "2026-10-08", teraz: "2026-10-01" });
     expect(pole.classificationVAT).toMatchObject({ vPohode: "", teraz: "UDpdp" });
-    expect(pole.classificationKVDPH).toMatchObject({ teraz: "A2" });
+    expect(pole.classificationKVDPH).toMatchObject({ teraz: "A2SP" });
     expect(pole["sum.priceHighVAT"]).toMatchObject({ vPohode: "920.00", teraz: "0.00" });
   });
   it("nezmenený doklad nemá rozdiely", () => {

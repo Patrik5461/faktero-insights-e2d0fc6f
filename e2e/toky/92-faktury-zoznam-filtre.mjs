@@ -13,6 +13,13 @@
 */
 import { vlozOdoslanuUpomienku, zmazFakturuNatvrdo } from "../lib/doklady.mjs";
 
+/*
+  Vlastná značka toku: značka behu je spoločná všetkým tokom a iné toky vo
+  firme Test zakladajú súbežne faktúry s ňou — hľadanie podľa nej im
+  započítalo cudziu (súčet 9 ≠ 8, 6. 11.).
+*/
+const zoz = (t) => `${t.znacka}-ZOZ`;
+
 function posunDni(iso, n) {
   const d = new Date(`${iso}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
@@ -22,7 +29,7 @@ function posunDni(iso, n) {
 async function zaloz(t, i, o) {
   const f = await t.rest.vloz("invoices", {
     company_id: t.firmy.test,
-    invoice_number: `${t.znacka}-ZF${i}`,
+    invoice_number: `${zoz(t)}-F${i}`,
     type: "regular",
     status: "issued",
     issue_date: posunDni(t.dnes, -40),
@@ -32,7 +39,7 @@ async function zaloz(t, i, o) {
     subtotal: 100,
     vat_total: 23,
     total: 123,
-    customer_name: `${t.znacka} Zoznam`,
+    customer_name: `${zoz(t)} Zoznam`,
     ...o,
   });
   t.uprac(`faktúra ${f.invoice_number}`, () => zmazFakturuNatvrdo(t, f.id));
@@ -56,7 +63,7 @@ export default {
     });
 
     await t.krok("REST: anti-join „bez upomienky“ a súčet za filter sedia", async () => {
-      const zaklad = `invoices?company_id=eq.${t.firmy.test}&customer_name=ilike.*${encodeURIComponent(t.znacka)}*&deleted_at=is.null&status=in.(issued,sent)&due_date=lt.${t.dnes}&paid_at=is.null`;
+      const zaklad = `invoices?company_id=eq.${t.firmy.test}&customer_name=ilike.*${encodeURIComponent(zoz(t))}*&deleted_at=is.null&status=in.(issued,sent)&due_date=lt.${t.dnes}&paid_at=is.null`;
       const po = await t.rest.get(`${zaklad}&select=id`);
       t.over(
         po.status === 200 && po.data.length === 7,
@@ -78,7 +85,7 @@ export default {
       ]) {
         const r = await t.rest.rpc("suhrn_vystavenych_faktur", {
           p_company_id: t.firmy.test,
-          p_hladanie: t.znacka,
+          p_hladanie: zoz(t),
           ...p,
         });
         t.over(
@@ -96,19 +103,19 @@ export default {
 
     await t.krok("po splatnosti: stránkovanie počíta len faktúry po splatnosti", async () => {
       await page.setViewportSize({ width: 1440, height: 900 });
-      await t.go(`/faktury?poSplatnosti=true&q=${encodeURIComponent(t.znacka)}&size=5`);
-      await page.getByText(`${t.znacka}-ZF`).first().waitFor({ timeout: 30000 });
+      await t.go(`/faktury?poSplatnosti=true&q=${encodeURIComponent(zoz(t))}&size=5`);
+      await page.getByText(`${zoz(t)}-F`).first().waitFor({ timeout: 30000 });
       const s = await textStrankovania();
       t.over(/z 7\b/.test(s), `stránkovanie „${s}“ — čakal som 7 faktúr`);
       const riadky = await page.locator("tbody tr[data-nahlad-id]").count();
       t.over(riadky === 5, `na 1. strane ${riadky} riadkov`);
       t.over(
-        (await page.getByText(`${t.znacka}-ZF8`).count()) === 0 &&
-          (await page.getByText(`${t.znacka}-ZF9`).count()) === 0,
+        (await page.getByText(`${zoz(t)}-F8`).count()) === 0 &&
+          (await page.getByText(`${zoz(t)}-F9`).count()) === 0,
         "uhradená alebo budúca faktúra je v zozname po splatnosti",
       );
-      await t.go(`/faktury?poSplatnosti=true&q=${encodeURIComponent(t.znacka)}&size=5&page=2`);
-      await page.getByText(`${t.znacka}-ZF`).first().waitFor({ timeout: 30000 });
+      await t.go(`/faktury?poSplatnosti=true&q=${encodeURIComponent(zoz(t))}&size=5&page=2`);
+      await page.getByText(`${zoz(t)}-F`).first().waitFor({ timeout: 30000 });
       const r2 = await page.locator("tbody tr[data-nahlad-id]").count();
       t.over(r2 === 2, `na 2. strane ${r2} riadkov`);
       // Odznak v riadku: Po splatnosti, nie Vystavená.
@@ -120,13 +127,13 @@ export default {
 
     await t.krok("bez upomienky: 6 faktúr, Vybrať všetko = len zobrazené", async () => {
       await t.go(
-        `/faktury?q=${encodeURIComponent(t.znacka)}&size=25&${filter({ bezUpomienky: "1" })}`,
+        `/faktury?q=${encodeURIComponent(zoz(t))}&size=25&${filter({ bezUpomienky: "1" })}`,
       );
-      await page.getByText(`${t.znacka}-ZF`).first().waitFor({ timeout: 30000 });
+      await page.getByText(`${zoz(t)}-F`).first().waitFor({ timeout: 30000 });
       const s = await textStrankovania();
       t.over(/z 6\b/.test(s), `stránkovanie „${s}“ — čakal som 6`);
       t.over(
-        (await page.getByText(`${t.znacka}-ZF1`, { exact: true }).count()) === 0,
+        (await page.getByText(`${zoz(t)}-F1`, { exact: true }).count()) === 0,
         "faktúra s upomienkou je vo filtri bez upomienky",
       );
       await page.getByRole("checkbox", { name: "Vybrať všetko" }).check();
@@ -146,8 +153,8 @@ export default {
 
     await t.krok("mobil: výber karty a štítok len vybranej faktúre", async () => {
       const m = await t.novaStranka({ mobil: true });
-      await t.go(`/faktury?poSplatnosti=true&q=${encodeURIComponent(t.znacka)}&size=25`, m);
-      const cb = m.getByRole("checkbox", { name: `Vybrať faktúru ${t.znacka}-ZF3` });
+      await t.go(`/faktury?poSplatnosti=true&q=${encodeURIComponent(zoz(t))}&size=25`, m);
+      const cb = m.getByRole("checkbox", { name: `Vybrať faktúru ${zoz(t)}-F3` });
       await cb.waitFor({ timeout: 30000 });
       await cb.check();
       const tl = m.getByRole("button", { name: /Hromadná akcia \(1\)/ });
@@ -165,7 +172,7 @@ export default {
         return (r.data?.[0]?.stitky ?? []).includes(`e2e-${t.znacka}`);
       });
       const ine = await t.rest.get(
-        `invoices?company_id=eq.${t.firmy.test}&customer_name=ilike.*${encodeURIComponent(t.znacka)}*&stitky=cs.{e2e-${t.znacka}}&select=id`,
+        `invoices?company_id=eq.${t.firmy.test}&customer_name=ilike.*${encodeURIComponent(zoz(t))}*&stitky=cs.{e2e-${t.znacka}}&select=id`,
       );
       t.over(ine.data?.length === 1, `štítok dostalo ${ine.data?.length} faktúr`);
       const sirka = await m.evaluate(() => document.documentElement.scrollWidth);

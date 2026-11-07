@@ -89,13 +89,15 @@ function ZauctovaniePage() {
             { kod: "predlohy", nazov: "Predlohy" },
           ]}
         />
-        {tab === "kontrola" ? (
-          <ZauctovanieNaKontrolu onPocet={naPocet} />
-        ) : tab === "pravidla" ? (
-          <ZauctovaniePravidla />
-        ) : cid ? (
-          <PredlohyUctovania companyId={cid} />
-        ) : null}
+        <div role="tabpanel" aria-labelledby={`zalozka-${tab}`}>
+          {tab === "kontrola" ? (
+            <ZauctovanieNaKontrolu onPocet={naPocet} />
+          ) : tab === "pravidla" ? (
+            <ZauctovaniePravidla />
+          ) : cid ? (
+            <PredlohyUctovania companyId={cid} />
+          ) : null}
+        </div>
       </PageBody>
     </>
   );

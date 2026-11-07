@@ -64,6 +64,7 @@ export function PoleZapisVRegistri({
   const [nacitava, setNacitava] = useState(false);
   const ico = String(firma.ico ?? "").replace(/\s+/g, "");
   const cz = /^(CZ|CZE|ČESK|CESK|CZECH)/i.test(String(firma.country ?? ""));
+  const de = /^(DE|DEU|NEMEC|GERMAN|DEUTSCH)/i.test(String(firma.country ?? ""));
 
   async function zRegistra() {
     if (!/^\d{6,8}$/.test(ico)) return toast.error(t("Najprv vyplňte IČO."));
@@ -100,10 +101,13 @@ export function PoleZapisVRegistri({
           id="zapis-v-registri"
           value={String(firma.registracia_text ?? "")}
           onChange={(e) => onZmena({ registracia_text: e.target.value })}
+          // Ukážka zápisu v registri krajiny firmy — nie v jazyku rozhrania.
           placeholder={
             cz
               ? "Spisová značka C 12345 vedená u Městského soudu v Praze"
-              : "Obchodný register Mestského súdu Bratislava III, oddiel: Sro, vložka č. 123456/B"
+              : de
+                ? "Amtsgericht München, HRB 123456"
+                : "Obchodný register Mestského súdu Bratislava III, oddiel: Sro, vložka č. 123456/B"
           }
           className="h-10 w-full min-w-0 flex-1 rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
         />

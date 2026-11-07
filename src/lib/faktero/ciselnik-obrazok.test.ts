@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   jeKodKv,
   kvKodFirmy,
+  kvPodkodPrenesenia,
+  pismenoPreneseniaKv,
   moznostiKv,
   nahlad,
   normalizujRiadky,
@@ -292,5 +294,57 @@ describe("resolveVatClassification s číselníkom KV firmy", () => {
     expect(kvKodFirmy(null, vydane)).toBe(null);
     const pdp = { ...faktura, reverse_charge: true, reverse_charge_type: "domestic_69", vat_total: 0 };
     expect(resolveVatClassification(firma, pdp, { kvCiselnik: ["A1", "A2SP", "KN"] }).kv_clenenie).toBe("A2SP");
+  });
+});
+
+describe("podkód KV prenesenia (A2SP, A2CN, A2MT, A2IO; C1CN, C1MT, C1IO)", () => {
+  const firma = { country: "SK", vat_payer: true, vat_scheme: "sk_platitel", ic_dph: "SK2020000001" };
+  const pdp = {
+    type: "regular",
+    vat_total: 0,
+    customer_ic_dph: "SK2020000000",
+    customer_ico: "12345678",
+    reverse_charge: true,
+    reverse_charge_type: "domestic_69",
+  };
+  const vsetky = ["A1", "A2CN", "A2IO", "A2MT", "A2SP", "C1", "C1CN", "C1IO", "C1MT", "D2", "KN"];
+
+  it("písmeno → podkód; bez písmena sa kód nemení; a) až e) = nezahŕňať", () => {
+    expect(kvPodkodPrenesenia("A2", "j", true)).toBe("A2SP");
+    expect(kvPodkodPrenesenia("A2", "f", true)).toBe("A2CN");
+    expect(kvPodkodPrenesenia("A2", "g", true)).toBe("A2CN");
+    expect(kvPodkodPrenesenia("A2", "h", true)).toBe("A2MT");
+    expect(kvPodkodPrenesenia("A2", "i", true)).toBe("A2IO");
+    expect(kvPodkodPrenesenia("A2", "a", true)).toBe("X");
+    expect(kvPodkodPrenesenia("A2", null, true)).toBe("A2");
+    expect(kvPodkodPrenesenia("C1", "g", true)).toBe("C1CN");
+    expect(kvPodkodPrenesenia("C1", "j", true)).toBe("C1");
+    expect(kvPodkodPrenesenia("C1", "g", false)).toBe("C1");
+    expect(kvPodkodPrenesenia("A2SP", "g", true)).toBe("A2SP");
+    expect(kvPodkodPrenesenia("A1", "j", true)).toBe("A1");
+    expect(pismenoPreneseniaKv("J", [{ colny_kod: "72083900" }])).toBe("j");
+    expect(pismenoPreneseniaKv(null, [{ colny_kod: "7208 39 00" }])).toBe("g");
+    expect(pismenoPreneseniaKv(null, [{ colny_kod: "72161000" }, { colny_kod: "74010000" }])).toBeNull();
+    expect(pismenoPreneseniaKv("92e", [])).toBeNull();
+  });
+
+  it("automatika dá podkód podľa druhu alebo colných kódov (bager expres 20260030–37: bez kódov ostáva A2)", () => {
+    const kv = (inv: object, ctx: object = {}) =>
+      resolveVatClassification(firma, { ...pdp, ...inv }, { kvCiselnik: vsetky, ...ctx }).kv_clenenie;
+    expect(kv({ pdp_druh: "j" })).toBe("A2SP");
+    expect(kv({}, { polozky: [{ colny_kod: "85423100" }] })).toBe("A2IO");
+    expect(kv({})).toBe("A2");
+    expect(kv({ pdp_druh: "c" })).toBe("X");
+    // Uložené všeobecné A2 bez zdroja nie je ručná voľba — prepíše sa podkódom.
+    expect(kv({ pdp_druh: "j", kv_clenenie: "A2", kv_zdroj: null })).toBe("A2SP");
+    expect(kv({ pdp_druh: "j", kv_clenenie: "A2", kv_zdroj: "auto" })).toBe("A2SP");
+    // Bez číselníka firmy systémové podkódy.
+    expect(resolveVatClassification(firma, { ...pdp, pdp_druh: "h" }).kv_clenenie).toBe("A2MT");
+    // Dobropis: z podkódu pôvodnej faktúry, inak podľa druhu.
+    const dob = { ...pdp, type: "credit_note", opravuje_fakturu_id: "p1" };
+    expect(kv(dob, { povodna: { kv_clenenie: "A2CN" } })).toBe("C1CN");
+    expect(kv(dob, { povodna: { kv_clenenie: "A2SP" } })).toBe("C1");
+    expect(kv({ ...dob, pdp_druh: "i" }, { povodna: { kv_clenenie: "A2" } })).toBe("C1IO");
+    expect(kv({ ...dob, opravuje_fakturu_id: null, pdp_druh: "h" })).toBe("C1MT");
   });
 });

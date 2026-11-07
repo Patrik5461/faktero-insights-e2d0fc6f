@@ -81,8 +81,11 @@ export type HladaniePravidiel = {
   bvs?: string;
   protistrana?: string;
 };
-const text = (v: unknown) =>
-  typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : undefined;
+/** Parameter z adresy — router číselný reťazec (IČO, VS) vráti ako number. */
+const text = (v: unknown) => {
+  const s = typeof v === "number" && Number.isFinite(v) ? String(v) : v;
+  return typeof s === "string" && s.trim() ? s.trim().slice(0, 200) : undefined;
+};
 
 /** Čistenie parametrov predvyplnenia — rovnaké ako na pôvodnej stránke Pravidlá. */
 export function ocistiHladaniePravidiel(s: Record<string, unknown>): HladaniePravidiel {
@@ -558,7 +561,7 @@ export function ZauctovaniePravidla() {
                           koniecTahania.current = Date.now();
                           setTahane(null);
                         }}
-                        className={`border-b border-border align-top last:border-0 ${r.aktivne ? "" : "opacity-50"} ${tahane === r.id ? "bg-secondary" : ""}`}
+                        className={`border-b border-border align-top last:border-0 ${r.aktivne ? "" : "bg-muted/40 text-muted-foreground"} ${tahane === r.id ? "bg-secondary" : ""}`}
                       >
                         <td className="p-3 tabular-nums">
                           <div className="flex items-center gap-1">
@@ -746,7 +749,8 @@ function UpravaPravidla({
       data: { company_id: companyId, pre: ponukaKodovPravidla(p.druh) },
     })
       .then(setKody)
-      .catch(() => {});
+      // Kódy sú len ponuka na výber — pole sa dá vyplniť aj ručne.
+      .catch((e) => console.warn("Návrhy kódov pre pravidlo sa nenačítali", e));
   }, [companyId, nacitajKody, p.druh]);
   const banka = p.druh === "banka";
   const vystavena = p.druh === "vystavena";
@@ -758,7 +762,7 @@ function UpravaPravidla({
   useEffect(() => {
     nacitajMenaClenov({ data: { company_id: companyId } })
       .then((m) => setClenovia(m as Record<string, string>))
-      .catch(() => {});
+      .catch((e) => console.warn("Mená členov firmy sa nenačítali", e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
   const sedi =

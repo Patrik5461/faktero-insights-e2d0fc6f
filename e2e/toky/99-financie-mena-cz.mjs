@@ -9,6 +9,8 @@
   - Pripojiť banku: Tatra banka už netvrdí „iba na čítanie / 90 dní“
     (platby prijatých faktúr idú cez TB, história je 13 mesiacov).
 */
+import { textSPopisom } from "../lib/popis.mjs";
+
 export default {
   popis: "CZ firma: leasing v CZK, pokladňa v Kč, DPH prehľad pre EPO, TB texty (QA Česká)",
   limit: 180000,
@@ -40,8 +42,10 @@ export default {
 
     await t.krok("DPH prehľad: EPO a súčty v Kč", async () => {
       await t.go("/uctovnictvo/dph");
-      await main().getByText(/EPO/).first().waitFor({ timeout: 30000 });
-      const text = await main().innerText();
+      await main().locator("[data-napoveda-otaznik]").first().waitFor({ timeout: 30000 });
+      // Text o EPO je v bubline „?“ pri nadpise (popisDalej).
+      const text = await textSPopisom(page);
+      t.over(/EPO/.test(text), "popis DPH prehľadu nespomína EPO");
       t.over(!text.includes("eDane"), "česká firma vidí text o eDane");
       t.over(/Kč|CZK/.test(text), "súčty DPH prehľadu nie sú v Kč");
     });

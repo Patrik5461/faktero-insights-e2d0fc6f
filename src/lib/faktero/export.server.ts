@@ -52,6 +52,7 @@ import {
 } from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
 import { kvPolozkyPrePohodu, kvPrijatehoPrePohodu, kvVystavenehoPrePohodu } from "./pohoda-kv";
+import { kvPodkodPrenesenia, pismenoPreneseniaKv } from "./ciselnik-obrazok";
 import { predkontacieNaSkratky, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { isAccountingDocument } from "./uctovny-doklad";
 import { jeNezahrnovat } from "./uctovanie-agenda";
@@ -910,7 +911,25 @@ export function polozkyFaktur(opts: {
         Členenie KV DPH (len SK verzia). Bez neho by doklad v Pohode do
         kontrolného výkazu nevstúpil vôbec — pozri `pohoda-kv.ts`.
       */
-      const kvHlavicka = kvVystavenehoPrePohodu({
+      /*
+        Podkód KV pre prenesenie: číselník KV Pohody všeobecné „A2“ nemá (len
+        A2CN, A2IO, A2MT, A2SP), opravná faktúra C1CN, C1IO, C1MT. Písmeno
+        § 69 ods. 12 z druhu prenesenia na faktúre, inak z colných kódov
+        položiek (ako veta o prenesení). Bez neho kontrola A2 zastaví.
+      */
+      const pismenoPdp = cz
+        ? null
+        : pismenoPreneseniaKv(
+            (invoice as any).pdp_druh,
+            invoice.reverse_charge ? items : items.filter((it) => (it as any).prenesenie),
+          );
+      const podkodKv = (k: string, pismeno: string | null, pdp: boolean) => {
+        if (cz || !k) return k;
+        const v = kvPodkodPrenesenia(k, pismeno, pdp) ?? k;
+        // Písmená a) až e) dodávateľ do KV neuvádza (len odberateľ v B.1).
+        return v === "X" ? "" : v;
+      };
+      const kvHlavicka = podkodKv(kvVystavenehoPrePohodu({
         cz,
         typ,
         kvDokladu: (invoice as any).kv_clenenie,
@@ -922,7 +941,7 @@ export function polozkyFaktur(opts: {
         icoOdberatela: invoice.customer_ico,
         dicOdberatela: invoice.customer_dic,
         clenenieDph: clenenie,
-      });
+      }), pismenoPdp, tuzemskePdp);
       /*
         Colné údaje položky do Pohody: blok `intrastatItem` (kód tovaru KN,
         krajina pôvodu, krajina určenia, vlastná hmotnosť riadku). Hmotnosť
@@ -972,7 +991,12 @@ export function polozkyFaktur(opts: {
           v prenesení A.2, inak členenie KV faktúry. Výnimky (UN, oslobodené,
           nedaňová položka) pri `kvPolozkyPrePohodu`.
         */
-        const kvp = kvPolozkyPrePohodu({
+        // Položka v prenesení: písmeno z jej colného kódu, inak z faktúry.
+        const pismenoPolozky =
+          (it as any).prenesenie || tuzemskePdp
+            ? (pismenoPreneseniaKv((invoice as any).pdp_druh, [it as any]) ?? pismenoPdp)
+            : null;
+        const kvp = podkodKv(kvPolozkyPrePohodu({
           cz: cz || zalohova,
           vlastne: (it as any).kv_clenenie,
           rucneDokladu: (invoice as any).kv_clenenie,
@@ -980,7 +1004,7 @@ export function polozkyFaktur(opts: {
           clenenie: cl || clenenie,
           dph: dphRiadku,
           zdedene: kvHlavicka,
-        });
+        }), pismenoPolozky, tuzemskePdp || pdpRiadok);
         /*
           Príznak prenesenia a kód tovaru na položke (invoice.xsd: `PDP` —
           „Příznak Přenesení daňové povinnosti (pouze pro Vydané faktury, Vydané

@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { poDavkach } from "@/lib/faktero/po-davkach";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
@@ -754,12 +755,16 @@ function PurchaseInvoicesPage() {
     const ids = m.ids;
     setHromadneBusy(true);
     try {
-      const { error } = await supabase
-        .from("purchase_invoices")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("company_id", cid)
-        .in("id", ids);
-      if (error) throw new Error(error.message);
+      const kedy = new Date().toISOString();
+      // Po dávkach — stovky id v jednom `.in()` pretiahnu URL (400).
+      await poDavkach(ids, async (davka) => {
+        const { error } = await supabase
+          .from("purchase_invoices")
+          .update({ deleted_at: kedy })
+          .eq("company_id", cid)
+          .in("id", davka);
+        if (error) throw new Error(error.message);
+      });
       toast.success(
         ids.length === 1 ? t("Faktúra vymazaná") : t("Vymazané faktúry: {n}", { n: ids.length }),
       );

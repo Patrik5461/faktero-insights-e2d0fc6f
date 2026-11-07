@@ -11,6 +11,7 @@ import { textPdf } from "../lib/pdf.mjs";
 import {
   akciaVMenu,
   nacitajFakturu,
+  vystavDokladKPlatbe,
   vystavFakturu,
   zalozOdberatela,
   zmazFakturuNatvrdo,
@@ -82,10 +83,7 @@ export default {
 
     const ddp = await t.krok("daňový doklad k prijatej platbe", async () => {
       await t.go(`/faktury/${zf.id}`);
-      await page.getByRole("button", { name: "Vystaviť daňový doklad" }).click();
-      const okno = page.getByRole("alertdialog");
-      if (await okno.isVisible({ timeout: 3000 }).catch(() => false))
-        await okno.getByRole("button").last().click();
+      await vystavDokladKPlatbe(page);
       const d = await t.cakajNa("doklad k platbe", async () => {
         const r = await t.rest.get(
           `invoices?advance_invoice_id=eq.${zf.id}&type=eq.advance_payment&select=*`,

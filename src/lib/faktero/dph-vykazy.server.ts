@@ -29,10 +29,12 @@ import {
   preneseniePrijatej,
   VYTKA_PLATITEL_BEZ_DPH,
   VYTKA_PRENESENIE_KV_X,
+  VYTKA_VLASTNA_FAKTURA,
   VYTKA_ROZPIS_NESEDI,
 } from "./dph-vykazy";
 import { domacaMena, domacejZaJednotku } from "./kurzy";
 import { riadkyZalohyVDomacej } from "./dph-vykazy";
+import { dodavatelJeFirma } from "./auto-uctovanie";
 import { KV_PREDVOLENE, kvSPredvolenym } from "./kv-clenenie";
 import { clenenieDphPrijateho, odberatelPodnikatel } from "./kv-urcenie";
 import { jeNezahrnovat } from "./uctovanie-agenda";
@@ -71,6 +73,19 @@ type Klient = {
 /** Stavy, v ktorých doklad ešte nie je vystavený alebo už je zrušený. */
 const NEPLATNE_STAVY = ["draft", "cancelled"];
 
+/** Kategórie rozpisu, ktorými človek rozhodol, že doklad je bez dane oprávnene. */
+const ROZHODNUTE_BEZ_DANE = ["exempt", "out_of_scope"];
+
+/**
+ * Členenie DPH prijatej faktúry nastavil človek (nie automatika): uložené na
+ * doklade so zdrojom „rucne“ alebo bez zdroja (staršie doklady), prípadne
+ * z kategórie či predvolené firmy. Len „auto“ uložené na doklade je odhad.
+ */
+function clenenieRucne(p: { pohoda_clenenie_dph?: unknown; clenenie_zdroj?: unknown }): boolean {
+  if (!String(p.pohoda_clenenie_dph ?? "").trim()) return true;
+  return p.clenenie_zdroj !== "auto";
+}
+
 function riadkyZPoloziek(
   polozky: {
     vat_rate: number | null;
@@ -78,6 +93,7 @@ function riadkyZPoloziek(
     total?: number | null;
     quantity?: number | null;
     unit_price?: number | null;
+    vat_amount?: number | string | null;
   }[],
 ): SadzbovyRiadok[] {
   const mapa = new Map<number, SadzbovyRiadok>();
@@ -85,7 +101,16 @@ function riadkyZPoloziek(
     const sadzba = Number(p.vat_rate ?? 0);
     const zaklad =
       p.subtotal != null ? Number(p.subtotal) : Number(p.quantity ?? 0) * Number(p.unit_price ?? 0);
-    const dan = (zaklad * sadzba) / 100;
+    /*
+      DPH položky, ako je uložená na faktúre (zaokrúhlená pri vystavení) — výkaz
+      musí sedieť s dokladom. Prepočet základ × sadzba dal o cent inú daň
+      (BÝVAJLEPŠIE DDP20260001: 1 495,93 na faktúre, 1 495,94 vo výkaze).
+      Uložená suma, ktorá sa od prepočtu líši o viac než zaokrúhlenie, je
+      podozrivá — vtedy platí prepočet.
+    */
+    const vypocet = (zaklad * sadzba) / 100;
+    const ulozena = p.vat_amount == null || p.vat_amount === "" ? NaN : Number(p.vat_amount);
+    const dan = Number.isFinite(ulozena) && Math.abs(ulozena - vypocet) <= 0.011 ? ulozena : vypocet;
     const s = mapa.get(sadzba) ?? { sadzba, zaklad: 0, dan: 0 };
     s.zaklad += zaklad;
     s.dan += dan;
@@ -123,7 +148,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_ico, customer_country, customer_name, pohoda_clenenie_dph, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, quantity, unit_price, prenesenie, kv_clenenie)",
+          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_ico, customer_country, customer_name, pohoda_clenenie_dph, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, vat_amount, quantity, unit_price, prenesenie, kv_clenenie)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -134,7 +159,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, pohoda_clenenie_dph, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi, na_kontrolu_at, na_kontrolu_dovod",
+          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, supplier_ico, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, kv_zdroj, pohoda_predkontacia, pohoda_clenenie_dph, clenenie_zdroj, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi, na_kontrolu_at, na_kontrolu_dovod",
         )
         .eq("company_id", companyId)
         /*
@@ -170,7 +195,7 @@ export async function nacitajVstup(
     supabase
       .from("companies")
       .select(
-        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_prijata, pohoda_clenenie_dph_doklady, country, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, vat_scheme",
+        "pohoda_predkontacia_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_prijata, pohoda_clenenie_dph_doklady, country, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, vat_scheme, ic_dph, ico",
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -561,6 +586,13 @@ export async function nacitajVstup(
   const prijate: PrijataFaktura[] = [];
   for (const p0 of (prijateRes.data ?? []) as any[]) {
     /*
+      Koncept (draft) ešte nie je prijatý doklad a stornovaná faktúra už nie —
+      do priznania ani KV nepatria, rovnako ako ich vynechá zoznam prijatých
+      a export do Pohody (audit 7. 11. 2026: MaxiTicket 08/2026 mal v B.2
+      štyri koncepty, 8392585681 dvakrát).
+    */
+    if (NEPLATNE_STAVY.includes(String(p0.status))) continue;
+    /*
       Prenesenie bez príznaku: faktúra od dodávateľa bez dane, ktorú zaúčtovanie
       (členenie DPH PDsluz/DDsluz…, KV B1) označilo za plnenie, pri ktorom daň
       platí príjemca. Bez toho by išla ako „bez dane“ a samozdanenie (r. 09–10,
@@ -720,12 +752,21 @@ export async function nacitajVstup(
       !dan &&
       zaklad !== 0 &&
       String(p.supplier_ic_dph ?? "").replace(/\s/g, "").toUpperCase().startsWith(domaciKod) &&
-      !rozbor.nezahrnovat &&
-      String(p.kv_clenenie ?? "").trim().toUpperCase() !== "X" &&
+      // „Nezahŕňať“ (PN, KV X) rozhodol človek; automatické PN/X nič nerozhodlo.
+      !(rozbor.nezahrnovat && clenenieRucne(p)) &&
+      !(String(p.kv_clenenie ?? "").trim().toUpperCase() === "X" && p.kv_zdroj !== "auto") &&
       riadkyP.length > 0 &&
-      !rozpisPrijatej(p).every((x: any) => x.vat_category)
+      // „Na kontrolu“ (0 % bez dôvodu) nie je rozhodnutie — oslobodené či mimo DPH áno.
+      !rozpisPrijatej(p).every((x: any) => ROZHODNUTE_BEZ_DANE.includes(String(x.vat_category ?? "")))
     )
       vytky.push({ doklad: cisloP, text: VYTKA_PLATITEL_BEZ_DPH });
+    // Dodávateľ = samotná firma (BÝVAJLEPŠIE 2026006): z vlastnej faktúry sa DPH neodpočítava.
+    if (
+      dan !== 0 &&
+      p.odpocet !== false &&
+      dodavatelJeFirma(p, { ic_dph: (firmaKody as any)?.ic_dph, ico: (firmaKody as any)?.ico })
+    )
+      vytky.push({ doklad: cisloP, text: VYTKA_VLASTNA_FAKTURA });
     prijate.push({
       cislo: String(p.invoice_number ?? ""),
       dodavatelNazov: p.supplier_name,
@@ -843,7 +884,12 @@ export async function nacitajVstup(
   const { opravy53b } = await import("./dph-nezaplatene");
   const naKontrolu = ((prijateRes.data ?? []) as any[])
     // Lehota sa počíta od pôvodnej splatnosti — predĺženie dohodou ju neposúva.
-    .filter((p) => zapocitatelna(p) && (p.povodna_splatnost || p.due_date))
+    .filter(
+      (p) =>
+        !NEPLATNE_STAVY.includes(String(p.status)) &&
+        zapocitatelna(p) &&
+        (p.povodna_splatnost || p.due_date),
+    )
     .map((p) => {
       const den = p.delivery_date || p.issue_date;
       const cudziaP = Boolean(p.currency && p.currency !== domaca);

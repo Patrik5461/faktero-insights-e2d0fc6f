@@ -16,6 +16,7 @@
 import { najblizsiaSadzba, sadzbyKuDnu, zoradPodlaSadzby } from "./vat-rates";
 import type { Oprava53b } from "./dph-nezaplatene";
 import { kvPreVykaz, kvPrijatehoDokladu, kvVystavenehoDokladu, upozornenieA1 } from "./kv-urcenie";
+import { jeNezahrnovat } from "./uctovanie-agenda";
 
 export type Obdobie = {
   rok: number;
@@ -556,7 +557,27 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
   const prijateDoB3: PrijatyDoklad[] = [];
   for (const p of vstup.prijate) {
     const kod = kodPrijatejFaktury(p);
-    if (!kod) continue;
+    if (!kod) {
+      /*
+        Tuzemský odpočet bez riadku KV: človek zvolil „nezahŕňať“ (X), no daň
+        sa v priznaní odpočítava (napr. tuzemská časť zmiešanej faktúry —
+        BÝVAJLEPŠIE 26090001, 132,80 €). Priznanie a KV by nesedeli.
+      */
+      const odpocitane = p.odpocet
+        ? p.riadky.reduce((a, r) => a + r.dan * (p.podielOdpoctu ?? 1), 0)
+        : 0;
+      if (
+        p.rezim === "tuzemsko" &&
+        !(p.dobropis ?? Boolean(p.opravujeCislo)) &&
+        !jeNezahrnovat(p.clenenieDph) &&
+        Math.abs(odpocitane) >= 0.005
+      )
+        vykaz.vytky.push({
+          doklad: p.cislo,
+          text: VYTKA_ODPOCET_BEZ_KV.replace("{suma}", centy(odpocitane).toFixed(2).replace(".", ",")),
+        });
+      continue;
+    }
 
     if (kod === "C2") {
       if (!p.opravujeCislo) {
@@ -1087,6 +1108,10 @@ export const VYTKA_PLATITEL_BEZ_DPH =
   "Faktúra od platiteľa DPH je bez dane a do priznania ani kontrolného výkazu nevošla. Ak ide o prenesenie daňovej povinnosti (§ 69 ods. 12), označte na faktúre prenesenie (alebo členenie DPH PDsluz / KV B1); ak je plnenie oslobodené alebo nie je predmetom DPH, zvoľte to v rozpise DPH.";
 export const VYTKA_PRENESENIE_KV_X =
   "Faktúra je v prenesení daňovej povinnosti — samozdanenie je v priznaní (r. 09–10), ale členenie KV „nezahŕňať“ ju vynechalo z časti B.1. Ak to nie je zámer, zmeňte členenie KV na B1.";
+export const VYTKA_VLASTNA_FAKTURA =
+  "Doklad vystavila sama firma (dodávateľ má rovnaké IČ DPH alebo IČO) — odpočet DPH z vlastnej faktúry nie je možný. Skontrolujte, či nejde o vystavenú faktúru nahratú medzi prijaté; ak áno, zmažte ju alebo vypnite odpočet.";
+export const VYTKA_ODPOCET_BEZ_KV =
+  "Z prijatej faktúry sa odpočítava {suma} € DPH, ale v kontrolnom výkaze nemá riadok (členenie KV „nezahŕňať“) — odpočet v priznaní (r. 21) a časť B.2 nebudú sedieť. Ak to nie je zámer, zmeňte členenie KV na B2.";
 export const VYTKA_ROZPIS_NESEDI =
   "Rozpis DPH nesedí — sadzba {sadzba} % neplatí (z dane a základu vyšla „priemerná“ sadzba, doklad má asi viac sadzieb). Vo výkaze je v nesprávnom riadku; doplňte rozpis DPH po sadzbách.";
 

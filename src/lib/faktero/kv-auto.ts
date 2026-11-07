@@ -8,6 +8,7 @@
   bez DPH, bez nároku na odpočet, členenie „nezahrnovať“ …).
 */
 
+import { kvPreneseniaPrijatej } from "./auto-uctovanie";
 import { kvPrijatehoDokladu, kvVystavenehoDokladu } from "./kv-urcenie";
 
 const cislo = (v: unknown) => {
@@ -27,22 +28,36 @@ export function kvAutoPrijatej(
     odpocet?: boolean | null;
     opravuje_cislo?: string | null;
     pohoda_clenenie_dph?: string | null;
+    reverse_charge?: boolean | null;
+    items?: unknown;
   },
   o: { predvolene?: string | null; clenenie?: string | null } = {},
 ): string {
   // Zálohová faktúra nie je daňový doklad — do KV ide až daňový doklad k platbe.
   if (r.type === "proforma") return "";
   const rezim = text(r.dph_rezim) || null;
+  const clenenie = text(o.clenenie) || text(r.pohoda_clenenie_dph) || null;
+  const dobropis = cislo(r.amount_total) < 0 || Boolean(text(r.opravuje_cislo));
+  /*
+    Prenesenie nie je len `dph_rezim = samozdanenie`: príznak `reverse_charge`,
+    všetky položky v prenesení alebo členenie prenesenia (PDsluz, DDsluz…).
+    Audit 7. 11. 2026: KV na takom doklade ostalo prázdne, hoci výkaz ho dal do B.1.
+  */
+  const polozky = Array.isArray(r.items) ? (r.items as Record<string, unknown>[]) : [];
+  const pdpPolozky = polozky.length > 0 && polozky.every((x) => x?.pdp || x?.reverse_charge);
+  const kvCl = kvPreneseniaPrijatej(clenenie);
+  // Prenesenie bez nároku na odpočet (PBsluz) — B1-0, aj keď príznak nesie doklad.
+  if (kvCl && !dobropis) return kvCl;
   return kvPrijatehoDokladu({
     kvDokladu: null,
     predvolene: o.predvolene ?? null,
     blocek: false,
-    dobropis: cislo(r.amount_total) < 0 || Boolean(text(r.opravuje_cislo)),
-    pdp: rezim === "samozdanenie",
+    dobropis,
+    pdp: rezim === "samozdanenie" || Boolean(r.reverse_charge) || pdpPolozky,
     rezim,
     maDph: sDph(r.vat_amount),
     odpocet: r.odpocet,
-    clenenieDph: text(o.clenenie) || text(r.pohoda_clenenie_dph) || null,
+    clenenieDph: clenenie,
     nadobudnutieDoB1: true,
   });
 }

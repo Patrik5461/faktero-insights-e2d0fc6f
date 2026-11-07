@@ -230,6 +230,8 @@ export type NastaveniaPokladni = {
   pokladneKody?: Record<string, string>;
   /** id pokladne → mena (sumy pohybov sú v nej). */
   pokladneMeny?: Record<string, string>;
+  /** Mena pokladne, ktorej skratka je v `pokladna` (predvolená). */
+  menaNahradnej?: string | null;
 };
 
 function text(v: unknown): string {
@@ -257,22 +259,33 @@ export function nastaveniaPokladni(
     pokladna: (pred && kody[pred.id]) || text(skratkaFirmy) || null,
     pokladneKody: kody,
     pokladneMeny: meny,
+    menaNahradnej: pred ? (meny[pred.id] ?? null) : null,
   };
 }
 
 /**
  * Skratka pokladne v Pohode pre jeden doklad: ručne zvolená na doklade
  * (zaúčtovanie, pravidlo) → skratka pokladne dokladu → predvolená/firma.
+ *
+ * Náhradná skratka (predvolená/firma) len pre pokladňu v tej istej mene:
+ * pokladňa v CZK bez skratky nesmie spadnúť do eurovej pokladne Pohody —
+ * vráti sa prázdny reťazec a kontrola exportu doklad zastaví.
  */
 export function kodPokladneDokladu(
   d: { pohoda_pokladna?: string | null; pokladna_id?: string | null } | null | undefined,
   nast: NastaveniaPokladni | null | undefined,
 ): string {
-  return (
-    text(d?.pohoda_pokladna) ||
-    (d?.pokladna_id ? text(nast?.pokladneKody?.[String(d.pokladna_id)]) : "") ||
-    text(nast?.pokladna)
-  );
+  const rucne = text(d?.pohoda_pokladna);
+  if (rucne) return rucne;
+  if (d?.pokladna_id) {
+    const id = String(d.pokladna_id);
+    const vlastna = text(nast?.pokladneKody?.[id]);
+    if (vlastna) return vlastna;
+    const mena = text(nast?.pokladneMeny?.[id]).toUpperCase();
+    const menaNahr = text(nast?.menaNahradnej).toUpperCase();
+    if (mena && menaNahr && mena !== menaNahr) return "";
+  }
+  return text(nast?.pokladna);
 }
 
 /** Mena pokladne dokladu, alebo `null` keď ju nepoznáme (= domáca). */
@@ -281,4 +294,29 @@ export function menaPokladneDokladu(
   nast: NastaveniaPokladni | null | undefined,
 ): string | null {
   return d?.pokladna_id ? (nast?.pokladneMeny?.[String(d.pokladna_id)] ?? null) : null;
+}
+
+/** Názov pokladne, ktorú firma dostane sama — v jazyku krajiny firmy. */
+export function nazovPredvolenejPokladne(country: string | null | undefined): string {
+  const k = String(country ?? "").trim().toUpperCase();
+  if (/^(CZ|CZE|ČESK|CESK|CZECH)/.test(k)) return "Pokladna";
+  if (/^(DE|DEU|NEMEC|GERMAN|DEUTSCH)/.test(k)) return "Kasse";
+  return "Pokladňa";
+}
+
+/**
+ * Iná aktívna pokladňa firmy s tou istou skratkou v Pohode (bez ohľadu na
+ * veľkosť písmen), alebo `null`. `id` = ukladaná pokladňa (sama so sebou
+ * nekoliduje).
+ */
+export function koliziaSkratkyPokladne<
+  T extends { id: string; kod_pohoda?: string | null; aktivna?: boolean | null },
+>(pokladne: readonly T[], skratka: string, id: string | null): T | null {
+  const k = skratka.trim().toUpperCase();
+  if (!k) return null;
+  return (
+    pokladne.find(
+      (p) => p.id !== id && p.aktivna !== false && text(p.kod_pohoda).toUpperCase() === k,
+    ) ?? null
+  );
 }

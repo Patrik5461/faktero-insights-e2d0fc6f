@@ -105,7 +105,7 @@ export function NavrhAiInfo({
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-[color-mix(in_oklch,var(--stav-priebeh-bod)_40%,transparent)] bg-[var(--stav-priebeh-plocha)] text-[var(--stav-priebeh-text)] px-3 py-2 text-xs">
       <Sparkles className="h-3.5 w-3.5 shrink-0" />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-[12rem] flex-1">
         <strong>{t("Návrh AI")}</strong>
         {dovod ? `: ${dovod}` : ""}.{" "}
         {onPotvrd

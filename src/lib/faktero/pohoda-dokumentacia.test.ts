@@ -183,7 +183,8 @@ describe("prenesenie na položke (invoice.xsd PDP, CodePDP)", () => {
     });
     expect(hodnota(xml, "inv:PDP")).toBe("true");
     expect(hodnota(xml, "inv:CodePDP")).toBe("7208");
-    expect(kvHlavicky(xml)).toBe("A2");
+    // Kapitola 72 = § 69 ods. 12 písm. g) → podkód A2CN (Pohoda všeobecné A2 nepozná).
+    expect(kvHlavicky(xml)).toBe("A2CN");
     expect(chybySchemy(xml)).toEqual([]);
   });
   it("stavebné práce bez kódu tovaru — len príznak", () => {
@@ -194,6 +195,7 @@ describe("prenesenie na položke (invoice.xsd PDP, CodePDP)", () => {
           invoice: faktura({
             reverse_charge: true,
             reverse_charge_type: "domestic_69",
+            pdp_druh: "j",
             total: 100,
           }),
           items: [polozka({ vat_rate: 0, vat_amount: 0, total: 100 })],
@@ -202,6 +204,7 @@ describe("prenesenie na položke (invoice.xsd PDP, CodePDP)", () => {
     });
     expect(hodnota(xml, "inv:PDP")).toBe("true");
     expect(xml).not.toContain("CodePDP");
+    expect(kvHlavicky(xml)).toBe("A2SP");
   });
   it("dodanie do EÚ príznak tuzemského prenesenia nedostane", () => {
     const xml = buildPohodaInvoiceXml({

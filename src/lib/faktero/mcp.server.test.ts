@@ -260,3 +260,31 @@ describe("MCP s kľúčom účtu (viac firiem)", () => {
     expect(faktury.inputSchema.properties?.company).toBeUndefined();
   });
 });
+
+describe("MCP s testovacím kľúčom", () => {
+  const test = { ucet: false, firmy: [], test: true };
+  it("zapisujúci nástroj odmietne test_key_read_only a REST nezavolá", async () => {
+    for (const n of NASTROJE.filter((t) => !t.annotations.readOnlyHint)) {
+      const volaj = volajZ({});
+      const r: any = await spracujSpravu(
+        { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: n.name, arguments: {} } },
+        volaj,
+        test,
+      );
+      expect(r.result.isError).toBe(true);
+      expect(r.result.content[0].text).toContain("test_key_read_only");
+      expect(volaj).not.toHaveBeenCalled();
+    }
+  });
+  it("čítací nástroj s testovacím kľúčom prejde", async () => {
+    const volaj = volajZ({ "/api/v1/invoices": { data: [] } });
+    const n = NASTROJE.find((t) => t.annotations.readOnlyHint)!;
+    const r: any = await spracujSpravu(
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: n.name, arguments: {} } },
+      volaj,
+      test,
+    );
+    expect(r.result.content[0].text).not.toContain("test_key_read_only");
+    expect(volaj).toHaveBeenCalled();
+  });
+});

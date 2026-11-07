@@ -460,9 +460,10 @@ describe("spätný chod — vystavené doklady SK", () => {
     );
     const [f] = vydaneSpat(x);
     expect([c(f.subtotal), c(f.vatTotal), c(f.total)]).toEqual([100, 0, 100]);
+    // Export posiela podkód A2CN (kapitola 72); import z Pohody (`kvZPohody`) zatiaľ pozná len sekcie.
+    expect(x).toContain("<typ:ids>A2CN</typ:ids>");
     expect(f.pohoda).toMatchObject({
       reverse_charge: true,
-      kv_clenenie: "A2",
       pohoda_clenenie_dph: "UDpdp",
     });
     polozkySedia(f);
@@ -478,6 +479,7 @@ describe("spätný chod — vystavené doklady SK", () => {
             invoice: faktura({
               id: "pp",
               invoice_number: "FA2026005",
+              pdp_druh: "h",
               subtotal: 200,
               vat_total: 23,
               total: 223,

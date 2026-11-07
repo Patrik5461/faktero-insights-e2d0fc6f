@@ -14,10 +14,10 @@
 */
 
 import { kodClenenia, odvodClenenia, type KodCiselnika } from "./auto-uctovanie";
-import { kvOpravnehoZPovodnej, kvVystavenehoDokladu } from "./kv-urcenie";
+import { kvOpravnehoZPovodnej, kvSekcia, kvVystavenehoDokladu } from "./kv-urcenie";
 import { ZAKLADNE_CLENENIA_DPH } from "./predkontacie";
 import { rezimFirmy } from "./dph-rezim";
-import { kvKodFirmy } from "./ciselnik-obrazok";
+import { kvKodFirmy, kvOpravnehoPodkodu, pismenoPreneseniaKv } from "./ciselnik-obrazok";
 
 export type ZdrojClenenia = "pravidlo" | "firma" | "rezim";
 
@@ -154,6 +154,8 @@ export type FakturaClenenia = {
   customer_dic?: string | null;
   vat_total?: unknown;
   opravuje_fakturu_id?: string | null;
+  /** Druh tuzemského prenesenia — písmeno § 69 ods. 12 (SK); určuje podkód KV A.2 / C.1. */
+  pdp_druh?: string | null;
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;
   pohoda_predkontacia?: string | null;
@@ -185,6 +187,11 @@ export type KontextClenenia = {
    * sekcie → ten podkód); prázdne = systémové kódy.
    */
   kvCiselnik?: string[];
+  /**
+   * Colné kódy položiek dokladu — bez zvoleného druhu prenesenia (`pdp_druh`)
+   * sa z nich odhadne písmeno § 69 ods. 12 pre podkód KV (A2CN, A2MT, A2IO).
+   */
+  polozky?: { colny_kod?: string | null }[] | null;
 };
 
 type Pole = "clenenie" | "kv" | "predkontacia";
@@ -339,19 +346,33 @@ export function resolveVatClassification(
   // ── KV DPH — len slovenský výkaz a len platiteľ.
   let kv: string | null = null;
   let zdrojKv: ZdrojHodnoty | null = null;
+  // Kód pred doplnením podkódu: staršie doklady majú uložené všeobecné „A2“ —
+  // to nie je ručná voľba, automatika ho prepíše podkódom.
+  let kvSurovy: string | null = null;
+  // Podkód KV prenesenia: druh z faktúry, inak odhad z colných kódov položiek.
+  const pdpKv = { pismeno: pismenoPreneseniaKv(invoice.pdp_druh, ctx.polozky), tuzemskePdp };
   if (!proforma && krajina === "SK") {
     const kvPr = txt(pr?.kv_clenenie)?.toUpperCase() ?? null;
     // Opravný doklad A.1/A.2 z pravidla pre faktúry nedostane (ako spúšťač v DB);
     // A.2 patrí len tuzemskému preneseniu a prenesenie nedostane A.1 / D.2.
     const kvSediRezimu =
-      kvPr && !(opravny && (kvPr === "A1" || kvPr === "A2")) && (kvPr === "A2") === tuzemskePdp
+      kvPr && !(opravny && (kvPr === "A1" || kvSekcia(kvPr) === "A2")) && (kvSekcia(kvPr) === "A2") === tuzemskePdp
         ? true
         : kvPr === "X";
-    if (kvPr && kvSediRezimu) [kv, zdrojKv] = [kvPr, "pravidlo"];
+    // Všeobecné A2 z pravidla dostane podkód (Pohoda A2 bez podkódu nepozná).
+    if (kvPr && kvSediRezimu)
+      [kv, zdrojKv, kvSurovy] = [kvPr === "A2" ? kvKodFirmy(kvPr, ctx.kvCiselnik, pdpKv) : kvPr, "pravidlo", kvPr];
     else if (!platitel) kv = null;
     else {
-      const zPovodnej = pov ? kvOpravnehoZPovodnej(pov.kv_clenenie) : "";
-      if (zPovodnej) [kv, zdrojKv] = [kvKodFirmy(zPovodnej, ctx.kvCiselnik), "povodna"];
+      /*
+        Podkód A.2 pôvodnej faktúry (A2CN …) sa mení na podkód C.1 (C1CN …);
+        ostatné podľa sekcie (A2xx → C1, KN → X).
+      */
+      const podkodPov = pov ? kvOpravnehoPodkodu(pov.kv_clenenie) : null;
+      const zPovodnej = pov ? kvOpravnehoZPovodnej(kvSekcia(pov.kv_clenenie) ?? pov.kv_clenenie) : "";
+      if (podkodPov) [kv, zdrojKv, kvSurovy] = [kvKodFirmy(podkodPov, ctx.kvCiselnik), "povodna", zPovodnej];
+      else if (zPovodnej)
+        [kv, zdrojKv, kvSurovy] = [kvKodFirmy(zPovodnej, ctx.kvCiselnik, pdpKv), "povodna", zPovodnej];
       else {
         const predvolene = typ === "regular" || typ === "advance_payment" ? txt(company.kv_clenenie_faktura) : null;
         const k = kvVystavenehoDokladu({
@@ -368,14 +389,15 @@ export function resolveVatClassification(
           clenenieDph: clenenieFinal,
         });
         if (k)
-          [kv, zdrojKv] = [
-            kvKodFirmy(k, ctx.kvCiselnik),
+          [kv, zdrojKv, kvSurovy] = [
+            kvKodFirmy(k, ctx.kvCiselnik, pdpKv),
             predvolene && k === predvolene.toUpperCase() ? "firma" : "system",
+            k,
           ];
       }
     }
   }
-  const rucneKv = jeRucna(invoice.kv_clenenie, invoice.kv_zdroj, kv, [pr?.kv_clenenie]);
+  const rucneKv = jeRucna(invoice.kv_clenenie, invoice.kv_zdroj, kv, [pr?.kv_clenenie, kvSurovy]);
 
   // ── predkontácia — kódy patria Pohode firmy, systém ich nevymýšľa (len ustálený zvyk firmy).
   let pk: string | null = null;

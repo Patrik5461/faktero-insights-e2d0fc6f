@@ -20,7 +20,12 @@
   členenie (účtuje cez DATEV), zálohová faktúra (proforma) nič.
 */
 
-import { odvodClenenia, type KodCiselnika, type VstupClenenia } from "./auto-uctovanie";
+import {
+  odvodClenenia,
+  znakyPreneseniaPrijatej,
+  type KodCiselnika,
+  type VstupClenenia,
+} from "./auto-uctovanie";
 import { kvKodFirmy } from "./ciselnik-obrazok";
 import { jeRucna, type ZdrojHodnoty } from "./clenenie-vystavenej";
 import { rezimFirmy } from "./dph-rezim";
@@ -99,6 +104,8 @@ export function vstupPrijatych(
     odpocet: row.odpocet,
     partnerIcDph: row.supplier_ic_dph,
     partnerKrajina: row.supplier_country,
+    zaklad: row.amount_without_vat == null ? null : Number(row.amount_without_vat),
+    znakyPrenesenia: znakyPreneseniaPrijatej(row),
   };
 }
 

@@ -9,7 +9,13 @@
   Všetko sa na konci zmaže natvrdo.
 */
 import { textPdf } from "../lib/pdf.mjs";
-import { akciaVMenu, nacitajFakturu, vystavFakturu, zmazFakturuNatvrdo } from "../lib/doklady.mjs";
+import {
+  akciaVMenu,
+  nacitajFakturu,
+  vystavDokladKPlatbe,
+  vystavFakturu,
+  zmazFakturuNatvrdo,
+} from "../lib/doklady.mjs";
 
 const pdfText = async (t, meno) => {
   const tl = () => t.page.getByRole("button", { name: /^(Stiahnuť PDF|Vygenerovať PDF)$/ }).first();
@@ -231,7 +237,7 @@ export default {
       t.uprac("úhrada zálohy", () => t.rest.delete(`payments?id=eq.${pl.id}`));
       await t.rest.patch(`invoices?id=eq.${zf.id}`, { status: "paid", paid_at: t.dnes });
       await t.go(`/faktury/${zf.id}`);
-      await page.getByRole("button", { name: "Vystaviť daňový doklad" }).click();
+      await vystavDokladKPlatbe(page);
       const ddp = await t.cakajNa("doklad k platbe", async () => {
         const r = await t.rest.get(
           `invoices?advance_invoice_id=eq.${zf.id}&type=eq.advance_payment&select=*`,

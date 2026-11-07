@@ -6,6 +6,8 @@
     nastavení pod avatarom;
   - verejný web: funkcie na úvodnej stránke a podstránky /funkcie/… v sitemape.
 */
+import { textSPopisom } from "../lib/popis.mjs";
+
 const KARTY = "/vozovy-park/palivove-karty";
 
 export default {
@@ -24,7 +26,7 @@ export default {
     });
 
     await t.krok("popis stránky spomína nahratie výpisu pri karte bez API", async () => {
-      const text = await page.locator("main").innerText();
+      const text = await textSPopisom(page);
       t.over(/nahráte mesačný výpis/.test(text), "popis nespomína nahratie výpisu (Up)");
       t.over(!/Nákupy palivovými kartami sa načítajú samy/.test(text), "ostal starý popis");
     });

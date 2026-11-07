@@ -6,7 +6,7 @@
  */
 import type { EN16931Invoice, EN16931Line, EN16931Party, EN16931TaxSubtotal } from "./types";
 import { sUctomFaktury } from "../platobny-ucet";
-import { riadkySoZlavou } from "../zlavy";
+import { percentoZlavy, riadkySoZlavou } from "../zlavy";
 import { peppolId } from "./peppol-id";
 import { textOdpoctu, type OdpocetZalohy } from "../zalohy-odpocty";
 import { upravColnyKod, upravKrajinuPovodu } from "../colny-kod";
@@ -208,6 +208,30 @@ function buildBuyerParty(inv: InvoiceRow): EN16931Party {
   };
 }
 
+/** Cena na 4 desatinné miesta — BT-146/147/148 nemajú obmedzenie ako sumy (BR-DEC). */
+const r4 = (n: number) => Math.round(n * 1e4) / 1e4;
+
+/**
+ * Cena riadku podľa Peppol BIS 3: so zľavou riadku (`discount_percent`) ide
+ * do `PriceAmount` čistá cena po zľave a hrubá cena so zľavou na jednotku do
+ * `Price/AllowanceCharge` (BaseAmount, Amount). Predtým išla hrubá cena, kým
+ * `LineExtensionAmount` bol po zľave — sieť to odmietla (PEPPOL-EN16931-R120:
+ * LineExtension = množstvo × čistá cena). Čistá cena sa počíta zo základu
+ * riadku (`subtotal / množstvo`), takže sedí aj po zaokrúhlení a s rozpočítanou
+ * zľavou na doklad; zľava = hrubá − čistá presne (PEPPOL-EN16931-R046).
+ */
+function cenaRiadku(it: InvoiceItemRow): Pick<EN16931Line, "unitPrice" | "priceDiscount"> {
+  const hruba = Number(it.unit_price) || 0;
+  const pct = percentoZlavy((it as any).discount_percent);
+  const q = Number(it.quantity) || 0;
+  if (!(pct > 0) || q === 0) return { unitPrice: hruba };
+  const cista = r4(Number(it.subtotal) / q);
+  const zaklad = r4(hruba);
+  // Čistá cena nad hrubou (nekonzistentný riadok) by dala zápornú zľavu — ide len čistá cena.
+  if (cista > zaklad) return { unitPrice: cista };
+  return { unitPrice: cista, priceDiscount: { baseAmount: zaklad, amount: r4(zaklad - cista) } };
+}
+
 function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow, neplatitel: boolean): EN16931Line[] {
   return items
     .slice()
@@ -218,7 +242,7 @@ function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow, neplatitel: bo
       description: it.description || undefined,
       quantity: Number(it.quantity),
       unitCode: mapUnit(it.unit),
-      unitPrice: Number(it.unit_price),
+      ...cenaRiadku(it),
       lineExtensionAmount: Number(it.subtotal),
       vatCategory: mapVatCategory(Number(it.vat_rate), pravidlaRiadku(it, invoice), neplatitel),
       vatPercent: pravidlaRiadku(it, invoice).reverse_charge || neplatitel ? 0 : Number(it.vat_rate),
@@ -404,6 +428,9 @@ export function mapToEN16931(args: {
       quantity: a(l.quantity),
       lineExtensionAmount: a(l.lineExtensionAmount),
       unitPrice: a(l.unitPrice),
+      ...(l.priceDiscount
+        ? { priceDiscount: { baseAmount: a(l.priceDiscount.baseAmount), amount: a(l.priceDiscount.amount) } }
+        : {}),
     }));
     dto.taxSubtotals = dto.taxSubtotals.map((t) => ({
       ...t,

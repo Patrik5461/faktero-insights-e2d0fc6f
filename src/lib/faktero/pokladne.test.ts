@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   knihaPokladni,
+  koliziaSkratkyPokladne,
+  nazovPredvolenejPokladne,
   kodPokladneDokladu,
   menaPokladneDokladu,
   nastaveniaPokladni,
@@ -235,8 +237,39 @@ describe("skratka pokladne pre export", () => {
     expect(kodPokladneDokladu({}, {})).toBe("");
   });
 
+  it("pokladňa v cudzej mene bez skratky nedostane skratku eurovej pokladne", () => {
+    const bez = nastaveniaPokladni([EUR, { ...CZK, kod_pohoda: null }], "FIRMA");
+    expect(kodPokladneDokladu({ pokladna_id: "p-czk" }, bez)).toBe("");
+    // Ručne zvolená skratka platí aj tak.
+    expect(kodPokladneDokladu({ pokladna_id: "p-czk", pohoda_pokladna: "HPCZ" }, bez)).toBe("HPCZ");
+    // Pokladňa v mene predvolenej bez skratky → náhradná ostáva.
+    const eur2 = { ...EUR, id: "p-eur2", predvolena: false, kod_pohoda: null };
+    expect(kodPokladneDokladu({ pokladna_id: "p-eur2" }, nastaveniaPokladni([EUR, eur2]))).toBe("HP");
+  });
+
   it("mena pokladne dokladu", () => {
     expect(menaPokladneDokladu({ pokladna_id: "p-czk" }, nast)).toBe("CZK");
     expect(menaPokladneDokladu({}, nast)).toBeNull();
+  });
+});
+
+describe("správa pokladní", () => {
+  it("názov predvolenej pokladne podľa krajiny firmy", () => {
+    expect(nazovPredvolenejPokladne("SK")).toBe("Pokladňa");
+    expect(nazovPredvolenejPokladne("CZ")).toBe("Pokladna");
+    expect(nazovPredvolenejPokladne("Česká republika")).toBe("Pokladna");
+    expect(nazovPredvolenejPokladne("DE")).toBe("Kasse");
+    expect(nazovPredvolenejPokladne(null)).toBe("Pokladňa");
+  });
+
+  it("dve aktívne pokladne s rovnakou skratkou kolidujú", () => {
+    const p = [
+      { id: "a", nazov: "Pokladňa", kod_pohoda: "HP", aktivna: true },
+      { id: "b", nazov: "Stará", kod_pohoda: "HPS", aktivna: false },
+    ];
+    expect(koliziaSkratkyPokladne(p, " hp ", "c")?.id).toBe("a");
+    expect(koliziaSkratkyPokladne(p, "HP", "a")).toBeNull();
+    expect(koliziaSkratkyPokladne(p, "HPS", "c")).toBeNull();
+    expect(koliziaSkratkyPokladne(p, "", "c")).toBeNull();
   });
 });

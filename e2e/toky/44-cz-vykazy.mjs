@@ -276,7 +276,18 @@ export default {
       ]);
       v.ddp = await faktura(
         platca,
-        { type: "advance_payment", status: "paid", paid_at: t.dnes, advance_invoice_id: v.zf.id },
+        /*
+          Od 6. 11. doklad k platbe bez predkontácie (vlastnej ani z nastavení
+          firmy) export do Pohody zastaví — QA Česká predvolenú nemá, preto
+          vlastná na doklade (nastavenia firmy test nemení).
+        */
+        {
+          type: "advance_payment",
+          status: "paid",
+          paid_at: t.dnes,
+          advance_invoice_id: v.zf.id,
+          pohoda_predkontacia: "E2EZAL",
+        },
         [["záloha", 5000, 21]],
       );
 

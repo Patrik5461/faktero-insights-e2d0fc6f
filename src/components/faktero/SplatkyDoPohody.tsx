@@ -143,7 +143,8 @@ export function SplatkyDoPohody({
     // „doklad“ ponúka aj agendu Ostatné záväzky (commitment).
     nacitajNavrhy({ data: { company_id: cid, pre: "doklad" } })
       .then((n) => zive && setNavrhy(n as any))
-      .catch(() => {});
+      // Návrhy sú len ponuka — kódy sa dajú zadať aj ručne.
+      .catch((e) => console.warn("Návrhy kódov pre splátky sa nenačítali", e));
     return () => {
       zive = false;
     };

@@ -2,7 +2,12 @@ import { vsetkoAkoData } from "./strankovanie";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { knihaPokladni, type Pokladna } from "./pokladne";
+import {
+  knihaPokladni,
+  koliziaSkratkyPokladne,
+  nazovPredvolenejPokladne,
+  type Pokladna,
+} from "./pokladne";
 import { cisloZRadu } from "./cislo-z-radu.server";
 import { krajinaDane } from "./vat-rates";
 
@@ -237,6 +242,24 @@ export const ulozPokladnu = createServerFn({ method: "POST" })
       ...(data.aktivna !== undefined ? { aktivna: data.aktivna } : {}),
       ...(data.poradie !== undefined ? { poradie: data.poradie } : {}),
     };
+    /*
+      Dve pokladne s tou istou skratkou by v Pohode splynuli do jednej
+      (pohyby oboch v jednej knihe, pri inej mene so zlými sumami).
+      Archivované sa nepočítajú — z nich sa už nič neexportuje.
+    */
+    const skratka = data.kod_pohoda?.trim();
+    if (skratka) {
+      const { data: ine } = await sb
+        .from("pokladne")
+        .select("id, nazov, kod_pohoda, aktivna")
+        .eq("company_id", data.company_id);
+      const kolizia = koliziaSkratkyPokladne((ine ?? []) as any, skratka, data.id ?? null);
+      if (kolizia)
+        // Pevný text (kľúč prekladu) — názov druhej pokladne je v zozname hneď vedľa.
+        throw new Error(
+          "Túto skratku v Pohode už má iná aktívna pokladňa — každá pokladňa potrebuje vlastnú.",
+        );
+    }
     if (data.id) {
       // Mena sa po prvom pohybe nemení — sumy pohybov sú v nej.
       if (data.mena) {
@@ -274,10 +297,10 @@ export const ulozPokladnu = createServerFn({ method: "POST" })
     if (!count) {
       const { data: firma } = await sb
         .from("companies")
-        .select("pohoda_pokladna")
+        .select("pohoda_pokladna, country")
         .eq("id", data.company_id)
         .maybeSingle();
-      const zaklad = "Pokladňa";
+      const zaklad = nazovPredvolenejPokladne((firma as any)?.country);
       if (zaklad.toLowerCase() !== data.nazov.trim().toLowerCase()) {
         const { error } = await sb.from("pokladne").insert({
           company_id: data.company_id,

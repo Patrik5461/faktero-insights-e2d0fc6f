@@ -41,21 +41,30 @@ function bezTajomstiev(text) {
   return t.replace(/\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[skryté]");
 }
 
-const zlyhane = (suhrn.toky ?? []).filter((x) => !x.ok);
+const zlyhane = (suhrn.toky ?? []).filter((x) => !x.ok && !x.nespusteny);
+const nespustene = (suhrn.toky ?? []).filter((x) => x.nespusteny);
 const riadky = [
-  `E2E testy po nasadení ${suhrn.commit} zlyhali (${zlyhane.length} z ${(suhrn.toky ?? []).length} tokov, ${suhrn.trvanie_s ?? "?"} s).`,
+  zlyhane.length || !nespustene.length
+    ? `E2E testy po nasadení ${suhrn.commit} zlyhali (${zlyhane.length} z ${(suhrn.toky ?? []).length} tokov, ${suhrn.trvanie_s ?? "?"} s).`
+    : `E2E testy po nasadení ${suhrn.commit} nedobehli celé (${suhrn.trvanie_s ?? "?"} s) — nič nezlyhalo.`,
   ...(suhrn.chyba ? [`Beh sa nespustil: ${suhrn.chyba}`] : []),
   "",
   ...zlyhane.map(
     (x) =>
       `• ${x.tok} — ${x.popis ?? ""}\n  ${x.chyba ?? "?"}${x.prvyPokus ? "\n  (zlyhal aj na druhý pokus)" : ""}`,
   ),
+  ...(nespustene.length
+    ? ["", `Nespustené (vypršal čas behu, nezlyhali): ${nespustene.map((x) => x.tok).join(", ")}`]
+    : []),
   "",
   `Výsledky na serveri: ${suhrn.vystup}`,
   "Súhrn: suhrn.json, snímky obrazovky *-chyba*.png, stiahnuté súbory v subory/.",
   "Nasadenie sa nevracia — vydanie beží ďalej.",
 ].map(bezTajomstiev);
-const predmet = `Faktero E2E: zlyhalo ${zlyhane.map((x) => x.tok).join(", ") || "spustenie"} (${suhrn.commit})`;
+const predmet =
+  zlyhane.length || !nespustene.length
+    ? `Faktero E2E: zlyhalo ${zlyhane.map((x) => x.tok).join(", ") || "spustenie"} (${suhrn.commit})`
+    : `Faktero E2E: nedobehlo ${nespustene.length} tokov (${suhrn.commit})`;
 
 async function mail() {
   if (!env.RESEND_API_KEY) return console.log("e-mail preskočený: chýba RESEND_API_KEY");

@@ -140,12 +140,22 @@ export async function vyriesClenenieRiadku(
       .maybeSingle();
     povodna = data ?? null;
   }
+  /*
+    Podkód KV prenesenia (A2CN, A2MT, A2IO) bez zvoleného druhu (`pdp_druh`)
+    sa odhadne z colných kódov položiek — načítajú sa len vtedy.
+  */
+  let polozky: KontextClenenia["polozky"] = null;
+  if (row.reverse_charge && !String(row.pdp_druh ?? "").trim() && row.id && row.type !== "proforma") {
+    const { data } = await sb.from("invoice_items").select("colny_kod").eq("invoice_id", row.id).limit(1000);
+    polozky = (data ?? []) as NonNullable<KontextClenenia["polozky"]>;
+  }
   return resolveVatClassification(k.firma, row, {
     pravidlo: pravidloPreFakturu(k.pravidla, row, k.firma.country),
     povodna,
     ciselnik: k.ciselnik,
     odhad: k.odhad,
     kvCiselnik: k.kvCiselnik,
+    polozky,
   });
 }
 

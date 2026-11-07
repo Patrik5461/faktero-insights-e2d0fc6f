@@ -27,6 +27,8 @@ type Volaj = (
 /** Kľúč účtu: firmy, ku ktorým smie. Kľúč firmy: `ucet: false`. */
 export type KontextKluca = {
   ucet: boolean;
+  /** Testovací kľúč smie len čítať — zapisujúce nástroje odmietne už MCP. */
+  test?: boolean;
   firmy: { id: string; name: string; ico: string | null }[];
 };
 
@@ -1169,6 +1171,19 @@ export async function spracujSpravu(
     case "tools/call": {
       const n = [LIST_COMPANIES, ...NASTROJE].find((x) => x.name === s.params?.name);
       if (!n) return chyba(s.id, -32602, `Neznámy nástroj: ${String(s.params?.name ?? "")}`);
+      /*
+        Testovací kľúč smie len čítať (ako /api/v1). Nespoliehame sa len na
+        403 z REST API — zapisujúci nástroj sa so skúšobným kľúčom nespustí vôbec.
+      */
+      if (kontext.test && !n.annotations.readOnlyHint) {
+        const text = JSON.stringify({
+          error: {
+            code: "test_key_read_only",
+            message: "Testovací kľúč smie len čítať. Na vytváranie a zmeny použite live kľúč.",
+          },
+        });
+        return odpoved(s.id, { content: [{ type: "text", text }], isError: true });
+      }
       try {
         // `company` nie je súčasť vstupu nástroja — ide do hlavičky X-Company.
         const { company, ...argumenty } = (s.params?.arguments ?? {}) as Record<string, unknown>;
@@ -1264,7 +1279,7 @@ export async function obsluzMcp(request: Request): Promise<Response> {
 
   const davka = Array.isArray(telo);
   const spravy = (davka ? telo : [telo]) as Sprava[];
-  const kontext: KontextKluca = { ucet: kluc.ucet, firmy: kluc.firmy };
+  const kontext: KontextKluca = { ucet: kluc.ucet, firmy: kluc.firmy, test: kluc.mode === "test" };
   const vysledky = (await Promise.all(spravy.map((s) => spracujSpravu(s, volaj, kontext)))).filter(
     Boolean,
   );

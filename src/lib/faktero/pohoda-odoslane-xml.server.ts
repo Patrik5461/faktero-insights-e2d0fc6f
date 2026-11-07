@@ -46,20 +46,41 @@ export async function ulozOdoslaneXml(
 /**
  * Po vrátení z Pohody pôjde doklad pod novým `id` (`id-verzia`) — Pohoda
  * kontroluje duplicitu podľa id položky dávky a opravu by inak odmietla.
- * Bez stĺpca `pohoda_verzia` (migrácia ešte nie je) sa nič nestane.
+ *
+ * Atomicky v databáze (`zvys_pohoda_verziu`: `pohoda_verzia + 1` jedným
+ * UPDATE) — čítanie a zápis z aplikácie by pri dvoch súbežných vráteniach
+ * zvýšili verziu len raz. Kým migrácia 20261107010200 nie je v databáze,
+ * ostáva doterajší postup po riadkoch.
  */
 export async function zvysVerziuPohody(
   supabase: any,
-  tabulka: string,
+  tabulka: "invoices" | "purchase_invoices" | "expense_documents" | "cash_entries",
   ids: string[],
 ): Promise<void> {
   if (!ids.length) return;
+  const { error: chybaRpc } = await supabase.rpc("zvys_pohoda_verziu", {
+    _tabulka: tabulka,
+    _ids: ids,
+  });
+  if (!chybaRpc) return;
+  if (!chybaChybajucejFunkcie(chybaRpc))
+    throw new Error(`Verzia dokladu pre Pohodu sa nezvýšila: ${chybaRpc.message ?? String(chybaRpc)}`);
   const { data, error } = await supabase.from(tabulka).select("id, pohoda_verzia").in("id", ids);
-  if (error || !data) return;
-  for (const r of data) {
-    await supabase
+  if (error) throw new Error(error.message);
+  for (const r of data ?? []) {
+    const { error: e } = await supabase
       .from(tabulka)
       .update({ pohoda_verzia: (Number(r.pohoda_verzia) || 0) + 1 })
       .eq("id", r.id);
+    if (e) throw new Error(e.message);
   }
+}
+
+/** Funkcia v databáze ešte nie je (PostgREST PGRST202 / Postgres 42883). */
+function chybaChybajucejFunkcie(e: { code?: string; message?: string }): boolean {
+  return (
+    e?.code === "PGRST202" ||
+    e?.code === "42883" ||
+    /could not find the function/i.test(String(e?.message ?? ""))
+  );
 }

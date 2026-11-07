@@ -40,7 +40,11 @@ export function NastaveniaUctovnehoProgramu({
         setProgram(jeProgramUctovania(programZAdresy) ? programZAdresy : r.program);
         setNastavenia(r.nastavenia as any);
       })
-      .catch(() => {});
+      // Bez načítaných nastavení by uloženie prepísalo doterajšie predvolenými.
+      .catch((e: any) => {
+        console.warn("Nastavenie účtovného programu sa nenačítalo", e);
+        toast.error(t("Nastavenie účtovného programu sa nepodarilo načítať — obnovte stránku."));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, programZAdresy]);
 

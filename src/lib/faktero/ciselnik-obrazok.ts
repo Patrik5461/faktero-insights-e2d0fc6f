@@ -15,6 +15,7 @@
 
 import { z } from "zod";
 import type { DruhCiselnika } from "./predkontacie";
+import { pismenoZColnychKodov, platnyDruhPdp } from "./veta-prenesenia";
 
 /** Druhy číselníka, ktoré sa dajú čítať z obrázka. */
 export const DRUHY_Z_OBRAZKA = ["predkontacia", "clenenie_dph", "kv_clenenie"] as const;
@@ -499,11 +500,77 @@ export function moznostiKv(
 }
 
 /**
- * Kód KV z číselníka firmy pre systémovo určenú sekciu (resolveVatClassification):
- * presná zhoda → ten kód; jediný podkód sekcie → ten; inak systémový kód.
+ * Písmeno § 69 ods. 12 pre KV: zvolený druh prenesenia na faktúre
+ * (`invoices.pdp_druh`), inak odhad z colných kódov položiek — ten istý ako
+ * pri vete o prenesení na doklade (`veta-prenesenia.ts`). Null = nevedno.
  */
-export function kvKodFirmy(kod: string | null, kodyFirmy: readonly string[] | null | undefined): string | null {
-  if (!kod || !kodyFirmy?.length) return kod;
+export function pismenoPreneseniaKv(
+  druh: unknown,
+  polozky?: { colny_kod?: string | null }[] | null,
+): string | null {
+  return platnyDruhPdp("SK", druh) ?? pismenoZColnychKodov(polozky);
+}
+
+/** Podkód KV (Pohoda) podľa písmena § 69 ods. 12: A2CN/A2MT/A2IO/A2SP, opravné C1CN/C1MT/C1IO. */
+const PODKOD_A2: Record<string, string> = { f: "A2CN", g: "A2CN", h: "A2MT", i: "A2IO", j: "A2SP" };
+// Opravná faktúra k stavebným prácam nemá v Pohode vlastný podkód — patrí do všeobecného C1.
+const PODKOD_C1: Record<string, string> = { f: "C1CN", g: "C1CN", h: "C1MT", i: "C1IO", j: "C1" };
+
+/**
+ * Všeobecné „A2“ (a „C1“ opravnej faktúry v tuzemskom prenesení) nahradí
+ * podkódom podľa písmena § 69 ods. 12. Číselník KV Pohody všeobecné A2 nemá
+ * (len A2CN, A2IO, A2MT, A2SP) — taký kód by Pohoda neprijala.
+ *
+ * Písmená a) až e) (šrot, emisné kvóty, nehnuteľnosti, záruka) dodávateľ
+ * v kontrolnom výkaze neuvádza — údaje uvádza len odberateľ v B.1 (metodický
+ * pokyn FS ku KV, časť 3.1.2) → „X“ (nezahŕňať).
+ *
+ * Bez písmena sa kód nemení — export pred odovzdaním zastaví A2 bez podkódu
+ * (`prekazkaVydanej`) a pri C1 upozorní (`varovanieKvVydanej`).
+ */
+export function kvPodkodPrenesenia(
+  kod: string | null | undefined,
+  pismeno: string | null | undefined,
+  /** Doklad (alebo položka) je v tuzemskom prenesení — rozhoduje pri C1. */
+  tuzemskePdp: boolean,
+): string | null {
+  const k = String(kod ?? "").trim().toUpperCase();
+  if (!k) return kod ?? null;
+  const p = String(pismeno ?? "").trim().toLowerCase();
+  if (!p) return k === "A2" || k === "C1" ? k : (kod ?? null);
+  if (k === "A2" || (k === "C1" && tuzemskePdp)) {
+    if (/^[a-e]$/.test(p)) return "X";
+    const nove = (k === "A2" ? PODKOD_A2 : PODKOD_C1)[p];
+    if (nove) return nove;
+  }
+  return kod ?? null;
+}
+
+/** Opravná faktúra k faktúre s podkódom A.2 — podkód C.1 (A2CN → C1CN, A2SP → C1). */
+export function kvOpravnehoPodkodu(kvPovodnej: unknown): string | null {
+  const k = String(kvPovodnej ?? "").trim().toUpperCase();
+  const m: Record<string, string> = { A2CN: "C1CN", A2MT: "C1MT", A2IO: "C1IO", A2SP: "C1" };
+  return m[k] ?? null;
+}
+
+/**
+ * Kód KV z číselníka firmy pre systémovo určenú sekciu (resolveVatClassification):
+ * podkód prenesenia podľa písmena § 69 ods. 12 (`kvPodkodPrenesenia`, ak ho
+ * firma má alebo nemá vlastný číselník); presná zhoda → ten kód; jediný
+ * podkód sekcie → ten; inak systémový kód.
+ */
+export function kvKodFirmy(
+  kod: string | null,
+  kodyFirmy: readonly string[] | null | undefined,
+  pdp?: { pismeno?: string | null; tuzemskePdp: boolean } | null,
+): string | null {
+  if (!kod) return kod;
+  if (pdp) {
+    const podkod = kvPodkodPrenesenia(kod, pdp.pismeno, pdp.tuzemskePdp);
+    if (podkod && podkod !== kod && (podkod === "X" || !kodyFirmy?.length || kodyFirmy.includes(podkod)))
+      return podkod;
+  }
+  if (!kodyFirmy?.length) return kod;
   if (kodyFirmy.includes(kod)) return kod;
   const sekcia = (k: string) => {
     const m = /^(A2|B1|C1|C2)/.exec(k);

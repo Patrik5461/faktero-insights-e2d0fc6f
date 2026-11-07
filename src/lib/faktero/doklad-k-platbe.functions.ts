@@ -205,6 +205,9 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
         .select("id, invoice_number, total, currency")
         .single();
     });
+    // Súbežné vystavenie k tej istej zálohe zastaví unikátny index (migrácia 20261107010200).
+    if (/invoices_doklad_k_platbe_uniq/.test(String(chyba?.message ?? "")))
+      throw new Error("K tejto zálohe už doklad existuje.");
     if (chyba || !doklad) throw new Error(chyba?.message ?? "Doklad sa nepodarilo vystaviť.");
 
     const { error: chybaPoloziek } = await supabase.from("invoice_items").insert(

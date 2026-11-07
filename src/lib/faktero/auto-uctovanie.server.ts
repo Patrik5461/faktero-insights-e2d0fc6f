@@ -20,7 +20,9 @@ import { jeRozpisNaKontrole } from "./rozpis-na-kontrole";
 import {
   NAZVY_REZIMOV,
   blokatory,
+  dodavatelJeFirma,
   kvPreneseniaPrijatej,
+  znakyPreneseniaPrijatej,
   jeRezimAutopilota,
   odvodClenenia,
   polozkyNesedia,
@@ -108,6 +110,9 @@ export type Firma = {
   pouzivaUctovanie: boolean;
   /** Predvolené členenie KV DPH bežného dokladu (Predkontácie → Predvolené). */
   kvPredvolene?: Partial<Record<TypDokladu, string | null>>;
+  /** IČ DPH a IČO firmy — doklad „od seba“ nesmie ísť do odpočtu sám. */
+  icDph?: string | null;
+  ico?: string | null;
 };
 
 const STLPCE_PREDVOLENYCH = [
@@ -122,7 +127,7 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     sb
       .from("companies")
       .select(
-        `id, country, vat_payer, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, ${STLPCE_PREDVOLENYCH.join(", ")}`,
+        `id, country, vat_payer, ic_dph, ico, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, ${STLPCE_PREDVOLENYCH.join(", ")}`,
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -143,6 +148,8 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     id: companyId,
     krajina: String(c?.country ?? "SK").toUpperCase(),
     platitel: Boolean(c?.vat_payer),
+    icDph: c?.ic_dph ?? null,
+    ico: c?.ico ?? null,
     rezim: jeRezimAutopilota(c?.auto_uctovanie_rezim) ? c.auto_uctovanie_rezim : "bezpecny",
     limit: c?.auto_uctovanie_limit != null ? Number(c.auto_uctovanie_limit) : PREDVOLENY_LIMIT,
     od: c?.auto_uctovanie_od ?? null,
@@ -213,6 +220,8 @@ export function vstupClenenia(
     odpocet: row.odpocet,
     partnerIcDph: row.supplier_ic_dph,
     partnerKrajina: row.supplier_country,
+    zaklad: row.amount_without_vat == null ? null : Number(row.amount_without_vat),
+    znakyPrenesenia: znakyPreneseniaPrijatej(row),
   };
 }
 
@@ -552,6 +561,8 @@ export async function navrhPreRiadok(
   const duplicitne = typ === "vystavena" ? null : await duplicitaRiadku(sb, typ, row);
   const bl = blokatory({
     cudziOdberatel: typ === "prijata" && Boolean(row.odberatel_nesedi),
+    // Doklad, ktorý vystavila sama firma (BÝVAJLEPŠIE 2026006) — odpočet z neho nie je.
+    vlastnaFaktura: typ !== "vystavena" && dodavatelJeFirma(row, { ic_dph: firma.icDph, ico: firma.ico }),
     duplicita: Boolean(duplicitne),
     // Rozpis DPH na kontrole (oprava rozpisu / vyťaženie) — autopilot ho nezaúčtuje, nechá návrh.
     rozpisNaKontrole: typ !== "vystavena" && jeRozpisNaKontrole(row),

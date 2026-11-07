@@ -111,11 +111,14 @@ export function AutoZauctovanieOdznak({
     return (
       <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
         <Bot className="h-4 w-4 shrink-0" />
-        <span title={navrh?.zdovodnenie || undefined} className="min-w-0 flex-1">
+        <span
+          title={navrh?.zdovodnenie ? t(navrh.zdovodnenie) : undefined}
+          className="min-w-0 flex-1 basis-full sm:basis-auto"
+        >
           {t("Zaúčtované automaticky")} ·{" "}
           {zdrojText(row.zauctovanie_zdroj, row.zauctovanie_istota, navrh?.pravidloNazov)}
           {navrh?.zdovodnenie && (
-            <span className="block text-xs opacity-80">{navrh.zdovodnenie}</span>
+            <span className="block text-xs opacity-80">{t(navrh.zdovodnenie)}</span>
           )}
         </span>
         <button
@@ -163,7 +166,10 @@ export function AutoZauctovanieOdznak({
     <div className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Bot className="h-4 w-4 shrink-0 text-primary" />
-        <span className="min-w-0 flex-1" title={navrh.zdovodnenie || undefined}>
+        <span
+          className="min-w-0 flex-1 basis-full sm:basis-auto"
+          title={navrh.zdovodnenie ? t(navrh.zdovodnenie) : undefined}
+        >
           {t("Návrh zaúčtovania")}: <strong>{kody || "—"}</strong>
           {navrh.zdroj && (
             <span className="text-muted-foreground">
@@ -172,7 +178,7 @@ export function AutoZauctovanieOdznak({
             </span>
           )}
           {navrh.zdovodnenie && (
-            <span className="block text-xs text-muted-foreground">{navrh.zdovodnenie}</span>
+            <span className="block text-xs text-muted-foreground">{t(navrh.zdovodnenie)}</span>
           )}
         </span>
         <button

@@ -5,8 +5,8 @@
 #   e2e/po-nasadeni.sh <commit>
 #
 # - celá sada trvá ~10 min (80 tokov v troch súbežných skupinách podľa QA firiem — e2e/skupiny.mjs,
-#   31. 10. 2026; sériovo to bolo ~25 min); beh má strop 21 minút (E2E_STROP_S 1260; spusti.mjs
-#   nové toky nespúšťa po E2E_LIMIT_S 1080 a bežiaci tok utne do 60 s po ňom, aby stihol upratať),
+#   31. 10. 2026; sériovo to bolo ~25 min); beh má strop 25 minút (E2E_STROP_S 1500; spusti.mjs
+#   nové toky nespúšťa po E2E_LIMIT_S 1320 a bežiaci tok utne do 60 s po ňom, aby stihol upratať),
 #   súbežne beží najviac jeden beh (zámok v spusti.mjs);
 # - keď zámok drží iný beh (napr. po predošlom nasadení), počká naň najviac E2E_CAKAJ_S (900 s)
 #   — predtým sa beh preskočil a posledné nasadenie ostalo neotestované;
@@ -27,9 +27,9 @@ COMMIT=${1:-$(git -C "$(dirname "$0")/.." rev-parse --short HEAD 2>/dev/null || 
 E2E=$(cd "$(dirname "$0")" && pwd)
 VYSLEDKY=${E2E_VYSLEDKY:-/home/patrik/e2e-vysledky}
 LOG=${E2E_DEPLOY_LOG:-/home/patrik/webhook/poll-deploy.log}
-STROP=${E2E_STROP_S:-1260}
+STROP=${E2E_STROP_S:-1500}
 CAKAJ=${E2E_CAKAJ_S:-900}
-export E2E_LIMIT_S=${E2E_LIMIT_S:-1080}
+export E2E_LIMIT_S=${E2E_LIMIT_S:-1320}
 
 export HOME=${HOME:-/home/patrik}
 export PATH=/usr/local/bin:/usr/bin:/bin:${PATH:-}
@@ -54,7 +54,8 @@ suhrn() { node -e '
   const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
   const n = (s.toky ?? []).length;
   const nest = s.nestabilne?.length ? `, na druhý pokus: ${s.nestabilne.join(", ")}` : "";
-  console.log(s.ok ? `OK ${n}/${n} za ${s.trvanie_s} s${nest}` : `ZLYHALO ${s.zlyhane.join(", ")} (${s.prešlo}/${n}, ${s.trvanie_s} s)`);
+  const nesp = s.nespustene?.length ? `, nespustené (čas behu): ${s.nespustene.join(", ")}` : "";
+  console.log(s.ok ? `OK ${n}/${n} za ${s.trvanie_s} s${nest}` : `${s.zlyhane?.length ? `ZLYHALO ${s.zlyhane.join(", ")}` : "NEÚPLNÉ"} (${s.prešlo}/${n}, ${s.trvanie_s} s${nesp})`);
 ' "$OUT/suhrn.json" 2>/dev/null; }
 
 case "$KOD" in

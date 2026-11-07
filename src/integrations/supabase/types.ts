@@ -1271,6 +1271,7 @@ export type Database = {
           type: Database["public"]["Enums"]["cash_entry_type"]
           updated_at: string
           number_series_id: string | null
+          pohoda_verzia: number
         }
         Insert: {
           pokladna_id?: string | null
@@ -1290,6 +1291,7 @@ export type Database = {
           type: Database["public"]["Enums"]["cash_entry_type"]
           updated_at?: string
           number_series_id?: string | null
+          pohoda_verzia?: number
         }
         Update: {
           pokladna_id?: string | null
@@ -1309,6 +1311,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["cash_entry_type"]
           updated_at?: string
           number_series_id?: string | null
+          pohoda_verzia?: number
         }
         Relationships: [
           {
@@ -3645,6 +3648,19 @@ export type Database = {
           exchange_rate: number | null
           exchange_rate_date: string | null
           exchange_rate_source: string | null
+          supplier_dic: string | null
+          supplier_street: string | null
+          supplier_city: string | null
+          supplier_zip: string | null
+          supplier_country: string | null
+          rucne_upravene_at: string | null
+          rucne_upravil: string | null
+          na_kontrolu_at: string | null
+          na_kontrolu_dovod: string | null
+          clenenie_zdroj: string | null
+          kv_zdroj: string | null
+          clenenie_auto_at: string | null
+          rozpis_dph_potvrdeny: Json | null
         }
         Insert: {
           pokladna_id?: string | null
@@ -3725,6 +3741,19 @@ export type Database = {
           exchange_rate?: number | null
           exchange_rate_date?: string | null
           exchange_rate_source?: string | null
+          supplier_dic?: string | null
+          supplier_street?: string | null
+          supplier_city?: string | null
+          supplier_zip?: string | null
+          supplier_country?: string | null
+          rucne_upravene_at?: string | null
+          rucne_upravil?: string | null
+          na_kontrolu_at?: string | null
+          na_kontrolu_dovod?: string | null
+          clenenie_zdroj?: string | null
+          kv_zdroj?: string | null
+          clenenie_auto_at?: string | null
+          rozpis_dph_potvrdeny?: Json | null
         }
         Update: {
           pokladna_id?: string | null
@@ -3805,6 +3834,19 @@ export type Database = {
           exchange_rate?: number | null
           exchange_rate_date?: string | null
           exchange_rate_source?: string | null
+          supplier_dic?: string | null
+          supplier_street?: string | null
+          supplier_city?: string | null
+          supplier_zip?: string | null
+          supplier_country?: string | null
+          rucne_upravene_at?: string | null
+          rucne_upravil?: string | null
+          na_kontrolu_at?: string | null
+          na_kontrolu_dovod?: string | null
+          clenenie_zdroj?: string | null
+          kv_zdroj?: string | null
+          clenenie_auto_at?: string | null
+          rozpis_dph_potvrdeny?: Json | null
         }
         Relationships: [
           {
@@ -7148,6 +7190,14 @@ export type Database = {
           odberatel_nesedi: Json | null
           odberatel_potvrdene_at: string | null
           odberatel_potvrdil: string | null
+          vat_breakdown: Json | null
+          rucne_upravene_at: string | null
+          rucne_upravil: string | null
+          na_kontrolu_dovod: string | null
+          clenenie_zdroj: string | null
+          kv_zdroj: string | null
+          clenenie_auto_at: string | null
+          rozpis_dph_potvrdeny: Json | null
         }
         Insert: {
           pokladna_id?: string | null
@@ -7275,6 +7325,14 @@ export type Database = {
           odberatel_nesedi?: Json | null
           odberatel_potvrdene_at?: string | null
           odberatel_potvrdil?: string | null
+          vat_breakdown?: Json | null
+          rucne_upravene_at?: string | null
+          rucne_upravil?: string | null
+          na_kontrolu_dovod?: string | null
+          clenenie_zdroj?: string | null
+          kv_zdroj?: string | null
+          clenenie_auto_at?: string | null
+          rozpis_dph_potvrdeny?: Json | null
         }
         Update: {
           pokladna_id?: string | null
@@ -7402,6 +7460,14 @@ export type Database = {
           odberatel_nesedi?: Json | null
           odberatel_potvrdene_at?: string | null
           odberatel_potvrdil?: string | null
+          vat_breakdown?: Json | null
+          rucne_upravene_at?: string | null
+          rucne_upravil?: string | null
+          na_kontrolu_dovod?: string | null
+          clenenie_zdroj?: string | null
+          kv_zdroj?: string | null
+          clenenie_auto_at?: string | null
+          rozpis_dph_potvrdeny?: Json | null
         }
         Relationships: [
           {
@@ -13052,6 +13118,45 @@ export type Database = {
       }
 
 
+      oprava_rozpisu_dph_audit: {
+        Row: {
+          id: number
+          run_id: string
+          tabulka: string
+          document_id: string
+          company_id: string | null
+          akcia: string
+          old_values: Json
+          new_values: Json
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id: number
+          run_id: string
+          tabulka: string
+          document_id: string
+          company_id?: string | null
+          akcia: string
+          old_values: Json
+          new_values: Json
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          run_id?: string
+          tabulka?: string
+          document_id?: string
+          company_id?: string | null
+          akcia?: string
+          old_values?: Json
+          new_values?: Json
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       stock_items_with_availability: {

@@ -199,20 +199,20 @@ describe("A1.1 VFA — kódy v každej položke", () => {
     expect(chybySchemy(xml)).toEqual([]);
   });
 
-  it("položka v prenesení na bežnej faktúre: UDpdp + A2, ostatné UD + A1", () => {
+  it("položka v prenesení na bežnej faktúre: UDpdp + A2SP (stavebné práce), ostatné UD + A1", () => {
     const xml = buildPohodaInvoiceXml({
       company: FIRMA,
       nastavenia: nast,
       invoices: [
         {
-          invoice: faktura({ vat_total: 23, total: 173 }),
+          invoice: faktura({ vat_total: 23, total: 173, pdp_druh: "j" }),
           items: [polozka(), polozka({ name: "Stavebné práce", unit_price: 50, subtotal: 50, vat_rate: 0, vat_amount: 0, total: 50, prenesenie: true })],
         },
       ],
     });
     const [a, b] = polozkyXml(xml);
     expect([kod(a, "classificationVAT"), kod(a, "classificationKVDPH")]).toEqual(["UD", "A1"]);
-    expect([kod(b, "classificationVAT"), kod(b, "classificationKVDPH")]).toEqual(["UDpdp", "A2"]);
+    expect([kod(b, "classificationVAT"), kod(b, "classificationKVDPH")]).toEqual(["UDpdp", "A2SP"]);
     expect(b).toContain("<inv:PDP>true</inv:PDP>");
     expect(chybySchemy(xml)).toEqual([]);
   });
@@ -519,6 +519,18 @@ describe("A2 Vrátiť z Pohody — všetky druhy, len s právom upravovať", () 
     expect(r.vratenych).toBe(1);
     expect(zapisy[0]).toMatchObject({ tab: "purchase_invoices", op: "update", val: { exported_at: null, pohoda_cislo: null } });
     expect(admin.zapisy).toContainEqual({ tab: "purchase_invoices", op: "verzia", ids: [PZ_ID] });
+  });
+
+  it("zaúčtovaná prijatá: stav späť na prijatú len v tej istej firme, aj export_job_id preč", async () => {
+    const zapisy: Zapis[] = [];
+    const sb = falosnyKlient(
+      { company_users: clen(), purchase_invoices: [{ id: PZ_ID, company_id: FIRMA.id, status: "booked", exported_at: "2026-11-05" }] },
+      zapisy,
+    );
+    await vratDokladyZPohody(kontext(sb), { company_id: FIRMA.id, druh: "prijata", ids: [PZ_ID] });
+    expect(zapisy[0].val).toMatchObject({ export_job_id: null });
+    const stav = zapisy.find((z) => z.op === "update" && (z.val as any)?.status === "received");
+    expect(stav?.filtre).toContainEqual(["eq", "company_id", FIRMA.id]);
   });
 
   it("pokladničný doklad: zruší odovzdanie a zvýši verziu", async () => {

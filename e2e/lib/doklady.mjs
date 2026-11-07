@@ -2,11 +2,17 @@
 import path from "node:path";
 import { citajEnvSubor, FIRMY, HLAVNE_REPO, SUPABASE } from "./prostredie.mjs";
 
-/** Dočasný odberateľ v QA firme; po toku sa zmaže. */
+/**
+ * Dočasný odberateľ v QA firme; po toku sa zmaže. Meno je jedinečné pre tok
+ * aj volanie (značka behu je spoločná všetkým tokom) — pri rovnakom mene si
+ * súbežné toky vo firme Test vo výbere odberateľa brali cudzieho
+ * (`.first()`) a počty faktúr odberateľa sa im miešali (6. 11.).
+ */
 export async function zalozOdberatela(t, firma = "test") {
+  const id = `${t.tok ?? "tok"}-${Math.random().toString(36).slice(2, 6)}`;
   const o = await t.rest.vloz("customers", {
     company_id: t.firmy[firma],
-    name: `${t.znacka} Odberateľ s.r.o.`,
+    name: `${t.znacka} ${id} Odberateľ s.r.o.`,
     street: "Testovacia 1",
     city: "Bratislava",
     zip: "81101",
@@ -99,6 +105,22 @@ export async function zmazFakturuNatvrdo(t, id) {
 export async function akciaVMenu(page, nazov) {
   await page.getByRole("button", { name: "Ďalšie akcie" }).first().click();
   await page.getByRole("menuitem", { name: nazov, exact: true }).first().click();
+}
+
+/**
+ * Zo zálohy vystaví daňový doklad k prijatej platbe. Tlačidlo otvorí okno
+ * „Vystaviť daňový doklad k platbe“ (DokladKPlatbeOkno) so sumou a dátumom
+ * predvyplnenými z úhrady; voliteľne ich prepíše a potvrdí.
+ */
+export async function vystavDokladKPlatbe(page, { suma, datum } = {}) {
+  await page.getByRole("button", { name: "Vystaviť daňový doklad", exact: true }).first().click();
+  const okno = page.getByRole("dialog").filter({ hasText: "Prijatá suma s DPH" }).last();
+  await okno.waitFor({ timeout: 15000 });
+  if (suma != null) await okno.locator('input[inputmode="decimal"]').fill(String(suma));
+  if (datum != null) await okno.locator('input[type="date"]').fill(datum);
+  const potvrd = page.getByRole("button", { name: "Vystaviť daňový doklad", exact: true }).last();
+  await potvrd.click({ timeout: 15000 });
+  await okno.waitFor({ state: "hidden", timeout: 30000 });
 }
 
 /**
