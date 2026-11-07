@@ -49,7 +49,7 @@ export async function ulozOdoslaneXml(
  *
  * Atomicky v databáze (`zvys_pohoda_verziu`: `pohoda_verzia + 1` jedným
  * UPDATE) — čítanie a zápis z aplikácie by pri dvoch súbežných vráteniach
- * zvýšili verziu len raz. Kým migrácia 20261107010200 nie je v databáze,
+ * zvýšili verziu len raz. Kým migrácia 20261107092942 nie je v databáze,
  * ostáva doterajší postup po riadkoch.
  */
 export async function zvysVerziuPohody(

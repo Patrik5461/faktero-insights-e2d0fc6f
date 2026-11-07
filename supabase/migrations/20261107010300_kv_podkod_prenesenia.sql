@@ -26,3 +26,14 @@ update public.invoices
    and reverse_charge
    and upper(coalesce(kv_clenenie, '')) in ('A2', 'C1')
    and coalesce(kv_zdroj, 'auto') = 'auto';
+
+-- Audit 7. 11. (F1): automatika dávala prijatej od SK platiteľa s 0 % DPH „PN“
+-- (nezahŕňať) — neoznačené prenesenie tak ticho vypadlo z výkazu. Nová logika
+-- nechá členenie prázdne a zastaví autopilota; automatické PN na neodovzdaných
+-- dokladoch preto vrátime do fronty, nech sa prepočítajú (ručné sa nemenia).
+update public.purchase_invoices
+   set clenenie_auto_at = null
+ where exported_at is null
+   and deleted_at is null
+   and clenenie_zdroj = 'auto'
+   and upper(coalesce(pohoda_clenenie_dph, '')) = 'PN';
