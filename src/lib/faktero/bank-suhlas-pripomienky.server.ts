@@ -9,6 +9,8 @@
  * Volá sa na konci denného behu bánk (`bank-sync-beh.server`), takže chyby
  * pohybov sú čerstvé a nepotrebuje vlastný cron. Každé upozornenie
  * (pripojenie/účet × druh × deň) ide raz — `bank_suhlas_upozornenia`.
+ * Výnimka: keď problém trvá (vypršaný súhlas, pohyby, účet, ktorý banka
+ * nepozná), pripomienka sa zopakuje po týždni, najviac `MAX_PRIPOMIENOK`-krát.
  * Do dát bánk nezapisuje nič.
  */
 import { stavSuhlasu, druhEmailuSuhlasu, datumSuhlasu } from "./bank-suhlas";
@@ -19,7 +21,7 @@ const ADRESA = "https://www.faktero.sk/bankove-ucty";
 export type Upozornenie = {
   company_id: string;
   ref_id: string;
-  druh: "suhlas_14" | "suhlas_3" | "suhlas_vyprsal" | "pohyby";
+  druh: "suhlas_14" | "suhlas_3" | "suhlas_vyprsal" | "pohyby" | "nepozna";
   termin: string;
   /** Riadok do e-mailu. */
   popis: string;
@@ -40,7 +42,54 @@ type Ucet = {
   pohyby_ok_at: string | null;
   pohyby_chyba: string | null;
   unavailable_since: string | null;
+  unavailable_reason?: string | null;
 };
+
+/** Druhy, pri ktorých problém trvá, kým ho človek nevyrieši — tie sa pripomínajú znova. */
+export const OPAKOVANE_DRUHY: ReadonlySet<Upozornenie["druh"]> = new Set([
+  "suhlas_vyprsal",
+  "pohyby",
+  "nepozna",
+]);
+export const PAUZA_PRIPOMIENKY_MS = 7 * 86_400_000;
+/** Prvý e-mail + 3 pripomienky (spolu asi mesiac), potom už len zvonček v appke. */
+export const MAX_PRIPOMIENOK = 4;
+/** Účet, ktorý banka nepozná, sa hlási až po 2 dňoch — krátky výpadok banky by plašil. */
+const NEPOZNA_PO_MS = 2 * 86_400_000;
+
+type ZaznamOdoslania = {
+  ref_id: string;
+  druh: string;
+  termin: string;
+  created_at: string;
+  pocet: number | null;
+};
+
+/**
+ * Ktoré upozornenia treba poslať teraz: nové vždy, trvajúce problémy znova
+ * po týždni od posledného e-mailu a najviac `MAX_PRIPOMIENOK`-krát.
+ */
+export function naOdoslanie(
+  polozky: Upozornenie[],
+  log: ZaznamOdoslania[],
+  teraz: Date = new Date(),
+): (Upozornenie & { pocet: number })[] {
+  const podlaKluca = new Map(log.map((r) => [`${r.ref_id}|${r.druh}|${r.termin}`, r]));
+  const out: (Upozornenie & { pocet: number })[] = [];
+  for (const p of polozky) {
+    const r = podlaKluca.get(`${p.ref_id}|${p.druh}|${p.termin}`);
+    if (!r) {
+      out.push({ ...p, pocet: 1 });
+      continue;
+    }
+    if (!OPAKOVANE_DRUHY.has(p.druh)) continue;
+    const pocet = r.pocet ?? 1;
+    if (pocet >= MAX_PRIPOMIENOK) continue;
+    if (teraz.getTime() - new Date(r.created_at).getTime() < PAUZA_PRIPOMIENKY_MS) continue;
+    out.push({ ...p, pocet: pocet + 1 });
+  }
+  return out;
+}
 
 /** Čo treba komu oznámiť — čistá funkcia, aby sa dala skúšať bez databázy. */
 export function zostavUpozornenia(
@@ -66,6 +115,19 @@ export function zostavUpozornenia(
     });
   }
   for (const u of ucty) {
+    if (u.unavailable_since && /NO_ACCOUNT|nepozná/i.test(u.unavailable_reason ?? "")) {
+      if (teraz.getTime() - new Date(u.unavailable_since).getTime() < NEPOZNA_PO_MS) continue;
+      const ucet = u.account_name || u.iban || "účet";
+      const od = u.unavailable_since.slice(0, 10);
+      out.push({
+        company_id: u.company_id,
+        ref_id: u.id,
+        druh: "nepozna",
+        termin: od,
+        popis: `Banka účet ${ucet} od ${datumSuhlasu(od)} nepozná — pohyby ani výpisy sa nesťahujú. Pripojte banku znova (Obnoviť súhlas) a pri potvrdení v banke tento účet označte.`,
+      });
+      continue;
+    }
     if (u.unavailable_since || !u.pohyby_chyba) continue;
     // Len vypršaný súhlas — iné chyby (výpadok banky) sa opravia samé a e-mail by plašil.
     // `pohyby_chyba` je už ľudský text z `popisChybyPohybov`, surová chyba banky len výnimočne.
@@ -166,9 +228,10 @@ export async function runBankConsentReminders(teraz: Date = new Date()) {
       .not("token_expires_at", "is", null),
     supabaseAdmin
       .from("bank_accounts")
-      .select("id, company_id, iban, account_name, pohyby_ok_at, pohyby_chyba, unavailable_since")
-      .not("pohyby_chyba", "is", null)
-      .is("unavailable_since", null),
+      .select(
+        "id, company_id, iban, account_name, pohyby_ok_at, pohyby_chyba, unavailable_since, unavailable_reason",
+      )
+      .or("and(pohyby_chyba.not.is.null,unavailable_since.is.null),unavailable_since.not.is.null"),
   ]);
 
   const vsetky = zostavUpozornenia(
@@ -186,10 +249,9 @@ export async function runBankConsentReminders(teraz: Date = new Date()) {
     try {
       const { data: log } = await supabaseAdmin
         .from("bank_suhlas_upozornenia")
-        .select("ref_id, druh, termin")
+        .select("ref_id, druh, termin, created_at, pocet")
         .eq("company_id", companyId);
-      const poslane = new Set((log ?? []).map((r: any) => `${r.ref_id}|${r.druh}|${r.termin}`));
-      const nove = polozky.filter((p) => !poslane.has(`${p.ref_id}|${p.druh}|${p.termin}`));
+      const nove = naOdoslanie(polozky, (log ?? []) as ZaznamOdoslania[], teraz);
       if (!nove.length) continue;
 
       const prijemca = await prijemcaFirmy(supabaseAdmin, companyId);
@@ -199,13 +261,21 @@ export async function runBankConsentReminders(teraz: Date = new Date()) {
       }
       const { text, html } = textUpozorneniaSuhlasu(prijemca.nazov, nove);
       const vyprsal = nove.some((p) => p.druh === "suhlas_vyprsal" || p.druh === "pohyby");
+      const nepozna = nove.some((p) => p.druh === "nepozna");
+      const predmet = vyprsal
+        ? "Súhlas banky vypršal"
+        : nepozna
+          ? "Banka nepozná váš účet — pohyby sa nesťahujú"
+          : "Súhlas banky čoskoro vyprší";
+      const pripomienka = nove.every((p) => p.pocet > 1) ? "Pripomienka: " : "";
       await sendMail({
         to: prijemca.email,
-        subject: `${vyprsal ? "Súhlas banky vypršal" : "Súhlas banky čoskoro vyprší"} — ${prijemca.nazov}`,
+        subject: `${pripomienka}${predmet} — ${prijemca.nazov}`,
         text,
         html,
       });
       // Zapísať až po odoslaní — pri chybe to denný beh skúsi zajtra znova.
+      // Pri pripomienke sa riadok prepíše: čas posledného e-mailu a ich počet.
       await supabaseAdmin.from("bank_suhlas_upozornenia").upsert(
         nove.map((p) => ({
           company_id: p.company_id,
@@ -213,8 +283,10 @@ export async function runBankConsentReminders(teraz: Date = new Date()) {
           druh: p.druh,
           termin: p.termin,
           prijemca: prijemca.email,
+          pocet: p.pocet,
+          created_at: teraz.toISOString(),
         })),
-        { onConflict: "ref_id,druh,termin", ignoreDuplicates: true },
+        { onConflict: "ref_id,druh,termin" },
       );
       vysledky.push({ company_id: companyId, odoslanych: nove.length });
     } catch (e: any) {

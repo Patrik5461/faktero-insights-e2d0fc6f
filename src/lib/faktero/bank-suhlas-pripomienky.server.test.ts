@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: {} }));
 
-const { zostavUpozornenia, textUpozorneniaSuhlasu } =
+const { zostavUpozornenia, textUpozorneniaSuhlasu, naOdoslanie } =
   await import("./bank-suhlas-pripomienky.server");
 
 const teraz = new Date("2026-10-31T10:00:00Z");
@@ -80,5 +80,47 @@ describe("upozornenia na súhlas banky", () => {
     expect(html).toContain("https://www.faktero.sk/bankove-ucty");
     expect(html).not.toContain("<b>Firma</b>");
     expect(text).toContain("nezmažú");
+  });
+
+  it("účet, ktorý banka nepozná (NO_ACCOUNT) viac ako 2 dni, sa ohlási", () => {
+    const u = zostavUpozornenia(
+      [],
+      [
+        ucet({
+          pohyby_chyba: null,
+          unavailable_since: "2026-10-28T05:00:00Z",
+          unavailable_reason: "Banka účet nepozná (NO_ACCOUNT).",
+        }),
+        ucet({
+          id: "a0000000-0000-4000-8000-000000000002",
+          unavailable_since: "2026-10-31T05:00:00Z",
+          unavailable_reason: "Banka účet nepozná (NO_ACCOUNT).",
+        }),
+      ],
+      teraz,
+    );
+    expect(u).toEqual([
+      expect.objectContaining({ druh: "nepozna", termin: "2026-10-28", ref_id: ucet().id }),
+    ]);
+    expect(u[0].popis).toContain("od 28. 10. 2026 nepozná");
+  });
+
+  it("trvajúci problém sa pripomenie po týždni, najviac 4-krát; blížiaci sa koniec len raz", () => {
+    const vyprsal = zostavUpozornenia([], [ucet()], teraz)[0];
+    const blizi = zostavUpozornenia([pripojenie()], [], teraz)[0];
+    const zaznam = (p: any, created_at: string, pocet: number) => ({
+      ref_id: p.ref_id,
+      druh: p.druh,
+      termin: p.termin,
+      created_at,
+      pocet,
+    });
+    expect(naOdoslanie([vyprsal], [], teraz)).toEqual([{ ...vyprsal, pocet: 1 }]);
+    expect(naOdoslanie([vyprsal], [zaznam(vyprsal, "2026-10-28T10:00:00Z", 1)], teraz)).toEqual([]);
+    expect(naOdoslanie([vyprsal], [zaznam(vyprsal, "2026-10-20T10:00:00Z", 2)], teraz)).toEqual([
+      { ...vyprsal, pocet: 3 },
+    ]);
+    expect(naOdoslanie([vyprsal], [zaznam(vyprsal, "2026-10-01T10:00:00Z", 4)], teraz)).toEqual([]);
+    expect(naOdoslanie([blizi], [zaznam(blizi, "2026-10-01T10:00:00Z", 1)], teraz)).toEqual([]);
   });
 });

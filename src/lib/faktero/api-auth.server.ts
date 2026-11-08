@@ -1,6 +1,20 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { adminPreApiKluc } from "@/integrations/supabase/admin-zdroj.server";
 
+/** Zapíše čas použitia kľúča bez čakania na odpoveď (chyba nič nezastaví). */
+export function zapisPouzitieKluca(id: string) {
+  supabaseAdmin
+    .from("api_keys")
+    .update({ last_used_at: new Date().toISOString() })
+    .eq("id", id)
+    .then(
+      ({ error }) => {
+        if (error) console.error("[api] last_used_at:", error.message);
+      },
+      (e) => console.error("[api] last_used_at:", e?.message ?? e),
+    );
+}
+
 export type ApiCtx = {
   supabase: typeof supabaseAdmin;
   company_id: string;
@@ -358,11 +372,9 @@ export async function handleApi(
   }
   result = chybaNeplatnehoId(result, path);
 
-  // Fire-and-forget log + last_used_at
-  void supabaseAdmin
-    .from("api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", keyRow.id);
+  // last_used_at bez čakania. Dopyt supabase-js sa odošle až pri `then` —
+  // samotné `void …` ho nikdy neposlalo a kľúče vyzerali nepoužité.
+  zapisPouzitieKluca(keyRow.id);
   await logRequest({
     company_id: firmaPoziadavky,
     api_key_id: keyRow.id,
@@ -491,10 +503,7 @@ export async function overApiKluc(
     companyId = v.company_id;
   }
 
-  void supabaseAdmin
-    .from("api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", data.id);
+  zapisPouzitieKluca(data.id);
 
   return {
     company_id: companyId,

@@ -77,7 +77,11 @@ export async function doplnJazdy(limit = 200): Promise<VysledokDoplnenia> {
     .select(
       "id, route, created_by, start_location, end_location, driver_name, doplnenie_pokusy, suradnice:raw_provider_data->suradnice",
     )
-    .in("external_source", ZDROJE)
+    /*
+      Jazdy z tlačidla „Spustiť jazdu“ v appke sa zapisujú bez zdroja, ale
+      trasu majú — bez tejto vetvy ostali navždy bez adries aj vodiča.
+    */
+    .or(`external_source.in.(${ZDROJE.join(",")}),and(external_source.is.null,route.not.is.null)`)
     .or("start_location.is.null,end_location.is.null,driver_name.is.null")
     .lt("doplnenie_pokusy", MAX_POKUSOV)
     .or(`doplnenie_skusane_at.is.null,doplnenie_skusane_at.lt.${skorNez}`)
