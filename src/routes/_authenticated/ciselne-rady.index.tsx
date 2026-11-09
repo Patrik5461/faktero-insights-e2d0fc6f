@@ -8,7 +8,14 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 import { cn } from "@/lib/utils";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { Plus, Star, Trash2, Loader2 } from "lucide-react";
+import { Plus, Star, Trash2, Loader2, Download, Upload } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CiselneRadyImportOkno, stiahniExportRadov } from "@/components/faktero/CiselneRadyImportOkno";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { StavOdznak } from "@/components/faktero/web/Stav";
@@ -31,6 +38,7 @@ import {
   ulozCiselnyRadFn,
   zmazCiselnyRadFn,
   radyZImportuFn,
+  exportCiselnychRadovFn,
 } from "@/lib/faktero/ciselne-rady.functions";
 
 export const Route = createFileRoute("/_authenticated/ciselne-rady/")({
@@ -51,7 +59,25 @@ function CiselneRadyPage() {
   const uloz = useServerFn(ulozCiselnyRadFn);
   const zmaz = useServerFn(zmazCiselnyRadFn);
   const zImportu = useServerFn(radyZImportuFn);
+  const exportFn = useServerFn(exportCiselnychRadovFn);
   const [radyZImportu, setRadyZImportu] = useState<any[] | null>(null);
+  const [importRadov, setImportRadov] = useState(false);
+  const [exportujem, setExportujem] = useState(false);
+
+  /** Všetky rady firmy do súboru — dá sa upraviť a nahrať späť cez Importovať. */
+  async function exportuj(format: "xlsx" | "csv") {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setExportujem(true);
+    try {
+      const n = await stiahniExportRadov(exportFn, cid, format, t);
+      toast.success(t("Číselné rady exportované ({n})", { n }));
+    } catch (e: any) {
+      toast.error(t("Číselné rady sa nepodarilo exportovať: {chyba}", { chyba: e?.message ?? "" }));
+    } finally {
+      setExportujem(false);
+    }
+  }
   const [hladam, setHladam] = useState(false);
 
   /** Faktúry prenesené z iného programu — v ktorom čísle sa má pokračovať. */
@@ -154,6 +180,32 @@ function CiselneRadyPage() {
       <PageHeader
         title={t("Číselné rady")}
         description={t("Ako sa číslujú doklady. Na jeden druh môžete mať viac radov a pri vystavovaní si vyberiete.")}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={exportujem}
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" /> {exportujem ? t("Exportujem…") : t("Exportovať")}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => exportuj("xlsx")}>{t("Excel (.xlsx)")}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => exportuj("csv")}>{t("CSV (.csv, oddeľovač ;)")}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              type="button"
+              onClick={() => setImportRadov(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary"
+            >
+              <Upload className="h-4 w-4" /> {t("Importovať")}
+            </button>
+          </div>
+        }
       />
       <PageBody>
         {loading ? (
@@ -211,7 +263,9 @@ function CiselneRadyPage() {
 
                   {zoznam.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      {t("Zatiaľ bez vlastného radu — doklady sa číslujú pôvodným tvarom a rad sa založí sám pri najbližšom doklade.")}
+                      {druh === "financing"
+                        ? t("Zatiaľ bez radu — splátky nemajú vlastné číslo a v Pohode im ho pridelí jej číselný rad. Rad sa vyberá na detaile leasingu, úveru či kontokorentu.")
+                        : t("Zatiaľ bez vlastného radu — doklady sa číslujú pôvodným tvarom a rad sa založí sám pri najbližšom doklade.")}
                     </p>
                   ) : (
                     <ul className="divide-y divide-border">
@@ -272,6 +326,14 @@ function CiselneRadyPage() {
             onZmena={setUpravovany}
             onUloz={ulozRad}
             onZrus={() => setUpravovany(null)}
+          />
+        )}
+
+        {importRadov && getActiveCompanyId() && (
+          <CiselneRadyImportOkno
+            companyId={getActiveCompanyId()!}
+            onClose={() => setImportRadov(false)}
+            onHotovo={load}
           />
         )}
 

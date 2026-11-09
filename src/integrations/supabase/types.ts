@@ -4145,6 +4145,7 @@ export type Database = {
           pohoda_clenenie_dph: string | null
           pohoda_predkontacia: string | null
           pohoda_rad: string | null
+          number_series_id: string | null
           pohoda_rozuctovanie: Json
         }
         Insert: {
@@ -4199,6 +4200,7 @@ export type Database = {
           pohoda_clenenie_dph?: string | null
           pohoda_predkontacia?: string | null
           pohoda_rad?: string | null
+          number_series_id?: string | null
           pohoda_rozuctovanie?: Json
         }
         Update: {
@@ -4253,6 +4255,7 @@ export type Database = {
           pohoda_clenenie_dph?: string | null
           pohoda_predkontacia?: string | null
           pohoda_rad?: string | null
+          number_series_id?: string | null
           pohoda_rozuctovanie?: Json
         }
         Relationships: [
@@ -4426,6 +4429,8 @@ export type Database = {
           updated_at: string
           vat_amount: number
           exported_at: string | null
+          cislo_dokladu: string | null
+          number_series_id: string | null
           insurance_part: number
           kv_clenenie: string | null
           pohoda_clenenie_dph: string | null
@@ -4450,6 +4455,8 @@ export type Database = {
           updated_at?: string
           vat_amount?: number
           exported_at?: string | null
+          cislo_dokladu?: string | null
+          number_series_id?: string | null
           insurance_part?: number
           kv_clenenie?: string | null
           pohoda_clenenie_dph?: string | null
@@ -4474,6 +4481,8 @@ export type Database = {
           updated_at?: string
           vat_amount?: number
           exported_at?: string | null
+          cislo_dokladu?: string | null
+          number_series_id?: string | null
           insurance_part?: number
           kv_clenenie?: string | null
           pohoda_clenenie_dph?: string | null
@@ -13342,6 +13351,14 @@ export type Database = {
           _series_id?: string | null
         }
         Returns: Json
+      }
+      faktero_cisla_splatok: {
+        Args: {
+          _company_id: string
+          _contract_id: string
+          _installment_ids?: string[] | null
+        }
+        Returns: number
       }
       faktero_next_series_number: {
         Args: {

@@ -376,7 +376,24 @@ async function zapisKalendarZoZmluvy(
     if (id) await supabase.from("financing_installments").update(zaznam).eq("id", id);
     else await supabase.from("financing_installments").insert(zaznam);
   }
+  await pridelCislaSplatok(supabase, companyId, contractId);
   return riadky.length;
+}
+
+/**
+ * Splátky bez čísla dostanú číslo z vlastného radu kalendára (ak ho má).
+ *
+ * Prepočet riadky prepisuje na mieste podľa poradia splátky a `cislo_dokladu`
+ * nechá tak (stráži to aj spúšťač v databáze), takže sa číslo pridelí len
+ * novým splátkam. Bez radu alebo bez migrácie sa nič nestane — číslo potom
+ * pridelí Pohoda.
+ */
+async function pridelCislaSplatok(supabase: any, companyId: string, contractId: string) {
+  const { error } = await supabase.rpc("faktero_cisla_splatok", {
+    _company_id: companyId,
+    _contract_id: contractId,
+  });
+  if (error) console.warn("Čísla splátok sa nepridelili", error.message);
 }
 
 /**
@@ -433,6 +450,7 @@ async function prepocitajKalendar(
     if (id) await supabase.from("financing_installments").update(zaznam).eq("id", id);
     else await supabase.from("financing_installments").insert(zaznam);
   }
+  await pridelCislaSplatok(supabase, companyId, contractId);
 
   return riadky.length;
 }

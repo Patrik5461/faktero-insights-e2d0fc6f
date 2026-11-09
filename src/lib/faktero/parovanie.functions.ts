@@ -77,7 +77,7 @@ async function podklady(supabase: any, companyId: string) {
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, variable_symbol, order_number, total, currency, status, issue_date, due_date, customer_name",
+          "id, invoice_number, variable_symbol, order_number, total, currency, status, issue_date, due_date, customer_name, type",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -157,6 +157,8 @@ function obohat(z: Zhoda, txs: any[], faktury: any[]) {
       issue_date: f.issue_date,
       due_date: f.due_date,
       status: f.status,
+      /** Druh dokladu — zoznam zálohových si z návrhov berie len tie svoje. */
+      type: f.type ?? null,
     },
   };
 }

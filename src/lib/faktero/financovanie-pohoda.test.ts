@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { XmlDocument, XsdValidator } from "libxml2-wasm";
 import { xmlRegisterFsInputProviders } from "libxml2-wasm/lib/nodejs.mjs";
 import {
+  cisloZavazkuXml,
   kodyPolozky,
   nazovSuboruSplatok,
   polozkySplatky,
@@ -306,5 +307,56 @@ describe("veriteľ, KV, dátum dodania a variabilný symbol", () => {
     expect(chybySchemy(r.xml)).toEqual([]);
     const bez = xmlSplatokDoPohody({ zmluva: { ...leasing, variable_symbol: null, contract_number: null }, splatky: [s1] });
     expect(bez.xml).not.toContain("symVar");
+  });
+
+  describe("vlastné číslo dokladu splátky", () => {
+    const s2 = { ...s1, id: "s2", number: 2, due_date: "2026-12-15" };
+
+    it("pošle numberRequested aj skratku radu Pohody a prejde schémou", () => {
+      const r = xmlSplatokDoPohody({
+        ico: "1",
+        krajinaFirmy: "SK",
+        zmluva: { ...leasing, pohoda_rad: "ZavL" },
+        splatky: [
+          { ...s1, cislo_dokladu: "LEAS2026001" },
+          { ...s2, cislo_dokladu: "LEAS2026002" },
+        ],
+      });
+      expect(chybySchemy(r.xml)).toEqual([]);
+      expect(r.xml).toContain(
+        "<inv:number><typ:ids>ZavL</typ:ids><typ:numberRequested>LEAS2026001</typ:numberRequested></inv:number>",
+      );
+      expect(r.xml).toContain("<typ:numberRequested>LEAS2026002</typ:numberRequested>");
+      // VS a párovací symbol ostávajú zo zmluvy, pôvodný doklad = zmluva/splátka.
+      expect(r.xml).toContain("<inv:symVar>2680613</inv:symVar>");
+      expect(r.xml).toContain("<inv:symPar>2680613</inv:symPar>");
+      expect(r.xml).toContain("<inv:originalDocument>UZF/26/80613/1</inv:originalDocument>");
+    });
+
+    it("číslo bez radu Pohody, rad bez čísla a bez oboch nič", () => {
+      const lenCislo = xmlSplatokDoPohody({ zmluva: leasing, splatky: [{ ...s1, cislo_dokladu: "SPL-2026/0001" }] });
+      expect(chybySchemy(lenCislo.xml)).toEqual([]);
+      expect(lenCislo.xml).toContain(
+        "<inv:number><typ:numberRequested>SPL-2026/0001</typ:numberRequested></inv:number>",
+      );
+      const lenRad = xmlSplatokDoPohody({ zmluva: { ...leasing, pohoda_rad: "ZavL" }, splatky: [s1] });
+      expect(lenRad.xml).toContain("<inv:number><typ:ids>ZavL</typ:ids></inv:number>");
+      expect(lenRad.xml).not.toContain("numberRequested");
+      expect(xmlSplatokDoPohody({ zmluva: leasing, splatky: [s1] }).xml).not.toContain("<inv:number>");
+    });
+
+    it("pridlhé číslo (> 32 znakov) sa nepošle a dá výhradu", () => {
+      const dlhe = "X".repeat(33);
+      const r = xmlSplatokDoPohody({ zmluva: leasing, splatky: [{ ...s1, cislo_dokladu: dlhe }] });
+      expect(r.xml).not.toContain(dlhe);
+      expect(r.vyhrady.join(" ")).toMatch(/dlhšie ako 32/);
+      expect(chybySchemy(r.xml)).toEqual([]);
+      expect(cisloZavazkuXml(null, "X".repeat(32))).toContain("numberRequested");
+      expect(cisloZavazkuXml("", " ")).toBe("");
+    });
+
+    it("číslo sa escapuje", () => {
+      expect(cisloZavazkuXml(null, "A&B<1>")).toContain("A&amp;B&lt;1&gt;");
+    });
   });
 });

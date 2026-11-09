@@ -40,6 +40,30 @@ export function poznamkaDokladuKPlatbe(
   }
 }
 
+/**
+ * Colné údaje a prenesenie položky, ktoré sa prenášajú z dokladu na doklad
+ * (záloha → daňový doklad k platbe, faktúra → dobropis, „Načítať položky
+ * z dokladu“). Prázdne hodnoty ostanú `null`, nie prázdny reťazec.
+ */
+export function colneUdajePolozkyZDokladu(p: {
+  colny_kod?: unknown;
+  krajina_povodu?: unknown;
+  hmotnost_kg?: unknown;
+  prenesenie?: unknown;
+}): { colny_kod: string | null; krajina_povodu: string | null; hmotnost_kg: number | null; prenesenie: boolean } {
+  const text = (v: unknown) => {
+    const t = v == null ? "" : String(v).trim();
+    return t || null;
+  };
+  const kg = p.hmotnost_kg == null || p.hmotnost_kg === "" ? null : Number(p.hmotnost_kg);
+  return {
+    colny_kod: text(p.colny_kod),
+    krajina_povodu: text(p.krajina_povodu),
+    hmotnost_kg: kg != null && Number.isFinite(kg) ? kg : null,
+    prenesenie: Boolean(p.prenesenie),
+  };
+}
+
 export type PolozkaZalohy = {
   quantity: number;
   unit_price: number;

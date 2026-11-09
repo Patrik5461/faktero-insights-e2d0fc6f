@@ -167,6 +167,20 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
     if (zmluva.kind === "kontokorent") {
       throw new Error("Kontokorent nemá splátkový kalendár — úroky sa párujú z banky.");
     }
+    /*
+      Vlastný číselný rad kalendára: splátky, ktoré ešte číslo nemajú (pribudli
+      predĺžením kalendára), ho dostanú teraz — pred zostavením XML. Pridelené
+      čísla sa nemenia, takže opakovaný export pošle to isté číslo.
+    */
+    const vyhradyRadu: string[] = [];
+    if (zmluva.number_series_id) {
+      const { error: eRad } = await supabase.rpc("faktero_cisla_splatok", {
+        _company_id: data.company_id,
+        _contract_id: data.contract_id,
+        _installment_ids: data.installment_ids?.length ? data.installment_ids : null,
+      });
+      if (eRad) vyhradyRadu.push(`Čísla splátok z vlastného radu sa nepridelili (${eRad.message}) — číslo pridelí Pohoda.`);
+    }
     let q = supabase
       .from("financing_installments")
       .select("*")
@@ -195,6 +209,7 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
     if (!vysledok.xml) {
       throw new Error(vysledok.vyhrady[0] ?? "Nie je čo exportovať.");
     }
+    vysledok.vyhrady.unshift(...vyhradyRadu);
 
     let oznacene = false;
     if (data.oznacit && vysledok.idSplatok.length) {
@@ -218,4 +233,64 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
       vyhrady: vysledok.vyhrady,
       oznacene,
     };
+  });
+
+/**
+ * Vlastný číselný rad kalendára (`number_series` druhu „financing“).
+ *
+ * Po výbere radu dostanú čísla hneď všetky splátky, ktoré ešte číslo nemajú —
+ * nech sú vidieť v tabuľke ešte pred exportom. Raz pridelené číslo sa nemení
+ * (ani zmenou radu, ani prepočtom kalendára). `series_id: null` = bez
+ * vlastného čísla, ďalšie splátky číslo nedostanú a pridelí im ho Pohoda.
+ *
+ * Kontokorent rad uloží tiež, ale do Pohody sa zatiaľ neexportuje.
+ */
+export const nastavRadSplatokFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        contract_id: z.string().uuid(),
+        series_id: z.string().uuid().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await overClena(context, data.company_id);
+    const supabase = context.supabase as any;
+    if (data.series_id) {
+      const { data: rad } = await supabase
+        .from("number_series")
+        .select("id, kind")
+        .eq("id", data.series_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (!rad || rad.kind !== "financing") throw new Error("Číselný rad sa nenašiel.");
+    }
+    const { data: zmluva, error } = await supabase
+      .from("financing_contracts")
+      .update({ number_series_id: data.series_id })
+      .eq("id", data.contract_id)
+      .eq("company_id", data.company_id)
+      .select("id, kind")
+      .maybeSingle();
+    if (error) {
+      throw new Error(
+        chybaStlpca(error)
+          ? "Vlastný číselný rad splátok ešte nie je v databáze zapnutý (chýba migrácia 20261109180000)."
+          : error.message,
+      );
+    }
+    if (!zmluva) throw new Error("Zmluva sa nenašla.");
+    let pridelene = 0;
+    if (data.series_id && zmluva.kind !== "kontokorent") {
+      const { data: n, error: e } = await supabase.rpc("faktero_cisla_splatok", {
+        _company_id: data.company_id,
+        _contract_id: data.contract_id,
+      });
+      if (e) throw new Error(e.message);
+      pridelene = Number(n ?? 0);
+    }
+    return { ok: true, pridelene };
   });

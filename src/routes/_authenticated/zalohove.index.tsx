@@ -3,7 +3,7 @@ import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/
 import { getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -34,6 +34,12 @@ import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { PasVyberuFiltra, potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
+import { usePlatbyZaloh } from "@/hooks/usePlatbyZaloh";
+import { IkonaPlatbyZalohy } from "@/components/faktero/PlatbaZalohy";
+import { jeFilterPlatby, MOZNOSTI_FILTRA_PLATBY } from "@/lib/faktero/zalohove-platby";
+
+/** Žiadny doklad — `in` s prázdnym zoznamom PostgREST neprijme. */
+const ZIADNE_ID = "00000000-0000-0000-0000-000000000000";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vydané zálohové faktúry — Faktero") }] }),
@@ -50,9 +56,31 @@ function ProformaListPage() {
   });
   const podla = (lf.filter("podla") || "vystavenie") as DatumObdobia;
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  /*
+    Platby z banky: väzby k riadkom strany a návrhy z párovania vydaných
+    faktúr (prichádzajúca platba podľa VS a sumy). Zoznam sa stránkuje na
+    serveri, preto filter „Platba“ ide do dotazu — návrhy dodajú zoznam id.
+  */
+  const lfPlatba = lf.filter("platba");
+  const platbaFilter = jeFilterPlatby(lfPlatba) ? lfPlatba : "";
+  const [idsStrany, setIdsStrany] = useState<string[]>([]);
+  const obnovZoznam = useRef<() => void>(() => {});
+  const platby = usePlatbyZaloh("vydana", getActiveCompanyId(), idsStrany, () => obnovZoznam.current());
+  const navrhIds = useMemo(() => [...platby.podlaDokladu.keys()].sort(), [platby.podlaDokladu]);
   const upravDotaz = useCallback(
-    (dotaz: any) => filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null),
-    [podla, obdobieOd, obdobieDo],
+    (dotaz: any) => {
+      let q = filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null);
+      if (platbaFilter === "uhradene") q = q.eq("status", "paid");
+      else if (platbaFilter === "navrh")
+        q = q.in("id", navrhIds.length ? navrhIds : [ZIADNE_ID]).not("status", "in", "(paid,draft,cancelled)");
+      else if (platbaFilter === "bez") {
+        // Hotovosť a karta sa na účte nehľadajú (rovnako ako ikonka v riadku).
+        q = q.not("status", "in", "(paid,draft,cancelled)").not("payment_method", "in", "(cash,card)");
+        if (navrhIds.length) q = q.not("id", "in", `(${navrhIds.join(",")})`);
+      }
+      return q;
+    },
+    [podla, obdobieOd, obdobieDo, platbaFilter, navrhIds],
   );
   const list = usePagedList({
     resource: "invoices",
@@ -62,8 +90,12 @@ function ProformaListPage() {
     orderBy: { column: "issue_date", ascending: false },
     upravDotaz,
     riadenie: lf,
-    filterKey: `${podla}|${obdobieOd}|${obdobieDo}`,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${platbaFilter}|${platbaFilter ? navrhIds.join(",") : ""}`,
   });
+  obnovZoznam.current = () => list.reload();
+  useEffect(() => {
+    setIdsStrany(list.rows.map((r: any) => r.id));
+  }, [list.rows]);
   // Súčet za celý filter (P-1007) — v tejto záložke sa zálohové počítajú.
   const sucetFiltra = useSuhrnVystavenych(
     {
@@ -346,6 +378,7 @@ function ProformaListPage() {
                 { value: "splatnost", label: "dátumu splatnosti" },
               ],
             },
+            { key: "platba", label: "Platba", type: "select", options: MOZNOSTI_FILTRA_PLATBY },
             { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
           ]}
         />
@@ -408,7 +441,12 @@ function ProformaListPage() {
                   : {})}
                 title={i.invoice_number}
                 subtitle={i.customer_name ?? "—"}
-                status={<ProformaStatus value={s} settled={settledMap[i.id]} />}
+                status={
+                  <span className="inline-flex flex-wrap items-center gap-1">
+                    <ProformaStatus value={s} settled={settledMap[i.id]} />
+                    <IkonaPlatbyZalohy platby={platby} druh="vydana" riadok={i} mena={i.currency} />
+                  </span>
+                }
                 meta={`${datumNaDoklade(i.issue_date)} · ${t("splat.")} ${datumNaDoklade(i.due_date)}`}
                 amount={formatujMenu(i.total, i.currency)}
                 actions={
@@ -536,7 +574,10 @@ function ProformaListPage() {
                           <span className="suma">{formatujMenu(i.total, i.currency)}</span>
                         </td>
                         <td className="p-3">
-                          <ProformaStatus value={s} settled={link} />
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <ProformaStatus value={s} settled={link} />
+                            <IkonaPlatbyZalohy platby={platby} druh="vydana" riadok={i} mena={i.currency} />
+                          </span>
                         </td>
                         <td className="p-3" onClick={(e) => e.stopPropagation()}>
                           {link ? (

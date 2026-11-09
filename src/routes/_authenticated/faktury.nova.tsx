@@ -3460,13 +3460,21 @@ function InvoicePickerModal({
     }
     const { data } = await supabase
       .from("invoice_items")
-      .select("name, description, quantity, unit, unit_price, vat_rate")
+      .select("name, description, quantity, unit, unit_price, vat_rate, colny_kod, krajina_povodu, hmotnost_kg, prenesenie")
       .eq("invoice_id", inv.id)
       .order("position");
     // Z dobropisu sa položky preberú tak, ako ich ukazuje — kladne.
     const zn = znamienkoZobrazenia(inv);
+    // Colné údaje a prenesenie idú s položkou (napr. vyúčtovanie zálohovej faktúry).
     onPickCopy(
-      (data ?? []).map((r: any) => ({ ...r, quantity: zn * Number(r.quantity) || 0 })) as Partial<Item>[],
+      (data ?? []).map((r: any) => ({
+        ...r,
+        quantity: zn * Number(r.quantity) || 0,
+        colny_kod: r.colny_kod ?? null,
+        krajina_povodu: r.krajina_povodu ?? null,
+        hmotnost_kg: r.hmotnost_kg ?? null,
+        prenesenie: Boolean(r.prenesenie),
+      })) as Partial<Item>[],
     );
   }
 

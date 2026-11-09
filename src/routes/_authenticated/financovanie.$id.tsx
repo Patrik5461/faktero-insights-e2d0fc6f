@@ -23,6 +23,7 @@ import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
 import { DetailKontokorentu } from "@/components/faktero/DetailKontokorentu";
 import { SadzbaZmluvy } from "@/components/faktero/SadzbaZmluvy";
 import { SplatkyDoPohody } from "@/components/faktero/SplatkyDoPohody";
+import { RadSplatok } from "@/components/faktero/RadSplatok";
 import { KartaVeritela } from "@/components/faktero/VeritelZmluvy";
 import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
@@ -54,6 +55,8 @@ type Splatka = {
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;
   exported_at?: string | null;
+  /* Číslo dokladu z vlastného radu kalendára (migrácia 20261109180000). */
+  cislo_dokladu?: string | null;
   paid_amount: number | null;
   bank_transaction_id: string | null;
 };
@@ -168,6 +171,8 @@ function Stranka() {
   const kontokorent = z.kind === "kontokorent";
   const vozidlo: { id: string; nazov: string } | null = data.vozidlo ?? null;
   const sPoistenim = splatky.some((r) => Number(r.insurance_part ?? 0) > 0);
+  /* Stĺpec čísla dokladu len keď kalendár má vlastný rad alebo už pridelené čísla. */
+  const sCislami = Boolean(z?.number_series_id) || splatky.some((r) => r.cislo_dokladu);
   const vsetkyVybrane = splatky.length > 0 && vybrane.length === splatky.length;
   const prepniVyber = (sid: string) =>
     setVybrane((v) => (v.includes(sid) ? v.filter((x) => x !== sid) : [...v, sid]));
@@ -277,7 +282,13 @@ function Stranka() {
         <KartaVeritela cid={cid} zmluva={z} onZmena={obnov} />
 
         {kontokorent ? (
-          <DetailKontokorentu key={z.updated_at} cid={cid} zmluva={z} />
+          <>
+            <DetailKontokorentu key={z.updated_at} cid={cid} zmluva={z} />
+            {/* Kontokorent sa do Pohody neexportuje — rad sa len uloží. */}
+            <section className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-5">
+              <RadSplatok cid={cid} zmluva={z} onZmena={obnov} kontokorent />
+            </section>
+          </>
         ) : (
           <>
             <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -394,6 +405,9 @@ function Stranka() {
                       />
                     </th>
                     <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Č.")}</th>
+                    {sCislami && (
+                      <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Číslo dokladu")}</th>
+                    )}
                     <th className="p-3 text-left font-semibold whitespace-nowrap">{t("Splatnosť")}</th>
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Splátka")}</th>
                     <th className="p-3 text-right font-semibold whitespace-nowrap">{t("Istina")}</th>
@@ -419,6 +433,11 @@ function Stranka() {
                           />
                         </td>
                         <td className="p-3 tabular-nums text-muted-foreground">{r.number}</td>
+                        {sCislami && (
+                          <td className="whitespace-nowrap p-3 font-mono text-xs tabular-nums">
+                            {r.cislo_dokladu || <span className="text-muted-foreground">—</span>}
+                          </td>
+                        )}
                         <td
                           className={`whitespace-nowrap p-3 ${poSplatnosti ? "font-semibold text-destructive" : ""}`}
                         >

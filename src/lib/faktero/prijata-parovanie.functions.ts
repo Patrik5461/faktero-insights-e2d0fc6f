@@ -39,24 +39,37 @@ function predDnami(dni: number): string {
 
 export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) => z.object({ company_id: z.string().uuid() }).parse(input))
+  .validator((input) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        /*
+          Len zálohové (zoznam a detail prijatých zálohových). Bez neho idú
+          všetky druhy spolu — aj zálohové, takže hlavný zoznam a zálohy si
+          ten istý pohyb nerozoberú dvakrát. So stropom 400 by ale zálohy
+          v rušnej firme z výberu vypadli, preto vlastný, užší dotaz.
+        */
+        typ: z.enum(["proforma"]).optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ context, data }) => {
     const supabase = context.supabase as unknown as Klient;
     const od = predDnami(DNI_DOZADU);
 
-    const { data: faktury } = await supabase
+    let dotazFaktur = supabase
       .from("purchase_invoices")
       .select(
-        "id, supplier_name, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status, advance_amount, advance_invoice_id",
+        "id, supplier_name, supplier_iban, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status, advance_amount, advance_invoice_id",
       )
       .eq("company_id", data.company_id)
       .is("deleted_at", null)
       .gte("issue_date", od)
       .neq("status", "cancelled")
       // Hotovosť sa v banke neobjaví, tak ju netreba ani ťahať.
-      .or("payment_method.is.null,payment_method.neq.hotovost")
-      .order("issue_date", { ascending: false })
-      .limit(400);
+      .or("payment_method.is.null,payment_method.neq.hotovost");
+    if (data.typ) dotazFaktur = dotazFaktur.eq("type", data.typ).not("status", "in", "(paid,draft)");
+    const { data: faktury } = await dotazFaktur.order("issue_date", { ascending: false }).limit(400);
 
     /*
       Platí sa suma na úhradu, nie celá faktúra: odpočet zaplatenej zálohy
@@ -111,7 +124,7 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
     const { data: pohyby } = sumy.length
       ? await supabase
           .from("bank_transactions")
-          .select("id, booking_date, amount, currency, variable_symbol, counterparty, description")
+          .select("id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description")
           .eq("company_id", data.company_id)
           .gte("booking_date", od)
           .in("amount", sumy)

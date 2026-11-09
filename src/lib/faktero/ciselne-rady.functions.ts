@@ -34,6 +34,8 @@ const KDE: Record<DruhRadu, { tabulka: string; stlpec: string }> = {
   purchase_order: { tabulka: "purchase_orders", stlpec: "number_series_id" },
   cash: { tabulka: "cash_entries", stlpec: "number_series_id" },
   self_billing: { tabulka: "purchase_invoices", stlpec: "number_series_id" },
+  /* Splátky, ktoré už z radu dostali číslo dokladu. */
+  financing: { tabulka: "financing_installments", stlpec: "number_series_id" },
 };
 
 export const ciselneRadyFn = createServerFn({ method: "POST" })
@@ -265,4 +267,164 @@ export const radyZImportuFn = createServerFn({ method: "POST" })
     // Číta sa cez RLS používateľa — vidí len faktúry svojej firmy.
     const { rozpoznajRadyPoImporte } = await import("./ciselne-rady-import.server");
     return { rady: await rozpoznajRadyPoImporte(context.supabase, data.company_id, false) };
+  });
+
+// ─── export a import radov cez súbor ─────────────────────────────────────────
+
+const RiadokSuboruZ = z.object({
+  riadok: z.number().int().min(1),
+  id: z.string().max(80).default(""),
+  druh: z.string().max(120).default(""),
+  nazov: z.string().max(200).default(""),
+  sablona: z.string().max(200).default(""),
+  start_from: z.string().max(40).default(""),
+  predvoleny: z.string().max(40).default(""),
+  aktivny: z.string().max(40).default(""),
+});
+
+const ImportRadov = z.object({
+  company_id: z.string().uuid(),
+  riadky: z.array(RiadokSuboruZ).max(500),
+});
+
+type KontextFn = { supabase: any; userId: string };
+
+/** Rady firmy (cez RLS používateľa) so start_from ako číslom. */
+async function radyFirmy(ctx: KontextFn, companyId: string) {
+  const { data, error } = await ctx.supabase
+    .from("number_series")
+    .select("id, kind, name, format, is_default, active, start_from")
+    .eq("company_id", companyId)
+    .order("kind")
+    .order("name");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as CiselnyRad[]).map((r) => ({ ...r, start_from: Number(r.start_from ?? 1) || 1 }));
+}
+
+/**
+ * Plán importu — rovnaký pre náhľad aj uloženie. Posledné použité poradia sa
+ * čítajú bez RLS (pozri `ciselne-rady-posledne.server.ts`), preto až po
+ * overení prístupu.
+ */
+async function planImportuRadov(
+  ctx: KontextFn,
+  companyId: string,
+  riadky: z.infer<typeof RiadokSuboruZ>[],
+  zapis: boolean,
+) {
+  const { overPristup } = await import("./over-pristup");
+  await overPristup(ctx, companyId, { oblast: "faktury", zapis });
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { naplanujImportRadov, potrebnePosledne } = await import("./ciselne-rady-subor");
+  const { posledneVRadoch } = await import("./ciselne-rady-posledne.server");
+  const existujuce = await radyFirmy(ctx, companyId);
+  const posledne = await posledneVRadoch(
+    supabaseAdmin,
+    companyId,
+    potrebnePosledne(riadky, existujuce),
+  );
+  return naplanujImportRadov(riadky, existujuce, posledne);
+}
+
+/** Všetky rady firmy s posledným použitým poradím — podklad pre export do XLSX/CSV. */
+export const exportCiselnychRadovFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { overPristup } = await import("./over-pristup");
+    await overPristup(context as KontextFn, data.company_id, { oblast: "faktury" });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { klucPosledneho } = await import("./ciselne-rady-subor");
+    const { posledneVRadoch } = await import("./ciselne-rady-posledne.server");
+    const rady = await radyFirmy(context as KontextFn, data.company_id);
+    const posledne = await posledneVRadoch(
+      supabaseAdmin,
+      data.company_id,
+      rady.map((r) => ({ kind: r.kind, format: r.format })),
+    );
+    return {
+      rady: rady.map((r) => ({
+        ...r,
+        posledne: posledne.get(klucPosledneho(r.kind, r.format)) ?? 0,
+      })),
+    };
+  });
+
+/** Náhľad importu: čo sa s ktorým riadkom stane, nič sa nezapisuje. */
+export const nahladImportuRadovFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => ImportRadov.parse(d))
+  .handler(async ({ data, context }) =>
+    planImportuRadov(context as KontextFn, data.company_id, data.riadky, false),
+  );
+
+/**
+ * Uloženie importu. Plán sa počíta znova na serveri — klient môže poslať len
+ * riadky súboru, nie výsledok. Riadky s chybou sa preskočia, ostatné sa
+ * zapíšu cez klienta prihláseného (RLS, rovnako ako ručná úprava radu).
+ */
+export const importujCiselneRadyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => ImportRadov.parse(d))
+  .handler(async ({ data, context }) => {
+    const ctx = context as KontextFn;
+    const plan = await planImportuRadov(ctx, data.company_id, data.riadky, true);
+    const { supabase } = ctx;
+    const naZapis = plan.polozky.filter((p) => p.stav === "novy" || p.stav === "zmena");
+    const chyby: { riadok: number; chyba: { text: string; parametre?: Record<string, string | number> } }[] =
+      plan.polozky
+        .filter((p) => p.stav === "chyba")
+        .map((p) => ({ riadok: p.riadok, chyba: p.chyba ?? { text: "Chyba" } }));
+    let nove = 0;
+    let zmenene = 0;
+
+    /*
+      Predvolený rad stráži jedinečný index — starý sa musí odznačiť skôr, než
+      sa nový zapíše. Plán zaručuje najviac jeden predvolený riadok na druh.
+    */
+    for (const p of naZapis) {
+      if (!p.is_default) continue;
+      let q = supabase
+        .from("number_series")
+        .update({ is_default: false, updated_at: new Date().toISOString() })
+        .eq("company_id", data.company_id)
+        .eq("kind", p.kind!)
+        .eq("is_default", true);
+      if (p.id) q = q.neq("id", p.id);
+      const { error } = await q;
+      if (error) chyby.push({ riadok: p.riadok, chyba: { text: prelozChybu(error.message) } });
+    }
+
+    for (const p of naZapis) {
+      if (p.id) {
+        const { error } = await supabase
+          .from("number_series")
+          .update({
+            name: p.name,
+            format: p.format,
+            is_default: p.is_default,
+            active: p.active,
+            start_from: p.start_from,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", p.id)
+          .eq("company_id", data.company_id);
+        if (error) chyby.push({ riadok: p.riadok, chyba: { text: prelozChybu(error.message) } });
+        else zmenene++;
+      } else {
+        const { error } = await supabase.from("number_series").insert({
+          company_id: data.company_id,
+          kind: p.kind as DruhRadu,
+          name: p.name,
+          format: p.format,
+          is_default: p.is_default,
+          active: p.active,
+          start_from: p.start_from,
+        });
+        if (error) chyby.push({ riadok: p.riadok, chyba: { text: prelozChybu(error.message) } });
+        else nove++;
+      }
+    }
+
+    return { nove, zmenene, bez_zmeny: plan.pocty.bez_zmeny, chyby: chyby.sort((a, b) => a.riadok - b.riadok) };
   });

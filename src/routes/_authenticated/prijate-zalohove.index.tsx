@@ -33,6 +33,14 @@ import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
+import { usePlatbyZaloh } from "@/hooks/usePlatbyZaloh";
+import { IkonaPlatbyZalohy, stavRiadkuZalohy } from "@/components/faktero/PlatbaZalohy";
+import {
+  jeFilterPlatby,
+  MOZNOSTI_FILTRA_PLATBY,
+  sediFiltruPlatby,
+  zalohaUhradena,
+} from "@/lib/faktero/zalohove-platby";
 
 export const Route = createFileRoute("/_authenticated/prijate-zalohove/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté zálohové faktúry — Faktero") }] }),
@@ -49,6 +57,7 @@ type Riadok = {
   amount_total: number;
   currency: string;
   payment_date: string | null;
+  payment_method: string | null;
   status: string;
   deleted_at: string | null;
   exported_at: string | null;
@@ -87,7 +96,7 @@ function PrijateZalohovePage() {
         let q = supabase
           .from("purchase_invoices")
           .select(
-            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, status, deleted_at, exported_at, locked_at, file_path",
+            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, payment_method, status, deleted_at, exported_at, locked_at, file_path",
           )
           .eq("company_id", cid)
           .eq("type", "proforma");
@@ -127,6 +136,16 @@ function PrijateZalohovePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ajVymazane]);
 
+  /*
+    Platby z banky: odchádzajúca platba podľa VS / účtu dodávateľa a sumy —
+    návrhy z párovania prijatých faktúr (len zálohové), potvrdenie jedným
+    klikom ako pri prijatých faktúrach.
+  */
+  const idsRiadkov = useMemo(() => rows.map((r) => r.id), [rows]);
+  const platby = usePlatbyZaloh("prijata", getActiveCompanyId(), idsRiadkov, () => load());
+  const lfPlatba = lf.filter("platba");
+  const platbaFilter = jeFilterPlatby(lfPlatba) ? lfPlatba : "";
+
   const hladane = lf.q.trim().toLowerCase();
   const stav = lf.filter("stav");
   const podla = lf.filter("podla") === "splatnost" ? "due_date" : "issue_date";
@@ -145,9 +164,15 @@ function PrijateZalohovePage() {
         const d = r[podla];
         if (obdobieOd && (!d || d < obdobieOd)) return false;
         if (obdobieDo && (!d || d > obdobieDo)) return false;
+        if (
+          platbaFilter &&
+          !sediFiltruPlatby(platbaFilter, zalohaUhradena(r, "prijata"), stavRiadkuZalohy(platby, "prijata", r))
+        )
+          return false;
         return true;
       }),
-    [rows, zuctovane, hladane, stav, podla, obdobieOd, obdobieDo],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, zuctovane, hladane, stav, podla, obdobieOd, obdobieDo, platbaFilter, platby.uhrady, platby.podlaDokladu],
   );
 
   // Kreslí sa len jedna strana; súčty, výber a export pracujú so všetkými zobrazenými.
@@ -440,6 +465,7 @@ function PrijateZalohovePage() {
                   { value: "splatnost", label: "dátumu splatnosti" },
                 ],
               },
+              { key: "platba", label: "Platba", type: "select", options: MOZNOSTI_FILTRA_PLATBY },
               { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
             ]}
           />
@@ -565,7 +591,10 @@ function PrijateZalohovePage() {
                             <span className="suma">{formatujMenu(r.amount_total, r.currency)}</span>
                           </td>
                           <td className="p-3">
-                            <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                              <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
+                              <IkonaPlatbyZalohy platby={platby} druh="prijata" riadok={r} mena={r.currency} />
+                            </span>
                           </td>
                           <td className="p-3 text-right">{akciaRiadku(r, false)}</td>
                         </KlikatelnyRiadok>
@@ -588,7 +617,12 @@ function PrijateZalohovePage() {
                   title={r.invoice_number}
                   subtitle={r.supplier_name}
                   amount={formatujMenu(r.amount_total, r.currency)}
-                  status={<StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />}
+                  status={
+                    <span className="inline-flex flex-wrap items-center gap-1">
+                      <StavZalohy riadok={r} zuctovanaNa={zuctovane[r.id]} />
+                      <IkonaPlatbyZalohy platby={platby} druh="prijata" riadok={r} mena={r.currency} />
+                    </span>
+                  }
                   meta={t("splatná {datum}", { datum: datumNaDoklade(r.due_date) })}
                   actions={akciaRiadku(r, true)}
                 />

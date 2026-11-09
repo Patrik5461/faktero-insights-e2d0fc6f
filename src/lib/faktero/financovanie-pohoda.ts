@@ -68,6 +68,11 @@ export type SplatkaPreExport = {
   interest_part: number | string;
   vat_amount: number | string;
   insurance_part?: number | string | null;
+  /**
+   * Číslo dokladu z vlastného číselného radu kalendára
+   * (`financing_contracts.number_series_id`). Prázdne = číslo pridelí Pohoda.
+   */
+  cislo_dokladu?: string | null;
   pohoda_predkontacia?: string | null;
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;
@@ -294,6 +299,28 @@ export function symbolSplatky(zmluva: ZmluvaPreExport): string {
   return (bez(zmluva.variable_symbol) || bez(zmluva.contract_number)).slice(0, 20);
 }
 
+/** `typ:numberRequested` je `string32NotEmpty` (type.xsd). */
+export const MAX_CISLO_DOKLADU = 32;
+
+/**
+ * Číslo záväzku (`inv:number`, type.xsd `numberType` — `xsd:all`, poradie
+ * prvkov je voľné):
+ *  - `typ:ids` = skratka číselného radu v Pohode (ak je zadaná),
+ *  - `typ:numberRequested` = vlastné číslo dokladu splátky z radu vo Fakteri.
+ *    `checkDuplicity` ostáva predvolené (true) — Pohoda odmietne záväzok,
+ *    ktorého číslo už má, takže opakovaný export splátku nezdvojí.
+ * Bez oboch sa prvok vynechá a číslo pridelí Pohoda predvoleným radom agendy.
+ */
+export function cisloZavazkuXml(rad: string | null | undefined, cislo: string | null | undefined, odsadenie = "        "): string {
+  const ids = skrat(rad, 10);
+  const c = txt(cislo);
+  const vlastne = c && c.length <= MAX_CISLO_DOKLADU ? c : "";
+  if (!ids && !vlastne) return "";
+  return `\n${odsadenie}<inv:number>${ids ? `<typ:ids>${esc(ids)}</typ:ids>` : ""}${
+    vlastne ? `<typ:numberRequested>${esc(vlastne)}</typ:numberRequested>` : ""
+  }</inv:number>`;
+}
+
 /** KV kód B.2 (prijaté plnenia od platiteľa) potrebuje IČ DPH dodávateľa. */
 const jeKvB2 = (kv: string | null | undefined) => /^B\.?2/i.test(txt(kv));
 
@@ -361,6 +388,11 @@ export function polozkaBalikaSplatky(
   const krajina = opts.krajina ?? "SK";
   const { polozky, vyhrady } = polozkySplatky(zmluva, splatka, krajina);
   if (!polozky.length) return { xml: "", vyhrady, kvB2: false };
+  if (txt(splatka.cislo_dokladu).length > MAX_CISLO_DOKLADU) {
+    vyhrady.push(
+      `Splátka č. ${splatka.number}: číslo dokladu ${txt(splatka.cislo_dokladu)} je dlhšie ako ${MAX_CISLO_DOKLADU} znakov — Pohoda ho neprijme, číslo jej pridelí Pohoda.`,
+    );
+  }
   const kody = ucinneKody(zmluva, splatka);
   // Členenie KV DPH má len slovenská Pohoda; „X“ (nezahŕňať) skratku nemá.
   const kv = krajina === "SK" && kody.kv && kody.kv !== "X" ? kody.kv : null;
@@ -390,9 +422,7 @@ export function polozkaBalikaSplatky(
   <dat:dataPackItem id="${esc(`SPL-${splatka.id}`)}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
-        <inv:invoiceType>commitment</inv:invoiceType>${
-          rad ? `\n${o}<inv:number><typ:ids>${esc(skrat(rad, 10))}</typ:ids></inv:number>` : ""
-        }${el("inv:symVar", vs, o)}${el("inv:symPar", vs, o)}${el("inv:originalDocument", povodne, o)}
+        <inv:invoiceType>commitment</inv:invoiceType>${cisloZavazkuXml(rad, splatka.cislo_dokladu, o)}${el("inv:symVar", vs, o)}${el("inv:symPar", vs, o)}${el("inv:originalDocument", povodne, o)}
         <inv:date>${esc(den)}</inv:date>
         <inv:dateTax>${esc(den)}</inv:dateTax>
         <inv:dateAccounting>${esc(den)}</inv:dateAccounting>${krajina === "CZ" ? datumDodania : ""}

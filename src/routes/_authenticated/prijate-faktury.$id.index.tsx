@@ -54,6 +54,7 @@ import {
 } from "@/lib/faktero/tatrabanka-payments.functions";
 import { toast } from "sonner";
 import { uhradyPrijatych, zrusParovaniePrijatej } from "@/lib/faktero/prijata-parovanie.functions";
+import { PlatbaZalohyDetail } from "@/components/faktero/PlatbaZalohy";
 import {
   Download,
   CheckCircle2,
@@ -624,12 +625,25 @@ function PurchaseInvoiceDetail() {
   */
   const kartaPohodaZalohy =
     (row as any).type === "proforma" && !navrh ? (
-      <OdovzdanieZalohovejPrijatej
-        row={row}
-        onVratit={async () => {
-          if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
-        }}
-      />
+      <>
+        {/* Nájdená platba z banky (Spárovať) alebo „V banke sme platbu nenašli“. */}
+        <PlatbaZalohyDetail
+          druh="prijata"
+          companyId={row.company_id}
+          doklad={row as any}
+          mena={row.currency}
+          onZmena={() => {
+            void load();
+            void nacitajUhradu(row.id);
+          }}
+        />
+        <OdovzdanieZalohovejPrijatej
+          row={row}
+          onVratit={async () => {
+            if (await poslatOpravu("prijata", row.company_id, row.id)) void load();
+          }}
+        />
+      </>
     ) : null;
 
   /* Kompaktné rozloženie: lišta ikon hore a jeden stĺpec kariet. */

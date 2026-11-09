@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { KodPohody } from "./KodPohody";
+import { RadSplatok } from "./RadSplatok";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import {
   exportSplatokDoPohodyFn,
@@ -325,8 +326,12 @@ export function SplatkyDoPohody({
       </p>
       <PoliaKodov navrhy={navrhy} hodnoty={kody} setHodnoty={setKody} />
       <RozuctovanieZloziek navrhy={navrhy} hodnoty={rozuct} setHodnoty={setRozuct} kalendar={kody} />
+      <RadSplatok cid={cid} zmluva={zmluva} onZmena={onZmena} />
       <div className="mt-3 flex flex-wrap items-end gap-3">
-        <label className="block w-40">
+        <label
+          className="block w-40"
+          title={t("Skratka číselného radu agendy Ostatné záväzky v Pohode. S vlastným číslom splátky ide do exportu spolu s ním.")}
+        >
           <span className="text-xs text-muted-foreground">{t("Číselný rad v Pohode")}</span>
           <input
             value={rad}

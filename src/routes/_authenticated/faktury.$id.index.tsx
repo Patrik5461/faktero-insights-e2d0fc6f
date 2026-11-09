@@ -14,6 +14,7 @@ import { UdajePreUctovnika, type UdajeUctovnika } from "@/components/faktero/Uda
 import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
 import { useDizajn } from "@/hooks/useDizajn";
 import { VystavenaDetailKompaktna } from "@/components/faktero/VystavenaDetailKompaktna";
+import { PlatbaZalohyDetail } from "@/components/faktero/PlatbaZalohy";
 import { rezimDphVystavenej, stavZauctovania } from "@/lib/faktero/udaje-pre-uctovnika";
 import { isAccountingDocument } from "@/lib/faktero/uctovny-doklad";
 import { useEffect, useRef, useState } from "react";
@@ -1617,6 +1618,16 @@ function InvoiceDetail() {
     );
   const kartyZalohySklad = (
     <>
+      {/* Nájdená prichádzajúca platba (Spárovať) alebo „V banke sme platbu nenašli“. */}
+      {inv.type === "proforma" && !inv.deleted_at && (
+        <PlatbaZalohyDetail
+          druh="vydana"
+          companyId={inv.company_id}
+          doklad={inv}
+          mena={inv.currency}
+          onZmena={() => load()}
+        />
+      )}
       {inv.type === "proforma" && (
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
           <div className="text-sm font-semibold text-muted-foreground">

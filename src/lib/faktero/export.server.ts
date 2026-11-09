@@ -684,12 +684,23 @@ export function polozkyZalohyBezDph(items: ItemRow[]): ItemRow[] {
       quantity: sedi ? q : 1,
       name: sedi ? it.name : `${it.name ?? ""} (${q} ${it.unit ?? "ks"})`.trim(),
       unit_price: sedi ? jednotkova : spolu,
+      // Hmotnosť je za jednotku; riadok 1 × celá suma nesie hmotnosť celého riadku.
+      ...(!sedi && Number((it as any).hmotnost_kg) > 0
+        ? { hmotnost_kg: Math.round(Number((it as any).hmotnost_kg) * Math.abs(q || 1) * 1000) / 1000 }
+        : {}),
       discount_percent: 0,
       vat_rate: 0,
       subtotal: spolu,
       vat_amount: 0,
       total: spolu,
       prenesenie: false,
+      /*
+        Položka v prenesení si príznak nesie ďalej: Pohoda pri vydanej
+        zálohovej faktúre pozná `PDP` aj `CodePDP` (kód tovaru, invoice.xsd)
+        — inak by zálohová prišla bez kódu, ktorý faktúra s tou istou
+        položkou má. Sadzba ostáva `none`, DPH na zálohe nie je.
+      */
+      _pdp_zalohy: Boolean((it as any).prenesenie),
     } as ItemRow;
   });
 }
@@ -1013,8 +1024,14 @@ export function polozkyFaktur(opts: {
           písm. f) až i) ako 4-miestny kód colného sadzobníka (stĺpec TK);
           pri stavebných prácach sa nevypĺňa, preto len keď ho položka má.
         */
-        // Zálohová ide bez DPH — príznak prenesenia nemá na čo sa vzťahovať.
-        const pdpPolozka = !zalohova && (tuzemskePdp || pdpRiadok);
+        /*
+          Zálohová ide bez DPH, ale príznak prenesenia a kód tovaru schéma pri
+          vydanej zálohovej faktúre pozná — položka v prenesení (alebo celá
+          zálohová v tuzemskom prenesení) ich dostane ako na faktúre.
+        */
+        const pdpPolozka = zalohova
+          ? tuzemskePdp || (!invoice.reverse_charge && Boolean((it as any)._pdp_zalohy))
+          : tuzemskePdp || pdpRiadok;
         const kodTovaru = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 4);
         // Stredisko a činnosť položky (invoice.xsd: po CodePDP, pred intrastatItem) — len pri rozúčtovaní.
         const centre = poPolozkach ? odkazIds("inv:centre", strediskoPolozky(it), "          ") : "";

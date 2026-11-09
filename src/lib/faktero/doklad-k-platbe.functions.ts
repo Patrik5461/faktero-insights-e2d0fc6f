@@ -88,7 +88,9 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     if (!(prijate > 0)) throw new Error("Prijatá suma musí byť kladná.");
     // Daň sa počíta z prijatej sumy s DPH (nie zo základu zálohy), a pri
     // čiastočnej platbe sa suma rozdelí podľa položiek — súčet sedí na halier.
-    const { rozpisDokladuKPlatbe, poznamkaDokladuKPlatbe } = await import("./doklad-k-platbe");
+    const { rozpisDokladuKPlatbe, poznamkaDokladuKPlatbe, colneUdajePolozkyZDokladu } = await import(
+      "./doklad-k-platbe"
+    );
     // Záloha bez jazyka má jazyk podľa krajiny firmy (česká firma → čeština).
     const { predvolenyJazykFirmy } = await import("./faktura-jazyk");
     const jazykDokladu = zf.language || predvolenyJazykFirmy(firmaZf?.country);
@@ -115,6 +117,10 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       vat_rate: number;
       position: number;
       product_id: string | null;
+      colny_kod: string | null;
+      krajina_povodu: string | null;
+      hmotnost_kg: number | null;
+      prenesenie: boolean;
     };
     const novePolozky: NovaPolozka[] = polozky.map((p: any, i: number) => ({
       name: p.name,
@@ -125,6 +131,12 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       vat_rate: Number(p.vat_rate),
       position: i,
       product_id: p.product_id ?? null,
+      /*
+        Colné údaje a prenesenie po položkách preberá zo zálohy — bez nich by
+        doklad (a jeho PDF, export do Pohody/Omegy, KV A.2) prišiel o kód
+        tovaru, ktorý záloha aj neskoršia faktúra majú.
+      */
+      ...colneUdajePolozkyZDokladu(p),
       // Zo zálohy sa tovar zo skladu neodpisuje — ten odíde až dodaním.
     }));
     const sumy = {

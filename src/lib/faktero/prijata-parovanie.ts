@@ -30,6 +30,8 @@ export type Pohyb = {
   variable_symbol: string | null;
   counterparty: string | null;
   description: string | null;
+  /** IBAN protistrany, keď ho banka posiela. */
+  counterparty_iban?: string | null;
 };
 
 export type PrijataFaktura = {
@@ -43,6 +45,8 @@ export type PrijataFaktura = {
   currency: string | null;
   payment_method: string | null;
   status: string | null;
+  /** Účet dodávateľa z faktúry — platba naň je silný údaj, hneď po VS. */
+  supplier_iban?: string | null;
 };
 
 export type ZhodaPrijatej = {
@@ -83,6 +87,19 @@ function menaSedia(a: string | null | undefined, b: string | null | undefined): 
 /** Sedí meno dodávateľa na protistranu alebo na popis pohybu? */
 export function dodavatelSedi(p: Pohyb, f: PrijataFaktura): boolean {
   return menaSedia(p.counterparty, f.supplier_name) || menaSedia(p.description, f.supplier_name);
+}
+
+function normIban(v: string | null | undefined): string {
+  return String(v ?? "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+}
+
+/** Odišla platba na účet dodávateľa z faktúry? */
+export function ucetSedi(p: Pohyb, f: PrijataFaktura): boolean {
+  const a = normIban(p.counterparty_iban);
+  const b = normIban(f.supplier_iban);
+  return a.length >= 15 && a === b;
 }
 
 /**
@@ -130,6 +147,11 @@ export function ohodnotPrijatu(
     skore += 0.45;
     rozpoznany = true;
     dovody.push(`variabilný symbol ${p.variable_symbol} sedí na faktúru`);
+  } else if (ucetSedi(p, f)) {
+    // Účet je presnejší než meno, ale slabší než VS — dodávateľ ho má na všetkých faktúrach.
+    skore += 0.35;
+    rozpoznany = true;
+    dovody.push("platba na účet dodávateľa");
   } else if (dodavatelSedi(p, f)) {
     skore += 0.3;
     rozpoznany = true;

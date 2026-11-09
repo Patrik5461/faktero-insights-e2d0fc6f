@@ -19,6 +19,7 @@ export const DRUHY_RADOV = [
   "purchase_order",
   "cash",
   "self_billing",
+  "financing",
 ] as const;
 
 export type DruhRadu = (typeof DRUHY_RADOV)[number];
@@ -34,6 +35,7 @@ export const NAZVY_DRUHOV: Record<DruhRadu, string> = {
   purchase_order: "Objednávky u dodávateľa",
   cash: "Pokladničné doklady",
   self_billing: "Samofaktúry",
+  financing: "Splátky leasingov a úverov",
 };
 
 export type CiselnyRad = {
@@ -274,6 +276,7 @@ const PREDPONA: Record<DruhRadu, string> = {
   purchase_order: "OBJ",
   cash: "PD",
   self_billing: "SF",
+  financing: "SPL",
 };
 
 /**

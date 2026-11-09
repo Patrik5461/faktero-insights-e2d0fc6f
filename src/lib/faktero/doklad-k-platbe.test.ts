@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rozpisDokladuKPlatbe } from "./doklad-k-platbe";
+import { colneUdajePolozkyZDokladu, rozpisDokladuKPlatbe } from "./doklad-k-platbe";
 
 describe("rozpisDokladuKPlatbe", () => {
   it("záloha 8 000 € s DPH 23 % dá doklad presne na 8 000,00 €", () => {
@@ -31,5 +31,22 @@ describe("rozpisDokladuKPlatbe", () => {
       1000,
     );
     expect(r).toMatchObject({ subtotal: 1000, vat_total: 0, total: 1000 });
+  });
+});
+
+describe("colneUdajePolozkyZDokladu", () => {
+  it("zo zálohy prenesie colný kód, krajinu pôvodu, hmotnosť a prenesenie", () => {
+    expect(
+      colneUdajePolozkyZDokladu({ colny_kod: "62012000", krajina_povodu: "CN", hmotnost_kg: "0.25", prenesenie: true }),
+    ).toEqual({ colny_kod: "62012000", krajina_povodu: "CN", hmotnost_kg: 0.25, prenesenie: true });
+  });
+
+  it("prázdne hodnoty ostanú null, prenesenie false", () => {
+    expect(colneUdajePolozkyZDokladu({ colny_kod: " ", krajina_povodu: null, hmotnost_kg: "" })).toEqual({
+      colny_kod: null,
+      krajina_povodu: null,
+      hmotnost_kg: null,
+      prenesenie: false,
+    });
   });
 });
