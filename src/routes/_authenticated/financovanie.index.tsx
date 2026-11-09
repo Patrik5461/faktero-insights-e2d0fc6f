@@ -17,10 +17,20 @@ import { EmptyState } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 
+/*
+  Jeden zoznam zmlúv, dva pohľady: leasingy sú v menu pri Vozovom parku,
+  úvery a kontokorenty pri Banke (Patrik 9. 11.). Bez `druh` sú všetky.
+*/
+type DruhZoznamu = "leasing" | "banka";
 export const Route = createFileRoute("/_authenticated/financovanie/")({
+  validateSearch: (s: Record<string, unknown>): { druh?: DruhZoznamu } =>
+    s.druh === "leasing" || s.druh === "banka" ? { druh: s.druh } : {},
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Leasingy a úvery — Faktero") }] }),
   component: Stranka,
 });
+
+const patriDoZoznamu = (kind: string, druh?: DruhZoznamu) =>
+  !druh || (druh === "leasing" ? kind === "leasing" : kind !== "leasing");
 
 type Zmluva = {
   id: string;
@@ -49,7 +59,12 @@ function Stranka() {
   const { t, jazyk } = useT();
   const { domaca } = useFormatMenyFirmy();
   const nacitaj = useServerFn(zoznamZmluvFn);
-  const [zmluvy, setZmluvy] = useState<Zmluva[] | null>(null);
+  const { druh } = Route.useSearch();
+  const [vsetkyZmluvy, setZmluvy] = useState<Zmluva[] | null>(null);
+  const zmluvy = vsetkyZmluvy === null ? null : vsetkyZmluvy.filter((z) => patriDoZoznamu(z.kind, druh));
+  const nadpis =
+    druh === "leasing" ? t("Leasingy") : druh === "banka" ? t("Úvery a kontokorenty") : t("Leasingy a úvery");
+  const druhNovej = druh === "banka" ? "uver" : druh === "leasing" ? "leasing" : undefined;
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -68,11 +83,11 @@ function Stranka() {
   return (
     <>
       <PageHeader
-        title={t("Leasingy a úvery")}
+        title={nadpis}
         description={t("Splátkový kalendár s rozpadom na istinu, úrok a DPH, aj kontokorentné úvery. Platby z banky sa k splátkam a úroky ku kontokorentu párujú samy.")}
         action={
           <Button asChild>
-            <Link to="/financovanie/nova">
+            <Link to="/financovanie/nova" search={druhNovej ? { druh: druhNovej } : {}}>
               <Plus className="h-4 w-4" /> {t("Nová zmluva")}
             </Link>
           </Button>

@@ -123,6 +123,7 @@ function text(v: unknown): string {
 export function FormularZmluvy({
   companyId,
   zmluva,
+  predvolenyDruh,
   zoZmluvy,
   onUlozene,
   onZrusit,
@@ -130,6 +131,8 @@ export function FormularZmluvy({
   companyId: string;
   /** Bez nej sa zakladá nová. */
   zmluva?: ZmluvaNaUpravu | null;
+  /** Druh novej zmluvy podľa toho, odkiaľ sa prišlo (Vozový park = leasing, Banka = úver). */
+  predvolenyDruh?: DruhFinancovania;
   /** Čo sa prečítalo z nahratého dokumentu. Kalendár odtiaľ má prednosť. */
   zoZmluvy?: {
     document_path: string | null;
@@ -147,7 +150,7 @@ export function FormularZmluvy({
   const krajina = useKrajinaDane();
 
   const nacitajUcty = useServerFn(uctyPreKontokorentFn);
-  const [kind, setKind] = useState<DruhFinancovania>(zmluva?.kind ?? "leasing");
+  const [kind, setKind] = useState<DruhFinancovania>(zmluva?.kind ?? predvolenyDruh ?? "leasing");
   const kontokorent = kind === "kontokorent";
   const [name, setName] = useState(text(zmluva?.name));
   const [provider, setProvider] = useState(text(zmluva?.provider_name));

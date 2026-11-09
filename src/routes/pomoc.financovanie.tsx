@@ -35,7 +35,8 @@ const sections: HelpSection[] = [
         <p>
           Faktero preto zo zmluvy vyrobí celý splátkový kalendár s týmto rozpadom a odchádzajúce
           platby z banky si k jednotlivým splátkam páruje samo. Nájdete to v{" "}
-          <Link to="/financovanie">Banka → Leasingy a úvery</Link>.
+          <Link to="/financovanie" search={{ druh: "leasing" }}>Vozový park → Leasingy</Link>, úvery a kontokorenty v{" "}
+          <Link to="/financovanie" search={{ druh: "banka" }}>Banka → Úvery a kontokorenty</Link>.
         </p>
       </>
     ),

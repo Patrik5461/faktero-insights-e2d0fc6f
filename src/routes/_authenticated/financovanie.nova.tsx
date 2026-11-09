@@ -9,6 +9,9 @@ import { FormularZmluvy, type ZmluvaNaUpravu } from "@/components/faktero/Formul
 import { NahratieZmluvy, type PrecitanyDokument } from "@/components/faktero/NahratieZmluvy";
 
 export const Route = createFileRoute("/_authenticated/financovanie/nova")({
+  // Z menu: leasing pri Vozovom parku, úver pri Banke — predvolený druh formulára.
+  validateSearch: (s: Record<string, unknown>): { druh?: "leasing" | "uver" | "kontokorent" } =>
+    s.druh === "leasing" || s.druh === "uver" || s.druh === "kontokorent" ? { druh: s.druh } : {},
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Nová zmluva o financovaní — Faktero") }],
   }),
@@ -20,6 +23,7 @@ function Stranka() {
   const navigate = useNavigate();
   const cid = getActiveCompanyId();
   const [precitane, setPrecitane] = useState<PrecitanyDokument | null>(null);
+  const { druh } = Route.useSearch();
 
   return (
     <>
@@ -42,6 +46,7 @@ function Stranka() {
               zmluva={
                 precitane ? ({ ...precitane.predvyplnene } as unknown as ZmluvaNaUpravu) : undefined
               }
+              predvolenyDruh={druh}
               zoZmluvy={
                 precitane
                   ? {

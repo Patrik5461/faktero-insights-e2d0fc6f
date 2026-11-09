@@ -85,7 +85,8 @@ const sections: HelpSection[] = [
         </ul>
         <p>
           Pri leasingu a úvere sa dá vozidlo prepojiť so zmluvou v{" "}
-          <Link to="/financovanie">Banka → Leasingy a úvery</Link>; zo zmluvy sa potom jedným klikom
+          <Link to="/financovanie" search={{ druh: "leasing" }}>Vozový park → Leasingy</Link> (vozidlo sa
+          vyberá priamo vo formulári zmluvy); zo zmluvy sa potom jedným klikom
           dostanete na splátkový kalendár.
         </p>
         <p>

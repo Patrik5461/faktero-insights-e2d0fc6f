@@ -197,10 +197,10 @@ export const NAV: NavGroup[] = [
       /* Dovtedy len tlačidlo na stránke Vozového parku — kto ho prehliadol,
          o kartách nevedel. */
       { to: "/vozovy-park/palivove-karty", label: "Palivové karty" },
-      /* Leasingy a úvery patria k autám — pokope s vozidlami (Patrik 9. 11.).
-         Kontokorent je tu tiež, zoznam zmlúv je jeden. */
-      { to: "/financovanie", label: "Leasingy a úvery" },
-      { to: "/financovanie/nova", label: "Nová zmluva o financovaní" },
+      /* Leasingy patria k autám; úvery a kontokorenty ostávajú pri Banke
+         (Patrik 9. 11.). Zoznam zmlúv je jeden, delí ho parameter `druh`. */
+      { to: "/financovanie", search: { druh: "leasing" }, label: "Leasingy" },
+      { to: "/financovanie/nova", search: { druh: "leasing" }, label: "Nový leasing" },
     ],
   },
   {
@@ -225,11 +225,13 @@ export const NAV: NavGroup[] = [
     key: "banka",
     label: "Banka",
     icon: Landmark,
-    match: ["/bankove-ucty"],
+    match: ["/bankove-ucty", "/financovanie"],
     children: [
       { to: "/bankove-ucty", label: "Bankové účty" },
       { to: "/bankove-ucty/transakcie", label: "Bankové transakcie" },
       { to: "/bankove-ucty/vypisy", label: "Bankové výpisy" },
+      { to: "/financovanie", search: { druh: "banka" }, label: "Úvery a kontokorenty" },
+      { to: "/financovanie/nova", search: { druh: "uver" }, label: "Nový úver alebo kontokorent" },
       { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
     ],
   },
