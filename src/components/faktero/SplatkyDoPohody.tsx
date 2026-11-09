@@ -99,6 +99,80 @@ function PoliaKodov({
 
 const z = (v: unknown) => String(v ?? "");
 
+type Zlozka = "istina" | "urok" | "poistenie" | "poplatky";
+type Rozuct = Record<Zlozka, { predkontacia: string; clenenie: string }>;
+const ZLOZKY: { kluc: Zlozka; nazov: string }[] = [
+  { kluc: "istina", nazov: "Istina" },
+  { kluc: "urok", nazov: "Úrok" },
+  { kluc: "poistenie", nazov: "Poistenie" },
+  { kluc: "poplatky", nazov: "Poplatky (zvyšok splátky)" },
+];
+function rozuctZoZmluvy(r: any): Rozuct {
+  const o = {} as Rozuct;
+  for (const { kluc } of ZLOZKY) o[kluc] = { predkontacia: z(r?.[kluc]?.predkontacia), clenenie: z(r?.[kluc]?.clenenie) };
+  return o;
+}
+
+/**
+ * Rozúčtovanie splátky: každá zložka (istina, úrok, poistenie, poplatky) môže
+ * mať vlastnú predkontáciu a členenie DPH. Prázdne pole = kód kalendára.
+ */
+function RozuctovanieZloziek({
+  navrhy,
+  hodnoty,
+  setHodnoty,
+  kalendar,
+}: {
+  navrhy: Navrhy | null;
+  hodnoty: Rozuct;
+  setHodnoty: (r: Rozuct) => void;
+  kalendar: Kody;
+}) {
+  const { t } = useT();
+  const ako = (v: string) => (v ? t("ako kalendár: {kod}", { kod: v }) : t("ako kalendár"));
+  return (
+    <div className="mt-4 rounded-lg border border-border p-3">
+      <h3 className="text-sm font-semibold">{t("Rozúčtovanie splátky")}</h3>
+      <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
+        {t(
+          "Istina, úrok, poistenie a poplatky idú do Pohody ako samostatné položky záväzku — každá môže mať vlastnú predkontáciu a členenie DPH. Prázdne pole = ako kalendár.",
+        )}
+      </p>
+      <div className="space-y-2">
+        {ZLOZKY.map(({ kluc, nazov }) => (
+          <div key={kluc} className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[10rem_1fr_1fr] [&>*]:min-w-0">
+            <span className="text-sm font-medium sm:pb-2">{t(nazov)}</span>
+            <label className="block">
+              <span className="text-xs text-muted-foreground">{t("Predkontácia (Pohoda)")}</span>
+              <KodPohody
+                ariaLabel={`${t(nazov)} – ${t("Predkontácia (Pohoda)")}`}
+                value={hodnoty[kluc].predkontacia}
+                placeholder={ako(kalendar.predkontacia)}
+                onChange={(v) => setHodnoty({ ...hodnoty, [kluc]: { ...hodnoty[kluc], predkontacia: v } })}
+                moznosti={navrhy?.predkontacie ?? []}
+                className={VSTUP}
+                vyber
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-muted-foreground">{t("Členenie DPH (plnenie)")}</span>
+              <KodPohody
+                ariaLabel={`${t(nazov)} – ${t("Členenie DPH (plnenie)")}`}
+                value={hodnoty[kluc].clenenie}
+                placeholder={ako(kalendar.clenenie)}
+                onChange={(v) => setHodnoty({ ...hodnoty, [kluc]: { ...hodnoty[kluc], clenenie: v } })}
+                moznosti={navrhy?.clenenia ?? []}
+                className={VSTUP}
+                vyber
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Zaúčtovanie splátkového kalendára do Pohody (Ostatné záväzky).
  *
@@ -133,6 +207,8 @@ export function SplatkyDoPohody({
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [kody, setKody] = useState<Kody>(kalendar);
   const [rad, setRad] = useState(z(zmluva.pohoda_rad));
+  const rozuctKalendara = rozuctZoZmluvy(zmluva.pohoda_rozuctovanie);
+  const [rozuct, setRozuct] = useState<Rozuct>(rozuctKalendara);
   const [busy, setBusy] = useState(false);
   const [oznacit, setOznacit] = useState(true);
   const [okno, setOkno] = useState(false);
@@ -154,7 +230,8 @@ export function SplatkyDoPohody({
     kody.predkontacia !== kalendar.predkontacia ||
     kody.clenenie !== kalendar.clenenie ||
     kody.kv !== kalendar.kv ||
-    rad !== z(zmluva.pohoda_rad);
+    rad !== z(zmluva.pohoda_rad) ||
+    JSON.stringify(rozuct) !== JSON.stringify(rozuctKalendara);
 
   async function urob(praca: () => Promise<unknown>) {
     setBusy(true);
@@ -170,7 +247,7 @@ export function SplatkyDoPohody({
   const ulozKody = () =>
     urob(async () => {
       await ulozKalendar({
-        data: { company_id: cid, contract_id: zmluva.id, ...kody, rad },
+        data: { company_id: cid, contract_id: zmluva.id, ...kody, rad, rozuctovanie: rozuct },
       });
       toast.success(t("Zaúčtovanie kalendára uložené — platí pre všetky splátky bez vlastných kódov."));
       await onZmena();
@@ -215,6 +292,7 @@ export function SplatkyDoPohody({
         )}
       </p>
       <PoliaKodov navrhy={navrhy} hodnoty={kody} setHodnoty={setKody} />
+      <RozuctovanieZloziek navrhy={navrhy} hodnoty={rozuct} setHodnoty={setRozuct} kalendar={kody} />
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="block w-40">
           <span className="text-xs text-muted-foreground">{t("Číselný rad v Pohode")}</span>

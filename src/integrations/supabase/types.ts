@@ -4138,6 +4138,7 @@ export type Database = {
           pohoda_clenenie_dph: string | null
           pohoda_predkontacia: string | null
           pohoda_rad: string | null
+          pohoda_rozuctovanie: Json
         }
         Insert: {
           account_iban?: string | null
@@ -4184,6 +4185,7 @@ export type Database = {
           pohoda_clenenie_dph?: string | null
           pohoda_predkontacia?: string | null
           pohoda_rad?: string | null
+          pohoda_rozuctovanie?: Json
         }
         Update: {
           account_iban?: string | null
@@ -4230,6 +4232,7 @@ export type Database = {
           pohoda_clenenie_dph?: string | null
           pohoda_predkontacia?: string | null
           pohoda_rad?: string | null
+          pohoda_rozuctovanie?: Json
         }
         Relationships: [
           {

@@ -25,6 +25,23 @@ const prazdneNaNull = (v: string | null | undefined) => {
   return t ? t : null;
 };
 
+const kodyZlozky = z.object({ predkontacia: kod, clenenie: kod }).optional().nullable();
+/** Rozúčtovanie po zložkách splátky; prázdne zložky sa nezapíšu. */
+const rozuctovanieSchema = z
+  .object({ istina: kodyZlozky, urok: kodyZlozky, poistenie: kodyZlozky, poplatky: kodyZlozky })
+  .optional()
+  .nullable();
+function cisteRozuctovanie(r: z.infer<typeof rozuctovanieSchema>) {
+  const out: Record<string, { predkontacia?: string; clenenie?: string }> = {};
+  for (const [zlozka, k] of Object.entries(r ?? {})) {
+    const predkontacia = prazdneNaNull(k?.predkontacia);
+    const clenenie = prazdneNaNull(k?.clenenie);
+    if (predkontacia || clenenie)
+      out[zlozka] = { ...(predkontacia ? { predkontacia } : {}), ...(clenenie ? { clenenie } : {}) };
+  }
+  return out;
+}
+
 /** Chýbajúci stĺpec = migrácia 20261106123915 ešte nie je v databáze. */
 function chybaStlpca(chyba: { message?: string; code?: string } | null): boolean {
   return Boolean(chyba && (chyba.code === "42703" || chyba.code === "PGRST204" || /column/i.test(chyba.message ?? "")));
@@ -44,6 +61,8 @@ export const ulozZauctovanieKalendaraFn = createServerFn({ method: "POST" })
         clenenie: kod,
         kv: kod,
         rad: z.string().trim().max(10).optional().nullable(),
+        /** Istina, úrok, poistenie a poplatky s vlastnou predkontáciou a členením. */
+        rozuctovanie: rozuctovanieSchema,
       })
       .parse(d),
   )
@@ -56,6 +75,7 @@ export const ulozZauctovanieKalendaraFn = createServerFn({ method: "POST" })
         pohoda_clenenie_dph: prazdneNaNull(data.clenenie),
         kv_clenenie: prazdneNaNull(data.kv),
         pohoda_rad: prazdneNaNull(data.rad),
+        ...(data.rozuctovanie !== undefined ? { pohoda_rozuctovanie: cisteRozuctovanie(data.rozuctovanie) } : {}),
       })
       .eq("id", data.contract_id)
       .eq("company_id", data.company_id);

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { XmlDocument, XsdValidator } from "libxml2-wasm";
 import { xmlRegisterFsInputProviders } from "libxml2-wasm/lib/nodejs.mjs";
 import {
+  kodyPolozky,
   nazovSuboruSplatok,
   polozkySplatky,
   ucinneKody,
@@ -86,7 +87,7 @@ describe("splátky do Ostatných záväzkov", () => {
 
   it("splátka bez rozpadu ide ako jedna položka", () => {
     const { polozky } = polozkySplatky(leasing, { ...s1, principal_part: 0, interest_part: 0, insurance_part: 0 });
-    expect(polozky).toEqual([{ text: "Splátka", zaklad: 512.4, dph: 0, sadzba: 0 }]);
+    expect(polozky).toEqual([{ text: "Splátka", zlozka: null, zaklad: 512.4, dph: 0, sadzba: 0 }]);
   });
 
   it("časti nad sumu splátky → výhrada", () => {
@@ -147,5 +148,53 @@ describe("splátky do Ostatných záväzkov", () => {
 
   it("názov súboru", () => {
     expect(nazovSuboruSplatok(leasing, [3, 1, 2])).toBe("splatky-UZF-26-80613-1-3.xml");
+  });
+});
+
+describe("rozúčtovanie splátky po zložkách", () => {
+  const rozuct = {
+    ...leasing,
+    pohoda_rozuctovanie: {
+      istina: { predkontacia: "1Li" },
+      urok: { predkontacia: "1Lu", clenenie: "PN" },
+      poistenie: { predkontacia: "1Lp", clenenie: "PN" },
+    },
+  };
+
+  it("každá položka dostane predkontáciu svojej zložky, chýbajúca ide podľa kalendára", () => {
+    const kody = ucinneKody(rozuct, s1);
+    expect(kodyPolozky(rozuct, kody, "istina")).toMatchObject({ predkontacia: "1Li", clenenie: "PN" });
+    expect(kodyPolozky(rozuct, kody, "urok").predkontacia).toBe("1Lu");
+    expect(kodyPolozky(rozuct, kody, "poplatky").predkontacia).toBe("1Lz");
+    expect(kodyPolozky(rozuct, kody, null).predkontacia).toBe("1Lz");
+  });
+
+  it("XML nesie kód na každej položke a prejde schémou", () => {
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: rozuct, splatky: [{ ...s1, amount: 515.4 }] });
+    expect(chybySchemy(r.xml)).toEqual([]);
+    const polozky = [...r.xml.matchAll(/<inv:invoiceItem>([\s\S]*?)<\/inv:invoiceItem>/g)].map((m) => [
+      m[1].match(/<inv:text>([^<]+)/)?.[1],
+      m[1].match(/<inv:accounting><typ:ids>([^<]+)/)?.[1],
+    ]);
+    expect(polozky).toEqual([
+      ["Istina", "1Li"],
+      ["Úrok", "1Lu"],
+      ["Poistenie", "1Lp"],
+      ["Ostatné (poplatky)", "1Lz"],
+    ]);
+  });
+
+  it("KV ide len na položky s DPH, nie na poistenie", () => {
+    const op = { ...rozuct, vat_rate: 23, kv_clenenie: "B2" };
+    const s = { ...s1, amount: 635, principal_part: 450, interest_part: 50, vat_amount: 115, insurance_part: 20 };
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: op, splatky: [s] });
+    const poistenie = r.xml.match(/<inv:text>Poistenie<\/inv:text>[\s\S]*?<\/inv:invoiceItem>/)?.[0] ?? "";
+    expect(poistenie).not.toContain("classificationKVDPH");
+    expect(r.xml.match(/<inv:invoiceItem>[\s\S]*?classificationKVDPH/g)?.length).toBe(2);
+  });
+
+  it("bez predkontácie kalendára vymenuje zložky, ktorým chýba", () => {
+    const r = xmlSplatokDoPohody({ zmluva: { ...rozuct, pohoda_predkontacia: null }, splatky: [s1] });
+    expect(r.vyhrady.join(" ")).toMatch(/Bez predkontácie: poplatky/);
   });
 });

@@ -18,6 +18,9 @@
  *
  * Predkontácia, členenie DPH a členenie KV sa nastavujú raz na kalendári
  * (`financing_contracts.pohoda_*`); splátka ich môže prepísať vlastnými.
+ * Rozúčtovanie (`pohoda_rozuctovanie`) dá istine, úroku, poisteniu a
+ * poplatkom vlastnú predkontáciu a členenie DPH na položke — istina ide
+ * na záväzok (napr. 479), úrok a poistenie do nákladov (562, 548).
  *
  * Čistý modul bez databázy — zostaví XML, nič nezapisuje. Generátor exportu
  * (`export.server.ts`) sa zámerne nevolá: splátka nie je doklad z adresára ani
@@ -39,7 +42,14 @@ export type ZmluvaPreExport = {
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;
   pohoda_rad?: string | null;
+  /** Kódy po zložkách splátky — `{ istina: { predkontacia, clenenie }, … }`. */
+  pohoda_rozuctovanie?: Rozuctovanie | null;
 };
+
+export const ZLOZKY_SPLATKY = ["istina", "urok", "poistenie", "poplatky"] as const;
+export type ZlozkaSplatky = (typeof ZLOZKY_SPLATKY)[number];
+export type KodyZlozky = { predkontacia?: string | null; clenenie?: string | null };
+export type Rozuctovanie = Partial<Record<ZlozkaSplatky, KodyZlozky>>;
 
 export type SplatkaPreExport = {
   id: string;
@@ -65,6 +75,8 @@ export type KodyZauctovania = {
 
 export type PolozkaSplatky = {
   text: string;
+  /** Zložka splátky; null = splátka bez rozpadu (jedna položka). */
+  zlozka: ZlozkaSplatky | null;
   zaklad: number;
   dph: number;
   /** Sadzba DPH v percentách (0 = bez DPH). */
@@ -121,6 +133,29 @@ export function ucinneKody(zmluva: ZmluvaPreExport, splatka: SplatkaPreExport): 
 }
 
 /**
+ * Kódy jednej položky záväzku: rozúčtovanie zložky na kalendári, inak kódy
+ * splátky a kalendára (`ucinneKody`). Splátka bez rozpadu ide podľa nich.
+ */
+export function kodyPolozky(
+  zmluva: ZmluvaPreExport,
+  kody: KodyZauctovania,
+  zlozka: ZlozkaSplatky | null,
+): KodyZauctovania {
+  const r = zlozka ? zmluva.pohoda_rozuctovanie?.[zlozka] : null;
+  return {
+    ...kody,
+    predkontacia: txt(r?.predkontacia) || kody.predkontacia,
+    clenenie: txt(r?.clenenie) || kody.clenenie,
+  };
+}
+
+/** Má kalendár rozúčtovanie aspoň jednej zložky? */
+export function maRozuctovanie(zmluva: ZmluvaPreExport): boolean {
+  const r = zmluva.pohoda_rozuctovanie ?? {};
+  return ZLOZKY_SPLATKY.some((z) => txt(r[z]?.predkontacia) || txt(r[z]?.clenenie));
+}
+
+/**
  * Sadzba DPH splátky. Zmluva ju zvyčajne nesie; keď nie (kalendár prečítaný
  * z PDF bez hlavičky), odvodí sa z pomeru dane a základu a priradí k sadzbe,
  * ktorá v deň splatnosti platila.
@@ -168,30 +203,32 @@ export function polozkySplatky(
   const polozky: PolozkaSplatky[] = [];
 
   if (istina > 0 || urok > 0) {
-    const zdanitelne = [
-      ["Istina", istina],
-      ["Úrok", urok],
-    ].filter(([, z]) => (z as number) > 0) as [string, number][];
+    const zdanitelne = (
+      [
+        ["Istina", istina, "istina"],
+        ["Úrok", urok, "urok"],
+      ] as [string, number, ZlozkaSplatky][]
+    ).filter(([, z]) => z > 0);
     const zakladSpolu = r2(zdanitelne.reduce((a, [, z]) => a + z, 0));
     let zostava = dph;
-    zdanitelne.forEach(([text, z], i) => {
+    zdanitelne.forEach(([text, z, zlozka], i) => {
       const posledna = i === zdanitelne.length - 1;
       const d = dph > 0 ? (posledna ? r2(zostava) : r2((dph * z) / zakladSpolu)) : 0;
       zostava = r2(zostava - d);
-      polozky.push({ text, zaklad: z, dph: d, sadzba: dph > 0 ? sadzba : 0 });
+      polozky.push({ text, zlozka, zaklad: z, dph: d, sadzba: dph > 0 ? sadzba : 0 });
     });
   } else {
     const z = zakladDane(splatka);
     if (z > 0 || dph > 0) {
-      polozky.push({ text: "Splátka", zaklad: Math.max(z, 0), dph, sadzba: dph > 0 ? sadzba : 0 });
+      polozky.push({ text: "Splátka", zlozka: null, zaklad: Math.max(z, 0), dph, sadzba: dph > 0 ? sadzba : 0 });
     }
   }
-  if (poistenie > 0) polozky.push({ text: "Poistenie", zaklad: poistenie, dph: 0, sadzba: 0 });
+  if (poistenie > 0) polozky.push({ text: "Poistenie", zlozka: "poistenie", zaklad: poistenie, dph: 0, sadzba: 0 });
 
   const sucet = r2(polozky.reduce((a, p) => a + p.zaklad + p.dph, 0));
   const rozdiel = r2(spolu - sucet);
   if (rozdiel >= 0.01) {
-    polozky.push({ text: "Ostatné (poplatky)", zaklad: rozdiel, dph: 0, sadzba: 0 });
+    polozky.push({ text: "Ostatné (poplatky)", zlozka: "poplatky", zaklad: rozdiel, dph: 0, sadzba: 0 });
   } else if (rozdiel <= -0.01) {
     vyhrady.push(
       `Splátka č. ${splatka.number}: istina, úrok, poistenie a DPH spolu (${sucet.toFixed(2)}) sú viac než splátka (${spolu.toFixed(2)}) — skontrolujte kalendár.`,
@@ -305,7 +342,18 @@ export function polozkaBalikaSplatky(
           o,
         )}
       </inv:invoiceHeader>
-      <inv:invoiceDetail>${polozky.map((p) => polozkaXml(p, kody, den, krajina, kv)).join("")}
+      <inv:invoiceDetail>${polozky
+        .map((p) =>
+          polozkaXml(
+            p,
+            kodyPolozky(zmluva, kody, p.zlozka),
+            den,
+            krajina,
+            // KV patrí len položke s daňou; poistenie či poplatok bez DPH v KV nie je.
+            kv && (p.dph > 0 || !polozky.some((x) => x.dph > 0)) ? kv : null,
+          ),
+        )
+        .join("")}
       </inv:invoiceDetail>
       <inv:invoiceSummary>
         <inv:roundingDocument>none</inv:roundingDocument>
@@ -375,9 +423,18 @@ export function xmlSplatokDoPohody(opts: {
     polozky += r.xml;
     idSplatok.push(s.id);
   }
-  if (!txt(opts.zmluva.pohoda_predkontacia) && zoradene.some((s) => !txt(s.pohoda_predkontacia))) {
+  const rozuct = opts.zmluva.pohoda_rozuctovanie ?? {};
+  const zlozkyBezKodu = ZLOZKY_SPLATKY.filter((z) => !txt(rozuct[z]?.predkontacia));
+  if (
+    !txt(opts.zmluva.pohoda_predkontacia) &&
+    zoradene.some((s) => !txt(s.pohoda_predkontacia)) &&
+    zlozkyBezKodu.length
+  ) {
+    const NAZVY: Record<ZlozkaSplatky, string> = { istina: "istina", urok: "úrok", poistenie: "poistenie", poplatky: "poplatky" };
     vyhrady.push(
-      "Kalendár nemá predkontáciu — Pohoda dá záväzkom „Neviem“. Nastavte ju v časti Zaúčtovanie do Pohody.",
+      maRozuctovanie(opts.zmluva)
+        ? `Bez predkontácie: ${zlozkyBezKodu.map((z) => NAZVY[z]).join(", ")} — tieto položky dostanú v Pohode „Neviem“. Doplňte ich v rozúčtovaní alebo predkontáciu kalendára.`
+        : "Kalendár nemá predkontáciu — Pohoda dá záväzkom „Neviem“. Nastavte ju v časti Zaúčtovanie do Pohody.",
     );
   }
   if (!txt(opts.zmluva.pohoda_clenenie_dph) && zoradene.some((s) => !txt(s.pohoda_clenenie_dph))) {
