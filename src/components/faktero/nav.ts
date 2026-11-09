@@ -190,13 +190,17 @@ export const NAV: NavGroup[] = [
     key: "vozovy-park",
     label: "Vozový park",
     icon: Car,
-    match: ["/vozovy-park"],
+    match: ["/vozovy-park", "/financovanie"],
     children: [
       { to: "/vozovy-park", label: "Prehľad vozidiel" },
       { to: "/vozovy-park/nove", label: "Nové vozidlo" },
       /* Dovtedy len tlačidlo na stránke Vozového parku — kto ho prehliadol,
          o kartách nevedel. */
       { to: "/vozovy-park/palivove-karty", label: "Palivové karty" },
+      /* Leasingy a úvery patria k autám — pokope s vozidlami (Patrik 9. 11.).
+         Kontokorent je tu tiež, zoznam zmlúv je jeden. */
+      { to: "/financovanie", label: "Leasingy a úvery" },
+      { to: "/financovanie/nova", label: "Nová zmluva o financovaní" },
     ],
   },
   {
@@ -221,13 +225,11 @@ export const NAV: NavGroup[] = [
     key: "banka",
     label: "Banka",
     icon: Landmark,
-    match: ["/bankove-ucty", "/financovanie"],
+    match: ["/bankove-ucty"],
     children: [
       { to: "/bankove-ucty", label: "Bankové účty" },
       { to: "/bankove-ucty/transakcie", label: "Bankové transakcie" },
       { to: "/bankove-ucty/vypisy", label: "Bankové výpisy" },
-      { to: "/financovanie", label: "Leasingy a úvery" },
-      { to: "/financovanie/nova", label: "Nová zmluva o financovaní" },
       { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
     ],
   },

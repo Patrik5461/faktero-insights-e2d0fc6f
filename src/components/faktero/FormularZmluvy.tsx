@@ -2,6 +2,7 @@ import { formatujCislo } from "@/lib/faktero/mena";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n/useT";
 import { ulozZmluvuFn } from "@/lib/faktero/financovanie.functions";
 import { uctyPreKontokorentFn } from "@/lib/faktero/kontokorent.functions";
@@ -69,6 +70,8 @@ export type ZmluvaNaUpravu = Partial<VeritelZmluvy> & {
   day_count: string | null;
   interest_from: string | null;
   note: string | null;
+  /** Vozidlo zo Vozového parku, ktoré zmluva financuje. */
+  vehicle_id?: string | null;
   /** 'zmluva' = kalendár je prečítaný z dokumentu a neprepočítava sa. */
   schedule_source?: string | null;
   currency?: string | null;
@@ -149,6 +152,29 @@ export function FormularZmluvy({
   const [name, setName] = useState(text(zmluva?.name));
   const [provider, setProvider] = useState(text(zmluva?.provider_name));
   const [veritel, setVeritel] = useState<VeritelZmluvy>(() => veritelZoZmluvy(zmluva));
+  // Vozidlo z Vozového parku — leasing a úver patria k autu (Patrik 9. 11.).
+  const [vozidloId, setVozidloId] = useState(text(zmluva?.vehicle_id));
+  const [vozidla, setVozidla] = useState<{ id: string; nazov: string }[]>([]);
+  useEffect(() => {
+    let zive = true;
+    void supabase
+      .from("vehicles")
+      .select("id, name, license_plate")
+      .eq("company_id", companyId)
+      .order("name")
+      .then(({ data }) => {
+        if (!zive) return;
+        setVozidla(
+          ((data ?? []) as any[]).map((v) => ({
+            id: v.id,
+            nazov: [v.name, v.license_plate].filter(Boolean).join(" · ") || v.id,
+          })),
+        );
+      });
+    return () => {
+      zive = false;
+    };
+  }, [companyId]);
   const [contractNumber, setContractNumber] = useState(text(zmluva?.contract_number));
   const [vs, setVs] = useState(text(zmluva?.variable_symbol));
   const [principal, setPrincipal] = useState(text(zmluva?.principal));
@@ -341,6 +367,7 @@ export function FormularZmluvy({
           name: name.trim(),
           provider_name: provider.trim() || null,
           ...veritel,
+          vehicle_id: kontokorent ? null : vozidloId || null,
           contract_number: contractNumber.trim() || null,
           counterparty_hint: provider.trim() || null,
           currency: menaZmluvy,
@@ -394,6 +421,7 @@ export function FormularZmluvy({
           name: name.trim(),
           provider_name: provider.trim() || null,
           ...veritel,
+          vehicle_id: kontokorent ? null : vozidloId || null,
           contract_number: contractNumber.trim() || null,
           variable_symbol: vs.trim() || null,
           counterparty_hint: provider.trim() || null,
@@ -513,6 +541,24 @@ export function FormularZmluvy({
               placeholder="ČSOB Leasing"
             />
           </div>
+          {!kontokorent && (
+            <div>
+              <label className={popis}>{t("Vozidlo")}</label>
+              <select
+                aria-label={t("Vozidlo")}
+                className={pole}
+                value={vozidloId}
+                onChange={(e) => setVozidloId(e.target.value)}
+              >
+                <option value="">{vozidla.length ? t("— bez vozidla —") : t("vo Vozovom parku nie je žiadne vozidlo")}</option>
+                {vozidla.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.nazov}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className={popis}>{t("Číslo zmluvy")}</label>
             <input aria-label={t("Číslo zmluvy")}

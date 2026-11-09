@@ -281,6 +281,26 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       zmluvaId = nova.id;
     }
 
+    /*
+      Väzba na vozidlo je z oboch strán (`vehicles.financing_contract_id` aj
+      `financing_contracts.vehicle_id`) — po zmene na zmluve sa zosúladí aj
+      karta vozidla, inak by na nej ostala stará zmluva.
+    */
+    if (data.vehicle_id !== undefined) {
+      await supabase
+        .from("vehicles")
+        .update({ financing_contract_id: null } as any)
+        .eq("company_id", data.company_id)
+        .eq("financing_contract_id" as any, zmluvaId!)
+        .neq("id", data.vehicle_id || "00000000-0000-0000-0000-000000000000");
+      if (data.vehicle_id)
+        await supabase
+          .from("vehicles")
+          .update({ financing_contract_id: zmluvaId } as any)
+          .eq("company_id", data.company_id)
+          .eq("id", data.vehicle_id);
+    }
+
     if (data.splatky?.length) {
       const pocet = await zapisKalendarZoZmluvy(supabase, zmluvaId!, data.company_id, data.splatky);
       return { id: zmluvaId!, splatok: pocet, zdroj: "zmluva" as const };
