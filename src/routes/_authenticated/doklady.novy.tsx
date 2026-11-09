@@ -750,17 +750,38 @@ function NovyDokladPage() {
   */
   const idNovehoRef = useRef<string | null>(null);
 
-  async function handleSave(spracovat = false) {
+  /** Rovnaký dodávateľ, deň a suma bez QR — iný nákup sa dá uložiť po potvrdení. */
+  function potvrdInyNakup(popis?: string) {
+    return potvrd(
+      (popis
+        ? t("Rovnaký bloček už je uložený: {popis}", { popis })
+        : t("Bloček s rovnakým dodávateľom, dňom a sumou už je uložený.")) +
+        "\n" +
+        t("Ide o iný nákup (napr. dva parkovacie lístky)? Uložte ho aj tak, inak by bol výdavok v účtovníctve dvakrát."),
+      { potvrdit: t("Je to iný nákup – uložiť"), zrusit: t("Späť"), nebezpecne: true },
+    );
+  }
+
+  async function handleSave(spracovat = false, ajDuplicitu = false) {
     if (!cid) {
       toast.error(t("Vyberte firmu"));
       return;
     }
     // Uložený bloček druhýkrát neuložíme (duplicita-zauctovania.ts); v Nespracovaných len upozorníme.
-    if (duplikat && !search.id && duplikat.kde !== "nespracovane") {
-      toast.error(t("Tento bloček už je uložený — druhýkrát ho uložiť nemožno."));
-      return;
+    /*
+      Ten istý QR z eKasy je ten istý nákup — druhýkrát sa neuloží. Bez QR
+      (rovnaký dodávateľ, deň a suma) to môžu byť dva nákupy, napr. dva
+      parkovacie lístky: po potvrdení sa uloží (audit 8. 11.).
+    */
+    if (duplikat && !search.id && duplikat.kde !== "nespracovane" && !ajDuplicitu) {
+      if (qrRaw?.trim()) {
+        toast.error(t("Tento bloček už je uložený — druhýkrát ho uložiť nemožno."));
+        return;
+      }
+      if (!(await potvrdInyNakup())) return;
+      ajDuplicitu = true;
     }
-    if (duplikat && !search.id && !(await potvrd(t("Tento bloček už vo firme máte. Uložiť ho aj tak ešte raz?")))) {
+    if (duplikat && !search.id && !ajDuplicitu && !(await potvrd(t("Tento bloček už vo firme máte. Uložiť ho aj tak ešte raz?")))) {
       return;
     }
     // Tlačidlo je bez toho zamknuté; toto je poistka pre klávesnicu a doplnky.
@@ -843,6 +864,7 @@ function NovyDokladPage() {
             id: idNovehoRef.current,
             supplier_dic: dodavatelZBlocku.current.dic || null,
             supplier_address: dodavatelZBlocku.current.adresa || null,
+            ...(ajDuplicitu ? { aj_duplicitu: true } : {}),
           },
         });
         if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
@@ -889,6 +911,11 @@ function NovyDokladPage() {
       });
     } catch (e: any) {
       const uz = rozlozChybuBlocku(e?.message);
+      if (uz && !ajDuplicitu && !qrRaw?.trim() && !search.id) {
+        setSaving(false);
+        if (await potvrdInyNakup(uz.popis)) await handleSave(spracovat, true);
+        return;
+      }
       if (uz)
         toast.error(t("Tento bloček už je uložený: {popis}", { popis: uz.popis }), {
           action: uz.id

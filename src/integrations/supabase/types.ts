@@ -3584,6 +3584,7 @@ export type Database = {
           created_by: string | null
           currency: string
           document_number: string | null
+          duplicita_potvrdena: boolean
           export_job_id: string | null
           exported_at: string | null
           file_mime: string | null
@@ -3677,6 +3678,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           document_number?: string | null
+          duplicita_potvrdena?: boolean
           export_job_id?: string | null
           exported_at?: string | null
           file_mime?: string | null
@@ -3770,6 +3772,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           document_number?: string | null
+          duplicita_potvrdena?: boolean
           export_job_id?: string | null
           exported_at?: string | null
           file_mime?: string | null

@@ -421,6 +421,24 @@ function Detail() {
       }
       // Ten istý bloček už v Bločkoch je — druhýkrát sa neuloží (odkaz na uložený).
       const uz = rozlozChybuBlocku(sprava);
+      /*
+        Nespracovaný doklad nemá QR — zhoda je len dodávateľ, deň a suma. Môže
+        to byť iný nákup, napr. dva parkovacie lístky. Po potvrdení sa uloží
+        (audit 8. 11.).
+      */
+      if (uz && !ajDuplicitu) {
+        setBusy(false);
+        if (
+          await potvrd(
+            t("Rovnaký bloček už je uložený: {popis}", { popis: uz.popis }) +
+              "\n" +
+              t("Ide o iný nákup (napr. dva parkovacie lístky)? Uložte ho aj tak, inak by bol výdavok v účtovníctve dvakrát."),
+            { potvrdit: t("Je to iný nákup – uložiť"), zrusit: t("Späť"), nebezpecne: true },
+          )
+        )
+          await vytvorDoklad(true, ajCudziu);
+        return;
+      }
       if (uz) {
         toast.error(t("Tento bloček už je uložený: {popis}", { popis: uz.popis }), {
           action: uz.id

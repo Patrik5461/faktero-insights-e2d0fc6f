@@ -610,7 +610,6 @@ export async function nacitajVstup(
     const odvodenePdp =
       !p0.dph_rezim &&
       !p0.reverse_charge &&
-      !p0.opravuje_cislo &&
       !danP0 &&
       Number(p0.amount_without_vat ?? 0) !== 0 &&
       prenesenieZUctovania.pdp &&
@@ -671,7 +670,13 @@ export async function nacitajVstup(
     */
     const rozpisP = cudziaP ? [] : rozpisPrijatej(p);
     const prenesene = rozpisP.filter((x) => x.pdp);
-    if (prenesene.length && !p.opravuje_cislo && vDobe(denPrenesenej)) {
+    /*
+      Dobropis k prenesenej faktúre sa opravuje v období, keď ho firma dostala
+      (§ 53 ods. 2), so záporným základom aj samozdanenou daňou (audit 8. 11.:
+      predtým celý vypadol z priznania aj KV).
+    */
+    const denPrenesenejCasti = dobropisP ? den : denPrenesenej;
+    if (prenesene.length && vDobe(denPrenesenejCasti)) {
       const zakladna = sadzbyKrajiny(krajinaDane((firmaKody as any)?.country), String(denPrenesenej))[0] ?? 23;
       if (p.kv_clenenie === "X")
         vytky.push({ doklad: p.invoice_number ?? p.supplier_name ?? "prijatá faktúra", text: VYTKA_PRENESENIE_KV_X });
@@ -680,12 +685,13 @@ export async function nacitajVstup(
         dodavatelNazov: p.supplier_name,
         dodavatelIcDph: p.supplier_ic_dph,
         dodavatelDic: p.supplier_dic,
-        datumDodania: String(denPrenesenej),
-        duzp: String(p.delivery_date || p.issue_date || denPrenesenej),
+        datumDodania: String(denPrenesenejCasti),
+        duzp: String(p.delivery_date || p.issue_date || denPrenesenejCasti),
         rezim: "samozdanenie",
         // PBsluz / KV B1-0 = prenesenie bez nároku na odpočet; registrovaná osoba nárok nemá.
         odpocet: p.odpocet !== false && !prenesenieZUctovania.bezNaroku && !registrovanaOsoba,
-        opravujeCislo: null,
+        opravujeCislo: p.opravuje_cislo ?? null,
+        dobropis: dobropisP,
         riadky: prenesene.map((x) => {
           const s = Number(x.sadzba) > 0 ? Number(x.sadzba) : zakladna;
           return { sadzba: s, zaklad: x.zaklad, dan: Math.round(x.zaklad * s) / 100 };
@@ -708,7 +714,7 @@ export async function nacitajVstup(
     }
     // Celá prenesená faktúra už ide vyššie; druhý, prázdny záznam by KV zdvojil.
     if (tuzemske && !tuzemske.length) {
-      if (p.na_kontrolu_at && vDobe(denPrenesenej))
+      if (p.na_kontrolu_at && vDobe(denPrenesenejCasti))
         vytkaNaKontrolu(p.invoice_number ?? p.supplier_name ?? "prijatá faktúra", p.na_kontrolu_dovod);
       continue;
     }

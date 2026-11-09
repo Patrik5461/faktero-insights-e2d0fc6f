@@ -606,8 +606,10 @@ export async function vytvorDoklad(
     /*
       Ten istý bloček už v Bločkoch je (rovnaký QR, alebo dodávateľ + deň +
       suma) — druhýkrát sa neuloží. Nespracovaný ostáva, kým ho človek nezmaže.
+      Po „Uložiť aj tak“ (`ajDuplicitu`, napr. dva parkovacie lístky) sa uloží
+      s príznakom `duplicita_potvrdena`.
     */
-    {
+    if (!volby.ajDuplicitu) {
       const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
       const { chybaUlozenehoBlocku } = await import("./duplicita-zauctovania");
       const uz = await najdiUlozenyBlocek(supabase, r.company_id, blocekZUdajov(u));
@@ -629,6 +631,7 @@ export async function vytvorDoklad(
         ...blocekZUdajov(u),
         ...kurzBlocku,
         ...(await zPravidla(blocekZUdajov(u), true)),
+        ...(volby.ajDuplicitu ? { duplicita_potvrdena: true } : {}),
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,
         company_id: r.company_id,

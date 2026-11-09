@@ -128,3 +128,18 @@ describe("autopilot", () => {
     ).toBe(false);
   });
 });
+
+describe("bloček bez QR: iný nákup (audit 8. 11.)", () => {
+  const listok = { id: "p1", supplier_name: "Parkovanie Mesto", issue_date: "2026-11-05", total_amount: 2 };
+  it("rovnaký predajca, deň a suma bez čísel ostáva duplicita", () => {
+    expect(suDuplicitne(zBlocku(listok), zBlocku({ ...listok, id: "p2" }))).toBe(true);
+  });
+  it("rôzne čísla dokladu sú dva nákupy", () => {
+    const a = zBlocku({ ...listok, document_number: "0012" });
+    expect(suDuplicitne(a, zBlocku({ ...listok, id: "p2", document_number: "13" }))).toBe(false);
+    expect(suDuplicitne(a, zBlocku({ ...listok, id: "p2", document_number: "12" }))).toBe(true);
+  });
+  it("bloček uložený vedome „aj tak“ s ničím nekoliduje", () => {
+    expect(suDuplicitne(zBlocku(listok), zBlocku({ ...listok, id: "p2", duplicita_potvrdena: true }))).toBe(false);
+  });
+});

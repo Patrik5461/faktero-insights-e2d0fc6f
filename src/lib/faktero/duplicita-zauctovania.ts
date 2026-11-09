@@ -57,6 +57,8 @@ export type DokladNaPorovnanie = {
   neplatny: boolean;
   zauctovany: boolean;
   odovzdany: boolean;
+  /** Bloček uložený vedome „aj tak“ — človek potvrdil, že nejde o duplicitu. */
+  potvrdena?: boolean;
 };
 
 /** Druhý doklad v páre — čo treba ukázať v hláške a v odkaze. */
@@ -118,6 +120,7 @@ export function zBlocku(r: Riadok): DokladNaPorovnanie {
       .trim()
       .toLowerCase(),
     neplatny: Boolean(r.deleted_at) || r.status === "cancelled",
+    potvrdena: Boolean(r.duplicita_potvrdena),
     zauctovany: Boolean(r.zauctovane_at),
     odovzdany: Boolean(r.exported_at),
   };
@@ -168,6 +171,13 @@ export function suDuplicitne(a: DokladNaPorovnanie, b: DokladNaPorovnanie): bool
   if (a.dobropis !== b.dobropis) return false;
   // Bloček: kód eKasy (UID/OKP) je jednoznačný — dva rôzne kódy sú dva nákupy.
   if (a.qr && b.qr) return a.qr === b.qr;
+  // Vedome uložený „aj tak“ (dva parkovacie lístky po 2 € v ten istý deň).
+  if (a.potvrdena || b.potvrdena) return false;
+  /*
+    Bez QR na oboch: rôzne čísla dokladu sú dva rôzne nákupy (audit 8. 11.).
+    Keď QR má jeden z nich, číslo z fotky býva prečítané inak — neplatí.
+  */
+  if (!a.qr && !b.qr && a.cislo && b.cislo && a.cislo !== b.cislo) return false;
   // Inak rovnaký dodávateľ, deň a suma (Patrik 3. 11.: „nedovoľ ukladať duplicity bločkov“).
   if (!rovnakyDodavatel(a, b)) return false;
   if (!a.datum || a.datum !== b.datum) return false;

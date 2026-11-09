@@ -25,7 +25,7 @@ const STLPCE: Record<DruhDuplicity, string> = {
   prijata:
     "id, company_id, invoice_number, type, status, supplier_ico, supplier_name, amount_total, currency, issue_date, opravuje_cislo, opravuje_id, deleted_at, zauctovane_at, exported_at",
   blocek:
-    "id, company_id, document_number, status, supplier_ico, supplier_name, total_amount, currency, issue_date, qr_raw, zauctovane_at, exported_at",
+    "id, company_id, document_number, status, supplier_ico, supplier_name, total_amount, currency, issue_date, qr_raw, duplicita_potvrdena, zauctovane_at, exported_at",
 };
 
 const neprazdne = (xs: unknown[]) =>

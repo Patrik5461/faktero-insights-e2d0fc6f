@@ -97,6 +97,8 @@ const inputSchema = z.object({
   ai_raw: z.any().optional(),
   zdroj: z.literal(ZDROJ_APKY).optional(),
   zalohova: z.boolean().optional(),
+  /** Človek potvrdil „Uložiť aj tak“ — rovnaký dodávateľ, deň a suma, ale iný nákup. */
+  aj_duplicitu: z.boolean().optional(),
   /*
     Dodávateľ z eKasy/QR — DIČ a adresa (jeden riadok ako z Finančnej správy).
     Do DB ide len, keď tabuľka stĺpce má (migrácia `expense_documents_dodavatel_adresa`).
@@ -206,7 +208,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
   .validator((data: ExpenseInput) => inputSchema.parse(data))
   .handler(async ({ data: vstup, context }) => {
     const { supabase, userId } = context;
-    const { zdroj, zalohova, supplier_dic, supplier_address, ...data } = vstup;
+    const { zdroj, zalohova, supplier_dic, supplier_address, aj_duplicitu, ...data } = vstup;
     const zAppky = zdroj === ZDROJ_APKY;
     /*
       Bloček z appky bez fotky sa neuloží. Appka má tlačidlo Uložiť dovtedy
@@ -257,7 +259,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       uložený — appka si myslela, že uložila nový. Opakovaný pokus toho istého
       zápisu stráži `id` vyššie.
     */
-    {
+    if (!aj_duplicitu) {
       const { najdiUlozenyBlocek } = await import("./duplicita-zauctovania.server");
       const { chybaUlozenehoBlocku } = await import("./duplicita-zauctovania");
       const uz = await najdiUlozenyBlocek(supabase, data.company_id, { ...data, qr_raw: qr ?? null });
@@ -304,6 +306,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
           source: zdrojVydavku(data.source, Boolean(data.file_path)),
           ...kurz,
           created_by: userId,
+          ...(aj_duplicitu ? { duplicita_potvrdena: true } : {}),
           ...(spracovany
             ? { status: "processed", processed_at: new Date().toISOString(), processed_by: userId }
             : { status: "new" }),

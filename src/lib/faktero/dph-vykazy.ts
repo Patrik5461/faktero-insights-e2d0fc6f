@@ -924,8 +924,13 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
     for (const x of p.riadky) {
       const pasmo = pasmoSadzby(x.sadzba, p.datumDodania);
 
-      if (p.opravujeCislo) {
-        // Prijatý dobropis: opravuje sa odpočítaná daň (§ 53).
+      /*
+        Prijatý dobropis v tuzemskom režime: opravuje sa odpočítaná daň (§ 53).
+        Dobropis v prenesení (§ 69, služba/tovar z EÚ) opravuje aj samozdanenú
+        daň — ide nižšie so záporným základom do r. 09/10 (05/06) aj odpočtu,
+        inak by r. 28 len vrátil odpočet a daň na úhradu by stúpla.
+      */
+      if (p.opravujeCislo && p.rezim !== "samozdanenie" && p.rezim !== "nadobudnutie") {
         if (p.odpocet && !vstup.registrovanaOsoba) pripocitaj("r28", -x.dan);
         continue;
       }
