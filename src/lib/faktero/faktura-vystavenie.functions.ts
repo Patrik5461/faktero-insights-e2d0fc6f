@@ -21,9 +21,18 @@ const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
 const Polozka = z.object({
   name: z.string().trim().min(1).max(255),
-  quantity: z.number().positive().max(1_000_000),
+  /*
+    Záporná položka (zľava, vrátenie obalu, odpočet) je na faktúre bežná —
+    záporné môže byť množstvo aj cena, nulové množstvo nie. Záporný súčet
+    celej faktúry je dobropis a ten sa vystavuje inde (kontrola nižšie).
+  */
+  quantity: z
+    .number()
+    .min(-1_000_000)
+    .max(1_000_000)
+    .refine((q) => q !== 0, "Množstvo nesmie byť nula."),
   unit: z.string().max(20).default("ks"),
-  unit_price: z.number().nonnegative().max(10_000_000),
+  unit_price: z.number().min(-10_000_000).max(10_000_000),
   vat_rate: z.number().min(0).max(100).default(23),
   /** Zľava riadku v %; jednotková cena ostáva pôvodná. */
   discount_percent: z.number().min(0).max(100).default(0),
@@ -191,6 +200,10 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       typ: data.discount_type ?? null,
       hodnota: data.discount_value,
     });
+    if (!(sucty.subtotal > 0))
+      throw new Error(
+        "Súčet faktúry musí byť kladný — záporné položky môžu cenu len znížiť. Na vrátenie peňazí vystavte dobropis.",
+      );
     const kZlavy = koeficientZlavy(sucty.subtotal, zlavaDokladu);
     const suctyPoZlave = {
       subtotal: Math.round(sucty.subtotal * kZlavy * 100) / 100,

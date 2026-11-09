@@ -768,6 +768,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "spolocne.polozka5": "tétel",
   "nf.cena": "Ár",
   "nf.cenaBezDph": "Nettó ár",
+  "nf.znamienko": "Negatív összeg (kedvezmény, visszatérítés)",
   "nf.sadzbaDo": "{sadzba} % ({rok}-ig)",
 
   /* appka — drobnosti */

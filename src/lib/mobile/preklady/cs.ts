@@ -762,6 +762,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "spolocne.polozka5": "položek",
   "nf.cena": "Cena",
   "nf.cenaBezDph": "Cena bez DPH",
+  "nf.znamienko": "Záporná částka (sleva, vrácení)",
   "nf.sadzbaDo": "{sadzba} % (do {rok})",
 
   /* appka — drobnosti */

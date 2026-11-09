@@ -425,7 +425,8 @@ export function NovaFaktura({
     return { zaklad: +zaklad.toFixed(2), dph: +dph.toFixed(2), spolu: +(zaklad + dph).toFixed(2) };
   }, [riadky, bezDph]);
 
-  const pouzitelne = riadky.filter((r) => r.name.trim() && cislo(r.quantity) > 0);
+  // Záporné množstvo (vrátenie, odpočet) je platný riadok — vypadne len nulové.
+  const pouzitelne = riadky.filter((r) => r.name.trim() && cislo(r.quantity) !== 0);
 
   /**
    * Uloženie opravy.
@@ -1281,13 +1282,31 @@ export function RiadokPolozky({
           <span className="mb-1 block text-[12px] text-app-text-2">
             {platca ? t("nf.cenaBezDph") : t("nf.cena")}
           </span>
-          <input
-            value={riadok.unit_price}
-            onChange={(e) => onZmen({ unit_price: e.target.value })}
-            inputMode="decimal"
-            placeholder="0,00"
-            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-2.5 py-2 text-[16px] tabular-nums"
-          />
+          {/*
+            Klávesnica „decimal“ na iPhone nemá mínus — záporná položka
+            (zľava, vrátenie obalu) sa preto otočí tlačidlom ±.
+          */}
+          <span className="relative block">
+            <input
+              value={riadok.unit_price}
+              onChange={(e) => onZmen({ unit_price: e.target.value })}
+              inputMode="decimal"
+              placeholder="0,00"
+              className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie py-2 pl-2.5 pr-9 text-[16px] tabular-nums"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const v = String(riadok.unit_price ?? "").trim();
+                onZmen({ unit_price: v.startsWith("-") ? v.slice(1) : `-${v}` });
+              }}
+              aria-label={t("nf.znamienko")}
+              title={t("nf.znamienko")}
+              className="absolute inset-y-0 right-0 w-9 rounded-r-app-sm text-[15px] font-semibold text-app-text-2 active:bg-app-ramik"
+            >
+              ±
+            </button>
+          </span>
         </label>
         {platca && (
           <label className="block">

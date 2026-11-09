@@ -777,6 +777,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "spolocne.polozka5": "Positionen",
   "nf.cena": "Preis",
   "nf.cenaBezDph": "Preis ohne MwSt.",
+  "nf.znamienko": "Negativer Betrag (Rabatt, Rückgabe)",
   "nf.sadzbaDo": "{sadzba} % (bis {rok})",
 
   /* appka — drobnosti */

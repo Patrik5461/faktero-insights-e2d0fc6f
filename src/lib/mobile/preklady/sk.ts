@@ -776,6 +776,7 @@ export const sk = {
   "spolocne.polozka5": "položiek",
   "nf.cena": "Cena",
   "nf.cenaBezDph": "Cena bez DPH",
+  "nf.znamienko": "Záporná suma (zľava, vrátenie)",
   "nf.sadzbaDo": "{sadzba} % (do {rok})",
 
   /* appka — drobnosti */
