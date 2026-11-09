@@ -8,7 +8,12 @@ import { RozpisDph } from "@/components/faktero/RozpisDph";
 import { rozpisPodlaSadzieb } from "@/lib/faktero/rozpis-dph";
 import { lokalJazyka, preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  nacitajPodkladyOstrej,
+  predvyplnenieOstrejZoZalohy,
+  type UpozornenieOstrej,
+} from "@/lib/faktero/ostra-zo-zalohy";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { chybajuceUdajeFirmy } from "@/lib/faktero/udaje-firmy-na-fakture";
@@ -151,7 +156,10 @@ export const Route = createFileRoute("/_authenticated/faktury/nova")({
     sales_order?: string;
     /** Dobropis k tejto faktúre — z tlačidla „Vystaviť dobropis“ na detaile. */
     opravuje?: string;
+    /** Ostrá faktúra zo zálohovej faktúry alebo daňového dokladu k platbe (ich id). */
+    zo_zalohy?: string;
   } => ({
+    zo_zalohy: typeof s.zo_zalohy === "string" && /^[0-9a-f-]{36}$/i.test(s.zo_zalohy) ? s.zo_zalohy : undefined,
     opravuje: typeof s.opravuje === "string" && /^[0-9a-f-]{36}$/i.test(s.opravuje) ? s.opravuje : undefined,
     sales_order: typeof s.sales_order === "string" && s.sales_order ? s.sales_order : undefined,
     type: (s.type === "proforma" || s.type === "credit_note" || s.type === "debit_note" ? s.type : undefined) as
@@ -371,7 +379,8 @@ function NewInvoice() {
     Len pri čistej novej faktúre — dobropis k faktúre, faktúra z objednávky
     či zo skenera majú svoje predvyplnenie a staré údaje by ho prepísali.
   */
-  const odkladat = !search.opravuje && !search.sales_order && !search.supplier_hint && !search.total_hint;
+  const odkladat =
+    !search.opravuje && !search.sales_order && !search.zo_zalohy && !search.supplier_hint && !search.total_hint;
   useEffect(() => {
     if (!odkladat) return;
     const d = nacitajRozpisanu<typeof form, Item>(getActiveCompanyId(), form.type);
@@ -716,6 +725,74 @@ function NewInvoice() {
     doteraz sa dala pripojiť len jedna a zvyšok dopočítaval človek ručne.
   */
   const [odpocty, setOdpocty] = useState<{ id: string; cislo: string; suma: number; mena?: string | null }[]>([]);
+
+  /*
+    Ostrá (vyúčtovacia) faktúra zo zálohy — z detailu zálohovej faktúry alebo
+    daňového dokladu k platbe. Hlavička a položky zo zálohovej faktúry, odpočet
+    ako cez „Pridať uhradenú zálohu“ (základ a DPH podľa dokladu k platbe
+    rozdelí až PDF a exporty). Už vyúčtovaná záloha sa druhýkrát neodpočíta.
+  */
+  const uvodZoZalohyRef = useRef(false);
+  const [zoZalohy, setZoZalohy] = useState<UpozornenieOstrej | null>(null);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !search.zo_zalohy) return;
+    let zrusene = false;
+    nacitajPodkladyOstrej(supabase, cid, search.zo_zalohy)
+      .then((podklady) => {
+        if (zrusene) return;
+        if (!podklady) {
+          toast.error(t("Zálohovú faktúru sa nepodarilo načítať."));
+          return;
+        }
+        const p = predvyplnenieOstrejZoZalohy(podklady);
+        const h = p.hlavicka;
+        // Režim DPH a jazyk preberá ostrá faktúra zo zálohy — návrh podľa odberateľa ich nemení.
+        rezimRucneRef.current = true;
+        if (h.language) jazykPevnyRef.current = true;
+        if (h.intro_note) uvodZoZalohyRef.current = true;
+        setForm((x) => ({
+          ...x,
+          type: "regular",
+          customer_id: h.customer_id || x.customer_id,
+          currency: h.currency || x.currency,
+          language: h.language ?? x.language,
+          payment_method: h.payment_method ?? x.payment_method,
+          payment_account_id: h.payment_account_id,
+          intro_note: h.intro_note ?? x.intro_note,
+          order_number: h.order_number,
+          job_id: h.job_id,
+          rounding_mode: (h.rounding_mode as typeof x.rounding_mode) ?? x.rounding_mode,
+          reverse_charge: h.reverse_charge,
+          reverse_charge_type: h.reverse_charge_type as typeof x.reverse_charge_type,
+          pdp_druh: h.pdp_druh,
+          eu_plnenie: (h.eu_plnenie as typeof x.eu_plnenie) ?? x.eu_plnenie,
+          oss: h.oss,
+          oss_country: h.oss_country,
+          osobitna_uprava: h.osobitna_uprava,
+          discount_type: h.discount_type as typeof x.discount_type,
+          discount_value: h.discount_value,
+          clenenie: h.clenenie || x.clenenie,
+          kv: h.kv || x.kv,
+        }));
+        if (p.polozky.length) setItems(p.polozky.map((it) => ({ ...EMPTY_ITEM, ...it })));
+        const odpocet = p.odpocet;
+        if (odpocet) setOdpocty((zoz) => (zoz.some((o) => o.id === odpocet.id) ? zoz : [...zoz, odpocet]));
+        setZoZalohy(p.upozornenie);
+        toast.success(
+          t("Ostrá faktúra k zálohe {cislo} — skontrolujte dátum dodania a položky", {
+            cislo: String(podklady.zaloha.invoice_number ?? ""),
+          }),
+        );
+      })
+      .catch((e: any) => {
+        if (!zrusene) toast.error(e?.message ?? t("Zálohovú faktúru sa nepodarilo načítať."));
+      });
+    return () => {
+      zrusene = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.zo_zalohy]);
   // Pri prvom načítaní sa ceny už zadaných riadkov neprepisujú — mohli prísť
   // z kópie faktúry alebo zo skenera a prepísať ich by bola tichá zmena sumy.
   const cennikPrvyRaz = useRef(true);
@@ -947,10 +1024,12 @@ function NewInvoice() {
           uvodFirmyRef.current = uvodFirmy;
           setForm((f) => ({
             ...f,
-            currency: data.default_currency || "EUR",
+            // Ostrá faktúra zo zálohy nesie menu zálohy — predvolená mena firmy ju neprepíše.
+            currency: search.zo_zalohy ? f.currency : data.default_currency || "EUR",
             /* Vlastný úvod firmy len na nedotknutý text faktúry — dobropis má vlastný. */
             ...(uvodFirmy &&
             !search.opravuje &&
+            !uvodZoZalohyRef.current &&
             (f.type === "regular" || f.type === "proforma") &&
             jeUvodFaktury(f.intro_note)
               ? { intro_note: uvodFirmy }
@@ -1978,6 +2057,46 @@ function NewInvoice() {
                   <p className="mt-2 text-xs opacity-80">
                     {t("Bez odpočtu zaplatí zákazník to isté plnenie druhýkrát.")}
                   </p>
+                </div>
+              )}
+              {zoZalohy && (
+                /* Ostrá faktúra zo zálohy: prečo sa odpočet nepridal alebo nie je celý. */
+                <div role="status" className="fk-oznam fk-oznam-pozor w-full rounded-lg p-3 text-sm" data-ostra-zo-zalohy={zoZalohy.druh}>
+                  <div className="font-medium">
+                    {zoZalohy.druh === "vyuctovana"
+                      ? t("Záloha {cislo} je už vyúčtovaná — odpočet sa druhýkrát nepridal.", { cislo: zoZalohy.zaloha })
+                      : zoZalohy.druh === "ciastocne"
+                        ? t("Časť zálohy {cislo} už odpočítala iná faktúra — odpočítava sa zvyšok {suma}.", {
+                            cislo: zoZalohy.zaloha,
+                            suma: formatujMenu(zoZalohy.zvysok, form.currency),
+                          })
+                        : zoZalohy.druh === "ciastocne_uhradena"
+                          ? t("Záloha {cislo} nie je uhradená celá — odpočítava sa prijatá suma {suma}.", {
+                              cislo: zoZalohy.zaloha,
+                              suma: formatujMenu(zoZalohy.prijate, form.currency),
+                            })
+                          : t("Záloha {cislo} ešte nie je uhradená — odpočet sa nepridal.", { cislo: zoZalohy.zaloha })}
+                  </div>
+                  {(zoZalohy.druh === "vyuctovana" || zoZalohy.druh === "ciastocne") && zoZalohy.faktury.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {zoZalohy.faktury.map((f) => (
+                        <li key={f.id} className="flex flex-wrap items-center gap-2 tabular-nums">
+                          <Link
+                            to="/faktury/$id"
+                            params={{ id: f.id }}
+                            className="cislo-dokladu font-medium text-primary hover:underline"
+                          >
+                            {f.invoice_number || t("koncept")}
+                          </Link>
+                          <span className="text-xs opacity-80">
+                            {f.issue_date ? datumNaDoklade(f.issue_date) : ""} · {t("odpočítané")}{" "}
+                            {formatujMenu(f.suma, form.currency)}
+                            {f.status === "draft" ? ` · ${t("koncept")}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
               {odpocty.length > 0 && (

@@ -58,6 +58,8 @@ import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { vystavDokladKPlatbeFn } from "@/lib/faktero/doklad-k-platbe.functions";
 import { DokladKPlatbeOkno } from "@/components/faktero/DokladKPlatbeOkno";
+import { OstraZoZalohy } from "@/components/faktero/OstraZoZalohy";
+import { nacitajStavOstrej, type StavOstrej } from "@/lib/faktero/ostra-zo-zalohy";
 import {
   Download,
   Receipt,
@@ -241,6 +243,8 @@ function InvoiceDetail() {
   const [odpocitaneZalohy, setOdpocitaneZalohy] = useState<any[]>([]);
   /* Daňový doklad k prijatej platbe, ak už k tejto zálohe existuje. */
   const [dokladKPlatbe, setDokladKPlatbe] = useState<any | null>(null);
+  /* Zálohová faktúra a doklad k platbe: či ju už ostrá faktúra vyúčtovala. */
+  const [stavOstrej, setStavOstrej] = useState<StavOstrej | null>(null);
   const [vystavujemDoklad, setVystavujemDoklad] = useState(false);
   /* Okno „Vystaviť daňový doklad k platbe“ (menu „…“ aj karta zálohy). */
   const [oknoDokladuKPlatbe, setOknoDokladuKPlatbe] = useState(false);
@@ -554,6 +558,14 @@ function InvoiceDetail() {
       } else {
         setWarehouseNames({});
         setStockSkus({});
+      }
+      // Ostrá faktúra k zálohe — na zálohovej faktúre aj na doklade k platbe.
+      if (data.type === "proforma" || data.type === "advance_payment") {
+        nacitajStavOstrej(supabase, data.company_id, data)
+          .then(setStavOstrej)
+          .catch(() => setStavOstrej(null));
+      } else {
+        setStavOstrej(null);
       }
       // Advance linkage
       if (data.type === "proforma") {
@@ -1633,7 +1645,16 @@ function InvoiceDetail() {
           <div className="text-sm font-semibold text-muted-foreground">
             {t("Zálohová faktúra")}
           </div>
-          {settledIn ? (
+          {stavOstrej && (stavOstrej.faktury.length > 0 || stavOstrej.mozeOstru) ? (
+            <div className="mt-2 space-y-1">
+              {stavOstrej.vyuctovana && (
+                <div>
+                  <StavWeb ton="uspech" maly>{t("Zúčtovaná")}</StavWeb>
+                </div>
+              )}
+              <OstraZoZalohy stav={stavOstrej} dokladId={inv.id} mena={inv.currency} />
+            </div>
+          ) : settledIn ? (
             <div className="mt-2 space-y-1">
               <div>
                 <StavWeb ton="uspech" maly>{t("Zúčtovaná")}</StavWeb>
@@ -1705,6 +1726,17 @@ function InvoiceDetail() {
             )}
           </div>
           )}
+        </div>
+      )}
+      {inv.type === "advance_payment" && stavOstrej && (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm">
+          <div className="text-sm font-semibold text-muted-foreground">{t("Vyúčtovanie zálohy")}</div>
+          <div className="mt-2">
+            <OstraZoZalohy stav={stavOstrej} dokladId={inv.id} mena={inv.currency} sOdkazomNaZalohu />
+            {!stavOstrej.mozeOstru && !stavOstrej.faktury.length && (
+              <p className="mt-2 text-muted-foreground">{t("Ostrá faktúra sa vystaví po úhrade zálohy.")}</p>
+            )}
+          </div>
         </div>
       )}
       {odpocitaneZalohy.length > 0 && (
@@ -2196,6 +2228,30 @@ function InvoiceDetail() {
                 >
                   {t("Vystaviť daňový doklad k platbe")}
                 </MenuAkcia>
+              )}
+              {/* Ostrá (vyúčtovacia) faktúra zo zálohy — kým nie je vyúčtovaná, inak odkaz na ňu. */}
+              {stavOstrej && inv.status !== "cancelled" && inv.status !== "draft" && (
+                stavOstrej.vyuctovana && stavOstrej.faktury.length ? (
+                  <MenuAkcia asChild>
+                    <Link to="/faktury/$id" params={{ id: stavOstrej.faktury[stavOstrej.faktury.length - 1].id }}>
+                      <FileCheck2 className="h-4 w-4" />
+                      {t("Ostrá faktúra {cislo}", {
+                        cislo: stavOstrej.faktury[stavOstrej.faktury.length - 1].invoice_number || t("koncept"),
+                      })}
+                    </Link>
+                  </MenuAkcia>
+                ) : stavOstrej.mozeOstru ? (
+                  <MenuAkcia asChild>
+                    <Link to="/faktury/nova" search={{ zo_zalohy: id } as any}>
+                      <FileCheck2 className="h-4 w-4" />
+                      {t("Vystaviť ostrú faktúru")}
+                    </Link>
+                  </MenuAkcia>
+                ) : (
+                  <MenuAkcia ikona={FileCheck2} disabled title={t("Ostrá faktúra sa vystaví po úhrade zálohy.")}>
+                    {t("Vystaviť ostrú faktúru")}
+                  </MenuAkcia>
+                )
               )}
               {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
                 <MenuAkcia asChild>
