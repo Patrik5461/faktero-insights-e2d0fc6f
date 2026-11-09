@@ -257,6 +257,43 @@ export async function zalozNespracovany(
 }
 
 /** Vyťaží nespracovaný doklad cez AI (beží na pozadí, po odpovedi klientovi). */
+/**
+ * Prijatá zálohová faktúra, ktorú odpočet zálohy na faktúre zúčtováva: číslo
+ * (alebo VS) z dokladu, ten istý dodávateľ (IČO, IČ DPH, názov), tá istá
+ * firma. Zálohová, ktorú už zúčtováva iná faktúra, sa nepoužije znova.
+ */
+export async function najdiZalohovuPrijatu(
+  supabase: any,
+  companyId: string,
+  u: Pick<UdajeNespracovaneho, "zalohaCislo" | "dodavatel">,
+): Promise<string | null> {
+  try {
+    const { najdiZalohovuPodlaCisla, dodavatelZalohySedi } = await import("./odpocet-zalohy-vytazenie");
+    const { data } = await supabase
+      .from("purchase_invoices")
+      .select("id, invoice_number, variable_symbol, supplier_ico, supplier_ic_dph, supplier_name")
+      .eq("company_id", companyId)
+      .eq("type", "proforma")
+      .is("deleted_at", null)
+      .order("issue_date", { ascending: false })
+      .limit(500);
+    const odDodavatela = ((data ?? []) as any[]).filter((z) => dodavatelZalohySedi(z, u.dodavatel));
+    const zaloha = najdiZalohovuPodlaCisla(String(u.zalohaCislo ?? ""), odDodavatela);
+    if (!zaloha) return null;
+    const { data: obsadena } = await supabase
+      .from("purchase_invoices")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("advance_invoice_id", zaloha.id)
+      .is("deleted_at", null)
+      .limit(1);
+    return (obsadena ?? []).length ? null : zaloha.id;
+  } catch (e: any) {
+    console.warn("[nespracovane] zálohovú faktúru sa nepodarilo dohľadať:", e?.message ?? e);
+    return null;
+  }
+}
+
 export async function vytazNespracovany(id: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: r } = await supabaseAdmin
@@ -476,6 +513,11 @@ export async function vytvorDoklad(
       const { overUlozeniePrijatej } = await import("./duplicita-zauctovania.server");
       await overUlozeniePrijatej(supabase, r.company_id, { ...zakl, status: "received" }, { ajMoznu: volby.ajDuplicitu });
     }
+    // Odpočet zálohy na faktúre — väzba na prijatú zálohovú faktúru podľa čísla z dokladu.
+    const zalohovaId =
+      druh === "faktura" && zakl.advance_amount && u.zalohaCislo
+        ? await najdiZalohovuPrijatu(supabase, r.company_id, u)
+        : null;
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
       const up = await supabase.storage.from("purchase-invoices").upload(cesta, bajty, { contentType: mime });
@@ -524,6 +566,7 @@ export async function vytvorDoklad(
         zauctoval: zauctovat ? userId : null,
         ...zdrojZauctovaniaPriVytvoreni(zauctovat),
         ...(cudzia ? { odberatel_nesedi: { ...cudzia, zistene_at: teraz } } : {}),
+        ...(zalohovaId ? { advance_invoice_id: zalohovaId } : {}),
         ...rucnaUprava,
       })
       .select("id, pohoda_predkontacia, pohoda_clenenie_dph, category, reverse_charge")

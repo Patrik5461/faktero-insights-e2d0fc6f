@@ -1,5 +1,6 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { DesatinnePole } from "@/components/faktero/DesatinnePole";
+import { OdpocetZalohyNespracovaneho } from "@/components/faktero/OdpocetZalohyNespracovaneho";
 import { UpozornenieObjednavky } from "./PovinnaObjednavka";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
@@ -539,6 +540,7 @@ export function NespracovanyKompaktny({
                 />
               </>
             ) : null}
+            {druh === "faktura" ? <OdpocetZalohyNespracovaneho u={u} set={set} celkom={sucty.celkom} /> : null}
             {druh === "dobropis" ? (
               <p className="text-xs text-muted-foreground">
                 {t("Sumy zadajte kladne — dobropis ich odpočíta sám.")}

@@ -47,7 +47,7 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
     const { data: faktury } = await supabase
       .from("purchase_invoices")
       .select(
-        "id, supplier_name, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status",
+        "id, supplier_name, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status, advance_amount, advance_invoice_id",
       )
       .eq("company_id", data.company_id)
       .is("deleted_at", null)
@@ -57,6 +57,37 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
       .or("payment_method.is.null,payment_method.neq.hotovost")
       .order("issue_date", { ascending: false })
       .limit(400);
+
+    /*
+      Platí sa suma na úhradu, nie celá faktúra: odpočet zaplatenej zálohy
+      (929,70 − 900 = 29,70) — rovnako ako `prijata_suma_na_uhradu` v DB.
+    */
+    const { zalohaPrijatej, stavUhradyPrijatej } = await import("./uhrady-prijatej");
+    const idZaloh = [
+      ...new Set(
+        ((faktury as any[]) ?? [])
+          .filter((f) => !(Math.abs(Number(f.advance_amount ?? 0)) > 0) && f.advance_invoice_id)
+          .map((f) => String(f.advance_invoice_id)),
+      ),
+    ];
+    const { data: zalohove } = idZaloh.length
+      ? await supabase
+          .from("purchase_invoices")
+          .select("id, amount_total, status")
+          .eq("company_id", data.company_id)
+          .is("deleted_at", null)
+          .in("id", idZaloh)
+      : { data: [] as any[] };
+    const zaplatena = new Map(
+      ((zalohove as any[]) ?? [])
+        .filter((z) => z.status === "paid")
+        .map((z) => [String(z.id), Number(z.amount_total ?? 0)]),
+    );
+    for (const f of (faktury as any[]) ?? []) {
+      const zaloha = zalohaPrijatej(f.advance_amount, f.advance_invoice_id ? zaplatena.get(String(f.advance_invoice_id)) : null);
+      if (zaloha > 0 && f.amount_total != null)
+        f.amount_total = stavUhradyPrijatej({ amount_total: f.amount_total, uhrady: [], zaloha }).naUhradu;
+    }
 
     /*
       Pohyby sa vyberajú podľa súm faktúr, nie „posledných N odchádzajúcich".

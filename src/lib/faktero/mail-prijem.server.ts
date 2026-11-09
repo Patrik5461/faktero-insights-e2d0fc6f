@@ -101,7 +101,10 @@ Vráť VÝLUČNE JSON v tvare:
  "items": [{"name": string, "quantity": number|null, "unit": string|null,
             "unit_price": number|null, "vat_rate": number|null, "total": number|null,
             "reverse_charge": boolean}],
- "items_total_with_vat": boolean|null}
+ "items_total_with_vat": boolean|null,
+ "amount_due": number|null,
+ "advance_deduction": {"amount": number, "advance_invoice_number": string|null, "taxed": boolean,
+                       "base": number|null, "vat": number|null, "rate": number|null}|null}
 Dátum dodania ("delivery_date") hľadaj pod „Dátum dodania", „Dátum dodania tovaru/služby",
 „Dátum vzniku daňovej povinnosti", „Dátum uskutočnenia zdaniteľného plnenia", „DUZP",
 „Datum zdanitelného plnění" — keď na doklade nie je, null (nie dátum vystavenia).
@@ -147,6 +150,18 @@ Pri bločku pridaj aj "rounding": zaokrúhlenie sumy na úhradu tak, ako je na d
 Keď zaokrúhlenie na doklade nie je, null.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
+ZÁPORNÉ riadky (zľava, dobropisovaná položka, vrátenie obalu či zálohy na obal) sú položky —
+daj ich do "items" so ZÁPORNOU sumou ("total", "unit_price") tak, ako sú na doklade.
+ODPOČET ZÁLOHY: riadok „Predplatba", „Záloha", „Odpočet zálohy", „Uhradené zálohou",
+„Zálohová platba", „Zaplatené zálohou", „Uhradené preddavky" (napr. „Predplatba: (Záloh. fak. č.
+20260037) -900,00") NIE JE položka — nedávaj ho do "items", ale do "advance_deduction":
+"amount" = odpočítaná suma s DPH KLADNE (900), "advance_invoice_number" = číslo zálohovej faktúry
+alebo dokladu k platbe (20260037), "taxed" = true len keď má odpočet vlastný základ a DPH / sadzbu
+(zdanená záloha, daňový doklad k prijatej platbe) a vtedy "base", "vat" a "rate" (kladne); pri
+nezdanenej zálohe "taxed": false a "base", "vat", "rate" null. Bez odpočtu zálohy "advance_deduction": null.
+"amount_total", "amount_without_vat", "vat_amount" a "vat_breakdown" sú vždy CELÉ plnenie PRED
+odpočtom zálohy („Celková fakturovaná suma", súčet položiek s DPH); sumu po odpočte („Celkom
+k úhrade", „Zostáva uhradiť") daj do "amount_due". Bez zálohy je "amount_due" suma na úhradu.
 ${pokynRozpisuDph()}
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
 `;

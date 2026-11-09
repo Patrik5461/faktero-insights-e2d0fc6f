@@ -95,6 +95,11 @@ function kategoria(
   return kategoriaRiadku({ rate: sadzba });
 }
 
+/** Znamienko súčtu (−1 len keď je súčet záporný — dobropis). */
+function znamienkoCelku(sumy: number[]): 1 | -1 {
+  return sumy.reduce((a, x) => a + x, 0) < 0 ? -1 : 1;
+}
+
 /** Zlúči riadky s rovnakou sadzbou a kategóriou. */
 function zluc(riadky: RiadokRozpisuVytazeny[]): RiadokRozpisuVytazeny[] {
   const po = new Map<string, RiadokRozpisuVytazeny>();
@@ -119,6 +124,12 @@ function zDokladu(
   prenesenie: boolean,
 ): RiadokRozpisuVytazeny[] | null {
   const pole = Array.isArray(ai.vat_breakdown) ? (ai.vat_breakdown as any[]) : [];
+  /*
+    Znamienko celého rozpisu: dobropis má záporné všetky riadky (otočia sa),
+    no záporný riadok medzi kladnými (odpočet zdanenej zálohy, zľava v
+    sadzbe) odpočítava — predtým sa z neho stal kladný a rozpis narástol.
+  */
+  const zn = znamienkoCelku(pole.map((x) => num(x?.base ?? x?.zaklad) ?? 0));
   const riadky: RiadokRozpisuVytazeny[] = [];
   for (const x of pole) {
     if (/celkom|spolu|total|celkem/i.test(String(x?.label ?? x?.column ?? ""))) continue;
@@ -130,8 +141,8 @@ function zDokladu(
     if (!zaklad && !dph) continue;
     riadky.push({
       sadzba,
-      zaklad: Math.abs(zaklad),
-      dph: Math.abs(dph ?? 0),
+      zaklad: zn * zaklad,
+      dph: zn * (dph ?? 0),
       vat_category: kategoria(
         sadzba,
         x?.vat_category ?? x?.category,
@@ -160,6 +171,10 @@ function zPoloziek(
     (p) => !jePolozkaZaokruhlenia(p),
   );
   if (!polozky.length) return null;
+  // Záporné položky (zľava, vrátenie obalu, odpočet zálohy) odpočítavajú; dobropis s celým záporným zoznamom sa otočí.
+  const zn = znamienkoCelku(
+    polozky.map((p) => num(p?.total) ?? (num(p?.quantity) ?? 1) * (num(p?.unit_price) ?? 0)),
+  );
   const riadky: { sadzba: number; suma: number; kat: KategoriaDph }[] = [];
   for (const p of polozky) {
     const s = num(p?.vat_rate);
@@ -174,7 +189,7 @@ function zPoloziek(
     const pdp = p?.reverse_charge === true || p?.pdp === true || ai.reverse_charge === true;
     riadky.push({
       sadzba: s,
-      suma: Math.abs(suma),
+      suma: zn * suma,
       kat: kategoria(s, p?.vat_category, pdp, prenesenie),
     });
   }

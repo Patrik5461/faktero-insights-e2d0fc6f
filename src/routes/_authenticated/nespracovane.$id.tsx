@@ -59,6 +59,7 @@ import {
   textVytvorenia,
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
+import { OdpocetZalohyNespracovaneho } from "@/components/faktero/OdpocetZalohyNespracovaneho";
 import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
 import { potvrd } from "@/lib/potvrdenie";
 import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
@@ -954,6 +955,7 @@ function Detail() {
                       {u.mena}
                     </label>
                   </div>
+                  {druh === "faktura" ? <OdpocetZalohyNespracovaneho className="mt-2" u={u} set={set} celkom={s.celkom} /> : null}
                   {blocek ? (
                     <>
                       <div className="mt-2 flex flex-wrap items-center justify-end gap-3 text-sm">

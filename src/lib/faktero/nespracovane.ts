@@ -24,6 +24,7 @@ import {
   type VysledokKontroly,
 } from "./rozpis-dph-kontrola";
 import { datum as datumZAi } from "./mail-prijem";
+import { aiSOdpoctomZalohy, naUhraduSOdpoctom } from "./odpocet-zalohy-vytazenie";
 import { upravIban, upravVs } from "./ostatne-doklady";
 import {
   bezZaokruhlenia,
@@ -180,6 +181,17 @@ export type UdajeNespracovaneho = {
    */
   zaloha?: number;
   /**
+   * Číslo zálohovej faktúry, ktorú odpočet zúčtováva („Záloh. fak. č.
+   * 20260037“) — podľa neho sa pri vytvorení dohľadá `advance_invoice_id`.
+   */
+  zalohaCislo?: string;
+  /**
+   * Odpočet zdanenej zálohy (daňový doklad k prijatej platbe), ako ho
+   * prečítalo vyťaženie. Už je v rozpise DPH, v sume aj v položkách (záporný
+   * riadok) — tu je len na zobrazenie, do úhrady sa druhýkrát nepočíta.
+   */
+  zalohaZdanena?: { suma: number; zaklad: number; dph: number; sadzba: number | null; cislo?: string };
+  /**
    * Nastavenie zo skenera v appke (úhrada, kategória, zákazka, predkontácia,
    * komentár). Uloží sa pri nahratí, aby platilo aj pre doklad, ktorý človek
    * nechá v Nespracovaných a dokončí na webe.
@@ -320,6 +332,11 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
   if (u.celkom == null && nove.celkom != null) u.celkom = nove.celkom;
   if (u.celkomDokladu == null && nove.celkomDokladu != null) u.celkomDokladu = nove.celkomDokladu;
   if (!u.polozky.length && nove.polozky.length) u.polozky = nove.polozky;
+  // Odpočet zálohy z nového čítania — len keď ho údaje ešte nemajú a suma ostala z rovnakého čítania.
+  if (u.zaloha == null && !u.zalohaZdanena && nove.zaloha && u.celkom != null && nove.celkom != null && Math.abs(u.celkom - nove.celkom) < 0.005) {
+    u.zaloha = nove.zaloha;
+    if (nove.zalohaCislo) u.zalohaCislo = nove.zalohaCislo;
+  }
   return u;
 }
 
@@ -350,6 +367,26 @@ export function udajeZAi(
 ): UdajeNespracovaneho {
   const u = prazdneUdaje();
   if (!ai) return u;
+  /*
+    Odpočet zálohy („Predplatba: Záloh. fak. č. … −900,00“): nezdanená ide
+    do `zaloha`, zdanená zníži rozpis aj sumu a pribudne ako záporná položka
+    (`odpocet-zalohy-vytazenie.ts`). Ďalej sa pracuje s upraveným výstupom.
+  */
+  const zOdpoctu = aiSOdpoctomZalohy(ai);
+  ai = zOdpoctu.ai;
+  const odpocet = zOdpoctu.odpocet;
+  if (odpocet && !odpocet.zdanena) {
+    u.zaloha = odpocet.suma;
+    if (odpocet.cislo) u.zalohaCislo = odpocet.cislo;
+  } else if (odpocet?.zdanena) {
+    u.zalohaZdanena = {
+      suma: odpocet.suma,
+      zaklad: odpocet.zaklad,
+      dph: odpocet.dph,
+      sadzba: odpocet.sadzba,
+      ...(odpocet.cislo ? { cislo: odpocet.cislo } : {}),
+    };
+  }
   const vystavenie = datum(ai.issue_date);
   u.dodavatel = {
     nazov: t(ai.supplier_name, 200),
@@ -748,12 +785,14 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   const zaklad = Math.abs(Number(p.amount_without_vat ?? 0));
   const dph = Math.abs(Number(p.vat_amount ?? 0));
   const rozpis = Array.isArray(p.vat_breakdown) ? p.vat_breakdown : null;
+  // Dobropis je v DB záporný celý — otočí sa; záporný riadok kladnej faktúry (odpočet) ostane záporný.
+  const znDokladu = Number(p.amount_total ?? 0) < 0 ? -1 : 1;
   u.rozpis = rozpis?.length
     ? zoradPodlaSadzby(
         rozpis.map((r: any) => ({
           sadzba: Number(r.sadzba) || 0,
-          zaklad: Math.abs(Number(r.zaklad) || 0),
-          dph: Math.abs(Number(r.dph) || 0),
+          zaklad: znDokladu * (Number(r.zaklad) || 0),
+          dph: znDokladu * (Number(r.dph) || 0),
           ...(jeKategoriaDph(r.vat_category) ? { vat_category: r.vat_category } : {}),
         })),
         "sadzba",
@@ -803,6 +842,12 @@ export function prijataZUdajov(
 ) {
   const s = sucty(u);
   const zn = druh === "dobropis" ? -1 : 1;
+  /*
+    Riadky rozpisu sú kladné; záporný riadok medzi kladnými (odpočet zdanenej
+    zálohy, zľava v sadzbe) odpočítava a znamienko si nechá. Celý záporný
+    rozpis (staršie zápisy dobropisu) sa berie ako kladný.
+  */
+  const znRozpisu = u.rozpis.length && u.rozpis.every((x) => Number(x.zaklad) <= 0 && Number(x.dph) <= 0) ? -1 : 1;
   return {
     supplier_name: u.dodavatel.nazov.trim() || "Neurčený dodávateľ",
     supplier_ico: prazdne(u.dodavatel.ico),
@@ -836,8 +881,8 @@ export function prijataZUdajov(
     vat_breakdown: u.rozpis.length
       ? zoradPodlaSadzby(u.rozpis, "sadzba").map((x) => ({
           sadzba: Number(x.sadzba) || 0,
-          zaklad: r2(zn * Math.abs(Number(x.zaklad) || 0)) || 0,
-          dph: r2(zn * Math.abs(Number(x.dph) || 0)) || 0,
+          zaklad: r2(zn * znRozpisu * (Number(x.zaklad) || 0)) || 0,
+          dph: r2(zn * znRozpisu * (Number(x.dph) || 0)) || 0,
           vat_category: kategoriaRiadku({ rate: x.sadzba, vat_category: x.vat_category }),
         }))
       : null,
@@ -997,7 +1042,8 @@ export function naUhraduZNespracovaneho(
     invoice_number: u.cislo || null,
     supplier_name: u.dodavatel.nazov || null,
     supplier_iban: u.dodavatel.iban || null,
-    amount_total: sucty(u).celkom,
+    // Na úhradu je suma po odpočte zaplatenej zálohy (929,70 − 900 = 29,70).
+    amount_total: naUhraduSOdpoctom(sucty(u).celkom, druh === "faktura" || !druh ? u.zaloha : 0),
     currency: u.mena || "EUR",
     due_date: u.splatnost || null,
     status: "received",
