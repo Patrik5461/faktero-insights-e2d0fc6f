@@ -46,6 +46,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { DocumentListToolbar, PRVOK } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
@@ -92,7 +93,7 @@ function OstatneDokladyPage() {
   /** Nespracované zo všetkých mesiacov — nič nesmie ostať schované. */
   const bezMesiaca = zalozka === "nespracovane";
 
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "ostatne-doklady" });
   // Mesiac doručenia je v adrese; bez neho platí aktuálny mesiac, „vsetky“ = všetky mesiace.
   const mesiacZAdresy = lf.filter("mesiac");
   const month =
@@ -142,6 +143,8 @@ function OstatneDokladyPage() {
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(hladane))),
   );
+  // Kreslí sa len jedna strana; výber, hromadné akcie a export pracujú so všetkými zobrazenými.
+  const strankovanie = useStrankovanie(zobrazene, lf, { reset: zalozka });
   async function doPriecinka() {
     const nazov = await zadaj(t("Do ktorého priečinka?\nPrázdne = bez priečinka."), {
       predvolene: priecinok && priecinok !== "__bez" ? priecinok : "",
@@ -630,7 +633,7 @@ function OstatneDokladyPage() {
           ) : (
             // Na telefóne karty — v tabuľke na 390 px nebolo vidieť sumu ani stav.
             <ResponsiveTable
-              items={zobrazene}
+              items={strankovanie.viditelne}
               mobileCard={(r: any) => {
                 const lehota = r.status === "exported" ? null : stavLehoty(r.due_date, dnes);
                 const prilohy = [...(r.other_document_files ?? [])].sort(
@@ -764,7 +767,7 @@ function OstatneDokladyPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {zobrazene.map((r) => {
+                      {strankovanie.viditelne.map((r) => {
                         const lehota = r.status === "exported" ? null : stavLehoty(r.due_date, dnes);
                         const prilohy = [...(r.other_document_files ?? [])].sort(
                           (a: any, b: any) => a.position - b.position,
@@ -927,6 +930,7 @@ function OstatneDokladyPage() {
             />
           )}
         </div>
+        {!loading && zobrazene.length > 0 ? strankovanie.stranky() : null}
       </PageBody>
     </>
   );

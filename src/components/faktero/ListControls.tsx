@@ -30,7 +30,7 @@ export function PageSizeSelect({
         onChange={(e) => onChange(Number(e.target.value))}
         className="rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
       >
-        {[5, 25, 50, 100].map((n) => (
+        {[10, 20, 50, 100].map((n) => (
           <option key={n} value={n}>
             {n}
           </option>
@@ -282,12 +282,12 @@ export function DeletedToggle({
   );
 }
 
-export function useStoredPageSize(key: string, fallback = 25) {
+export function useStoredPageSize(key: string, fallback = 10) {
   const [value, setValue] = useState<number>(() => {
     if (typeof window === "undefined") return fallback;
     const raw = window.localStorage.getItem(`faktero.pageSize.${key}`);
     const n = raw ? Number(raw) : NaN;
-    return [5, 25, 50, 100].includes(n) ? n : fallback;
+    return [10, 20, 50, 100].includes(n) ? n : fallback;
   });
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -548,7 +548,7 @@ export function ListPagination({
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
         >
-          {[5, 25, 50, 100].map((n) => (
+          {[10, 20, 50, 100].map((n) => (
             <option key={n} value={n}>
               {n}
             </option>

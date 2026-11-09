@@ -32,6 +32,7 @@ import { OdoslanieEfakturyOkno } from "@/components/faktero/OdoslanieEfakturyOkn
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 
 export const Route = createFileRoute("/_authenticated/efaktura/odoslane")({
@@ -57,7 +58,7 @@ function SentPage() {
   const regen = useServerFn(generateEfakturaXmlFn);
   const listDorucenia = useServerFn(listEfakturaDeliveriesFn);
   const efakturaTest = useEfakturaTestovaciRezim();
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "efaktura-odoslane" });
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   const q = useQuery({
@@ -204,6 +205,8 @@ function SentPage() {
       .some((v) => String(v).toLowerCase().includes(hladane));
   });
   const nicNevyhovuje = !!q.data && q.data.length > 0 && zobrazene.length === 0;
+  // Kreslí sa len jedna strana (10/20/50/100).
+  const strankovanie = useStrankovanie(zobrazene, lf);
 
   return (
     <>
@@ -232,7 +235,7 @@ function SentPage() {
               {t("Nič nevyhovuje filtru.")}
             </div>
           )}
-          {zobrazene.map((row: any) => {
+          {strankovanie.viditelne.map((row: any) => {
             const karta = klik(cielFaktury(row), { klavesnica: false });
             return (
             <div
@@ -301,7 +304,7 @@ function SentPage() {
                   </td>
                 </tr>
               )}
-              {zobrazene.map((row: any) => (
+              {strankovanie.viditelne.map((row: any) => (
                 <KlikatelnyRiadok key={row.id} ciel={cielFaktury(row)} className="align-top">
                   <td className="cislo-dokladu whitespace-nowrap p-3">{cislo(row)}</td>
                   <td className="p-3">
@@ -332,6 +335,7 @@ function SentPage() {
             </tbody>
           </table>
         </TabulkaZoznamu>
+        {strankovanie.stranky()}
       </PageBody>
       {okno && companyId && (
         <OdoslanieEfakturyOkno

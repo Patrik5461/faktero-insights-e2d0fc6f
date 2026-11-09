@@ -356,7 +356,7 @@ export const getBankStatementUrl = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
       .from("bank_statements")
-      .select("storage_path, status, company_id")
+      .select("storage_path, status, company_id, export_type, period_start, bank_accounts(iban)")
       .eq("id", data.statement_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
@@ -364,9 +364,18 @@ export const getBankStatementUrl = createServerFn({ method: "POST" })
     // Cestu vie správca firmy v riadku prepísať — podpisuje sa len súbor v priečinku firmy.
     const { cestaPatriFirme } = await import("./cesta-firmy");
     if (!cestaPatriFirme(row.storage_path, data.company_id)) throw new Error("not_ready");
+    /*
+      Odkaz so `download` vráti súbor ako prílohu s menom — XML sa tak stiahne
+      (predtým sa otváral v novom okne, ktoré prehliadač po čakaní na server
+      zablokoval, a keď nie, XML ukázal ako text).
+    */
+    const pripona = String((row as any).export_type ?? "").toUpperCase() === "PDF" ? "pdf" : "xml";
+    const iban = String((row as any).bank_accounts?.iban ?? "").replace(/\s/g, "");
+    const mesiac = String((row as any).period_start ?? "").slice(0, 7);
+    const nazov = ["vypis", iban, mesiac].filter(Boolean).join("-") + "." + pripona;
     const { data: signed, error } = await supabaseAdmin.storage
       .from("bank-statements")
-      .createSignedUrl(row.storage_path, 300);
+      .createSignedUrl(row.storage_path, 300, { download: nazov });
     if (error || !signed) throw new Error(error?.message ?? "sign_failed");
     return { url: signed.signedUrl };
   });
@@ -480,10 +489,15 @@ export const sumyTransakcii = createServerFn({ method: "POST" })
       if (data.vybavenie) q = q.eq("vybavenie", data.vybavenie);
       const term = (data.hladat ?? "").trim().replace(/[%_,()]/g, "");
       if (term) {
+        const { podmienkySumy, sumaZHladania } = await import("./hladanie-sumy");
+        const suma = sumaZHladania(data.hladat);
         q = q.or(
-          ["counterparty", "variable_symbol", "description", "transaction_reference"]
-            .map((c) => `${c}.ilike.%${term}%`)
-            .join(","),
+          [
+            ...["counterparty", "variable_symbol", "description", "transaction_reference"].map(
+              (c) => `${c}.ilike.%${term}%`,
+            ),
+            ...(suma != null ? podmienkySumy("amount", suma) : []),
+          ].join(","),
         );
       }
       const { data: cast, error } = await q;

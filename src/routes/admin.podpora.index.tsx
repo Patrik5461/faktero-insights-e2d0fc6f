@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Search, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { TelegramAdminKarta } from "@/components/faktero/TelegramAdminKarta";
@@ -39,6 +40,13 @@ function AdminPodporaPage() {
   const [hladat, setHladat] = useState("");
   const [data, setData] = useState<Awaited<ReturnType<typeof adminPoziadavkyFn>> | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-podpora");
+
+  useEffect(() => {
+    setStrana(1);
+  }, [filter, hladat]);
 
   useEffect(() => {
     let zruseny = false;
@@ -119,7 +127,7 @@ function AdminPodporaPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.rows.map((r: any) => {
+                {data.rows.slice((strana - 1) * pageSize, strana * pageSize).map((r: any) => {
                   const nove = neprecitanaPrePodporu(r);
                   return (
                     <KlikatelnyRiadok
@@ -194,6 +202,18 @@ function AdminPodporaPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {data && data.rows.length > 0 && (
+          <ListPagination
+            page={strana}
+            pageSize={pageSize}
+            total={data.rows.length}
+            onPageChange={setStrana}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setStrana(1);
+            }}
+          />
         )}
       </AdminPageBody>
     </>

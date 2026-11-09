@@ -12,7 +12,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
-import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
@@ -107,7 +107,7 @@ function OdoslaneUpomienky() {
     [podlaKlientov, zobrazene],
   );
   const klienti = useMemo(() => moznostiKlientov(vsetky), [vsetky]);
-  const { viditelne, zarazkaRiadok, zarazka } = usePostupneZobrazenie(zobrazene, {
+  const { viditelne, zarazkaRiadok, zarazka, stranky } = useStrankovanie(zobrazene, lf, {
     reset: [od, doDna, klient, stav, sposob, lf.q],
   });
   const [rozbalene, setRozbalene] = useState<Record<string, boolean>>({});
@@ -403,6 +403,7 @@ function OdoslaneUpomienky() {
                 </tbody>
               </table>
             </TabulkaZoznamu>
+            {stranky()}
           </>
         )}
       </PageBody>

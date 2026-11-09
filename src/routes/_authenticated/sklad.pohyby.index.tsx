@@ -25,11 +25,14 @@ import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
 
+import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 export const Route = createFileRoute("/_authenticated/sklad/pohyby/")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Skladové pohyby — Faktero") }],
   }),
-  validateSearch: (s: Record<string, unknown>): { stock_item_id?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { stock_item_id?: string } & ListSearch => ({
+    ...zoznamSearch(s),
     stock_item_id: typeof s.stock_item_id === "string" ? s.stock_item_id : undefined,
   }),
   component: MovementsPage,
@@ -174,6 +177,10 @@ function MovementsPage() {
     const si = items[m.stock_item_id];
     const prodName = si?.product_id ? (products[si.product_id]?.name ?? "") : "";
     return (si?.sku ?? "").toLowerCase().includes(q) || prodName.toLowerCase().includes(q);
+  });
+  const lf = useListFilters({ pageSizeKey: "sklad-pohyby" });
+  const { viditelne, stranky } = useStrankovanie(visibleRows, lf, {
+    reset: [filter, stock_item_id, warehouseFilter, dateFrom, dateTo, productSearch],
   });
 
   async function exportMovements(format: "csv" | "xlsx") {
@@ -405,7 +412,7 @@ function MovementsPage() {
                   </td>
                 </tr>
               )}
-              {visibleRows.map((m) => (
+              {viditelne.map((m) => (
                 <KlikatelnyRiadok key={m.id} ciel={{ to: "/sklad/pohyby/$id", params: { id: m.id } }}>
                   <td className="p-3 whitespace-nowrap tabular-nums text-muted-foreground">
                     {new Date(m.created_at).toLocaleString("sk-SK")}
@@ -493,7 +500,7 @@ function MovementsPage() {
               <EmptyState title="Žiadne pohyby." />
             </div>
           )}
-          {visibleRows.map((m) => (
+          {viditelne.map((m) => (
             <Link
               key={m.id}
               to="/sklad/pohyby/$id"
@@ -540,6 +547,7 @@ function MovementsPage() {
             </Link>
           ))}
         </div>
+        {stranky()}
       </PageBody>
     </>
   );

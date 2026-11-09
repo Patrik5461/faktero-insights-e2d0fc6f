@@ -14,6 +14,7 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
@@ -45,7 +46,7 @@ function PurchaseOrdersPage() {
   const fetchOrders = useServerFn(listPurchaseOrders);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "objednavky-dodavatelom" });
   // Predvolene len otvorené; „Všetky“ si načíta zo servera aj prijaté a zrušené.
   const filter: "vsetky" | "otvorene" = lf.filter("stav") === "vsetky" ? "vsetky" : "otvorene";
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
@@ -78,6 +79,7 @@ function PurchaseOrdersPage() {
       }),
     [rows, hladane, obdobieOd, obdobieDo],
   );
+  const strankovanie = useStrankovanie(zobrazene, lf);
 
   return (
     <>
@@ -154,7 +156,7 @@ function PurchaseOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {zobrazene.map((o) => (
+                {strankovanie.viditelne.map((o) => (
                   <KlikatelnyRiadok key={o.id} ciel={{ to: "/sklad/objednavky/$id", params: { id: o.id } }}>
                     <td className="whitespace-nowrap p-3">
                       <Link
@@ -185,6 +187,7 @@ function PurchaseOrdersPage() {
             </table>
           </TabulkaZoznamu>
         )}
+        {!loading && strankovanie.stranky()}
       </PageBody>
     </>
   );

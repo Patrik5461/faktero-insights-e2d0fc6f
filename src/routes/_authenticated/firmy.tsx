@@ -44,11 +44,14 @@ import {
   type Ton,
 } from "@/lib/faktero/prehlad-firiem";
 import { jeAdminRola } from "@/lib/faktero/opravnenia";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Správa firiem — Faktero") }],
   }),
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   component: CompanyManagementPage,
 });
 
@@ -149,6 +152,9 @@ function CompanyManagementPage() {
     return zoradFirmy(podlaRoly, hladanie, activeId, posledne).vsetky;
   }, [rows, rola, hladanie, activeId, posledne]);
   const sNastrojmi = (rows?.length ?? 0) >= HLADANIE_OD;
+  // Účtovná kancelária má desiatky firiem — po 10/20/50/100 na stranu.
+  const lf = useListFilters({ pageSizeKey: "firmy" });
+  const strankovanie = useStrankovanie(zobrazene, lf, { reset: [rola, hladanie] });
 
   /**
    * Po zmazaní firmy sa treba prepnúť inam — inak by celá aplikácia ukazovala
@@ -454,7 +460,7 @@ function CompanyManagementPage() {
               {t("Nič sa nenašlo.")}
             </div>
           )}
-          {zobrazene.map((r) => {
+          {strankovanie.viditelne.map((r) => {
             const karta = klik(null, {
               naKlik: () => switchTo(r.id),
               vypnute: r.id === activeId,
@@ -535,7 +541,7 @@ function CompanyManagementPage() {
                   </td>
                 </tr>
               )}
-              {zobrazene.map((r) => (
+              {strankovanie.viditelne.map((r) => (
                 <KlikatelnyRiadok
                   key={r.id}
                   naKlik={() => switchTo(r.id)}
@@ -572,6 +578,7 @@ function CompanyManagementPage() {
             </tbody>
           </table>
         </div>
+        {strankovanie.stranky()}
       </PageBody>
       <CreateCompanyDialog open={open} onOpenChange={setOpen} onCreated={load} />
       {mazem && (

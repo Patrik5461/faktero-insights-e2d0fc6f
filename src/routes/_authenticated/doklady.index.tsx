@@ -81,7 +81,7 @@ import { formatujMenu, formatujCislo } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
 import { TRIEDA_KLIK_RIADKU, useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
-import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { spracovanieDokladu, menoSpracovatela } from "@/lib/faktero/spracoval";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { KtoKedyBunka } from "@/components/faktero/KtoKedyDokladu";
@@ -338,8 +338,8 @@ function DokladyPage() {
       : /^\d{4}-\d{2}$/.test(mesiacFiltra)
         ? mesiacFiltra
         : (mesiacZAdresy ?? "");
-  // Stovky bločkov naraz zablokovali prehliadač — kreslí sa po dávkach.
-  const postupne = usePostupneZobrazenie(rad.zoradene, {
+  // Stránkovanie po 10/20/50/100 — súčty, výber a export pracujú so všetkými riadkami.
+  const postupne = useStrankovanie(rad.zoradene, lf, {
     reset: [zalozka, month],
     potrebneId: posledny.id,
   });
@@ -1700,6 +1700,7 @@ function DokladyPage() {
             </table>
             </>
           )}
+          {postupne.stranky()}
           {rows.length > 0 ? (
             /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
                vyfiltrovaný zoznam so základom a DPH, rovnako ako vo vystavených. */

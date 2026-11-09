@@ -19,7 +19,7 @@ import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
-import { usePostupneZobrazenie } from "@/hooks/usePostupneZobrazenie";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { useRadenie } from "@/hooks/useRadenie";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { stiahniExcel, stlpceRozpisuDph, tabulka } from "@/lib/faktero/excel-zoznamu";
@@ -271,8 +271,8 @@ function PurchaseInvoicesPage() {
     predkontacia: (r: any) => r.pohoda_predkontacia,
     stav: (r: any) => r.status,
   });
-  // Stovky riadkov naraz zablokovali prehliadač — kreslí sa po dávkach.
-  const postupne = usePostupneZobrazenie(rad.zoradene, {
+  // Stránkovanie po 10/20/50/100 — súčty, výber a export pracujú so všetkými riadkami.
+  const postupne = useStrankovanie(rad.zoradene, lf, {
     reset: [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra, lfPlatba],
     potrebneId: posledny.id,
   });
@@ -1675,6 +1675,7 @@ function PurchaseInvoicesPage() {
             <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">{paticka}</div>
           ) : null}
         </div>
+        {postupne.stranky()}
         </div>
         {/* Súčet označených + úhrada z výberu (lišta drží spodok obrazovky). */}
         <SuctovaListaVyberu

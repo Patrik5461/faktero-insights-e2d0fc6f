@@ -12,11 +12,14 @@ import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { preloz } from "@/lib/i18n/jazyk";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 export const Route = createFileRoute("/_authenticated/sklad/minimum")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Pod minimom — Faktero") }],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: LowStockPage,
 });
 
@@ -25,6 +28,8 @@ function LowStockPage() {
   const fetchLow = useServerFn(getLowStockReport);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const lf = useListFilters({ pageSizeKey: "sklad-minimum" });
+  const strankovanie = useStrankovanie(rows, lf);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -86,7 +91,7 @@ function LowStockPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {rows.map((r) => (
+                {strankovanie.viditelne.map((r) => (
                   <KlikatelnyRiadok
                     key={r.stock_item_id}
                     ciel={
@@ -147,6 +152,7 @@ function LowStockPage() {
                 ))}
               </tbody>
             </table>
+            {strankovanie.stranky()}
           </div>
         )}
       </PageBody>

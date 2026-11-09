@@ -49,6 +49,8 @@ import {
   nastavAktivneCiselnikaFn,
 } from "@/lib/faktero/predkontacie.functions";
 import { useHromadnyVyber } from "@/hooks/useHromadnyVyber";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import {
   ListaHromadnychAkcii,
   PouziteNaDeaktivaciu,
@@ -84,7 +86,8 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/predkontacie")
   }),
   // ?pridat=1 otvorí rovno formulár novej predkontácie (odkaz zo zaúčtovania).
   // ?nastavenia=<program> zroluje k Nastaveniam exportu s tým programom (odkaz z Účtovných exportov).
-  validateSearch: (s: Record<string, unknown>): { pridat?: string; nastavenia?: string } => ({
+  validateSearch: (s: Record<string, unknown>) => ({
+    ...zoznamSearch(s),
     ...(s.pridat ? { pridat: String(s.pridat) } : {}),
     ...(s.nastavenia ? { nastavenia: String(s.nastavenia) } : {}),
   }),
@@ -1186,6 +1189,9 @@ function Ciselnik({
     );
   });
   const vyber = useHromadnyVyber(riadky.map((r) => r.id));
+  // Číselník z Pohody má aj stovky kódov — po 10/20/50/100 na stranu; výber a hromadné akcie ostávajú na všetkých riadkoch.
+  const lf = useListFilters({ pageSizeKey: "uctovnictvo-predkontacie" });
+  const strankovanie = useStrankovanie(riadky, lf, { reset: [druh, hladaj, agenda, vsetky] });
   const oznacene = riadky.filter((r) => vyber.jeOznaceny(r.id));
   const [hromadne, setHromadne] = useState<"zmazat" | "aktivovat" | "deaktivovat" | null>(null);
   /** Kódy, ktoré sa pri poslednom mazaní nedali zmazať (použité) — ponuka deaktivácie. */
@@ -1639,7 +1645,7 @@ function Ciselnik({
               </tr>
             </thead>
             <tbody>
-              {riadky.map((z) => (
+              {strankovanie.viditelne.map((z) => (
                 <KlikatelnyRiadok
                   key={z.id}
                   naKlik={() => upravRiadok(z)}
@@ -1748,6 +1754,7 @@ function Ciselnik({
           </table>
         </div>
       )}
+      {strankovanie.stranky()}
     </section>
   );
 }

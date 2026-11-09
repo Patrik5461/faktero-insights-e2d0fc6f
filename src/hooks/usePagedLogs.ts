@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { podmienkySumy, sumaZHladania } from "@/lib/faktero/hladanie-sumy";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useStoredPageSize } from "@/components/faktero/ListControls";
@@ -21,6 +22,8 @@ export type PagedLogsOptions = {
   resource: string;
   /** ilike OR-search across these columns. */
   searchColumns?: string[];
+  /** Stĺpec sumy — hľadaný text, ktorý je suma („120,50“), nájde aj pohyby s touto sumou (±). */
+  amountColumn?: string;
   /** Equality filters (array = `in`); null/empty values are ignored. */
   filters?: LogFilters;
   /**
@@ -50,6 +53,7 @@ export function usePagedLogs(opts: PagedLogsOptions) {
   const {
     resource,
     searchColumns = [],
+    amountColumn,
     filters,
     compare,
     dateColumn = "created_at",
@@ -128,7 +132,13 @@ export function usePagedLogs(opts: PagedLogsOptions) {
       }
       const term = search.trim().replace(/[%_,()]/g, "");
       if (term && searchColumns.length) {
-        q = q.or(searchColumns.map((c) => `${c}.ilike.%${term}%`).join(","));
+        const suma = amountColumn ? sumaZHladania(search) : null;
+        q = q.or(
+          [
+            ...searchColumns.map((c) => `${c}.ilike.%${term}%`),
+            ...(suma != null && amountColumn ? podmienkySumy(amountColumn, suma) : []),
+          ].join(","),
+        );
       }
       const ord = orderBy ?? { column: "created_at", ascending: false };
       q = q.order(ord.column, { ascending: !!ord.ascending });

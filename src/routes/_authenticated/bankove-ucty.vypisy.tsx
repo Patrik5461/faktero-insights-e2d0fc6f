@@ -8,11 +8,14 @@ import {
   listBankStatements,
   getBankStatementUrl,
 } from "@/lib/faktero/tatrabanka.functions";
+import { zostavVypisZTransakciiFn } from "@/lib/faktero/vypis-z-transakcii.functions";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { triedaStavu } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import {
   FileText,
   FileCode2,
@@ -22,10 +25,12 @@ import {
   Clock,
   AlertCircle,
   Sparkles,
+  Wand2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/vypisy")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Bankové výpisy — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: BankStatementsPage,
 });
 
@@ -50,6 +55,22 @@ function fmtObdobie(periodStart: string, t: (s: string) => string = (s) => s) {
   return `${t(MESIACE[Number(m) - 1])} ${y}`;
 }
 
+/** Posledných 13 mesiacov vrátane aktuálneho, od najnovšieho: ["2026-11", "2026-10", …] */
+function poslednychMesiacov(pocet = 13, dnes = new Date()): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < pocet; i++) {
+    const d = new Date(dnes.getFullYear(), dnes.getMonth() - i, 1);
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  return out;
+}
+
+/** "2026-10-26" → "26. 10. 2026" */
+function fmtDen(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${Number(d)}. ${Number(m)}. ${y}`;
+}
+
 function fmtVelkost(bytes: number | null) {
   if (!bytes) return "";
   return bytes < 1024 * 1024
@@ -62,11 +83,16 @@ function BankStatementsPage() {
   const loadData = useServerFn(listBankData);
   const loadStatements = useServerFn(listBankStatements);
   const getUrl = useServerFn(getBankStatementUrl);
+  const zostavVypis = useServerFn(zostavVypisZTransakciiFn);
+  const mesiace = poslednychMesiacov();
 
   const [accounts, setAccounts] = useState<any[]>([]);
   const [statements, setStatements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [vyberUcet, setVyberUcet] = useState("");
+  const [vyberMesiac, setVyberMesiac] = useState(mesiace[1] ?? mesiace[0]);
+  const [zostavujem, setZostavujem] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -78,6 +104,7 @@ function BankStatementsPage() {
           loadStatements({ data: { company_id: cid } }),
         ]);
         setAccounts(d.accounts ?? []);
+        setVyberUcet((v) => v || d.accounts?.[0]?.id || "");
         setStatements(s.statements ?? []);
       } catch (e: any) {
         toast.error(e?.message ?? t("Nepodarilo sa načítať výpisy"));
@@ -93,14 +120,50 @@ function BankStatementsPage() {
     setBusy(row.id);
     try {
       const { url } = await getUrl({ data: { company_id: cid, statement_id: row.id } });
-      // Odkaz je podpísaný a platí 5 minút — otvárame ho v novom okne.
-      window.open(url, "_blank", "noopener");
+      /*
+        Odkaz je podpísaný (5 minút) a vracia súbor ako prílohu — stiahne sa bez
+        opustenia stránky. Nové okno po čakaní na server prehliadač blokoval.
+      */
+      const a = document.createElement("a");
+      a.href = url;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     } catch (e: any) {
       toast.error(
         e?.message === "not_ready" ? t("Výpis ešte nie je pripravený") : t("Stiahnutie zlyhalo"),
       );
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function onZostav() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vyberUcet || !vyberMesiac) return;
+    setZostavujem(true);
+    try {
+      const r = await zostavVypis({
+        data: { company_id: cid, bank_account_id: vyberUcet, mesiac: vyberMesiac },
+      });
+      const s = await loadStatements({ data: { company_id: cid } });
+      setStatements(s.statements ?? []);
+      if (r.ciastocny_od) {
+        toast.success(
+          t("Čiastočný výpis od {datum} je pripravený — skôr Faktero pohyby z banky nemá.", {
+            datum: fmtDen(r.ciastocny_od),
+          }),
+        );
+      } else {
+        toast.success(t("Výpis za {obdobie} je pripravený (PDF a XML).", {
+          obdobie: fmtObdobie(`${vyberMesiac}-01`, t),
+        }));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ? t(e.message) : t("Výpis sa nepodarilo zostaviť"));
+    } finally {
+      setZostavujem(false);
     }
   }
 
@@ -115,6 +178,18 @@ function BankStatementsPage() {
     perUcet.get(s.bank_account_id)![s.export_type] = s;
   }
   const zoradeneObdobia = [...obdobia.keys()].sort().reverse();
+  // Stránkuje sa po mesiacoch (obdobie = skupina účtov); prázdne obdobia sa vynechajú vopred,
+  // aby každá strana mala plný počet.
+  const obdobiaSVypismi = zoradeneObdobia
+    .map((obdobie) => ({
+      id: obdobie,
+      riadky: [...obdobia.get(obdobie)!.entries()].filter(([, formaty]) =>
+        Object.values(formaty).some((s: any) => s.status !== "unsupported"),
+      ),
+    }))
+    .filter((o) => o.riadky.length > 0);
+  const lf = useListFilters({ pageSizeKey: "bankove-vypisy" });
+  const strankovanie = useStrankovanie(obdobiaSVypismi, lf);
 
   // Účty, kde výpis nevydala banka a ani my sme ho nedokázali zostaviť —
   // spravidla preto, že nemáme transakcie za celé obdobie.
@@ -145,6 +220,58 @@ function BankStatementsPage() {
       <PageBody>
         {loading && <NacitavanieStav className="rounded-xl border border-border bg-card" />}
 
+        {!loading && accounts.length > 0 && (
+          <div className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="flex items-center gap-2">
+              <Wand2 className="h-4 w-4 shrink-0 text-primary" />
+              <h2 className="text-base font-semibold">{t("Zostaviť výpis z pohybov")}</h2>
+            </div>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              {t("Faktero zostaví výpis v PDF a XML (camt.053) z pohybov, ktoré z účtu načítalo — pre ktorýkoľvek účet a mesiac. Keď pohyby nesiahajú na začiatok mesiaca, vznikne čiastočný výpis a povie to o sebe.")}
+            </p>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <label className="block min-w-0 flex-1 basis-64">
+                <span className="text-sm font-semibold">{t("Účet")}</span>
+                <select
+                  value={vyberUcet}
+                  onChange={(e) => setVyberUcet(e.target.value)}
+                  className="input mt-1 w-full"
+                >
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {[a.iban, a.account_name].filter(Boolean).join(" · ") || t("Účet")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block min-w-0 basis-40">
+                <span className="text-sm font-semibold">{t("Mesiac")}</span>
+                <select
+                  value={vyberMesiac}
+                  onChange={(e) => setVyberMesiac(e.target.value)}
+                  className="input mt-1 w-full"
+                >
+                  {mesiace.map((m, i) => (
+                    <option key={m} value={m}>
+                      {fmtObdobie(`${m}-01`, t)}
+                      {i === 0 ? ` (${t("do dnes")})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={onZostav}
+                disabled={zostavujem || !vyberUcet}
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <FileText className="h-4 w-4" />
+                {zostavujem ? t("Zostavujem…") : t("Zostaviť PDF a XML")}
+              </button>
+            </div>
+          </div>
+        )}
+
         {!loading && zoradeneObdobia.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
             <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
@@ -154,12 +281,7 @@ function BankStatementsPage() {
           </div>
         )}
 
-        {zoradeneObdobia.map((obdobie) => {
-          const perUcet = obdobia.get(obdobie)!;
-          const riadky = [...perUcet.entries()].filter(([, formaty]) =>
-            Object.values(formaty).some((s: any) => s.status !== "unsupported"),
-          );
-          if (riadky.length === 0) return null;
+        {strankovanie.viditelne.map(({ id: obdobie, riadky }) => {
           return (
             <div key={obdobie} className="mt-6 first:mt-0">
               <h2 className="text-base font-semibold">
@@ -240,6 +362,7 @@ function BankStatementsPage() {
             </div>
           );
         })}
+        {strankovanie.stranky()}
 
         {maVlastne && (
           <div className="mt-8 rounded-xl border border-border bg-card p-4 sm:p-5">

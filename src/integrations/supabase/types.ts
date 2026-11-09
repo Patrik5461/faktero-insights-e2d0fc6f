@@ -4409,6 +4409,7 @@ export type Database = {
           kv_clenenie: string | null
           pohoda_clenenie_dph: string | null
           pohoda_predkontacia: string | null
+          pohoda_rozuctovanie: Json
         }
         Insert: {
           amount: number
@@ -4432,6 +4433,7 @@ export type Database = {
           kv_clenenie?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_predkontacia?: string | null
+          pohoda_rozuctovanie?: Json
         }
         Update: {
           amount?: number
@@ -4455,6 +4457,7 @@ export type Database = {
           kv_clenenie?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_predkontacia?: string | null
+          pohoda_rozuctovanie?: Json
         }
         Relationships: [
           {

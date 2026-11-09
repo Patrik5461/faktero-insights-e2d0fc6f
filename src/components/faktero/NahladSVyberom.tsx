@@ -1,3 +1,4 @@
+import { moznostiPdf } from "@/lib/faktero/pdfjs-moznosti";
 import {
   useEffect,
   useMemo,
@@ -302,7 +303,7 @@ function Vyber({
           import.meta.url,
         ).toString();
         if (!zrusene) setPdfjsModul(() => pdfjs);
-        const dokument = await pdfjs.getDocument({ url }).promise;
+        const dokument = await pdfjs.getDocument(moznostiPdf(url)).promise;
         if (zrusene) return;
         setPocetStran(dokument.numPages);
         const meradlo = document.createElement("canvas").getContext("2d");

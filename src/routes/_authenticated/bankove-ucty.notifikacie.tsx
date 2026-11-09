@@ -8,6 +8,8 @@ import { useClenstvoFirmy, useJeAdminFirmy } from "@/lib/faktero/use-opravnenia"
 import { TEXT_BANKU_SPRAVUJE } from "@/lib/faktero/banka-ui";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { cn } from "@/lib/utils";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/bankove-ucty/notifikacie")
       },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: NotifikaciePage,
 });
 
@@ -66,6 +69,8 @@ function NotifikaciePage() {
   const [stav, setStav] = useState<any | null>(null);
   const [maily, setMaily] = useState<any[]>([]);
   const [vsetky, setVsetky] = useState(false);
+  const lf = useListFilters({ pageSizeKey: "banka-notifikacie-maily" });
+  const strankovanie = useStrankovanie(maily, lf, { reset: vsetky });
   const [busy, setBusy] = useState<string | null>(null);
   // Formulár na pridanie
   const [banka, setBanka] = useState<string>(BANKY[0]!.kod);
@@ -446,9 +451,10 @@ function NotifikaciePage() {
               </p>
             ) : (
               <div className="mt-3 space-y-3">
-                {maily.map((m) => (
+                {strankovanie.viditelne.map((m) => (
                   <MailNaKontrolu key={m.id} mail={m} cid={cid!} poZmene={obnov} />
                 ))}
+                {strankovanie.stranky()}
               </div>
             )}
           </div>

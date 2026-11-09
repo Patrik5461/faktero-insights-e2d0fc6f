@@ -28,6 +28,7 @@ import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
@@ -148,6 +149,9 @@ function PrijateZalohovePage() {
       }),
     [rows, zuctovane, hladane, stav, podla, obdobieOd, obdobieDo],
   );
+
+  // Kreslí sa len jedna strana; súčty, výber a export pracujú so všetkými zobrazenými.
+  const strankovanie = useStrankovanie(zobrazene, lf);
 
   // Po menách — CZK ani USD sa k eurám nepripočítajú (AB-09); storno a
   // zúčtované zálohy nie sú dlh (AB-10).
@@ -485,7 +489,7 @@ function PrijateZalohovePage() {
             </div>
           ) : (
             <ResponsiveTable
-              items={zobrazene}
+              items={strankovanie.viditelne}
               loading={loading}
               emptyText={t("Zatiaľ žiadna prijatá záloha.")}
               desktop={
@@ -516,7 +520,7 @@ function PrijateZalohovePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {zobrazene.map((r) => (
+                      {strankovanie.viditelne.map((r) => (
                         <KlikatelnyRiadok
                           key={r.id}
                           ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
@@ -591,6 +595,7 @@ function PrijateZalohovePage() {
               )}
             />
           )}
+          {!loading && zobrazene.length > 0 ? strankovanie.stranky() : null}
         </div>
 
         <ConfirmDialog

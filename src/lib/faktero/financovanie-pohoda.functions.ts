@@ -25,19 +25,24 @@ const prazdneNaNull = (v: string | null | undefined) => {
   return t ? t : null;
 };
 
-const kodyZlozky = z.object({ predkontacia: kod, clenenie: kod }).optional().nullable();
+const kodyZlozky = z.object({ predkontacia: kod, clenenie: kod, kv: kod }).optional().nullable();
 /** Rozúčtovanie po zložkách splátky; prázdne zložky sa nezapíšu. */
 const rozuctovanieSchema = z
   .object({ istina: kodyZlozky, urok: kodyZlozky, poistenie: kodyZlozky, poplatky: kodyZlozky })
   .optional()
   .nullable();
 function cisteRozuctovanie(r: z.infer<typeof rozuctovanieSchema>) {
-  const out: Record<string, { predkontacia?: string; clenenie?: string }> = {};
+  const out: Record<string, { predkontacia?: string; clenenie?: string; kv?: string }> = {};
   for (const [zlozka, k] of Object.entries(r ?? {})) {
     const predkontacia = prazdneNaNull(k?.predkontacia);
     const clenenie = prazdneNaNull(k?.clenenie);
-    if (predkontacia || clenenie)
-      out[zlozka] = { ...(predkontacia ? { predkontacia } : {}), ...(clenenie ? { clenenie } : {}) };
+    const kv = prazdneNaNull(k?.kv);
+    if (predkontacia || clenenie || kv)
+      out[zlozka] = {
+        ...(predkontacia ? { predkontacia } : {}),
+        ...(clenenie ? { clenenie } : {}),
+        ...(kv ? { kv } : {}),
+      };
   }
   return out;
 }
@@ -98,6 +103,8 @@ export const ulozZauctovanieSplatokFn = createServerFn({ method: "POST" })
         predkontacia: kod,
         clenenie: kod,
         kv: kod,
+        /** Rozúčtovanie zložiek len pre vybrané splátky; prázdne = ako kalendár. */
+        rozuctovanie: rozuctovanieSchema,
       })
       .parse(d),
   )
@@ -110,6 +117,7 @@ export const ulozZauctovanieSplatokFn = createServerFn({ method: "POST" })
           pohoda_predkontacia: prazdneNaNull(data.predkontacia),
           pohoda_clenenie_dph: prazdneNaNull(data.clenenie),
           kv_clenenie: prazdneNaNull(data.kv),
+          ...(data.rozuctovanie !== undefined ? { pohoda_rozuctovanie: cisteRozuctovanie(data.rozuctovanie) } : {}),
         },
         { count: "exact" },
       )

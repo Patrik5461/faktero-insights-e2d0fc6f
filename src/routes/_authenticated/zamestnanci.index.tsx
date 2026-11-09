@@ -13,8 +13,11 @@ import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { preloz } from "@/lib/i18n/jazyk";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 export const Route = createFileRoute("/_authenticated/zamestnanci/")({
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zamestnanci — Faktero") }] }),
   component: ZamestnanciPage,
 });
@@ -39,6 +42,9 @@ function ZamestnanciPage() {
       .finally(() => setNacitava(false));
   }, [nacitajZoznam, stav]);
   useEffect(nacitaj, [nacitaj]);
+
+  const lf = useListFilters({ pageSizeKey: "zamestnanci" });
+  const strankovanie = useStrankovanie(data?.zamestnanci ?? [], lf, { reset: stav });
 
   const zmluvaZamestnanca = (id: string) => data?.zmluvy.find((k) => k.employee_id === id);
 
@@ -130,7 +136,7 @@ function ZamestnanciPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {data.zamestnanci.map((z) => {
+                    {strankovanie.viditelne.map((z) => {
                       const k = zmluvaZamestnanca(z.id);
                       return (
                         <KlikatelnyRiadok
@@ -158,6 +164,7 @@ function ZamestnanciPage() {
                 </table>
               </div>
             )}
+            {!nacitava && strankovanie.stranky()}
           </>
         )}
       </PageBody>

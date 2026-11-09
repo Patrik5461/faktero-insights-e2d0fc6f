@@ -70,6 +70,11 @@ export type OwnStatementInput = {
   note?: string | null;
   /** Poradové číslo výpisu z papiera. Bez neho ide do `ElctrncSeqNb` nula. */
   sequenceNumber?: number | null;
+  /**
+   * Čiastočný výpis: pohyby nesiahajú na začiatok mesiaca, výpis začína až
+   * týmto dňom. Na výpise to musí byť povedané — v PDF aj v `AddtlStmtInf`.
+   */
+  partialFrom?: string | null;
 };
 
 /* ------------------------------------------------------------------ výpočty */
@@ -252,7 +257,21 @@ export function buildCamt053(input: OwnStatementInput): string {
     `<TtlDbtNtries><NbOfNtries>${transactions.filter((t) => t.amount < 0).length}</NbOfNtries><Sum>${debits.toFixed(2)}</Sum></TtlDbtNtries>` +
     "</TxsSummry>" +
     transactions.map((t) => entry(t, ccy)).join("") +
-    tag("AddtlStmtInf", input.note === undefined ? DISCLAIMER : input.note) +
+    /*
+      AddtlStmtInf je v camt.053.001.02 Max500Text. Pri 140 znakoch sa
+      upozornenie odsekávalo v polovici vety, a čiastočný výpis k nemu
+      pridáva ešte vlastnú vetu na začiatok.
+    */
+    tag(
+      "AddtlStmtInf",
+      [
+        input.partialFrom ? poznamkaCiastocny(input.partialFrom) : null,
+        input.note === undefined ? DISCLAIMER : input.note,
+      ]
+        .filter(Boolean)
+        .join(" "),
+      500,
+    ) +
     "</Stmt></BkToCstmrStmt></Document>"
   );
 }
@@ -349,6 +368,24 @@ export async function buildStatementPdf(input: OwnStatementInput): Promise<Uint8
     color: GREY,
   });
   y -= 24;
+
+  // Čiastočný výpis musí byť poznať hneď na prvý pohľad, nie až v pätke.
+  if (input.partialFrom) {
+    const veta = poznamkaCiastocny(input.partialFrom);
+    page.drawRectangle({
+      x: MARGIN,
+      y: y - 8,
+      width: A4.w - 2 * MARGIN,
+      height: 22,
+      color: rgb(1, 0.96, 0.86),
+    });
+    text(fit(veta, bold, 9.5, A4.w - 2 * MARGIN - 24), MARGIN + 12, y, {
+      size: 9.5,
+      font: bold,
+      color: rgb(0.55, 0.33, 0),
+    });
+    y -= 30;
+  }
 
   // ---- účet a zostatky
   page.drawRectangle({
@@ -468,6 +505,169 @@ export async function buildStatementPdf(input: OwnStatementInput): Promise<Uint8
 
 /* -------------------------------------------------------------- orchestrácia */
 
+/** "2026-10-26" → "26. 10. 2026" (tak, ako sa dátum píše vo vete) */
+export function datumVoVete(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${Number(d)}. ${Number(m)}. ${y}`;
+}
+
+/** Veta na čiastočnom výpise — v PDF aj v XML (`AddtlStmtInf`). */
+export function poznamkaCiastocny(od: string): string {
+  return `Čiastočný výpis od ${datumVoVete(od)} – skôr Faktero pohyby z banky nemá.`;
+}
+
+export type ZostavenieUctu =
+  | {
+      ok: true;
+      input: OwnStatementInput;
+      /** Najstarší pohyb účtu, aký Faktero má. */
+      najstarsi: string;
+      /** Deň, od ktorého je výpis čiastočný; `null` = výpis za celé obdobie. */
+      ciastocnyOd: string | null;
+    }
+  | {
+      ok: false;
+      /**
+       * `bez-pohybov` = účet nemá žiadny pohyb do konca obdobia,
+       * `neuplne` = pohyby nesiahajú na začiatok obdobia a čiastočný výpis nebol povolený.
+       */
+      dovod: "bez-pohybov" | "neuplne";
+      najstarsi: string | null;
+    };
+
+/**
+ * Pripraví podklady výpisu jedného účtu za obdobie `start`..`end` (vrátane).
+ *
+ * Bez `ciastocny` sa správa ako nočný beh: keď pohyby nesiahajú na začiatok
+ * obdobia, výpis nezostaví (`neuplne`). S `ciastocny` zostaví výpis od
+ * najstaršieho známeho pohybu a povie to na ňom — v PDF aj v XML.
+ * Súbory vyrobí `suborVypisu`.
+ */
+export async function zostavVypisUctu(
+  supabaseAdmin: any,
+  accountId: string,
+  start: string,
+  end: string,
+  opts: { ciastocny?: boolean } = {},
+): Promise<ZostavenieUctu> {
+  const { data: account } = await supabaseAdmin
+    .from("bank_accounts")
+    .select("id, company_id, iban, account_name, currency, balance, booked_balance")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (!account) throw new Error("účet neexistuje");
+
+  // Bez transakcií siahajúcich pred začiatok obdobia nevieme povedať, či
+  // ich za obdobie máme všetky — radšej výpis nevydáme, ako by mal klamať.
+  const { data: earliest } = await supabaseAdmin
+    .from("bank_transactions")
+    .select("booking_date")
+    .eq("bank_account_id", accountId)
+    .order("booking_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const najstarsi: string | null = earliest?.booking_date ?? null;
+  if (!najstarsi || najstarsi > end) return { ok: false, dovod: "bez-pohybov", najstarsi };
+  const ciastocnyOd = najstarsi > start ? najstarsi : null;
+  if (ciastocnyOd && !opts.ciastocny) return { ok: false, dovod: "neuplne", najstarsi };
+
+  const { data: company } = await supabaseAdmin
+    .from("companies")
+    .select("name, ico, street, zip, city, country")
+    .eq("id", account.company_id)
+    .maybeSingle();
+
+  /*
+    Supabase vracia najviac 1 000 riadkov na dotaz. Účet s rušnou prevádzkou
+    ich má za mesiac viac a obratov po konci obdobia ešte viac — bez
+    stránkovania výpis vynechal pohyby a zostatky dopočítal zle.
+  */
+  const txs = await vsetkyRiadky<any>((zac, kon) =>
+    supabaseAdmin
+      .from("bank_transactions")
+      .select(
+        "booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference",
+      )
+      .eq("bank_account_id", accountId)
+      .gte("booking_date", start)
+      .lte("booking_date", end)
+      .order("booking_date", { ascending: true })
+      .order("id", { ascending: true })
+      .range(zac, kon),
+  );
+
+  const after = await vsetkyRiadky<any>((zac, kon) =>
+    supabaseAdmin
+      .from("bank_transactions")
+      .select("amount")
+      .eq("bank_account_id", accountId)
+      .gt("booking_date", end)
+      .order("id", { ascending: true })
+      .range(zac, kon),
+  );
+
+  const transactions: OwnStatementTx[] = (txs ?? []).map((t: any) => ({
+    booking_date: t.booking_date,
+    amount: Number(t.amount),
+    currency: t.currency,
+    variable_symbol: t.variable_symbol,
+    counterparty: t.counterparty,
+    description: t.description,
+    transaction_reference: t.transaction_reference,
+  }));
+  // Výpis je účtovný doklad, takže sa počíta zo zaúčtovaného zostatku;
+  // disponibilný v sebe nesie blokácie, ktoré na výpise nie sú.
+  const sums = computeBalances(
+    Number(account.booked_balance ?? account.balance ?? 0),
+    transactions,
+    (after ?? []).map((t: any) => ({ amount: Number(t.amount) })),
+  );
+
+  const input: OwnStatementInput = {
+    company: {
+      name: company?.name ?? "—",
+      ico: company?.ico,
+      street: company?.street,
+      zip: company?.zip,
+      city: company?.city,
+      country: company?.country,
+    },
+    account: {
+      iban: account.iban,
+      account_name: account.account_name,
+      currency: account.currency,
+    },
+    // Čiastočný výpis začína tam, kde začínajú pohyby — počiatočný zostatok je
+    // zostatok pred najstarším z nich.
+    periodStart: ciastocnyOd ?? start,
+    periodEnd: end,
+    transactions,
+    opening: sums.opening,
+    closing: sums.closing,
+    partialFrom: ciastocnyOd,
+  };
+  return { ok: true, input, najstarsi, ciastocnyOd };
+}
+
+/** Vyrobí súbor výpisu v danom formáte. */
+export async function suborVypisu(input: OwnStatementInput, typ: "PDF" | "XML"): Promise<Uint8Array> {
+  return typ === "PDF"
+    ? await buildStatementPdf(input)
+    : new TextEncoder().encode(buildCamt053(input));
+}
+
+/** Cesta súboru vlastného výpisu v buckete — rovnaká pre nočný beh aj ručné zostavenie. */
+export function cestaVlastnehoVypisu(
+  companyId: string,
+  accountId: string,
+  start: string,
+  typ: "PDF" | "XML",
+): string {
+  return `${companyId}/${accountId}/${start.slice(0, 7)}-faktero.${typ === "PDF" ? "pdf" : "xml"}`;
+}
+
+export { BUCKET as BUCKET_VYPISOV };
+
 type GenResult = {
   period: { start: string; end: string };
   generated: number;
@@ -483,6 +683,9 @@ type GenResult = {
  * s oneskorením, takže výpis za minulý mesiac sa ešte pár dní dopĺňa. Cron
  * beží denne a generovanie je lokálne, takže to nič nestojí; keď sa obdobie
  * posunie na ďalší mesiac, hotový výpis už nikto nemení.
+ *
+ * Neúplné obdobie sa tu preskakuje — čiastočný výpis vzniká len na požiadanie
+ * (`zostavVypisZTransakciiFn`).
  */
 export async function generateOwnStatements(period?: {
   start: string;
@@ -513,64 +716,14 @@ export async function generateOwnStatements(period?: {
 
   for (const [accountId, accountRows] of byAccount) {
     try {
-      const { data: account } = await supabaseAdmin
-        .from("bank_accounts")
-        .select("id, company_id, iban, account_name, currency, balance, booked_balance")
-        .eq("id", accountId)
-        .maybeSingle();
-      if (!account) throw new Error("účet neexistuje");
-
-      const { data: company } = await supabaseAdmin
-        .from("companies")
-        .select("name, ico, street, zip, city, country")
-        .eq("id", account.company_id)
-        .maybeSingle();
-
-      /*
-        Supabase vracia najviac 1 000 riadkov na dotaz. Účet s rušnou prevádzkou
-        ich má za mesiac viac a obratov po konci obdobia ešte viac — bez
-        stránkovania výpis vynechal pohyby a zostatky dopočítal zle.
-      */
-      const txs = await vsetkyRiadky<any>((zac, kon) =>
-        supabaseAdmin
-          .from("bank_transactions")
-          .select(
-            "booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference",
-          )
-          .eq("bank_account_id", accountId)
-          .gte("booking_date", start)
-          .lte("booking_date", end)
-          .order("booking_date", { ascending: true })
-          .order("id", { ascending: true })
-          .range(zac, kon),
-      );
-
-      const after = await vsetkyRiadky<any>((zac, kon) =>
-        supabaseAdmin
-          .from("bank_transactions")
-          .select("amount")
-          .eq("bank_account_id", accountId)
-          .gt("booking_date", end)
-          .order("id", { ascending: true })
-          .range(zac, kon),
-      );
-
-      // Bez transakcií siahajúcich pred začiatok obdobia nevieme povedať, či
-      // ich za obdobie máme všetky — radšej výpis nevydáme, ako by mal klamať.
-      const { data: earliest } = await supabaseAdmin
-        .from("bank_transactions")
-        .select("booking_date")
-        .eq("bank_account_id", accountId)
-        .order("booking_date", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (!earliest || earliest.booking_date > start) {
+      const z = await zostavVypisUctu(supabaseAdmin, accountId, start, end);
+      if (!z.ok) {
         skipped += accountRows.length;
         for (const r of accountRows) {
           await supabaseAdmin
             .from("bank_statements")
             .update({
-              error: `nemáme transakcie za celé obdobie (najstaršia je ${earliest?.booking_date ?? "—"})`,
+              error: `nemáme transakcie za celé obdobie (najstaršia je ${z.najstarsi ?? "—"})`,
               updated_at: new Date().toISOString(),
             })
             .eq("id", r.id);
@@ -578,53 +731,13 @@ export async function generateOwnStatements(period?: {
         continue;
       }
 
-      const transactions: OwnStatementTx[] = (txs ?? []).map((t: any) => ({
-        booking_date: t.booking_date,
-        amount: Number(t.amount),
-        currency: t.currency,
-        variable_symbol: t.variable_symbol,
-        counterparty: t.counterparty,
-        description: t.description,
-        transaction_reference: t.transaction_reference,
-      }));
-      // Výpis je účtovný doklad, takže sa počíta zo zaúčtovaného zostatku;
-      // disponibilný v sebe nesie blokácie, ktoré na výpise nie sú.
-      const sums = computeBalances(
-        Number(account.booked_balance ?? account.balance ?? 0),
-        transactions,
-        (after ?? []).map((t: any) => ({ amount: Number(t.amount) })),
-      );
-
-      const input: OwnStatementInput = {
-        company: {
-          name: company?.name ?? "—",
-          ico: company?.ico,
-          street: company?.street,
-          zip: company?.zip,
-          city: company?.city,
-          country: company?.country,
-        },
-        account: {
-          iban: account.iban,
-          account_name: account.account_name,
-          currency: account.currency,
-        },
-        periodStart: start,
-        periodEnd: end,
-        transactions,
-        opening: sums.opening,
-        closing: sums.closing,
-      };
-
       for (const row of accountRows) {
         try {
-          const isPdf = row.export_type === "PDF";
-          const bytes = isPdf
-            ? await buildStatementPdf(input)
-            : new TextEncoder().encode(buildCamt053(input));
-          const path = `${row.company_id}/${accountId}/${start.slice(0, 7)}-faktero.${isPdf ? "pdf" : "xml"}`;
+          const typ = row.export_type === "PDF" ? "PDF" : "XML";
+          const bytes = await suborVypisu(z.input, typ);
+          const path = cestaVlastnehoVypisu(row.company_id, accountId, start, typ);
           const { error: upErr } = await supabaseAdmin.storage.from(BUCKET).upload(path, bytes, {
-            contentType: isPdf ? "application/pdf" : "application/xml",
+            contentType: typ === "PDF" ? "application/pdf" : "application/xml",
             upsert: true,
           });
           if (upErr) throw new Error(`upload zlyhal: ${upErr.message}`);

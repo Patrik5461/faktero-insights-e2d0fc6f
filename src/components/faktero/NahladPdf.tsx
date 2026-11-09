@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { moznostiPdf } from "@/lib/faktero/pdfjs-moznosti";
 import { useT } from "@/lib/i18n/useT";
 import { slovaStranyPdf } from "@/lib/faktero/pdf-slova";
 import { maStranaText, slovaZoZvyrazneni, type SlovoSkenu } from "@/lib/faktero/textova-vrstva";
@@ -90,7 +91,7 @@ export function NahladPdf({
         ).toString();
         if (!zrusene) setPdfjsModul(() => pdfjs);
 
-        const dokument = await pdfjs.getDocument({ url }).promise;
+        const dokument = await pdfjs.getDocument(moznostiPdf(url)).promise;
         if (zrusene) return;
         setStran(dokument.numPages);
         const meradlo = document.createElement("canvas").getContext("2d");

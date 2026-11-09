@@ -10,6 +10,7 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 
 type Polozka = {
   id: string;
@@ -43,6 +44,12 @@ export function KosDokladovOkno({
   const zmaz = useServerFn(zmazZKosaFn);
   const [polozky, setPolozky] = useState<Polozka[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // Okno nemá vlastnú adresu — strana je v stave, počet na stranu si pamätá prehliadač.
+  const [strana, setStrana] = useState(1);
+  const [naStranu, setNaStranu] = useStoredPageSize("kos-dokladov");
+  const pocetStran = Math.max(1, Math.ceil((polozky?.length ?? 0) / naStranu));
+  const aktStrana = Math.min(strana, pocetStran);
+  const viditelne = (polozky ?? []).slice((aktStrana - 1) * naStranu, aktStrana * naStranu);
 
   const nacitajZnova = () =>
     nacitaj({ data: { company_id: companyId } })
@@ -108,7 +115,7 @@ export function KosDokladovOkno({
           <p className={`${vlozene ? "py-4" : "mt-6"} text-center text-sm text-muted-foreground`}>{t("Kôš je prázdny.")}</p>
         ) : (
           <ul className={`${vlozene ? "-my-2" : "mt-4"} divide-y divide-border`}>
-            {polozky.map((p) => (
+            {viditelne.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{p.popis}</div>
@@ -139,6 +146,18 @@ export function KosDokladovOkno({
               </li>
             ))}
           </ul>
+        )}
+        {polozky && polozky.length > 0 && (
+          <ListPagination
+            page={aktStrana}
+            pageSize={naStranu}
+            total={polozky.length}
+            onPageChange={setStrana}
+            onPageSizeChange={(n) => {
+              setNaStranu(n);
+              setStrana(1);
+            }}
+          />
         )}
         {!vlozene && (
           <div className="mt-4 flex justify-end">

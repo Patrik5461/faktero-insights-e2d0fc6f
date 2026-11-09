@@ -12,9 +12,12 @@ import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/St
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Presuny — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: TransfersListPage,
 });
 
@@ -37,6 +40,8 @@ function TransfersListPage() {
   const [warehouses, setWarehouses] = useState<Record<string, string>>({});
   const [companies, setCompanies] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const lf = useListFilters({ pageSizeKey: "presuny-skladu" });
+  const strankovanie = useStrankovanie(rows, lf);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -109,7 +114,7 @@ function TransfersListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {rows.map((r) => (
+                {strankovanie.viditelne.map((r) => (
                   <KlikatelnyRiadok key={r.id} ciel={{ to: "/sklad/presuny/$id", params: { id: r.id } }}>
                     <td className="whitespace-nowrap p-3 tabular-nums">{new Date(r.created_at).toLocaleString("sk-SK")}</td>
                     <td className="p-3 font-medium">{warehouses[r.warehouse_from_id] ?? "—"}</td>
@@ -144,6 +149,7 @@ function TransfersListPage() {
             </table>
           </div>
         )}
+        {!loading && strankovanie.stranky()}
       </PageBody>
     </>
   );

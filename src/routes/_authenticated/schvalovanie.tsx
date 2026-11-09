@@ -21,6 +21,8 @@ import {
   type AgendaSchvalovania,
 } from "@/lib/faktero/schvalovanie";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 
 /** Tón stavu schvaľovania (redizajn) — text stavu ostáva z NAZVY_STAVOV. */
@@ -34,6 +36,7 @@ const TON_STAVU_SCHVALOVANIA: Record<string, TonStavu> = {
 /** Doklady, ktoré čakajú na moje schválenie — jednotlivo aj hromadne. */
 export const Route = createFileRoute("/_authenticated/schvalovanie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Na schválenie — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: Stranka,
 });
 
@@ -46,6 +49,9 @@ function Stranka() {
   const [vyber, setVyber] = useState<Set<string>>(new Set());
   const [poznamka, setPoznamka] = useState("");
   const [busy, setBusy] = useState(false);
+  const lf = useListFilters({ pageSizeKey: "schvalovanie" });
+  // Stránkovanie po 10/20/50/100 — „vybrať všetky“ a hromadné akcie platia pre všetky riadky.
+  const strankovanie = useStrankovanie(d?.polozky ?? [], lf);
 
   const obnov = async () => {
     if (!companyId) return;
@@ -158,7 +164,7 @@ function Stranka() {
                   </tr>
                 </thead>
                 <tbody>
-                  {d.polozky.map((p) => {
+                  {strankovanie.viditelne.map((p) => {
                     const k = `${p.agenda}:${p.id}`;
                     return (
                       <KlikatelnyRiadok key={k} ciel={odkazNaDetail(p.agenda, p.id) as any} className="border-t border-border">
@@ -198,6 +204,7 @@ function Stranka() {
                 </tbody>
               </table>
             </div>
+            {strankovanie.stranky()}
           </section>
         )}
       </PageBody>

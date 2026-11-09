@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { listAdminErrors } from "@/lib/faktero/admin.functions";
 import {
   StavProcesu,
@@ -109,9 +110,13 @@ function LogoveChyby({ source }: { source: Source }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-chyby-logy");
 
   useEffect(() => {
     let cancelled = false;
+    setStrana(1);
     (async () => {
       setLoading(true);
       setError(null);
@@ -147,7 +152,7 @@ function LogoveChyby({ source }: { source: Source }) {
         </div>
       ) : (
         <ul className="space-y-2">
-          {rows.map((r, i) => (
+          {rows.slice((strana - 1) * pageSize, strana * pageSize).map((r, i) => (
             <li
               key={`${r.source}-${r.created_at}-${i}`}
               className="rounded-xl border border-border bg-card p-3 shadow-sm"
@@ -185,6 +190,18 @@ function LogoveChyby({ source }: { source: Source }) {
             </li>
           ))}
         </ul>
+      )}
+      {rows.length > 0 && (
+        <ListPagination
+          page={strana}
+          pageSize={pageSize}
+          total={rows.length}
+          onPageChange={setStrana}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setStrana(1);
+          }}
+        />
       )}
     </>
   );

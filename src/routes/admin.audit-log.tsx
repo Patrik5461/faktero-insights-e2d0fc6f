@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
@@ -24,7 +25,8 @@ function fmtDateTime(s: string) {
 function AdminAuditLogPage() {
   const fetchLogs = useServerFn(listAuditLogs);
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [pageSize, setPageSize] = useStoredPageSize("admin-audit-log");
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -50,9 +52,8 @@ function AdminAuditLogPage() {
     return () => {
       cancelled = true;
     };
-  }, [fetchLogs, page]);
+  }, [fetchLogs, page, pageSize]);
 
-  const pages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <>
@@ -140,28 +141,17 @@ function AdminAuditLogPage() {
           )}
         />
 
-        {total > pageSize && (
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Strana {page} z {pages} · {total} záznamov
-            </span>
-            <div className="flex gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
-              >
-                ← Späť
-              </button>
-              <button
-                disabled={page >= pages}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
-              >
-                Ďalej →
-              </button>
-            </div>
-          </div>
+        {total > 0 && (
+          <ListPagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+          />
         )}
       </AdminPageBody>
     </>

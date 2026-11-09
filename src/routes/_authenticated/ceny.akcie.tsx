@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,6 +26,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenové akcie — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: AkciePage,
 });
 
@@ -60,6 +63,8 @@ function AkciePage() {
   const klik = useKlikNaRiadok();
   const [produkty, setProdukty] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const lf = useListFilters({ pageSizeKey: "ceny-akcie" });
+  const strankovanie = useStrankovanie(akcie, lf);
   const [form, setForm] = useState<any | null>(null);
   useZatvorNaEscape(form ? () => setForm(null) : null);
   const [chyba, setChyba] = useState<string | null>(null);
@@ -189,7 +194,7 @@ function AkciePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {akcie.map((a) => {
+            {strankovanie.viditelne.map((a) => {
               const bezi = akciaPlati(
                 { valid_from: a.valid_from, valid_to: a.valid_to, active: a.active },
                 dnesok,
@@ -291,6 +296,7 @@ function AkciePage() {
                 </div>
               );
             })}
+            {strankovanie.stranky()}
           </div>
         )}
       </PageBody>

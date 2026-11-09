@@ -16,6 +16,7 @@ import { zoznamVyuctovaniFn } from "@/lib/faktero/vyuctovanie-vydavkov.functions
 import { nazovTypu, TYPY_VYUCTOVANIA } from "@/lib/faktero/vyuctovanie-vydavkov";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
@@ -77,6 +78,7 @@ function Zoznam() {
             .some((x) => String(x).toLowerCase().includes(h))),
     );
   }, [rows, lf.q, typ, stav]);
+  const strankovanie = useStrankovanie(zobrazene ?? [], lf);
 
   return (
     <>
@@ -143,7 +145,7 @@ function Zoznam() {
         ) : (
           // Na telefóne karty — v tabuľke na 390 px nebolo vidieť sumu.
           <ResponsiveTable
-            items={zobrazene}
+            items={strankovanie.viditelne}
             mobileCard={(r: any) => (
               <MobileListCard
                 ciel={{ to: "/doklady/vyuctovania/$id", params: { id: r.id } }}
@@ -188,7 +190,7 @@ function Zoznam() {
                     </tr>
                   </thead>
                   <tbody>
-                    {zobrazene.map((r) => (
+                    {strankovanie.viditelne.map((r) => (
                       <KlikatelnyRiadok
                         key={r.id}
                         ciel={{ to: "/doklady/vyuctovania/$id", params: { id: r.id } }}
@@ -228,6 +230,7 @@ function Zoznam() {
             }
           />
         )}
+        {zobrazene && strankovanie.stranky()}
       </PageBody>
     </>
   );

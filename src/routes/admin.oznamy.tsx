@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Ban, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { potvrd } from "@/lib/potvrdenie";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import {
   casVBratislave,
   predvolenyText,
@@ -52,6 +53,9 @@ function datumCas(iso: string): string {
 
 function Page() {
   const qc = useQueryClient();
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-oznamy");
   const {
     data: oznamy = [],
     isLoading,
@@ -292,7 +296,7 @@ function Page() {
               </tr>
             </thead>
             <tbody>
-              {oznamy.map((o) => {
+              {oznamy.slice((strana - 1) * pageSize, strana * pageSize).map((o) => {
                 const faza = stavOznamu(o, teraz, 0, true).faza;
                 return (
                   <tr key={o.id} className="border-b border-border last:border-0 align-top">
@@ -342,6 +346,18 @@ function Page() {
             </tbody>
           </table>
         </div>
+      )}
+      {!isLoading && !error && oznamy.length > 0 && (
+        <ListPagination
+          page={strana}
+          pageSize={pageSize}
+          total={oznamy.length}
+          onPageChange={setStrana}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setStrana(1);
+          }}
+        />
       )}
     </div>
   );

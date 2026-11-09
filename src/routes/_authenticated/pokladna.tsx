@@ -19,12 +19,15 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useMenaFirmy } from "@/lib/faktero/krajina-firmy";
 import { useT } from "@/lib/i18n/useT";
 import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Pokladňa — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: PokladnaPage,
 });
 
@@ -90,6 +93,10 @@ function PokladnaPage() {
   }, [cid, fetchBook, mesiac, pokladnaId, t]);
 
   useEffect(nacitaj, [nacitaj]);
+
+  const lf = useListFilters({ pageSizeKey: "pokladna" });
+  const riadky = useMemo<any[]>(() => data?.riadky ?? [], [data]);
+  const { viditelne, stranky } = useStrankovanie(riadky, lf, { reset: [mesiac, pokladnaId] });
 
   async function uloz(e: React.FormEvent) {
     e.preventDefault();
@@ -470,7 +477,7 @@ function PokladnaPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {(data?.riadky ?? []).map((r: any) => {
+                  {viditelne.map((r: any) => {
                     const pr = klik(cielRiadku(r));
                     return (
                     <tr key={`${r.zdroj}-${r.id}-${r.pokladna_id}`} {...pr} className={cn(pr.className, "hover:bg-muted/30")}>
@@ -535,7 +542,7 @@ function PokladnaPage() {
 
             {/* Na mobile karty — tabuľka by Zdroj, Sumu a Zostatok orezala. */}
             <div className="space-y-2 md:hidden">
-              {(data?.riadky ?? []).map((r: any) => {
+              {viditelne.map((r: any) => {
                 const pk = klik(cielRiadku(r), { klavesnica: false });
                 return (
                 <div
@@ -598,6 +605,7 @@ function PokladnaPage() {
                 );
               })}
             </div>
+            {stranky()}
           </>
         )}
 

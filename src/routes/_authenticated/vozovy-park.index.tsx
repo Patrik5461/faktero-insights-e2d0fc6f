@@ -11,9 +11,12 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { nazovVlastnictva, terminyNaRiesenie } from "@/lib/faktero/vozovy-park";
 import { StitokTerminu } from "@/components/faktero/VozidloKarta";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 export const Route = createFileRoute("/_authenticated/vozovy-park/")({
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Vozový park — Faktero") }],
   }),
@@ -46,6 +49,8 @@ function VozovyPark() {
     () => (vozidla ?? []).filter((v) => ajVyradene || v.active !== false),
     [vozidla, ajVyradene],
   );
+  const lf = useListFilters({ pageSizeKey: "vozovy-park" });
+  const strankovanie = useStrankovanie(zobrazene, lf, { reset: ajVyradene });
   const naRiesenie = zobrazene.reduce((s, v) => s + terminyNaRiesenie(v, dnes).length, 0);
 
   return (
@@ -119,7 +124,7 @@ function VozovyPark() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {zobrazene.map((v) => {
+                {strankovanie.viditelne.map((v) => {
                   const terminy = terminyNaRiesenie(v, dnes);
                   return (
                     <KlikatelnyRiadok
@@ -180,6 +185,7 @@ function VozovyPark() {
             </table>
           </div>
         )}
+        {vozidla !== null && strankovanie.stranky()}
       </PageBody>
     </>
   );

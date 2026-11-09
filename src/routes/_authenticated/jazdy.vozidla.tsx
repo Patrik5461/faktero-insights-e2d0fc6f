@@ -19,7 +19,10 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { useMozeUpravovat } from "@/lib/faktero/use-opravnenia";
 import { textChybyZapisu, zapisOverene } from "@/lib/faktero/over-zapis";
 import { PALIVA, popisPaliva, vozidlaNaVyber } from "@/lib/faktero/vozidla-vyber";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 export const Route = createFileRoute("/_authenticated/jazdy/vozidla")({
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Vozidlá — Faktero") }] }),
   component: VehiclesPage,
 });
@@ -45,6 +48,8 @@ function VehiclesPage() {
   const klik = useKlikNaRiadok();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [fuel, setFuel] = useState<any[]>([]);
+  const lf = useListFilters({ pageSizeKey: "jazdy-tankovania" });
+  const tankovania = useStrankovanie(fuel, lf);
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [fuelOpen, setFuelOpen] = useState(false);
 
@@ -270,7 +275,7 @@ function VehiclesPage() {
               {t("Žiadne záznamy.")}
             </div>
           )}
-          {fuel.map((f: any) => (
+          {tankovania.viditelne.map((f: any) => (
             <div key={f.id} className="rounded-xl border border-border bg-card p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -328,7 +333,7 @@ function VehiclesPage() {
                   </td>
                 </tr>
               )}
-              {fuel.map((f: any) => (
+              {tankovania.viditelne.map((f: any) => (
                 <tr key={f.id}>
                   <td className="p-3 whitespace-nowrap">{formatujDatum(f.fuel_date)}</td>
                   <td className="p-3 font-medium">{f.vehicles?.name ?? "—"}</td>
@@ -358,6 +363,7 @@ function VehiclesPage() {
             </tbody>
           </table>
         </div>
+        {tankovania.stranky()}
       </PageBody>
 
       {editing && (

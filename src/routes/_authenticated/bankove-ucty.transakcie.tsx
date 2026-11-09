@@ -134,6 +134,8 @@ function TxPage() {
     // `iban` tu nikdy nebol — hľadanie kvôli nemu končilo chybou 400 a
     // nenašlo nič. Referencia pohybu je to, čo sa naozaj dá hľadať.
     searchColumns: ["counterparty", "variable_symbol", "description", "transaction_reference"],
+    // „120,50“ v hľadaní nájde aj platby s touto sumou (príjem aj výdaj).
+    amountColumn: "amount",
     filters: { bank_account_id: selected ?? null, vybavenie: vybavenie || null },
     compare: compare as any,
     dateColumn: "booking_date",
@@ -283,7 +285,7 @@ function TxPage() {
         <LogsToolbar
           search={q}
           onSearchChange={setQ}
-          searchPlaceholder={t("Hľadať protistranu, VS alebo popis…")}
+          searchPlaceholder={t("Hľadať protistranu, VS, popis alebo sumu…")}
           selects={[
             {
               label: t("Účet"),

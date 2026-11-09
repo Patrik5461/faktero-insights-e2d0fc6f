@@ -25,13 +25,16 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { cn } from "@/lib/utils";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useMozeUpravovat } from "@/lib/faktero/use-opravnenia";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Kniha jázd — Faktero") }] }),
-  validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } & ListSearch => ({
+    ...zoznamSearch(s),
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
   component: TripsPage,
@@ -163,6 +166,8 @@ function TripsPage() {
     [rows, vybrane],
   );
   const vsetkyVybrate = rows.length > 0 && vybraneIds.length === rows.length;
+  const lf = useListFilters({ pageSizeKey: "jazdy" });
+  const { viditelne, stranky } = useStrankovanie(rows, lf, { reset: [vehicle_id] });
 
   function prepniJazdu(id: string, zapnute: boolean) {
     setVybrane((p) => ({ ...p, [id]: zapnute }));
@@ -402,7 +407,7 @@ function TripsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {rows.map((r) => (
+                  {viditelne.map((r) => (
                     /*
                       Jazdu otvára celý riadok, nielen ceruzka. Rovnako sa
                       správa kniha faktúr — malá ikonka na kraji riadku je na
@@ -514,7 +519,7 @@ function TripsPage() {
 
             {/* Mobile cards */}
             <div className="space-y-2 md:hidden">
-              {rows.map((r) => {
+              {viditelne.map((r) => {
                 const p = klik({ to: "/jazdy/nova", search: { id: r.id } });
                 return (
                   <div
@@ -598,6 +603,8 @@ function TripsPage() {
                 );
               })}
             </div>
+
+            {stranky()}
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
               <span>

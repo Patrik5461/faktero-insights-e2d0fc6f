@@ -131,7 +131,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
 const ListInput = z.object({
   q: z.string().max(120).optional().default(""),
   page: z.number().int().min(1).max(1000).default(1),
-  pageSize: z.number().int().min(10).max(100).default(25),
+  pageSize: z.number().int().min(10).max(100).default(10),
   suspended: z.enum(["all", "active", "suspended"]).default("all"),
 });
 
@@ -1067,7 +1067,7 @@ export const listAuditLogs = createServerFn({ method: "POST" })
     z
       .object({
         page: z.number().int().min(1).max(1000).default(1),
-        pageSize: z.number().int().min(10).max(100).default(50),
+        pageSize: z.number().int().min(10).max(100).default(10),
       })
       .parse(input),
   )

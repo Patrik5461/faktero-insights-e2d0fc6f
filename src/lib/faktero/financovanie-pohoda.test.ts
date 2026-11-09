@@ -162,11 +162,10 @@ describe("rozúčtovanie splátky po zložkách", () => {
   };
 
   it("každá položka dostane predkontáciu svojej zložky, chýbajúca ide podľa kalendára", () => {
-    const kody = ucinneKody(rozuct, s1);
-    expect(kodyPolozky(rozuct, kody, "istina")).toMatchObject({ predkontacia: "1Li", clenenie: "PN" });
-    expect(kodyPolozky(rozuct, kody, "urok").predkontacia).toBe("1Lu");
-    expect(kodyPolozky(rozuct, kody, "poplatky").predkontacia).toBe("1Lz");
-    expect(kodyPolozky(rozuct, kody, null).predkontacia).toBe("1Lz");
+    expect(kodyPolozky(rozuct, s1, "istina")).toMatchObject({ predkontacia: "1Li", clenenie: "PN" });
+    expect(kodyPolozky(rozuct, s1, "urok").predkontacia).toBe("1Lu");
+    expect(kodyPolozky(rozuct, s1, "poplatky").predkontacia).toBe("1Lz");
+    expect(kodyPolozky(rozuct, s1, null).predkontacia).toBe("1Lz");
   });
 
   it("XML nesie kód na každej položke a prejde schémou", () => {
@@ -196,5 +195,20 @@ describe("rozúčtovanie splátky po zložkách", () => {
   it("bez predkontácie kalendára vymenuje zložky, ktorým chýba", () => {
     const r = xmlSplatokDoPohody({ zmluva: { ...rozuct, pohoda_predkontacia: null }, splatky: [s1] });
     expect(r.vyhrady.join(" ")).toMatch(/Bez predkontácie: poplatky/);
+  });
+
+  it("splátka: vlastná zložka > vlastný kód splátky > zložka kalendára > kalendár", () => {
+    const sVlastna = { ...s1, pohoda_predkontacia: "1Sx", pohoda_rozuctovanie: { urok: { predkontacia: "1Su", kv: "B2" } } };
+    expect(kodyPolozky(rozuct, sVlastna, "urok")).toMatchObject({ predkontacia: "1Su", kv: "B2", vlastne: true });
+    expect(kodyPolozky(rozuct, sVlastna, "istina").predkontacia).toBe("1Sx");
+    expect(kodyPolozky(rozuct, s1, "istina").predkontacia).toBe("1Li");
+  });
+
+  it("výslovné KV zložky ide aj na položku bez DPH", () => {
+    const z = { ...rozuct, pohoda_rozuctovanie: { ...rozuct.pohoda_rozuctovanie, poistenie: { predkontacia: "1Lp", kv: "B2" } } };
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: z, splatky: [s1] });
+    expect(chybySchemy(r.xml)).toEqual([]);
+    const poistenie = r.xml.match(/<inv:text>Poistenie<\/inv:text>[\s\S]*?<\/inv:invoiceItem>/)?.[0] ?? "";
+    expect(poistenie).toContain("<inv:classificationKVDPH><typ:ids>B2</typ:ids>");
   });
 });

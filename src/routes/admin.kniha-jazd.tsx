@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { getAdminKnihaJazd } from "@/lib/faktero/admin.functions";
 
@@ -31,6 +32,9 @@ function AdminKnihaJazdPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-kniha-jazd");
 
   useEffect(() => {
     let zive = true;
@@ -50,6 +54,8 @@ function AdminKnihaJazdPage() {
     }),
     { vozidiel: 0, aktivne: 0 },
   );
+
+  const viditelne = rows.slice((strana - 1) * pageSize, strana * pageSize);
 
   return (
     <>
@@ -78,7 +84,7 @@ function AdminKnihaJazdPage() {
         )}
 
         <ResponsiveTable
-          items={rows}
+          items={viditelne}
           loading={loading}
           emptyText="Knihu jázd zatiaľ nepoužíva žiadna firma."
           desktop={
@@ -104,7 +110,7 @@ function AdminKnihaJazdPage() {
                       </td>
                     </tr>
                   ) : (
-                    rows.map((r) => (
+                    viditelne.map((r) => (
                       <KlikatelnyRiadok
                         key={r.company_id}
                         ciel={{ to: "/admin/companies/$id", params: { id: r.company_id } }}
@@ -168,6 +174,18 @@ function AdminKnihaJazdPage() {
             />
           )}
         />
+        {!loading && rows.length > 0 && (
+          <ListPagination
+            page={strana}
+            pageSize={pageSize}
+            total={rows.length}
+            onPageChange={setStrana}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setStrana(1);
+            }}
+          />
+        )}
       </AdminPageBody>
     </>
   );

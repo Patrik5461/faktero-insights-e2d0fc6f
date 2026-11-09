@@ -11,12 +11,15 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/zakazky/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Zákazky — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: JobsPage,
 });
 
@@ -75,6 +78,9 @@ function JobsPage() {
       ),
     [rows],
   );
+  // Súčty ostávajú zo všetkých zákaziek, kreslí sa len jedna strana.
+  const lf = useListFilters({ pageSizeKey: "zakazky" });
+  const strankovanie = useStrankovanie(rows, lf, { reset: filter });
 
   return (
     <>
@@ -138,7 +144,7 @@ function JobsPage() {
         ) : (
           <>
             <ResponsiveTable
-              items={rows}
+              items={strankovanie.viditelne}
               desktop={
                 <div className="overflow-x-auto rounded-xl border border-border bg-card">
                   <table className="w-full min-w-[860px] text-sm">
@@ -155,7 +161,7 @@ function JobsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {rows.map((j) => (
+                      {strankovanie.viditelne.map((j) => (
                         <KlikatelnyRiadok key={j.id} ciel={{ to: "/zakazky/$id", params: { id: j.id } }}>
                           <td className="whitespace-nowrap p-3">
                             <Link
@@ -264,6 +270,7 @@ function JobsPage() {
                 {t("Výnosy")} {suma(spolu.vynosy)} · {t("Náklady")} {suma(spolu.naklady)}
               </span>
             </div>
+            {strankovanie.stranky()}
           </>
         )}
       </PageBody>

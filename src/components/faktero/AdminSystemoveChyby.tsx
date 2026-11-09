@@ -16,6 +16,7 @@ import {
   type SystemovaChyba,
 } from "@/lib/faktero/admin-chyby.functions";
 import { potvrd } from "@/lib/potvrdenie";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 
 type Zdroj = SystemovaChyba["zdroj"];
 type Obdobie = "24h" | "7d" | "30d" | "90d";
@@ -211,6 +212,13 @@ export function SystemoveChybyZoznam({ zdroje }: { zdroje: Zdroj[] }) {
   const [chyba, setChyba] = useState<string | null>(null);
   const [pracuje, setPracuje] = useState(false);
   const kluc = zdroje.join(",");
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (ako logové chyby na tej istej stránke).
+  const [strana, setStrana] = useState(1);
+  const [naStranu, setNaStranu] = useStoredPageSize("admin-systemove-chyby");
+  useEffect(() => setStrana(1), [kluc, obdobie, stav, uroven]);
+  const pocetStran = Math.max(1, Math.ceil(rows.length / naStranu));
+  const aktStrana = Math.min(strana, pocetStran);
+  const viditelne = rows.slice((aktStrana - 1) * naStranu, aktStrana * naStranu);
 
   const obnov = useCallback(async () => {
     setLoading(true);
@@ -318,10 +326,20 @@ export function SystemoveChybyZoznam({ zdroje }: { zdroje: Zdroj[] }) {
             {rows.length >= 300 ? " (zobrazených prvých 300)" : ""}.
           </p>
           <ul className="space-y-2">
-            {rows.map((r) => (
+            {viditelne.map((r) => (
               <RiadokChyby key={r.id} r={r} prepni={(x) => void prepni(x)} pracuje={pracuje} />
             ))}
           </ul>
+          <ListPagination
+            page={aktStrana}
+            pageSize={naStranu}
+            total={rows.length}
+            onPageChange={setStrana}
+            onPageSizeChange={(n) => {
+              setNaStranu(n);
+              setStrana(1);
+            }}
+          />
         </>
       )}
     </section>

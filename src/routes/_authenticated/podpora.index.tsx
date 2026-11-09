@@ -33,9 +33,12 @@ import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
 import { WhatsAppOdkaz, WhatsAppTlacidlo } from "@/components/faktero/WhatsAppOdkaz";
 import { useWhatsAppPodpora } from "@/hooks/useWhatsAppPodpora";
 import { hladajVManualoch, type Clanok, type Vysledok } from "@/lib/faktero/pomoc-hladanie";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 export const Route = createFileRoute("/_authenticated/podpora/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk ?? "sk", "Pomoc a podpora — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   component: PodporaPage,
 });
 
@@ -70,6 +73,9 @@ function PodporaPage() {
   // Bez nastaveného bota hlavička nedostane prázdny stĺpec akcií.
   const telegram = useTelegramPodpora();
   const whatsapp = useWhatsAppPodpora();
+  // Požiadavky pribúdajú roky — po 10/20/50/100 na stranu.
+  const lf = useListFilters({ pageSizeKey: "podpora-poziadavky" });
+  const strankovanie = useStrankovanie(poziadavky ?? [], lf);
 
   const nacitaj = useCallback(async () => {
     const { data, error } = await supabase
@@ -240,7 +246,7 @@ function PodporaPage() {
               </p>
             ) : (
               <ul>
-                {poziadavky.map((p) => {
+                {strankovanie.viditelne.map((p) => {
                   const nove = neprecitanaPreZakaznika(p);
                   return (
                     <li key={p.id} className="border-b border-border last:border-0">
@@ -273,6 +279,7 @@ function PodporaPage() {
               </ul>
             )}
           </div>
+          {strankovanie.stranky()}
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
             <a

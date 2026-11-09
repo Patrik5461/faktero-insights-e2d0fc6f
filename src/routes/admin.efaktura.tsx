@@ -21,6 +21,7 @@ import {
   Webhook,
 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import {
   adminEfakturaPrehladFn,
   adminEfakturaPrehladPdfFn,
@@ -77,6 +78,30 @@ const kedy = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("sk-SK", { dateStyle: "short", timeStyle: "short" }) : "—";
 
 /** PDF so zoznamom firiem na eFaktúre a rozsahom služby (odosielanie / príjem). */
+/**
+ * Stránkovanie jednej tabuľky na klientovi: predvolene 10 na stranu, na výber
+ * 10/20/50/100 (Patrik 9. 11.). Každá tabuľka má vlastnú stranu aj počet.
+ */
+function useStrankaTabulky(kluc: string, pocet: number) {
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize(kluc);
+  const vysek = <T,>(riadky: T[]) => riadky.slice((strana - 1) * pageSize, strana * pageSize);
+  const paticka =
+    pocet > 0 ? (
+      <ListPagination
+        page={strana}
+        pageSize={pageSize}
+        total={pocet}
+        onPageChange={setStrana}
+        onPageSizeChange={(n) => {
+          setPageSize(n);
+          setStrana(1);
+        }}
+      />
+    ) : null;
+  return { vysek, paticka };
+}
+
 function PrehladPdf() {
   const stiahni = useServerFn(adminEfakturaPrehladPdfFn);
   const [busy, setBusy] = useState(false);
@@ -125,6 +150,12 @@ function Page() {
     queryFn: () => nacitaj({}),
   });
   const obnov = () => qc.invalidateQueries({ queryKey: ["admin-efaktura"] });
+  const strZiadosti = useStrankaTabulky("admin-efaktura-ziadosti", data?.ziadosti.length ?? 0);
+  const strOdmietnute = useStrankaTabulky(
+    "admin-efaktura-odmietnute",
+    data?.odmietnute.length ?? 0,
+  );
+  const strWebhooky = useStrankaTabulky("admin-efaktura-webhooky", data?.webhooky.length ?? 0);
 
   const akcia = useMutation({
     mutationFn: async (f: () => Promise<unknown>) => f(),
@@ -192,7 +223,7 @@ function Page() {
                 </tr>
               </thead>
               <tbody>
-                {data.ziadosti.map((z) => (
+                {strZiadosti.vysek(data.ziadosti).map((z) => (
                   <tr key={z.id} className="border-t border-border align-top">
                     <td className="p-3 whitespace-nowrap">{kedy(z.prijate_at)}</td>
                     <td className="p-3">
@@ -318,6 +349,7 @@ function Page() {
             </table>
           </div>
         )}
+        {strZiadosti.paticka}
       </section>
 
       <OdosielanieSekcia
@@ -349,7 +381,7 @@ function Page() {
                 </tr>
               </thead>
               <tbody>
-                {data.odmietnute.map((o) => (
+                {strOdmietnute.vysek(data.odmietnute).map((o) => (
                   <tr key={o.id} className="border-t border-border align-top">
                     <td className="p-3 whitespace-nowrap">{kedy(o.prijate_at)}</td>
                     <td className="p-3">
@@ -381,6 +413,7 @@ function Page() {
             </table>
           </div>
         )}
+        {strOdmietnute.paticka}
       </section>
 
       <section>
@@ -411,7 +444,7 @@ function Page() {
                 </tr>
               </thead>
               <tbody>
-                {data.webhooky.map((w) => (
+                {strWebhooky.vysek(data.webhooky).map((w) => (
                   <tr key={w.company_id} className="border-t border-border align-top">
                     <td className="p-3">
                       <div className="font-medium">{w.firma ?? w.company_id}</div>
@@ -443,6 +476,7 @@ function Page() {
             </table>
           </div>
         )}
+        {strWebhooky.paticka}
       </section>
     </div>
   );
@@ -647,6 +681,7 @@ function OdosielanieSekcia({
   const obnovFn = useServerFn(adminObnovOdosielanieFn);
   const webhookFn = useServerFn(adminNastavOnboardingWebhookFn);
   const [bezi, setBezi] = useState<string | null>(null);
+  const strana = useStrankaTabulky("admin-efaktura-len-odosielanie", riadky.length);
 
   const spusti = async (id: string, f: () => Promise<unknown>, hotovo: string) => {
     setBezi(id);
@@ -733,7 +768,7 @@ function OdosielanieSekcia({
               </tr>
             </thead>
             <tbody>
-              {riadky.map((o) => (
+              {strana.vysek(riadky).map((o) => (
                 <tr key={o.company_id} className="border-t border-border align-top">
                   <td className="p-3">
                     <div className="font-medium">{o.firma ?? o.company_id}</div>
@@ -793,6 +828,7 @@ function OdosielanieSekcia({
           </table>
         </div>
       )}
+      {strana.paticka}
     </section>
   );
 }

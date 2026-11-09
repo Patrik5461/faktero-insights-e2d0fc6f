@@ -14,6 +14,7 @@ import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
@@ -42,7 +43,7 @@ function DeliveryNoteHistoryPage() {
   const signFn = useServerFn(getDeliveryNoteSignedUrlFn);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "dodacie-listy-importy" });
   const klik = useKlikNaRiadok();
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
@@ -74,6 +75,7 @@ function DeliveryNoteHistoryPage() {
       }),
     [rows, hladane, obdobieOd, obdobieDo],
   );
+  const strankovanie = useStrankovanie(zobrazene, lf);
 
   async function openDoc(path: string) {
     /*
@@ -126,7 +128,7 @@ function DeliveryNoteHistoryPage() {
           <>
             {/* Mobil: karty — šesť stĺpcov sa na úzky displej nezmestí. */}
             <div className="space-y-2 md:hidden">
-              {zobrazene.map((r) => {
+              {strankovanie.viditelne.map((r) => {
                 const m = r.metadata ?? {};
                 const c = m.counts ?? {};
                 const items = Array.isArray(m.items) ? m.items.length : 0;
@@ -183,7 +185,7 @@ function DeliveryNoteHistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {zobrazene.map((r) => {
+                  {strankovanie.viditelne.map((r) => {
                     const m = r.metadata ?? {};
                     const c = m.counts ?? {};
                     const items = Array.isArray(m.items) ? m.items.length : 0;
@@ -220,6 +222,7 @@ function DeliveryNoteHistoryPage() {
                 </tbody>
               </table>
             </TabulkaZoznamu>
+            {strankovanie.stranky()}
           </>
         )}
       </PageBody>

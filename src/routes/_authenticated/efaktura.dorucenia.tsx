@@ -12,6 +12,8 @@ import { kanalDorucenia, kratkyCas } from "@/components/faktero/EfakturaStatusBa
 import { BunkaStavuEfaktury } from "@/components/faktero/EfakturaStavWeb";
 import { stavEfaktury } from "@/lib/faktero/efaktura/stav-efaktury";
 import { EmptyState } from "@/components/faktero/ListControls";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 function prijemca(d: {
   recipient_participant_id?: string | null;
@@ -22,6 +24,7 @@ function prijemca(d: {
 
 export const Route = createFileRoute("/_authenticated/efaktura/dorucenia")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doručenia eFaktúr — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: DeliveriesPage,
 });
 
@@ -35,6 +38,8 @@ function DeliveriesPage() {
     queryFn: () => fn({ data: { companyId: companyId! } }),
     enabled: !!companyId,
   });
+  const lf = useListFilters({ pageSizeKey: "efaktura-dorucenia" });
+  const strankovanie = useStrankovanie(q.data ?? [], lf);
 
   return (
     <>
@@ -73,7 +78,7 @@ function DeliveriesPage() {
                   </td>
                 </tr>
               )}
-              {q.data?.map((d) => (
+              {strankovanie.viditelne.map((d) => (
                 <tr key={d.id}>
                   <td className="whitespace-nowrap p-3 text-xs">{t(kanalDorucenia(d.channel))}</td>
                   <td className="max-w-[220px] truncate p-3 font-mono text-xs" title={prijemca(d)}>
@@ -105,6 +110,7 @@ function DeliveriesPage() {
             </tbody>
           </table>
         </div>
+        {strankovanie.stranky()}
       </PageBody>
     </>
   );

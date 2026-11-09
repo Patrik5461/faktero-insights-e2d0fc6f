@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 
 export const Route = createFileRoute("/admin/legal")({
   component: Page,
@@ -15,6 +17,9 @@ const DOCS: { type: string; label: string; to: string }[] = [
 ];
 
 function Page() {
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-pravne-suhlasy");
   const { data: versions } = useQuery({
     queryKey: ["legal_document_versions"],
     queryFn: async () => {
@@ -97,7 +102,7 @@ function Page() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {(acceptances ?? []).map((a, i) => (
+              {(acceptances ?? []).slice((strana - 1) * pageSize, strana * pageSize).map((a, i) => (
                 <tr key={i}>
                   <td className="px-4 py-2 whitespace-nowrap">
                     {new Date(a.accepted_at).toLocaleString("sk-SK")}
@@ -119,6 +124,18 @@ function Page() {
           </table>
         </div>
       </section>
+      {(acceptances?.length ?? 0) > 0 && (
+        <ListPagination
+          page={strana}
+          pageSize={pageSize}
+          total={acceptances?.length ?? 0}
+          onPageChange={setStrana}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setStrana(1);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -38,6 +38,7 @@ import { casUdalosti } from "@/lib/faktero/kto-kedy";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
@@ -99,7 +100,7 @@ function Stranka() {
   // Mená kolegov pre stĺpec „Nahral“ (profily číta server po overení členstva).
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [mena, setMena] = useState<Record<string, string>>({});
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "nespracovane" });
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   async function obnov() {
@@ -171,6 +172,9 @@ function Stranka() {
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(hladane));
   });
+
+  // Kreslí sa len jedna strana; výber všetkých a súčty berú všetky zobrazené.
+  const strankovanie = useStrankovanie(zobrazene, lf, { potrebneId: posledny.id });
 
   // Zmena hľadania či obdobia zruší výber, aby hromadná akcia nezasiahla skrytý doklad.
   useEffect(() => setVybrane(new Set()), [hladane, obdobieOd, obdobieDo]);
@@ -466,7 +470,7 @@ function Stranka() {
                   </td>
                 </tr>
               )}
-              {zobrazene.map((r) => (
+              {strankovanie.viditelne.map((r) => (
                 <tr
                   key={r.kluc}
                   {...posledny.riadok(r.id)}
@@ -521,7 +525,7 @@ function Stranka() {
               {t("Nič nevyhovuje filtru.")}
             </div>
           )}
-          {zobrazene.map((r) => (
+          {strankovanie.viditelne.map((r) => (
             <div
               key={r.kluc}
               {...posledny.karta(r.id)}
@@ -575,6 +579,7 @@ function Stranka() {
             </div>
           ))}
         </div>
+        {strankovanie.stranky()}
 
         {/* Súčet označených + úhrada z výberu (lišta drží spodok obrazovky). */}
         <SuctovaListaVyberu

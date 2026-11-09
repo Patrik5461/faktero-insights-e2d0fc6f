@@ -37,6 +37,7 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import type { CielDetailu } from "@/hooks/useKlikNaRiadok";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { odkazNaZaradenie } from "@/lib/faktero/efaktura/zaevidovanie-efaktury";
 import { cakaNaZaevidovanie } from "@/lib/faktero/efaktura/upozornenie-prijatej";
 
@@ -305,7 +306,7 @@ function ReceivedPage() {
   const [nahlad, setNahlad] = useState<Nahlad | null>(null);
   const [prilohyOkno, setPrilohyOkno] = useState<{ id: string; cislo: string } | null>(null);
   const [rozbalene, setRozbalene] = useState<string | null>(null);
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "efaktura-prijate" });
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const podla = lf.filter("podla") || "vystavenie";
   /* Zaevidované / Nezaevidované a dodávateľ — účtovníčka si vyberá, čo ešte
@@ -474,6 +475,9 @@ function ReceivedPage() {
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(hladane));
   });
+
+  // Kreslí sa len jedna strana; hromadný výber pracuje so všetkými zobrazenými.
+  const strankovanie = useStrankovanie(zobrazene, lf);
 
   /*
     Hromadný výber — len zobrazené podľa filtra (zoznam je načítaný celý).
@@ -759,7 +763,7 @@ function ReceivedPage() {
           </ListaHromadnychAkcii>
           <ResponsiveTable
             className="mt-3"
-            items={zobrazene}
+            items={strankovanie.viditelne}
             loading={q.isLoading}
             emptyText="Nič nevyhovuje filtru."
             mobileCard={(r: any) => (
@@ -828,7 +832,7 @@ function ReceivedPage() {
                     </td>
                   </tr>
                 )}
-                {zobrazene.map((r) => (
+                {strankovanie.viditelne.map((r) => (
                   <Fragment key={r.id}>
                   <KlikatelnyRiadok ciel={cielRiadku(r)} naKlik={nahladRiadku(r)}>
                     <td className="w-8 px-2 py-3">
@@ -886,6 +890,7 @@ function ReceivedPage() {
           </TabulkaZoznamu>
             }
           />
+          {!q.isLoading ? strankovanie.stranky() : null}
           </>
         )}
       </PageBody>

@@ -12,11 +12,12 @@ import {
   type HladaniePravidiel,
 } from "@/components/faktero/uctovnictvo/ZauctovaniePravidla";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 
 type Tab = "kontrola" | "pravidla" | "predlohy";
-type Hladanie = HladaniePravidiel & { tab?: Tab };
+type Hladanie = HladaniePravidiel & ListSearch & { tab?: Tab };
 
 /**
  * Automatické účtovanie — jedna stránka namiesto „Zaúčtovanie na kontrolu“
@@ -36,7 +37,8 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/zauctovanie")(
       : s.tab === "pravidla" || s.tab === "predlohy" || s.tab === "kontrola"
         ? s.tab
         : undefined;
-    return { ...pravidla, tab };
+    // Stránkovanie zoznamu „Na kontrolu“ (page/size v adrese).
+    return { ...zoznamSearch(s), ...pravidla, tab };
   },
   component: ZauctovaniePage,
 });
@@ -56,7 +58,8 @@ function ZauctovaniePage() {
       search: (s: Hladanie) => ({
         ...Object.fromEntries(
           Object.entries(s).filter(
-            ([k]) => !(KLUCE_HLADANIA_PRAVIDIEL as readonly string[]).includes(k),
+            // Strana zoznamu „Na kontrolu“ na inej záložke nemá zmysel.
+            ([k]) => k !== "page" && !(KLUCE_HLADANIA_PRAVIDIEL as readonly string[]).includes(k),
           ),
         ),
         tab: kod,

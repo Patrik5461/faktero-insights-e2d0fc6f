@@ -18,6 +18,8 @@ import {
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import {
   Plus,
   Pencil,
@@ -50,7 +52,8 @@ export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Skladové položky — Faktero") }],
   }),
-  validateSearch: (s: Record<string, unknown>): { filter?: "low_stock" } => ({
+  validateSearch: (s: Record<string, unknown>): { filter?: "low_stock" } & ListSearch => ({
+    ...zoznamSearch(s),
     filter: s.filter === "low_stock" ? ("low_stock" as const) : undefined,
   }),
   component: StockItemsPage,
@@ -407,6 +410,10 @@ function StockItemsPage() {
       } else if (r.category_id !== categoryFilter) return false;
     }
     return true;
+  });
+  const lf = useListFilters({ pageSizeKey: "sklad-produkty" });
+  const { viditelne, stranky } = useStrankovanie(filtered, lf, {
+    reset: [search, warehouseFilter, categoryFilter, urlFilter, showArchived],
   });
 
   const selectedIds = Object.entries(selected)
@@ -900,7 +907,7 @@ function StockItemsPage() {
                   </td>
                 </tr>
               )}
-              {filtered.map((s) => {
+              {viditelne.map((s) => {
                 const qty = levels[s.id] ?? 0;
                 const reserved = reservedByItem[s.id] ?? 0;
                 const available = qty - reserved;
@@ -1090,6 +1097,7 @@ function StockItemsPage() {
             </tbody>
           </table>
         </div>
+        {stranky()}
       </PageBody>
 
       {editing && (

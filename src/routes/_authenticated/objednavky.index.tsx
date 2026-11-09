@@ -18,6 +18,7 @@ import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoM
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { EmptyState } from "@/components/faktero/ListControls";
@@ -58,7 +59,7 @@ function OrdersPage() {
   const suma = (n: unknown, mena: unknown) => menyFirmy.suma(Number(n) || 0, mena);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const lf = useListFilters();
+  const lf = useListFilters({ pageSizeKey: "prijate-objednavky" });
   // Predvolene len otvorené; „Všetky“ si načíta zo servera aj vybavené a zrušené.
   const filter: "otvorene" | "vsetky" = lf.filter("stav") === "vsetky" ? "vsetky" : "otvorene";
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
@@ -105,6 +106,7 @@ function OrdersPage() {
     }),
     [zobrazene, menyFirmy],
   );
+  const strankovanie = useStrankovanie(zobrazene, lf);
 
   return (
     <>
@@ -163,7 +165,7 @@ function OrdersPage() {
           </div>
         ) : (
           <ResponsiveTable
-            items={zobrazene}
+            items={strankovanie.viditelne}
             desktop={
               <TabulkaZoznamu>
                 <table className="w-full text-sm">
@@ -179,7 +181,7 @@ function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {zobrazene.map((o) => {
+                    {strankovanie.viditelne.map((o) => {
                       const stav = (o.stav_vypocitany ?? o.status) as StavPrijatejObjednavky;
                       const meska = jePoTermine(o.requested_date, stav, dnes);
                       const percento = percentoVybavenia(o.sales_order_items ?? []);
@@ -282,6 +284,7 @@ function OrdersPage() {
             }}
           />
         )}
+        {!loading && strankovanie.stranky()}
       </PageBody>
     </>
   );

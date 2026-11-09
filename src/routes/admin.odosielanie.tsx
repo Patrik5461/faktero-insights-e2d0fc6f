@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, PlayCircle } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { adminNastavOdosielanie, listOdosielanieAdmin } from "@/lib/faktero/admin.functions";
 import { useT } from "@/lib/i18n/useT";
 
@@ -36,6 +37,13 @@ function AdminOdosielaniePage() {
   const [data, setData] = useState<Data | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  // Zastavené pokusy / výstrahy: predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-odosielanie-pokusy");
+
+  useEffect(() => {
+    setStrana(1);
+  }, [vystrahy]);
 
   useEffect(() => {
     let zruseny = false;
@@ -159,7 +167,9 @@ function AdminOdosielaniePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {data.pokusy.map((p: any) => (
+                      {data.pokusy
+                        .slice((strana - 1) * pageSize, strana * pageSize)
+                        .map((p: any) => (
                         <tr key={p.id} className="align-top">
                           <td className="whitespace-nowrap py-2 pr-3">{kedy(p.created_at)}</td>
                           <td className="py-2 pr-3">
@@ -200,6 +210,18 @@ function AdminOdosielaniePage() {
                     </tbody>
                   </table>
                 </div>
+              )}
+              {data.pokusy.length > 0 && (
+                <ListPagination
+                  page={strana}
+                  pageSize={pageSize}
+                  total={data.pokusy.length}
+                  onPageChange={setStrana}
+                  onPageSizeChange={(n) => {
+                    setPageSize(n);
+                    setStrana(1);
+                  }}
+                />
               )}
             </section>
 

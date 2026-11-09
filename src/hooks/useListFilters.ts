@@ -19,7 +19,7 @@ export type ListSearch = {
   f?: Record<string, string>;
 };
 
-export const VELKOSTI_STRANY = [5, 25, 50, 100] as const;
+export const VELKOSTI_STRANY = [10, 20, 50, 100] as const;
 
 /** Rozparsovanie kľúčov zoznamu z adresy — rozprestrie sa do `validateSearch` trasy. */
 export function zoznamSearch(s: Record<string, unknown>): ListSearch {

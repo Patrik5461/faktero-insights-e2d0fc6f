@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/sklad/hodnota")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Hodnota skladu — Faktero") }],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: ValuationPage,
 });
 
@@ -26,6 +29,9 @@ function ValuationPage() {
   const fetchVal = useServerFn(getStockValuation);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const lf = useListFilters({ pageSizeKey: "sklad-hodnota" });
+  // Stránkuje sa len zoznam podľa produktu — skladov je pár; export berie všetky produkty.
+  const strankovanie = useStrankovanie<any>(data?.by_product ?? [], lf);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -189,7 +195,7 @@ function ValuationPage() {
                         </td>
                       </tr>
                     )}
-                    {data.by_product.map((p: any) => (
+                    {strankovanie.viditelne.map((p: any) => (
                       <tr key={p.stock_item_id}>
                         <td className="p-2 min-w-[10rem] break-words">{p.name}</td>
                         <td className="p-2 whitespace-nowrap text-muted-foreground">
@@ -207,6 +213,7 @@ function ValuationPage() {
                   </tbody>
                 </table>
               </div>
+              {strankovanie.stranky()}
             </div>
             <div className="mt-6 text-sm text-muted-foreground">
               <Link to="/sklad" className="font-medium text-primary hover:underline">

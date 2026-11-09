@@ -48,7 +48,7 @@ export type ZmluvaPreExport = {
 
 export const ZLOZKY_SPLATKY = ["istina", "urok", "poistenie", "poplatky"] as const;
 export type ZlozkaSplatky = (typeof ZLOZKY_SPLATKY)[number];
-export type KodyZlozky = { predkontacia?: string | null; clenenie?: string | null };
+export type KodyZlozky = { predkontacia?: string | null; clenenie?: string | null; kv?: string | null };
 export type Rozuctovanie = Partial<Record<ZlozkaSplatky, KodyZlozky>>;
 
 export type SplatkaPreExport = {
@@ -63,6 +63,8 @@ export type SplatkaPreExport = {
   pohoda_predkontacia?: string | null;
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;
+  /** Rozúčtovanie zložiek len pre túto splátku (prebíja kalendár). */
+  pohoda_rozuctovanie?: Rozuctovanie | null;
 };
 
 export type KodyZauctovania = {
@@ -133,26 +135,47 @@ export function ucinneKody(zmluva: ZmluvaPreExport, splatka: SplatkaPreExport): 
 }
 
 /**
- * Kódy jednej položky záväzku: rozúčtovanie zložky na kalendári, inak kódy
- * splátky a kalendára (`ucinneKody`). Splátka bez rozpadu ide podľa nich.
+ * Kódy jednej položky záväzku. Poradie (prvé vyplnené vyhráva):
+ *  1. rozúčtovanie zložky na splátke,
+ *  2. vlastný kód celej splátky,
+ *  3. rozúčtovanie zložky na kalendári,
+ *  4. kód kalendára.
+ * Vlastný kód splátky tak prebije kalendár celý, ale zložku nastavenú priamo
+ * na splátke nie. Splátka bez rozpadu (zložka null) ide podľa 2 a 4.
  */
 export function kodyPolozky(
   zmluva: ZmluvaPreExport,
-  kody: KodyZauctovania,
+  splatka: SplatkaPreExport,
   zlozka: ZlozkaSplatky | null,
 ): KodyZauctovania {
-  const r = zlozka ? zmluva.pohoda_rozuctovanie?.[zlozka] : null;
+  const zS = zlozka ? splatka.pohoda_rozuctovanie?.[zlozka] : null;
+  const zK = zlozka ? zmluva.pohoda_rozuctovanie?.[zlozka] : null;
+  const vyber = (pole: keyof KodyZlozky, naSplatke: unknown, naKalendari: unknown) =>
+    txt(zS?.[pole]) || txt(naSplatke) || txt(zK?.[pole]) || txt(naKalendari) || null;
+  const predkontacia = vyber("predkontacia", splatka.pohoda_predkontacia, zmluva.pohoda_predkontacia);
+  const clenenie = vyber("clenenie", splatka.pohoda_clenenie_dph, zmluva.pohoda_clenenie_dph);
+  const kv = vyber("kv", splatka.kv_clenenie, zmluva.kv_clenenie);
   return {
-    ...kody,
-    predkontacia: txt(r?.predkontacia) || kody.predkontacia,
-    clenenie: txt(r?.clenenie) || kody.clenenie,
+    predkontacia,
+    clenenie,
+    kv,
+    vlastne: Boolean(
+      txt(splatka.pohoda_predkontacia) || txt(splatka.pohoda_clenenie_dph) || txt(splatka.kv_clenenie) ||
+        (zS && (txt(zS.predkontacia) || txt(zS.clenenie) || txt(zS.kv))),
+    ),
   };
+}
+
+/** Má zložka KV nastavené výslovne (na splátke alebo kalendári)? */
+function kvZlozkyVyslovne(zmluva: ZmluvaPreExport, splatka: SplatkaPreExport, zlozka: ZlozkaSplatky | null) {
+  if (!zlozka) return false;
+  return Boolean(txt(splatka.pohoda_rozuctovanie?.[zlozka]?.kv) || txt(zmluva.pohoda_rozuctovanie?.[zlozka]?.kv));
 }
 
 /** Má kalendár rozúčtovanie aspoň jednej zložky? */
 export function maRozuctovanie(zmluva: ZmluvaPreExport): boolean {
   const r = zmluva.pohoda_rozuctovanie ?? {};
-  return ZLOZKY_SPLATKY.some((z) => txt(r[z]?.predkontacia) || txt(r[z]?.clenenie));
+  return ZLOZKY_SPLATKY.some((z) => txt(r[z]?.predkontacia) || txt(r[z]?.clenenie) || txt(r[z]?.kv));
 }
 
 /**
@@ -343,16 +366,20 @@ export function polozkaBalikaSplatky(
         )}
       </inv:invoiceHeader>
       <inv:invoiceDetail>${polozky
-        .map((p) =>
-          polozkaXml(
-            p,
-            kodyPolozky(zmluva, kody, p.zlozka),
-            den,
-            krajina,
-            // KV patrí len položke s daňou; poistenie či poplatok bez DPH v KV nie je.
-            kv && (p.dph > 0 || !polozky.some((x) => x.dph > 0)) ? kv : null,
-          ),
-        )
+        .map((p) => {
+          const kp = kodyPolozky(zmluva, splatka, p.zlozka);
+          // Členenie KV má len slovenská Pohoda; „X“ (nezahŕňať) skratku nemá.
+          const kvP = krajina === "SK" && kp.kv && kp.kv !== "X" ? kp.kv : null;
+          /*
+            KV patrí len položke s daňou — poistenie či poplatok bez DPH v KV
+            nie je. Výslovne nastavené KV zložky sa pošle vždy.
+          */
+          const kvPolozky =
+            kvP && (kvZlozkyVyslovne(zmluva, splatka, p.zlozka) || p.dph > 0 || !polozky.some((x) => x.dph > 0))
+              ? kvP
+              : null;
+          return polozkaXml(p, kp, den, krajina, kvPolozky);
+        })
         .join("")}
       </inv:invoiceDetail>
       <inv:invoiceSummary>

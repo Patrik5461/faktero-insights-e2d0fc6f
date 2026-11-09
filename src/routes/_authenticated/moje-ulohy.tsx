@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
+import { useListFilters, zoznamSearch, type ListSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { cn } from "@/lib/utils";
 import {
   fetchMyCompanies,
@@ -48,7 +50,8 @@ export const Route = createFileRoute("/_authenticated/moje-ulohy")({
   */
   validateSearch: (
     s: Record<string, unknown>,
-  ): { firma?: string; dalej?: "po-splatnosti" | "efaktury" } => ({
+  ): ListSearch & { firma?: string; dalej?: "po-splatnosti" | "efaktury" } => ({
+    ...zoznamSearch(s),
     firma: typeof s.firma === "string" && /^[0-9a-f-]{36}$/i.test(s.firma) ? s.firma : undefined,
     dalej:
       s.dalej === "po-splatnosti" ? "po-splatnosti" : s.dalej === "efaktury" ? "efaktury" : undefined,
@@ -109,6 +112,9 @@ function Stranka() {
   const [ulohy, setUlohy] = useState<Ulohy | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [riesim, setRiesim] = useState<string | null>(null);
+  const lf = useListFilters({ pageSizeKey: "moje-ulohy-komentare" });
+  // Komentárov môže byť až 100 — stránkujú sa; ostatné sekcie sú obmedzené na 10.
+  const strankyKomentarov = useStrankovanie(ulohy?.komentare ?? [], lf);
 
   const obnov = async () => {
     if (!companyId) return;
@@ -265,8 +271,9 @@ function Stranka() {
               {ulohy.komentare.length === 0 ? (
                 <Prazdne>{t("Žiadny nevyriešený komentár, v ktorom by vás kolega označil.")}</Prazdne>
               ) : (
+                <>
                 <ul className="space-y-2">
-                  {ulohy.komentare.map((k) => {
+                  {strankyKomentarov.viditelne.map((k) => {
                     // Celá karta otvorí doklad (ak je ešte dostupný); tlačidlo Vyriešiť si klik nechá.
                     const p = klik(k.dokladDostupny ? (odkazNaDoklad(k.agenda, k.dokladId) as any) : null, {
                       klavesnica: false,
@@ -313,6 +320,8 @@ function Stranka() {
                     );
                   })}
                 </ul>
+                {strankyKomentarov.stranky()}
+                </>
               )}
             </Sekcia>
 

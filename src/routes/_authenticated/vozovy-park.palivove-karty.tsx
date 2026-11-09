@@ -36,7 +36,10 @@ import {
 
 import { getActiveProduct, type ActiveProduct } from "@/lib/faktero/active-product";
 import { navratZPalivovychKariet } from "@/lib/faktero/vozidla-vyber";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 export const Route = createFileRoute("/_authenticated/vozovy-park/palivove-karty")({
+  validateSearch: (s: Record<string, unknown>) => zoznamSearch(s),
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk, "Palivové karty — Faktero") }],
   }),
@@ -79,6 +82,8 @@ function PalivoveKarty() {
   const [transakcie, setTransakcie] = useState<any[]>([]);
   const [logy, setLogy] = useState<any[]>([]);
   const [vozidla, setVozidla] = useState<any[]>([]);
+  const lf = useListFilters({ pageSizeKey: "palivove-karty-nakupy" });
+  const strankovanie = useStrankovanie(transakcie, lf);
   const [formular, setFormular] = useState<{ poskytovatel: string; id: string | null } | null>(
     null,
   );
@@ -499,7 +504,7 @@ function PalivoveKarty() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {transakcie.map((x) => (
+                    {strankovanie.viditelne.map((x) => (
                       <tr key={x.id}>
                         <td className="whitespace-nowrap py-2 pr-3 tabular-nums">{datumNaDoklade(x.datum)}</td>
                         <td className="py-2 pr-3">
@@ -560,6 +565,7 @@ function PalivoveKarty() {
                   </tbody>
                 </table>
               </div>
+              {strankovanie.stranky()}
             </section>
           )}
 

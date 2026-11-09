@@ -18,6 +18,8 @@ import { cislo } from "@/lib/faktero/ceny";
 import { Plus, Pencil, Trash2, Tag, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { KROK_CENY } from "@/lib/faktero/mena";
 import { useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { textChybyZapisu } from "@/lib/faktero/over-zapis";
@@ -28,6 +30,7 @@ import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Cenník — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: CennikPage,
 });
 
@@ -92,6 +95,9 @@ function CennikPage() {
   }, [cid, nacitajSkupiny, nacitajCeny]);
 
   useEffect(nacitaj, [nacitaj]);
+
+  const lf = useListFilters({ pageSizeKey: "cennik-ceny" });
+  const { viditelne: viditelneCeny, stranky } = useStrankovanie(ceny, lf);
 
   async function ulozSkupinuKlik(e: React.FormEvent) {
     e.preventDefault();
@@ -300,7 +306,7 @@ function CennikPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {ceny.map((c) => {
+                      {viditelneCeny.map((c) => {
                         const zakladna = cislo(c.products?.unit_price);
                         const dohodnuta = cislo(c.unit_price);
                         const rozdiel = zakladna - dohodnuta;
@@ -382,6 +388,7 @@ function CennikPage() {
                       })}
                     </tbody>
                   </table>
+                  <div className="px-4 pb-3 sm:px-5">{stranky()}</div>
                 </div>
               )}
             </section>

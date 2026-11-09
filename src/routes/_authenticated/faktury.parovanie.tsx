@@ -28,9 +28,12 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { potvrd as potvrdOkno } from "@/lib/potvrdenie";
 import { navrhyVoVybere } from "@/lib/faktero/akcie-faktury";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 export const Route = createFileRoute("/_authenticated/faktury/parovanie")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Párovanie platieb — Faktero") }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: ParovaniePage,
 });
 
@@ -104,6 +107,10 @@ function ParovaniePage() {
   }, []);
 
   const vsetky = [...(data?.auto ?? []), ...(data?.navrhy ?? [])];
+  // Kreslí sa len jedna strana; výber a zápis úhrad pracujú so všetkými zhodami.
+  const lf = useListFilters({ pageSizeKey: "faktury-parovanie" });
+  // Zhoda nemá `id` (kľúč je transactionId) — doplnené len pre typ háčika.
+  const strankovanie = useStrankovanie<Zhoda & { id?: unknown }>(vsetky, lf);
 
   async function zapisVybrane() {
     const cid = getActiveCompanyId();
@@ -252,7 +259,7 @@ function ParovaniePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {vsetky.map((z) => (
+                      {strankovanie.viditelne.map((z) => (
                         /* Zoznam slúži na výber: klik na riadok ho označí/odznačí, faktúru otvára odkaz na čísle. */
                         <KlikatelnyRiadok
                           key={z.transactionId}
@@ -315,6 +322,7 @@ function ParovaniePage() {
                     </tbody>
                   </table>
                 </div>
+                {strankovanie.stranky()}
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">

@@ -28,6 +28,8 @@ import { EmptyState } from "@/components/faktero/ListControls";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import type { CielDetailu } from "@/hooks/useKlikNaRiadok";
+import { useListFilters } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 type Filter = "vsetky" | "blokovane" | "navrh" | "bez_navrhu";
 const TYPY: { kod: "" | RiadokNaKontrolu["typ"]; nazov: string }[] = [
@@ -109,6 +111,11 @@ export function ZauctovanieNaKontrolu({
     });
   }, [riadky, typ, filter, zdroj, hladaj]);
 
+  // Stránkovanie 10/20/50/100 — výber všetkých a potvrdenie pracujú so všetkými riadkami.
+  const lf = useListFilters({ pageSizeKey: "zauctovanie-na-kontrolu" });
+  const { viditelne, stranky } = useStrankovanie(zobrazene, lf, {
+    reset: [typ, filter, zdroj, hladaj],
+  });
   const zobrazeneKluce = useMemo(() => zobrazene.map(kluc), [zobrazene]);
   const vsetkyVybrane = vsetkyZobrazeneVybrane(zobrazeneKluce, vybrane);
   const sNavrhom = (r: RiadokNaKontrolu) =>
@@ -331,7 +338,7 @@ export function ZauctovanieNaKontrolu({
               </tr>
             </thead>
             <tbody>
-              {zobrazene.map((r) => {
+              {viditelne.map((r) => {
                 const n = r.navrh as NavrhZauctovania | null;
                 // „501/321 · PD · B2“ — členenie DPH a KV DPH vedľa seba.
                 const kody = textZauctovania(
@@ -422,6 +429,7 @@ export function ZauctovanieNaKontrolu({
           </table>
         </div>
       )}
+      {riadky && !chyba && zobrazene.length > 0 && stranky()}
       {skratene && (
         <p className="mt-2 text-xs text-muted-foreground">
           {t("Zobrazuje sa najviac 500 najnovších dokladov každého druhu.")}

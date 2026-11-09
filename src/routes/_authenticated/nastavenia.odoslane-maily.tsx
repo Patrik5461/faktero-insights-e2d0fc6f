@@ -27,6 +27,8 @@ import {
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
 import { cn } from "@/lib/utils";
+import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { useStrankovanie } from "@/hooks/useStrankovanie";
 
 /*
   Nastavenia → Odoslané e-maily: koľko e-mailov firma poslala, komu a akých,
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/nastavenia/odoslane-maily"
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Odoslané e-maily — Faktero") }],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
   component: OdoslaneMailyStranka,
 });
 
@@ -64,7 +67,6 @@ const cas = (iso: string) => {
 };
 
 const POCIATOCNE_ADRESATOV = 15;
-const POCIATOCNE_ZOZNAM = 50;
 
 function OdoslaneMailyStranka() {
   const { t } = useT();
@@ -77,7 +79,7 @@ function OdoslaneMailyStranka() {
   );
   const rozsah = rozsahObdobia(obdobie, dnes, vlastne);
   const [vsetciAdresati, setVsetciAdresati] = useState(false);
-  const [zoznamPocet, setZoznamPocet] = useState(POCIATOCNE_ZOZNAM);
+  const lf = useListFilters({ pageSizeKey: "odoslane-maily" });
   const [filterDruh, setFilterDruh] = useState("");
   const [lenChyby, setLenChyby] = useState(false);
 
@@ -99,6 +101,9 @@ function OdoslaneMailyStranka() {
       ),
     [maily, filterDruh, lenChyby],
   );
+  const strankovanie = useStrankovanie(zoznam, lf, {
+    reset: [filterDruh, lenChyby, rozsah.od, rozsah.do],
+  });
 
   function stiahniCsv() {
     const csv = mailyDoCsv(maily, (s) => t(s));
@@ -149,7 +154,6 @@ function OdoslaneMailyStranka() {
                   aria-pressed={obdobie === o.v}
                   onClick={() => {
                     setObdobie(o.v);
-                    setZoznamPocet(POCIATOCNE_ZOZNAM);
                   }}
                   className={cn(
                     "rounded-md px-3 py-1.5 font-semibold",
@@ -400,7 +404,7 @@ function OdoslaneMailyStranka() {
                       </div>
                     </div>
                     <ul className="divide-y divide-border border-t border-border px-5 text-sm">
-                      {zoznam.slice(0, zoznamPocet).map((m) => (
+                      {strankovanie.viditelne.map((m) => (
                         <RiadokMailu key={m.id} m={m} />
                       ))}
                       {zoznam.length === 0 && (
@@ -409,16 +413,8 @@ function OdoslaneMailyStranka() {
                         </li>
                       )}
                     </ul>
-                    {zoznam.length > zoznamPocet && (
-                      <div className="border-t border-border px-5 py-3">
-                        <button
-                          type="button"
-                          onClick={() => setZoznamPocet((n) => n + 100)}
-                          className="text-sm font-semibold text-primary hover:underline"
-                        >
-                          {t("Zobraziť ďalšie ({n})", { n: zoznam.length - zoznamPocet })}
-                        </button>
-                      </div>
+                    {zoznam.length > 0 && (
+                      <div className="border-t border-border px-5 py-3">{strankovanie.stranky()}</div>
                     )}
                   </section>
                 </>

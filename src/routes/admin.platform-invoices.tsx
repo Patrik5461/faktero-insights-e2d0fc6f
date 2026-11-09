@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminPageBody, AdminPageHeader } from "@/components/faktero/AdminShell";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { AlertTriangle, ExternalLink, Trash2 } from "lucide-react";
 import { potvrd } from "@/lib/potvrdenie";
 import { toast } from "sonner";
@@ -37,6 +38,9 @@ function PlatformInvoicesAdmin() {
   const [month, setMonth] = useState<string>(""); // YYYY-MM
   const [companyFilter, setCompanyFilter] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [strana, setStrana] = useState(1);
+  const [pageSize, setPageSize] = useStoredPageSize("admin-platformove-faktury");
 
   async function load() {
     setLoading(true);
@@ -70,6 +74,10 @@ function PlatformInvoicesAdmin() {
       return true;
     });
   }, [rows, month, companyFilter]);
+
+  useEffect(() => {
+    setStrana(1);
+  }, [month, companyFilter]);
 
   async function del(row: Row) {
     if (!(await potvrd(`Naozaj vymazať doklad ${row.invoice_number}?\n\nTáto akcia je NEVRATNÁ.`)))
@@ -166,7 +174,7 @@ function PlatformInvoicesAdmin() {
                 </tr>
               )}
               {!loading &&
-                filtered.map((r) => (
+                filtered.slice((strana - 1) * pageSize, strana * pageSize).map((r) => (
                   <tr key={r.id} className="border-t border-border/60">
                     <td className="px-3 py-2 font-mono text-xs">{r.invoice_number}</td>
                     <td className="px-3 py-2">
@@ -203,6 +211,18 @@ function PlatformInvoicesAdmin() {
             </tbody>
           </table>
         </div>
+        {!loading && filtered.length > 0 && (
+          <ListPagination
+            page={strana}
+            pageSize={pageSize}
+            total={filtered.length}
+            onPageChange={setStrana}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setStrana(1);
+            }}
+          />
+        )}
       </AdminPageBody>
     </>
   );

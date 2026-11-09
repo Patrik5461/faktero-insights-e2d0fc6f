@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
@@ -50,7 +51,8 @@ function AdminSubscriptionsPage() {
   const syncPaymentFn = useServerFn(adminSyncPayment);
   const diagFn = useServerFn(getBillingDiagnostics);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(25);
+  // Predvolene 10 na stranu, na výber 10/20/50/100 (Patrik 9. 11.).
+  const [pageSize, setPageSize] = useStoredPageSize("admin-predplatne");
   const [rows, setRows] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ function AdminSubscriptionsPage() {
     failedPayments: any[];
   } | null>(null);
   const [diagPage, setDiagPage] = useState(1);
-  const diagPageSize = 25;
+  const [diagPageSize, setDiagPageSize] = useStoredPageSize("admin-gopay-udalosti");
   const [diagLoading, setDiagLoading] = useState(false);
   const [config, setConfig] = useState<any>(null);
 
@@ -107,9 +109,8 @@ function AdminSubscriptionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [eventsFn, diagFn, diagPage]);
+  }, [eventsFn, diagFn, diagPage, diagPageSize]);
 
-  const pages = Math.max(1, Math.ceil(total / pageSize));
 
   async function reload() {
     const res = await fetchList({ data: { page, pageSize, q: "", suspended: "all" } });
@@ -341,28 +342,17 @@ function AdminSubscriptionsPage() {
           )}
         />
 
-        {total > pageSize && (
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Strana {page} z {pages} · {total}
-            </span>
-            <div className="flex gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
-              >
-                ← Späť
-              </button>
-              <button
-                disabled={page >= pages}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
-              >
-                Ďalej →
-              </button>
-            </div>
-          </div>
+        {total > 0 && (
+          <ListPagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPageSize(n);
+              setPage(1);
+            }}
+          />
         )}
 
         {/* GoPay diagnostics */}
@@ -430,29 +420,17 @@ function AdminSubscriptionsPage() {
                     </li>
                   ))}
                 </ul>
-                {diag.eventsTotal > diagPageSize && (
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      Strana {diag.page} z {Math.max(1, Math.ceil(diag.eventsTotal / diagPageSize))}{" "}
-                      · {diag.eventsTotal}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        disabled={diagPage <= 1}
-                        onClick={() => setDiagPage((p) => Math.max(1, p - 1))}
-                        className="rounded-md border border-border px-2 py-1 disabled:opacity-50"
-                      >
-                        ← Späť
-                      </button>
-                      <button
-                        disabled={diagPage >= Math.ceil(diag.eventsTotal / diagPageSize)}
-                        onClick={() => setDiagPage((p) => p + 1)}
-                        className="rounded-md border border-border px-2 py-1 disabled:opacity-50"
-                      >
-                        Ďalej →
-                      </button>
-                    </div>
-                  </div>
+                {diag.eventsTotal > 0 && (
+                  <ListPagination
+                    page={diagPage}
+                    pageSize={diagPageSize}
+                    total={diag.eventsTotal}
+                    onPageChange={setDiagPage}
+                    onPageSizeChange={(n) => {
+                      setDiagPageSize(n);
+                      setDiagPage(1);
+                    }}
+                  />
                 )}
               </>
             ) : (
