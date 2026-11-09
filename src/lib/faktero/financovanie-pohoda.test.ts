@@ -6,6 +6,7 @@ import {
   kodyPolozky,
   nazovSuboruSplatok,
   polozkySplatky,
+  symbolSplatky,
   ucinneKody,
   xmlSplatokDoPohody,
   type SplatkaPreExport,
@@ -210,5 +211,100 @@ describe("rozúčtovanie splátky po zložkách", () => {
     expect(chybySchemy(r.xml)).toEqual([]);
     const poistenie = r.xml.match(/<inv:text>Poistenie<\/inv:text>[\s\S]*?<\/inv:invoiceItem>/)?.[0] ?? "";
     expect(poistenie).toContain("<inv:classificationKVDPH><typ:ids>B2</typ:ids>");
+  });
+});
+
+describe("veriteľ, KV, dátum dodania a variabilný symbol", () => {
+  const sVeritelom: ZmluvaPreExport = {
+    ...leasing,
+    provider_ico: "35704713",
+    provider_dic: "2020264818",
+    provider_ic_dph: "SK2020264818",
+    provider_street: "Žižkova 11",
+    provider_city: "Bratislava",
+    provider_zip: "811 02",
+    provider_country: "SK",
+    kv_clenenie: "B2",
+    vat_rate: 23,
+  };
+  const sDph = { ...s1, amount: 615, principal_part: 450, interest_part: 50, vat_amount: 115, insurance_part: 0 };
+
+  it("partnerIdentity nesie plné údaje veriteľa v poradí addressType a prejde schémou", () => {
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: sVeritelom, splatky: [sDph] });
+    expect(chybySchemy(r.xml)).toEqual([]);
+    const adresa = r.xml.match(/<typ:address>([\s\S]*?)<\/typ:address>/)?.[1] ?? "";
+    expect([...adresa.matchAll(/<typ:(\w+)>/g)].map((m) => m[1]).filter((x) => x !== "ids")).toEqual([
+      "company",
+      "city",
+      "street",
+      "zip",
+      "ico",
+      "dic",
+      "icDph",
+      "country",
+    ]);
+    expect(adresa).toContain("<typ:company>ČSOB Leasing, a.s.</typ:company>");
+    expect(adresa).toContain("<typ:ico>35704713</typ:ico>");
+    expect(adresa).toContain("<typ:dic>2020264818</typ:dic>");
+    expect(adresa).toContain("<typ:icDph>SK2020264818</typ:icDph>");
+    expect(adresa).toContain("<typ:country><typ:ids>SK</typ:ids></typ:country>");
+    expect(r.vyhrady.join(" ")).not.toMatch(/IČ DPH veriteľa/);
+  });
+
+  it("KV B2 ide na hlavičku aj položky s DPH", () => {
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: sVeritelom, splatky: [sDph] });
+    const hlavicka = r.xml.match(/<inv:invoiceHeader>[\s\S]*?<\/inv:invoiceHeader>/)?.[0] ?? "";
+    expect(hlavicka).toContain("<inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>");
+    expect(r.xml.match(/<inv:invoiceItem>[\s\S]*?classificationKVDPH/g)?.length).toBe(2);
+  });
+
+  it("KV B2 bez IČ DPH veriteľa → výhrada", () => {
+    const r = xmlSplatokDoPohody({
+      ico: "1",
+      krajinaFirmy: "SK",
+      zmluva: { ...sVeritelom, provider_ic_dph: null },
+      splatky: [sDph, { ...sDph, id: "s2", number: 2 }],
+    });
+    const v = r.vyhrady.filter((x) => /bez IČ DPH veriteľa Pohoda nezaradí do KV B\.2/.test(x.replace("záväzok ", "")));
+    expect(v).toHaveLength(1);
+    // Bez B2 výhrada nie je.
+    const bezKv = xmlSplatokDoPohody({ zmluva: { ...sVeritelom, provider_ic_dph: null, kv_clenenie: "X" }, splatky: [sDph] });
+    expect(bezKv.vyhrady.join(" ")).not.toMatch(/IČ DPH veriteľa/);
+  });
+
+  it("SK: dateDelivery = splatnosť splátky, CZ: dateKHDPH", () => {
+    const sk = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: sVeritelom, splatky: [sDph] });
+    expect(sk.xml).toContain("<inv:dateDelivery>2026-11-15</inv:dateDelivery>");
+    expect(sk.xml).not.toContain("dateKHDPH");
+    expect(chybySchemy(sk.xml)).toEqual([]);
+    const cz = xmlSplatokDoPohody({
+      ico: "1",
+      krajinaFirmy: "CZ",
+      zmluva: { ...sVeritelom, currency: "CZK", vat_rate: 21, provider_country: "CZ" },
+      splatky: [{ ...sDph, vat_amount: 105, amount: 605 }],
+    });
+    expect(cz.xml).toContain("<inv:dateKHDPH>2026-11-15</inv:dateKHDPH>");
+    expect(cz.xml).not.toContain("dateDelivery");
+    expect(chybySchemy(cz.xml)).toEqual([]);
+    // Poradie podľa invoice.xsd: date, dateTax, dateAccounting, (dateKHDPH), dateDue, (dateDelivery).
+    const datumy = (x: string) =>
+      [...x.matchAll(/<inv:(date\w*)>/g)].map((m) => m[1]);
+    expect(datumy(sk.xml)).toEqual(["date", "dateTax", "dateAccounting", "dateDue", "dateDelivery"]);
+    expect(datumy(cz.xml)).toEqual(["date", "dateTax", "dateAccounting", "dateKHDPH", "dateDue"]);
+  });
+
+  it("variabilný symbol: zo zmluvy, inak číslo zmluvy bez lomítok — nič vymyslené", () => {
+    expect(symbolSplatky(leasing)).toBe("2680613");
+    expect(symbolSplatky({ ...leasing, variable_symbol: null })).toBe("UZF2680613");
+    expect(symbolSplatky({ ...leasing, variable_symbol: " ", contract_number: "00526/0445" })).toBe("005260445");
+    expect(symbolSplatky({ ...leasing, variable_symbol: null, contract_number: "LZ-2024 / 15 A" })).toBe("LZ-202415A");
+    expect(symbolSplatky({ ...leasing, variable_symbol: null, contract_number: "ABCDEFGHIJ/1234567890/XYZ" })).toHaveLength(20);
+    expect(symbolSplatky({ ...leasing, variable_symbol: null, contract_number: null })).toBe("");
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: { ...leasing, variable_symbol: null }, splatky: [s1] });
+    expect(r.xml).toContain("<inv:symVar>UZF2680613</inv:symVar>");
+    expect(r.xml).toContain("<inv:symPar>UZF2680613</inv:symPar>");
+    expect(chybySchemy(r.xml)).toEqual([]);
+    const bez = xmlSplatokDoPohody({ zmluva: { ...leasing, variable_symbol: null, contract_number: null }, splatky: [s1] });
+    expect(bez.xml).not.toContain("symVar");
   });
 });

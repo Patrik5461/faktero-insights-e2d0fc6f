@@ -7,4 +7,5 @@ export default {
   "Odpočet zdanenej zálohy{cislo}: základ −{zaklad}, DPH −{dph} — je už v rozpise DPH aj v položkách.": "Abzug der versteuerten Anzahlung{cislo}: Netto −{zaklad}, USt −{dph} — bereits in der USt-Aufstellung und in den Positionen enthalten.",
   "zálohová faktúra č.": "Anzahlungsrechnung Nr.",
   "Zrušiť odpočet zálohy": "Abzug der Anzahlung entfernen",
+  "Odpočet zálohy č. {cislo}": "Abzug der Anzahlung Nr. {cislo}",
 };

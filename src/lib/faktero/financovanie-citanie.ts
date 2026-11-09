@@ -19,7 +19,10 @@ export type PrecitanaSplatka = {
   remaining_principal: number;
 };
 
-export type PrecitanaZmluva = {
+/*
+ * Údaje veriteľa (`provider_*`) — leasingovka alebo banka, nie nájomca/dlžník.
+ */
+export type PrecitanaZmluva = VeritelZmluvy & {
   kind: "leasing" | "uver" | "kontokorent" | null;
   provider_name: string | null;
   contract_number: string | null;
@@ -63,6 +66,7 @@ export type PrecitanaZmluva = {
   vyhrady: string[];
 };
 
+import { normalizujVeritela, POLIA_VERITELA, type VeritelZmluvy } from "./financovanie-veritel";
 import {
   predvolenaFrekvencia,
   type FrekvenciaZmeny,
@@ -468,6 +472,7 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
     const k: PrecitanaZmluva = {
       ...prazdnyKalendar(dokumenty.find((d) => d.kind === "kontokorent")!),
       provider_name: skalar("provider_name"),
+      ...veritelZoSpojenych(skalar),
       contract_number: skalar("contract_number"),
       currency: skalar("currency") ?? "EUR",
       interest_rate: skalar("interest_rate"),
@@ -492,6 +497,7 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
   const spojena: PrecitanaZmluva = {
     kind: skalar("kind"),
     provider_name: skalar("provider_name"),
+    ...veritelZoSpojenych(skalar),
     contract_number: skalar("contract_number"),
     variable_symbol: skalar("variable_symbol"),
     currency: skalar("currency") ?? "EUR",
@@ -527,6 +533,15 @@ export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
     spojena.vyhrady.push(VYHRADA_BEZ_SPLATNOSTI);
   }
   return spojena;
+}
+
+/** Údaje veriteľa — každé pole z prvého dokumentu, ktorý ho má. */
+function veritelZoSpojenych(
+  skalar: <K extends keyof PrecitanaZmluva>(k: K) => PrecitanaZmluva[K],
+): VeritelZmluvy {
+  const v = {} as VeritelZmluvy;
+  for (const k of POLIA_VERITELA) v[k] = skalar(k);
+  return v;
 }
 
 /** Pohyblivú sadzbu berie celú z prvého dokumentu, ktorý ju má — polia sa nemiešajú. */
@@ -584,6 +599,7 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
     const zmluva = prazdnyKalendar({
       kind,
       provider_name: text(parsed?.provider_name),
+      ...normalizujVeritela(parsed),
       contract_number: text(parsed?.contract_number, 100),
       variable_symbol: null,
       currency: text(parsed?.currency, 3) ?? "EUR",
@@ -621,6 +637,7 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
   const zmluva: PrecitanaZmluva = {
     kind,
     provider_name: text(parsed?.provider_name),
+    ...normalizujVeritela(parsed),
     contract_number: text(parsed?.contract_number, 100),
     variable_symbol: text(parsed?.variable_symbol, 30),
     currency: text(parsed?.currency, 3) ?? "EUR",

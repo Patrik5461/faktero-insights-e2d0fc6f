@@ -47,6 +47,14 @@ const Zmluva_ = z
     kind: z.enum(["leasing", "uver", "kontokorent"]),
     name: z.string().trim().min(1).max(200),
     provider_name: z.string().trim().max(200).optional().nullable(),
+    /* Veriteľ (leasingovka/banka) — do Pohody ako partner záväzku za splátku. */
+    provider_ico: z.string().trim().max(20).optional().nullable(),
+    provider_dic: z.string().trim().max(20).optional().nullable(),
+    provider_ic_dph: z.string().trim().max(20).optional().nullable(),
+    provider_street: z.string().trim().max(100).optional().nullable(),
+    provider_city: z.string().trim().max(100).optional().nullable(),
+    provider_zip: z.string().trim().max(20).optional().nullable(),
+    provider_country: z.string().trim().max(40).optional().nullable(),
     contract_number: z.string().trim().max(100).optional().nullable(),
     variable_symbol: z.string().trim().max(30).optional().nullable(),
     counterparty_hint: z.string().trim().max(200).optional().nullable(),
@@ -149,6 +157,22 @@ const Zmluva_ = z
   });
 
 /**
+ * Údaje veriteľa na uloženie: upratané a keď je IČO a niečo chýba, doplnené
+ * z registra. Pole, ktoré formulár vôbec neposlal (starší klient), ostane
+ * nedotknuté — `undefined` sa do update nedostane.
+ */
+async function veritelNaUlozenie(data: Record<string, unknown>) {
+  const { normalizujVeritela, POLIA_VERITELA } = await import("./financovanie-veritel");
+  const poslane = POLIA_VERITELA.filter((k) => data[k] !== undefined);
+  if (!poslane.length) return {};
+  const { doplnVeritelaZRegistra } = await import("./financovanie-veritel.server");
+  const { veritel } = await doplnVeritelaZRegistra(normalizujVeritela(data as any));
+  const out: Record<string, string | null> = {};
+  for (const k of POLIA_VERITELA) if (poslane.includes(k) || veritel[k]) out[k] = veritel[k];
+  return out;
+}
+
+/**
  * Uloží zmluvu a prepočíta kalendár.
  *
  * Už zaplatené splátky sa **neprepisujú**: keď človek opraví úrok alebo počet
@@ -183,9 +207,11 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       }
     }
 
+    const veritel = await veritelNaUlozenie(data);
+
     if (data.kind === "kontokorent") {
       const { ulozKontokorent } = await import("./kontokorent.server");
-      return await ulozKontokorent(supabase, userId, { ...data, ...sadzbaStlpce });
+      return await ulozKontokorent(supabase, userId, { ...data, ...sadzbaStlpce, ...veritel });
     }
 
     /*
@@ -209,6 +235,7 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       kind: data.kind,
       name: data.name,
       provider_name: data.provider_name || null,
+      ...veritel,
       contract_number: data.contract_number || null,
       variable_symbol: data.variable_symbol || null,
       counterparty_hint: data.counterparty_hint || null,
@@ -525,6 +552,98 @@ export const detailZmluvyFn = createServerFn({ method: "POST" })
     }
 
     return { zmluva, splatky: riadky, suhrn: suhrn(riadky, zmluva as Zmluva), vozidlo };
+  });
+
+/**
+ * „Doplniť údaje veriteľa“ na detaile zmluvy — pre zmluvy založené skôr, než
+ * sa IČO/DIČ/IČ DPH a adresa veriteľa ukladali.
+ *
+ * Postup: IČO z požiadavky (výber z ponuky) alebo zo zmluvy → register.
+ * Bez IČO najprv adresár firmy (rovnaký názov), potom register podľa názvu —
+ * jednoznačná zhoda sa použije, inak sa vráti ponuka na výber. Dopĺňajú sa
+ * len prázdne polia; čo človek zadal ručne, ostáva.
+ */
+export const doplnVeritelaZmluvyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        id: z.string().uuid(),
+        ico: z.string().trim().regex(/^\d{6,8}$/).optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    await overClena(context, data.company_id);
+    const { data: zmluva } = await supabase
+      .from("financing_contracts")
+      .select("*")
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!zmluva) throw new Error("Zmluva sa nenašla.");
+
+    const { normalizujVeritela, doplnZRegistra, normNazovFirmy, POLIA_VERITELA } = await import(
+      "./financovanie-veritel"
+    );
+    const { doplnVeritelaZRegistra, najdiVeritelaPodlaNazvu } = await import("./financovanie-veritel.server");
+    const povodny = normalizujVeritela(zmluva);
+    let v = { ...povodny };
+    if (data.ico) v.provider_ico = normalizujVeritela({ provider_ico: data.ico }).provider_ico;
+
+    let kandidati: { ico: string; nazov: string; mesto: string | null }[] = [];
+    const nazov = String(zmluva.provider_name ?? "").trim();
+    if (!v.provider_ico && nazov) {
+      // Adresár firmy — leasingovka tam často je ako dodávateľ.
+      const { data: kontakty } = await supabase
+        .from("customers")
+        .select("name, ico, dic, ic_dph, street, city, zip, country")
+        .eq("company_id", data.company_id)
+        .is("deleted_at", null)
+        .not("ico", "is", null)
+        .ilike("name", `%${nazov.slice(0, 40).replace(/[%_]/g, "")}%`)
+        .limit(20);
+      const cielovy = normNazovFirmy(nazov);
+      const zhoda = ((kontakty ?? []) as any[]).filter((k) => normNazovFirmy(k.name) === cielovy);
+      if (zhoda.length && new Set(zhoda.map((k) => k.ico)).size === 1) {
+        v = doplnZRegistra(v, zhoda[0]);
+      } else {
+        const r = await najdiVeritelaPodlaNazvu(nazov);
+        kandidati = r.kandidati;
+        if (r.ico) v.provider_ico = normalizujVeritela({ provider_ico: r.ico }).provider_ico;
+      }
+    }
+    if (!v.provider_ico) {
+      return {
+        doplnene: [] as string[],
+        kandidati,
+        sprava: kandidati.length
+          ? "Podľa názvu sa našlo viac firiem — vyberte veriteľa."
+          : "Veriteľa sa nepodarilo nájsť — zadajte IČO v úprave zmluvy.",
+      };
+    }
+    const { veritel, zRegistra } = await doplnVeritelaZRegistra(v);
+    const zmenene: Record<string, string | null> = {};
+    for (const k of POLIA_VERITELA) if (veritel[k] && veritel[k] !== povodny[k]) zmenene[k] = veritel[k];
+    if (Object.keys(zmenene).length) {
+      const { error } = await supabase
+        .from("financing_contracts")
+        .update(zmenene)
+        .eq("id", data.id)
+        .eq("company_id", data.company_id);
+      if (error) throw new Error(error.message);
+    }
+    return {
+      doplnene: Object.keys(zmenene),
+      kandidati: [] as typeof kandidati,
+      sprava: Object.keys(zmenene).length
+        ? null
+        : zRegistra
+          ? "Register nepriniesol nič nové."
+          : "Register teraz neodpovedá alebo firmu nepozná — údaje doplňte ručne.",
+    };
   });
 
 export const zmazZmluvuFn = createServerFn({ method: "POST" })
@@ -862,16 +981,24 @@ export const spustiCitanieZmluvyFn = createServerFn({ method: "POST" })
     // Čítanie beží ďalej samo a odpoveď ide von hneď. Kalendár na 72 splátok
     // číta model aj 40 sekúnd a taká dlhá požiadavka po ceste padne — prehliadač
     // ju zavrie skôr, než odpoveď príde, a človek vidí len točiace sa koliesko.
-    void citajNaPozadi(supabase, cesta, base64, mime);
+    void citajNaPozadi(supabase, data.company_id, cesta, base64, mime);
     return { document_path: cesta, nazov_suboru: data.nazov ?? null };
   });
 
 /** Výsledok čítania — leží vedľa dokumentu ako `<cesta>.vysledok.json`. */
-async function citajNaPozadi(supabase: any, cesta: string, base64: string, mime: string) {
+async function citajNaPozadi(
+  supabase: any,
+  companyId: string,
+  cesta: string,
+  base64: string,
+  mime: string,
+) {
   let vysledok: Record<string, unknown>;
   try {
     const { precitajZmluvu } = await import("./financovanie-citanie.server");
-    vysledok = { ok: true, zmluva: await precitajZmluvu(base64, mime) };
+    const zmluva = await precitajZmluvu(base64, mime);
+    await doplnVeritelaPrecitanej(supabase, companyId, zmluva);
+    vysledok = { ok: true, zmluva };
   } catch (e: any) {
     vysledok = {
       ok: false,
@@ -885,6 +1012,30 @@ async function citajNaPozadi(supabase: any, cesta: string, base64: string, mime:
       upsert: true,
     });
   if (error) console.error("Výsledok čítania zmluvy sa nepodarilo uložiť:", error.message);
+}
+
+/**
+ * Veriteľ z prečítanej zmluvy: keď model omylom vrátil IČO vlastnej firmy
+ * (nájomca/dlžník), zahodí sa celý; keď je IČO a chýba DIČ, IČ DPH alebo
+ * adresa, doplnia sa z registra (FinStat/ARES ako v adresári).
+ */
+async function doplnVeritelaPrecitanej(supabase: any, companyId: string, zmluva: Record<string, any>) {
+  const { normalizujVeritela, POLIA_VERITELA } = await import("./financovanie-veritel");
+  let v = normalizujVeritela(zmluva);
+  if (v.provider_ico) {
+    const { data: firma } = await supabase.from("companies").select("ico").eq("id", companyId).maybeSingle();
+    const vlastne = String(firma?.ico ?? "").replace(/\s+/g, "").padStart(8, "0");
+    if (vlastne && vlastne === v.provider_ico.padStart(8, "0")) {
+      v = normalizujVeritela(null);
+      zmluva.vyhrady = [
+        ...(zmluva.vyhrady ?? []),
+        "IČO veriteľa sa zhodovalo s IČO vašej firmy (nájomca), takže sa nepoužilo — údaje leasingovky alebo banky doplňte ručne.",
+      ];
+    }
+  }
+  const { doplnVeritelaZRegistra } = await import("./financovanie-veritel.server");
+  const r = await doplnVeritelaZRegistra(v);
+  for (const k of POLIA_VERITELA) zmluva[k] = r.veritel[k];
 }
 
 const StavCitania = z.object({

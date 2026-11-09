@@ -7,4 +7,5 @@ export default {
   "Odpočet zdanenej zálohy{cislo}: základ −{zaklad}, DPH −{dph} — je už v rozpise DPH aj v položkách.": "Odpočet zdaněné zálohy{cislo}: základ −{zaklad}, DPH −{dph} — je už v rozpisu DPH i v položkách.",
   "zálohová faktúra č.": "zálohová faktura č.",
   "Zrušiť odpočet zálohy": "Zrušit odpočet zálohy",
+  "Odpočet zálohy č. {cislo}": "Odpočet zálohy č. {cislo}",
 };

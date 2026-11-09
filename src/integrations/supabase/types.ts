@@ -4118,6 +4118,13 @@ export type Database = {
           payment_amount: number | null
           principal: number | null
           provider_name: string | null
+          provider_ico: string | null
+          provider_dic: string | null
+          provider_ic_dph: string | null
+          provider_street: string | null
+          provider_city: string | null
+          provider_zip: string | null
+          provider_country: string | null
           fixing_offset_days: number | null
           fixing_rule: string | null
           index_floor: number | null
@@ -4165,6 +4172,13 @@ export type Database = {
           payment_amount?: number | null
           principal?: number | null
           provider_name?: string | null
+          provider_ico?: string | null
+          provider_dic?: string | null
+          provider_ic_dph?: string | null
+          provider_street?: string | null
+          provider_city?: string | null
+          provider_zip?: string | null
+          provider_country?: string | null
           fixing_offset_days?: number | null
           fixing_rule?: string | null
           index_floor?: number | null
@@ -4212,6 +4226,13 @@ export type Database = {
           payment_amount?: number | null
           principal?: number | null
           provider_name?: string | null
+          provider_ico?: string | null
+          provider_dic?: string | null
+          provider_ic_dph?: string | null
+          provider_street?: string | null
+          provider_city?: string | null
+          provider_zip?: string | null
+          provider_country?: string | null
           fixing_offset_days?: number | null
           fixing_rule?: string | null
           index_floor?: number | null

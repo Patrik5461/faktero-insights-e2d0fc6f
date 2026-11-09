@@ -23,6 +23,7 @@ import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
 import { DetailKontokorentu } from "@/components/faktero/DetailKontokorentu";
 import { SadzbaZmluvy } from "@/components/faktero/SadzbaZmluvy";
 import { SplatkyDoPohody } from "@/components/faktero/SplatkyDoPohody";
+import { KartaVeritela } from "@/components/faktero/VeritelZmluvy";
 import { nazovDruhuFinancovania } from "@/lib/faktero/kontokorent";
 import { potvrd as potvrdAkciu } from "@/lib/potvrdenie";
 import { Button } from "@/components/ui/button";
@@ -272,6 +273,8 @@ function Stranka() {
             />
           </div>
         )}
+
+        <KartaVeritela cid={cid} zmluva={z} onZmena={obnov} />
 
         {kontokorent ? (
           <DetailKontokorentu key={z.updated_at} cid={cid} zmluva={z} />

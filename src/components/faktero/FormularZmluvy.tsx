@@ -33,6 +33,8 @@ import {
 } from "@/lib/faktero/pohybliva-sadzba";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { Button } from "@/components/ui/button";
+import { PoliaVeritela, veritelZoZmluvy } from "@/components/faktero/VeritelZmluvy";
+import type { VeritelZmluvy } from "@/lib/faktero/financovanie-veritel";
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -49,7 +51,7 @@ const DATUM = /^\d{4}-\d{2}-\d{2}$/;
  * poplatok za rámec, platnosť a obdobie úročenia.
  */
 
-export type ZmluvaNaUpravu = {
+export type ZmluvaNaUpravu = Partial<VeritelZmluvy> & {
   id: string;
   kind: DruhFinancovania;
   name: string;
@@ -146,6 +148,7 @@ export function FormularZmluvy({
   const kontokorent = kind === "kontokorent";
   const [name, setName] = useState(text(zmluva?.name));
   const [provider, setProvider] = useState(text(zmluva?.provider_name));
+  const [veritel, setVeritel] = useState<VeritelZmluvy>(() => veritelZoZmluvy(zmluva));
   const [contractNumber, setContractNumber] = useState(text(zmluva?.contract_number));
   const [vs, setVs] = useState(text(zmluva?.variable_symbol));
   const [principal, setPrincipal] = useState(text(zmluva?.principal));
@@ -337,6 +340,7 @@ export function FormularZmluvy({
           kind: "kontokorent",
           name: name.trim(),
           provider_name: provider.trim() || null,
+          ...veritel,
           contract_number: contractNumber.trim() || null,
           counterparty_hint: provider.trim() || null,
           currency: menaZmluvy,
@@ -389,6 +393,7 @@ export function FormularZmluvy({
           kind: kind as "leasing" | "uver",
           name: name.trim(),
           provider_name: provider.trim() || null,
+          ...veritel,
           contract_number: contractNumber.trim() || null,
           variable_symbol: vs.trim() || null,
           counterparty_hint: provider.trim() || null,
@@ -526,6 +531,8 @@ export function FormularZmluvy({
             </div>
           )}
         </div>
+
+        <PoliaVeritela hodnota={veritel} onChange={setVeritel} pole={pole} popis={popis} />
 
         {kontokorent && (
           <div className="grid gap-4 sm:grid-cols-2">

@@ -33,6 +33,14 @@ export type ZmluvaPreExport = {
   kind: string;
   name: string;
   provider_name?: string | null;
+  /* Veriteľ — partner záväzku (`partnerIdentity`). */
+  provider_ico?: string | null;
+  provider_dic?: string | null;
+  provider_ic_dph?: string | null;
+  provider_street?: string | null;
+  provider_city?: string | null;
+  provider_zip?: string | null;
+  provider_country?: string | null;
   contract_number?: string | null;
   variable_symbol?: string | null;
   currency?: string | null;
@@ -272,11 +280,45 @@ function priehradka(sadzba: number, den: string, krajina: KrajinaDane): Priehrad
   return sadzba > tab.low ? "high" : "low";
 }
 
-/** Variabilný symbol splátky: zo zmluvy, inak číslice čísla zmluvy. */
+/**
+ * Variabilný symbol splátky (`symVar`, `symPar`): variabilný symbol zo zmluvy;
+ * keď nie je, číslo zmluvy bez lomítok a medzier (písmená a pomlčky ostávajú,
+ * „UZF/26/80613“ → „UZF2680613“). Nič iné sa nevymýšľa — bez oboch je prázdny.
+ * Max 20 znakov (type.xsd `symVarType`).
+ *
+ * Párovanie s bankou (`financovanie-parovanie.ts`) tento symbol nepoužíva —
+ * porovnáva `variable_symbol` zmluvy s platbou cez `normVs`.
+ */
 export function symbolSplatky(zmluva: ZmluvaPreExport): string {
-  const vs = txt(zmluva.variable_symbol).replace(/\D/g, "");
-  if (vs) return vs.slice(0, 20);
-  return txt(zmluva.contract_number).replace(/\D/g, "").slice(0, 20);
+  const bez = (v: unknown) => txt(v).replace(/[\s/\\]+/g, "");
+  return (bez(zmluva.variable_symbol) || bez(zmluva.contract_number)).slice(0, 20);
+}
+
+/** KV kód B.2 (prijaté plnenia od platiteľa) potrebuje IČ DPH dodávateľa. */
+const jeKvB2 = (kv: string | null | undefined) => /^B\.?2/i.test(txt(kv));
+
+/** Kód krajiny pre `typ:country`: dvojpísmenový, inak nič. */
+function kodKrajiny(v: unknown): string {
+  const s = txt(v).toUpperCase();
+  return /^[A-Z]{2}$/.test(s) ? s : "";
+}
+
+/**
+ * Adresa veriteľa v poradí typ:addressType (company, city, street, zip, ico,
+ * dic, icDph, country). Prázdne polia sa vynechajú.
+ */
+export function adresaVeritela(zmluva: ZmluvaPreExport, odsadenie = "            "): string {
+  const krajina = kodKrajiny(zmluva.provider_country);
+  return [
+    el("typ:company", skrat(zmluva.provider_name, 96), odsadenie),
+    el("typ:city", skrat(zmluva.provider_city, 45), odsadenie),
+    el("typ:street", skrat(zmluva.provider_street, 64), odsadenie),
+    el("typ:zip", skrat(zmluva.provider_zip, 15), odsadenie),
+    el("typ:ico", txt(zmluva.provider_ico).replace(/\s+/g, "").slice(0, 15), odsadenie),
+    el("typ:dic", txt(zmluva.provider_dic).replace(/\s+/g, "").slice(0, 18), odsadenie),
+    el("typ:icDph", txt(zmluva.provider_ic_dph).replace(/\s+/g, "").toUpperCase().slice(0, 18), odsadenie),
+    krajina ? `\n${odsadenie}<typ:country><typ:ids>${krajina}</typ:ids></typ:country>` : "",
+  ].join("");
 }
 
 const DRUH: Record<string, string> = { leasing: "leasing", uver: "úver", kontokorent: "kontokorent" };
@@ -315,13 +357,14 @@ export function polozkaBalikaSplatky(
   zmluva: ZmluvaPreExport,
   splatka: SplatkaPreExport,
   opts: { krajina?: KrajinaDane; pocetSplatok?: number } = {},
-): { xml: string; vyhrady: string[] } {
+): { xml: string; vyhrady: string[]; kvB2: boolean } {
   const krajina = opts.krajina ?? "SK";
   const { polozky, vyhrady } = polozkySplatky(zmluva, splatka, krajina);
-  if (!polozky.length) return { xml: "", vyhrady };
+  if (!polozky.length) return { xml: "", vyhrady, kvB2: false };
   const kody = ucinneKody(zmluva, splatka);
   // Členenie KV DPH má len slovenská Pohoda; „X“ (nezahŕňať) skratku nemá.
   const kv = krajina === "SK" && kody.kv && kody.kv !== "X" ? kody.kv : null;
+  let kvB2 = jeKvB2(kv);
   const den = splatka.due_date;
   const vs = symbolSplatky(zmluva);
   const povodne = skrat(
@@ -334,7 +377,14 @@ export function polozkaBalikaSplatky(
   const zakl = (p: Priehradka) => kosik(p).reduce((a, x) => a + x.zaklad, 0);
   const dan = (p: Priehradka) => kosik(p).reduce((a, x) => a + x.dph, 0);
   const rad = txt(zmluva.pohoda_rad);
-  const partner = txt(zmluva.provider_name);
+  const partner = adresaVeritela(zmluva);
+  /*
+    Dátum dodania = splatnosť splátky (DUZP pri opakovanom plnení, § 19 ods. 3
+    ZDPH). invoice.xsd: `dateDelivery` pozná len SK Pohoda, `dateKHDPH` (obdobie
+    kontrolného hlásenia) len CZ — každá verzia dostane svoj.
+  */
+  const datumDodania =
+    krajina === "CZ" ? el("inv:dateKHDPH", den, o) : el("inv:dateDelivery", den, o);
 
   const xml = `
   <dat:dataPackItem id="${esc(`SPL-${splatka.id}`)}" version="2.0">
@@ -345,8 +395,8 @@ export function polozkaBalikaSplatky(
         }${el("inv:symVar", vs, o)}${el("inv:symPar", vs, o)}${el("inv:originalDocument", povodne, o)}
         <inv:date>${esc(den)}</inv:date>
         <inv:dateTax>${esc(den)}</inv:dateTax>
-        <inv:dateAccounting>${esc(den)}</inv:dateAccounting>
-        <inv:dateDue>${esc(den)}</inv:dateDue>${
+        <inv:dateAccounting>${esc(den)}</inv:dateAccounting>${krajina === "CZ" ? datumDodania : ""}
+        <inv:dateDue>${esc(den)}</inv:dateDue>${krajina === "CZ" ? "" : datumDodania}${
           kody.predkontacia ? `\n${o}<inv:accounting><typ:ids>${esc(kody.predkontacia)}</typ:ids></inv:accounting>` : ""
         }${kody.clenenie ? `\n${o}<inv:classificationVAT><typ:ids>${esc(kody.clenenie)}</typ:ids></inv:classificationVAT>` : ""}${
           kv ? `\n${o}<inv:classificationKVDPH><typ:ids>${esc(kv)}</typ:ids></inv:classificationKVDPH>` : ""
@@ -354,7 +404,7 @@ export function polozkaBalikaSplatky(
           partner
             ? `
         <inv:partnerIdentity>
-          <typ:address>${el("typ:company", skrat(partner, 96), "            ")}
+          <typ:address>${partner}
           </typ:address>
         </inv:partnerIdentity>`
             : ""
@@ -378,6 +428,7 @@ export function polozkaBalikaSplatky(
             kvP && (kvZlozkyVyslovne(zmluva, splatka, p.zlozka) || p.dph > 0 || !polozky.some((x) => x.dph > 0))
               ? kvP
               : null;
+          if (jeKvB2(kvPolozky)) kvB2 = true;
           return polozkaXml(p, kp, den, krajina, kvPolozky);
         })
         .join("")}
@@ -399,7 +450,7 @@ export function polozkaBalikaSplatky(
       </inv:invoiceSummary>
     </inv:invoice>
   </dat:dataPackItem>`;
-  return { xml, vyhrady };
+  return { xml, vyhrady, kvB2 };
 }
 
 export type VysledokExportuSplatok = {
@@ -443,10 +494,12 @@ export function xmlSplatokDoPohody(opts: {
   const vyhrady: string[] = [];
   const idSplatok: string[] = [];
   let polozky = "";
+  let kvB2 = false;
   for (const s of zoradene) {
     const r = polozkaBalikaSplatky(opts.zmluva, s, { krajina, pocetSplatok });
     vyhrady.push(...r.vyhrady);
     if (!r.xml) continue;
+    if (r.kvB2) kvB2 = true;
     polozky += r.xml;
     idSplatok.push(s.id);
   }
@@ -462,6 +515,11 @@ export function xmlSplatokDoPohody(opts: {
       maRozuctovanie(opts.zmluva)
         ? `Bez predkontácie: ${zlozkyBezKodu.map((z) => NAZVY[z]).join(", ")} — tieto položky dostanú v Pohode „Neviem“. Doplňte ich v rozúčtovaní alebo predkontáciu kalendára.`
         : "Kalendár nemá predkontáciu — Pohoda dá záväzkom „Neviem“. Nastavte ju v časti Zaúčtovanie do Pohody.",
+    );
+  }
+  if (kvB2 && !txt(opts.zmluva.provider_ic_dph)) {
+    vyhrady.push(
+      "Splátky sú v KV DPH B.2, ale na zmluve chýba IČ DPH veriteľa — bez IČ DPH veriteľa Pohoda nezaradí záväzok do KV B.2. Doplňte ho na zmluve (Upraviť → Veriteľ).",
     );
   }
   if (!txt(opts.zmluva.pohoda_clenenie_dph) && zoradene.some((s) => !txt(s.pohoda_clenenie_dph))) {

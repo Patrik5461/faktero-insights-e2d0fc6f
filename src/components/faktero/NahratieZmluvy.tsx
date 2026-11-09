@@ -125,6 +125,14 @@ export function NahratieZmluvy({
           name:
             [r.provider_name, r.contract_number].filter(Boolean).join(" ") || subory[0]?.name || "",
           provider_name: r.provider_name,
+          // Veriteľ (leasingovka/banka) — server ho už doplnil z registra podľa IČO.
+          provider_ico: r.provider_ico,
+          provider_dic: r.provider_dic,
+          provider_ic_dph: r.provider_ic_dph,
+          provider_street: r.provider_street,
+          provider_city: r.provider_city,
+          provider_zip: r.provider_zip,
+          provider_country: r.provider_country,
           contract_number: r.contract_number,
           variable_symbol: r.variable_symbol,
           principal: r.principal ?? "",

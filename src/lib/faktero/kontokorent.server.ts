@@ -65,6 +65,14 @@ export type KontokorentNaUlozenie = {
   company_id: string;
   name: string;
   provider_name?: string | null;
+  /* Veriteľ (banka) — upratané a doplnené z registra v `ulozZmluvuFn`. */
+  provider_ico?: string | null;
+  provider_dic?: string | null;
+  provider_ic_dph?: string | null;
+  provider_street?: string | null;
+  provider_city?: string | null;
+  provider_zip?: string | null;
+  provider_country?: string | null;
   contract_number?: string | null;
   counterparty_hint?: string | null;
   currency: string;
@@ -128,6 +136,22 @@ export async function ulozKontokorent(
     kind: "kontokorent" as const,
     name: data.name,
     provider_name: data.provider_name || null,
+    // Len polia, ktoré prišli — starší klient bez nich údaje veriteľa nezmaže.
+    ...Object.fromEntries(
+      (
+        [
+          "provider_ico",
+          "provider_dic",
+          "provider_ic_dph",
+          "provider_street",
+          "provider_city",
+          "provider_zip",
+          "provider_country",
+        ] as const
+      )
+        .filter((k) => data[k] !== undefined)
+        .map((k) => [k, data[k] || null]),
+    ),
     contract_number: data.contract_number || null,
     variable_symbol: null,
     counterparty_hint: data.counterparty_hint || null,

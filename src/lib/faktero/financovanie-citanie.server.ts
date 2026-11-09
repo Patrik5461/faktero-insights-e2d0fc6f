@@ -26,6 +26,13 @@ Najprv urči druh (kind):
 Kontokorent spoznáš podľa toho, že zmluva hovorí o limite/rámci na konkrétnom bežnom účte a nie o splátkach.
 product_name = názov produktu tak, ako je v zmluve (napr. "Kontokorentný úver", "Podnikateľský úver", "Finančný leasing").
 
+Veriteľ (provider_*) = leasingová spoločnosť, banka alebo iný poskytovateľ financovania — strana, ktorá peniaze požičiava a ktorej sa splátky platia.
+NIKDY nie nájomca, dlžník, klient ani ručiteľ (to je firma používateľa, tú nevracaj).
+- provider_name = obchodné meno veriteľa presne podľa zmluvy (napr. "ČSOB Leasing, a.s.").
+- provider_ico = IČO veriteľa, provider_dic = DIČ veriteľa, provider_ic_dph = IČ DPH veriteľa (napr. "SK2020264818"; české DIČ "CZ12345678" daj do provider_dic aj provider_ic_dph).
+- provider_street = ulica a číslo, provider_city = obec, provider_zip = PSČ, provider_country = kód krajiny ("SK", "CZ"…) sídla veriteľa.
+- Údaje veriteľa bývajú v hlavičke zmluvy pri označení „Prenajímateľ“, „Poskytovateľ“, „Veriteľ“, „Banka“, „Leasingová spoločnosť“, alebo v pätičke dokumentu. Ak ich v dokumente nie je, daj null.
+
 Pravidlá:
 - Dátumy vracaj vo formáte YYYY-MM-DD.
 - Sumy vracaj ako číslo bez meny a bez medzier ("1 234,56" → 1234.56).
@@ -62,7 +69,7 @@ Iba pri kontokorente (inak null):
 - interest_period = "mesacne" alebo "stvrtrocne" — ako často banka úrok strhne.
 
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"kind":"leasing"|"uver"|"kontokorent"|null,"product_name":string|null,"provider_name":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"credit_limit":number|null,"account_iban":string|null,"reference_rate_name":string|null,"reference_rate_value":number|null,"interest_margin":number|null,"index_floor":number|null,"fixing_rule":string|null,"fixing_offset_days":number|null,"rate_reset_period":"mesacne"|"stvrtrocne"|"polrocne"|"rocne"|null,"day_count":"ACT/360"|"ACT/365"|"30E/360"|null,"limit_fee":number|null,"limit_fee_period":"mesacne"|"stvrtrocne"|"rocne"|null,"limit_fee_percent":number|null,"valid_until":"YYYY-MM-DD"|null,"interest_period":"mesacne"|"stvrtrocne"|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"insurance_part":number,"remaining_principal":number}]}`;
+{"kind":"leasing"|"uver"|"kontokorent"|null,"product_name":string|null,"provider_name":string|null,"provider_ico":string|null,"provider_dic":string|null,"provider_ic_dph":string|null,"provider_street":string|null,"provider_city":string|null,"provider_zip":string|null,"provider_country":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"credit_limit":number|null,"account_iban":string|null,"reference_rate_name":string|null,"reference_rate_value":number|null,"interest_margin":number|null,"index_floor":number|null,"fixing_rule":string|null,"fixing_offset_days":number|null,"rate_reset_period":"mesacne"|"stvrtrocne"|"polrocne"|"rocne"|null,"day_count":"ACT/360"|"ACT/365"|"30E/360"|null,"limit_fee":number|null,"limit_fee_period":"mesacne"|"stvrtrocne"|"rocne"|null,"limit_fee_percent":number|null,"valid_until":"YYYY-MM-DD"|null,"interest_period":"mesacne"|"stvrtrocne"|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"insurance_part":number,"remaining_principal":number}]}`;
 
 export async function precitajZmluvu(base64: string, mimeType: string): Promise<PrecitanaZmluva> {
   const { aiVision } = await import("./ai.server");

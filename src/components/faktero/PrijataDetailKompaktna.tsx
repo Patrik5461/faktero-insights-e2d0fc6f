@@ -82,6 +82,21 @@ export function PrijataDetailKompaktna({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row.company_id]);
   const { uhrady, stav, nacitaj } = useUhradyPrijatej(row);
+  // Číslo zálohovej faktúry, ktorú táto faktúra zúčtováva (do riadku odpočtu).
+  const [cisloZalohy, setCisloZalohy] = useState<string | null>(null);
+  useEffect(() => {
+    if (!row.advance_invoice_id) return setCisloZalohy(null);
+    let zive = true;
+    void supabase
+      .from("purchase_invoices")
+      .select("invoice_number")
+      .eq("id", row.advance_invoice_id)
+      .maybeSingle()
+      .then(({ data }) => zive && setCisloZalohy((data as any)?.invoice_number ?? null));
+    return () => {
+      zive = false;
+    };
+  }, [row.advance_invoice_id]);
   const [okno, setOkno] = useState(false);
   // Pätička panelu a sekcia Poznámka — tlačidlá a účtovnú poznámku tam presunie ZauctovaniePanel.
   const [pataEl, setPataEl] = useState<HTMLDivElement | null>(null);
@@ -122,9 +137,30 @@ export function PrijataDetailKompaktna({
     Array.isArray(row.polozky_vypnute) &&
     row.polozky_vypnute.length > 0 &&
     (!Array.isArray(row.items) || row.items.length === 0);
-  const polozky = (
+  const polozkyDokladu = (
     polozkyVypnute ? row.polozky_vypnute : Array.isArray(row.items) ? row.items : []
   ) as any[];
+  /*
+    Odpočet zaplatenej (nezdanenej) zálohy nie je položka s DPH — rozpis sa ním
+    nemení, len suma na úhradu. Ukazuje sa ako záporný riadok pod položkami,
+    rovnako ako je na doklade („Predplatba … −900“).
+  */
+  const odpocetZalohy = Math.abs(Number(row.advance_amount ?? 0)) || 0;
+  const polozky =
+    odpocetZalohy > 0 && polozkyDokladu.length
+      ? [
+          ...polozkyDokladu,
+          {
+            name: cisloZalohy
+              ? t("Odpočet zálohy č. {cislo}", { cislo: cisloZalohy })
+              : t("Odpočet zálohy"),
+            quantity: 1,
+            unit_price: -odpocetZalohy,
+            total: -odpocetZalohy,
+            vat_rate: 0,
+          },
+        ]
+      : polozkyDokladu;
 
   const pdf = String(row.file_mime ?? "").includes("pdf");
   const nazovSuboru = `${row.invoice_number ?? t("Doklad")}.${
@@ -276,6 +312,18 @@ export function PrijataDetailKompaktna({
               </Hodnota>
             </div>
           ))}
+          {stav.zaloha > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Hodnota
+                popis={cisloZalohy ? t("Odpočet zálohy č. {cislo}", { cislo: cisloZalohy }) : t("Odpočet zálohy")}
+              >
+                <span className="tabular-nums">−{formatujCislo(stav.zaloha, 2)}</span>
+              </Hodnota>
+              <Hodnota popis="Na úhradu">
+                <span className="font-semibold tabular-nums">{formatujCislo(stav.naUhradu, 2)}</span>
+              </Hodnota>
+            </div>
+          ) : null}
           {row.type === "proforma" ? (
             <p className="text-xs text-muted-foreground">
               {t("Nie je daňový doklad — daň prinesie ostrá faktúra.")}
