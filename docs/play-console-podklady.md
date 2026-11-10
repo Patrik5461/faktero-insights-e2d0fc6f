@@ -19,7 +19,7 @@ a najmä prísnejšie obhájenie polohy na pozadí.
 | Web | https://www.faktero.sk |
 | E-mail podpory | servis@faktero.sk |
 | Zásady ochrany súkromia | https://www.faktero.sk/pravne/gdpr |
-| Cena | Zdarma (predplatné sa platí mimo obchodu, cez GoPay na webe) |
+| Cena | Zdarma (predplatné sa kupuje na webe, v obchode sa cena neuvádza) |
 
 **Účet:** vývojárske konto v Play Console stojí jednorazovo 25 USD. Pri firemnom
 účte si Google vyžiada overenie firmy (výpis z registra), čo trvá pár dní — ak
@@ -184,10 +184,10 @@ FUNGUJE AJ BEZ SIGNÁLU
 Faktúru vystavíte aj bez pripojenia — odošle sa sama, keď sa telefón pripojí.
 V aute, kde signál býva najhorší, je to práve to, čo treba.
 
-CENA
-30 dní zdarma bez platobnej karty. Potom od 9 € mesačne. Predplatné sa
-uzatvára na www.faktero.sk, nie v aplikácii.
 ```
+
+Cena ani predplatné sa v popise neuvádzajú — predplatné sa kupuje na webe,
+nie cez Google Play (Patrik 10. 11. 2026).
 
 ### Obrázky, ktoré Google vyžaduje
 
@@ -254,3 +254,11 @@ Kniha jázd, ktorá sa zapíše sama — bez papiera a bez zabúdania.
 
 Ten istý ako v časti 4, len bez zmienky o fakturácii: appka je **len** kniha
 jázd, takže polohu na pozadí potrebuje o to zjavnejšie — bez nej nerobí nič.
+
+
+## 9. Účet pre recenzenta Google (2026-11-10)
+
+Play Console → Obsah aplikácie → Prístup do aplikácie: **recenzia.google@faktero.sk**,
+heslo je na serveri v `~/play-api/recenzent-heslo.txt`. Člen (admin) firmy
+*Faktero Demo s.r.o.* s ukážkovými faktúrami, dokladmi a jazdami; predplatné
+firmy platí do 31. 12. 2027. Ten istý účet platí pre Faktero aj Knihu jázd.
