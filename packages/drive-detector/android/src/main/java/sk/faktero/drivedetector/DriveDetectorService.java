@@ -578,7 +578,7 @@ public class DriveDetectorService extends Service {
                 ServiceCompat.startForeground(
                         this,
                         DriveNotifications.ID_BEH,
-                        DriveNotifications.prubeh(this, "Kniha jázd", "Detekcia je vypnutá."),
+                        DriveNotifications.prubeh(this, nazovAppky(), "Detekcia je vypnutá."),
                         android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE);
             } catch (Exception ignored) {
                 // Keď ani to neprejde, nezostáva než skončiť a dúfať.
@@ -588,10 +588,25 @@ public class DriveDetectorService extends Service {
         stopSelf();
     }
 
+    /**
+     * Meno appky, ako ho ukazuje spúšťač. Plugin beží vo Fakteri aj v Knihe
+     * jázd — napevno zadaný názov by vo Fakteri hlásil „Kniha jázd sleduje
+     * jazdy“ a človek by nevedel, ktorá appka meria.
+     */
+    private String nazovAppky() {
+        try {
+            CharSequence nazov = getApplicationInfo().loadLabel(getPackageManager());
+            if (nazov != null && nazov.length() > 0) return nazov.toString();
+        } catch (RuntimeException e) {
+            /* bez mena sa notifikácia ukáže aj tak */
+        }
+        return "Kniha jázd";
+    }
+
     /** `false`, keď sa službu do popredia dostať nepodarilo. */
     private boolean doPopredia() {
         BufferedTrip bezi = motor != null ? motor.getTrip() : null;
-        String nadpis = bezi != null ? "Nahrávam jazdu" : "Kniha jázd sleduje jazdy";
+        String nadpis = bezi != null ? "Nahrávam jazdu" : nazovAppky() + " sleduje jazdy";
         String popis = bezi != null
                 ? String.format(java.util.Locale.US, "%.1f km", bezi.distanceMeters / 1000)
                 : "Jazda sa zapíše sama, keď sa rozbehnete.";
