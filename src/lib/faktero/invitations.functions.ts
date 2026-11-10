@@ -49,11 +49,12 @@ export const getInvitationByTokenFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: inv } = await supabaseAdmin
       .from("company_invitations")
-      .select("id, company_id, email, role, expires_at, accepted_at, companies(name)")
+      .select("id, company_id, email, role, expires_at, accepted_at, declined_at, companies(name)")
       .eq("token", data.token)
       .maybeSingle();
     if (!inv) return { valid: false as const };
     if (inv.accepted_at) return { valid: false as const, reason: "already_accepted" };
+    if ((inv as any).declined_at) return { valid: false as const, reason: "declined" };
     if (new Date(inv.expires_at) < new Date()) return { valid: false as const, reason: "expired" };
     return {
       valid: true as const,
@@ -74,49 +75,165 @@ export const acceptInvitationFn = createServerFn({ method: "POST" })
       .select("*")
       .eq("token", data.token)
       .maybeSingle();
-    if (!inv) throw new Error("Pozvánka neexistuje");
-    if (inv.accepted_at) throw new Error("Pozvánka už bola využitá");
-    if (new Date(inv.expires_at) < new Date()) throw new Error("Pozvánka expirovala");
+    return prijmiPozvanku(supabaseAdmin, inv, context.userId);
+  });
 
-    // Odkaz je len doručenie — pozvánka patrí adrese, na ktorú išla. Bez tejto
-    // kontroly sa s preposlaným (alebo od kolegu odkukaným) tokenom dal pripojiť
-    // ktokoľvek a existujúci člen si ním vedel prepísať vlastnú rolu.
-    const { data: ja } = await supabaseAdmin.auth.admin.getUserById(context.userId);
-    const mojEmail = (ja?.user?.email ?? "").trim().toLowerCase();
-    if (!mojEmail || mojEmail !== String(inv.email).trim().toLowerCase())
-      throw new Error("Pozvánka je pre inú e-mailovú adresu. Prihláste sa účtom, na ktorý prišla.");
+/**
+ * Prijatie pozvánky — spoločné pre odkaz z e-mailu (token) aj pre tlačidlo
+ * vo webe (zvonček, pás hore). Pozvánka patrí adrese, na ktorú išla.
+ */
+async function prijmiPozvanku(supabaseAdmin: any, inv: any, userId: string) {
+  if (!inv) throw new Error("Pozvánka neexistuje");
+  if (inv.accepted_at) throw new Error("Pozvánka už bola využitá");
+  if (inv.declined_at) throw new Error("Pozvánka bola odmietnutá");
+  if (new Date(inv.expires_at) < new Date()) throw new Error("Pozvánka expirovala");
 
-    // Pozvánku si najprv zaberieme — dve súbežné prijatia ju nesmú využiť obe.
-    const { data: zabrata } = await supabaseAdmin
+  // Odkaz je len doručenie — pozvánka patrí adrese, na ktorú išla. Bez tejto
+  // kontroly sa s preposlaným (alebo od kolegu odkukaným) tokenom dal pripojiť
+  // ktokoľvek a existujúci člen si ním vedel prepísať vlastnú rolu.
+  const { data: ja } = await supabaseAdmin.auth.admin.getUserById(userId);
+  const mojEmail = (ja?.user?.email ?? "").trim().toLowerCase();
+  if (!mojEmail || mojEmail !== String(inv.email).trim().toLowerCase())
+    throw new Error("Pozvánka je pre inú e-mailovú adresu. Prihláste sa účtom, na ktorý prišla.");
+
+  // Pozvánku si najprv zaberieme — dve súbežné prijatia ju nesmú využiť obe.
+  const { data: zabrata } = await supabaseAdmin
+    .from("company_invitations")
+    .update({ accepted_at: new Date().toISOString(), accepted_user_id: userId })
+    .eq("id", inv.id)
+    .is("accepted_at", null)
+    .select("id");
+  if (!zabrata?.length) throw new Error("Pozvánka už bola využitá");
+
+  const { error: linkErr } = await supabaseAdmin
+    .from("company_users")
+    // Kto už vo firme je, tomu pozvánka rolu nemení — majiteľa by inak
+    // prijatie pozvánky „používateľa" potichu zosadilo.
+    .upsert(
+      {
+        company_id: inv.company_id,
+        user_id: userId,
+        role: inv.role,
+        permissions: (inv as any).permissions ?? {},
+      },
+      { onConflict: "company_id,user_id", ignoreDuplicates: true },
+    );
+  if (linkErr) {
+    await supabaseAdmin
       .from("company_invitations")
-      .update({ accepted_at: new Date().toISOString(), accepted_user_id: context.userId })
-      .eq("id", inv.id)
+      .update({ accepted_at: null, accepted_user_id: null })
+      .eq("id", inv.id);
+    throw linkErr;
+  }
+
+  return { ok: true, company_id: inv.company_id as string };
+}
+
+async function mojEmail(supabaseAdmin: any, userId: string) {
+  const { data: ja } = await supabaseAdmin.auth.admin.getUserById(userId);
+  return String(ja?.user?.email ?? "").trim().toLowerCase();
+}
+
+/** Pozvánka, ktorú môže prihlásený človek prijať alebo odmietnuť (podľa id). */
+async function mojaPozvanka(supabaseAdmin: any, id: string, userId: string) {
+  const { data: inv } = await supabaseAdmin
+    .from("company_invitations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  const email = await mojEmail(supabaseAdmin, userId);
+  // Cudzia pozvánka sa správa ako neexistujúca — id nič neprezradí.
+  if (!inv || !email || String(inv.email).trim().toLowerCase() !== email)
+    throw new Error("Pozvánka neexistuje");
+  return inv;
+}
+
+const idSchema = z.object({ id: z.string().uuid() });
+
+export type MojaPozvanka = {
+  id: string;
+  company_id: string;
+  company_name: string;
+  role: string;
+  pozval: string | null;
+  created_at: string;
+  expires_at: string;
+};
+
+/** Čakajúce pozvánky pre e-mail prihláseného — na potvrdenie priamo vo webe. */
+export const mojePozvankyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MojaPozvanka[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = await mojEmail(supabaseAdmin, context.userId);
+    if (!email) return [];
+    const { data: rows } = await supabaseAdmin
+      .from("company_invitations")
+      .select("id, company_id, email, role, invited_by, created_at, expires_at, companies(name)")
+      .ilike("email", email.replace(/[\\%_]/g, (z) => "\\" + z))
       .is("accepted_at", null)
-      .select("id");
-    if (!zabrata?.length) throw new Error("Pozvánka už bola využitá");
-
-    const { error: linkErr } = await supabaseAdmin
+      .is("declined_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const zoznam = (rows ?? []).filter(
+      (r: any) => String(r.email).trim().toLowerCase() === email,
+    );
+    if (!zoznam.length) return [];
+    // Firmy, kde už človek je, neponúkame — prijatie by aj tak nič nezmenilo.
+    const { data: clen } = await supabaseAdmin
       .from("company_users")
-      // Kto už vo firme je, tomu pozvánka rolu nemení — majiteľa by inak
-      // prijatie pozvánky „používateľa" potichu zosadilo.
-      .upsert(
-        {
-          company_id: inv.company_id,
-          user_id: context.userId,
-          role: inv.role,
-          permissions: (inv as any).permissions ?? {},
-        },
-        { onConflict: "company_id,user_id", ignoreDuplicates: true },
-      );
-    if (linkErr) {
-      await supabaseAdmin
-        .from("company_invitations")
-        .update({ accepted_at: null, accepted_user_id: null })
-        .eq("id", inv.id);
-      throw linkErr;
+      .select("company_id")
+      .eq("user_id", context.userId)
+      .in("company_id", zoznam.map((r: any) => r.company_id));
+    const uz = new Set((clen ?? []).map((r: any) => r.company_id));
+    const ktori = [...new Set(zoznam.map((r: any) => r.invited_by).filter(Boolean))];
+    const mena = new Map<string, string>();
+    if (ktori.length) {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ktori);
+      for (const p of prof ?? []) mena.set(p.id, p.full_name || p.email || "");
     }
+    const videne = new Set<string>();
+    return zoznam
+      .filter((r: any) => !uz.has(r.company_id))
+      .filter((r: any) => (videne.has(r.company_id) ? false : (videne.add(r.company_id), true)))
+      .map((r: any) => ({
+        id: r.id,
+        company_id: r.company_id,
+        company_name: r.companies?.name ?? "",
+        role: r.role,
+        pozval: (r.invited_by && mena.get(r.invited_by)) || null,
+        created_at: r.created_at,
+        expires_at: r.expires_at,
+      }));
+  });
 
-    return { ok: true, company_id: inv.company_id };
+export const prijatMojuPozvankuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => idSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const inv = await mojaPozvanka(supabaseAdmin, data.id, context.userId);
+    if (new Date(inv.expires_at) < new Date()) throw new Error("Pozvánka expirovala");
+    return prijmiPozvanku(supabaseAdmin, inv, context.userId);
+  });
+
+export const odmietnutMojuPozvankuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => idSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const inv = await mojaPozvanka(supabaseAdmin, data.id, context.userId);
+    if (inv.accepted_at) throw new Error("Pozvánka už bola prijatá");
+    await supabaseAdmin
+      .from("company_invitations")
+      .update({ declined_at: new Date().toISOString() })
+      .eq("id", inv.id)
+      .is("accepted_at", null);
+    return { ok: true };
   });
 
 export const listInvitationsFn = createServerFn({ method: "POST" })
@@ -125,7 +242,7 @@ export const listInvitationsFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("company_invitations")
-      .select("id, email, role, permissions, accepted_at, expires_at, created_at")
+      .select("id, email, role, permissions, accepted_at, declined_at, expires_at, created_at")
       .eq("company_id", data.company_id)
       .order("created_at", { ascending: false })
       .limit(50);

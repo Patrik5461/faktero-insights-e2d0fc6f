@@ -2029,6 +2029,7 @@ export type Database = {
           company_id: string
           permissions: Json
           created_at: string
+          declined_at: string | null
           email: string
           expires_at: string
           id: string
@@ -2042,6 +2043,7 @@ export type Database = {
           company_id: string
           permissions?: Json
           created_at?: string
+          declined_at?: string | null
           email: string
           expires_at?: string
           id?: string
@@ -2055,6 +2057,7 @@ export type Database = {
           company_id?: string
           permissions?: Json
           created_at?: string
+          declined_at?: string | null
           email?: string
           expires_at?: string
           id?: string

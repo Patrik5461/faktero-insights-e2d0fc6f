@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { bezpecnyNavrat } from "@/lib/faktero/navrat-po-prihlaseni";
 import { EfakturaOznam } from "@/components/faktero/EfakturaOznam";
+import { PozvankyPas } from "@/components/faktero/MojePozvanky";
 import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
 import {
   getActiveCompanyId,
@@ -267,6 +268,8 @@ function AuthedLayout() {
       >
         {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
         <PlanGateBanner companyId={activeId} />
+        {/* Pozvánka do ďalšej firmy — potvrdenie priamo vo webe, nie len z e-mailu. */}
+        <PozvankyPas />
         {/* Oznam o e-fakturácii 2027 — okno alebo pás; rozhoduje efaktura-oznam.ts. */}
         <EfakturaOznam
           companyId={aktivna?.id ?? null}

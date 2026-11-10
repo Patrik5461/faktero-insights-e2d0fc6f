@@ -457,10 +457,10 @@ export function predvoleneZavislosti(): Zavislosti {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data } = await supabaseAdmin
         .from("company_invitations")
-        .select("email, expires_at, accepted_at")
+        .select("email, expires_at, accepted_at, declined_at")
         .eq("token", token)
         .maybeSingle();
-      if (!data || data.accepted_at || new Date(data.expires_at) < new Date()) return null;
+      if (!data || data.accepted_at || data.declined_at || new Date(data.expires_at) < new Date()) return null;
       return { email: String(data.email) };
     },
     limity: limityProcesu(),

@@ -180,7 +180,9 @@ function AcceptInvitationPage() {
             ? t("Platnosť pozvánky vypršala.")
             : inv?.reason === "already_accepted"
               ? t("Pozvánka už bola využitá.")
-              : t("Odkaz je neplatný.")}
+              : inv?.reason === "declined"
+                ? t("Pozvánku ste odmietli.")
+                : t("Odkaz je neplatný.")}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Ak už účet máte, prihláste sa. O novú pozvánku požiadajte toho, kto vás do firmy pozval.")}

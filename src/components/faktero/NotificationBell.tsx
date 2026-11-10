@@ -16,6 +16,7 @@ import {
   type NotificationSeverity,
 } from "@/lib/faktero/notifications";
 import { useT } from "@/lib/i18n/useT";
+import { PozvankyVZvoncku, useMojePozvanky } from "@/components/faktero/MojePozvanky";
 
 const IKONA: Record<NotificationSeverity, typeof Info> = {
   danger: AlertCircle,
@@ -44,6 +45,10 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Pozvánky do cudzích firiem — neviažu sa na aktívnu firmu a nedajú sa
+  // „prečítať“; zmiznú až prijatím alebo odmietnutím.
+  const { pozvanky, obnov: obnovPozvanky } = useMojePozvanky();
+  const pocet = unread + pozvanky.length;
 
   const obnov = useCallback(async () => {
     const cid = getActiveCompanyId();
@@ -100,17 +105,20 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
-        if (o) obnov();
+        if (o) {
+          obnov();
+          obnovPozvanky();
+        }
       }}
     >
       <DropdownMenuTrigger
-        aria-label={unread > 0 ? t("Notifikácie ({n} neprečítaných)", { n: unread }) : t("Notifikácie")}
+        aria-label={pocet > 0 ? t("Notifikácie ({n} neprečítaných)", { n: pocet }) : t("Notifikácie")}
         className={`relative grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary ${className}`}
       >
         <Bell className="h-4 w-4" />
-        {unread > 0 && (
+        {pocet > 0 && (
           <span className="absolute -right-0.5 -top-0.5 grid min-w-[16px] place-items-center rounded-full bg-destructive px-1 text-[10px] font-medium leading-4 text-destructive-foreground">
-            {unread > 9 ? "9+" : unread}
+            {pocet > 9 ? "9+" : pocet}
           </span>
         )}
       </DropdownMenuTrigger>
@@ -130,10 +138,11 @@ export function NotificationBell({ className = "" }: { className?: string } = {}
         </div>
 
         <div className="max-h-[min(24rem,60vh)] overflow-y-auto">
+          <PozvankyVZvoncku pozvanky={pozvanky} />
           {loading ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t("Načítavam…")}</p>
           ) : items.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+            pozvanky.length > 0 ? null : <p className="px-3 py-6 text-center text-sm text-muted-foreground">
               {t("Nič nové. Všetko je vybavené.")}
             </p>
           ) : (

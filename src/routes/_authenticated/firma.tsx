@@ -949,7 +949,9 @@ function TeamSection({ companyId, spravca }: { companyId: string; spravca: boole
                 const expired = new Date(r.expires_at) < new Date();
                 const status = r.accepted_at
                   ? "pozvanka::Prijaté"
-                  : expired
+                  : r.declined_at
+                    ? "pozvanka::Odmietnuté"
+                    : expired
                     ? "Expirované"
                     : "Čaká sa";
                 return (
@@ -965,7 +967,7 @@ function TeamSection({ companyId, spravca }: { companyId: string; spravca: boole
                     </td>
                     <td className="p-3">
                       <StavOdznak
-                        ton={r.accepted_at ? "uspech" : expired ? "zruseny" : "priebeh"}
+                        ton={r.accepted_at ? "uspech" : r.declined_at || expired ? "zruseny" : "priebeh"}
                         maly
                       >
                         {t(status)}

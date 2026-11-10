@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PozvankyPas } from "@/components/faktero/MojePozvanky";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText } from "lucide-react";
@@ -192,6 +193,9 @@ function Onboarding() {
       <p className="mt-2 text-muted-foreground">
         {t("Tieto údaje sa zobrazia na faktúrach. Môžete ich kedykoľvek upraviť.")}
       </p>
+
+      {/* Pozvali ho do existujúcej firmy — nemusí zakladať vlastnú. */}
+      <PozvankyPas bezFirmy />
 
       {prenos && !prenosPouzity && (
         <div className="mt-6 flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center">
