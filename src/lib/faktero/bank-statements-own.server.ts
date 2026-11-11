@@ -38,6 +38,8 @@ export type OwnStatementTx = {
   counterparty: string | null;
   description: string | null;
   transaction_reference: string | null;
+  /** IBAN protistrany — do `DbtrAcct`/`CdtrAcct`, odkiaľ ho berie POHODA. */
+  counterparty_iban?: string | null;
   /**
    * Účel platby (`Purp`) — čím platba je. ISO 20022 má na to vlastné pole;
    * `cd` je kód z číselníka, `prtry` vlastné označenie tam, kde kód neexistuje.
@@ -160,6 +162,39 @@ function amt(n: number, ccy: string): string {
   return `<Amt Ccy="${escapeXml(ccy)}">${Math.abs(n).toFixed(2)}</Amt>`;
 }
 
+/**
+  Posun Bratislavy voči UTC v daný deň („+01:00“ v zime, „+02:00“ v lete).
+  Tatra banka píše začiatok a koniec obdobia s posunom a POHODA výpis
+  v tomto tvare načíta — preto rovnako.
+*/
+function posunBratislava(datum: string): string {
+  const d = new Date(`${datum}T12:00:00Z`);
+  const tz = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Bratislava", timeZoneName: "shortOffset" })
+    .formatToParts(d)
+    .find((x) => x.type === "timeZoneName")?.value;
+  const m = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(tz ?? "");
+  if (!m) return "+01:00";
+  return `${m[1]}${m[2].padStart(2, "0")}:${m[3] ?? "00"}`;
+}
+
+/** IBAN bez medzier, len keď naozaj vyzerá ako IBAN — inak ho schéma odmietne. */
+function ibanAleboNic(v: string | null | undefined): string | null {
+  const s = String(v ?? "").replace(/\s+/g, "").toUpperCase();
+  return /^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$/.test(s) ? s : null;
+}
+
+/**
+ * Text platby bez „ · IBAN …“, ktorý k nemu pridáva čítanie bankových
+ * notifikácií — IBAN ide do vlastného poľa protistrany.
+ */
+function cistyText(popis: string | null | undefined, iban: string | null): string | null {
+  let t = String(popis ?? "");
+  t = t.replace(/\s*·\s*IBAN\s+[A-Z]{2}[0-9A-Z ]{10,40}\s*$/i, "");
+  if (iban) t = t.replace(new RegExp(`\\s*·?\\s*${iban}\\s*$`), "");
+  t = t.trim();
+  return t || null;
+}
+
 function balance(code: string, value: number, ccy: string, date: string): string {
   return (
     `<Bal><Tp><CdOrPrtry><Cd>${code}</Cd></CdOrPrtry></Tp>` +
@@ -171,13 +206,33 @@ function balance(code: string, value: number, ccy: string, date: string): string
 
 function entry(t: OwnStatementTx, ccy: string): string {
   const credit = t.amount > 0;
-  const party = t.counterparty
-    ? `<RltdPties>${credit ? "<Dbtr>" : "<Cdtr>"}${tag("Nm", t.counterparty)}${credit ? "</Dbtr>" : "</Cdtr>"}</RltdPties>`
-    : "";
-  const refs = t.variable_symbol
-    ? `<Refs>${tag("EndToEndId", t.variable_symbol, 35)}</Refs>`
-    : `<Refs><EndToEndId>NOTPROVIDED</EndToEndId></Refs>`;
-  const rmt = t.description ? `<RmtInf>${tag("Ustrd", t.description, 140)}</RmtInf>` : "";
+  // Pohyby z bankových notifikácií majú IBAN protistrany len v texte („… · IBAN SK…“).
+  const ibanZTextu = /IBAN\s+([A-Z]{2}\d{2}[0-9A-Z ]{10,36})\s*$/i.exec(t.description ?? "")?.[1];
+  const iban = ibanAleboNic(t.counterparty_iban) ?? ibanAleboNic(ibanZTextu);
+  /*
+    Protistrana ako vo výpise banky: meno v Dbtr/Cdtr a účet v DbtrAcct/CdtrAcct.
+    Pri príjme platil dlžník (Dbtr), pri výdavku dostal veriteľ (Cdtr).
+  */
+  const strana = credit ? "Dbtr" : "Cdtr";
+  const party =
+    t.counterparty || iban
+      ? "<RltdPties>" +
+        (t.counterparty ? `<${strana}>${tag("Nm", t.counterparty)}</${strana}>` : "") +
+        (iban ? `<${strana}Acct><Id><IBAN>${iban}</IBAN></Id></${strana}Acct>` : "") +
+        "</RltdPties>"
+      : "";
+  /*
+    Variabilný symbol v tvare slovenských bánk „/VS…/SS…/KS…“ v EndToEndId —
+    odtiaľ ho POHODA číta a páruje podľa neho doklad.
+  */
+  const vs = String(t.variable_symbol ?? "").replace(/\D/g, "").slice(0, 10);
+  const refs =
+    "<Refs>" +
+    tag("AcctSvcrRef", t.transaction_reference, 35) +
+    `<EndToEndId>${vs ? `/VS${vs}/SS/KS` : "NOTPROVIDED"}</EndToEndId>` +
+    "</Refs>";
+  const text = cistyText(t.description, iban);
+  const rmt = text ? `<RmtInf>${tag("Ustrd", text, 140)}</RmtInf>` : "";
   // V schéme stojí `Purp` medzi stranami platby a textom — na poradí záleží.
   const purp = t.purpose?.cd
     ? `<Purp>${tag("Cd", t.purpose.cd, 4)}</Purp>`
@@ -187,7 +242,8 @@ function entry(t: OwnStatementTx, ccy: string): string {
   const details = `<NtryDtls><TxDtls>${refs}${party}${purp}${rmt}</TxDtls></NtryDtls>`;
   return (
     "<Ntry>" +
-    tag("NtryRef", t.transaction_reference, 35) +
+    // Referencia ako pri banke: len písmená, číslice a pomlčky (z notifikácií chodí s dvojbodkami).
+    tag("NtryRef", (t.transaction_reference ?? "").replace(/[^A-Za-z0-9-]+/g, "-").replace(/^-+|-+$/g, ""), 35) +
     amt(t.amount, t.currency || ccy) +
     `<CdtDbtInd>${credit ? "CRDT" : "DBIT"}</CdtDbtInd>` +
     "<Sts>BOOK</Sts>" +
@@ -215,6 +271,7 @@ export function buildCamt053(input: OwnStatementInput): string {
   const msgId = id35(`FAK-${iban || "UCET"}-${obdobie}`);
 
   const net = cents(input.closing - input.opening);
+  const poradie = Number(input.sequenceNumber) > 0 ? Math.trunc(Number(input.sequenceNumber)) : 0;
   const credits = cents(transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0));
   const debits = cents(transactions.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0));
 
@@ -223,7 +280,7 @@ export function buildCamt053(input: OwnStatementInput): string {
       ? `<PstlAdr>${tag("StrtNm", company.street, 70)}${tag("PstCd", company.zip, 16)}${tag("TwnNm", company.city, 35)}<Ctry>${kodKrajiny(company.country)}</Ctry></PstlAdr>`
       : "";
   const orgId = company.ico
-    ? `<Id><OrgId><Othr>${tag("Id", company.ico, 35)}<SchmeNm><Prtry>ICO</Prtry></SchmeNm></Othr></OrgId></Id>`
+    ? `<Id><OrgId><Othr>${tag("Id", company.ico, 35)}<SchmeNm><Prtry>ICO</Prtry></SchmeNm><Issr>ORSR</Issr></Othr></OrgId></Id>`
     : "";
 
   return (
@@ -234,9 +291,12 @@ export function buildCamt053(input: OwnStatementInput): string {
     `<MsgRcpt>${tag("Nm", company.name)}</MsgRcpt></GrpHdr>` +
     "<Stmt>" +
     tag("Id", id35(`${iban || "UCET"}-${obdobie}`)) +
-    `<ElctrncSeqNb>${Number(input.sequenceNumber) > 0 ? Math.trunc(Number(input.sequenceNumber)) : 0}</ElctrncSeqNb>` +
+    `<ElctrncSeqNb>${poradie}</ElctrncSeqNb>` +
+    // LglSeqNb posiela aj Tatra banka; POHODA podľa neho číta poradové číslo výpisu.
+    `<LglSeqNb>${poradie}</LglSeqNb>` +
     `<CreDtTm>${created}</CreDtTm>` +
-    `<FrToDt><FrDtTm>${periodStart}T00:00:00</FrDtTm><ToDtTm>${periodEnd}T23:59:59</ToDtTm></FrToDt>` +
+    `<FrToDt><FrDtTm>${periodStart}T00:00:00.0${posunBratislava(periodStart)}</FrDtTm>` +
+    `<ToDtTm>${periodEnd}T00:00:00.0${posunBratislava(periodEnd)}</ToDtTm></FrToDt>` +
     "<Acct><Id>" +
     /*
       Účet platobnej brány (Stripe, PayPal…) IBAN nemá — schéma by „STRIPE"
@@ -245,8 +305,11 @@ export function buildCamt053(input: OwnStatementInput): string {
     (/^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$/.test(iban)
       ? `<IBAN>${escapeXml(iban)}</IBAN>`
       : `<Othr>${tag("Id", iban || "NOTPROVIDED", 34)}</Othr>`) +
-    `</Id>${tag("Ccy", ccy)}${tag("Nm", account.account_name)}` +
+    // Tp BU (bežný účet) ako vo výpise Tatra banky.
+    `</Id><Tp><Prtry>BU</Prtry></Tp>${tag("Ccy", ccy)}${tag("Nm", account.account_name)}` +
     `<Ownr>${tag("Nm", company.name)}${addr}${orgId}</Ownr></Acct>` +
+    // PRCD (konečný zostatok predchádzajúceho výpisu) uvádza Tatra banka pred OPBD.
+    balance("PRCD", input.opening, ccy, periodEnd) +
     balance("OPBD", input.opening, ccy, periodStart) +
     balance("CLBD", input.closing, ccy, periodEnd) +
     "<TxsSummry>" +
@@ -586,7 +649,7 @@ export async function zostavVypisUctu(
     supabaseAdmin
       .from("bank_transactions")
       .select(
-        "booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference",
+        "booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, transaction_reference",
       )
       .eq("bank_account_id", accountId)
       .gte("booking_date", start)
@@ -614,6 +677,7 @@ export async function zostavVypisUctu(
     counterparty: t.counterparty,
     description: t.description,
     transaction_reference: t.transaction_reference,
+    counterparty_iban: t.counterparty_iban,
   }));
   // Výpis je účtovný doklad, takže sa počíta zo zaúčtovaného zostatku;
   // disponibilný v sebe nesie blokácie, ktoré na výpise nie sú.

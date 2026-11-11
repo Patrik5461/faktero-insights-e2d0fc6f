@@ -150,3 +150,38 @@ describe("camt.053 proti schéme", () => {
     expect(overSchemou(xml)).toBeNull();
   });
 });
+
+describe("camt.053 v tvare Tatra banky (POHODA)", () => {
+  it("má LglSeqNb, PRCD, posun času, protistranu a VS v tvare /VS…/SS/KS a prejde schémou", () => {
+    const xml = buildCamt053(
+      vstup({
+        periodStart: "2026-10-01",
+        periodEnd: "2026-10-31",
+        opening: 100,
+        closing: 150,
+        transactions: [
+          {
+            booking_date: "2026-10-05",
+            amount: 50,
+            currency: "EUR",
+            variable_symbol: "2026001",
+            counterparty: "Odberateľ s.r.o.",
+            description: "Faktúra 2026001 · IBAN SK1975002000020008264692",
+            transaction_reference: "notif:2026-10-05:50.00:EUR:1",
+          },
+        ],
+      }),
+    );
+    expect(overSchemou(xml)).toBeNull();
+    expect(xml).toContain("<LglSeqNb>0</LglSeqNb>");
+    expect(xml).toContain("<Cd>PRCD</Cd>");
+    expect(xml).toContain("<FrDtTm>2026-10-01T00:00:00.0+02:00</FrDtTm>");
+    expect(xml).toContain("<ToDtTm>2026-10-31T00:00:00.0+01:00</ToDtTm>");
+    expect(xml).toContain("<EndToEndId>/VS2026001/SS/KS</EndToEndId>");
+    expect(xml).toContain("<DbtrAcct><Id><IBAN>SK1975002000020008264692</IBAN></Id></DbtrAcct>");
+    expect(xml).toContain("<Ustrd>Faktúra 2026001</Ustrd>");
+    expect(xml).toContain('<Cd>OPBD</Cd></CdOrPrtry></Tp><Amt Ccy="EUR">100.00</Amt>');
+    expect(xml).toContain('<Cd>CLBD</Cd></CdOrPrtry></Tp><Amt Ccy="EUR">150.00</Amt>');
+    expect(xml).not.toMatch(/<NtryRef>[^<]*:/);
+  });
+});

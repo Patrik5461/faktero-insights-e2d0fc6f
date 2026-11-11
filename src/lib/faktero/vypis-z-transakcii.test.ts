@@ -94,7 +94,7 @@ describe("čiastočný výpis z pohybov", () => {
     );
     // Upozornenie, že nejde o výpis banky, sa už neodsekne v polovici.
     expect(xml).toContain("niektoré poplatky).</AddtlStmtInf>");
-    expect(xml).toContain("<FrDtTm>2026-10-26T00:00:00</FrDtTm>");
+    expect(xml).toContain("<FrDtTm>2026-10-26T00:00:00.0+01:00</FrDtTm>");
     expect(xml).toContain(
       '<Bal><Tp><CdOrPrtry><Cd>OPBD</Cd></CdOrPrtry></Tp><Amt Ccy="EUR">1000.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><Dt><Dt>2026-10-26</Dt></Dt></Bal>',
     );
