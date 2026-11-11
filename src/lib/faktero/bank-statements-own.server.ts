@@ -239,7 +239,13 @@ function entry(t: OwnStatementTx, ccy: string): string {
     : t.purpose?.prtry
       ? `<Purp>${tag("Prtry", t.purpose.prtry, 35)}</Purp>`
       : "";
-  const details = `<NtryDtls><TxDtls>${refs}${party}${purp}${rmt}</TxDtls></NtryDtls>`;
+  /*
+    Dátum transakcie pri každom pohybe (RltdDts/TxDtTm) — posiela ho aj Tatra
+    banka a POHODA z neho berie dátum platby. Bez neho dala všetkým pohybom
+    koniec obdobia výpisu. V schéme stojí za RmtInf.
+  */
+  const dts = `<RltdDts><TxDtTm>${t.booking_date}T12:00:00.0${posunBratislava(t.booking_date)}</TxDtTm></RltdDts>`;
+  const details = `<NtryDtls><TxDtls>${refs}${party}${purp}${rmt}${dts}</TxDtls></NtryDtls>`;
   return (
     "<Ntry>" +
     // Referencia ako pri banke: len písmená, číslice a pomlčky (z notifikácií chodí s dvojbodkami).

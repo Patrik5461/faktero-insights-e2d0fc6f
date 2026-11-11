@@ -183,5 +183,7 @@ describe("camt.053 v tvare Tatra banky (POHODA)", () => {
     expect(xml).toContain('<Cd>OPBD</Cd></CdOrPrtry></Tp><Amt Ccy="EUR">100.00</Amt>');
     expect(xml).toContain('<Cd>CLBD</Cd></CdOrPrtry></Tp><Amt Ccy="EUR">150.00</Amt>');
     expect(xml).not.toMatch(/<NtryRef>[^<]*:/);
+    // Dátum platby pre POHODU — inak dá všetkým pohybom koniec obdobia.
+    expect(xml).toContain("<RltdDts><TxDtTm>2026-10-05T12:00:00.0+02:00</TxDtTm></RltdDts>");
   });
 });
