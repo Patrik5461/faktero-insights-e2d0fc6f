@@ -9,7 +9,7 @@ import {
   getBankStatementUrl,
 } from "@/lib/faktero/tatrabanka.functions";
 import { zostavVypisZTransakciiFn } from "@/lib/faktero/vypis-z-transakcii.functions";
-import { vypisPreXmlImportPohodyFn } from "@/lib/faktero/vypis-pohoda-xml.functions";
+import { skratkaUctuPohodyFn, vypisPreXmlImportPohodyFn } from "@/lib/faktero/vypis-pohoda-xml.functions";
 import { zadaj } from "@/lib/potvrdenie";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
@@ -87,6 +87,7 @@ function BankStatementsPage() {
   const getUrl = useServerFn(getBankStatementUrl);
   const zostavVypis = useServerFn(zostavVypisZTransakciiFn);
   const pohodaXml = useServerFn(vypisPreXmlImportPohodyFn);
+  const skratkaPohody = useServerFn(skratkaUctuPohodyFn);
   const mesiace = poslednychMesiacov();
 
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -157,9 +158,15 @@ function BankStatementsPage() {
     } catch {
       /* bez úložiska sa len nepamätá */
     }
+    try {
+      const r = await skratkaPohody({ data: { company_id: cid, bank_account_id: row.bank_account_id } });
+      if (r.skratka) predvolene = r.skratka;
+    } catch {
+      /* ponúkne sa zapamätaná */
+    }
     const banka = await zadaj(
-      t("Skratka tohto bankového účtu v POHODE (Adresár → Bankové účty, napr. VUB). Bez nej dá POHODA pohyby na predvolený účet."),
-      { predvolene, placeholder: "VUB", povolitPrazdne: true },
+      t("Skratka tohto bankového účtu v POHODE presne tak, ako je v Nastavenie → Bankové účty (stĺpec Skratka). Bez nej dá POHODA pohyby na predvolený účet aj s jeho predkontáciou."),
+      { predvolene, placeholder: "VUB" },
       { potvrdit: t("Stiahnuť XML") },
     );
     if (banka === null) return;

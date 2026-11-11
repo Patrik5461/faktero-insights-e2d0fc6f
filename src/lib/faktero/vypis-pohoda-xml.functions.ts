@@ -12,6 +12,40 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { overPristup } from "./over-pristup";
 import type { VypisPohyb } from "./export.server";
 
+/** IBAN bez medzier a veľkými písmenami — na porovnanie účtov. */
+const normIban = (v: unknown) => String(v ?? "").replace(/\s+/g, "").toUpperCase();
+
+/**
+ * Skratka účtu v POHODE z Firma → Bankové účty (`company_bank_accounts.pohoda_skratka`)
+ * pre účet, z ktorého je výpis — tá istá, s ktorou idú faktúry.
+ */
+async function skratkaUctu(supabaseAdmin: any, companyId: string, iban: string | null) {
+  if (!iban) return null;
+  const { data } = await supabaseAdmin
+    .from("company_bank_accounts")
+    .select("id, iban, pohoda_skratka")
+    .eq("company_id", companyId);
+  const riadok = (data ?? []).find((r: any) => normIban(r.iban) === normIban(iban));
+  return riadok ? { id: riadok.id as string, skratka: (riadok.pohoda_skratka as string | null) ?? null } : null;
+}
+
+/** Predvolená skratka účtu v POHODE pre okno pred stiahnutím. */
+export const skratkaUctuPohodyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { company_id: string; bank_account_id: string }) => d)
+  .handler(async ({ data, context }): Promise<{ skratka: string | null }> => {
+    await overPristup(context as never, data.company_id, { oblast: "banka" });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ucet } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("company_id, iban")
+      .eq("id", data.bank_account_id)
+      .maybeSingle();
+    if (!ucet || ucet.company_id !== data.company_id) return { skratka: null };
+    const r = await skratkaUctu(supabaseAdmin, data.company_id, ucet.iban);
+    return { skratka: r?.skratka ?? null };
+  });
+
 export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -47,6 +81,28 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       .eq("id", data.company_id)
       .maybeSingle();
     if (e3) throw new Error(e3.message);
+
+    /*
+      Skratka účtu v POHODE: zadaná pri stiahnutí, inak z Firma → Bankové účty.
+      Bez bnk:account vezme POHODA účet z nastavenia používateľa (bank.xsd) — tak
+      skončili pohyby z VÚB pod Tatra bankou. Zadaná sa uloží k účtu firmy,
+      aby ju nabudúce poznali aj faktúry a ďalšie výpisy.
+    */
+    const ulozena = await skratkaUctu(supabaseAdmin, data.company_id, ucet.iban);
+    const banka = String(data.banka ?? "").trim() || ulozena?.skratka || "";
+    if (!banka) {
+      throw new Error(
+        "Zadajte skratku bankového účtu v POHODE (Nastavenie → Bankové účty), inak POHODA dá pohyby na predvolený účet.",
+      );
+    }
+    if (ulozena && ulozena.skratka !== banka) {
+      const { error } = await supabaseAdmin
+        .from("company_bank_accounts")
+        .update({ pohoda_skratka: banka })
+        .eq("id", ulozena.id)
+        .eq("company_id", data.company_id);
+      if (error) console.error("[vypis-pohoda-xml] skratka sa neuložila", error.message);
+    }
 
     const { vsetkyRiadky } = await import("./strankovanie");
     const txs = await vsetkyRiadky<any>((zac, kon) =>
@@ -94,9 +150,14 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       datumVypisu: vypis.period_end,
       nastavenia: {
         // Skratka bankového účtu v POHODE; bez nej by POHODA dala pohyby na predvolený účet.
-        banka: String(data.banka ?? "").trim() || null,
-        predkontaciaBanka: null,
-        predkontacieOznaceni: {},
+        banka,
+        /*
+          Bez bnk:accounting vezme POHODA predkontáciu z nastavenia používateľa,
+          pod ktorým beží import (bank.xsd) — nie z bankového účtu. Preto ide
+          predkontácia banky z nastavení firmy pre POHODU; pravidlo pohybu má prednosť.
+        */
+        predkontaciaBanka: String((company as any)?.pohoda_predkontacia_banka ?? "").trim() || null,
+        predkontacieOznaceni: ((company as any)?.pohoda_predkontacie_oznaceni ?? {}) as Record<string, string>,
       },
     });
 
