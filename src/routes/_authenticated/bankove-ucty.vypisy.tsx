@@ -9,6 +9,8 @@ import {
   getBankStatementUrl,
 } from "@/lib/faktero/tatrabanka.functions";
 import { zostavVypisZTransakciiFn } from "@/lib/faktero/vypis-z-transakcii.functions";
+import { vypisPreXmlImportPohodyFn } from "@/lib/faktero/vypis-pohoda-xml.functions";
+import { zadaj } from "@/lib/potvrdenie";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -84,6 +86,7 @@ function BankStatementsPage() {
   const loadStatements = useServerFn(listBankStatements);
   const getUrl = useServerFn(getBankStatementUrl);
   const zostavVypis = useServerFn(zostavVypisZTransakciiFn);
+  const pohodaXml = useServerFn(vypisPreXmlImportPohodyFn);
   const mesiace = poslednychMesiacov();
 
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -134,6 +137,52 @@ function BankStatementsPage() {
       toast.error(
         e?.message === "not_ready" ? t("Výpis ešte nie je pripravený") : t("Stiahnutie zlyhalo"),
       );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /*
+    Dávka pre POHODU (Súbor → Dátová komunikácia → XML import) s dátumom platby
+    pri každom pohybe. camt.053 zostavený Fakterom POHODA načíta s dátumom konca
+    mesiaca pri všetkých platbách.
+  */
+  async function onPohodaXml(row: any) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const kluc = `faktero:pohoda-banka:${row.bank_account_id}`;
+    let predvolene = "";
+    try {
+      predvolene = localStorage.getItem(kluc) ?? "";
+    } catch {
+      /* bez úložiska sa len nepamätá */
+    }
+    const banka = await zadaj(
+      t("Skratka tohto bankového účtu v POHODE (Adresár → Bankové účty, napr. VUB). Bez nej dá POHODA pohyby na predvolený účet."),
+      { predvolene, placeholder: "VUB", povolitPrazdne: true },
+      { potvrdit: t("Stiahnuť XML") },
+    );
+    if (banka === null) return;
+    try {
+      localStorage.setItem(kluc, banka.trim());
+    } catch {
+      /* nič */
+    }
+    setBusy(`${row.id}:pohoda`);
+    try {
+      const r = await pohodaXml({ data: { company_id: cid, statement_id: row.id, banka } });
+      const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      toast.success(t("XML pre POHODU je stiahnuté ({n} pohybov). Načítajte ho cez Súbor → Dátová komunikácia → XML import.", { n: r.pocet }));
+    } catch (e: any) {
+      toast.error(e?.message ? t(e.message) : t("Stiahnutie zlyhalo"));
     } finally {
       setBusy(null);
     }
@@ -355,6 +404,18 @@ function BankStatementsPage() {
                           </span>
                         );
                       })}
+                      {vlastny && formaty.XML?.status === "ready" && (
+                        <button
+                          onClick={() => onPohodaXml(formaty.XML)}
+                          disabled={busy === `${formaty.XML.id}:pohoda`}
+                          title={t("Dávka pre XML import v POHODE — každá platba má svoj dátum platby.")}
+                          className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
+                        >
+                          <FileCode2 className="h-4 w-4 text-primary" />
+                          {t("XML pre POHODU")}
+                          <Download className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   );
                 })}
