@@ -11,7 +11,7 @@ import { menoSpracovatela, nahralDokladu, spracovanieDokladu } from "@/lib/fakte
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
-import { kontrolaUlozenehoBlocku, zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
+import { kontrolaUlozenehoBlocku, nastavZaokruhlenie, zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
 import { KontrolaSumyBlocku, potvrdRozdielSumy } from "./KontrolaSumyBlocku";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { kvAutoBlocku } from "@/lib/faktero/kv-auto";
@@ -218,6 +218,17 @@ export function BlocekDetailKompaktny({
     } finally {
       setUkladam(false);
     }
+  }
+  async function zapisZaokruhlenie(suma: number) {
+    setUkladam(true);
+    const { error } = await supabase
+      .from("expense_documents")
+      .update({ items: nastavZaokruhlenie(Array.isArray(row.items) ? row.items : [], suma) } as never)
+      .eq("id", row.id);
+    setUkladam(false);
+    if (error) return toast.error(t(error.message));
+    toast.success(t("Rozdiel je zapísaný ako zaokrúhlenie"));
+    hotovo();
   }
   async function ulozStlpec(zmena: Record<string, string | null>) {
     setUkladam(true);
@@ -530,7 +541,15 @@ export function BlocekDetailKompaktny({
               </Hodnota>
             </div>
           ) : null}
-          <KontrolaSumyBlocku kontrola={kontrolaSumy} mena={menaDokladu} />
+          <KontrolaSumyBlocku
+            kontrola={kontrolaSumy}
+            mena={menaDokladu}
+            /*
+              Rozdiel do 2 centov pri hotovosti zapíše ako položku zaokrúhlenia.
+              Odovzdaný bloček sa mení len po vrátení z Pohody (zámok).
+            */
+            onZaokruhlenie={zamknute ? undefined : zapisZaokruhlenie}
+          />
         </Sekcia>
 
         <Sekcia nadpis="Obchodník">

@@ -5,4 +5,5 @@ export default {
   "Exportovať aj tak?": "Trotzdem exportieren?",
   "Exportovať aj tak": "Trotzdem exportieren",
   "Opravím to": "Ich korrigiere es",
+  "Rozdiel je zapísaný ako zaokrúhlenie": "Die Differenz wurde als Rundung erfasst",
 };

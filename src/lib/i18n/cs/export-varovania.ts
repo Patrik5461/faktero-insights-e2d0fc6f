@@ -5,4 +5,5 @@ export default {
   "Exportovať aj tak?": "Exportovat i tak?",
   "Exportovať aj tak": "Exportovat i tak",
   "Opravím to": "Opravím to",
+  "Rozdiel je zapísaný ako zaokrúhlenie": "Rozdíl je zapsaný jako zaokrouhlení",
 };
