@@ -163,6 +163,8 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
         aj_odovzdane: z.boolean().optional(),
         /** Poradie faktúr v dávke. */
         radenie: z.enum(["datum", "cislo", "nahratie"]).nullish(),
+        /** Človek videl upozornenia (`varovania`) a export potvrdil. */
+        potvrdene_varovania: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -229,6 +231,24 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
       return !dovod;
     });
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
+    /*
+      Upozornenia (sadzba DPH, prenesenie, predkontácia) export nezastavia —
+      prvé volanie ich vráti a súbor nevyrobí; po potvrdení sa zavolá znova
+      s `potvrdene_varovania`.
+    */
+    if (!data.potvrdene_varovania) {
+      const { varovaniaPrijatejPredExportom } = await import("./export-varovania");
+      const varovania = ok.flatMap((p: any) => varovaniaPrijatejPredExportom(p, firma, nastavenia));
+      if (varovania.length)
+        return {
+          xml: "",
+          fileName: "",
+          subory: [] as { xml: string; fileName: string; pocet: number }[],
+          pocet: 0,
+          preskocene,
+          varovania,
+        };
+    }
     // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
     const roky = data.datum_zauctovania ? [{ rok: "", doklady: ok }] : podlaRoka(ok, (p: any) => p.delivery_date || p.issue_date);
     const den0 = dnesBratislava();
@@ -270,5 +290,6 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
       subory,
       pocet: ok.length,
       preskocene,
+      varovania: [] as string[],
     };
   });

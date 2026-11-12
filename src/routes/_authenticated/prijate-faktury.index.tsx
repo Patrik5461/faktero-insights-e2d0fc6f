@@ -75,6 +75,7 @@ import { riadkyPreIds, vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
 import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
@@ -627,16 +628,22 @@ function PurchaseInvoicesPage() {
     if (!cid || !selected.size) return;
     setHromadneBusy(true);
     try {
-      const r = await exportujXml({
-        data: {
-          company_id: cid,
-          ids: [...selected],
-          oznacit: v.oznacit,
-          datum_zauctovania: v.datumZauctovania,
-          aj_odovzdane: v.ajOdovzdane,
-          radenie: v.radenie,
-        },
-      });
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportujXml({
+            data: {
+              company_id: cid,
+              ids: [...selected],
+              oznacit: v.oznacit,
+              datum_zauctovania: v.datumZauctovania,
+              aj_odovzdane: v.ajOdovzdane,
+              radenie: v.radenie,
+              potvrdene_varovania: potvrdene,
+            },
+          }),
+        t,
+      );
+      if (!r) return;
       for (const f of r.subory) {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([f.xml], { type: "text/xml;charset=utf-8" }));

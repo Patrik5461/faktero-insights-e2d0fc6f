@@ -27,6 +27,7 @@
  * prijatá faktúra a nemá ich polia.
  */
 import { sadzbyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
+import { predkontacieVXml } from "./pohoda-predkontacia";
 
 export type ZmluvaPreExport = {
   id: string;
@@ -183,6 +184,46 @@ export function kodyPolozky(
 function kvZlozkyVyslovne(zmluva: ZmluvaPreExport, splatka: SplatkaPreExport, zlozka: ZlozkaSplatky | null) {
   if (!zlozka) return false;
   return Boolean(txt(splatka.pohoda_rozuctovanie?.[zlozka]?.kv) || txt(zmluva.pohoda_rozuctovanie?.[zlozka]?.kv));
+}
+
+/** Zaúčtovanie kalendára tak, ako je vyplnené vo formulári (ešte neuložené). */
+export type FormularZauctovania = {
+  predkontacia?: string | null;
+  clenenie?: string | null;
+  kv?: string | null;
+  rad?: string | null;
+  rozuctovanie?: Rozuctovanie | null;
+};
+
+/** Rozúčtovanie bez prázdnych polí a zložiek — tak, ako ho uloží server. */
+export function cisteRozuctovanie(r: Rozuctovanie | null | undefined): Rozuctovanie {
+  const out: Rozuctovanie = {};
+  for (const z of ZLOZKY_SPLATKY) {
+    const k: KodyZlozky = {};
+    for (const pole of ["predkontacia", "clenenie", "kv"] as const) {
+      const v = txt(r?.[z]?.[pole]);
+      if (v) k[pole] = v;
+    }
+    if (Object.keys(k).length) out[z] = k;
+  }
+  return out;
+}
+
+/**
+ * Líši sa formulár zaúčtovania od toho, čo je na kalendári uložené?
+ *
+ * Export číta len uložené kódy. Keď človek kódy vyberie a rovno klikne na
+ * export, musia sa najprv uložiť — inak idú splátky do Pohody bez predkontácie
+ * („Neviem“), hoci ju na obrazovke vidí vyplnenú (BÝVAJLEPŠIE, 9. 11.).
+ */
+export function zauctovanieKalendaraZmenene(zmluva: ZmluvaPreExport, f: FormularZauctovania): boolean {
+  return (
+    txt(f.predkontacia) !== txt(zmluva.pohoda_predkontacia) ||
+    txt(f.clenenie) !== txt(zmluva.pohoda_clenenie_dph) ||
+    txt(f.kv) !== txt(zmluva.kv_clenenie) ||
+    txt(f.rad) !== txt(zmluva.pohoda_rad) ||
+    JSON.stringify(cisteRozuctovanie(f.rozuctovanie)) !== JSON.stringify(cisteRozuctovanie(zmluva.pohoda_rozuctovanie))
+  );
 }
 
 /** Má kalendár rozúčtovanie aspoň jednej zložky? */
@@ -384,10 +425,12 @@ export function polozkaBalikaSplatky(
   zmluva: ZmluvaPreExport,
   splatka: SplatkaPreExport,
   opts: { krajina?: KrajinaDane; pocetSplatok?: number } = {},
-): { xml: string; vyhrady: string[]; kvB2: boolean } {
+): { xml: string; vyhrady: string[]; kvB2: boolean; bezPredkontacie: (ZlozkaSplatky | null)[] } {
   const krajina = opts.krajina ?? "SK";
   const { polozky, vyhrady } = polozkySplatky(zmluva, splatka, krajina);
-  if (!polozky.length) return { xml: "", vyhrady, kvB2: false };
+  if (!polozky.length) return { xml: "", vyhrady, kvB2: false, bezPredkontacie: [] };
+  /* Zložky, ktoré idú bez predkontácie (null = splátka bez rozpadu). */
+  const bezPredkontacie: (ZlozkaSplatky | null)[] = [];
   if (txt(splatka.cislo_dokladu).length > MAX_CISLO_DOKLADU) {
     vyhrady.push(
       `Splátka č. ${splatka.number}: číslo dokladu ${txt(splatka.cislo_dokladu)} je dlhšie ako ${MAX_CISLO_DOKLADU} znakov — Pohoda ho neprijme, číslo jej pridelí Pohoda.`,
@@ -448,6 +491,7 @@ export function polozkaBalikaSplatky(
       <inv:invoiceDetail>${polozky
         .map((p) => {
           const kp = kodyPolozky(zmluva, splatka, p.zlozka);
+          if (!kp.predkontacia) bezPredkontacie.push(p.zlozka);
           // Členenie KV má len slovenská Pohoda; „X“ (nezahŕňať) skratku nemá.
           const kvP = krajina === "SK" && kp.kv && kp.kv !== "X" ? kp.kv : null;
           /*
@@ -480,7 +524,7 @@ export function polozkaBalikaSplatky(
       </inv:invoiceSummary>
     </inv:invoice>
   </dat:dataPackItem>`;
-  return { xml, vyhrady, kvB2 };
+  return { xml, vyhrady, kvB2, bezPredkontacie };
 }
 
 export type VysledokExportuSplatok = {
@@ -505,6 +549,12 @@ export function xmlSplatokDoPohody(opts: {
   splatky: SplatkaPreExport[];
   /** Preklad kódu predkontácie na skratku Pohody (`predkontacieNaSkratky`). */
   prelozPredkontacie?: (xml: string) => string;
+  /**
+   * Kódy predkontácií, ktoré preklad na skratky Pohody zahodí (dvojica účtov
+   * bez skratky — `chybajuceSkratky`). Bez výhrady by splátka potichu išla
+   * s „Neviem“, hoci predkontáciu má.
+   */
+  chybajuceSkratky?: (kody: string[]) => string[];
 }): VysledokExportuSplatok {
   const krajina = krajinaDane(opts.krajinaFirmy);
   const domaca = krajina === "CZ" ? "CZK" : "EUR";
@@ -525,24 +575,25 @@ export function xmlSplatokDoPohody(opts: {
   const idSplatok: string[] = [];
   let polozky = "";
   let kvB2 = false;
+  const bezKodu = new Set<ZlozkaSplatky | null>();
   for (const s of zoradene) {
     const r = polozkaBalikaSplatky(opts.zmluva, s, { krajina, pocetSplatok });
     vyhrady.push(...r.vyhrady);
     if (!r.xml) continue;
     if (r.kvB2) kvB2 = true;
+    for (const z of r.bezPredkontacie) bezKodu.add(z);
     polozky += r.xml;
     idSplatok.push(s.id);
   }
-  const rozuct = opts.zmluva.pohoda_rozuctovanie ?? {};
-  const zlozkyBezKodu = ZLOZKY_SPLATKY.filter((z) => !txt(rozuct[z]?.predkontacia));
-  if (
-    !txt(opts.zmluva.pohoda_predkontacia) &&
-    zoradene.some((s) => !txt(s.pohoda_predkontacia)) &&
-    zlozkyBezKodu.length
-  ) {
+  /*
+    Výhrada podľa položiek, ktoré naozaj odišli bez predkontácie — nie podľa
+    kalendára: kód na splátke alebo jej rozúčtovanie ju doplní aj bez kódu kalendára.
+  */
+  const zlozkyBezKodu = ZLOZKY_SPLATKY.filter((z) => bezKodu.has(z));
+  if (bezKodu.size) {
     const NAZVY: Record<ZlozkaSplatky, string> = { istina: "istina", urok: "úrok", poistenie: "poistenie", poplatky: "poplatky" };
     vyhrady.push(
-      maRozuctovanie(opts.zmluva)
+      maRozuctovanie(opts.zmluva) && zlozkyBezKodu.length
         ? `Bez predkontácie: ${zlozkyBezKodu.map((z) => NAZVY[z]).join(", ")} — tieto položky dostanú v Pohode „Neviem“. Doplňte ich v rozúčtovaní alebo predkontáciu kalendára.`
         : "Kalendár nemá predkontáciu — Pohoda dá záväzkom „Neviem“. Nastavte ju v časti Zaúčtovanie do Pohody.",
     );
@@ -556,6 +607,12 @@ export function xmlSplatokDoPohody(opts: {
     vyhrady.push("Kalendár nemá členenie DPH — Pohoda doplní predvolené z agendy.");
   }
   if (!polozky) return { xml: "", pocet: 0, idSplatok, vyhrady };
+  const zahodene = opts.chybajuceSkratky?.(predkontacieVXml(polozky)) ?? [];
+  if (zahodene.length) {
+    vyhrady.push(
+      `Predkontácia ${zahodene.map((k) => `„${k}“`).join(", ")} je dvojica účtov bez skratky v Pohode — splátky s ňou pôjdu bez predkontácie (v Pohode „Neviem“). Doplňte skratku v Predkontácie → Export → Skratky predkontácií v Pohode, alebo vyberte predkontáciu z číselníka Pohody.`,
+    );
+  }
   const telo = opts.prelozPredkontacie ? opts.prelozPredkontacie(polozky) : polozky;
   const xml = `<?xml version="1.0" encoding="utf-8"?>
 <dat:dataPack id="SPL${Date.now()}" ico="${esc(txt(opts.ico).replace(/\s/g, ""))}" application="Faktero" version="2.0" note="${esc(

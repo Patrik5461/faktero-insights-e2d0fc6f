@@ -21,6 +21,7 @@ import {
   ulozZauctovanieSplatokFn,
 } from "@/lib/faktero/financovanie-pohoda.functions";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { zauctovanieKalendaraZmenene } from "@/lib/faktero/financovanie-pohoda";
 import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { stiahniBajty } from "@/lib/faktero/cennik-data";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
@@ -253,12 +254,7 @@ export function SplatkyDoPohody({
     };
   }, [cid, nacitajNavrhy]);
 
-  const zmenene =
-    kody.predkontacia !== kalendar.predkontacia ||
-    kody.clenenie !== kalendar.clenenie ||
-    kody.kv !== kalendar.kv ||
-    rad !== z(zmluva.pohoda_rad) ||
-    JSON.stringify(rozuct) !== JSON.stringify(rozuctKalendara);
+  const zmenene = zauctovanieKalendaraZmenene(zmluva, { ...kody, rad, rozuctovanie: rozuct });
 
   async function urob(praca: () => Promise<unknown>) {
     setBusy(true);
@@ -282,6 +278,17 @@ export function SplatkyDoPohody({
 
   const stiahni = (lenVybrane: boolean) =>
     urob(async () => {
+      /*
+        Export číta len uložené kódy. Vybrané, ale neuložené kódy kalendára sa
+        preto uložia ešte pred exportom — inak by splátky odišli do Pohody bez
+        predkontácie („Neviem“), hoci ju človek na obrazovke vidí vyplnenú.
+      */
+      const ulozeneTeraz = zmenene;
+      if (ulozeneTeraz) {
+        await ulozKalendar({
+          data: { company_id: cid, contract_id: zmluva.id, ...kody, rad, rozuctovanie: rozuct },
+        });
+      }
       const r = await exportuj({
         data: {
           company_id: cid,
@@ -296,8 +303,9 @@ export function SplatkyDoPohody({
           ? t("Ostatné záväzky stiahnuté (splátok: {n}) a označené ako exportované.", { n: r.pocet })
           : t("Ostatné záväzky stiahnuté (splátok: {n}).", { n: r.pocet }),
       );
+      if (ulozeneTeraz) toast.success(t("Zaúčtovanie kalendára uložené — platí pre všetky splátky bez vlastných kódov."));
       for (const v of r.vyhrady) toast.warning(v);
-      if (r.oznacene) await onZmena();
+      if (r.oznacene || ulozeneTeraz) await onZmena();
     });
 
   const ulozVybranym = () =>
@@ -374,7 +382,7 @@ export function SplatkyDoPohody({
       </div>
       {zmenene && (
         <p className="mt-2 text-xs text-warning">
-          {t("Kódy kalendára nie sú uložené — export použije uložené hodnoty.")}
+          {t("Kódy kalendára nie sú uložené — export ich pred stiahnutím uloží.")}
         </p>
       )}
 

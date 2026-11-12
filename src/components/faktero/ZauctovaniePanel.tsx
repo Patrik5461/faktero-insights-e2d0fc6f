@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
@@ -622,7 +623,14 @@ export function ZauctovaniePanel({
   async function stiahniXml(oznacit: boolean) {
     setBusy(true);
     try {
-      const r = await exportuj({ data: { company_id: row.company_id, ids: [row.id], oznacit } });
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportuj({
+            data: { company_id: row.company_id, ids: [row.id], oznacit, potvrdene_varovania: potvrdene },
+          }),
+        t,
+      );
+      if (!r) return;
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([r.xml], { type: "text/xml;charset=utf-8" }));
       a.download = r.fileName;

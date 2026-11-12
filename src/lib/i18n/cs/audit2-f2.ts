@@ -17,7 +17,7 @@ export default {
   "Export vybraných": "Export vybraných",
   "Vlastné kódy vybraným": "Vlastní kódy vybraným",
   "Označiť ako exportované": "Označit jako exportované",
-  "Kódy kalendára nie sú uložené — export použije uložené hodnoty.": "Kódy kalendáře nejsou uloženy — export použije uložené hodnoty.",
+  "Kódy kalendára nie sú uložené — export ich pred stiahnutím uloží.": "Kódy kalendáře nejsou uloženy — export je před stažením uloží.",
   "Vlastné kódy vybraných splátok ({n})": "Vlastní kódy vybraných splátek ({n})",
   "Prázdne pole = ako kalendár. Uložením sa prepíšu doterajšie vlastné kódy vybraných splátok.": "Prázdné pole = jako kalendář. Uložením se přepíšou dosavadní vlastní kódy vybraných splátek.",
   "Vybrať všetky splátky": "Vybrat všechny splátky",

@@ -12,6 +12,7 @@ import {
   pripravFaktury,
 } from "./export-priprava.server";
 import { prekazkaDokladu, varovanieDokladu, varovanieDokladuKPlatbe, varovanieKvVydanej } from "./pohoda-kontrola";
+import { varovaniaPrijatejPredExportom } from "./export-varovania";
 import { poliaDokladovXml, rozdielyPoli, type RozdielPola } from "./pohoda-rozdiely";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
@@ -163,6 +164,8 @@ export async function zastaveneDoklady(
       else {
         const varovanie =
           varovanieDokladu(doklad, nast as any, company as any) ??
+          // Sadzba DPH, prenesenie bez príznaku, chýbajúca predkontácia (export-varovania.ts).
+          (varovaniaPrijatejPredExportom(p, company, nast as any)[0] ?? null) ??
           varovanieChybajucejSkratky(p.invoice_number, nast, (n) =>
             buildPohodaExpensesXml({ company: bezOdkazov(company), doklady: [doklad], nastavenia: n }),
           );

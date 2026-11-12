@@ -11,6 +11,7 @@ import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { Download, Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { exportPrijatychPohodaFn, vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
@@ -216,16 +217,22 @@ function PrijateZalohovePage() {
     const cid = getActiveCompanyId();
     if (!cid || !naExport.length) return;
     try {
-      const r = await exportujXml({
-        data: {
-          company_id: cid,
-          ids: naExport.map((x) => x.id),
-          oznacit: v.oznacit,
-          datum_zauctovania: v.datumZauctovania,
-          aj_odovzdane: v.ajOdovzdane,
-          radenie: v.radenie,
-        },
-      });
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportujXml({
+            data: {
+              company_id: cid,
+              ids: naExport.map((x) => x.id),
+              oznacit: v.oznacit,
+              datum_zauctovania: v.datumZauctovania,
+              aj_odovzdane: v.ajOdovzdane,
+              radenie: v.radenie,
+              potvrdene_varovania: potvrdene,
+            },
+          }),
+        t,
+      );
+      if (!r) return;
       for (const f of r.subory) {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([f.xml], { type: "text/xml;charset=utf-8" }));

@@ -192,7 +192,7 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!splatky?.length) throw new Error("Nie je čo exportovať — vyberte aspoň jednu splátku.");
 
-    const [{ xmlSplatokDoPohody, nazovSuboruSplatok }, { doplnkyExportu }, { predkontacieNaSkratky }] =
+    const [{ xmlSplatokDoPohody, nazovSuboruSplatok }, { doplnkyExportu }, { predkontacieNaSkratky, chybajuceSkratky }] =
       await Promise.all([
         import("./financovanie-pohoda"),
         import("./export-nastavenia.server"),
@@ -205,6 +205,7 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
       zmluva,
       splatky,
       prelozPredkontacie: (xml) => predkontacieNaSkratky(xml, doplnky?.mapaPredkontacii),
+      chybajuceSkratky: (kody) => chybajuceSkratky(kody, doplnky?.mapaPredkontacii),
     });
     if (!vysledok.xml) {
       throw new Error(vysledok.vyhrady[0] ?? "Nie je čo exportovať.");

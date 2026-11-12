@@ -10,6 +10,7 @@ import {
   symbolSplatky,
   ucinneKody,
   xmlSplatokDoPohody,
+  zauctovanieKalendaraZmenene,
   type SplatkaPreExport,
   type ZmluvaPreExport,
 } from "./financovanie-pohoda";
@@ -195,7 +196,8 @@ describe("rozúčtovanie splátky po zložkách", () => {
   });
 
   it("bez predkontácie kalendára vymenuje zložky, ktorým chýba", () => {
-    const r = xmlSplatokDoPohody({ zmluva: { ...rozuct, pohoda_predkontacia: null }, splatky: [s1] });
+    // Splátka s poplatkom (3 € nad istinu, úrok a poistenie) — položka poplatkov kód nemá.
+    const r = xmlSplatokDoPohody({ zmluva: { ...rozuct, pohoda_predkontacia: null }, splatky: [{ ...s1, amount: 515.4 }] });
     expect(r.vyhrady.join(" ")).toMatch(/Bez predkontácie: poplatky/);
   });
 
@@ -358,5 +360,73 @@ describe("veriteľ, KV, dátum dodania a variabilný symbol", () => {
     it("číslo sa escapuje", () => {
       expect(cisloZavazkuXml(null, "A&B<1>")).toContain("A&amp;B&lt;1&gt;");
     });
+  });
+});
+
+describe("zvolené predkontácie sa dostanú do exportu", () => {
+  const bezKodov: ZmluvaPreExport = { ...leasing, pohoda_predkontacia: null, pohoda_clenenie_dph: null, kv_clenenie: null };
+  const prazdnyFormular = {
+    predkontacia: "",
+    clenenie: "",
+    kv: "",
+    rad: "",
+    rozuctovanie: {
+      istina: { predkontacia: "", clenenie: "", kv: "" },
+      urok: { predkontacia: "", clenenie: "", kv: "" },
+      poistenie: { predkontacia: "", clenenie: "", kv: "" },
+      poplatky: { predkontacia: "", clenenie: "", kv: "" },
+    },
+  };
+
+  it("prázdny formulár nad kalendárom bez kódov nie je zmena (null = \"\")", () => {
+    expect(zauctovanieKalendaraZmenene({ ...bezKodov, pohoda_rozuctovanie: {} }, prazdnyFormular)).toBe(false);
+  });
+
+  it("vybraná, ale neuložená predkontácia je zmena — export ju musí najprv uložiť", () => {
+    expect(zauctovanieKalendaraZmenene(bezKodov, { ...prazdnyFormular, predkontacia: "1Lz" })).toBe(true);
+    const r = { ...prazdnyFormular.rozuctovanie, urok: { predkontacia: "1Lu", clenenie: "", kv: "" } };
+    expect(zauctovanieKalendaraZmenene(bezKodov, { ...prazdnyFormular, rozuctovanie: r })).toBe(true);
+    // Po uložení (server zahodí prázdne polia) sa formulár s kalendárom zhoduje.
+    expect(
+      zauctovanieKalendaraZmenene({ ...bezKodov, pohoda_rozuctovanie: { urok: { predkontacia: "1Lu" } } }, { ...prazdnyFormular, rozuctovanie: r }),
+    ).toBe(false);
+  });
+
+  it("kalendár bez kódov (BÝVAJLEPŠIE 9. 11.) ide bez predkontácie a s výhradou", () => {
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: bezKodov, splatky: [s1] });
+    expect(r.xml).not.toContain("<inv:accounting>");
+    expect(r.vyhrady.join(" ")).toMatch(/Kalendár nemá predkontáciu/);
+  });
+
+  it("predkontácia na splátke stačí aj bez kódu kalendára — bez výhrady", () => {
+    const s = { ...s1, pohoda_predkontacia: "1Sx" };
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: bezKodov, splatky: [s] });
+    expect(r.xml.match(/<inv:invoiceItem>[\s\S]*?<inv:accounting><typ:ids>1Sx</g)?.length).toBe(3);
+    expect(r.vyhrady.join(" ")).not.toMatch(/predkontáci/);
+  });
+
+  it("rozúčtovanie na splátke pokryje všetky položky — bez výhrady", () => {
+    const s = {
+      ...s1,
+      pohoda_rozuctovanie: { istina: { predkontacia: "1Li" }, urok: { predkontacia: "1Lu" }, poistenie: { predkontacia: "1Lp" } },
+    };
+    const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: bezKodov, splatky: [s] });
+    const kody = [...r.xml.matchAll(/<inv:invoiceItem>[\s\S]*?<inv:accounting><typ:ids>([^<]+)/g)].map((m) => m[1]);
+    expect(kody).toEqual(["1Li", "1Lu", "1Lp"]);
+    expect(r.vyhrady.join(" ")).not.toMatch(/predkontáci/);
+  });
+
+  it("predkontácia, ktorú preklad na skratky zahodí, dostane výhradu", () => {
+    const z = { ...bezKodov, pohoda_predkontacia: "518/325" };
+    const r = xmlSplatokDoPohody({
+      ico: "1",
+      krajinaFirmy: "SK",
+      zmluva: z,
+      splatky: [s1],
+      chybajuceSkratky: (kody) => kody.filter((k) => k.includes("/")),
+      prelozPredkontacie: (xml) => xml.replace(/<inv:accounting><typ:ids>518\/325<\/typ:ids><\/inv:accounting>/g, ""),
+    });
+    expect(r.xml).not.toContain("518/325");
+    expect(r.vyhrady.join(" ")).toMatch(/„518\/325“ je dvojica účtov bez skratky/);
   });
 });
