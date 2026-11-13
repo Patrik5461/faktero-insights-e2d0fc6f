@@ -75,3 +75,21 @@ describe("upozornenia pred exportom prijatej do Pohody", () => {
     expect(jeClenenieSPrenesenim("MojePDP", "MojePDP")).toBe(true);
   });
 });
+
+import { jeSamozdanenie } from "./datum-prijatia";
+import { datumyPrijateho } from "./export-nastavenia";
+
+describe("dátum odpočtu pri prenesení bez príznaku (BÝVAJLEPŠIE 2622100045)", () => {
+  it("faktúra bez DPH s členením PDsluz je samozdanenie a odpočet ide na DUZP", () => {
+    const p = { dph_rezim: null, reverse_charge: false, vat_amount: 0, pohoda_clenenie_dph: "PDsluz" };
+    expect(jeSamozdanenie(p)).toBe(true);
+    const d = datumyPrijateho(
+      { vystavenie: "2026-10-31", dodanie: "2026-10-30", dorucenie: "2026-11-11", prijatie: "2026-11-11", samozdanenie: jeSamozdanenie(p) },
+      { datumZapisu: "vystavenie", datumOdpoctu: "neskorsi" } as any,
+    );
+    expect(d.odpocet).toBe("2026-10-30");
+  });
+  it("bežná faktúra s DPH ostáva na neskoršom z DUZP a prijatia", () => {
+    expect(jeSamozdanenie({ dph_rezim: null, reverse_charge: false, vat_amount: 23, pohoda_clenenie_dph: "PD" })).toBe(false);
+  });
+});

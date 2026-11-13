@@ -17,6 +17,7 @@
 
   Tu je čistá logika pre výkazy, export do účtovníctva aj formuláre.
 */
+import { jeClenenieSPrenesenim } from "./export-varovania";
 import { dnesBratislava } from "./datum-vystavenia";
 
 const den = (v: unknown): string => {
@@ -48,10 +49,20 @@ export type PrijatyNaOdpocet = {
  * sa posúva podľa prijatia, prenesenú rieši výkaz zvlášť (ako `celaPdp`).
  */
 export function jeSamozdanenie(
-  p: Pick<PrijatyNaOdpocet, "dph_rezim" | "reverse_charge" | "vat_amount">,
+  p: Pick<PrijatyNaOdpocet, "dph_rezim" | "reverse_charge" | "vat_amount"> & {
+    pohoda_clenenie_dph?: string | null;
+  },
 ): boolean {
   if (p.dph_rezim === "samozdanenie" || p.dph_rezim === "nadobudnutie") return true;
-  return p.reverse_charge === true && !Number(p.vat_amount ?? 0);
+  if (Number(p.vat_amount ?? 0)) return false;
+  if (p.reverse_charge === true) return true;
+  /*
+    Faktúra bez DPH s členením pre prenesenie (PDsluz, PDtovar…) je
+    samozdanenie, aj keď príznak prenesenia nie je zaškrtnutý — inak by išla
+    s dátumom prijatia namiesto dňa dodania (BÝVAJLEPŠIE 2622100045: DUZP
+    30. 10., prijatá 11. 11. → Pohoda dostala odpočet v novembri).
+  */
+  return jeClenenieSPrenesenim(p.pohoda_clenenie_dph);
 }
 
 /**
