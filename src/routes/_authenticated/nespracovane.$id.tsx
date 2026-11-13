@@ -906,14 +906,20 @@ function Detail() {
                   <EditorRozpisuDph
                     riadky={u.rozpis}
                     onChange={(r) =>
-                      set({ rozpis: r as UdajeNespracovaneho["rozpis"], celkom: null, rozpisPotvrdeny: false })
+                      // Úprava rozpisu ruší aj kontrolu návrhu z Bločkov (český QR — 21 %).
+                      set({ rozpis: r as UdajeNespracovaneho["rozpis"], celkom: null, rozpisPotvrdeny: false, kontrolaRozpisu: undefined })
                     }
                     sadzby={sadzby}
                     mena={u.mena}
                     kontrola={kontrolaRozpisu}
                     minRiadkov={0}
                   />
-                  <UpozornenieRozpisuDph className="mt-2" kontrola={kontrolaRozpisu} />
+                  <UpozornenieRozpisuDph
+                    className="mt-2"
+                    kontrola={kontrolaRozpisu}
+                    dovod={u.kontrolaRozpisu}
+                    poznamka={kontrolaRozpisu?.ok === false ? undefined : t("Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.")}
+                  />
                   <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-destructive" : ""}`}>
                     <span className="text-muted-foreground">
                       {t("Základ {zaklad} · DPH {dph}", { zaklad: s.zaklad.toFixed(2), dph: s.dph.toFixed(2) })}

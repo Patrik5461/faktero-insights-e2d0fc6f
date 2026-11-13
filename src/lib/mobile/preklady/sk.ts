@@ -756,6 +756,8 @@ export const sk = {
   "app.zDokladuZatvorka": "(prečítané z dokladu)",
   "app.zTohoDph": "z toho DPH {suma}",
   "app.rozpisDphNesedi": "Rozpis DPH nesedí — doklad pôjde na kontrolu",
+  "app.sadzbaZQrNeznama": "Sadzba DPH z QR kódu nie je známa — návrh 21 %",
+  "app.sadzbaZQrNeznamaPopis": "Český QR kód nesie len sumu. Odfoťte bloček, rozpis DPH sa prečíta z fotky; inak sa uloží návrh 21 % na kontrolu (môže ísť o 12 %).",
   "app.bezPripojeniaKratke": "bez pripojenia",
   "app.bezOdpovede": "bez odpovede",
 

@@ -70,6 +70,12 @@ export type BlocekVysledok = {
    * (`rozpis-dph-kontrola.ts`) — dôvod pre človeka. Doklad treba skontrolovať.
    */
   kontrola_dph?: string;
+  /**
+   * Rozpis DPH je len návrh, nie údaj z dokladu: český QR (EET) nenesie
+   * sadzby a fotka rozpis nedala — predvyplnilo sa 21 % zo sumy
+   * (`blocek-eet.ts`). Bloček ide na kontrolu, či nejde o 12 %.
+   */
+  rozpis_odhad?: boolean;
   /** Spôsob úhrady, keď ho doklad nesie. Väčšina bločkov ho neposiela. */
   payment_method?: "hotovost" | "karta" | "prevod";
   currency?: string;
@@ -153,7 +159,8 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           date: d.datum,
           items: [],
         };
-        if (!data.image_data_url) return eet;
+        // Bez fotky sadzby nepovie nič — rozpis je návrh 21 % na kontrolu.
+        if (!data.image_data_url) return (await import("./blocek-eet")).doplnRozpisEet(eet);
         poznamka = "Suma, dátum a predajca sú z QR kódu, položky sú prečítané z fotky.";
       } else {
         poznamka = data.image_data_url

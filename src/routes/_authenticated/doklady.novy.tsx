@@ -54,6 +54,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
+import { jeEetQr } from "@/lib/faktero/eet-cz";
+import { rozpisZoSumy } from "@/lib/faktero/blocek-eet";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { rozlozChybuBlocku } from "@/lib/faktero/duplicita-zauctovania";
@@ -241,6 +243,12 @@ function NovyDokladPage() {
   /* Položky a rozpis DPH z bločku — ukladajú sa k dokladu tak, ako prišli. */
   const [polozky, setPolozky] = useState<BlocekVysledok["items"]>([]);
   const [rozpisDph, setRozpisDph] = useState<BlocekVysledok["vat_breakdown"] | null>(null);
+  /*
+    Český bloček z QR (EET): rozpis DPH je návrh 21 % alebo nesedí s QR —
+    dôvod kontroly z čítania. Kým rozpis človek nezmení, uložený bloček ide
+    na kontrolu (`kontrola_dph` → `na_kontrolu_dovod`).
+  */
+  const [kontrolaQr, setKontrolaQr] = useState<{ dovod: string; odhad: boolean } | null>(null);
   /** Do „Celkom“ siahol človek alebo prišlo z bločku — potom sa nedopočítava. */
   const celkomRucne = useRef(false);
   const [ekasaBadge, setEkasaBadge] = useState<null | {
@@ -457,6 +465,11 @@ function NovyDokladPage() {
    */
   // Zaokrúhlenie (hotovosť na 5 centov) je samostatná položka bločku bez DPH.
   const zaokruhlenie = zaokruhlenieZPoloziek(polozky);
+  /** Suma českého bločku z QR (EET) bez zaokrúhlenia — sadzba sa k nej dopĺňa. */
+  const sumaZQrEet =
+    qrRaw && jeEetQr(qrRaw) && form.total_amount !== "" && Number.isFinite(Number(form.total_amount))
+      ? Math.round((Number(form.total_amount) - zaokruhlenie) * 100) / 100
+      : null;
   useEffect(() => {
     if (celkomRucne.current) return;
     const zaklad = form.net_amount === "" ? null : Number(form.net_amount);
@@ -542,6 +555,8 @@ function NovyDokladPage() {
     hotovost: form.payment_method === "hotovost",
   });
   function zmenRozpisDph(r: RiadokRozpisu[]) {
+    // Človek rozpis upravil (napr. prepol návrh 21 % na 12 %) — rozhodol, kontrola netreba.
+    setKontrolaQr(null);
     setRozpisDph(r as BlocekVysledok["vat_breakdown"]);
     const s = suctyRozpisu(r);
     const sadzba = hlavnaSadzba(r);
@@ -636,11 +651,16 @@ function NovyDokladPage() {
       // Na fotke býva aj QR kód — keď sa dá prečítať, doklad príde z Finančnej
       // správy presne, namiesto odhadu z obrázka.
       const qr = await scanQrFromImage(cap.dataUrl);
-      if (qr?.raw) {
-        setQrRaw(qr.raw);
+      /*
+        Český QR načítaný skôr (kamerou) a fotka bez čitateľného kódu: číta sa
+        spolu — rozpis DPH po sadzbách dá len fotka, sumu a predajcu QR.
+      */
+      const qrNa = qr?.raw ?? (qrRaw && jeEetQr(qrRaw) ? qrRaw : undefined);
+      if (qrNa) {
+        setQrRaw(qrNa);
         setSource("qr");
       }
-      await precitaj(qr?.raw, cap.dataUrl);
+      await precitaj(qrNa, cap.dataUrl);
     } catch (e: any) {
       toast.error(e?.message ?? t("Spracovanie zlyhalo"));
     } finally {
@@ -685,15 +705,17 @@ function NovyDokladPage() {
       // len priložilo a všetky údaje sa prepisovali ručne.
       if (file.type.startsWith("image/")) {
         const qr = await scanQrFromImage(dataUrl);
-        if (qr?.raw) setQrRaw(qr.raw);
-        const r = await precitaj(qr?.raw, dataUrl);
+        // Český QR načítaný skôr + fotka bez kódu: rozpis DPH z fotky, suma z QR.
+        const qrNa = qr?.raw ?? (qrRaw && jeEetQr(qrRaw) ? qrRaw : undefined);
+        if (qrNa) setQrRaw(qrNa);
+        const r = await precitaj(qrNa, dataUrl);
         /*
           Nahratá fotka bločku s QR kódom pokladnice je ten istý bloček ako
           odfotený — ide rovno medzi Bločky. So zdrojom „upload“ ho server
           posielal do Nespracovaných. Iný QR (napr. PAY by square na faktúre)
           sa ako bloček nečíta a zdroj ostáva „upload“.
         */
-        if (qr?.raw && jeQrPokladnice(r)) setSource("qr");
+        if (qrNa && jeQrPokladnice(r)) setSource("qr");
       } else if (file.type === "application/pdf") {
         await precitaj(undefined, dataUrl);
       }
@@ -753,6 +775,11 @@ function NovyDokladPage() {
       updateForm("category", "palivo");
     }
     setRozpisDph(r.vat_breakdown ?? null);
+    setKontrolaQr(
+      r.qr_raw && jeEetQr(r.qr_raw) && r.kontrola_dph
+        ? { dovod: r.kontrola_dph, odhad: Boolean(r.rozpis_odhad) }
+        : null,
+    );
 
     setEkasaBadge({ source: r.zdroj, overeny: r.overeny });
     if (opts?.ticho) return;
@@ -926,6 +953,8 @@ function NovyDokladPage() {
             id: idNovehoRef.current,
             supplier_dic: dodavatelZBlocku.current.dic || null,
             supplier_address: dodavatelZBlocku.current.adresa || null,
+            // Český bloček z QR: rozpis na kontrolu (návrh 21 %), kým ho človek nezmenil.
+            kontrola_dph: kontrolaQr?.dovod ?? null,
             ...(ajDuplicitu ? { aj_duplicitu: true } : {}),
           },
         });
@@ -1611,7 +1640,39 @@ function NovyDokladPage() {
                   sadzby={sadzbyRozpisu}
                   mena={form.currency || "EUR"}
                   kontrola={kontrolaRozpisuDph}
+                  // Český QR: suma je istá, sadzba nie — zmena sadzby prepočíta základ zo sumy.
+                  celkomPriZmeneSadzby={sumaZQrEet}
                 />
+                {kontrolaQr ? (
+                  <div role="status" data-testid="navrh-sadzby-qr" className="dk-pozor mt-2 rounded-md border p-2.5 text-xs">
+                    <div className="font-semibold">
+                      {kontrolaQr.odhad
+                        ? t("Sadzba DPH z QR kódu nie je známa — rozpis je návrh v 21 %")
+                        : t("Rozpis DPH z fotky nesedí so sumou z QR kódu")}
+                    </div>
+                    <div className="mt-0.5">
+                      {kontrolaQr.odhad
+                        ? t("Český QR kód nesie len celkovú sumu. Skontrolujte na bločku, či nejde o 12 % (potraviny, ubytovanie…). Kým rozpis nezmeníte, bloček sa uloží na kontrolu.")
+                        : kontrolaQr.dovod}
+                    </div>
+                    {kontrolaQr.odhad && sumaZQrEet != null ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {sadzbyRozpisu
+                          .filter((s) => s > 0)
+                          .map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => zmenRozpisDph([{ ...rozpisZoSumy(sumaZQrEet, s), vat_category: "standard" }])}
+                              className="inline-flex h-7 items-center rounded-md border border-current/30 px-2.5 font-medium hover:bg-background/60"
+                            >
+                              {t("Celé v {sadzba} %", { sadzba: s })}
+                            </button>
+                          ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
               <label className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Zaokrúhlenie (bez DPH)")}</span>

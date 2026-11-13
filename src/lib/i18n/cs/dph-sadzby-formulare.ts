@@ -34,4 +34,11 @@ export default {
   "Podľa IČ DPH ({krajina})": "Podle DIČ ({krajina})",
   "Tuzemský dodávateľ": "Tuzemský dodavatel",
   "Zahraničný dodávateľ": "Zahraniční dodavatel",
+  // Český bloček z QR (EET): sadzba nie je v kóde — návrh 21 % na kontrolu.
+  "Sadzba DPH z QR kódu nie je známa — rozpis je návrh v 21 %": "Sazba DPH z QR kódu není známa — rozpis je návrh v 21 %",
+  "Rozpis DPH z fotky nesedí so sumou z QR kódu": "Rozpis DPH z fotky nesedí s částkou z QR kódu",
+  "Český QR kód nesie len celkovú sumu. Skontrolujte na bločku, či nejde o 12 % (potraviny, ubytovanie…). Kým rozpis nezmeníte, bloček sa uloží na kontrolu.":
+    "QR kód z účtenky nese jen celkovou částku. Zkontrolujte na účtence, zda nejde o 12 % (potraviny, ubytování…). Dokud rozpis nezměníte, účtenka se uloží ke kontrole.",
+  "Celé v {sadzba} %": "Celé v {sadzba} %",
+  "Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.": "Doklad půjde ke kontrole, dokud rozpis DPH neupravíte podle účtenky.",
 };

@@ -34,4 +34,11 @@ export default {
   "Podľa IČ DPH ({krajina})": "Laut USt-IdNr. ({krajina})",
   "Tuzemský dodávateľ": "Inländischer Lieferant",
   "Zahraničný dodávateľ": "Ausländischer Lieferant",
+  // Tschechischer Beleg mit QR (EET): Satz nicht im Code — Vorschlag 21 % zur Prüfung.
+  "Sadzba DPH z QR kódu nie je známa — rozpis je návrh v 21 %": "USt.-Satz aus dem QR-Code unbekannt — die Aufschlüsselung ist ein Vorschlag mit 21 %",
+  "Rozpis DPH z fotky nesedí so sumou z QR kódu": "USt.-Aufschlüsselung aus dem Foto stimmt nicht mit dem Betrag aus dem QR-Code überein",
+  "Český QR kód nesie len celkovú sumu. Skontrolujte na bločku, či nejde o 12 % (potraviny, ubytovanie…). Kým rozpis nezmeníte, bloček sa uloží na kontrolu.":
+    "Der tschechische QR-Code enthält nur den Gesamtbetrag. Prüfen Sie auf dem Beleg, ob es sich um 12 % handelt (Lebensmittel, Unterkunft…). Solange Sie die Aufschlüsselung nicht ändern, wird der Beleg zur Prüfung gespeichert.",
+  "Celé v {sadzba} %": "Alles zu {sadzba} %",
+  "Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.": "Der Beleg wird zur Prüfung markiert, bis Sie die USt.-Aufschlüsselung laut Beleg anpassen.",
 };

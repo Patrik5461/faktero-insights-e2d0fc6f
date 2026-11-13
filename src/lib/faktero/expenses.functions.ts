@@ -60,6 +60,12 @@ export type ExpenseInput = {
   supplier_dic?: string | null;
   /** Adresa dodávateľa z eKasy ako jeden riadok. Nie je stĺpec. */
   supplier_address?: string | null;
+  /**
+   * Dôvod kontroly rozpisu DPH z čítania bločku (`BlocekVysledok.kontrola_dph`).
+   * Nie je stĺpec — pri českom bločku z QR (EET) sa zapíše do `na_kontrolu_dovod`.
+   * `null` = človek rozpis skontroloval (zmenil ho vo formulári).
+   */
+  kontrola_dph?: string | null;
 };
 
 const inputSchema = z.object({
@@ -109,6 +115,7 @@ const inputSchema = z.object({
   */
   supplier_dic: z.string().max(20).nullable().optional(),
   supplier_address: z.string().max(300).nullable().optional(),
+  kontrola_dph: z.string().max(1000).nullable().optional(),
   items: z
     .array(
       z.object({
@@ -222,7 +229,15 @@ export const createExpenseFn = createServerFn({ method: "POST" })
   .validator((data: ExpenseInput) => inputSchema.parse(data))
   .handler(async ({ data: vstup, context }) => {
     const { supabase, userId } = context;
-    const { zdroj, zalohova, supplier_dic, supplier_address, aj_duplicitu, ...data } = vstup;
+    const { zdroj, zalohova, supplier_dic, supplier_address, aj_duplicitu, kontrola_dph, ...data } = vstup;
+    /*
+      Český bloček z QR (EET) nesie len celkovú sumu. Bez rozpisu aj bez DPH
+      (starší klient, záznam z fronty appky) dostane návrh 21 % zo sumy —
+      a nižšie ide na kontrolu, či nejde o 12 %.
+    */
+    const { navrhRozpisuPriUlozeni, dovodKontrolyEet, DOVOD_NAVRHU_SADZBY_QR } = await import("./blocek-eet");
+    const navrhEet = navrhRozpisuPriUlozeni(data);
+    if (navrhEet) Object.assign(data, navrhEet);
     const zAppky = zdroj === ZDROJ_APKY;
     /*
       Bloček z appky bez fotky sa neuloží. Appka má tlačidlo Uložiť dovtedy
@@ -366,6 +381,19 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
     if (!row) throw new Error("Doklad sa nepodarilo uložiť.");
+    /*
+      Český bloček z QR: rozpis je návrh 21 % (sadzbu QR nepovie) alebo rozpis
+      z fotky nesedí so sumou z QR — na kontrolu, kým ho človek nepotvrdí.
+    */
+    const dovodEet = navrhEet ? DOVOD_NAVRHU_SADZBY_QR : dovodKontrolyEet(row as any, kontrola_dph);
+    if (dovodEet) {
+      const { error: eK } = await supabase
+        .from("expense_documents")
+        .update({ na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: dovodEet } as any)
+        .eq("id", row.id);
+      if (eK) console.warn("[doklad] na kontrolu (český QR) sa nezapísalo:", eK.message);
+      else Object.assign(row as any, { na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: dovodEet });
+    }
     /*
       Rozpis DPH, ktorý nesedí so základom a DPH alebo nesie sadzbu, čo
       v krajine neplatí, sa neuloží potichu — doklad ide na kontrolu s

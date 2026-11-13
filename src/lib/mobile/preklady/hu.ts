@@ -748,6 +748,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.zDokladuZatvorka": "(a bizonylatról beolvasva)",
   "app.zTohoDph": "ebből áfa: {suma}",
   "app.rozpisDphNesedi": "Az áfabontás nem stimmel — a bizonylat ellenőrzésre kerül",
+  "app.sadzbaZQrNeznama": "Az áfakulcs nem szerepel a QR-kódban — javaslat 21 %",
+  "app.sadzbaZQrNeznamaPopis": "A cseh QR-kód csak a végösszeget tartalmazza. Fényképezze le a blokkot, az áfabontás a fotóból olvasható ki; különben a 21 %-os javaslat ellenőrzésre kerül (lehet 12 % is).",
   "app.bezPripojeniaKratke": "nincs kapcsolat",
   "app.bezOdpovede": "nincs válasz",
 

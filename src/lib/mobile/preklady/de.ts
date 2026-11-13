@@ -757,6 +757,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.zDokladuZatvorka": "(aus dem Beleg gelesen)",
   "app.zTohoDph": "davon USt. {suma}",
   "app.rozpisDphNesedi": "USt.-Aufschlüsselung stimmt nicht — der Beleg wird zur Prüfung markiert",
+  "app.sadzbaZQrNeznama": "USt.-Satz aus dem QR-Code unbekannt — Vorschlag 21 %",
+  "app.sadzbaZQrNeznamaPopis": "Der tschechische QR-Code enthält nur den Betrag. Fotografieren Sie den Beleg, die USt.-Aufschlüsselung wird aus dem Foto gelesen; sonst wird der Vorschlag 21 % zur Prüfung gespeichert (es kann 12 % sein).",
   "app.bezPripojeniaKratke": "ohne Verbindung",
   "app.bezOdpovede": "keine Antwort",
 

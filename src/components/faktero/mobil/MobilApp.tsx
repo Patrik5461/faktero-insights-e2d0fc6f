@@ -1724,8 +1724,10 @@ function ZachytDokladu({
   ) {
     setQrKod(vstup.qr ?? null);
     setStav("citam");
+    let precitane: BlocekVysledok | null = null;
     try {
-      prijmi((await nacitaj({ data: { ...vstup, krajina } })) as BlocekVysledok, prilozene);
+      precitane = (await nacitaj({ data: { ...vstup, krajina } })) as BlocekVysledok;
+      prijmi(precitane, prilozene);
     } catch (e: any) {
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       if (!(await isOnline())) {
@@ -1745,13 +1747,33 @@ function ZachytDokladu({
       súboru na webe by prehliadač nepustil, tam ostáva tlačidlo.
     */
     if (vstup.qr && !prilozene && (Capacitor.isNativePlatform() || kameraVStrankeMozna()))
-      await odfotBlocek();
+      await odfotBlocek(precitane);
   }
 
   /** Fotka k bločku — jedna strana tou istou kamerou ako všade v appke. */
-  async function odfotBlocek() {
+  async function odfotBlocek(precitane?: BlocekVysledok | null) {
     const [obrazok] = (await zachytStrany({ jednaStrana: true })) ?? [];
-    if (obrazok) setFoto(obrazok);
+    if (!obrazok) return;
+    setFoto(obrazok);
+    /*
+      Český bloček z QR (EET): kód nesie len sumu, sadzby nie — rozpis DPH
+      bol návrh 21 %. Teraz je fotka, tak sa rozpis prečíta z nej (suma
+      ostáva z QR). Keď to nevyjde, ostáva návrh a dočíta ho fronta.
+    */
+    const v = precitane ?? vysledok;
+    if (v?.rozpis_odhad && v.qr_raw) {
+      setStav("citam");
+      try {
+        const r = (await nacitaj({
+          data: { qr: v.qr_raw, image_data_url: obrazok, krajina },
+        })) as BlocekVysledok;
+        if (r.zdroj !== "nic") setVysledok(r);
+      } catch {
+        /* bez signálu ostáva návrh 21 % — fronta skúsi fotku pri odoslaní */
+      } finally {
+        setStav("potvrdenie");
+      }
+    }
   }
 
   /*
@@ -2087,7 +2109,7 @@ function ZachytDokladu({
         uhrada={uhrada}
         setUhrada={setUhrada}
         foto={foto}
-        onOdfotit={odfotBlocek}
+        onOdfotit={() => void odfotBlocek()}
         onUloz={ulozDoklad}
         onSpat={() => {
           /*
@@ -2313,8 +2335,13 @@ export function Potvrdenie({
           )}
           {vysledok.kontrola_dph ? (
             <div role="alert" className="mt-2 rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-2 text-xs">
-              <div className="font-semibold text-app-pozor">{t("app.rozpisDphNesedi")}</div>
-              <div className="mt-0.5 text-app-text-2">{vysledok.kontrola_dph}</div>
+              {/* Český QR (EET): sadzba nie je v kóde — návrh 21 %, kým ju nepovie fotka. */}
+              <div className="font-semibold text-app-pozor">
+                {vysledok.rozpis_odhad ? t("app.sadzbaZQrNeznama") : t("app.rozpisDphNesedi")}
+              </div>
+              <div className="mt-0.5 text-app-text-2">
+                {vysledok.rozpis_odhad ? t("app.sadzbaZQrNeznamaPopis") : vysledok.kontrola_dph}
+              </div>
             </div>
           ) : null}
           {vysledok.items.length > 0 && (

@@ -137,6 +137,8 @@ export function NespracovanyKompaktny({
       rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)),
       celkom: null,
       rozpisPotvrdeny: false,
+      // Človek rozpis upravil — návrh z Bločkov (český QR) už nie je na kontrole.
+      kontrolaRozpisu: undefined,
     });
   // Bloček: základ + DPH + zaokrúhlenie musí sedieť so sumou na cent.
   const kontrola = kontrolaSumy(u);
@@ -499,7 +501,7 @@ export function NespracovanyKompaktny({
                 />
               </div>
             ))}
-            <UpozornenieRozpisuDph kontrola={kontrolaRozpisu} />
+            <UpozornenieRozpisuDph kontrola={kontrolaRozpisu} dovod={u.kontrolaRozpisu} poznamka={kontrolaRozpisu?.ok === false ? undefined : t("Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.")} />
             <div className="flex items-center justify-between text-xs">
               <button
                 type="button"

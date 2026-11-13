@@ -9,6 +9,7 @@ import {
   type CakajuciDoklad,
 } from "./doklady-fronta";
 import { isOnline } from "./offline-queue";
+import { jeEetQr } from "@/lib/faktero/eet-cz";
 
 /**
  * Dokončenie odloženého dokladu: prečítať → nahrať prílohu → uložiť.
@@ -44,16 +45,25 @@ async function odosliJeden(d: CakajuciDoklad, nacitaj: NacitajFn, uloz: UlozFn):
    */
   let vysledok: BlocekVysledok | null =
     d.vysledok && d.vysledok.zdroj !== "nic" ? d.vysledok : null;
-  if (!vysledok) {
+  /*
+   * Český bloček z QR (EET): kód nesie len sumu, sadzby DPH dá len fotka.
+   * Fotka ide na čítanie spolu s QR — aj keď vo fronte je výsledok s návrhom
+   * 21 % (QR prečítaný skôr, fotka až potom).
+   */
+  const eet = Boolean(d.qr_raw && jeEetQr(d.qr_raw));
+  const dociatatZFotky = eet && Boolean(d.obrazok) && Boolean(vysledok?.rozpis_odhad);
+  if (!vysledok || dociatatZFotky) {
     try {
-      vysledok = await nacitaj({
+      const novy = await nacitaj({
         data: {
           qr: d.qr_raw ?? undefined,
-          image_data_url: d.qr_raw ? undefined : (d.obrazok ?? undefined),
+          image_data_url: d.qr_raw && !eet ? undefined : (d.obrazok ?? undefined),
         },
       });
+      // Z fotky nič — ostáva to, čo už bolo (návrh 21 % na kontrolu).
+      vysledok = vysledok && novy.zdroj === "nic" ? vysledok : novy;
     } catch {
-      vysledok = d.vysledok ?? nedostupnyDoklad(d.qr_raw);
+      vysledok = vysledok ?? d.vysledok ?? nedostupnyDoklad(d.qr_raw);
     }
   }
 

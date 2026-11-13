@@ -750,6 +750,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.zDokladuZatvorka": "(read from the receipt)",
   "app.zTohoDph": "of which VAT {suma}",
   "app.rozpisDphNesedi": "VAT breakdown does not add up — the document will be flagged for review",
+  "app.sadzbaZQrNeznama": "VAT rate not in the QR code — 21 % suggested",
+  "app.sadzbaZQrNeznamaPopis": "The Czech QR code carries only the total. Take a photo of the receipt and the VAT breakdown is read from it; otherwise the 21 % suggestion is saved for review (it may be 12 %).",
   "app.bezPripojeniaKratke": "offline",
   "app.bezOdpovede": "no response",
 

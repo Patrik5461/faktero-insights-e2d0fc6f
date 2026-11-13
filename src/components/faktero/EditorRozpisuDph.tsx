@@ -90,6 +90,7 @@ export function EditorRozpisuDph({
   kontrola,
   kompaktne = false,
   minRiadkov = 1,
+  celkomPriZmeneSadzby = null,
   className = "",
 }: {
   riadky: RiadokRozpisu[];
@@ -106,6 +107,12 @@ export function EditorRozpisuDph({
   kompaktne?: boolean;
   /** Koľko riadkov musí ostať (Nespracované môžu byť aj bez rozpisu). */
   minRiadkov?: number;
+  /**
+   * Suma s DPH, ktorá sa zmenou sadzby nesmie pohnúť (český bloček z QR —
+   * suma je istá, sadzba nie). Pri jednom riadku sa po zmene sadzby základ
+   * prepočíta z tejto sumy: 605 Kč na 12 % = 540,18 + 64,82.
+   */
+  celkomPriZmeneSadzby?: number | null;
   className?: string;
 }) {
   const { t } = useT();
@@ -140,6 +147,17 @@ export function EditorRozpisuDph({
                   onChange={(z) => {
                     const n = { ...r, ...z, pdp: z.vat_category === "reverse_charge" ? true : undefined };
                     if (n.pdp === undefined) delete n.pdp;
+                    if (
+                      celkomPriZmeneSadzby != null &&
+                      Number.isFinite(celkomPriZmeneSadzby) &&
+                      riadky.length === 1 &&
+                      !n.pdp &&
+                      n.sadzba !== r.sadzba
+                    ) {
+                      const zaklad = Math.round((celkomPriZmeneSadzby / (1 + n.sadzba / 100)) * 100) / 100;
+                      zmen(i, { ...n, zaklad, dph: Math.round((celkomPriZmeneSadzby - zaklad) * 100) / 100 });
+                      return;
+                    }
                     zmen(i, { ...n, dph: vypocitanaDph(n) });
                   }}
                   className={`w-24 max-w-full rounded-md border border-input bg-background px-1.5 ${kompaktne ? "py-1" : "py-1.5"} text-sm sm:w-36 sm:px-2`}

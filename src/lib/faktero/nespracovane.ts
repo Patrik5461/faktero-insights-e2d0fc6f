@@ -169,6 +169,13 @@ export type UdajeNespracovaneho = {
   /** Človek potvrdil „Rozpis je správny“ — kontrola rozpisu ho už nezastaví. Zmena rozpisu ho zruší. */
   rozpisPotvrdeny?: boolean;
   /**
+   * Rozpis DPH bločku presunutého z Bločkov bol na kontrole (`na_kontrolu_dovod`
+   * „Rozpis DPH…“), napr. český bloček z QR s návrhom 21 % (`blocek-eet.ts`).
+   * Sumy pritom sedia, takže kontrola sadzieb ho nezachytí — vytvorený doklad
+   * ide na kontrolu s týmto dôvodom. Zmena rozpisu vo formulári ho zruší.
+   */
+  kontrolaRozpisu?: string;
+  /**
    * Suma spolu vytlačená na doklade (z vyťaženia alebo ručne zadaná). Na rozdiel
    * od `celkom` sa zmenou rozpisu nezmaže — formulár podľa nej hlási, keď
    * základ + DPH podľa sadzieb nesedí s dokladom (`nesuladSDokladom`).

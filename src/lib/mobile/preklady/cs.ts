@@ -742,6 +742,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.zDokladuZatvorka": "(přečteno z dokladu)",
   "app.zTohoDph": "z toho DPH {suma}",
   "app.rozpisDphNesedi": "Rozpis DPH nesedí — doklad půjde ke kontrole",
+  "app.sadzbaZQrNeznama": "Sazba DPH z QR kódu není známa — návrh 21 %",
+  "app.sadzbaZQrNeznamaPopis": "QR kód z účtenky nese jen částku. Vyfoťte účtenku, rozpis DPH se přečte z fotky; jinak se uloží návrh 21 % ke kontrole (může jít o 12 %).",
   "app.bezPripojeniaKratke": "bez připojení",
   "app.bezOdpovede": "bez odpovědi",
 

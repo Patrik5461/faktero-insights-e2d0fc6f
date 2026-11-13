@@ -14,7 +14,6 @@ import {
   nacitajFakturu,
   vystavDokladKPlatbe,
   vystavFakturu,
-  vyplnRozpisDph,
   zmazFakturuNatvrdo,
 } from "../lib/doklady.mjs";
 
@@ -302,69 +301,123 @@ export default {
       );
     });
 
-    await t.krok("bloček z QR kódu EET: koruny, dátum a predajca bez AI", async () => {
+    await t.krok("bloček z QR kódu EET: koruny, dátum, predajca a návrh rozpisu 21 % bez AI", async () => {
       /*
         Kameru nahradí podvrhnutý BarcodeDetector, ktorý „prečíta“ český QR
         z účtenky. Server ho rozoberie sám (eet-cz.ts) a predajcu dohľadá v ARES —
         fotka sa neposiela, takže AI sa nevolá.
+
+        EET QR nesie len celkovú sumu, sadzby nie (13. 11.): bez fotky sa rozpis
+        predvyplní ako návrh 21 % a bloček ide na kontrolu, kým ho človek nezmení.
+        Dva bločky: 605 Kč prepnutý v editore na 12 % (základ sa prepočíta zo
+        sumy, kontrola netreba) a 117 Kč uložený s návrhom 21 % (na kontrolu).
       */
-      const qr = "EET*1.0*BKP:0123456789ABCDEF*DIC:CZ27082440*KC:605.00*DT:202610301015*R:B*";
       const zaciatok = new Date().toISOString();
-      t.uprac("bloček z QR", async () => {
+      t.uprac("bločky z QR", async () => {
         const r = await t.rest.delete(
-          `expense_documents?company_id=eq.${firma}&created_at=gte.${zaciatok}&total_amount=eq.605`,
+          `expense_documents?company_id=eq.${firma}&created_at=gte.${zaciatok}&total_amount=in.(605,117)`,
         );
         if (r.status >= 300) throw new Error(`${r.status} ${r.text.slice(0, 200)}`);
       });
-      const p = await t.novaStranka({ firma: "cz" });
-      await p.addInitScript((raw) => {
-        globalThis.BarcodeDetector = class {
-          async detect() {
-            return [{ rawValue: raw }];
-          }
-        };
-        navigator.mediaDevices.getUserMedia = async () => new MediaStream();
-        HTMLMediaElement.prototype.play = async function () {};
-      }, qr);
-      await t.go("/doklady/novy", p);
-      await p.getByRole("button", { name: "QR kód", exact: true }).click();
-      const pole = (label) =>
-        p
-          .locator("label")
-          .filter({ has: p.getByText(label, { exact: true }) })
-          .locator("input, select")
-          .first();
-      await t.cakajNa(
-        "vyplnený bloček z QR",
-        async () => (await pole("Celkom").inputValue()) === "605",
-        {
+      const cislo = (v) => Number(String(v).replace(/\s/g, "").replace(",", "."));
+
+      async function blocekZQr(qr, suma) {
+        const p = await t.novaStranka({ firma: "cz" });
+        await p.addInitScript((raw) => {
+          globalThis.BarcodeDetector = class {
+            async detect() {
+              return [{ rawValue: raw }];
+            }
+          };
+          navigator.mediaDevices.getUserMedia = async () => new MediaStream();
+          HTMLMediaElement.prototype.play = async function () {};
+        }, qr);
+        await t.go("/doklady/novy", p);
+        await p.getByRole("button", { name: "QR kód", exact: true }).click();
+        const pole = (label) =>
+          p
+            .locator("label")
+            .filter({ has: p.getByText(label, { exact: true }) })
+            .locator("input, select")
+            .first();
+        await t.cakajNa("vyplnený bloček z QR", async () => (await pole("Celkom").inputValue()) === String(suma), {
           limit: 30000,
-        },
-      );
-      t.over((await pole("Mena").inputValue()) === "CZK", "bloček z QR nie je v korunách");
-      t.over((await pole("Dátum vystavenia").inputValue()) === "2026-10-30", "dátum z QR nesedí");
-      /* EET QR nesie len celkovú sumu, rozpis DPH nie — od 13. 11. sa bloček
-         bez rozpisu, ktorý sedí s Celkom, neuloží („Rozpis DPH nesedí“).
-         605 Kč = 500 + 21 % (105). */
-      await vyplnRozpisDph(p, [{ sadzba: 21, zaklad: 500 }]);
-      t.over((await pole("Celkom").inputValue()) === "605", "Celkom z QR sa po rozpise zmenilo");
-      await p
-        .locator("select")
-        .filter({ has: p.locator('option[value="hotovost"]') })
-        .first()
-        .selectOption("karta");
-      await p.getByRole("button", { name: "Uložiť doklad" }).click();
-      const d = await t.cakajNa("bloček v databáze", async () => {
-        const r = await t.rest.get(
-          `expense_documents?company_id=eq.${firma}&created_at=gte.${zaciatok}&total_amount=eq.605&select=*`,
+        });
+        t.over((await pole("Mena").inputValue()) === "CZK", "bloček z QR nie je v korunách");
+        t.over((await pole("Dátum vystavenia").inputValue()) === "2026-10-30", "dátum z QR nesedí");
+        const riadok = p.locator('[data-testid="editor-rozpisu-dph"] tbody tr').first();
+        return { p, pole, riadok };
+      }
+
+      async function uloz(p) {
+        await p
+          .locator("select")
+          .filter({ has: p.locator('option[value="hotovost"]') })
+          .first()
+          .selectOption("karta");
+        await p.getByRole("button", { name: "Uložiť doklad" }).click();
+      }
+
+      async function zDatabazy(suma) {
+        return t.cakajNa(`bloček ${suma} Kč v databáze`, async () => {
+          const r = await t.rest.get(
+            `expense_documents?company_id=eq.${firma}&created_at=gte.${zaciatok}&total_amount=eq.${suma}&select=*`,
+          );
+          return r.data?.[0] ?? null;
+        });
+      }
+
+      /* 605 Kč: návrh 21 % (500 + 105) → prepnúť na 12 % → 540,18 + 64,82. */
+      {
+        const qr = "EET*1.0*BKP:0123456789ABCDEF*DIC:CZ27082440*KC:605.00*DT:202610301015*R:B*";
+        const { p, pole, riadok } = await blocekZQr(qr, 605);
+        const sadzba = riadok.getByLabel("Sadzba", { exact: true });
+        const zaklad = riadok.getByLabel("Základ dane", { exact: true });
+        const dph = riadok.getByLabel("DPH", { exact: true });
+        t.over((await sadzba.inputValue()) === "s:21", `návrh sadzby ${await sadzba.inputValue()}, čakal som 21 %`);
+        t.over(cislo(await zaklad.inputValue()) === 500, `návrh základu ${await zaklad.inputValue()}, čakal som 500`);
+        t.over(cislo(await dph.inputValue()) === 105, `návrh DPH ${await dph.inputValue()}, čakal som 105`);
+        const navrh = p.getByTestId("navrh-sadzby-qr");
+        t.over(await navrh.isVisible(), "chýba upozornenie, že sadzba z QR nie je známa");
+        t.over(/12 %/.test(await navrh.innerText()), "upozornenie nespomína 12 %");
+        await sadzba.selectOption("s:12");
+        await t.cakajNa("základ prepočítaný zo sumy na 12 %", async () => cislo(await zaklad.inputValue()) === 540.18, {
+          limit: 5000,
+        });
+        t.over(cislo(await dph.inputValue()) === 64.82, `DPH pri 12 % ${await dph.inputValue()}, čakal som 64,82`);
+        t.over((await pole("Celkom").inputValue()) === "605", "Celkom z QR sa zmenou sadzby pohlo");
+        t.over(!(await navrh.isVisible()), "upozornenie na návrh ostalo po zmene sadzby");
+        await uloz(p);
+        const d = await zDatabazy(605);
+        t.over(d.currency === "CZK", `mena ${d.currency}`);
+        t.over(d.supplier_ico === "27082440", `IČO predajcu ${d.supplier_ico}`);
+        t.over(d.issue_date === "2026-10-30", `dátum ${d.issue_date}`);
+        t.over(d.status === "processed", `stav ${d.status}, QR bloček má ísť rovno medzi Bločky`);
+        const r = d.vat_breakdown?.[0] ?? {};
+        t.over(
+          d.vat_breakdown?.length === 1 && Number(r.sadzba) === 12 && Number(r.zaklad) === 540.18 && Number(r.dph) === 64.82,
+          `rozpis ${JSON.stringify(d.vat_breakdown)}`,
         );
-        return r.data?.[0] ?? null;
-      });
-      t.over(d.currency === "CZK", `mena ${d.currency}`);
-      t.over(d.supplier_ico === "27082440", `IČO predajcu ${d.supplier_ico}`);
-      t.over(d.issue_date === "2026-10-30", `dátum ${d.issue_date}`);
-      t.over(d.status === "processed", `stav ${d.status}, QR bloček má ísť rovno medzi Bločky`);
-      await p.close();
+        t.over(Number(d.net_amount) === 540.18 && Number(d.vat_amount) === 64.82, `základ ${d.net_amount}, DPH ${d.vat_amount}`);
+        t.over(!d.na_kontrolu_at, `skontrolovaný rozpis nemá ísť na kontrolu (${d.na_kontrolu_dovod})`);
+        await p.close();
+      }
+
+      /* 117 Kč: návrh 21 % (96,69 + 20,31) uložený bez zmeny → na kontrolu. */
+      {
+        const qr = "EET*1.0*BKP:0123456789ABCDEE*DIC:CZ27082440*KC:117.00*DT:202610301016*R:B*";
+        const { p } = await blocekZQr(qr, 117);
+        await uloz(p);
+        const d = await zDatabazy(117);
+        const r = d.vat_breakdown?.[0] ?? {};
+        t.over(
+          d.vat_breakdown?.length === 1 && Number(r.sadzba) === 21 && Number(r.zaklad) === 96.69 && Number(r.dph) === 20.31,
+          `návrh rozpisu ${JSON.stringify(d.vat_breakdown)}`,
+        );
+        t.over(Boolean(d.na_kontrolu_at), "bloček s návrhom 21 % nie je na kontrole");
+        t.over(/^Rozpis DPH/.test(d.na_kontrolu_dovod ?? "") && /12 %/.test(d.na_kontrolu_dovod ?? ""), `dôvod kontroly: ${d.na_kontrolu_dovod}`);
+        await p.close();
+      }
     });
 
     await t.krok(

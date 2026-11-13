@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { BlocekVysledok } from "./blocek.functions";
 import { zdrojVydavku } from "./zdroj-vydavku";
+import { jeEetQr } from "./eet-cz";
 
 /**
  * Uloženie dokladu z mobilnej aplikácie.
@@ -100,6 +101,12 @@ export function dokladNaZaznam(
     qr_raw: r.qr_raw ?? null,
     items: r.items.length ? r.items : null,
     vat_breakdown: r.vat_breakdown?.length ? r.vat_breakdown : null,
+    /*
+      Český bloček z QR (EET): dôvod kontroly rozpisu (návrh 21 %, rozpis
+      z fotky nesedí s QR) — server bloček označí na kontrolu. Kľúč ide vždy,
+      aby server nehádal podľa starých pravidiel (`dovodKontrolyEet`).
+    */
+    ...(r.qr_raw && jeEetQr(r.qr_raw) ? { kontrola_dph: r.kontrola_dph ?? null } : {}),
   };
 }
 

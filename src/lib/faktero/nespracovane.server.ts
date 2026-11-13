@@ -102,10 +102,15 @@ async function oznacNaKontroluDph(
     return;
   }
   const k = kontrolaSadziebUdajov(u, krajina);
-  if (k.ok) return;
+  // Rozpis z Bločkov bol na kontrole (český QR: návrh 21 %) a človek ho nezmenil.
+  const dovodZBlocku = u.kontrolaRozpisu?.trim() || null;
+  if (k.ok && !dovodZBlocku) return;
   const { error } = await supabase
     .from(tabulka)
-    .update({ na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: popisChybRozpisu(k) } as any)
+    .update({
+      na_kontrolu_at: new Date().toISOString(),
+      na_kontrolu_dovod: k.ok ? dovodZBlocku : popisChybRozpisu(k),
+    } as any)
     .eq("id", id);
   if (error) console.warn(`[nespracovane] ${tabulka} na kontrolu sa nezapísalo:`, error.message);
 }
@@ -1017,6 +1022,11 @@ export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string
       ? [{ sadzba: Number(e.vat_rate) || 0, zaklad: Number(e.net_amount) || 0, dph: Number(e.vat_amount) || 0 }]
       : [];
   u.celkom = e.total_amount != null ? Number(e.total_amount) : null;
+  // Rozpis na kontrole (český QR — návrh 21 %) sa presunom nesmie stratiť.
+  {
+    const { jeDovodRozpisu } = await import("./rozpis-na-kontrole");
+    if (e.na_kontrolu_at && jeDovodRozpisu(e.na_kontrolu_dovod)) u.kontrolaRozpisu = String(e.na_kontrolu_dovod);
+  }
   u.platba = e.payment_method ?? "";
   u.kategoria = e.category ?? "";
   u.poznamka = e.note ?? "";
