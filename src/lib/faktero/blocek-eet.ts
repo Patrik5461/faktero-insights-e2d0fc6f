@@ -1,6 +1,7 @@
 import type { BlocekVysledok } from "./blocek.functions";
 import { jeEetQr } from "./eet-cz";
 import { zaokruhlenieZPoloziek } from "./zaokruhlenie-blocku";
+import { skontrolujDph } from "./dph-pravidlo";
 
 /**
  * Český bloček: hlavička z QR kódu (EET), položky a rozpis DPH z fotky.
@@ -74,14 +75,24 @@ export function rozpisZoSumy(
 /** Rozpis z fotky nesedí so sumou z QR o viac ako 2 centy. */
 function popisNesuladu(sucet: number, suma: number, mena: string): string {
   const f = (n: number) => `${n.toFixed(2).replace(".", ",")} ${mena}`;
-  return `Rozpis DPH z fotky (spolu ${f(sucet)}) nesedí so sumou z QR kódu ${f(suma)} — skontrolujte sadzby, základ a DPH podľa bločku.`;
+  return `Rozpis DPH z fotky (spolu ${f(sucet)}) nesedí so sumou z QR kódu ${f(suma)} — predvyplnený je návrh 21 % zo sumy z QR. Skontrolujte sadzby, základ a DPH podľa bločku.`;
+}
+
+/** Rozpis z fotky nesie nezákonnú sadzbu alebo zle vypočítanú DPH. */
+function popisChybyRozpisu(chyby: string): string {
+  return `Rozpis DPH z fotky nie je po zákonných sadzbách (${chyby}) — predvyplnený je návrh 21 % zo sumy z QR. Skontrolujte sadzby podľa bločku.`;
 }
 
 /**
  * Rozpis DPH českého bločku z QR (EET).
  *
- * - Rozpis z fotky: ostáva; keď základ + DPH + zaokrúhlenie nesedí so sumou
- *   z QR, dostane dôvod na kontrolu (`kontrola_dph`).
+ * - Rozpis z fotky: ostáva, keď sedí so sumou z QR (základ + DPH +
+ *   zaokrúhlenie) a je po zákonných sadzbách CZ; hlavička (základ, DPH)
+ *   sa vtedy berie z rozpisu.
+ * - Rozpis z fotky, ktorý nesedí alebo nesie nezákonnú sadzbu (OCR prečítalo
+ *   inú sumu, slovenských 23 % …): návrh 21 % zo sumy z QR a dôvod na
+ *   kontrolu. Taký rozpis by spúšťač zákonných sadzieb pri uložení odmietol
+ *   a bloček z appky by uviazol vo fronte (E2E apka-skener, 13. 11. 2026).
  * - Bez rozpisu: návrh 21 % zo sumy z QR (`rozpis_odhad`) a dôvod na kontrolu.
  *
  * Iný než český QR bloček sa nemení (slovenská eKasa nesie rozpis z FS).
@@ -93,10 +104,26 @@ export function doplnRozpisEet(v: BlocekVysledok): BlocekVysledok {
   const zaokr = zaokruhlenieZPoloziek(v.items);
   const rozpis = (v.vat_breakdown ?? []).filter((r) => r && Number.isFinite(Number(r.sadzba)));
 
+  let dovod = DOVOD_NAVRHU_SADZBY_QR;
   if (rozpis.length) {
-    const sucet = r2(rozpis.reduce((a, r) => a + (Number(r.zaklad) || 0) + (Number(r.dph) || 0), 0));
-    if (Math.abs(r2(sucet + zaokr) - total) <= 0.02) return v;
-    return { ...v, kontrola_dph: popisNesuladu(r2(sucet + zaokr), total, v.currency || "CZK") };
+    const zaklad = r2(rozpis.reduce((a, r) => a + (Number(r.zaklad) || 0), 0));
+    const dph = r2(rozpis.reduce((a, r) => a + (Number(r.dph) || 0), 0));
+    const sucet = r2(zaklad + dph + zaokr);
+    const chyby = skontrolujDph({
+      rozpis: rozpis.map((r) => ({ sadzba: Number(r.sadzba), zaklad: Number(r.zaklad) || 0, dph: Number(r.dph) || 0 })),
+      zaklad,
+      dph,
+      krajina: "CZ",
+      den: v.date ?? null,
+      krajinaDodavatela: "CZ",
+      poloziek: v.items?.length,
+    });
+    if (Math.abs(sucet - total) > 0.02) dovod = popisNesuladu(sucet, total, v.currency || "CZK");
+    else if (chyby.length) dovod = popisChybyRozpisu(chyby.map((c) => c.text).join(" "));
+    else {
+      const hlavna = [...rozpis].sort((a, b) => (Number(b.zaklad) || 0) - (Number(a.zaklad) || 0))[0]!;
+      return { ...v, net_amount: zaklad, vat_amount: dph, vat_rate: Number(hlavna.sadzba) };
+    }
   }
 
   const navrh = rozpisZoSumy(r2(total - zaokr), SADZBA_NAVRHU_CZ);
@@ -107,7 +134,7 @@ export function doplnRozpisEet(v: BlocekVysledok): BlocekVysledok {
     vat_amount: navrh.dph,
     vat_rate: navrh.sadzba,
     rozpis_odhad: true,
-    kontrola_dph: DOVOD_NAVRHU_SADZBY_QR,
+    kontrola_dph: dovod,
   };
 }
 

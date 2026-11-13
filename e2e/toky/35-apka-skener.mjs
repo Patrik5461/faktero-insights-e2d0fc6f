@@ -366,6 +366,17 @@ export default {
       t.over(Number(d.total_amount) === 117, `suma ${d.total_amount}`);
       t.over(d.currency === "CZK", `mena ${d.currency}`);
       t.over(d.issue_date === "2026-10-28", `dátum ${d.issue_date}`);
+      /*
+        Fotka je slovenský bloček (23 %) — taký rozpis k českému QR nesedí, tak
+        ostáva návrh 21 % zo sumy z QR a bloček ide na kontrolu (13. 11. 2026).
+      */
+      const rozpis = Array.isArray(d.vat_breakdown) ? d.vat_breakdown : [];
+      t.over(
+        rozpis.length === 1 && Number(rozpis[0].sadzba) === 21,
+        `rozpis nie je návrh 21 %: ${JSON.stringify(d.vat_breakdown)}`,
+      );
+      t.over(Boolean(d.na_kontrolu_at), "český bloček s návrhom 21 % nie je na kontrolu");
+      t.over(/^Rozpis DPH/.test(d.na_kontrolu_dovod ?? ""), `dôvod kontroly: ${d.na_kontrolu_dovod}`);
     });
 
     await t.krok(

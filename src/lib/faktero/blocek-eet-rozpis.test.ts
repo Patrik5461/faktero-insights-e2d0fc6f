@@ -93,11 +93,40 @@ describe("doplnRozpisEet", () => {
     expect(v.rozpis_odhad).toBeUndefined();
   });
 
-  it("rozpis z fotky, ktorý nesedí so sumou z QR, ide na kontrolu", () => {
+  it("rozpis z fotky, ktorý nesedí so sumou z QR → návrh 21 % na kontrolu", () => {
     const v = doplnRozpisEet({ ...eet, vat_breakdown: [{ sadzba: 12, zaklad: 500, dph: 60 }] });
-    expect(v.vat_breakdown).toEqual([{ sadzba: 12, zaklad: 500, dph: 60 }]);
+    expect(v.vat_breakdown).toEqual([{ sadzba: 21, zaklad: 500, dph: 105 }]);
+    expect(v.net_amount).toBe(500);
+    expect(v.vat_amount).toBe(105);
     expect(v.kontrola_dph).toMatch(/^Rozpis DPH z fotky \(spolu 560,00 CZK\) nesedí so sumou z QR kódu 605,00 CZK/);
-    expect(v.rozpis_odhad).toBeUndefined();
+    expect(jeDovodRozpisu(v.kontrola_dph)).toBe(true);
+    expect(v.rozpis_odhad).toBe(true);
+  });
+
+  it("rozpis z fotky so slovenskými 23 % (sadzba v CZ neplatí) → návrh 21 %, spúšťač ho neodmietne", () => {
+    // E2E apka-skener 13. 11.: fotka „Nafta 114,60 EUR, DPH 23 %“ k QR na 117 Kč —
+    // rozpis z fotky by spúšťač odmietol a bloček by ostal vo fronte appky.
+    const zFotky = { ...eet, total: 117, vat_breakdown: [{ sadzba: 23, zaklad: 95.12, dph: 21.88 }] };
+    const v = doplnRozpisEet(zFotky);
+    expect(v.vat_breakdown).toEqual([rozpisZoSumy(117, 21)]);
+    expect(v.rozpis_odhad).toBe(true);
+    expect(v.kontrola_dph).toMatch(/^Rozpis DPH z fotky nie je po zákonných sadzbách/);
+    expect(
+      skontrolujDph({ rozpis: v.vat_breakdown!, zaklad: v.net_amount!, dph: v.vat_amount!, krajina: "CZ", den: "2026-10-28" } as any),
+    ).toEqual([]);
+  });
+
+  it("rozpis z fotky, ktorý sedí: hlavička (základ, DPH) ide z rozpisu", () => {
+    const v = doplnRozpisEet({
+      ...eet,
+      net_amount: 1,
+      vat_amount: 2,
+      vat_breakdown: [{ sadzba: 12, zaklad: 540.18, dph: 64.82 }],
+    });
+    expect(v.net_amount).toBe(540.18);
+    expect(v.vat_amount).toBe(64.82);
+    expect(v.vat_rate).toBe(12);
+    expect(v.kontrola_dph).toBeUndefined();
   });
 
   it("slovenská eKasa sa nemení", () => {
