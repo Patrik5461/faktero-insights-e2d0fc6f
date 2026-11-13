@@ -73,6 +73,8 @@ function volby(argv: string[]) {
     company: typeof o.company === "string" ? lenCislice(o.company) : "",
     firma: typeof o.firma === "string" ? o.firma : null,
     zaSekundu: Number(o["za-sekundu"]) || 4,
+    /** Záloha už existuje (napr. zaloha_rozpis_doklado_20261113 urobená ručne) — nevytvárať ju cez Management API. */
+    zalohaHotova: typeof o["zaloha-hotova"] === "string" ? String(o["zaloha-hotova"]) : null,
   };
 }
 
@@ -458,13 +460,17 @@ async function main() {
     revoke all on public.${tabZalohy} from public, anon, authenticated;
     insert into public.${tabZalohy} (tabulka, id, riadok) ${casti.join(" union all ")};
     select count(*)::int as n from public.${tabZalohy};`;
-  const res = await fetch(`https://api.supabase.com/v1/projects/${env.projekt}/database/query`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${env.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ query: sql }),
-  });
-  if (!res.ok) throw new Error(`záloha sa nepodarila: ${res.status} ${(await res.text()).slice(0, 300)}`);
-  log(`Záloha: ${tabZalohy} (${JSON.stringify(await res.json())})`);
+  if (o.zalohaHotova) {
+    log(`Záloha: ${o.zalohaHotova} (urobená vopred)`);
+  } else {
+    const res = await fetch(`https://api.supabase.com/v1/projects/${env.projekt}/database/query`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ query: sql }),
+    });
+    if (!res.ok) throw new Error(`záloha sa nepodarila: ${res.status} ${(await res.text()).slice(0, 300)}`);
+    log(`Záloha: ${tabZalohy} (${JSON.stringify(await res.json())})`);
+  }
 
   let zapisane = 0;
   let chyby = 0;
