@@ -6,6 +6,7 @@
   sú tu, aby ich zdieľali REST aj MCP (nástroje MCP volajú to isté REST API).
   Všetko ide cez `ctx.supabase` (servisný klient) a vždy s filtrom firmy.
 */
+import { chybaZaokruhleniaBlocku } from "./zaokruhlenie-blocku";
 import { krajinaBlocku } from "./krajina-blocku";
 import { z } from "zod";
 import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
@@ -668,6 +669,9 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
   {
     const chyby = await overDphZapisu(db, ctx.company_id, "expense_documents", riadokBlocku(d, ""));
     if (chyby.length) return chybaDph(chyby);
+    // Položka zaokrúhlenia najviac ±0,02 € pri hotovosti, inak ako prijatá faktúra.
+    const zlyZaokr = chybaZaokruhleniaBlocku(riadokBlocku(d, ""));
+    if (zlyZaokr) return err("validation_error", zlyZaokr);
   }
   let subor = {};
   if (d.file) {
@@ -765,13 +769,17 @@ export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
     "expense_documents",
     stary,
     riadok,
-    // Nespracovaný bloček (status new) nie je v účtovníctve — ako `guard_locked_period_expense`.
+    // Nespracovaný bloček (status new) nie je v účtovníctve — ako `guard_locked_period_dokladu`.
     (stary.status ?? "new") !== "new" ? await zamknuteDoFirmy(ctx) : null,
   );
   if (zamok) return zamok;
   {
     const chyby = await overDphZapisu(ctx.supabase, ctx.company_id, "expense_documents", riadok, stary);
     if (chyby.length) return chybaDph(chyby);
+    if ("items" in riadok || "payment_method" in riadok || "currency" in riadok) {
+      const zlyZaokr = chybaZaokruhleniaBlocku({ ...stary, ...riadok });
+      if (zlyZaokr) return err("validation_error", zlyZaokr);
+    }
   }
   if (riadok.zauctovane_at && !stary.zauctovane_at) {
     const dup = await strazDuplicity(ctx, "blocek", { ...stary, ...riadok });

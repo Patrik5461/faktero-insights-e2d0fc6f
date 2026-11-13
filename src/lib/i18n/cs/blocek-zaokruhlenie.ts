@@ -16,4 +16,6 @@ export default {
   "Rozpis DPH podľa sadzieb nesedí so základom a DPH": "Rozpis DPH podle sazeb nesouhlasí se základem a DPH",
   "Do Pohody pôjde rozpis z bločku, nie sumy v poliach. Uložiť aj tak?":
     "Do Pohody půjde rozpis z účtenky, ne částky v polích. Přesto uložit?",
+  "Zaokrúhlenie {suma} {mena} je priveľké — najviac ±{max} {mena}. Rozdiel nie je zaokrúhlenie: doplňte ho do rozpisu DPH alebo opravte sumu bločku.":
+    "Zaokrouhlení {suma} {mena} je příliš velké — nejvýše ±{max} {mena}. Rozdíl není zaokrouhlení: doplňte ho do rozpisu DPH nebo opravte částku účtenky.",
 };

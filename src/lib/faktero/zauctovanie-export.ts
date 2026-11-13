@@ -19,7 +19,13 @@ import { platneRozuctovanieVystavenej } from "./rozuctovanie-vystavenej";
 import { vsPrijatej, vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { odpocetDokladu } from "./vozidlo-odpocet";
 import { kodStatu } from "./company-autofill";
-import { polozkyPrijatej, rozpisPrijatej } from "./prijate-do-pohody";
+import {
+  jePrenesenieCele,
+  jeSamozdanenieCele,
+  polozkyPrijatej,
+  rozpisPrijatej,
+  sadzbaSamozdanenia,
+} from "./prijate-do-pohody";
 import {
   maPopisPrijatej,
   nazvyPoloziek,
@@ -205,6 +211,8 @@ export type NastaveniaUctovania = {
   datumZapisu?: DatumZapisu;
   datumOdpoctu?: DatumOdpoctu;
   zakazkyDokladov?: Record<string, string>;
+  /** Krajina firmy (`companies.country`) — základná sadzba samozdanenia. */
+  krajina?: string | null;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -467,7 +475,8 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     zaúčtovať s členením pre prenesenie a v KV v B.1 — inak by odišla ako
     bežný nákup a samozdanenie by v priznaní chýbalo.
   */
-  const prenesenie = Boolean(p?.reverse_charge) || p?.dph_rezim === "samozdanenie";
+  const prenesenie =
+    Boolean(p?.reverse_charge) || p?.dph_rezim === "samozdanenie" || jePrenesenieCele(p);
   const clenenie =
     t(p?.pohoda_clenenie_dph) ??
     t(kat?.clenenie) ??
@@ -482,7 +491,20 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     celého dokladu, nie riadkov: zľava či odpočet zálohy sú záporné riadky
     a absolútna hodnota by ich pripočítala.
   */
-  const rozpis0 = rozpisPrijatej(p);
+  /*
+    Prenesený riadok bez sadzby (rozpis `{ sadzba: 0, pdp: true }`) dostane
+    základnú sadzbu — Money by ho inak dal do `Zaklad0`, Flexi do `sumOsv`,
+    CSV do nulovej sadzby a samozdanenie by chýbalo (QA-C-PF2, 13. 11. 2026).
+  */
+  const samozdanenie = <T extends { sadzba: number; dph?: number; pdp?: boolean; vat_category?: string | null }>(
+    r: T[],
+  ) =>
+    sadzbaSamozdanenia(r, {
+      cele: jeSamozdanenieCele(p),
+      krajina: nast.krajina,
+      den: t(p?.delivery_date) ?? t(p?.issue_date),
+    });
+  const rozpis0 = samozdanenie(rozpisPrijatej(p));
   const zn = znamienkoCelku(spolu, rozpis0);
   const rozpis = rozpis0.map((x) => ({
     sadzba: x.sadzba,
@@ -556,7 +578,7 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
       dokladu majú často len `total` s DPH, ktorý by inak išiel celý ako
       základ s nulovou daňou. Keď nesedia so súčtami faktúry, žiadne.
     */
-    polozky: (polozkyPrijatej(p) ?? []).map((x) => ({
+    polozky: samozdanenie(polozkyPrijatej(p) ?? []).map((x) => ({
       nazov: x.nazov,
       mnozstvo: x.mnozstvo,
       mj: x.mj,

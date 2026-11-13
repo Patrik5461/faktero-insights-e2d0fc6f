@@ -600,8 +600,15 @@ export async function zostavBalik(
       if (xmlPrijatych) zip.file("pohoda-prijate-faktury.xml", xmlPrijatych);
       else prijateDoXml = [];
     }
-    const { rozpisPrijatej } = await import("./prijate-do-pohody");
-    const rozpisPrijatych = prijate.map((p: Riadok) => rozpisPrijatej(p));
+    const { rozpisPrijatej, sadzbaSamozdanenia, jeSamozdanenieCele } = await import("./prijate-do-pohody");
+    // Prenesená časť bez sadzby ide v stĺpci základnej sadzby (zaklad_pdp_23), nie „0“.
+    const rozpisPrijatych = prijate.map((p: Riadok) =>
+      sadzbaSamozdanenia(rozpisPrijatej(p), {
+        cele: jeSamozdanenieCele(p),
+        krajina: company?.country,
+        den: p.delivery_date || p.issue_date,
+      }),
+    );
     const stlpcePrijatych = stlpceRozpisu(rozpisPrijatych);
     zip.file(
       "prijate-faktury.csv",

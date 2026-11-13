@@ -15,6 +15,7 @@ import { z } from "zod";
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
 import { HLASKA_ZAMKU_FAKTURY, porusenieZamkuFaktury } from "./pohoda-zamok";
+import { hlaskaZamkuObdobia, porusenieZamkuObdobia } from "./zamok-obdobia";
 import {
   SPRAVA_ZAMKU,
   STAVY_POHYBU,
@@ -22,7 +23,6 @@ import {
   VybavenieVstup,
   ZnackyVstup,
   dovodZamkuApi,
-  spravaZamkuObdobia,
   vUzavretomObdobi,
   zmenyVObdobi,
   jeSparovany,
@@ -153,14 +153,17 @@ export function strazZamku(
     if (stlpce.length)
       return err("locked", SPRAVA_ZAMKU[dovod], 409, { reason: dovod, fields: stlpce });
   }
-  if (zamknuteDo && vUzavretomObdobi(tab, zamknuteDo, stary, zmena)) {
-    const stlpce = zmenyVObdobi(tab, stary, zmena);
-    if (stlpce.length)
-      return err("locked", spravaZamkuObdobia(zamknuteDo), 409, {
+  if (zamknuteDo && vUzavretomObdobi(tab, zamknuteDo, stary, { ...stary, ...zmena })) {
+    // To isté pravidlo ako spúšťač `guard_locked_period_dokladu` (storno, koncept, polia).
+    const p = porusenieZamkuObdobia(tab, stary, { ...stary, ...zmena }, zamknuteDo);
+    if (p) {
+      const stlpce = zmenyVObdobi(tab, stary, zmena);
+      return err("locked", hlaskaZamkuObdobia(tab, p, zamknuteDo), 409, {
         reason: "obdobie",
-        fields: stlpce,
+        fields: stlpce.length ? stlpce : p.dovod === "pole" ? [p.pole] : ["status"],
         locked_until: String(zamknuteDo).slice(0, 10),
       });
+    }
   }
   return null;
 }

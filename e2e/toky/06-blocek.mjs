@@ -1,4 +1,5 @@
 /* Bloček zadaný ručne (bez skenu a AI) → objaví sa v zozname Doklady. */
+import { vyplnRozpisDph } from "../lib/doklady.mjs";
 import { pravidloPreDodavatela } from "../lib/zauctovanie.mjs";
 
 export default {
@@ -33,10 +34,13 @@ export default {
       await pole("Dodávateľ").fill(dodavatel);
       await pole("Číslo dokladu").fill(cislo);
       await pole("Dátum vystavenia").fill(t.dnes);
-      await pole("Suma bez DPH").fill("10");
-      await pole("DPH").fill("2.3");
-      await pole("Celkom").fill("12.3");
-      await pole("Sadzba DPH %").fill("23");
+      // Od 13. 11. rozpis DPH: sadzba zo zákonných, DPH sa dopočíta, Celkom zo súčtu.
+      await vyplnRozpisDph(page, [{ sadzba: 23, zaklad: 10 }]);
+      await t.cakajNa(
+        "Celkom 12,3 zo súčtu rozpisu",
+        async () => Number((await pole("Celkom").inputValue()).replace(",", ".")) === 12.3,
+        { limit: 5000 },
+      );
       await page
         .locator("select")
         .filter({ has: page.locator('option[value="hotovost"]') })

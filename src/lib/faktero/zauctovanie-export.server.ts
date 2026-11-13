@@ -35,6 +35,7 @@ export async function nastaveniaUctovania(
     );
   }
   return {
+    krajina: company.country ?? null,
     predkontacia: company.pohoda_predkontacia,
     predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
     predkontaciaDobropis: company.pohoda_predkontacia_dobropis,

@@ -110,7 +110,13 @@ import {
 import { ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
-import { kontrolaSumyBlocku, nastavZaokruhlenie, zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
+import {
+  jePovoleneZaokruhlenieBlocku,
+  kontrolaSumyBlocku,
+  maxZaokruhleniaBlocku,
+  nastavZaokruhlenie,
+  zaokruhlenieZPoloziek,
+} from "@/lib/faktero/zaokruhlenie-blocku";
 import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { blocekJeUzamknuty, formatujDatum, HLASKA_ZAMKNUTY_BLOCEK, jeChybaUzamknutia } from "@/lib/faktero/uzavierka";
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
@@ -546,6 +552,20 @@ function NovyDokladPage() {
       vat_rate: sadzba == null ? f.vat_rate : String(sadzba),
     }));
   }
+  /*
+    Zaokrúhlenie najviac ±0,02 € pri hotovosti, inak ako prijatá faktúra
+    (0,50 €, 1 Kč…) — QA 13. 11.: 0,80 € sa uložilo bez varovania, lebo
+    kontrola rozpisu porovnáva sumu bločku už bez zaokrúhlenia.
+  */
+  const maxZaokr = maxZaokruhleniaBlocku(form.payment_method, form.currency || "EUR");
+  const zaokruhlenieOk = jePovoleneZaokruhlenieBlocku(zaokruhlenie, form.payment_method, form.currency || "EUR");
+  const hlaskaZaokruhlenia = zaokruhlenieOk
+    ? null
+    : t("Zaokrúhlenie {suma} {mena} je priveľké — najviac ±{max} {mena}. Rozdiel nie je zaokrúhlenie: doplňte ho do rozpisu DPH alebo opravte sumu bločku.", {
+        suma: zaokruhlenie.toFixed(2).replace(".", ","),
+        max: maxZaokr.toFixed(2).replace(".", ","),
+        mena: form.currency || "EUR",
+      });
   const kontrolaSumy = kontrolaSumyBlocku({
     celkom: form.total_amount,
     zaklad: form.net_amount,
@@ -827,6 +847,11 @@ function NovyDokladPage() {
     const uhrada = form.payment_method;
     if (!uhrada) {
       toast.error(t("Vyberte spôsob úhrady — hotovosť uberá zo stavu pokladne."));
+      return;
+    }
+    // Zaokrúhlenie nad limit sa neuloží (to isté stráži server).
+    if (hlaskaZaokruhlenia) {
+      toast.error(hlaskaZaokruhlenia);
       return;
     }
     // Súčet, ktorý nesedí so sumou bločku, sa uloží len po potvrdení.
@@ -1592,9 +1617,24 @@ function NovyDokladPage() {
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Zaokrúhlenie (bez DPH)")}</span>
                 <VstupZaokruhlenia
                   value={zaokruhlenie || null}
-                  onChange={(v) => setPolozky(nastavZaokruhlenie(polozky, v) as BlocekVysledok["items"])}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  onChange={(v) => {
+                    /*
+                      Zmena zaokrúhlenia prepočíta „Celkom“ = základ + DPH +
+                      zaokrúhlenie, aj pri úprave uloženého bločku (kontrola
+                      13. 11., chyba 14: Celkom ostal starý a hlášky si protirečili).
+                    */
+                    celkomRucne.current = false;
+                    setPolozky(nastavZaokruhlenie(polozky, v) as BlocekVysledok["items"]);
+                  }}
+                  className={`w-full rounded-md border bg-background px-3 py-2 text-sm ${
+                    hlaskaZaokruhlenia ? "border-destructive" : "border-border"
+                  }`}
                 />
+                {hlaskaZaokruhlenia ? (
+                  <span role="alert" className="mt-1 block text-xs text-destructive">
+                    {hlaskaZaokruhlenia}
+                  </span>
+                ) : null}
               </label>
               <Field
                 label={t("Celkom")}

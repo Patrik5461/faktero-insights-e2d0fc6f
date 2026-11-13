@@ -16,4 +16,6 @@ export default {
   "Rozpis DPH podľa sadzieb nesedí so základom a DPH": "USt.-Aufteilung nach Sätzen stimmt nicht mit Netto und USt. überein",
   "Do Pohody pôjde rozpis z bločku, nie sumy v poliach. Uložiť aj tak?":
     "An Pohoda geht die Aufteilung vom Kassenbon, nicht die Beträge in den Feldern. Trotzdem speichern?",
+  "Zaokrúhlenie {suma} {mena} je priveľké — najviac ±{max} {mena}. Rozdiel nie je zaokrúhlenie: doplňte ho do rozpisu DPH alebo opravte sumu bločku.":
+    "Rundung {suma} {mena} ist zu hoch — höchstens ±{max} {mena}. Die Differenz ist keine Rundung: Ergänzen Sie sie in der USt-Aufteilung oder korrigieren Sie den Belegbetrag.",
 };

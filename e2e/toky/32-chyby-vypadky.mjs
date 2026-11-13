@@ -14,7 +14,7 @@
   fetch“ pri zaúčtovaní a HTML nginxu v hláške exportu, prázdny formulár po
   novom prihlásení.
 */
-import { zalozOdberatela, zmazFakturuNatvrdo } from "../lib/doklady.mjs";
+import { vyplnRozpisDph, zalozOdberatela, zmazFakturuNatvrdo } from "../lib/doklady.mjs";
 import { pravidloPreDodavatela, zmazPrijatu } from "../lib/zauctovanie.mjs";
 import { klucRelacie, QA_EMAIL, qaHeslo } from "../lib/prostredie.mjs";
 
@@ -158,8 +158,7 @@ export default {
       await pole("Dátum vystavenia").fill(t.dnes);
       await pole("Dátum dodania (daňového plnenia)").fill(t.dnes);
       await pole("Dátum splatnosti").fill(t.dnes);
-      await pole("Bez DPH").fill("10");
-      await pole("DPH").fill("2.3");
+      await vyplnRozpisDph(page, [{ sadzba: 23, zaklad: 10 }]);
       const pusti = await vypadok(page, "**/rest/v1/purchase_invoices*", { strataOdpovede: true });
       t.hlasky.length = 0;
       await page.getByRole("button", { name: "Uložiť prijatú faktúru" }).click();
@@ -192,7 +191,8 @@ export default {
       await pole("Dodávateľ").fill(`${t.znacka} Obchod`);
       await pole("Číslo dokladu").fill(cislo);
       await pole("Dátum vystavenia").fill(t.dnes);
-      await pole("Celkom").fill("12.3");
+      // Od 13. 11. rozpis DPH — Celkom 12,30 je jeho súčet.
+      await vyplnRozpisDph(page, [{ sadzba: 23, zaklad: 10 }]);
       await page
         .locator("select")
         .filter({ has: page.locator('option[value="hotovost"]') })

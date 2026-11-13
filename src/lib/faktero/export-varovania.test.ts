@@ -42,12 +42,20 @@ describe("upozornenia pred exportom prijatej do Pohody", () => {
     expect(v).toEqual([]);
   });
 
-  it("členenie PDsluz bez prenesenia", () => {
+  it("členenie PDsluz pri inom zvolenom režime DPH", () => {
     const v = varovaniaPrijatejPredExportom(
-      { ...zaklad, vat_amount: 0, pohoda_clenenie_dph: "PDsluz", reverse_charge: false },
+      { ...zaklad, vat_amount: 0, pohoda_clenenie_dph: "PDsluz", reverse_charge: false, dph_rezim: "tuzemsko" },
       firma,
     );
     expect(v.join(" ")).toContain("PDsluz");
+    // S daňou nejde o celé prenesenie — upozorní aj bez režimu.
+    expect(
+      varovaniaPrijatejPredExportom({ ...zaklad, pohoda_clenenie_dph: "PDsluz", reverse_charge: false }, firma).join(" "),
+    ).toContain("PDsluz");
+    // Bez režimu a bez dane ho export berie ako prenesenie (jePrenesenieCele) — nie je čo hlásiť.
+    expect(
+      varovaniaPrijatejPredExportom({ ...zaklad, vat_amount: 0, pohoda_clenenie_dph: "PDsluz", reverse_charge: false }, firma),
+    ).toEqual([]);
     expect(varovaniaPrijatejPredExportom({ ...zaklad, vat_amount: 0, pohoda_clenenie_dph: "PDsluz", reverse_charge: true }, firma)).toEqual([]);
   });
 

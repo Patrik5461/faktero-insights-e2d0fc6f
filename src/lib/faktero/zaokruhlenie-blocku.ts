@@ -15,10 +15,53 @@
   nie ako položku v sadzbe 0 %.
 */
 
+import { maxZaokruhlenie } from "./dph-pravidlo";
+
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 /** Najväčšie zaokrúhlenie hotovosti na 5 centov. */
 export const MAX_ZAOKRUHLENIE = 0.02;
+
+/**
+ * Najväčšie povolené zaokrúhlenie bločku (QA 13. 11. 2026: bloček prijal
+ * zaokrúhlenie 0,80 € bez varovania). Hotovosť v eurách sa zaokrúhľuje na
+ * 5 centov — najviac ±0,02 €. Inak (karta, prevod, iná mena) rovnaký limit
+ * ako prijatá faktúra (`maxZaokruhlenie`: 0,50 €, 1 Kč, 5 Ft).
+ */
+export function maxZaokruhleniaBlocku(platba?: string | null, mena?: string | null): number {
+  const m = String(mena ?? "").trim().toUpperCase() || "EUR";
+  if (platba === "hotovost" && m === "EUR") return MAX_ZAOKRUHLENIE;
+  return maxZaokruhlenie(m);
+}
+
+/** Je zaokrúhlenie bločku v povolených medziach? */
+export function jePovoleneZaokruhlenieBlocku(
+  zaokruhlenie: number | string | null | undefined,
+  platba?: string | null,
+  mena?: string | null,
+): boolean {
+  return Math.abs(r2(Number(zaokruhlenie) || 0)) <= maxZaokruhleniaBlocku(platba, mena) + 1e-9;
+}
+
+/**
+ * Chyba zaokrúhlenia bločku pre server a API (`null` = v poriadku). Zaokrúhlenie
+ * sa číta z položiek (`items`, položka „Zaokrúhlenie“).
+ */
+export function chybaZaokruhleniaBlocku(d: {
+  items?: unknown;
+  payment_method?: unknown;
+  currency?: unknown;
+}): string | null {
+  const z = zaokruhlenieZPoloziek(d.items);
+  const platba = d.payment_method == null ? null : String(d.payment_method);
+  const mena = String(d.currency ?? "EUR").toUpperCase() || "EUR";
+  if (jePovoleneZaokruhlenieBlocku(z, platba, mena)) return null;
+  const max = maxZaokruhleniaBlocku(platba, mena);
+  const f = (n: number) => n.toFixed(2).replace(".", ",");
+  return `Zaokrúhlenie ${f(z)} ${mena} je priveľké — najviac ±${f(max)} ${mena}${
+    platba === "hotovost" && mena === "EUR" ? " (hotovosť sa zaokrúhľuje na 5 centov)" : ""
+  }. Rozdiel nie je zaokrúhlenie — doplňte ho do rozpisu DPH alebo opravte sumu bločku.`;
+}
 
 /** Názov položky, pod ktorým Faktero zaokrúhlenie ukladá. */
 export const NAZOV_ZAOKRUHLENIA = "Zaokrúhlenie";

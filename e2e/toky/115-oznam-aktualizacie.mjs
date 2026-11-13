@@ -124,8 +124,13 @@ export default {
       ]);
       await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(2000);
+      /* Skutočný informačný oznam (typ 'info', napr. „Údržba Faktera…“) môže
+         svietiť všetkým naraz — ten tok nerieši; po obnovení nesmie ostať pás
+         tohto toku (pred/počas/po). */
       t.over(
-        (await page.locator("[data-oznam-aktualizacie]").count()) === 0,
+        (await page
+          .locator('[data-oznam-aktualizacie]:not([data-oznam-aktualizacie="info"])')
+          .count()) === 0,
         "pás po obnovení ostal",
       );
     });

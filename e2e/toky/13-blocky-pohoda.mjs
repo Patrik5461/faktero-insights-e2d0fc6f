@@ -1,8 +1,10 @@
 /*
   Bločky do Pohody vo veľkom: 400+ dokladov v jednom mesiaci (dávky id),
   bloček v cudzej mene s kurzom, PHM na vozidle s 50 % odpočtom DPH a
-  hotovosť v cudzej mene (do XML nejde). XML proti XSD Stormware, potom
-  „Odovzdať účtovníkovi“ označí všetko, čo bolo v XML. Upratanie vráti
+  hotovosť v cudzej mene. Tá je od 13. 11. 2026 „závažná“ chyba: export
+  najprv ukáže okno `potvrd()` („Opravím to“ = nič sa nestiahne, „Exportovať
+  aj tak“ = ide do XML aj ona). XML proti XSD Stormware, potom „Odovzdať
+  účtovníkovi“ (znova cez okno) označí všetko, čo bolo v XML. Upratanie vráti
   odovzdanie a zmaže doklady, vozidlo aj záznamy exportu.
 */
 import { readFileSync } from "node:fs";
@@ -141,14 +143,29 @@ export default {
         .filter({ visible: true })
         .first()
         .waitFor({ timeout: 30000 });
-      const subor = await t.stiahni(
-        () =>
-          page
-            .getByRole("button", { name: /XML pre Pohodu/ })
-            .first()
-            .click(),
-        "pohoda",
-      );
+      const tlacidlo = page.getByRole("button", { name: /XML pre Pohodu/ }).first();
+      const okno = page
+        .getByRole("alertdialog")
+        .filter({ hasText: "Pred exportom do Pohody skontrolujte" });
+      // „Opravím to“ = nič sa nevyvezie.
+      let stiahnuteNavyse = 0;
+      const naStiahnutie = () => stiahnuteNavyse++;
+      page.on("download", naStiahnutie);
+      await tlacidlo.click();
+      await okno.waitFor({ timeout: 60000 });
+      const text = await okno.innerText();
+      t.over(/Závažné/.test(text), `okno bez „Závažné“: ${text.slice(0, 200)}`);
+      t.over(text.includes(cislo("CZK-HOT")), "okno nespomína hotovosť v cudzej mene");
+      await okno.getByRole("button", { name: "Opravím to" }).click();
+      await okno.waitFor({ state: "hidden", timeout: 5000 });
+      await page.waitForTimeout(3000);
+      page.off("download", naStiahnutie);
+      t.over(stiahnuteNavyse === 0, "„Opravím to“ aj tak stiahlo súbor");
+      const subor = await t.stiahni(async () => {
+        await tlacidlo.click();
+        await okno.waitFor({ timeout: 60000 });
+        await okno.getByRole("button", { name: "Exportovať aj tak" }).click();
+      }, "pohoda");
       const buf = readFileSync(subor);
       return { buf, text: textXml(buf) };
     });
@@ -158,8 +175,9 @@ export default {
       const chyba = await overXsd(stiahnute.buf, SCHEMY.pohoda);
       t.over(!chyba, `XSD: ${chyba}`);
       const polozky = (xml.match(/<dat:dataPackItem /g) ?? []).length;
-      t.over(polozky === VYPLN + 2, `v XML ${polozky} dokladov, čakal som ${VYPLN + 2}`);
-      t.over(!xml.includes(cislo("CZK-HOT")), "hotovosť v cudzej mene nemá ísť do XML");
+      // Po „Exportovať aj tak“ ide do XML aj hotovosť v cudzej mene (závažná chyba).
+      t.over(polozky === VYPLN + 3, `v XML ${polozky} dokladov, čakal som ${VYPLN + 3}`);
+      t.over(xml.includes(cislo("CZK-HOT")), "potvrdená hotovosť v cudzej mene chýba v XML");
     });
 
     await t.krok("bloček v cudzej mene", async () => {
@@ -203,22 +221,22 @@ export default {
       await page.getByRole("button", { name: "Odovzdať účtovníkovi" }).click();
       const okno = page.getByRole("dialog", { name: "Export do účtovníctva" });
       await okno.waitFor();
-      await t.stiahni(() => okno.getByRole("button", { name: "Exportovať" }).click(), "zip");
+      await t.stiahni(async () => {
+        await okno.getByRole("button", { name: "Exportovať", exact: true }).click();
+        // Hotovosť v cudzej mene je závažná chyba — okno, „Exportovať aj tak“.
+        await t.potvrd(page, "Exportovať aj tak");
+      }, "zip");
       const odovzdane = await t.cakajNa(
         "odovzdanie",
         async () => {
           const n = await t.rest.pocet(
             `expense_documents?company_id=eq.${firma}&document_number=like.${t.znacka}-*&exported_at=not.is.null`,
           );
-          return n >= VYPLN + 2 ? n : null;
+          return n >= VYPLN + 3 ? n : null;
         },
         { limit: 60000 },
       );
-      t.over(odovzdane === VYPLN + 2, `odovzdaných ${odovzdane}`);
-      const hot = await t.rest.get(
-        `expense_documents?company_id=eq.${firma}&document_number=eq.${cislo("CZK-HOT")}&select=exported_at`,
-      );
-      t.over(!hot.data?.[0]?.exported_at, "hotovosť v cudzej mene sa označila ako odovzdaná");
+      t.over(odovzdane === VYPLN + 3, `odovzdaných ${odovzdane}`);
     });
   },
 };

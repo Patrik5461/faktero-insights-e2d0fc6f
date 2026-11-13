@@ -2,6 +2,7 @@
   Prijatá faktúra zadaná ručne (bez AI) → zaúčtovanie s predkontáciou
   a členením na detaile → kontrola pred odovzdaním do Pohody ju pustí.
 */
+import { vyplnRozpisDph } from "../lib/doklady.mjs";
 import {
   CLENENIE_PRAVIDLA,
   PREDKONTACIA_PRAVIDLA,
@@ -26,6 +27,14 @@ export default {
       );
       if (r.status >= 300) throw new Error(`${r.status} ${r.text.slice(0, 200)}`);
     });
+    // Ručné zaúčtovanie si spúšťač zapamätá ako návyk dodávateľa (IČO 50000001) —
+    // inak ho upratal len iný tok s rovnakým IČO (prijataCezRest), pri behu
+    // samostatného toku ostával.
+    t.uprac("návyk dodávateľa 50000001", async () => {
+      await t.rest.delete(
+        `doklad_navyky?company_id=eq.${t.firmy.test}&kluc_dodavatela=eq.ico:50000001`,
+      );
+    });
 
     const id = await t.krok("zadanie cez formulár", async () => {
       await t.go("/prijate-faktury/nova");
@@ -42,9 +51,13 @@ export default {
       await pole("Dátum vystavenia").fill(t.dnes);
       await pole("Dátum dodania (daňového plnenia)").fill(t.dnes);
       await pole("Dátum splatnosti").fill(t.dnes);
-      await pole("Bez DPH").fill("100");
-      await pole("DPH").fill("23");
-      await pole("Celkom").fill("123");
+      // Od 13. 11. rozpis DPH: sadzba zo zákonných, DPH sa dopočíta, Celkom je súčet.
+      await vyplnRozpisDph(page, [{ sadzba: 23, zaklad: 100 }]);
+      await t.cakajNa(
+        "Celkom 123 zo súčtu rozpisu",
+        async () => Number((await pole("Celkom").inputValue()).replace(",", ".")) === 123,
+        { limit: 5000 },
+      );
       await page.getByRole("button", { name: "Uložiť prijatú faktúru" }).click();
       // Duplicita by sa pýtala — pri jedinečnom čísle nemá prečo.
       await page.waitForURL(/\/prijate-faktury\/[0-9a-f-]{36}/, { timeout: 30000 });
@@ -118,16 +131,19 @@ export default {
         .filter({ has: page.getByRole("heading", { name: "Kontrola pred odovzdaním do Pohody" }) })
         .first();
       await blok.getByRole("button", { name: "Skontrolovať" }).click();
+      // Od 13. 11.: „Odíde, ale skontrolujte v Pohode“ (upozornenia) a „So závažnou
+      // chybou“ (ručný export ich po potvrdení pustí, konektor nie).
       await t.cakajNa("výsledok kontroly", async () => {
         const text = await blok.innerText();
-        return /prejde kontrolou|Neodovzdané:/.test(text);
+        return /prejde kontrolou|So závažnou chybou:|skontrolujte v Pohode:/.test(text);
       });
       const text = (await blok.innerText()).replace(/\s+/g, " ");
-      // Upozornenie („prejde, ale skontrolujte v Pohode“, napr. KV B2 bez IČ DPH) faktúru nezastaví.
-      const okolie = text.slice(Math.max(0, text.indexOf(cislo) - 120), text.indexOf(cislo) + 40);
+      // Upozornenie (napr. KV B2 bez IČ DPH) je v poriadku; závažná chyba nie.
+      const kde = text.indexOf(cislo);
+      const zavazne = text.indexOf("So závažnou chybou:");
       t.over(
-        !text.includes(cislo) || /skontrolujte v Pohode/.test(okolie),
-        `kontrola zastavila našu faktúru: ${text.slice(text.indexOf(cislo) - 50, text.indexOf(cislo) + 200)}`,
+        kde < 0 || zavazne < 0 || kde < zavazne,
+        `kontrola hlási našu faktúru ako závažnú: ${text.slice(kde - 50, kde + 200)}`,
       );
     });
   },

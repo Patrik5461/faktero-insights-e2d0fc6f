@@ -33,6 +33,8 @@ export type RozpisSadzby = {
   dph: number;
   /** Kategória riadku (`rozpis-dph-kontrola.ts`) — „Nie je predmetom DPH“ nejde do priznania. */
   vat_category?: string;
+  /** Riadok v prenesení daňovej povinnosti (§ 69 ods. 12) — daň odvedie odberateľ. */
+  pdp?: boolean;
 };
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -214,6 +216,8 @@ export function rozpisBlocku(d: any): RozpisSadzby[] {
         zaklad: Number(x?.zaklad ?? 0),
         dph: Number(x?.dph ?? 0),
         ...(typeof x?.vat_category === "string" ? { vat_category: x.vat_category } : {}),
+        // Riadok v prenesení — export mu dá členenie pre prenesenie a sadzbu samozdanenia.
+        ...(x?.pdp === true ? { pdp: true } : {}),
       }))
       .filter((x) => x.zaklad || x.dph)
       .sort((a, b) => porovnajSadzby(a.sadzba, b.sadzba));

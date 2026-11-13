@@ -14,6 +14,7 @@ import {
   nacitajFakturu,
   vystavDokladKPlatbe,
   vystavFakturu,
+  vyplnRozpisDph,
   zmazFakturuNatvrdo,
 } from "../lib/doklady.mjs";
 
@@ -279,13 +280,25 @@ export default {
           .filter({ has: page.getByText(label, { exact: true }) })
           .locator("input, select")
           .first();
-      await pole("Sadzba DPH %").waitFor();
+      // Od 13. 11. sadzba v editore rozpisu DPH — výber len zo zákonných CZ sadzieb.
+      const sadzba = page
+        .locator('[data-testid="editor-rozpisu-dph"]')
+        .first()
+        .getByLabel("Sadzba", { exact: true })
+        .first();
+      await sadzba.waitFor();
       await t.cakajNa(
         "bloček v CZK s 21 %",
         async () =>
-          (await pole("Mena").inputValue()) === "CZK" &&
-          (await pole("Sadzba DPH %").inputValue()) === "21",
+          (await pole("Mena").inputValue()) === "CZK" && (await sadzba.inputValue()) === "s:21",
         { limit: 10000 },
+      );
+      const ponuka = await sadzba
+        .locator("option:not([disabled])")
+        .evaluateAll((o) => o.map((x) => x.value).filter((v) => v.startsWith("s:")));
+      t.over(
+        ponuka.includes("s:12") && ponuka.includes("s:21") && !ponuka.includes("s:23"),
+        `CZ sadzby v ponuke: ${ponuka.join(", ")}`,
       );
     });
 
@@ -330,6 +343,11 @@ export default {
       );
       t.over((await pole("Mena").inputValue()) === "CZK", "bloček z QR nie je v korunách");
       t.over((await pole("Dátum vystavenia").inputValue()) === "2026-10-30", "dátum z QR nesedí");
+      /* EET QR nesie len celkovú sumu, rozpis DPH nie — od 13. 11. sa bloček
+         bez rozpisu, ktorý sedí s Celkom, neuloží („Rozpis DPH nesedí“).
+         605 Kč = 500 + 21 % (105). */
+      await vyplnRozpisDph(p, [{ sadzba: 21, zaklad: 500 }]);
+      t.over((await pole("Celkom").inputValue()) === "605", "Celkom z QR sa po rozpise zmenilo");
       await p
         .locator("select")
         .filter({ has: p.locator('option[value="hotovost"]') })

@@ -6,6 +6,7 @@
 */
 import { z } from "zod";
 import { MAX_STITKOV } from "./doklady-hromadne";
+import { ZAMOK_OBDOBIA, denVZamku } from "./zamok-obdobia";
 import { stavUhradyPrijatej, type UhradaPrijatej } from "./uhrady-prijatej";
 
 export const DATUM_API = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Dátum v tvare RRRR-MM-DD");
@@ -201,87 +202,29 @@ export const ZAMKNUTE_STLPCE: Record<TabulkaDokladu, readonly string[]> = {
 
 /*
   Uzavreté obdobie (`companies.locked_until`) — rovnaké stĺpce ako spúšťače
-  `guard_locked_period*`. Tie servisný kľúč nepustia, no API ich hlási vopred
-  ako 409 (inak 500 s textom z databázy). Faktúra má navyše `cancelled_at`:
-  storno mení DPH podaného obdobia a spúšťač ho dnes (stav je voľný kvôli
-  úhrade) nestráži — cez API sa faktúra z uzavretého obdobia stornovať nedá.
+  `guard_locked_period_dokladu` (zoznamy v `zamok-obdobia.ts`). Tie servisný
+  kľúč nepustia, no API ich hlási vopred ako 409 (inak 500 s textom z
+  databázy). Storno, zmazanie a návrat na koncept v uzavretom období spúšťač
+  odmietne rovnako (`porusenieZamkuObdobia`).
 */
-export const OBDOBIE_STLPCE: Record<TabulkaDokladu, { datum: string; stlpce: readonly string[] }> = {
-  invoices: {
-    datum: "issue_date",
-    stlpce: [
-      "issue_date",
-      "delivery_date",
-      "povodna_splatnost",
-      "invoice_number",
-      "type",
-      "currency",
-      "customer_id",
-      "customer_name",
-      "customer_ico",
-      "customer_dic",
-      "customer_ic_dph",
-      "subtotal",
-      "vat_total",
-      "total",
-      "reverse_charge",
-      "reverse_charge_type",
-      "advance_invoice_id",
-      "advance_amount",
-      "deleted_at",
-      "cancelled_at",
-    ],
-  },
-  purchase_invoices: {
-    datum: "issue_date",
-    stlpce: [
-      "issue_date",
-      "received_date",
-      "povodna_splatnost",
-      "invoice_number",
-      "supplier_name",
-      "supplier_ico",
-      "supplier_dic",
-      "supplier_ic_dph",
-      "amount_without_vat",
-      "vat_amount",
-      "amount_total",
-      "vat_breakdown",
-      "currency",
-      "deleted_at",
-    ],
-  },
-  expense_documents: {
-    datum: "issue_date",
-    stlpce: [
-      "issue_date",
-      "document_number",
-      "supplier_name",
-      "supplier_ico",
-      "supplier_ic_dph",
-      "total_amount",
-      "net_amount",
-      "vat_amount",
-      "vat_rate",
-      "vat_breakdown",
-      "currency",
-    ],
-  },
+export const OBDOBIE_STLPCE: Record<TabulkaDokladu, { stlpce: readonly string[] }> = {
+  invoices: { stlpce: ZAMOK_OBDOBIA.invoices },
+  purchase_invoices: { stlpce: ZAMOK_OBDOBIA.purchase_invoices },
+  expense_documents: { stlpce: ZAMOK_OBDOBIA.expense_documents },
 };
 
-/** Patrí doklad (pôvodný alebo po zmene dátumu) do uzavretého obdobia? */
+/**
+ * Patrí doklad (pôvodný alebo po zmene) do uzavretého obdobia? Rozhoduje deň
+ * vystavenia aj deň, ktorým ide do výkazu DPH (vydaná: deň dodania, prijatá:
+ * deň odpočtu) — `denZamku`.
+ */
 export function vUzavretomObdobi(
   tab: TabulkaDokladu,
   zamknuteDo: string | null | undefined,
   ...riadky: (Record<string, unknown> | null | undefined)[]
 ): boolean {
   if (!zamknuteDo) return false;
-  const hranica = String(zamknuteDo).slice(0, 10);
-  const k = OBDOBIE_STLPCE[tab].datum;
-  return riadky.some((r) => {
-    const d = r?.[k];
-    return typeof d === "string" && d.length >= 10 && d.slice(0, 10) <= hranica;
-  });
+  return riadky.some((r) => denVZamku(tab, r, zamknuteDo));
 }
 
 /**

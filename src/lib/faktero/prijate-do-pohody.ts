@@ -8,7 +8,8 @@
 */
 
 import { jeSamozdanenie } from "./datum-prijatia";
-import { najblizsiaSadzba, zoradPodlaSadzby } from "./vat-rates";
+import { jeClenenieSPrenesenim } from "./export-varovania";
+import { krajinaDane, najblizsiaSadzba, zakladnaSadzba, zoradPodlaSadzby } from "./vat-rates";
 import { prepocitajPolozku, sumySamofaktury } from "./samofakturacia";
 import { maPopisPrijatej, textPrijatejFaktury } from "./text-dokladu";
 import { jeRozpisNaKontrole } from "./rozpis-na-kontrole";
@@ -35,21 +36,79 @@ export type PolozkaPrijatej = {
   vat_category?: string | null;
 };
 
+/** Riadok rozpisu DPH alebo položka v prenesení (`pdp`, `reverse_charge`, kategória `reverse_charge`). */
+export const jeRiadokVPreneseni = (x: any): boolean =>
+  x?.pdp === true || x?.reverse_charge === true || x?.vat_category === "reverse_charge";
+
 /**
  * Celá faktúra v prenesení daňovej povinnosti (§ 69 ods. 12) — dodávateľ
- * neúčtoval žiadnu daň a odvedie ju odberateľ. Formulár ukladá len
- * `dph_rezim: "samozdanenie"`, čítanie dokladu aj `reverse_charge`.
+ * neúčtoval žiadnu daň a odvedie ju odberateľ. **Jediný zdroj pravdy** pre
+ * exporty prijatých faktúr (Pohoda súbor aj konektor, Money, Flexi, Omega,
+ * MRP, CSV) aj pre rozpis DPH. Príznak nesie doklad rôzne:
+ * - `dph_rezim: "samozdanenie"` (formulár „Daň platím ja – § 69“),
+ * - `reverse_charge` (čítanie dokladu),
+ * - uložený rozpis DPH, ktorého všetky riadky sú v prenesení (`pdp` /
+ *   `vat_category: "reverse_charge"`),
+ * - členenie DPH pre prenesenie (PDsluz, PDtovar, PDpdp…) na doklade bez
+ *   režimu DPH — rovnako ako výkazy (`odvodenePdp` v dph-vykazy.server.ts).
+ * Faktúra s daňou nie je celá v prenesení (zmiešaná rieši riadky).
+ *
+ * QA-C-PF2 (13. 11. 2026): len režim „samozdanenie“ a riadok rozpisu
+ * `{ sadzba: 0, pdp: true }` — do Pohody išla v `priceNone` bez sadzby.
  */
-export const celaPdp = (p: any) =>
-  (p?.reverse_charge === true || p?.dph_rezim === "samozdanenie") &&
-  !Number(p?.vat_amount ?? 0);
+export function jePrenesenieCele(p: any): boolean {
+  if (!p || Number(p?.vat_amount ?? 0)) return false;
+  if (p.reverse_charge === true || p.dph_rezim === "samozdanenie") return true;
+  const rozpis = (Array.isArray(p.vat_breakdown) ? p.vat_breakdown : []).filter(
+    (x: any) => Number(x?.zaklad ?? 0) || Number(x?.dph ?? 0),
+  );
+  if (rozpis.length && rozpis.every(jeRiadokVPreneseni)) return true;
+  return !String(p.dph_rezim ?? "").trim() && jeClenenieSPrenesenim(p.pohoda_clenenie_dph);
+}
+
+/** Staršie meno — celá faktúra v prenesení (`jePrenesenieCele`). */
+export const celaPdp = (p: any) => jePrenesenieCele(p);
+
+/**
+ * Celý doklad bez dane sa samozdaňuje — prenesenie (§ 69 ods. 12) alebo
+ * nadobudnutie tovaru z EÚ. Riadky bez sadzby potrebujú pre účtovný program
+ * základnú sadzbu, inak z nich daň nevypočíta.
+ */
+export function jeSamozdanenieCele(p: any): boolean {
+  if (!p || Number(p?.vat_amount ?? 0)) return false;
+  return jePrenesenieCele(p) || p.dph_rezim === "nadobudnutie";
+}
+
+/** Riadky bez dane, ktoré do priznania nepatria — tie sadzbu nedostanú. */
+const MIMO_SAMOZDANENIA = ["exempt", "out_of_scope"];
+
+/**
+ * Sadzba samozdanenia pre účtovné programy. Prenesený riadok (alebo riadok
+ * celého samozdaneného dokladu) s nulovou sadzbou dostane základnú sadzbu
+ * krajiny firmy k dňu dodania — so sadzbou a daňou 0 ho účtovný program
+ * zaúčtuje ako prenesenie a daň si vypočíta (Pohoda `priceHigh` s členením
+ * PDsluz/PDpdp, MRP daň príjemcu, Money/Flexi základ v sadzbe). Bez toho
+ * išiel do „bez DPH“ (Pohoda `priceNone`, Money `Zaklad0`, Flexi `sumOsv`)
+ * a samozdanenie chýbalo. Sadzba uvedená na riadku (23 %) ostáva.
+ */
+export function sadzbaSamozdanenia<T extends { sadzba: number; dph?: number; pdp?: boolean; vat_category?: string | null }>(
+  riadky: T[],
+  opts: { cele: boolean; krajina?: string | null; den?: string | null },
+): T[] {
+  const zakladna = zakladnaSadzba(krajinaDane(opts.krajina), opts.den ?? null);
+  return riadky.map((r) => {
+    if (Number(r.sadzba) > 0 || Number(r.dph ?? 0)) return r;
+    const prenesene = r.pdp === true || r.vat_category === "reverse_charge";
+    if (!prenesene && !(opts.cele && !MIMO_SAMOZDANENIA.includes(String(r.vat_category ?? "")))) return r;
+    return { ...r, sadzba: zakladna };
+  });
+}
 
 const jePdp = (x: any, p: any) =>
-  x?.pdp === true ||
-  x?.reverse_charge === true ||
+  jeRiadokVPreneseni(x) ||
   // Celá faktúra v prenesení: položky bez dane sú prenesené — aj keď je pri
   // nich uvedená sadzba, ktorú si odberateľ dopočíta.
-  celaPdp(p) ||
+  jePrenesenieCele(p) ||
   ((p?.reverse_charge === true || p?.dph_rezim === "samozdanenie") && !(Number(x?.vat_rate) > 0));
 
 /**
@@ -263,6 +322,7 @@ function zalohovaAkoDoklad(d: Record<string, unknown>, spolu: number): Record<st
     pohoda_clenenie_dph: null,
     kv_clenenie: null,
     _pdp: false,
+    _samozdanenieCele: false,
     _rezim: null,
     odpocet: null,
     _datumDph: d.issue_date,
@@ -336,7 +396,12 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     // Skutočný dátum prijatia — odpočet DPH nebude skôr (neskorší z DUZP a prijatia).
     _datumPrijatia: p.received_date || null,
     // Samozdanenie: odpočet aj daň v období dodania, prijatie ho neposúva.
-    _samozdanenie: jeSamozdanenie(p) || Boolean(celaPdp(p)),
+    _samozdanenie: jeSamozdanenie(p) || jePrenesenieCele(p),
+    /*
+      Celý doklad bez dane sa samozdaňuje (prenesenie alebo nadobudnutie) —
+      export dá riadkom bez sadzby základnú sadzbu (`sadzbaSamozdanenia`).
+    */
+    _samozdanenieCele: jeSamozdanenieCele(p),
     // Partner v adresári — pre párovanie s kartou v Pohode (voľba firmy).
     customer_id: p.customer_id ?? null,
     _splatnost: p.due_date,
@@ -350,7 +415,7 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     // Nárok na odpočet DPH; `false` = Faktero DPH do výkazu nezapočíta.
     odpocet: p.odpocet,
     // Celá faktúra v prenesení — hlavička dostane členenie pre prenesenie a KV B.1.
-    _pdp: celaPdp(p),
+    _pdp: jePrenesenieCele(p),
     // Zaúčtovaná vo Fakteri — pred odovzdaním musí mať predkontáciu aj členenie.
     _zauctovane: Boolean(p.zauctovane_at),
     // Odberateľ na doklade je iná firma — do Pohody nejde, kým to človek nepotvrdí.

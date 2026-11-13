@@ -233,6 +233,9 @@ export const createExpenseFn = createServerFn({ method: "POST" })
     */
     const bezFotky = chybaFotkyZAppky({ zAppky, filePath: data.file_path });
     if (bezFotky) throw new Error(bezFotky);
+    // Zaokrúhlenie najviac ±0,02 € pri hotovosti, inak ako prijatá faktúra (QA 13. 11.).
+    const zlyZaokr = (await import("./zaokruhlenie-blocku")).chybaZaokruhleniaBlocku(data);
+    if (zlyZaokr) throw new Error(zlyZaokr);
     /*
       Poistka proti dvojitému zápisu. Appka sa na duplicitu pýta ešte pred
       uložením, ale doklad sa odosiela z fronty na pozadí — pokus, ktorý spadne
@@ -412,6 +415,17 @@ export const updateExpenseFn = createServerFn({ method: "POST" })
       poslal by sa účtovníkovi druhý raz.
     */
     const { status: _stav, ...patch } = data.patch;
+    // Zaokrúhlenie bločku najviac ±0,02 € pri hotovosti, inak ako prijatá faktúra (QA 13. 11.).
+    if ("items" in patch || "payment_method" in patch || "currency" in patch) {
+      const { data: terajsi } = await supabase
+        .from("expense_documents")
+        .select("items, payment_method, currency")
+        .eq("id", data.id)
+        .maybeSingle();
+      const { chybaZaokruhleniaBlocku } = await import("./zaokruhlenie-blocku");
+      const zlyZaokr = chybaZaokruhleniaBlocku({ ...(terajsi ?? {}), ...patch });
+      if (zlyZaokr) throw new Error(zlyZaokr);
+    }
     // Krajina dodávateľa nasleduje IČ DPH, keď ju formulár neuvádza (pravidlo DPH zahraničného bločku).
     if ("supplier_country" in patch || "supplier_ic_dph" in patch) {
       const k = (await import("./krajina-blocku")).krajinaBlocku({

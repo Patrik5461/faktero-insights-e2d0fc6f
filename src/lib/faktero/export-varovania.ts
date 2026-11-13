@@ -70,13 +70,19 @@ export function varovaniaPrijatejPredExportom(
       );
   }
 
-  // 2) Členenie s prenesením, ale doklad prenesenie nemá.
+  /*
+    2) Členenie s prenesením, ale doklad prenesenie nemá. Doklad bez režimu
+    DPH a bez dane s takým členením export berie ako prenesenie
+    (`jePrenesenieCele` v prijate-do-pohody.ts) — varuje sa len pri režime
+    zvolenom inak (tuzemsko, bez dane…) alebo pri faktúre s daňou.
+  */
   const rezim = kod(p.dph_rezim);
   if (
     jeClenenieSPrenesenim(p.pohoda_clenenie_dph, nastavenia?.clenenieDphPdpPrijata) &&
     !p.reverse_charge &&
     rezim !== "samozdanenie" &&
-    rezim !== "nadobudnutie"
+    rezim !== "nadobudnutie" &&
+    (rezim || Number(p.vat_amount ?? 0) || !jeClenenieSPrenesenim(p.pohoda_clenenie_dph))
   )
     out.push(
       `${cislo} — členenie DPH ${kod(p.pohoda_clenenie_dph)} je pre prenesenie daňovej povinnosti, ale doklad nemá zaškrtnuté prenesenie — Pohoda daň nesamozdaní`,

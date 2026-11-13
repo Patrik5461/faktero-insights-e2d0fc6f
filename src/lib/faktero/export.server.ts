@@ -67,7 +67,7 @@ import {
   type NastaveniaExportu,
 } from "./export-nastavenia";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
-import { polozkyPrijatej, type PolozkaPrijatej } from "./prijate-do-pohody";
+import { polozkyPrijatej, sadzbaSamozdanenia, type PolozkaPrijatej } from "./prijate-do-pohody";
 import {
   clenenieBlockuPodlaZakona,
   jeHotovostnyBlocek,
@@ -1804,7 +1804,21 @@ export function polozkyDokladov(opts: {
           ? sDoplnenymDodavatelom(d1, nastavenia?.dodavateliaPrijatych?.[String(d1?.id ?? "")])
           : d1;
       const tab = sadzbyKuDnu(String(d?.issue_date ?? ""), krajinaDane(company.country));
-      const rozpis = rozpisDokladu(d);
+      /*
+        Samozdanenie (prenesenie § 69 ods. 12, nadobudnutie z EÚ): riadok bez
+        sadzby dostane základnú sadzbu k dňu dodania — Pohoda ho tak zaúčtuje
+        v `priceHigh` s daňou 0 a členením pre prenesenie a daň samozdaní.
+        V `priceNone` by samozdanenie chýbalo (QA-C-PF2, 13. 11. 2026).
+      */
+      const samozdanenie = <T extends { sadzba: number; dph?: number; pdp?: boolean; vat_category?: string | null }>(
+        riadky: T[],
+      ) =>
+        sadzbaSamozdanenia(riadky, {
+          cele: Boolean(d?._samozdanenieCele),
+          krajina: company?.country,
+          den: String(d?._datumDph || d?.issue_date || ""),
+        });
+      const rozpis = samozdanenie(rozpisDokladu(d) as (RozpisDph & { pdp?: boolean; vat_category?: string })[]);
       const zaSadzbu = (p: Priehradka) =>
         rozpis.filter((x) => priehradka(kodSadzby(x.sadzba, tab)) === p);
       const zaklad = (arr: RozpisDph[]) => arr.reduce((a, x) => a + x.zaklad, 0);
@@ -1980,7 +1994,7 @@ export function polozkyDokladov(opts: {
       const polozkyFaktury: any[] = rozuctovany
         ? []
         : Array.isArray(d?._polozkyPrijatej)
-          ? d._polozkyPrijatej
+          ? samozdanenie(d._polozkyPrijatej as PolozkaPrijatej[])
           : blocek && nastavenia?.polozkyBlockov
             ? polozkyBlockuPrePohodu(d, rozpis, predkontaciaJedna ?? null, clenenieJedno ?? null)
             : [];
@@ -2298,13 +2312,22 @@ export function polozkyDokladov(opts: {
       /*
         Položky z rozpisu DPH: v cudzej mene vždy (súhrn sadzby nenesie), inak
         len keď si to firma zapla a doklad iné položky nemá.
+
+        Zmiešaná faktúra (23 % + prenesenie) ide po riadkoch rozpisu vždy: po
+        samozdanení sú obe časti v sadzbe 23 % a súhrn by ich zlial do
+        `priceHigh` s jedným členením dokladu — prenesená časť potrebuje
+        členenie pre prenesenie a KV B.1, tuzemská členenie dokladu.
       */
+      const zmiesanePrenesenie =
+        prijatyDoklad &&
+        rozpis.some((r) => (r as { pdp?: boolean }).pdp) &&
+        rozpis.some((r) => !(r as { pdp?: boolean }).pdp);
       const xmlZRozpisu =
         xmlPolozkyFaktury || polozkyRozuct
           ? ""
           : cudziaD && rozpis.length
             ? polozkyZRozpisu("foreignCurrency")
-            : ex.polozkyZRozpisu && prijatyDoklad && rozpis.length
+            : (ex.polozkyZRozpisu || zmiesanePrenesenie) && prijatyDoklad && rozpis.length
               ? polozkyZRozpisu("homeCurrency")
               : "";
 

@@ -154,3 +154,36 @@ export async function vlozOdoslanuUpomienku(t, { invoiceId, companyId, cislo }) 
   });
   if (r.status >= 300) throw new Error(`upomienka: ${r.status} ${(await r.text()).slice(0, 200)}`);
 }
+
+/**
+ * Vyplní editor rozpisu DPH (`EditorRozpisuDph`, prijatá faktúra aj bloček)
+ * od 13. 11. 2026 — sadzba je výber zo zákonných sadzieb, DPH sa dopočíta
+ * zo základu. `riadky` = [{ sadzba: 23, zaklad: 100 }, …]; chýbajúce riadky
+ * pridá „Pridať sadzbu“. Vráti DPH, ktoré editor dopočítal (čísla).
+ */
+export async function vyplnRozpisDph(page, riadky, koren = page) {
+  const editor = koren.locator('[data-testid="editor-rozpisu-dph"]').first();
+  await editor.waitFor({ timeout: 20000 });
+  const tr = editor.locator("tbody tr");
+  while ((await tr.count()) < riadky.length)
+    await editor.getByRole("button", { name: "Pridať sadzbu" }).click();
+  const dph = [];
+  for (let i = 0; i < riadky.length; i++) {
+    const r = tr.nth(i);
+    await r.getByLabel("Sadzba", { exact: true }).selectOption(`s:${riadky[i].sadzba}`);
+    await r.getByLabel("Základ dane", { exact: true }).fill(String(riadky[i].zaklad));
+    const pole = r.getByLabel("DPH", { exact: true });
+    const cakane = Math.round(riadky[i].zaklad * riadky[i].sadzba) / 100;
+    const koniec = Date.now() + 5000;
+    let v;
+    do {
+      v = Number((await pole.inputValue()).replace(/\s/g, "").replace(",", "."));
+      if (Math.abs(v - cakane) < 0.005) break;
+      await page.waitForTimeout(150);
+    } while (Date.now() < koniec);
+    if (Math.abs(v - cakane) >= 0.005)
+      throw new Error(`rozpis DPH: riadok ${i + 1} dopočítal DPH ${v}, čakal som ${cakane}`);
+    dph.push(v);
+  }
+  return dph;
+}

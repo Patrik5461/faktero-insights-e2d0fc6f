@@ -221,3 +221,34 @@ describe("export bločku so zaokrúhlením do Pohody", () => {
     expect(r.reduce((a, x) => a + x.zaklad, 0)).toBeCloseTo(10, 2);
   });
 });
+
+describe("limit zaokrúhlenia bločku (QA 13. 11.: 0,80 € sa uložilo bez varovania)", () => {
+  it("hotovosť v eurách najviac ±0,02 €", async () => {
+    const z = await import("./zaokruhlenie-blocku");
+    expect(z.maxZaokruhleniaBlocku("hotovost", "EUR")).toBe(0.02);
+    expect(z.jePovoleneZaokruhlenieBlocku(-0.02, "hotovost", "EUR")).toBe(true);
+    expect(z.jePovoleneZaokruhlenieBlocku(0.03, "hotovost", "EUR")).toBe(false);
+    expect(z.jePovoleneZaokruhlenieBlocku(0.8, "hotovost", "EUR")).toBe(false);
+  });
+
+  it("iná platba a mena ako prijatá faktúra (0,50 €, 1 Kč)", async () => {
+    const z = await import("./zaokruhlenie-blocku");
+    expect(z.maxZaokruhleniaBlocku("karta", "EUR")).toBe(0.5);
+    expect(z.jePovoleneZaokruhlenieBlocku(0.5, "karta", "EUR")).toBe(true);
+    expect(z.jePovoleneZaokruhlenieBlocku(0.8, "karta", "EUR")).toBe(false);
+    expect(z.maxZaokruhleniaBlocku("hotovost", "CZK")).toBe(1);
+    expect(z.maxZaokruhleniaBlocku(null, null)).toBe(0.5);
+  });
+
+  it("server a API: chyba z položky zaokrúhlenia s dôvodom", async () => {
+    const z = await import("./zaokruhlenie-blocku");
+    const items = z.nastavZaokruhlenie([{ name: "Káva", total: 2.4 }], 0.8);
+    const chyba = z.chybaZaokruhleniaBlocku({ items, payment_method: "hotovost", currency: "EUR" });
+    expect(chyba).toContain("0,80 EUR");
+    expect(chyba).toContain("±0,02 EUR");
+    expect(chyba).toContain("5 centov");
+    expect(z.chybaZaokruhleniaBlocku({ items: z.nastavZaokruhlenie([], -0.02), payment_method: "hotovost" })).toBeNull();
+    // Bez zaokrúhlenia nič.
+    expect(z.chybaZaokruhleniaBlocku({ items: null, payment_method: "karta" })).toBeNull();
+  });
+});
