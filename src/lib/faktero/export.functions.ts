@@ -37,6 +37,11 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       datumZauctovania?: string | null;
       /** Poradie faktúr v dávke. */
       radenie?: "datum" | "cislo" | "nahratie" | null;
+      /**
+       * Človek videl závažné chyby (`zavazne`) a export do Pohody potvrdil —
+       * faktúry s obsahovou prekážkou idú do súboru aj tak.
+       */
+      potvrdene_varovania?: boolean;
     }) => input,
   )
   .handler(async ({ data, context }) => {
@@ -132,16 +137,45 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       ? String(data.datumZauctovania)
       : null;
 
+    const nastavenia = {
+      ...nastaveniaFaktur(company),
+      // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
+      ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
+      ...(datumZauctovania ? { datumZauctovaniaPevny: datumZauctovania } : {}),
+    };
+
+    /*
+      Pohoda: obsahová prekážka (prenesenie bez IČ DPH, DPH nesediaca so
+      sadzbou, bez kurzu…) export nezastaví — prvé volanie vráti `zavazne`
+      bez súboru, po potvrdení („Exportovať aj tak“) idú faktúry do súboru
+      (Patrik 13. 11. 2026). Konektor ich naďalej zastaví.
+    */
+    const pohoda = data.format === "pohoda_xml";
+    if (pohoda && !data.potvrdene_varovania) {
+      const { pohodaPrekazka } = await import("./export.server");
+      const zavazne = bundle
+        .map(({ invoice, items }) => pohodaPrekazka(invoice, company, { items, nastavenia }))
+        .filter((d): d is string => !!d);
+      if (zavazne.length)
+        return {
+          jobId: null as string | null,
+          fileName: "",
+          content: "",
+          mime: strategy.mime,
+          encoding: strategy.encoding,
+          invoiceCount: 0,
+          oznacene: false,
+          preskocene: uzOdovzdane,
+          zavazne,
+          varovania: [] as string[],
+        };
+    }
+
     const built = await strategy.build({
       company,
       invoices: bundle,
       zalohy,
-      nastavenia: {
-        ...nastaveniaFaktur(company),
-        // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
-        ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
-        ...(datumZauctovania ? { datumZauctovaniaPevny: datumZauctovania } : {}),
-      },
+      nastavenia: { ...nastavenia, ...(pohoda && data.potvrdene_varovania ? { ajSPrekazkami: true } : {}) },
     });
 
     // Doklad, ktorý do súboru neprešiel, sa nesmie tváriť ako odovzdaný —
@@ -161,6 +195,8 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         invoiceCount: vyvezene.length,
         oznacene: false,
         preskocene: built.preskocene ?? [],
+        zavazne: [] as string[],
+        varovania: [] as string[],
       };
     }
 
@@ -211,6 +247,8 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       invoiceCount: vyvezene.length,
       oznacene: oznacit,
       preskocene: [...uzOdovzdane, ...(built.preskocene ?? [])],
+      zavazne: [] as string[],
+      varovania: [] as string[],
     };
   });
 

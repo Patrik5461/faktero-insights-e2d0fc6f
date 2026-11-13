@@ -48,6 +48,7 @@ import {
   idDokladuPohody,
   jeTuzemskePdp,
   prekazkaDokladu,
+  prekazkaStavuDokladu,
   prekazkaVydanej,
 } from "./pohoda-kontrola";
 import { domacaMena, domacejZaJednotku, kurzZaMnozstvo } from "./kurzy";
@@ -245,6 +246,13 @@ function kvZPredvoleneho(kod: string | null | undefined): string {
 
 /** Predkontácia a členenie DPH — kódy z Pohody účtovníka, ak si ich vyplnil. */
 export type PohodaNastavenia = {
+  /**
+   * Ručný export po potvrdení „Exportovať aj tak“ — obsahové prekážky
+   * (`pohodaPrekazka`, `prekazkaDokladu`) doklad nevyradia, ide do súboru.
+   * Prekážky stavu (cudzia firma, duplicita) platia ďalej. Konektor ho nikdy
+   * nezapína.
+   */
+  ajSPrekazkami?: boolean;
   /** Predkontácia pre bežnú faktúru, napr. `3Fv`. */
   predkontacia?: string | null;
   /** Predkontácia pre zálohovú faktúru. */
@@ -496,7 +504,7 @@ export function pohodaPrekazka(
   const domaca = domacaMenaFirmy(company);
   const mena = String(invoice?.currency ?? domaca).toUpperCase() || domaca;
   if (mena !== domaca && !(Number((invoice as any)?.exchange_rate) > 0))
-    return `${invoice?.invoice_number ?? "?"} — faktúra v mene ${mena} nemá kurz`;
+    return `${invoice?.invoice_number ?? "?"} — faktúra v mene ${mena} nemá kurz — bez kurzu pôjde do Pohody s kurzom 0 a sumy v domácej mene nebudú sedieť`;
   if (kontrola) return prekazkaVydanej(invoice as any, kontrola.items as any[], company as any, kontrola.nastavenia as any);
   return null;
 }
@@ -724,9 +732,10 @@ export function polozkyFaktur(opts: {
 }): string {
   const { company, nastavenia } = opts;
   const cz = krajinaDane(company?.country) === "CZ";
-  const vsetky = opts.invoices.filter(
-    ({ invoice, items }) => !pohodaPrekazka(invoice, company, { items, nastavenia }),
-  );
+  // Po potvrdení ručného exportu idú aj faktúry s prekážkou (`ajSPrekazkami`).
+  const vsetky = nastavenia?.ajSPrekazkami
+    ? opts.invoices
+    : opts.invoices.filter(({ invoice, items }) => !pohodaPrekazka(invoice, company, { items, nastavenia }));
   /*
     Daňový doklad k prijatej platbe Pohoda SK vedie medzi internými dokladmi
     (typ faktúry preň schéma nemá) — ide preto cez agendu Interné doklady.
@@ -1767,10 +1776,13 @@ export function polozkyDokladov(opts: {
     súboru nejde — volajúci ho podľa `prekazkaDokladu` neoznačí ako odovzdaný.
     Daňový doklad k platbe je náš vystavený; prešiel kontrolou faktúr.
   */
+  // Po potvrdení ručného exportu (`ajSPrekazkami`) zastaví len prekážka stavu (cudzia firma, duplicita).
   const doklady = opts.doklady.filter((d) =>
-    d?._typPohody === "danovyDokladKPlatbe"
-      ? (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca || Number(d?._kurz) > 0
-      : !prekazkaDokladu(d as any, company as any, nastavenia as any),
+    nastavenia?.ajSPrekazkami
+      ? !prekazkaStavuDokladu(d as any)
+      : d?._typPohody === "danovyDokladKPlatbe"
+        ? (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca || Number(d?._kurz) > 0
+        : !prekazkaDokladu(d as any, company as any, nastavenia as any),
   );
 
   return doklady
@@ -3103,9 +3115,12 @@ export const POHODA_XML: ExportStrategy = {
   encoding: "utf-8",
   mime: "application/xml",
   build({ company, invoices, nastavenia, zalohy, opravovane, povodneCisla, zakazky }) {
-    const preskocene = invoices
-      .map(({ invoice, items }) => pohodaPrekazka(invoice, company, { items, nastavenia }))
-      .filter((d): d is string => !!d);
+    // Po potvrdení ručného exportu (`ajSPrekazkami`) nevypadne nič.
+    const preskocene = nastavenia?.ajSPrekazkami
+      ? []
+      : invoices
+          .map(({ invoice, items }) => pohodaPrekazka(invoice, company, { items, nastavenia }))
+          .filter((d): d is string => !!d);
     // Prázdny balík schéma Pohody nepripúšťa a účtovníčke by prišiel súbor,
     // ktorý sa tvári ako export, ale nie je v ňom nič.
     if (preskocene.length === invoices.length) {

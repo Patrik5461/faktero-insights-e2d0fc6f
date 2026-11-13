@@ -12,6 +12,10 @@ export type OcrBlocek = {
   supplier?: string | null;
   ico?: string | null;
   ic_dph?: string | null;
+  /** Štát predajcu (ISO kód) podľa adresy alebo IČ DPH na doklade. */
+  supplier_country?: string | null;
+  /** Adresa predajcu jedným riadkom. */
+  supplier_address?: string | null;
   total?: number | null;
   vat_amount?: number | null;
   vat_rate?: number | null;
@@ -48,11 +52,14 @@ function pokyn(krajina: KrajinaDane): string {
   const mena = MENA[krajina];
   return `Si OCR asistent pre pokladničné bločky a faktúry. Z dokladu prečítaj údaje.
 Doklad môže mať viac strán — položky pozbieraj zo všetkých a sumy vezmi z tej, kde je celkový súčet.
-Sadzby DPH ${KDE[krajina]} sú ${zoznam} percent — inú nevracaj.
+Sadzby DPH ${KDE[krajina]} sú ${zoznam} percent — inú nevracaj, okrem dokladu od predajcu z inej krajiny.
+Doklad od predajcu z inej krajiny (palivo v Maďarsku, hotel v Rakúsku — adresa či IČ DPH s cudzím prefixom)
+nesie sadzby a menu svojho štátu: prepíš ich presne z dokladu (napr. 27, 18, 5 v Maďarsku) a do
+"supplier_country" daj kód štátu predajcu (HU, AT, CZ, PL…). Pri domácom doklade "supplier_country" je "${krajina}".
 Dátum vráť tak, ako je na doklade, vo formáte YYYY-MM-DD.
 Keď údaj na doklade nie je, daj null; nič si nevymýšľaj.
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"net_amount":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"vat_breakdown":[{"rate":${vyber},"base":number,"vat":number}],"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"rounding":number|null,"payment_method":"hotovost"|"karta"|"prevod"|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}
+{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"supplier_country":"SK"|"CZ"|"HU"|"AT"|"PL"|string|null,"supplier_address":string|null,"total":number|null,"net_amount":number|null,"vat_amount":number|null,"vat_rate":${vyber}|number|null,"vat_breakdown":[{"rate":${vyber}|number,"base":number,"vat":number}],"currency":"${mena}"|string,"date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"rounding":number|null,"payment_method":"hotovost"|"karta"|"prevod"|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}|number}]}
 "total" je suma na úhradu (po zaokrúhlení). Zaokrúhlenie („Zaokrúhlenie", napr. -0.02) daj do "rounding",
 nie medzi položky; keď na doklade nie je, null.
 "payment_method" je spôsob úhrady vytlačený na doklade: "hotovost" (hotovosť, v hotovosti, cash,

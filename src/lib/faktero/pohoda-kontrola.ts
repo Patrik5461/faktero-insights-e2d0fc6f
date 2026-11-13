@@ -6,9 +6,11 @@ import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
   zle: prenesenie daňovej povinnosti bez IČ DPH odberateľa (KV A.2 sa nedá
   vyplniť), prijaté prenesenie bez členenia pre samozdanenie, DPH rovnú
   základu, zaúčtované doklady bez predkontácie, hotovostné bločky bez
-  pokladne. Taký doklad sa do súboru nepustí — ručný export, mesačný balík aj
-  konektor ho vynechajú a povedia prečo („číslo — dôvod“, ako ostatné
-  vynechané doklady).
+  pokladne. Automatický konektor a mesačný balík z cronu taký doklad
+  vynechajú a povedia prečo („číslo — dôvod“). Ručný export (Patrik 13. 11.
+  2026: „môže upozorniť, ale má dovoliť exportovať aj napriek významným
+  chybám“) ich ukáže ako „Závažné“ a po potvrdení doklad pustí — okrem
+  prekážok stavu (`prekazkaStavuDokladu`: faktúra cudzej firmy, duplicita).
 
   Čisté funkcie bez prístupu k databáze — volá ich generátor XML
   (`export.server.ts`) aj prehľad pred odovzdaním.
@@ -393,6 +395,34 @@ export function clenenieVydanejPdp(nastavenia?: Riadok | null, company?: Riadok 
 }
 
 /**
+ * Prekážka stavu, nie obsahu: faktúra inej firmy a duplicita (ten istý doklad
+ * dvakrát v evidencii). Tú neprebije ani potvrdenie pri ručnom exporte —
+ * doklad by v Pohode bol dvakrát alebo v cudzej firme.
+ */
+export function prekazkaStavuDokladu(d: Riadok): string | null {
+  const blocek = !d?._typPohody;
+  const cislo = d?._povodneCislo || d?.document_number || (blocek ? "bloček" : "?");
+  // Faktúra inej firmy (iný odberateľ) — kým človek nepotvrdí, že patrí tejto firme.
+  if (d?._odberatelNesedi) return `${cislo} — ${DOVOD_CUDZIA}`;
+  // Duplicitný doklad (ten istý dvakrát v evidencii) — `oznacDuplicity` v duplicita-zauctovania.server.ts.
+  if (d?._duplicita) return `${cislo} — ${String(d._duplicita)}`;
+  return null;
+}
+
+/**
+ * Obsahová prekážka (zlé DPH, chýbajúce členenie, kurz…) — pri ručnom
+ * exporte len „Závažné“ upozornenie; prekážka stavu sem nepatrí.
+ */
+export function obsahovaPrekazkaDokladu(
+  d: Riadok,
+  company: Riadok,
+  nastavenia?: Riadok | null,
+): string | null {
+  if (prekazkaStavuDokladu(d)) return null;
+  return prekazkaDokladu(d, company, nastavenia);
+}
+
+/**
  * Dôvod, prečo prijatý doklad (prijatá faktúra v tvare `prijataAkoDoklad`
  * alebo bloček) do Pohody nesmie ísť — alebo `null`.
  */
@@ -403,10 +433,10 @@ export function prekazkaDokladu(
 ): string | null {
   const blocek = !d?._typPohody;
   const cislo = d?._povodneCislo || d?.document_number || (blocek ? "bloček" : "?");
-  // Faktúra inej firmy (iný odberateľ) — kým človek nepotvrdí, že patrí tejto firme.
-  if (d?._odberatelNesedi) return `${cislo} — ${DOVOD_CUDZIA}`;
-  // Duplicitný doklad (ten istý dvakrát v evidencii) — `oznacDuplicity` v duplicita-zauctovania.server.ts.
-  if (d?._duplicita) return `${cislo} — ${String(d._duplicita)}`;
+  {
+    const dovod = prekazkaStavuDokladu(d);
+    if (dovod) return dovod;
+  }
   {
     const dovod = prekazkaPoliPrijateho(d);
     if (dovod) return dovod;
@@ -432,8 +462,8 @@ export function prekazkaDokladu(
     const kurz = blocek ? Number(d?.exchange_rate) : Number(d?._kurz);
     if (!(kurz > 0))
       return blocek
-        ? `${cislo} — bloček v mene ${mena} nemá kurz — otvorte ho a uložte znova, kurz sa doplní`
-        : `${cislo} — doklad v mene ${mena} nemá kurz`;
+        ? `${cislo} — bloček v mene ${mena} nemá kurz — otvorte ho a uložte znova, kurz sa doplní (bez kurzu pôjde do Pohody s kurzom 0 a sumy v domácej mene nebudú sedieť)`
+        : `${cislo} — doklad v mene ${mena} nemá kurz — bez kurzu pôjde do Pohody s kurzom 0 a sumy v domácej mene nebudú sedieť`;
   }
 
   /*

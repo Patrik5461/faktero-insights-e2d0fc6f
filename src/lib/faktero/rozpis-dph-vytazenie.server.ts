@@ -53,7 +53,14 @@ export async function vytazRozpisDph(
   });
   if (!ai) return null;
   const { rozpisZVytazenia } = await import("./rozpis-dph-vytazeny");
-  const v = rozpisZVytazenia(ai, { krajina: args.krajina ?? "SK" });
+  /*
+    Odpočet zálohy najprv (ako Nespracované): nezdanená záloha zapísaná AI do
+    rozpisu či základu (Tempus-Car 40260037 → „30,5 %“) sa presunie preč,
+    zdanená zníži rozpis. Inak by opravný skript prečítal rozpis zle znova.
+  */
+  const { aiSOdpoctomZalohy } = await import("./odpocet-zalohy-vytazenie");
+  const upravene = aiSOdpoctomZalohy(ai, { krajina: args.krajina ?? "SK" }).ai;
+  const v = rozpisZVytazenia(upravene, { krajina: args.krajina ?? "SK" });
   const n = (x: unknown) => {
     const c = Number(x);
     return Number.isFinite(c) ? Math.abs(c) : 0;
@@ -66,8 +73,9 @@ export async function vytazRozpisDph(
     rozpis: v.rozpis.map((r) => ({ rate: r.sadzba, base: r.zaklad, vat: r.dph })),
     bezDph,
     dph,
-    spolu: n(ai.amount_total) || Math.round((bezDph + dph) * 100) / 100,
-    reverseCharge: v.prenesenie || ai.reverse_charge === true,
+    spolu: n(upravene.amount_total) || Math.round((bezDph + dph) * 100) / 100,
+    // Celá faktúra v prenesení len bez riadku s daňou (zmiešaná 23 % + PDP nie).
+    reverseCharge: v.prenesenie || (ai.reverse_charge === true && !v.rozpis.some((r) => Math.abs(r.dph) > 0.004)),
     ...(text ? { text } : {}),
     zdroj: v.zdroj,
     kontrola: v.kontrola,

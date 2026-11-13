@@ -16,6 +16,8 @@ export type ExpenseInput = {
   supplier_name?: string | null;
   supplier_ico?: string | null;
   supplier_ic_dph?: string | null;
+  /** Krajina dodávateľa (ISO); bez nej sa odvodí z IČ DPH alebo adresy. */
+  supplier_country?: string | null;
   document_number?: string | null;
   issue_date?: string | null;
   total_amount?: number | null;
@@ -69,6 +71,8 @@ const inputSchema = z.object({
   supplier_name: z.string().nullable().optional(),
   supplier_ico: z.string().nullable().optional(),
   supplier_ic_dph: z.string().nullable().optional(),
+  /** Krajina dodávateľa (ISO kód alebo názov) — bez nej sa odvodí z IČ DPH/adresy. */
+  supplier_country: z.string().max(60).nullable().optional(),
   document_number: z.string().nullable().optional(),
   issue_date: z.string().nullable().optional(),
   total_amount: z.number().nullable().optional(),
@@ -121,7 +125,17 @@ const inputSchema = z.object({
     .nullable()
     .optional(),
   vat_breakdown: z
-    .array(z.object({ sadzba: z.number(), zaklad: z.number(), dph: z.number() }))
+    .array(
+      /* Kategória a príznak prenesenia musia prejsť — bez nich riadok PDP (23 %, DPH 0)
+         spúšťač zákonných sadzieb odmietne ako nesediacu DPH. */
+      z.object({
+        sadzba: z.number(),
+        zaklad: z.number(),
+        dph: z.number(),
+        vat_category: z.string().nullable().optional(),
+        pdp: z.boolean().optional(),
+      }),
+    )
     .nullable()
     .optional(),
 });
@@ -297,11 +311,22 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       "expense_documents",
       data,
     );
+    /*
+      Krajina dodávateľa (13. 11. 2026): bez nej pravidlo DPH berie bloček za
+      palivo v Maďarsku ako slovenský a 27 % odmietne. Uvedená krajina, inak
+      prefix IČ DPH, inak štát na konci adresy z eKasy.
+    */
+    const supplierCountry = (await import("./krajina-blocku")).krajinaBlocku({
+      krajina: data.supplier_country,
+      icDph: data.supplier_ic_dph,
+      adresa: supplier_address,
+    });
     const zapis = (spracovany: boolean) =>
       supabase
         .from("expense_documents")
         .insert({
           ...data,
+          supplier_country: supplierCountry,
           // Ručný zápis bez obrázka nesmie mať zdroj „fotka“.
           source: zdrojVydavku(data.source, Boolean(data.file_path)),
           ...kurz,
@@ -387,6 +412,14 @@ export const updateExpenseFn = createServerFn({ method: "POST" })
       poslal by sa účtovníkovi druhý raz.
     */
     const { status: _stav, ...patch } = data.patch;
+    // Krajina dodávateľa nasleduje IČ DPH, keď ju formulár neuvádza (pravidlo DPH zahraničného bločku).
+    if ("supplier_country" in patch || "supplier_ic_dph" in patch) {
+      const k = (await import("./krajina-blocku")).krajinaBlocku({
+        krajina: patch.supplier_country,
+        icDph: patch.supplier_ic_dph,
+      });
+      if (k || "supplier_country" in patch) patch.supplier_country = k;
+    }
     /*
       Zmena meny alebo dňa nákupu: pôvodný kurz neplatí (bloček prepísaný
       z EUR na CZK ostával bez kurzu). Starý sa zmaže a doplní sa kurz ECB/ČNB
@@ -738,6 +771,11 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       polozky?: boolean | null;
       /** `xml` = len pohoda.xml bez CSV a skenov; predvolene ZIP. */
       format?: "zip" | "xml";
+      /**
+       * Človek videl závažné chyby (`zavazne`) a export potvrdil — doklady
+       * s obsahovou prekážkou idú do pohoda.xml aj tak.
+       */
+      potvrdene_varovania?: boolean;
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -881,15 +919,40 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
       await oznacDuplicity(supabase, data.company_id, "blocek", rows.filter((r: any) => !r.exported_at));
     }
-    const { subory: xmlPodlaRoka, preskocene } = pohodaXmlBlockov({
+    const { subory: xmlPodlaRoka, preskocene, zavazne } = pohodaXmlBlockov({
       firma,
       rows,
       nastavenia,
       oznacit: Boolean(data.mark_exported),
       datumZauctovania: datumZ,
       obdobie,
+      // Závažné chyby export nezastavia — najprv sa vrátia na potvrdenie.
+      ajSPrekazkami: true,
     });
+    /*
+      Prvé volanie so závažnými chybami vráti len ich zoznam — okno sa spýta
+      „Exportovať aj tak“ a až potvrdené volanie vyrobí súbor a označí doklady.
+    */
+    if (zavazne.length && !data.potvrdene_varovania)
+      return {
+        base64: "",
+        filename: "",
+        subory: [] as { fileName: string; xml: string }[],
+        count: 0,
+        v_xml: 0,
+        preskocene,
+        zavazne,
+        varovania: [] as string[],
+      };
     for (const x of xmlPodlaRoka) zip.file(x.nazov, x.xml);
+    if (zavazne.length)
+      zip.file(
+        "pohoda-skontrolovat.txt",
+        "\uFEFF" +
+          "Tieto doklady sú v pohoda.xml napriek závažnej chybe — po importe ich skontrolujte v Pohode:\n" +
+          zavazne.map((d) => `- ${d}`).join("\n") +
+          "\n",
+      );
     /*
       Čo do XML nešlo, musí byť vidieť aj v samotnom ZIP-e — inak to vyzerá,
       že XML „chýba“ (hotovostný bloček bez pokladne, zlá DPH…).
@@ -957,6 +1020,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       /** Koľko dokladov je v XML pre Pohodu (zvyšok je v `preskocene`). */
       v_xml: vXml,
       preskocene,
+      zavazne: [] as string[],
+      varovania: [] as string[],
     };
   });
 

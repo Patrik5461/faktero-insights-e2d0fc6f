@@ -17,6 +17,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
@@ -218,16 +219,23 @@ function ProformaListPage() {
     }
     setExportujem(true);
     try {
-      const r = await exportFn({
-        data: {
-          companyId: cid,
-          invoiceIds: ids,
-          format: "pohoda_xml",
-          oznacit: v.oznacit,
-          datumZauctovania: v.datumZauctovania,
-          radenie: v.radenie,
-        },
-      });
+      // Závažné chyby export nezastavia — okno sa spýta „Exportovať aj tak“.
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportFn({
+            data: {
+              companyId: cid,
+              invoiceIds: ids,
+              format: "pohoda_xml",
+              oznacit: v.oznacit,
+              datumZauctovania: v.datumZauctovania,
+              radenie: v.radenie,
+              potvrdene_varovania: potvrdene,
+            },
+          }),
+        t,
+      );
+      if (!r) return;
       const url = URL.createObjectURL(new Blob([r.content], { type: "application/xml;charset=utf-8" }));
       const a = document.createElement("a");
       a.href = url;

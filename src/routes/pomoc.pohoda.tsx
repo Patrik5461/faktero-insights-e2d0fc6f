@@ -618,9 +618,13 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
-          Doklad, ktorý by Pohoda zaúčtovala zle, do XML nejde a export vypíše prečo — napríklad
-          hotovostný bloček, keď sa bločky posielajú podľa platby a firma nemá vyplnenú skratku
-          pokladne. V ZIP-e je ten zoznam aj v súbore pohoda-nevyvezene.txt.
+          Doklad, ktorý by Pohoda mohla zaúčtovať zle, export pred stiahnutím ukáže v okne ako
+          závažnú chybu a povie prečo — napríklad hotovostný bloček, keď sa bločky posielajú podľa
+          platby a firma nemá vyplnenú skratku pokladne. Tlačidlom Exportovať aj tak pôjde do XML
+          aj tak a v ZIP-e je ten zoznam v súbore pohoda-skontrolovat.txt; tlačidlom Opravím to sa
+          nič nevyvezie. Automatický konektor taký doklad nepošle, kým ho neopravíte. Doklad, ktorý
+          je v evidencii dvakrát, alebo faktúra inej firmy do XML nejdú nikdy — tie sú
+          v pohoda-nevyvezene.txt.
         </p>
         <p>
           Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie a členenie DPH/KV</Link> v

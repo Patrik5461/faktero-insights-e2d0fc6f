@@ -57,7 +57,8 @@ describe("rozpis DPH z vyťaženia — príklad RISS Plus (0 % + 23 %)", () => {
     );
     expect(v.zdroj).toBe("sumy");
     expect(v.rozpis).toEqual([
-      { sadzba: 0, zaklad: 143.77, dph: 26.88, vat_category: "needs_review" },
+      // DPH bez sadzby sa do riadku 0 % nedá (revízia 13. 11.) — ostáva v sumách dokladu.
+      { sadzba: 0, zaklad: 143.77, dph: 0, vat_category: "needs_review" },
     ]);
     expect(v.kontrola.ok).toBe(false);
     expect(v.kontrola.chyby.map((c) => c.kod)).toContain("neplatna_kategoria");

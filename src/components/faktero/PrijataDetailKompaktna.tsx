@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { udajeZPrijatej } from "@/lib/faktero/nespracovane";
 import { popisyRiadkuDph } from "./VolbaSadzbyDph";
+import { UpozornenieZlejDph } from "./OpravaRozpisuDph";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useServerFn } from "@tanstack/react-start";
 import { Pencil } from "lucide-react";
@@ -329,6 +330,14 @@ export function PrijataDetailKompaktna({
               {t("Nie je daňový doklad — daň prinesie ostrá faktúra.")}
             </p>
           ) : null}
+          {/* Uložená faktúra so zlou DPH (staré dáta, prenos len s hlavičkou) — oprava rozpisu. */}
+          <UpozornenieZlejDph
+            tabulka="purchase_invoices"
+            doklad={row}
+            krajina={krajina}
+            zamknute={zamknute}
+            onOpravene={onZmena}
+          />
         </Sekcia>
 
         <Sekcia nadpis="Dodávateľ">

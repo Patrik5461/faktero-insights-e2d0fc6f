@@ -31,6 +31,7 @@ import { StavOdznak } from "@/components/faktero/web/Stav";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { KontrolaPohody } from "@/components/faktero/KontrolaPohody";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 import {
@@ -267,9 +268,15 @@ function ExportsPage() {
     if (!selectedIds.length) return toast.error(t("Vyberte aspoň jednu faktúru"));
     setBusy(true);
     try {
-      const r = await exportFn({
-        data: { companyId: cid, invoiceIds: selectedIds, format, oznacit },
-      });
+      // Pohoda: závažné chyby export nezastavia — okno sa spýta „Exportovať aj tak“.
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportFn({
+            data: { companyId: cid, invoiceIds: selectedIds, format, oznacit, potvrdene_varovania: potvrdene },
+          }),
+        t,
+      );
+      if (!r) return;
       downloadFile(r.fileName, r.content, r.mime, r.encoding);
       toast.success(
         r.oznacene
@@ -801,7 +808,13 @@ function OdovzdanieZaMesiac() {
     if (!cid) return;
     setBusy(oznacit ? "odovzdat" : "stiahnut");
     try {
-      const r = await odovzdaj({ data: { companyId: cid, mesiac, oznacit, lenNove: oznacit } });
+      // Závažné chyby odovzdanie nezastavia — okno sa spýta „Exportovať aj tak“.
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          odovzdaj({ data: { companyId: cid, mesiac, oznacit, lenNove: oznacit, potvrdeneVarovania: potvrdene } }),
+        t,
+      );
+      if (!r || r.pocetFaktur === undefined) return;
       const bajty = Uint8Array.from(atob(r.base64), (z) => z.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bajty], { type: "application/zip" }));
       const a = document.createElement("a");
@@ -839,9 +852,14 @@ function OdovzdanieZaMesiac() {
     if (!email) return;
     setBusy("mail");
     try {
-      const r = await posliMailom({
-        data: { companyId: cid, mesiac, oznacit: true, lenNove: true, email },
-      });
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          posliMailom({
+            data: { companyId: cid, mesiac, oznacit: true, lenNove: true, email, potvrdeneVarovania: potvrdene },
+          }),
+        t,
+      );
+      if (!r || r.pocetFaktur === undefined) return;
       toast.success(
         t("Odoslané na {prijemca} — {obsah}", { prijemca: r.prijemca, obsah: popisObsahu(r) }),
       );

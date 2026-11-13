@@ -69,7 +69,7 @@ import { jeCudzia } from "@/lib/faktero/cudzia-faktura";
 import { UpozornenieDuplicity, useDuplicitaDokladu } from "./DuplicitaDokladu";
 import { useKrajinaDane, useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { kontrolaSadziebPrijatej } from "@/lib/faktero/rozpis-dph-kontrola";
-import { potvrdNesuladRozpisu, ulozPotvrdenieRozpisu } from "./UpozornenieRozpisuDph";
+import { potvrdNesuladRozpisu } from "./UpozornenieRozpisuDph";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -684,14 +684,14 @@ export function ZauctovaniePanel({
 
   async function uloz(lenUlozit: boolean) {
     /*
-      Zaúčtovanie dokladu, ktorého sadzba DPH / súčet nesedí s dokladom:
-      „Pokračovať aj tak“ sa zapíše a znova sa nepýta, „Opraviť“ nezaúčtuje.
+      Doklad, ktorého sadzba DPH / súčet nesedí s dokladom, sa nezaúčtuje
+      (Patrik 13. 11.) — najprv „Opraviť rozpis DPH“ v upozornení na detaile.
     */
     if (!lenUlozit) {
       const s = kontrolaSadziebPrijatej(row, krajinaDane);
-      if (!s.kontrola.ok && !s.potvrdene) {
-        if (!(await potvrdNesuladRozpisu(s.kontrola, t))) return;
-        await ulozPotvrdenieRozpisu("purchase_invoices", row.id, s.podpis, s.kontrola);
+      if (!s.kontrola.ok) {
+        await potvrdNesuladRozpisu(s.kontrola, t);
+        return;
       }
     }
     setBusy(true);

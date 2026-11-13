@@ -44,6 +44,8 @@ import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
 import { UpozornenieRozpisuDph } from "./UpozornenieRozpisuDph";
 import { popisyRiadkuDph, VolbaSadzbyDph } from "./VolbaSadzbyDph";
+import { PoleDph } from "./EditorRozpisuDph";
+import { vypocitanaDph, zmenaZakladu, type RiadokRozpisu } from "./dph-formular";
 import type { VysledokKontroly } from "@/lib/faktero/rozpis-dph-kontrola";
 
 
@@ -476,31 +478,28 @@ export function NespracovanyKompaktny({
                 <Pole popis={popisyRiadkuDph(r, t).zaklad}>
                   <DesatinnePole
                     hodnota={r.zaklad}
-                    naZmenu={(z) => {
-                      setRozpis(i, { zaklad: z, dph: Math.round(z * Number(r.sadzba)) / 100 });
-                    }}
+                    naZmenu={(z) => setRozpis(i, zmenaZakladu(r, z) as Partial<typeof r>)}
                     className={ram("")}
                   />
                 </Pole>
                 <Pole popis={popisyRiadkuDph(r, t).dan}>
-                  <DesatinnePole
-                    hodnota={r.dph}
-                    naZmenu={(v) => setRozpis(i, { dph: v })}
+                  {/* DPH sa počíta zo základu — doladiť sa dá len o zaokrúhlenie (Patrik 13. 11.). */}
+                  <PoleDph
+                    label={popisyRiadkuDph(r, t).dan}
+                    riadok={r}
+                    onChange={(v) => setRozpis(i, { dph: v })}
                     className={ram("")}
                   />
                 </Pole>
                 <VolbaSadzbyDph
                   riadok={r}
                   sadzby={sadzby}
-                  onChange={(z) => setRozpis(i, z)}
+                  onChange={(z) => setRozpis(i, { ...z, dph: vypocitanaDph({ ...r, ...z } as RiadokRozpisu) })}
                   className="col-span-2 h-10 rounded-lg border border-input bg-background px-2 text-xs"
                 />
               </div>
             ))}
-            <UpozornenieRozpisuDph
-              kontrola={kontrolaRozpisu}
-              onPotvrd={() => set({ kontrolaDph: undefined, rozpisPotvrdeny: true })}
-            />
+            <UpozornenieRozpisuDph kontrola={kontrolaRozpisu} />
             <div className="flex items-center justify-between text-xs">
               <button
                 type="button"

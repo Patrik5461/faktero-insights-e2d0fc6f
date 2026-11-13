@@ -9,7 +9,6 @@ import {
 } from "@/lib/faktero/pohoda-kontrola.functions";
 import { NAZVY_POLI } from "@/lib/faktero/pohoda-rozdiely";
 import { usePoslatOpravuDoPohody, type DruhOpravy } from "./PoslatOpravuDoPohody";
-import { tvarNeodovzdanych } from "./NeodovzdaneDoklady";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 
@@ -64,8 +63,9 @@ function OdkazDokladu({
 /**
  * Exporty → kontrola pred odovzdaním a rozdiely oproti Pohode.
  *
- * Kontrola ukáže doklady, ktoré ručný export, balík ani konektor do Pohody
- * nepustia (s dôvodom a cestou k náprave). Rozdiely porovnajú posledné
+ * Kontrola ukáže doklady so závažnou chybou (s dôvodom a cestou k náprave):
+ * konektor ich do Pohody nepustí, ručný export a balík na ne upozornia a po
+ * potvrdení ich pustia (Patrik 13. 11. 2026). Rozdiely porovnajú posledné
  * odoslané XML s dnešným a pri zmenenom doklade ponúknu „Poslať opravu“.
  */
 export function KontrolaPohody({ companyId }: { companyId: string }) {
@@ -129,7 +129,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {t(
-            "Doklady, ktoré by Pohoda zaúčtovala zle, export, balík ani konektor nepošlú — kým ich neopravíte, ostanú neodovzdané.",
+            "Doklady, ktoré by Pohoda mohla zaúčtovať zle. Ručný export a balík vás na ne upozornia a po potvrdení ich pustia; automatický konektor ich nepošle, kým ich neopravíte.",
           )}
         </p>
         {zastavene && !zastavene.length && (
@@ -164,7 +164,7 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
           <>
             <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-warning">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              {t(tvarNeodovzdanych(zastavene.length), { n: zastavene.length })}
+              {t("So závažnou chybou: {n}", { n: zastavene.length })}
             </p>
             <ul className="mt-2 max-h-80 divide-y divide-border overflow-y-auto text-sm">
               {zastavene.map((z) => (

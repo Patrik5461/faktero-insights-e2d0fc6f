@@ -356,7 +356,21 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     });
     const d = parser.parse(r.content).dataPack;
     expect(d.dataPackItem.invoice.invoiceHeader.number.numberRequested).toBe(20250001);
-    expect(r.preskocene).toEqual(["20250009 — faktúra v mene USD nemá kurz"]);
+    expect(r.preskocene).toEqual(["20250009 — faktúra v mene USD nemá kurz — bez kurzu pôjde do Pohody s kurzom 0 a sumy v domácej mene nebudú sedieť"]);
+  });
+
+  it("po potvrdení ručného exportu (`ajSPrekazkami`) ide aj faktúra s prekážkou", async () => {
+    const r = await EXPORT_STRATEGIES.pohoda_xml.build({
+      company: firma,
+      invoices: [
+        { invoice: faktura, items: polozky },
+        { invoice: { ...faktura, invoice_number: "20250009", currency: "USD" }, items: polozky },
+      ],
+      nastavenia: { ajSPrekazkami: true },
+    });
+    const d = parser.parse(r.content).dataPack;
+    expect(d.dataPackItem).toHaveLength(2);
+    expect(r.preskocene).toEqual([]);
   });
 
   it("keď by v balíku nezostalo nič, export sa nespraví", () => {

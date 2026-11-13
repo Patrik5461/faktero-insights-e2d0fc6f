@@ -75,6 +75,14 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
     const zaklad = Number(doklad.net_amount ?? 0) || 0;
     const dph = Number(doklad.vat_amount ?? 0) || 0;
     const celkom = Number(doklad.total_amount ?? 0) || zaklad + dph;
+    const { rozpisPrePresun } = await import("./dph-presun");
+    const rozpis = rozpisPrePresun(doklad.vat_breakdown, zaklad, dph, {
+      krajina: (await (supabase as any).from("companies").select("country").eq("id", data.company_id).maybeSingle())
+        .data?.country,
+      den: vystavenie,
+      icDph: doklad.supplier_ic_dph,
+      krajinaDodavatela: (doklad as any).supplier_country,
+    });
     const poznamka = [doklad.note, doklad.category ? `Kategória: ${doklad.category}` : null]
       .filter(Boolean)
       .join(" · ");
@@ -111,10 +119,9 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
         amount_without_vat: zaklad,
         vat_amount: dph,
         amount_total: celkom,
-        // Rozpis DPH po sadzbách z bločku — bez neho by viac sadzieb splynulo do jednej (audit 6. 11.).
-        ...({
-          vat_breakdown: Array.isArray(doklad.vat_breakdown) && doklad.vat_breakdown.length ? doklad.vat_breakdown : null,
-        } as any),
+        // Rozpis DPH po sadzbách z bločku — bez neho by viac sadzieb splynulo do jednej (audit 6. 11.);
+        // bez rozpisu jeden riadok, keď je DPH čistá jedna zákonná sadzba (dph-presun.ts).
+        ...({ vat_breakdown: rozpis, supplier_country: (doklad as any).supplier_country ?? null } as any),
         currency: doklad.currency ?? "EUR",
         payment_method: doklad.payment_method ?? "prevod",
         note: poznamka || null,
@@ -128,7 +135,11 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
     if (chybaZapisu || !faktura) {
       // Prílohu, ktorá už je v druhom úložisku, po neúspechu upraceme.
       if (file_path) await supabase.storage.from("purchase-invoices").remove([file_path]);
-      throw new Error(chybaZapisu?.message ?? "Prijatú faktúru sa nepodarilo vytvoriť.");
+      // DPH bločku nie je po zákonných sadzbách — spúšťač presun zastaví, veta ide človeku.
+      const { hlaskaSpustacaDph } = await import("./dph-pravidlo");
+      throw new Error(
+        hlaskaSpustacaDph(chybaZapisu) ?? chybaZapisu?.message ?? "Prijatú faktúru sa nepodarilo vytvoriť.",
+      );
     }
 
     /* --- pôvodný doklad aj s prílohou preč --- */

@@ -5,7 +5,7 @@ import {
   posliBalikMailom,
   rozsahMesiaca,
   STROP_PRILOH_MAILOM,
-  zostavBalik,
+  zostavBalikRucne,
   type OdovzdanieVstup,
   type Riadok,
 } from "./odovzdanie.server";
@@ -18,7 +18,14 @@ export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
   .validator((input: OdovzdanieVstup) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { balik } = await zostavBalik(supabase, data);
+    /*
+      Závažné chyby (doklad by Pohoda mohla zaúčtovať zle) odovzdanie
+      nezastavia — prvé volanie vráti ich zoznam, po potvrdení
+      (`potvrdeneVarovania`) idú doklady do XML aj tak.
+    */
+    const zostavene = await zostavBalikRucne(supabase, data);
+    if (!zostavene.balik) return { zavazne: zostavene.zavazne, varovania: [] as string[] };
+    const { balik } = zostavene;
 
     let jobId: string | undefined;
     if (data.oznacit) {
@@ -52,6 +59,8 @@ export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
       pocetOstatnych: balik.pocetOstatnych,
       preskocene: balik.preskocene,
       vynechanePrilohy: balik.vynechanePrilohy,
+      zavazne: [] as string[],
+      varovania: [] as string[],
       jobId,
     };
   });
@@ -67,10 +76,13 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
   .validator((input: OdovzdanieVstup & { email?: string; poznamka?: string }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { balik, company } = await zostavBalik(supabase, {
+    // Závažné chyby najprv na potvrdenie — mail odíde až po ňom.
+    const zostavene = await zostavBalikRucne(supabase, {
       ...data,
       stropPriloh: STROP_PRILOH_MAILOM,
     });
+    if (!zostavene.balik) return { zavazne: zostavene.zavazne, varovania: [] as string[] };
+    const { balik, company } = zostavene;
 
     const prijemca = (data.email || company.uctovnik_email || "").trim();
     await posliBalikMailom({
@@ -116,6 +128,8 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
       pocetOstatnych: balik.pocetOstatnych,
       vynechanePrilohy: balik.vynechanePrilohy,
       preskocene: balik.preskocene,
+      zavazne: [] as string[],
+      varovania: [] as string[],
       jobId,
     };
   });

@@ -166,6 +166,48 @@ describe("riadky do databázy", () => {
     expect(r.note).toContain("Importované z Doklado");
   });
 
+  it("rozpis DPH: z hlavičky s jednou zákonnou sadzbou, zmiešaná bez položiek → koncept", async () => {
+    const { skontrolujDphDokladu } = await import("./dph-pravidlo");
+    const o = { stav: "new" as const, dnes: "2026-09-21", zdrojAplikacie: "Pohoda", krajina: "SK" };
+    const jedna = riadokPrijatejFaktury({ ...zaklad, druh: null }, o);
+    expect(jedna.vat_breakdown).toEqual([{ sadzba: 23, zaklad: 100, dph: 23 }]);
+    expect(jedna.status).toBe("received");
+    expect(skontrolujDphDokladu("purchase_invoices", jedna, "SK")).toEqual([]);
+    // 5 % + 23 % v hlavičke bez položiek (pomer 11 %) — nevymýšľa, koncept s dôvodom.
+    const zmes = riadokPrijatejFaktury({ ...zaklad, druh: null, zaklad: 300, dph: 33 }, o);
+    expect(zmes.status).toBe("draft");
+    expect((zmes as any).vat_breakdown).toBeUndefined();
+    expect(zmes.note).toMatch(/koncept/);
+    expect(skontrolujDphDokladu("purchase_invoices", zmes, "SK")).toEqual([]);
+    // Položky z Pohody so základom a daňou dajú rozpis po sadzbách.
+    const sPolozkami = riadokPrijatejFaktury(
+      {
+        ...zaklad,
+        druh: null,
+        zaklad: 300,
+        dph: 33,
+        polozky: [
+          { name: "a", quantity: 1, unit_price: 200, vat_rate: 5, total: 210, zaklad: 200, dph: 10 },
+          { name: "b", quantity: 1, unit_price: 100, vat_rate: 23, total: 123, zaklad: 100, dph: 23 },
+        ],
+      },
+      o,
+    );
+    expect(sPolozkami.status).toBe("received");
+    expect(sPolozkami.vat_breakdown).toHaveLength(2);
+    expect(skontrolujDphDokladu("purchase_invoices", sPolozkami, "SK")).toEqual([]);
+  });
+
+  it("bloček dostane rozpis z hlavičky; zahraničný (HU) bez rozpisu prejde", async () => {
+    const { skontrolujDphDokladu } = await import("./dph-pravidlo");
+    const o = { stav: "new" as const, dnes: "2026-09-21", zdrojAplikacie: "Pohoda", doPokladne: false, krajina: "SK" };
+    const b = riadokBlocku({ ...zaklad, typ: "blocek", druh: null, uhrada: "karta" }, o);
+    expect(b.vat_breakdown).toEqual([{ sadzba: 23, zaklad: 100, dph: 23 }]);
+    expect(skontrolujDphDokladu("expense_documents", b, "SK")).toEqual([]);
+    const hu = riadokBlocku({ ...zaklad, typ: "blocek", druh: null, uhrada: "karta", dph: 27, icDph: "HU12345678" }, o);
+    expect(skontrolujDphDokladu("expense_documents", hu, "SK")).toEqual([]);
+  });
+
   it("hotovostný bloček mimo pokladne", () => {
     const b = { ...zaklad, typ: "blocek" as const, uhrada: "hotovost" as const, spolu: 12, zaklad: null, dph: null };
     const mimo = riadokBlocku(b, { stav: "processed", dnes: "2026-09-21", zdrojAplikacie: "Doklado", doPokladne: false });

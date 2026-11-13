@@ -11,6 +11,7 @@
   a riadky cieľových tabuliek.
 */
 
+import { krajinaBlocku } from "@/lib/faktero/krajina-blocku";
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 import { zoradPodlaSadzby } from "./vat-rates";
 import { rozpisZVytazenia, type KontextRozpisu } from "./rozpis-dph-vytazeny";
@@ -372,7 +373,10 @@ export function udajeZAi(
     do `zaloha`, zdanená zníži rozpis aj sumu a pribudne ako záporná položka
     (`odpocet-zalohy-vytazenie.ts`). Ďalej sa pracuje s upraveným výstupom.
   */
-  const zOdpoctu = aiSOdpoctomZalohy(ai);
+  const zOdpoctu = aiSOdpoctomZalohy(ai, {
+    krajina: kontext.krajina,
+    den: datum(ai.delivery_date) || datum(ai.issue_date) || null,
+  });
   ai = zOdpoctu.ai;
   const odpocet = zOdpoctu.odpocet;
   if (odpocet && !odpocet.zdanena) {
@@ -443,7 +447,16 @@ export function udajeZAi(
     const z = num(ai.rounding);
     if (z && Math.abs(z) <= 0.05) u.zaokruhlenie = r2(z);
   }
-  u.prenesenie = jePrenesenieZAi(ai, u.polozky) || vytazeny.prenesenie;
+  /*
+    Celá faktúra v prenesení (reverse_charge + samozdanenie na hlavičke) len
+    keď v rozpise nie je riadok s daňou. Zmiešaná faktúra (PP Projekt
+    2610018: 23 % 348,98 / 80,27 + PDP 99,00; MD BUILDING, Nízkoenergetické
+    domy) má prenesenie len pri riadku `reverse_charge` — veta „Prenesenie
+    daňovej povinnosti…“ na nej je, no hlavička by inak tvrdila, že DPH
+    80,27 neexistuje.
+  */
+  const rozpisSDanou = vytazeny.rozpis.some((r) => Math.abs(Number(r.dph) || 0) > 0.004);
+  u.prenesenie = !rozpisSDanou && (jePrenesenieZAi(ai, u.polozky) || vytazeny.prenesenie);
   /*
     Sumy vyťažené v domácej mene, ceny položiek v inej (uprednostnená domáca
     mena, pozri `vytazenie-mena.ts`): položky by so sumami nesedeli — doklad
@@ -479,7 +492,9 @@ export function udajeZAi(
  * samotného rozpisu, ktoré sedia vždy.
  */
 export function kontrolaRozpisuUdajov(
-  u: Pick<UdajeNespracovaneho, "rozpis" | "kontrolaDph" | "rozpisPotvrdeny" | "datumDodania" | "datumVystavenia">,
+  u: Pick<UdajeNespracovaneho, "rozpis" | "kontrolaDph" | "rozpisPotvrdeny" | "datumDodania" | "datumVystavenia"> & {
+    dodavatel?: Partial<UdajeNespracovaneho["dodavatel"]> | null;
+  },
   krajina?: string | null,
 ): VysledokKontroly {
   if (!u.rozpis?.length || u.rozpisPotvrdeny) return { ok: true, chyby: [] };
@@ -495,7 +510,13 @@ export function kontrolaRozpisuUdajov(
       vat_category: r.vat_category ?? null,
     })),
     u.kontrolaDph ? { bezDph: u.kontrolaDph.bezDph, dph: u.kontrolaDph.dph } : vlastne,
-    { krajina: krajina ?? "SK", datumDodania: u.datumDodania || u.datumVystavenia || null },
+    {
+      krajina: krajina ?? "SK",
+      datumDodania: u.datumDodania || u.datumVystavenia || null,
+      // Zahraničný dodávateľ (bloček za palivo v Maďarsku) nesie sadzby svojho štátu.
+      krajinaDodavatela: u.dodavatel?.krajina ?? null,
+      icDphDodavatela: u.dodavatel?.icDph ?? null,
+    },
   );
 }
 
@@ -924,6 +945,8 @@ export function blocekZUdajov(u: UdajeNespracovaneho) {
     supplier_name: prazdne(u.dodavatel.nazov),
     supplier_ico: prazdne(u.dodavatel.ico),
     supplier_ic_dph: prazdne(u.dodavatel.icDph),
+    // Zahraničný bloček (palivo v Maďarsku) nesie sadzby svojho štátu — krajina z údajov, inak z IČ DPH.
+    supplier_country: krajinaBlocku({ krajina: u.dodavatel.krajina, icDph: u.dodavatel.icDph }),
     document_number: prazdne(u.cislo),
     pohoda_cislo: prazdne(u.interneCislo ?? ""),
     issue_date: u.datumVystavenia || null,

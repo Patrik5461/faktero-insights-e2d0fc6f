@@ -11,6 +11,7 @@ import {
   type DruhKonvertora,
 } from "@/lib/faktero/konvertor";
 import { konvertorDoPohodyFn } from "@/lib/faktero/konvertor.functions";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 
 /**
@@ -83,7 +84,12 @@ export function KonvertorExcel() {
         .sheet_to_json<Record<string, unknown>>(ws, { raw: true, defval: "" })
         .map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, bunka(v)])));
       if (!riadky.length) throw new Error(t("Súbor je prázdny."));
-      const r = await preved({ data: { company_id: cid, druh, riadky } });
+      // Závažné chyby prevod nezastavia — okno sa spýta „Exportovať aj tak“.
+      const r = await exportSPotvrdenim(
+        (potvrdene) => preved({ data: { company_id: cid, druh, riadky, potvrdene_varovania: potvrdene } }),
+        t,
+      );
+      if (!r) return;
       const url = URL.createObjectURL(new Blob([r.xml], { type: "application/xml" }));
       const a = document.createElement("a");
       a.href = url;

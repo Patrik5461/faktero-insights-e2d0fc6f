@@ -507,7 +507,7 @@ export const NASTROJE: Nastroj[] = [
     name: "create_purchase_invoice",
     title: "Založiť prijatú faktúru",
     description:
-      "Zapíše prijatú (dodávateľskú) faktúru. Sumy buď z položiek (items, ceny bez DPH), alebo amount_total (+ amount_without_vat, vat_amount). Dodávateľ sa založí v adresári, ak tam nie je. Tá istá faktúra (IČO + číslo + suma) sa druhýkrát nezaloží.",
+      "Zapíše prijatú (dodávateľskú) faktúru. Sumy buď z položiek (items, ceny bez DPH), alebo amount_total (+ amount_without_vat, vat_amount; pri viacerých sadzbách DPH aj vat_breakdown). DPH musí byť po zákonných sadzbách. Dodávateľ sa založí v adresári, ak tam nie je. Tá istá faktúra (IČO + číslo + suma) sa druhýkrát nezaloží.",
     inputSchema: {
       type: "object",
       properties: {
@@ -538,6 +538,21 @@ export const NASTROJE: Nastroj[] = [
         amount_without_vat: { type: "number" },
         vat_amount: { type: "number" },
         amount_total: { type: "number" },
+        vat_breakdown: {
+          type: "array",
+          description:
+            "Rozpis DPH po sadzbách. Sadzba musí byť zákonná (SK 23/19/5/0 %, do 2024 20/10/0 %), vat = base × rate / 100. Inak chyba invalid_vat.",
+          items: {
+            type: "object",
+            properties: {
+              rate: { type: "number" },
+              base: { type: "number" },
+              vat: { type: "number" },
+              vat_category: { type: "string", enum: ["standard", "reverse_charge", "exempt", "out_of_scope"] },
+            },
+            required: ["rate", "base", "vat"],
+          },
+        },
         payment_date: { type: "string", description: "Dátum úhrady, ak je už zaplatená" },
         note: { type: "string" },
         external_id: { type: "string", description: "Vlastné id — opakované volanie nič nezdvojí" },
@@ -611,12 +626,15 @@ export const NASTROJE: Nastroj[] = [
         total_amount: { type: "number", description: "Suma s DPH" },
         vat_breakdown: {
           type: "array",
+          description:
+            "Rozpis DPH po sadzbách. Sadzba musí byť zákonná (SK 23/19/5/0 %, do 2024 20/10/0 %), vat = base × rate / 100. Inak chyba invalid_vat.",
           items: {
             type: "object",
             properties: {
               rate: { type: "number" },
               base: { type: "number" },
               vat: { type: "number" },
+              vat_category: { type: "string", enum: ["standard", "reverse_charge", "exempt", "out_of_scope"] },
             },
             required: ["rate", "base", "vat"],
           },

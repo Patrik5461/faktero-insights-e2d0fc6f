@@ -33,6 +33,8 @@ import {
   druhDokladu,
   jeZauctovany,
   klucPartnera,
+  krajinaFirmy,
+  rozpisDph,
   lenCislice,
   menoSuboru,
   prijata,
@@ -404,7 +406,7 @@ async function main() {
   }
 
   const firmy = await vsetko<any>((od, po) =>
-    db.from("companies").select("id, name, ico, locked_until").order("id").range(od, po),
+    db.from("companies").select("id, name, ico, locked_until, country").order("id").range(od, po),
   );
   const podlaIco = new Map<string, any[]>();
   for (const f of firmy) {
@@ -521,7 +523,17 @@ async function main() {
     const ex = firma ? await nacitajExistujuce(db, firma.id, sId) : null;
 
     if (o.dryRun) {
-      await dryRunFirmy({ doklado, ico, podlaDruhu, exportovane, ex, s, teraz, dnes });
+      await dryRunFirmy({
+        doklado,
+        ico,
+        podlaDruhu,
+        exportovane,
+        ex,
+        s,
+        teraz,
+        dnes,
+        krajina: krajinaFirmy(firma?.country),
+      });
       if (o.nespracovane) {
         const n = await doklado.nespracovane({ ico, od, do: doDna });
         log(`  nespracované v Doklade: ${n.length}`);
@@ -564,8 +576,28 @@ async function dryRunFirmy(a: {
   s: Suhrn;
   teraz: string;
   dnes: string;
+  krajina: ReturnType<typeof krajinaFirmy>;
 }) {
   const { podlaDruhu, ex, s } = a;
+  // Rozpis DPH po sadzbách — čo by sa uložilo a čo nie (sadzba mimo zákonných, nesediace súčty).
+  for (const dr of ["prijata", "blocek"] as const) {
+    const zoz = podlaDruhu.get(dr) ?? [];
+    if (!zoz.length) continue;
+    const stavy = new Map<string, number>();
+    for (const d of zoz) {
+      const r = rozpisDph(d, {
+        krajina: a.krajina,
+        den:
+          datumZTextu((d as any).deliveryDate) ??
+          datumZTextu((d as any).taxPointDate) ??
+          datumDokladu(d),
+        dobropis: dr === "prijata" && String(d.subType ?? "").includes("credit"),
+        blocek: dr === "blocek",
+      });
+      stavy.set(r.stav, (stavy.get(r.stav) ?? 0) + 1);
+    }
+    log(`  rozpis DPH (${dr}): ${[...stavy].map(([k, v]) => `${k} ${v}`).join(", ")}`);
+  }
   // Zaúčtované v Doklade musí prísť zaúčtované — tu je to vidieť po druhoch.
   for (const dr of ["vystavena", "prijata", "blocek"] as const) {
     const zoz = podlaDruhu.get(dr) ?? [];
@@ -875,7 +907,7 @@ async function zapisFirmy(a: {
 }) {
   const { db, doklado, firma, ex, s } = a;
   const cid = firma.id as string;
-  const o = { teraz: a.teraz, dnes: a.dnes };
+  const o = { teraz: a.teraz, dnes: a.dnes, krajina: krajinaFirmy(firma.country) };
   let dozauctovane = 0;
   // Jeden záznam „Prenos z Doklada“ v histórii exportov — export_logs ho vyžaduje.
   let job: string | null = null;

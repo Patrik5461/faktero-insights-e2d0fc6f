@@ -7,7 +7,8 @@ import {
   predkontaciaZPohody,
   sadzbaZPohody,
 } from "./pohoda-citanie";
-import { zoradPodlaSadzby } from "./vat-rates";
+import { krajinaDane, zoradPodlaSadzby } from "./vat-rates";
+import { dphZoZakladu, popisChybDph, skontrolujDph, toleranciaRiadku, zakonneSadzby, type RiadokDph } from "./dph-pravidlo";
 /*
   Import prijatých dokladov z inej aplikácie (Doklado, Pohoda, tabuľka).
 
@@ -948,11 +949,13 @@ function poznamkaImportu(z: PrijatyZaznam, zdrojAplikacie: string): string {
  */
 export function riadokPrijatejFaktury(
   z: PrijatyZaznam,
-  o: { stav: StavImportu; dnes: string; zdrojAplikacie: string },
+  o: { stav: StavImportu; dnes: string; zdrojAplikacie: string; krajina?: string | null },
 ) {
   const s = sumy(z);
   const vystavenie = z.vystavenie ?? o.dnes;
-  return {
+  const zalohova = z.druh === TYPY_PRIJATYCH.receivedadvanceinvoice;
+  const dph = zalohova ? null : rozpisDphImportu(z, { krajina: o.krajina, den: z.dodanie ?? vystavenie });
+  const riadok = {
     supplier_name: z.dodavatel ?? "Neurčený dodávateľ",
     supplier_ico: z.ico,
     supplier_dic: z.dic,
@@ -968,14 +971,14 @@ export function riadokPrijatejFaktury(
     amount_total: s.spolu ?? 0,
     currency: z.mena || "EUR",
     // Zálohová faktúra nie je náklad — bez typu by sa zaúčtovala aj do DPH.
-    type: z.druh === TYPY_PRIJATYCH.receivedadvanceinvoice ? "proforma" : "regular",
+    type: zalohova ? "proforma" : "regular",
     advance_amount: z.zaloha ?? null,
     payment_method: z.uhrada,
     // Prijatá faktúra nemá stav „odovzdaná" — zaúčtovaná je najbližšie.
     // Stornovaná v Pohode ostáva v evidencii ako stornovaná.
-    status: z.stornovany ? "cancelled" : o.stav === "new" ? "received" : "booked",
+    status: (z.stornovany ? "cancelled" : o.stav === "new" ? "received" : "booked") as string,
     source: "import",
-    note: poznamkaImportu(z, o.zdrojAplikacie),
+    note: poznamkaImportu(z, o.zdrojAplikacie) as string,
     items: z.polozky.length
       ? z.polozky.map((p) => ({ ...polozkaNaUlozenie(p), unit: null as string | null }))
       : null,
@@ -983,7 +986,63 @@ export function riadokPrijatejFaktury(
     ...(z.dodanie ? { delivery_date: z.dodanie } : {}),
     ...(z.dphRezim ? { dph_rezim: z.dphRezim } : {}),
     ...(z.opravujeCislo ? { opravuje_cislo: z.opravujeCislo } : {}),
+    ...(dph?.vat_breakdown ? { vat_breakdown: dph.vat_breakdown } : {}),
   };
+  /*
+    DPH sa nedá rozpísať po zákonných sadzbách — faktúra sa založí ako koncept
+    (spúšťač zákonných sadzieb koncept nekontroluje), s dôvodom v poznámke.
+    Vystaviť ju pôjde až s opraveným rozpisom; stratiť sa nesmie.
+  */
+  if (dph?.chyba) {
+    riadok.status = "draft";
+    riadok.note = [riadok.note, `${dph.chyba} Uložené ako koncept — doplňte rozpis DPH po sadzbách.`].join("\n");
+  }
+  return riadok;
+}
+
+/**
+ * Rozpis DPH dokladu z importu (`vat_breakdown`) tak, aby prešiel pravidlom
+ * DPH (`dph-pravidlo.ts`, spúšťač v databáze):
+ *  1. z položiek so základom a daňou (Pohoda XML), keď ich súčty sedia s hlavičkou,
+ *  2. inak z hlavičky, keď je jej DPH čistá jedna zákonná sadzba,
+ *  3. DPH 0 → bez rozpisu (pravidlo ho nevyžaduje).
+ * Keď nič neprejde, `chyba` je veta pre človeka a rozpis sa nevymýšľa.
+ */
+export function rozpisDphImportu(
+  z: PrijatyZaznam,
+  o: { krajina?: string | null; den?: string | null },
+): { vat_breakdown: RiadokDph[] | null; chyba: string | null } {
+  const s = sumy(z);
+  const zaklad = s.zaklad ?? 0;
+  const dph = s.dph ?? 0;
+  const krajina = krajinaDane(o.krajina);
+  const kontrola = (rozpis: RiadokDph[] | null) =>
+    skontrolujDph({
+      rozpis,
+      zaklad,
+      dph,
+      krajina,
+      den: o.den ?? null,
+      poloziek: z.polozky.length,
+      icDphDodavatela: z.icDph,
+    });
+  const zPoloziek = rozpisZPoloziek(z).vat_breakdown as RiadokDph[] | undefined;
+  if (zPoloziek?.length && !kontrola(zPoloziek).length) return { vat_breakdown: zPoloziek, chyba: null };
+  if (Math.abs(dph) < 0.005) return { vat_breakdown: null, chyba: null };
+  if (Math.abs(zaklad) >= 0.005) {
+    const tol = toleranciaRiadku(z.polozky.length);
+    const sadzba = zakonneSadzby(krajina, o.den ?? null).find(
+      (x) => x > 0 && Math.abs(dphZoZakladu(zaklad, x) - dph) <= tol + 1e-9,
+    );
+    if (sadzba != null) {
+      const jeden = [{ sadzba, zaklad, dph }];
+      if (!kontrola(jeden).length) return { vat_breakdown: jeden, chyba: null };
+    }
+  }
+  // Bez rozpisu prejde len doklad, ktorý pravidlo pustí aj tak (zahraničný dodávateľ).
+  const bez = kontrola(null);
+  if (!bez.length) return { vat_breakdown: null, chyba: null };
+  return { vat_breakdown: null, chyba: popisChybDph(zPoloziek?.length ? kontrola(zPoloziek) : bez) };
 }
 
 /**
@@ -1006,9 +1065,11 @@ function stlpcePohody(z: PrijatyZaznam): Record<string, unknown> {
  */
 export function riadokBlocku(
   z: PrijatyZaznam,
-  o: { stav: StavImportu; dnes: string; zdrojAplikacie: string; doPokladne: boolean },
+  o: { stav: StavImportu; dnes: string; zdrojAplikacie: string; doPokladne: boolean; krajina?: string | null },
 ) {
   const s = sumy(z);
+  /* Bloček nemá koncept — rozpis, ktorý pravidlom neprejde, sa nevymýšľa; zápis potom odmietne spúšťač s vetou. */
+  const dph = rozpisDphImportu(z, { krajina: o.krajina, den: z.vystavenie ?? o.dnes });
   const hotovostMimo = z.uhrada === "hotovost" && !o.doPokladne;
   const now = new Date().toISOString();
   return {
@@ -1038,7 +1099,12 @@ export function riadokBlocku(
     processed_at: o.stav === "new" ? null : now,
     exported_at: o.stav === "exported" ? now : null,
     ...stlpcePohody(z),
-    ...rozpisZPoloziek(z),
+    ...(dph.vat_breakdown
+      ? {
+          vat_breakdown: dph.vat_breakdown,
+          ...(dph.vat_breakdown.length === 1 ? { vat_rate: dph.vat_breakdown[0]!.sadzba } : {}),
+        }
+      : {}),
   };
 }
 

@@ -6,6 +6,7 @@ import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { kontrolaNespracovaneho } from "@/components/faktero/dph-formular";
 import {
   chybajuce,
   nacitajUdaje,
@@ -44,6 +45,8 @@ type Detail = {
   varovania: string[];
   /** Kontroly firmy (tolerancia zaokrúhlenia, splatnosť) — staršie servery ich neposielajú. */
   nastavenia?: { toleranciaCenty?: number; kontrolaSplatnosti?: boolean };
+  /** Krajina firmy — zákonné sadzby DPH (SK/CZ). */
+  krajinaFirmy?: string | null;
 };
 
 export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
@@ -251,7 +254,14 @@ export function RozpoznanyDoklad({
 
   const chyba =
     druh && finalne ? chybajuce(druh, finalne, detail?.povinne, detail?.nastavenia) : ["druh"];
-  const daSaUlozit = !!druh && chyba.length === 0 && !ukladam;
+  /*
+    Rozpis DPH mimo zákonných sadzieb alebo s DPH, ktorá nezodpovedá základu,
+    sa neuloží ani z appky (Patrik 13. 11.). Rozpis sa v appke neupravuje —
+    doklad ostáva v Nespracovaných a opraví sa na webe.
+  */
+  const kontrolaDph = finalne ? kontrolaNespracovaneho(finalne, detail?.krajinaFirmy ?? null, druh) : null;
+  const zlaDph = Boolean(kontrolaDph && !kontrolaDph.ok);
+  const daSaUlozit = !!druh && chyba.length === 0 && !ukladam && !zlaDph;
 
   async function uloz(ajDuplicitu = false, ajCudziu = false) {
     if (!druh || !finalne || !id) return;
@@ -491,6 +501,21 @@ export function RozpoznanyDoklad({
             <div className="mt-1 text-app-text-2">{detail.chyba ?? t("rd.chybaCitaniaPopis")}</div>
           </div>
         )}
+        {zlaDph && kontrolaDph ? (
+          <div
+            role="alert"
+            data-testid="rd-dph-nesedi"
+            className="rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-3 text-[13px]"
+          >
+            <div className="font-semibold text-app-pozor">{t("rd.dphNesedi")}</div>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-app-text-2">
+              {kontrolaDph.chyby.map((c, i) => (
+                <li key={i}>{c.sprava}</li>
+              ))}
+            </ul>
+            <div className="mt-1 text-app-text-2">{t("rd.dphNesediPopis")}</div>
+          </div>
+        ) : null}
         {detail.varovania.map((v) => (
           <div
             key={v}

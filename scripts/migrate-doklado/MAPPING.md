@@ -138,7 +138,7 @@ rad **nastaví** (šablóna + `start_from` za najvyšším prenesenými číslom
 | `dueDate`                                                            | `due_date`                                                            |                                                                                                                                                                      |
 | `paymentStatus = paid`                                               | `status = 'paid'`, `payment_date`                                     | dátum úhrady chýba → `due_date`                                                                                                                                      |
 | inak                                                                 | `status = 'booked'` ak má predkontáciu, inak `received`               | ako import prijatých dokladov                                                                                                                                        |
-| `vatSummary` / `totalPrice`                                          | `amount_without_vat`, `vat_amount`, `amount_total`                    |                                                                                                                                                                      |
+| `vatSummary` / `totalPrice`                                          | `vat_breakdown`, `amount_without_vat`, `vat_amount`, `amount_total`   |                                                                                                                                                                      |
 | `vatCategory` + podtyp                                               | `dph_rezim`, `reverse_charge`, `reverse_charge_type`                  | `reverse_charge` + `domestic_*` → `samozdanenie`/`domestic_69`; `reverse_charge` + `foreign_*` → `nadobudnutie`/`eu_b2b`; `tax_exempt` → `bez_dane`; inak `tuzemsko` |
 | `currency`, `exchangeRate`                                           | `currency`, `exchange_rate`                                           |                                                                                                                                                                      |
 | `paymentType`                                                        | `payment_method`                                                      | `transfer`→`prevod`, `cash`→`hotovost`, `card`→`karta`                                                                                                               |
@@ -148,6 +148,24 @@ rad **nastaví** (šablóna + `start_from` za najvyšším prenesenými číslom
 | `accountingSettings.accountingItem.value` / `classificationVat.code` | `pohoda_predkontacia` / `pohoda_clenenie_dph`                         | ak sú, `zauctovane_at` = teraz, `zauctovanie_zdroj = 'manual'`                                                                                                       |
 | `accountingSettings.expenditureCenter.code` / `activity.code`        | `stredisko` / `cinnost`                                               |                                                                                                                                                                      |
 | —                                                                    | `source = 'import'`                                                   |                                                                                                                                                                      |
+
+**Rozpis DPH (`rozpisDph` v mapovanie.ts):** `vatSummary` (inak polia základnej/zníženej
+sadzby) → `vat_breakdown` `[{sadzba, zaklad, dph, vat_category?, pdp?}]`, rovnaké sadzby zlúčené,
+dobropis záporne, prenesenie DPH 0 + `pdp`. Uloží sa len keď: sadzba je zákonná pre krajinu firmy
+a deň dodania (SK do 2024 20/10/0, od 2025 23/19/5/0), DPH riadku = základ × sadzba (±0,02 €,
+pri položkách 0,01 € × počet, najviac 0,10 €) a základ + DPH = `totalPrice` (±0,02 €, bloček
+±0,05 €). Inak `vat_breakdown = null` a dôvod ide do `int_poznamka`. Doklad bez rozpisu (len
+`totalPrice`) ostane pri prijatej bez rozpisu. K už preneseným dokladom rozpis doplní
+`doplnit-rozpis.ts`.
+
+Keď rozpis neprejde (`dphNaUlozenie`): hlavička, ktorá je čistá jedna zákonná sadzba, dostane
+jednoriadkový rozpis; DPH 0 ide bez rozpisu (bloček 0 %); zahraničný dodávateľ (krajina alebo
+prefix IČ DPH ≠ krajina firmy) sa prevezme so sadzbami svojho štátu. Inak sa doklad prenesie
+s hlavičkou z Doklada, bez rozpisu a **na kontrolu** (`na_kontrolu_at` = čas prenosu,
+`na_kontrolu_dovod` „Rozpis DPH z Doklada sa neprevzal: …“). Spúšťač zákonných sadzieb doklad
+s `doklado_id` na kontrole pustí; príznak sa zruší až po oprave rozpisu (Opraviť rozpis DPH).
+Zálohová faktúra na kontrolu nejde (spúšťač ju nekontroluje). `doplnit-rozpis.ts` robí to isté
+s už prenesenými dokladmi (len príznak, sumy nemení).
 
 **Súbory:** `attachments/get` (`documentType: "expense"`) → kôš `purchase-invoices`; súbor
 `primary` do `file_path` / `file_mime` / `file_size`. Prijatá faktúra nemá tabuľku príloh, takže
@@ -163,7 +181,7 @@ rad **nastaví** (šablóna + `start_from` za najvyšším prenesenými číslom
 | `organizationName` / `Id` / `VatId`                | `supplier_name` / `supplier_ico` / `supplier_ic_dph`                    |                                                                      |
 | `issuedAt`                                         | `issue_date`                                                            |                                                                      |
 | `totalPrice`                                       | `total_amount`                                                          |                                                                      |
-| `vatSummary[]`                                     | `vat_breakdown` (`[{sadzba, zaklad, dph}]`), `net_amount`, `vat_amount` |                                                                      |
+| `vatSummary[]`                                     | `vat_breakdown` (`[{sadzba, zaklad, dph}]`), `net_amount`, `vat_amount` | bez rozpisu celé v 0 %; pozri „Rozpis DPH“ |                                                                      |
 | `paymentType`                                      | `payment_method`                                                        | `cash`→`hotovost`, `card`→`karta`, `transfer`→`prevod`, inak `karta` |
 | hotovosť                                           | `mimo_pokladne = true`                                                  | staré bločky nesmú pohnúť stavom pokladne                            |
 | `items[]`                                          | `items`                                                                 |                                                                      |

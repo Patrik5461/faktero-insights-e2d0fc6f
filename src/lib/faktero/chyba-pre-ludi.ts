@@ -25,6 +25,10 @@ export function technickaChyba(surova: unknown): string | null {
   const text = String((surova as { message?: unknown } | null)?.message ?? surova ?? "").trim();
   if (!text) return null;
 
+  // Spúšťač zákonných sadzieb DPH: veta je po slovensky, len bez technickej značky.
+  const dph = text.indexOf("FAKTERO_DPH:");
+  if (dph >= 0) return text.slice(dph + 12).trim() || "DPH nie je po zákonných sadzbách.";
+
   // Poradie: najprv to, čo je najkonkrétnejšie.
   // Holé čísla (429, 500) len v technickom kontexte — „limit 500 riadkov“ je veta aplikácie.
   const kod = (k: string) =>

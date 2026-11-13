@@ -6,6 +6,7 @@
   sú tu, aby ich zdieľali REST aj MCP (nástroje MCP volajú to isté REST API).
   Všetko ide cez `ctx.supabase` (servisný klient) a vždy s filtrom firmy.
 */
+import { krajinaBlocku } from "./krajina-blocku";
 import { z } from "zod";
 import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import type { ApiCtx } from "./api-auth.server";
@@ -13,6 +14,8 @@ import { err, ok } from "./api-auth.server";
 import { ZnackyVstup, maZnacky } from "./api-evidencia";
 import { chybaDb, riadokZnaciek, strazZamku, zamknuteDoFirmy } from "./api-evidencia.server";
 import { chybaUlozenejPrijatej, rozlozChybuBlocku, rozlozChybuPrijatej } from "./duplicita-zauctovania";
+import { popisChybDph, type ChybaDph } from "./dph-pravidlo";
+import { overDphZapisu } from "./dph-pravidlo.server";
 
 type Odpoved = { status: number; body: any };
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -64,6 +67,18 @@ const PolozkaPrijatej = z.object({
   unit_price: z.number(),
   vat_rate: z.number().min(0).max(100).default(0),
 });
+
+/** Riadok rozpisu DPH zo vstupu API (rovnaký tvar pre prijatú faktúru aj bloček). */
+const RiadokRozpisu = z.object({
+  rate: z.number().min(0).max(100),
+  base: z.number(),
+  vat: z.number(),
+  vat_category: z.enum(["standard", "reverse_charge", "exempt", "out_of_scope"]).nullish(),
+});
+
+/** DPH nie je po zákonných sadzbách — 400 `invalid_vat` so zoznamom chýb. */
+const chybaDph = (chyby: ChybaDph[]): Odpoved =>
+  err("invalid_vat", popisChybDph(chyby), 400, { errors: chyby });
 
 const UHRADA: Record<string, "prevod" | "hotovost" | "karta"> = {
   prevod: "prevod",
@@ -186,6 +201,11 @@ const PrijataVstup = z.object({
   amount_without_vat: z.number().nullish(),
   vat_amount: z.number().nullish(),
   amount_total: z.number().nullish(),
+  /**
+   * Rozpis DPH po sadzbách. Bez neho sa zostaví z položiek; faktúra len so
+   * sumami musí mať DPH v jednej zákonnej sadzbe.
+   */
+  vat_breakdown: z.array(RiadokRozpisu).max(10).optional(),
   reverse_charge: z.boolean().optional(),
   reverse_charge_type: z.enum(["domestic_69", "eu_b2b"]).nullish(),
   dph_rezim: z.enum(["tuzemsko", "samozdanenie", "nadobudnutie", "dovoz", "bez_dane"]).nullish(),
@@ -212,9 +232,10 @@ const PrijataVstup = z.object({
 }).merge(ZnackyVstup);
 
 function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string) {
+  const rozpisVstup = d.vat_breakdown?.length ? d.vat_breakdown : null;
   const s = sucty(d.items, {
-    zaklad: d.amount_without_vat,
-    dph: d.vat_amount,
+    zaklad: d.amount_without_vat ?? (rozpisVstup ? r2(rozpisVstup.reduce((a, x) => a + x.base, 0)) : undefined),
+    dph: d.vat_amount ?? (rozpisVstup ? r2(rozpisVstup.reduce((a, x) => a + x.vat, 0)) : undefined),
     spolu: d.amount_total,
   });
   const a = d.accounting ?? {};
@@ -252,6 +273,29 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
     r.amount_without_vat = s.zaklad ?? 0;
     r.vat_amount = s.dph ?? 0;
     r.amount_total = s.spolu ?? 0;
+  }
+  /*
+    Rozpis DPH po sadzbách (dph-pravidlo.ts): zadaný, inak z položiek. Bez
+    neho by faktúra s dvoma sadzbami mala v hlavičke „sadzbu“, ktorá nie je
+    zákonná, a databáza by ju odmietla.
+  */
+  if (rozpisVstup) {
+    r.vat_breakdown = rozpisVstup.map((x) => ({
+      sadzba: x.rate,
+      zaklad: x.base,
+      dph: x.vat,
+      ...(x.vat_category ? { vat_category: x.vat_category } : {}),
+      ...(x.vat_category === "reverse_charge" ? { pdp: true } : {}),
+    }));
+  } else if (d.items?.length) {
+    const po = new Map<number, { sadzba: number; zaklad: number; dph: number }>();
+    for (const x of s.riadky) {
+      const b = po.get(x.vat_rate) ?? { sadzba: x.vat_rate, zaklad: 0, dph: 0 };
+      b.zaklad = r2(b.zaklad + x.zaklad);
+      b.dph = r2(b.dph + x.dph);
+      po.set(x.vat_rate, b);
+    }
+    r.vat_breakdown = [...po.values()].map((b) => (d.reverse_charge ? { ...b, pdp: true } : b));
   }
   if (d.items)
     r.items = s.riadky.map((x) => ({
@@ -370,6 +414,15 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const { riadok, sumy: s } = riadokPrijatej(d, teraz);
   if (s.spolu == null)
     return err("validation_error", "Zadajte položky (items) alebo sumy (amount_total).");
+  // DPH len po zákonných sadzbách (dph-pravidlo.ts) — skôr, než sa nahrá súbor.
+  {
+    const chyby = await overDphZapisu(db, ctx.company_id, "purchase_invoices", {
+      ...riadok,
+      type: riadok.type ?? "regular",
+      status: riadok.status ?? "received",
+    });
+    if (chyby.length) return chybaDph(chyby);
+  }
   // Tá istá faktúra (číslo + dodávateľ + suma + rok) sa druhýkrát nezaloží.
   {
     const dup = await strazUlozeniaPrijatej(ctx, {
@@ -456,6 +509,10 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
   // Zámok odovzdaného dokladu: servisný kľúč spúšťač púšťa, stráži ho API.
   const zamok = strazZamku("purchase_invoices", stary, riadok, await zamknuteDoFirmy(ctx));
   if (zamok) return zamok;
+  {
+    const chyby = await overDphZapisu(ctx.supabase, ctx.company_id, "purchase_invoices", riadok, stary);
+    if (chyby.length) return chybaDph(chyby);
+  }
   // Faktúra inej firmy (iný odberateľ) sa nezaúčtuje, kým to človek nepotvrdí vo Fakteri.
   if (stary.odberatel_nesedi && riadok.zauctovane_at && !stary.zauctovane_at) {
     const { nacitajNesedi, textNesedi } = await import("./cudzia-faktura");
@@ -509,10 +566,7 @@ const BlocekVstup = z.object({
   issue_date: DATUM,
   currency: z.string().length(3).default("EUR"),
   total_amount: z.number(),
-  vat_breakdown: z
-    .array(z.object({ rate: z.number().min(0).max(100), base: z.number(), vat: z.number() }))
-    .max(10)
-    .optional(),
+  vat_breakdown: z.array(RiadokRozpisu).max(10).optional(),
   items: z.array(PolozkaPrijatej).max(300).optional(),
   payment_method: z.string().max(20).default("karta"),
   /** Hotovosť sa započíta do pokladne; false = mimo pokladne. */
@@ -534,6 +588,9 @@ function riadokBlocku(d: Partial<z.infer<typeof BlocekVstup>>, teraz: string) {
     nastav("supplier_name", d.supplier.name ?? null);
     nastav("supplier_ico", lenCislice(d.supplier.ico) || null);
     nastav("supplier_ic_dph", d.supplier.ic_dph ?? null);
+    // Krajina: uvedená, inak z IČ DPH — zahraničný bloček nesie sadzby svojho štátu.
+    if (d.supplier.country !== undefined || d.supplier.ic_dph !== undefined)
+      nastav("supplier_country", krajinaBlocku({ krajina: d.supplier.country, icDph: d.supplier.ic_dph }));
   }
   nastav("document_number", d.document_number);
   nastav("issue_date", d.issue_date);
@@ -545,7 +602,13 @@ function riadokBlocku(d: Partial<z.infer<typeof BlocekVstup>>, teraz: string) {
     r.vat_amount = dph;
     r.net_amount = r2(d.total_amount - dph);
     r.vat_breakdown = rozpis.length
-      ? rozpis.map((x) => ({ sadzba: x.rate, zaklad: x.base, dph: x.vat }))
+      ? rozpis.map((x) => ({
+          sadzba: x.rate,
+          zaklad: x.base,
+          dph: x.vat,
+          ...(x.vat_category ? { vat_category: x.vat_category } : {}),
+          ...(x.vat_category === "reverse_charge" ? { pdp: true } : {}),
+        }))
       : null;
     r.vat_rate = rozpis.length === 1 ? rozpis[0]!.rate : null;
   }
@@ -600,6 +663,11 @@ export async function zalozBlocek(ctx: ApiCtx): Promise<Odpoved> {
       .eq("external_id", d.external_id)
       .maybeSingle();
     if (uz) return ok({ objekt: "receipt", ...uz, existoval: true }, 200);
+  }
+  // DPH len po zákonných sadzbách (dph-pravidlo.ts) — skôr, než sa nahrá súbor.
+  {
+    const chyby = await overDphZapisu(db, ctx.company_id, "expense_documents", riadokBlocku(d, ""));
+    if (chyby.length) return chybaDph(chyby);
   }
   let subor = {};
   if (d.file) {
@@ -656,7 +724,7 @@ async function rozpisBlockuNaKontrolu(ctx: ApiCtx, id: string | undefined): Prom
     const db = ctx.supabase as any;
     const { data: row } = await db
       .from("expense_documents")
-      .select("id, net_amount, vat_amount, vat_rate, vat_breakdown, issue_date, supplier_ic_dph")
+      .select("id, net_amount, vat_amount, vat_rate, vat_breakdown, issue_date, supplier_ic_dph, supplier_country")
       .eq("company_id", ctx.company_id)
       .eq("id", id)
       .maybeSingle();
@@ -701,6 +769,10 @@ export async function upravBlocek(ctx: ApiCtx, id: string): Promise<Odpoved> {
     (stary.status ?? "new") !== "new" ? await zamknuteDoFirmy(ctx) : null,
   );
   if (zamok) return zamok;
+  {
+    const chyby = await overDphZapisu(ctx.supabase, ctx.company_id, "expense_documents", riadok, stary);
+    if (chyby.length) return chybaDph(chyby);
+  }
   if (riadok.zauctovane_at && !stary.zauctovane_at) {
     const dup = await strazDuplicity(ctx, "blocek", { ...stary, ...riadok });
     if (dup) return dup;

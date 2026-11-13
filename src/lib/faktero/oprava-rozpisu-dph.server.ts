@@ -712,10 +712,11 @@ export async function predvoleneVytazenie(
   });
   if (!res) return null;
   const { rozpisZVytazenia } = await import("./rozpis-dph-vytazeny");
-  const v = rozpisZVytazenia(res.ai, {
-    krajina: args.krajina ?? "SK",
-    datumDodania: args.datumDodania,
-  });
+  const { aiSOdpoctomZalohy } = await import("./odpocet-zalohy-vytazenie");
+  const v = rozpisZVytazenia(
+    aiSOdpoctomZalohy(res.ai, { krajina: args.krajina ?? "SK", den: args.datumDodania }).ai,
+    { krajina: args.krajina ?? "SK", datumDodania: args.datumDodania },
+  );
   return {
     ai: res.ai,
     rozpis: v.rozpis.map((r) => ({

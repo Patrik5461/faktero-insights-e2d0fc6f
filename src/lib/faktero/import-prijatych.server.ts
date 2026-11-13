@@ -5,6 +5,7 @@
  * Beží na pozadí (nginx zruší požiadavku po 30 s a sto skenov číta AI aj
  * desať minút); priebeh sa zapisuje do `import_jobs` a stránka sa naň pýta.
  */
+import { hlaskaSpustacaDph } from "./dph-pravidlo";
 import {
   PrilisVelkyZip,
   novyRozpocet,
@@ -387,6 +388,8 @@ async function zapisZaznam(
     doPokladne: boolean;
     zdrojAplikacie: string;
     dnes: string;
+    /** Krajina firmy — zákonné sadzby rozpisu DPH. */
+    krajina?: string | null;
     /** Kurz cudzej meny do vkladaného riadku (prázdne pri domácej mene). */
     kurz?: (tabulka: "purchase_invoices" | "expense_documents", riadok: Record<string, any>) => Promise<Record<string, any>>;
   },
@@ -420,7 +423,7 @@ async function zapisZaznam(
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(hlaskaSpustacaDph(error) ?? error.message);
     return { tabulka: "purchase_invoices", id: data.id, zaznam: z, maSubor: Boolean(subor) };
   }
   const subor = sken ? await nahrajSubor(klient, "expense-receipts", o.companyId, sken) : null;
@@ -438,7 +441,7 @@ async function zapisZaznam(
     })
     .select("id")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(hlaskaSpustacaDph(error) ?? error.message);
   return { tabulka: "expense_documents", id: data.id, zaznam: z, maSubor: Boolean(subor) };
 }
 
@@ -483,6 +486,9 @@ export async function vykonajImport(args: {
     doPokladne: args.doPokladne,
     zdrojAplikacie: args.zdrojAplikacie,
     dnes: dnesBratislava(),
+    krajina:
+      ((await klient.from("companies").select("country").eq("id", args.companyId).maybeSingle()).data
+        ?.country as string | null | undefined) ?? null,
     kurz: (await import("./kurz-dokladu.server")).doplnovacKurzov(args.companyId),
   };
   const vysledok = {

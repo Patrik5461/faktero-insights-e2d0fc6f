@@ -21,14 +21,27 @@ import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
 import { useKrajinaDane, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
-import { kontrolaSadziebPrijatej } from "@/lib/faktero/rozpis-dph-kontrola";
 import {
   UpozornenieRozpisuDph,
   potvrdNesuladRozpisu,
-  ulozPotvrdenieRozpisu,
 } from "@/components/faktero/UpozornenieRozpisuDph";
+import { EditorRozpisuDph } from "@/components/faktero/EditorRozpisuDph";
+import {
+  celkomSoZaokruhlenim,
+  historickeSadzbyNaVyber,
+  kontrolaUlozeniaPrijatej,
+  pociatocneZaokruhlenie,
+  rozpisZDokladu,
+  sadzbyNaVyber,
+  suctyRozpisu,
+  type DphPoliaPrijatej,
+  type RiadokRozpisu,
+} from "@/components/faktero/dph-formular";
+import { DesatinnePole } from "@/components/faktero/DesatinnePole";
+import { maxZaokruhlenie } from "@/lib/faktero/dph-pravidlo";
 import { dicPreRegister, ucetNaIban } from "@/lib/faktero/cz-registr-dph";
 import { useT } from "@/lib/i18n/useT";
+import { hlaskaSpustacaDph } from "@/lib/faktero/dph-pravidlo";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
@@ -119,6 +132,8 @@ export function PrijataFakturaForm({
     type: druh as "regular" | "proforma",
     /** Prijatá záloha, ktorú táto faktúra zúčtováva. */
     advance_invoice_id: "",
+    /** Odpočet nezdanenej zálohy — vlastné pole, nie záporná DPH v rozpise (k úhrade = suma − záloha). */
+    advance_amount: "" as string,
   });
   /*
     Nová faktúra dostane domácu menu firmy — česká firma predtým zakladala
@@ -127,9 +142,21 @@ export function PrijataFakturaForm({
   */
   const menaFirmy = useMenaFirmy();
   const krajinaDane = useKrajinaDane();
-  /* Uložený rozpis DPH a potvrdený nesúlad — kontrola sadzieb pri sumách (B1-2). */
-  const [rozpisUlozeny, setRozpisUlozeny] = useState<unknown>(null);
-  const [potvrdenieRozpisu, setPotvrdenieRozpisu] = useState<unknown>(null);
+  /*
+    Rozpis DPH po sadzbách — jediné miesto, kde sa DPH zadáva (Patrik 13. 11.):
+    sadzba len zo zákonných, DPH zo základu, „Bez DPH“ a „DPH“ sú súčty.
+  */
+  const [rozpis, setRozpis] = useState<RiadokRozpisu[]>([]);
+  /** Krajina dodávateľa uloženej faktúry — zahraničný dodávateľ smie mať sadzby svojho štátu. */
+  const [krajinaDodavatelaUlozena, setKrajinaDodavatelaUlozena] = useState<string | null>(null);
+  /**
+   * Zaokrúhlenie celkovej sumy (haliérové v CZK, centové): celkom = základ +
+   * DPH + zaokrúhlenie. Tabuľka nemá vlastný stĺpec — pri načítaní sa odvodí
+   * ako rozdiel uloženej sumy a základ + DPH.
+   */
+  const [zaokruhlenie, setZaokruhlenie] = useState(0);
+  /** Uložené sumy, rozpis a dátumy — keď ich úprava nemení, DPH sa neposiela ani nekontroluje. */
+  const [povodneDph, setPovodneDph] = useState<DphPoliaPrijatej | null>(null);
   useEffect(() => {
     if (upravujeme) return;
     setForm((f) =>
@@ -357,6 +384,10 @@ export function PrijataFakturaForm({
         opravuje_cislo: data.opravuje_cislo ?? "",
         type: ((data as any).type ?? "regular") as "regular" | "proforma",
         advance_invoice_id: (data as any).advance_invoice_id ?? "",
+        advance_amount:
+          (data as any).advance_amount != null
+            ? formatujCislo(Math.abs(Number((data as any).advance_amount)), 2, 2)
+            : "",
       });
       setPrilohaCesta(data.file_path ?? null);
       setPrilohaMime(data.file_mime ?? null);
@@ -369,8 +400,38 @@ export function PrijataFakturaForm({
       kvUlozeneRef.current = (data as any).kv_clenenie ?? "";
       clenenieUlozeneRef.current = (data as any).pohoda_clenenie_dph ?? "";
       setPolozkyDokladu(Array.isArray(data.items) ? (data.items as PolozkaK[]) : []);
-      setRozpisUlozeny((data as any).vat_breakdown ?? null);
-      setPotvrdenieRozpisu((data as any).rozpis_dph_potvrdeny ?? null);
+      {
+        // Jedna uložená sadzba nasleduje hlavičku (tú mohol človek meniť aj inde).
+        const pole = Array.isArray((data as any).vat_breakdown) ? ((data as any).vat_breakdown as any[]) : [];
+        const r = rozpisZDokladu({
+          vat_breakdown: pole.length === 1 ? null : pole,
+          vat_rate: pole.length === 1 ? (pole[0]?.sadzba ?? pole[0]?.rate) : null,
+          zaklad: data.amount_without_vat,
+          dph: data.vat_amount,
+        });
+        if (pole.length === 1 && r[0]) {
+          if (pole[0]?.vat_category) r[0].vat_category = String(pole[0].vat_category);
+          if (pole[0]?.pdp === true) r[0].pdp = true;
+        }
+        setRozpis(r);
+        setKrajinaDodavatelaUlozena((data as any).supplier_country ?? null);
+        setZaokruhlenie(
+          pociatocneZaokruhlenie(data.amount_total, data.amount_without_vat, data.vat_amount, data.currency),
+        );
+        setPovodneDph({
+          amount_without_vat: data.amount_without_vat ?? null,
+          vat_amount: data.vat_amount ?? null,
+          amount_total: data.amount_total ?? null,
+          rozpis: r,
+          delivery_date: data.delivery_date ?? null,
+          issue_date: data.issue_date ?? null,
+          currency: data.currency ?? "EUR",
+          supplier_country: (data as any).supplier_country ?? null,
+          supplier_ic_dph: data.supplier_ic_dph ?? null,
+          type: (data as any).type ?? "regular",
+          status: data.status ?? null,
+        });
+      }
       setNacitavam(false);
     })();
     return () => {
@@ -435,37 +496,81 @@ export function PrijataFakturaForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.supplier_ico, form.supplier_name, form.type]);
 
-  // auto-compute amount_total when net/vat change
+  /* Nová faktúra začína jedným riadkom v základnej sadzbe krajiny firmy. */
+  const sadzbyRozpisu = sadzbyNaVyber(
+    krajinaDane,
+    form.delivery_date || form.issue_date || null,
+    adresaDodavatela?.supplier_country ?? krajinaDodavatelaUlozena,
+  );
+  useEffect(() => {
+    if (nacitavam) return;
+    const prazdny = rozpis.length === 1 && !rozpis[0]!.zaklad && !rozpis[0]!.dph;
+    // Prázdny riadok nasleduje krajinu firmy (CZ 21 %), kým sa do neho nepísalo.
+    if (rozpis.length && !(prazdny && !sadzbyRozpisu.includes(rozpis[0]!.sadzba))) return;
+    setRozpis([{ sadzba: sadzbyRozpisu[0] ?? 0, zaklad: 0, dph: 0, vat_category: "standard" }]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nacitavam, rozpis.length, sadzbyRozpisu.join(",")]);
+  /* Hlavička je súčet rozpisu. */
+  function zmenRozpis(r: RiadokRozpisu[]) {
+    setRozpis(r);
+    const s = suctyRozpisu(r);
+    setForm((f) => ({
+      ...f,
+      amount_without_vat: formatujCislo(s.zaklad, 2, 2),
+      vat_amount: formatujCislo(s.dph, 2, 2),
+    }));
+  }
+
+  // Celkom = základ + DPH + zaokrúhlenie (haliérové/centové).
   useEffect(() => {
     const net = sumaZPola(form.amount_without_vat || "0");
     const vat = sumaZPola(form.vat_amount || "0");
     if (!isNaN(net) || !isNaN(vat)) {
-      const total = (isNaN(net) ? 0 : net) + (isNaN(vat) ? 0 : vat);
+      const total = celkomSoZaokruhlenim(isNaN(net) ? 0 : net, isNaN(vat) ? 0 : vat, zaokruhlenie);
       set("amount_total", formatujCislo(total, 2, 2));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.amount_without_vat, form.vat_amount]);
+  }, [form.amount_without_vat, form.vat_amount, zaokruhlenie]);
 
   /*
     Sadzba DPH / súčet podľa sadzieb voči sume dokladu (Patrik 6. 11.): pri
     nesúlade upozornenie pri sumách a pri uložení „Pokračovať aj tak / Opraviť“.
     Potvrdený nesúlad sa zapíše (`rozpis_dph_potvrdeny`) a znova sa nehlási.
   */
-  const sadzbyPrijatej = kontrolaSadziebPrijatej(
-    {
-      vat_breakdown: rozpisUlozeny,
+  /*
+    Pravidlo DPH (Patrik 13. 11.): zákonná sadzba, DPH zo základu, súčty =
+    hlavička — `skontrolujDph`, to isté stráži databáza. Zálohová faktúra
+    (nie je daňový doklad) a koncept sa nekontrolujú, ako v spúšťači.
+  */
+  const krajinaDodavatela = adresaDodavatela?.supplier_country ?? krajinaDodavatelaUlozena;
+  /*
+    Úprava, ktorá sumy, rozpis, dátumy, menu ani dodávateľa nemení (splatnosť,
+    poznámka…), sa nekontroluje a sumy neposiela — ako spúšťač. Inak sa
+    starú faktúru so zmiešanou hlavičkou nedalo uložiť vôbec.
+  */
+  const kontrolaPrijatej = kontrolaUlozeniaPrijatej({
+    povodne: upravujeme ? povodneDph : null,
+    aktualne: {
       amount_without_vat: sumaZPola(form.amount_without_vat || "0") || 0,
       vat_amount: sumaZPola(form.vat_amount || "0") || 0,
       amount_total: sumaZPola(form.amount_total || "0") || 0,
-      currency: form.currency,
+      rozpis,
       delivery_date: form.delivery_date || null,
       issue_date: form.issue_date || null,
+      currency: form.currency,
+      supplier_country: krajinaDodavatela,
+      supplier_ic_dph: form.supplier_ic_dph.trim() || null,
       type: form.type,
-      supplier_ic_dph: form.supplier_ic_dph,
-      rozpis_dph_potvrdeny: potvrdenieRozpisu,
+      status: form.status,
     },
-    krajinaDane,
-  );
+    zaokruhlenie,
+    krajina: krajinaDane,
+    poloziek: polozkyDokladu.length || undefined,
+  });
+  const sadzbyPrijatej = { kontrola: kontrolaPrijatej };
+  const dobropisPrijatej =
+    Boolean(form.opravuje_cislo.trim()) || (sumaZPola(form.amount_total || "0") || 0) < 0;
+  const historickeRozpisu = historickeSadzbyNaVyber(krajinaDane, krajinaDodavatela);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -476,8 +581,12 @@ export function PrijataFakturaForm({
     // Splatnosť pred vystavením je takmer vždy preklep v roku či mesiaci.
     if (form.due_date && form.issue_date && form.due_date < form.issue_date)
       return toast.error(t("Splatnosť je skôr ako dátum vystavenia — skontrolujte dátumy."));
-    const potvrdilNesulad = !sadzbyPrijatej.kontrola.ok && !sadzbyPrijatej.potvrdene;
-    if (potvrdilNesulad && !(await potvrdNesuladRozpisu(sadzbyPrijatej.kontrola, t))) return;
+    // Nesediaci rozpis DPH sa neuloží (Patrik 13. 11.) — okno povie, čo nesedí.
+    if (!sadzbyPrijatej.kontrola.ok) {
+      await potvrdNesuladRozpisu(sadzbyPrijatej.kontrola, t);
+      return;
+    }
+    const zalohaSuma = Math.abs(sumaZPola(form.advance_amount || "0") || 0);
 
     setBusy(true);
     try {
@@ -588,6 +697,16 @@ export function PrijataFakturaForm({
         amount_without_vat: sumaZPola(form.amount_without_vat || "0") || 0,
         vat_amount: sumaZPola(form.vat_amount || "0") || 0,
         amount_total: sumaZPola(form.amount_total || "0") || 0,
+        vat_breakdown: rozpis.length
+          ? rozpis.map((r) => ({
+              sadzba: r.sadzba,
+              zaklad: r.zaklad,
+              dph: r.dph,
+              ...(r.vat_category ? { vat_category: r.vat_category } : {}),
+              ...(r.pdp ? { pdp: true } : {}),
+            }))
+          : null,
+        advance_amount: form.type === "regular" && zalohaSuma ? zalohaSuma : null,
         currency: form.currency,
         payment_method: form.payment_method || null,
         note: form.note || null,
@@ -622,6 +741,13 @@ export function PrijataFakturaForm({
           delete uprava.file_mime;
           delete uprava.file_size;
         }
+        // DPH sa nemenila — sumy ani rozpis neposielaj (staré dáta ostanú, ako sú).
+        if (!kontrolaPrijatej.zmena) {
+          delete uprava.amount_without_vat;
+          delete uprava.vat_amount;
+          delete uprava.amount_total;
+          delete uprava.vat_breakdown;
+        }
         const { error } = await supabase
           .from("purchase_invoices")
           .update(uprava as never)
@@ -629,8 +755,6 @@ export function PrijataFakturaForm({
         if (error) throw error;
         if (!id) await ulozDodavatelaDoAdresara(cid);
         await doplnKurz(cielId);
-        if (potvrdilNesulad)
-          await ulozPotvrdenieRozpisu("purchase_invoices", cielId, sadzbyPrijatej.podpis, sadzbyPrijatej.kontrola);
         idNovejRef.current = null;
         toast.success(id ? t("Zmeny sú uložené") : t("Prijatá faktúra bola uložená"));
         navigate({ to: "/prijate-faktury/$id", params: { id: cielId } });
@@ -661,6 +785,12 @@ export function PrijataFakturaForm({
             ? { label: t("Otvoriť"), onClick: () => navigate({ to: "/prijate-faktury/$id", params: { id: uz.id! } }) }
             : undefined,
         });
+        return;
+      }
+      // Databáza (spúšťač FAKTERO_DPH) odmietla DPH mimo zákonných sadzieb — povedz prečo.
+      const dph = hlaskaSpustacaDph(e);
+      if (dph) {
+        toast.error(dph);
         return;
       }
       const { friendlyError } = await import("@/lib/faktero/plan-error");
@@ -862,7 +992,13 @@ export function PrijataFakturaForm({
         <Field label="Zúčtováva prijatú zálohu">
           <select
             value={form.advance_invoice_id}
-            onChange={(e) => set("advance_invoice_id", e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              set("advance_invoice_id", v);
+              // Odpočet zálohy sa predvyplní sumou zálohy (dá sa prepísať, napr. pri čiastočnom zúčtovaní).
+              const z = zalohy.find((x) => x.id === v);
+              if (z && !form.advance_amount.trim()) set("advance_amount", formatujCislo(z.amount_total, 2, 2));
+            }}
             className="input"
           >
             <option value="">{t("— žiadnu —")}</option>
@@ -961,22 +1097,29 @@ export function PrijataFakturaForm({
   );
   const poliaSum = (
     <>
-      <Field label="Bez DPH">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={form.amount_without_vat}
-          onChange={(e) => set("amount_without_vat", e.target.value)}
-          className="input"
+      <div className="col-span-full min-w-0">
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">{t("Rozpis DPH podľa sadzieb")}</span>
+        <EditorRozpisuDph
+          riadky={rozpis}
+          onChange={zmenRozpis}
+          sadzby={sadzbyRozpisu}
+          historicke={historickeRozpisu}
+          dobropis={dobropisPrijatej}
+          mena={form.currency}
+          kontrola={sadzbyPrijatej.kontrola}
+          kompaktne={kompaktne}
         />
-      </Field>
-      <Field label="DPH">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={form.vat_amount}
-          onChange={(e) => set("vat_amount", e.target.value)}
-          className="input"
+      </div>
+      <Field label="Zaokrúhlenie">
+        <DesatinnePole
+          aria-label={t("Zaokrúhlenie")}
+          hodnota={zaokruhlenie}
+          naZmenu={(v) => setZaokruhlenie(Math.round((Number(v) || 0) * 100) / 100)}
+          title={t("Haliérové alebo centové zaokrúhlenie celkovej sumy (najviac ±{max} {mena})", {
+            max: String(maxZaokruhlenie(form.currency)).replace(".", ","),
+            mena: form.currency,
+          })}
+          className="input text-right tabular-nums"
         />
       </Field>
       <Field label="Celkom">
@@ -984,8 +1127,10 @@ export function PrijataFakturaForm({
           type="text"
           inputMode="decimal"
           value={form.amount_total}
-          onChange={(e) => set("amount_total", e.target.value)}
-          className="input font-semibold"
+          readOnly
+          aria-readonly="true"
+          title={t("Súčet rozpisu DPH a zaokrúhlenia")}
+          className="input bg-muted/40 font-semibold"
         />
       </Field>
       <Field label="Mena">
@@ -1001,12 +1146,32 @@ export function PrijataFakturaForm({
           ))}
         </select>
       </Field>
+      {form.type === "regular" ? (
+        <Field label="Odpočet nezdanenej zálohy">
+          <input
+            type="text"
+            inputMode="decimal"
+            aria-label={t("Odpočet zálohy")}
+            value={form.advance_amount}
+            onChange={(e) => set("advance_amount", e.target.value)}
+            placeholder="0,00"
+            className="input"
+          />
+          {sumaZPola(form.advance_amount || "0") ? (
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t("Na úhradu")}:{" "}
+              {formatujMenu(
+                Math.round(
+                  ((sumaZPola(form.amount_total || "0") || 0) - Math.abs(sumaZPola(form.advance_amount || "0") || 0)) * 100,
+                ) / 100,
+                form.currency,
+              )}
+            </span>
+          ) : null}
+        </Field>
+      ) : null}
       {!sadzbyPrijatej.kontrola.ok ? (
-        <UpozornenieRozpisuDph
-          className="col-span-full"
-          kontrola={sadzbyPrijatej.kontrola}
-          potvrdene={sadzbyPrijatej.potvrdene}
-        />
+        <UpozornenieRozpisuDph className="col-span-full" kontrola={sadzbyPrijatej.kontrola} />
       ) : null}
     </>
   );
@@ -1147,7 +1312,7 @@ export function PrijataFakturaForm({
         priloha={prilohaCesta ? { cesta: prilohaCesta, mime: prilohaMime } : null}
         onSubmit={submit}
         busy={busy}
-        sumaSedi={sumaSedi && (sadzbyPrijatej.kontrola.ok || sadzbyPrijatej.potvrdene)}
+        sumaSedi={sumaSedi && sadzbyPrijatej.kontrola.ok}
         ibanOk={ibanOk}
         pravidlo={
           <PravidloZDokladu

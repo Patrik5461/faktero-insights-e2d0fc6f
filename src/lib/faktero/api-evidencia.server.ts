@@ -49,6 +49,9 @@ export function chybaDb(
   sprava = "Zápis sa nepodaril.",
 ) {
   const m = e?.message ?? sprava;
+  // Spúšťač zákonných sadzieb DPH (dph-pravidlo.ts) — vstup klienta, nie chyba servera.
+  if (/FAKTERO_DPH:/.test(m))
+    return err("invalid_vat", m.slice(m.indexOf("FAKTERO_DPH:") + 12).trim(), 400);
   if (e?.code === "23505") return err("conflict", `Záznam už existuje: ${m}`, 409);
   if (/zamknut|locked|odovzdan|uzamk/i.test(m)) return err("locked", m, 409);
   if (/FAKTERO_PLAN_BLOCK/.test(m))

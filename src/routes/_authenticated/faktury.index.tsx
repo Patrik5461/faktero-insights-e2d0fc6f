@@ -43,6 +43,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import {
@@ -417,9 +418,20 @@ function InvoicesPage() {
     }
     setBusy(true);
     try {
-      const r = await exportFn({
-        data: { companyId: cid, invoiceIds: list.selectedIds, format: "pohoda_xml" },
-      });
+      // Závažné chyby export nezastavia — okno sa spýta „Exportovať aj tak“.
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportFn({
+            data: {
+              companyId: cid,
+              invoiceIds: list.selectedIds,
+              format: "pohoda_xml",
+              potvrdene_varovania: potvrdene,
+            },
+          }),
+        t,
+      );
+      if (!r) return;
       const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
 import { popisyRiadkuDph } from "./VolbaSadzbyDph";
+import { UpozornenieZlejDph } from "./OpravaRozpisuDph";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { BookCheck, Check, CheckCircle2, Loader2, Lock } from "lucide-react";
@@ -104,6 +106,7 @@ export function BlocekDetailKompaktny({
 }) {
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
+  const krajinaFirmy = useKrajinaDane();
   const navigate = useNavigate();
   const nacitajMena = useServerFn(menaClenovFirmy);
   const zauctuj = useServerFn(zauctujDokladyFn);
@@ -541,6 +544,14 @@ export function BlocekDetailKompaktny({
               </Hodnota>
             </div>
           ) : null}
+          {/* Uložený bloček so zlou DPH (sadzba mimo zákonných, DPH nesedí so základom) — oprava rozpisu. */}
+          <UpozornenieZlejDph
+            tabulka="expense_documents"
+            doklad={row}
+            krajina={krajinaFirmy}
+            zamknute={zamknute}
+            onOpravene={onZmena}
+          />
           <KontrolaSumyBlocku
             kontrola={kontrolaSumy}
             mena={menaDokladu}

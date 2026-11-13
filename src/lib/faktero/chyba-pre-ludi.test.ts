@@ -79,3 +79,11 @@ describe("technickaChyba", () => {
     expect(prelozHlaskuChyby("Vyberte odberateľa", "de")).toBe("Vyberte odberateľa");
   });
 });
+
+describe("spúšťač zákonných sadzieb DPH", () => {
+  it("odstráni technickú značku FAKTERO_DPH", () => {
+    expect(
+      technickaChyba("FAKTERO_DPH: Faktúru 1 nemožno uložiť — sadzba 13 % nie je zákonná sadzba DPH."),
+    ).toBe("Faktúru 1 nemožno uložiť — sadzba 13 % nie je zákonná sadzba DPH.");
+  });
+});

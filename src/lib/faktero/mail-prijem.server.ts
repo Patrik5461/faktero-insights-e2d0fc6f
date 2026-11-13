@@ -145,16 +145,17 @@ pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací 
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
 Pri bločku pridaj "payment_method": "hotovost" (hotovosť, v hotovosti, cash), "karta" (karta,
 platobná karta, kartou, Visa, Mastercard) alebo "prevod"; keď na doklade nie je, null.
-Pri bločku pridaj aj "rounding": zaokrúhlenie sumy na úhradu tak, ako je na doklade
-(„Zaokrúhlenie", napr. -0.02 alebo 0.01); "amount_total" je potom suma po zaokrúhlení.
+Pri bločku aj faktúre pridaj "rounding": zaokrúhlenie sumy tak, ako je na doklade
+(„Zaokrúhlenie", „Haliérové vyrovnanie", napr. -0.02 alebo 0.01); "amount_total" je potom suma
+po zaokrúhlení, "amount_without_vat", "vat_amount" a "vat_breakdown" sú BEZ zaokrúhlenia.
 Keď zaokrúhlenie na doklade nie je, null.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 ZÁPORNÉ riadky (zľava, dobropisovaná položka, vrátenie obalu či zálohy na obal) sú položky —
 daj ich do "items" so ZÁPORNOU sumou ("total", "unit_price") tak, ako sú na doklade.
 ODPOČET ZÁLOHY: riadok „Predplatba", „Záloha", „Odpočet zálohy", „Uhradené zálohou",
-„Zálohová platba", „Zaplatené zálohou", „Uhradené preddavky" (napr. „Predplatba: (Záloh. fak. č.
-20260037) -900,00") NIE JE položka — nedávaj ho do "items", ale do "advance_deduction":
+„Zálohová platba", „Zaplatené zálohou", „Uhradené preddavky", „Odpočítané na zálohách", „ZF č. …"
+(napr. „Predplatba: (Záloh. fak. č. 20260037) -900,00", „ZF 9180431, 14.10.2026 0% -14 980,00") NIE JE položka — nedávaj ho do "items", ale do "advance_deduction":
 "amount" = odpočítaná suma s DPH KLADNE (900), "advance_invoice_number" = číslo zálohovej faktúry
 alebo dokladu k platbe (20260037), "taxed" = true len keď má odpočet vlastný základ a DPH / sadzbu
 (zdanená záloha, daňový doklad k prijatej platbe) a vtedy "base", "vat" a "rate" (kladne); pri
@@ -162,6 +163,12 @@ nezdanenej zálohe "taxed": false a "base", "vat", "rate" null. Bez odpočtu zá
 "amount_total", "amount_without_vat", "vat_amount" a "vat_breakdown" sú vždy CELÉ plnenie PRED
 odpočtom zálohy („Celková fakturovaná suma", súčet položiek s DPH); sumu po odpočte („Celkom
 k úhrade", „Zostáva uhradiť") daj do "amount_due". Bez zálohy je "amount_due" suma na úhradu.
+Nezdanený odpočet zálohy NIKDY neznižuje "amount_without_vat" ani nie je riadkom "vat_breakdown" —
+ani keď ho rekapitulácia vytlačí ZÁPORNE v stĺpci „Nie je predmetom DPH", „Oslobodené" alebo 0 %
+(napr. „Odpočítané na zálohách -14 980,00" pod „Nie je predmetom DPH"): taký záporný údaj patrí len
+do "advance_deduction". Kontrola: "vat_amount" = súčet "vat" a "amount_without_vat" = súčet "base"
+riadkov "vat_breakdown"; "amount_total" = "amount_without_vat" + "vat_amount" (+ "rounding");
+"amount_due" = "amount_total" − "advance_deduction.amount".
 ${pokynRozpisuDph()}
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.
 `;

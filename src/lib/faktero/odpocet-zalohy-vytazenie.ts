@@ -18,6 +18,7 @@
 
   Čisté funkcie bez databázy — testy v `odpocet-zalohy-vytazenie.test.ts`.
 */
+import { napravZalohuVZaklade } from "./napravy-dph-vytazenia";
 
 export type OdpocetZalohyAi = {
   /** Odpočítaná suma s DPH, kladne. */
@@ -42,9 +43,19 @@ const TOL = 0.02;
 const blizko = (a: number | null | undefined, b: number | null | undefined, tol = TOL) =>
   a != null && b != null && Math.abs(a - b) <= tol + 1e-9;
 
+/** Slová, ktoré prezrádzajú odpočet zálohy (bez ohľadu na veľkosť písmen). */
+const SLOVA_ZALOHY = /(z[aá]loh|predplat|preddavok|preddavk|advance|prepaid|deposit|uhraden[eéáa]? z[aá]loh|z[aá]lohov)/i;
+/**
+ * Skratka „ZF“ len s číslom dokladu („ZF 2026001“, „ZF č. 12“, „ZF/2026/3“ — aspoň tri číslice, „ZF 8HP“ je prevodovka) a
+ * len veľkými písmenami — samotné „ZF“ je aj značka (ZF Friedrichshafen:
+ * „ZF olej prevodovky“ je tovar, nie záloha).
+ */
+const CISLO_ZF = /\bZF\s*(?:č\.?|c\.)\s*\d|\bZF\s*[-.\/]?\s*\d{3,}/;
+
 /** Text riadku, ktorý je odpočtom zálohy (nie zľavou ani vrátením obalu). */
-export const TEXT_ODPOCTU_ZALOHY =
-  /(z[aá]loh|predplat|preddavok|preddavk|advance|prepaid|deposit|uhraden[eéáa]? z[aá]loh|z[aá]lohov)/i;
+export const TEXT_ODPOCTU_ZALOHY = {
+  test: (text: string): boolean => SLOVA_ZALOHY.test(text) || CISLO_ZF.test(text),
+};
 
 const OBAL = /(obal|f[ľl]a[šs]|vratn|prepravk|palet|sud|keg)/i;
 
@@ -130,7 +141,28 @@ function suctyRozpisu(ai: Record<string, unknown>): { zaklad: number; dph: numbe
  *   (ak ich AI vrátila celé) a medzi položky pribudne záporný riadok
  *   „Odpočet zálohy …“ — súčet položiek tak sedí so sumou dokladu.
  */
-export function aiSOdpoctomZalohy(ai: Record<string, unknown>): {
+export function aiSOdpoctomZalohy(
+  vstup: Record<string, unknown>,
+  /** Krajina firmy a deň dodania — na overenie sadzieb pri náprave zálohy v základe. */
+  kontext: { krajina?: string | null; den?: string | null } = {},
+): {
+  ai: Record<string, unknown>;
+  odpocet: OdpocetZalohyAi | null;
+  /** Veta o deterministickej náprave (záloha bola v základe / v rozpise). */
+  naprava?: string | null;
+} {
+  /*
+    Tempus-Car 40260037 (13. 11. 2026): odpočet nezdanenej zálohy −14 980 bol
+    v rekapitulácii v stĺpci „Nie je predmetom DPH“ a AI ho dala do rozpisu
+    aj do základu → „30,5 %“. Najprv sa presunie do odpočtu zálohy.
+  */
+  const opravene = napravZalohuVZaklade(vstup, kontext);
+  const ai = opravene.ai;
+  const vysledok = aiSOdpoctomZalohyBezNapravy(ai);
+  return opravene.naprava ? { ...vysledok, naprava: opravene.naprava } : vysledok;
+}
+
+function aiSOdpoctomZalohyBezNapravy(ai: Record<string, unknown>): {
   ai: Record<string, unknown>;
   odpocet: OdpocetZalohyAi | null;
 } {

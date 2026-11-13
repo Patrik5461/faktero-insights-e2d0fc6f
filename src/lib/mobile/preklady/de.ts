@@ -1058,6 +1058,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "rd.cudziaUlozena": "Die Rechnung gehört nicht zu dieser Firma — mit Ausrufezeichen gespeichert, wird nicht verbucht.",
   "rd.inaFirma": "eine andere Firma",
   "rd.chybaUlozenia": "Der Beleg konnte nicht gespeichert werden.",
+  "rd.dphNesedi": "USt.-Aufschlüsselung entspricht nicht den gesetzlichen Sätzen",
+  "rd.dphNesediPopis": "So wird der Beleg nicht gespeichert. Korrigieren Sie Sätze und USt. im Web unter „Unbearbeitete Belege“ — der Beleg ist dort bereits.",
   "rd.dodavatel": "Lieferant",
   "rd.cislo": "Belegnummer",
   "rd.vystavene": "Ausgestellt",

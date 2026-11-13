@@ -2,7 +2,10 @@
   Výber sadzby a druhu plnenia v riadku rozpisu DPH („Čiastka a DPH“):
   0 / 5 / 19 / 23 % (CZ 0 / 12 / 21 %), „Nie je predmetom DPH“, „Oslobodené“,
   „Prenesenie DP“. Druh plnenia bez dane nastaví sadzbu 0 a daň 0; zmena
-  sadzby prepočíta daň zo základu.
+  sadzby prepočíta daň zo základu. Ponúkajú sa len zákonné sadzby — sadzba
+  mimo nich (napr. 16,82 % dopočítaná z hlavičky) je len označená ako neplatná.
+  Záporný riadok (odpočet zálohy, dobropis) a dobropis/opravný doklad ponúkne
+  aj historické zákonné sadzby (SK 20/10, CZ 15/10) — pôvodné obdobie.
 */
 import { useT } from "@/lib/i18n/useT";
 import { zoradSadzby } from "@/lib/faktero/vat-rates";
@@ -11,6 +14,7 @@ import {
   NAZVY_KATEGORII_DPH,
   type KategoriaDph,
 } from "@/lib/faktero/rozpis-dph-kontrola";
+import { ponukaSadzieb } from "./dph-formular";
 
 type Riadok = { sadzba: number; zaklad: number; dph: number; vat_category?: KategoriaDph };
 
@@ -45,18 +49,27 @@ export function zmenaZVolby(r: Riadok, hodnota: string): Partial<Riadok> {
 export function VolbaSadzbyDph({
   riadok,
   sadzby,
+  historicke,
+  dobropis = false,
   onChange,
   className = "",
 }: {
   riadok: Riadok;
   /** Sadzby krajiny firmy (vrátane 0). */
   sadzby: number[];
+  /** Všetky zákonné sadzby, čo v krajine platili — pre záporný riadok a dobropis. */
+  historicke?: number[];
+  /** Dobropis / opravný doklad — ponúkne aj sadzby pôvodného obdobia. */
+  dobropis?: boolean;
   onChange: (z: Partial<Riadok>) => void;
   className?: string;
 }) {
   const { t } = useT();
   const hodnota = hodnotaVolby(riadok);
-  const ponuka = zoradSadzby([...new Set([...sadzby, 0, Number(riadok.sadzba) || 0])]);
+  // Len zákonné sadzby (Patrik 13. 11.) — iná hodnota z dokladu sa ukáže ako neplatná a nedá sa vybrať.
+  const ponuka = zoradSadzby(ponukaSadzieb(sadzby, historicke, riadok, dobropis));
+  const aktualna = Number(riadok.sadzba) || 0;
+  const neplatna = hodnota.startsWith("s:") && !ponuka.some((x) => Math.abs(x - aktualna) < 0.001);
   const naKontrolu =
     kategoriaRiadku({ rate: riadok.sadzba, vat_category: riadok.vat_category }) === "needs_review";
   return (
@@ -64,8 +77,14 @@ export function VolbaSadzbyDph({
       aria-label={t("Sadzba")}
       value={hodnota}
       onChange={(e) => onChange(zmenaZVolby(riadok, e.target.value))}
-      className={`${className} ${naKontrolu ? "dk-ramik-chyba" : ""}`}
+      aria-invalid={naKontrolu || neplatna || undefined}
+      className={`${className} ${naKontrolu || neplatna ? "dk-ramik-chyba" : ""}`}
     >
+      {neplatna ? (
+        <option value={hodnota} disabled>
+          {t("{sadzba} % – neplatná", { sadzba: String(aktualna).replace(".", ",") })}
+        </option>
+      ) : null}
       {ponuka.map((x) => (
         <option key={x} value={`s:${x}`}>
           {x} %

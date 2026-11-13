@@ -236,6 +236,30 @@ describe("prijatá faktúra z faktúry Shell", () => {
     expect(riadok.vat_amount).toBe(14.4);
   });
 
+  it("nesie rozpis DPH po sadzbách, ktorý prejde pravidlom", async () => {
+    const { skontrolujDphDokladu } = await import("../dph-pravidlo");
+    const { riadok } = prijataZFaktury({ ...F, zaklad: 62.62, dph: 14.4, spolu: 77.02 }, [t()], K);
+    expect(riadok.vat_breakdown).toEqual([{ sadzba: 23, zaklad: 62.62, dph: 14.4 }]);
+    expect(skontrolujDphDokladu("purchase_invoices", riadok, "SK")).toEqual([]);
+    const cz = t({ externeId: "cz", krajina: "CZ", krajinaDph: "CZ", zaklad: 40, dph: 8.4, sadzbaDph: 21, spolu: 48.4 });
+    const r2 = prijataZFaktury({ ...F, zaklad: 100.62, dph: 22.34, spolu: 122.96 }, [t(), cz], K).riadok;
+    expect(r2.vat_breakdown).toEqual([
+      { sadzba: 23, zaklad: 60.62, dph: 13.94 },
+      { sadzba: 0, zaklad: 48.4, dph: 0 },
+    ]);
+    expect(skontrolujDphDokladu("purchase_invoices", r2, "SK")).toEqual([]);
+  });
+
+  it("nezákonná sadzba vydavateľa → koncept na kontrolu (spúšťač by ju odmietol)", async () => {
+    const { skontrolujDphDokladu } = await import("../dph-pravidlo");
+    const zla = t({ zaklad: 100, dph: 22, sadzbaDph: 22, spolu: 122 });
+    const { riadok, naKontrolu, poznamky } = prijataZFaktury({ ...F, zaklad: 100, dph: 22, spolu: 122 }, [zla], K);
+    expect(riadok.status).toBe("draft");
+    expect(naKontrolu).toBe(true);
+    expect(poznamky.join(" ")).toMatch(/koncept/);
+    expect(skontrolujDphDokladu("purchase_invoices", riadok, "SK")).toEqual([]);
+  });
+
   it("zahraničná DPH ide do nákladu so sadzbou 0 % a do odpočtu nie", () => {
     const cz = t({
       externeId: "cz",

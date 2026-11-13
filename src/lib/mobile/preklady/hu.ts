@@ -1044,6 +1044,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "rd.cudziaUlozena": "A számla nem ehhez a céghez tartozik — felkiáltójellel mentve, nem könyvelődik.",
   "rd.inaFirma": "másik cég",
   "rd.chybaUlozenia": "A bizonylatot nem sikerült menteni.",
+  "rd.dphNesedi": "Az áfabontás nem felel meg a törvényes kulcsoknak",
+  "rd.dphNesediPopis": "A bizonylat így nem menthető. Javítsa a kulcsokat és az áfát a weben a Feldolgozatlan bizonylatok között — a bizonylat már ott van.",
   "rd.dodavatel": "Szállító",
   "rd.cislo": "Bizonylatszám",
   "rd.vystavene": "Kiállítva",

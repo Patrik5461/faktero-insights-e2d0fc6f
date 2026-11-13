@@ -4,7 +4,7 @@
   (`rozpis-dph-kontrola.ts`). Doklad s takým rozpisom sa neuloží potichu —
   ide „na kontrolu“ a človek ho tu vidí ešte pred vytvorením.
 */
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { supabase } from "@/integrations/supabase/client";
 import { potvrd } from "@/lib/potvrdenie";
@@ -14,19 +14,27 @@ type Preklad = (s: string, p?: Record<string, string | number>) => string;
 
 /**
   Pred uložením, zaúčtovaním či vytvorením dokladu s nesediacim rozpisom DPH
-  (zlá sadzba, súčet nesedí so sumou dokladu): „Pokračovať aj tak“ vráti true,
-  „Opraviť“ false. Pri sediacom rozpise sa nepýta.
+  (sadzba mimo zákonných, DPH nezodpovedá základu, súčet nesedí s dokladom).
+  Od 13. 11. (Patrik: „nedovoľ prepisovať zákonné sadzby DPH“) sa taký doklad
+  neuloží vôbec — okno len povie, čo nesedí. „Opraviť rozpis DPH“ zavolá
+  `naOpravu` (napr. otvorí opravu rozpisu). Vráti true len pri sediacom rozpise.
 */
-export async function potvrdNesuladRozpisu(k: VysledokKontroly | null | undefined, t: Preklad): Promise<boolean> {
+export async function potvrdNesuladRozpisu(
+  k: VysledokKontroly | null | undefined,
+  t: Preklad,
+  naOpravu?: (() => void) | null,
+): Promise<boolean> {
   if (!k || k.ok) return true;
-  return potvrd(
-    t("Sadzba DPH alebo súčet nesedí s dokladom") +
+  const opravit = await potvrd(
+    t("Rozpis DPH nesedí — doklad sa neuloží") +
       "\n" +
       k.chyby.map((c) => c.sprava).join("\n") +
       "\n" +
-      t("Pokračovať aj tak? Nesúlad sa zapíše ako potvrdený a pri ďalšom otvorení sa už neukáže."),
-    { potvrdit: t("Pokračovať aj tak"), zrusit: t("Opraviť") },
+      t("Sadzba musí byť zákonná a DPH riadku sa počíta zo základu (doladiť sa dá len o zaokrúhlenie). Opravte rozpis podľa dokladu."),
+    { potvrdit: naOpravu ? t("Opraviť rozpis DPH") : t("Rozumiem"), zrusit: t("Späť") },
   );
+  if (opravit && naOpravu) naOpravu();
+  return false;
 }
 
 /**
@@ -65,8 +73,7 @@ export async function ulozPotvrdenieRozpisu(
 export function UpozornenieRozpisuDph({
   kontrola,
   dovod,
-  onPotvrd,
-  potvrdene = false,
+  onOprava,
   poznamka,
   className = "",
 }: {
@@ -74,26 +81,23 @@ export function UpozornenieRozpisuDph({
   kontrola?: VysledokKontroly | null;
   /** Uložený dôvod (napr. `na_kontrolu_dovod`), keď živá kontrola nie je. */
   dovod?: string | null;
-  /** „Rozpis je správny“ — človek ho overil podľa dokladu. */
+  /**
+   * Zastarané: „Rozpis je správny“ sa už neponúka — nesediaci rozpis treba
+   * opraviť (Patrik 13. 11.). Ostáva kvôli volajúcim.
+   */
   onPotvrd?: (() => void) | null;
-  /** Nesúlad človek už vedome potvrdil („Pokračovať aj tak“) — len tichý riadok. */
+  /**
+   * Zastarané: kedysi potvrdený nesúlad („Pokračovať aj tak“) sa už neschováva —
+   * zlá DPH je chyba, kým sa neopraví.
+   */
   potvrdene?: boolean;
+  /** Tlačidlo „Opraviť rozpis DPH“ (uložený doklad so zlou DPH). */
+  onOprava?: (() => void) | null;
   /** Veta pod zoznamom chýb; predvolene „pôjde na kontrolu“. */
   poznamka?: string;
   className?: string;
 }) {
   const { t } = useT();
-  if (potvrdene && kontrola && !kontrola.ok)
-    return (
-      <p
-        data-testid="rozpis-dph-potvrdeny"
-        className={`flex items-start gap-1.5 text-xs text-muted-foreground ${className}`}
-        title={kontrola.chyby.map((c) => c.sprava).join(" ")}
-      >
-        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        {t("Nesúlad rozpisu DPH s dokladom ste potvrdili.")}
-      </p>
-    );
   const vety =
     kontrola && !kontrola.ok ? kontrola.chyby.map((c) => c.sprava) : dovod ? [dovod] : [];
   if (!vety.length) return null;
@@ -118,16 +122,16 @@ export function UpozornenieRozpisuDph({
         <p className="text-muted-foreground">
           {poznamka ??
             t(
-              "Opravte sadzby, základ a DPH podľa tabuľky rozpisu DPH na doklade. Ak je doklad naozaj taký, pri uložení zvoľte „Pokračovať aj tak“ — nesúlad sa zapíše a znova sa nehlási.",
+              "Opravte sadzby, základ a DPH podľa tabuľky rozpisu DPH na doklade. Sadzba musí byť zákonná a DPH sa počíta zo základu — kým rozpis nesedí, doklad sa neuloží.",
             )}
         </p>
-        {onPotvrd ? (
+        {onOprava ? (
           <button
             type="button"
-            onClick={onPotvrd}
+            onClick={onOprava}
             className="mt-1 inline-flex h-8 items-center rounded-md border border-current/30 px-3 font-medium hover:bg-background/60"
           >
-            {t("Rozpis je správny")}
+            {t("Opraviť rozpis DPH")}
           </button>
         ) : null}
       </div>

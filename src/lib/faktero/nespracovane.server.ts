@@ -513,6 +513,11 @@ export async function vytvorDoklad(
       const { overUlozeniePrijatej } = await import("./duplicita-zauctovania.server");
       await overUlozeniePrijatej(supabase, r.company_id, { ...zakl, status: "received" }, { ajMoznu: volby.ajDuplicitu });
     }
+    // DPH len po zákonných sadzbách (dph-pravidlo.ts) — skôr, než sa nahrá súbor.
+    {
+      const { strazDphZapisu } = await import("./dph-pravidlo.server");
+      await strazDphZapisu(supabase, r.company_id, "purchase_invoices", { ...zakl, status: "received" });
+    }
     // Odpočet zálohy na faktúre — väzba na prijatú zálohovú faktúru podľa čísla z dokladu.
     const zalohovaId =
       druh === "faktura" && zakl.advance_amount && u.zalohaCislo
@@ -573,7 +578,8 @@ export async function vytvorDoklad(
       .single();
     if (error) {
       if (cesta) await supabase.storage.from("purchase-invoices").remove([cesta]);
-      throw new Error(error.message);
+      const { hlaskaSpustacaDph } = await import("./dph-pravidlo");
+      throw new Error(hlaskaSpustacaDph(error) ?? error.message);
     }
     /*
       Kto klikol Vytvoriť (stĺpec „Spracoval“) — `created_by` ostáva ten, kto
@@ -658,6 +664,10 @@ export async function vytvorDoklad(
       const uz = await najdiUlozenyBlocek(supabase, r.company_id, blocekZUdajov(u));
       if (uz) throw new Error(chybaUlozenehoBlocku(uz));
     }
+    {
+      const { strazDphZapisu } = await import("./dph-pravidlo.server");
+      await strazDphZapisu(supabase, r.company_id, "expense_documents", blocekZUdajov(u));
+    }
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
       const up = await supabase.storage.from("expense-receipts").upload(cesta, bajty, { contentType: mime });
@@ -695,7 +705,8 @@ export async function vytvorDoklad(
       .single();
     if (error) {
       if (cesta) await supabase.storage.from("expense-receipts").remove([cesta]);
-      throw new Error(error.message);
+      const { hlaskaSpustacaDph } = await import("./dph-pravidlo");
+      throw new Error(hlaskaSpustacaDph(error) ?? error.message);
     }
     /*
       Vytvorením s predkontáciou je bloček zaúčtovaný (ako ručná predkontácia

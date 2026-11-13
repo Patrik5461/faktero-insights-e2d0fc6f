@@ -44,7 +44,7 @@ describe("mesačný balík — jedna zlá faktúra ho nezhodí", () => {
       zostav,
     );
     expect(r.content).toBe("");
-    expect(r.preskocene).toEqual(["20260001 — faktúra v mene USD nemá kurz"]);
+    expect(r.preskocene).toEqual(["20260001 — faktúra v mene USD nemá kurz — bez kurzu pôjde do Pohody s kurzom 0 a sumy v domácej mene nebudú sedieť"]);
   });
 
   it("dobrá a zlá faktúra: dobrá ide do XML, zlá do vynechaných", async () => {
@@ -58,7 +58,7 @@ describe("mesačný balík — jedna zlá faktúra ho nezhodí", () => {
     );
     const d = parser.parse(r.content).dataPack;
     expect(d.dataPackItem.invoice.invoiceHeader.number.numberRequested).toBe(20260001);
-    expect(r.preskocene).toEqual(["20260002 — faktúra v mene USD nemá kurz"]);
+    expect(r.preskocene).toEqual(["20260002 — faktúra v mene USD nemá kurz — bez kurzu pôjde do Pohody s kurzom 0 a sumy v domácej mene nebudú sedieť"]);
   });
 
   it("faktúra, ktorá zhodí generátor, sa vyčlení a ostatné prejdú", async () => {

@@ -56,6 +56,7 @@ import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.fu
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { vystavDokladKPlatbeFn } from "@/lib/faktero/doklad-k-platbe.functions";
 import { DokladKPlatbeOkno } from "@/components/faktero/DokladKPlatbeOkno";
 import { OstraZoZalohy } from "@/components/faktero/OstraZoZalohy";
@@ -906,14 +907,21 @@ function InvoiceDetail() {
     try {
       // Odovzdaná faktúra: len kópia na stiahnutie — do histórie sa nezapíše,
       // aby nevznikla druhá dávka s tou istou faktúrou.
-      const r = await exportFn({
-        data: {
-          companyId: inv.company_id,
-          invoiceIds: [inv.id],
-          format: "pohoda_xml",
-          kopia: Boolean(inv.exported_at),
-        },
-      });
+      // Závažné chyby export nezastavia — okno sa spýta „Exportovať aj tak“.
+      const r = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportFn({
+            data: {
+              companyId: inv.company_id,
+              invoiceIds: [inv.id],
+              format: "pohoda_xml",
+              kopia: Boolean(inv.exported_at),
+              potvrdene_varovania: potvrdene,
+            },
+          }),
+        t,
+      );
+      if (!r) return;
       const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

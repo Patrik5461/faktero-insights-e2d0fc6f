@@ -15,6 +15,8 @@
 */
 
 import { poskytovatel as metaPoskytovatela } from "./register";
+import { popisChybDph, skontrolujDph, type RiadokDph } from "../dph-pravidlo";
+import { krajinaDane } from "../vat-rates";
 import type { KartaFaktura, KartaTransakcia } from "./typy";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -297,6 +299,12 @@ export function prijataZFaktury(
   let zahranicnaDph = 0;
   const poVozidlach = new Map<string, number>();
   const vozidla = new Map(k.vozidla.map((v) => [v.id, v]));
+  /* Rozpis DPH po sadzbách (vat_breakdown) — súčty položiek, ako ich pravidlo DPH vyžaduje. */
+  const poSadzbach = new Map<number, { zaklad: number; dph: number }>();
+  const doRozpisu = (sadzba: number, zaklad: number, dph: number) => {
+    const x = poSadzbach.get(sadzba) ?? { zaklad: 0, dph: 0 };
+    poSadzbach.set(sadzba, { zaklad: r2(x.zaklad + zaklad), dph: r2(x.dph + dph) });
+  };
 
   const zoradene = [...transakcie].sort((a, b) => a.cas.localeCompare(b.cas));
   for (const t of zoradene) {
@@ -318,6 +326,7 @@ export function prijataZFaktury(
     const dph = cudzia ? 0 : t.dph;
     const sadzba = cudzia ? 0 : (t.sadzbaDph ?? sadzbaZoSum(t.zaklad, t.dph) ?? 0);
     if (cudzia) zahranicnaDph = r2(zahranicnaDph + t.dph);
+    doRozpisu(sadzba, zaklad, dph);
     items.push({
       name: nazov,
       quantity: mnozstvo,
@@ -371,6 +380,7 @@ export function prijataZFaktury(
       vat_rate: sadzba,
       total: r2(zaklad + dph),
     });
+    doRozpisu(sadzba, zaklad, dph);
     zakladSpolu = r2(zakladSpolu + zaklad);
     dphSpolu = r2(dphSpolu + dph);
     sumaSpolu = r2(sumaSpolu + zaklad + dph);
@@ -411,23 +421,48 @@ export function prijataZFaktury(
   }
 
   const dodanie = zoradene.length ? zoradene[zoradene.length - 1].datum : f.datum;
+  const denDodania = dodanie > f.datum ? f.datum : dodanie;
+  const krajinaDodavatela = f.dodavatel.krajina?.toUpperCase() || null;
+  const rozpis: RiadokDph[] = [...poSadzbach]
+    .filter(([, v]) => Math.abs(v.zaklad) >= 0.005 || Math.abs(v.dph) >= 0.005)
+    .map(([sadzba, v]) => ({ sadzba, zaklad: v.zaklad, dph: v.dph }));
+  /*
+    Rozpis musí prejsť pravidlom DPH (zákonná sadzba, DPH = základ × sadzba).
+    Keď neprejde (nezvyčajná sadzba vydavateľa, zaokrúhlenie po mnohých
+    nákupoch), faktúra sa založí ako koncept — spúšťač by ju inak odmietol
+    a nákupy by ostali bez faktúry. Koncept treba skontrolovať a vystaviť.
+  */
+  const chybyDph = skontrolujDph({
+    rozpis,
+    zaklad: zakladSpolu,
+    dph: dphSpolu,
+    krajina: krajinaDane(domaca),
+    den: denDodania,
+    poloziek: items.length,
+    krajinaDodavatela,
+  });
+  if (chybyDph.length) {
+    naKontrolu = true;
+    poznamky.push(`${popisChybDph(chybyDph)} Faktúra je uložená ako koncept — opravte rozpis DPH podľa PDF.`);
+  }
   const riadok: Record<string, unknown> = {
     company_id: k.companyId,
     supplier_name: f.dodavatel.nazov || "Shell",
     supplier_ico: String(k.dodavatelIco ?? "").replace(/\D/g, "") || null,
-    supplier_country: f.dodavatel.krajina?.toUpperCase() || null,
+    supplier_country: krajinaDodavatela,
     ...(k.dodavatelDic ? { supplier_dic: String(k.dodavatelDic).trim() } : {}),
     invoice_number: f.cislo,
     issue_date: f.datum,
-    delivery_date: dodanie > f.datum ? f.datum : dodanie,
+    delivery_date: denDodania,
     received_date: k.dnes,
     due_date: f.splatnost ?? f.datum,
     currency: f.mena,
     amount_without_vat: zakladSpolu,
     vat_amount: dphSpolu,
     amount_total: sumaSpolu,
+    vat_breakdown: rozpis.length ? rozpis : null,
     items,
-    status: "received",
+    status: chybyDph.length ? "draft" : "received",
     source: "import",
     external_id: `${k.poskytovatel}:faktura:${f.externeId}`,
     vehicle_id: jedno,

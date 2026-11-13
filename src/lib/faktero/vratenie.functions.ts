@@ -90,7 +90,20 @@ export const presunPrijatuDoDokladovFn = createServerFn({ method: "POST" })
 
     const zaklad = Number(p.amount_without_vat ?? 0);
     const dph = Number(p.vat_amount ?? 0);
-    const sadzba = zaklad ? Math.round((dph / zaklad) * 100) : 0;
+    /*
+      Rozpis DPH sa prenesie z faktúry. Predtým sa „sadzba“ počítala ako
+      pomer DPH k základu (zmiešaná 5 % + 23 % → 11 %) a taký riadok by
+      pravidlo zákonných sadzieb odmietlo.
+    */
+    const { rozpisPrePresun } = await import("./dph-presun");
+    const rozpis = rozpisPrePresun(p.vat_breakdown, zaklad, dph, {
+      krajina: (await supabase.from("companies").select("country").eq("id", data.company_id).maybeSingle()).data
+        ?.country,
+      den: p.delivery_date ?? p.issue_date,
+      icDph: p.supplier_ic_dph,
+      krajinaDodavatela: p.supplier_country,
+    });
+    const sadzba = rozpis?.length === 1 ? rozpis[0]!.sadzba : null;
     const { data: doklad, error: e3 } = await supabase
       .from("expense_documents")
       .insert({
@@ -107,7 +120,8 @@ export const presunPrijatuDoDokladovFn = createServerFn({ method: "POST" })
         net_amount: zaklad,
         vat_amount: dph,
         vat_rate: sadzba,
-        vat_breakdown: zaklad || dph ? [{ sadzba, zaklad, dph }] : null,
+        vat_breakdown: rozpis,
+        supplier_country: p.supplier_country ?? null,
         currency: p.currency ?? "EUR",
         payment_method: ["hotovost", "karta", "prevod"].includes(p.payment_method)
           ? p.payment_method
@@ -216,36 +230,47 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
       predkontaciaRozuctovat: firma?.pohoda_predkontacia_rozuctovat,
       ...(await nastaveniaDokladov(supabase, firma, schvalene.map(prijataAkoDoklad))),
       datumZauctovaniaPevny: data.datum_zauctovania ?? null,
+      // Po potvrdení idú aj doklady so závažnou chybou (obsahová prekážka).
+      ajSPrekazkami: Boolean(data.potvrdene_varovania),
     };
     // Duplicitná faktúra (to isté číslo od toho istého dodávateľa) do Pohody nejde.
     {
       const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
       await oznacDuplicity(supabase, data.company_id, "prijata", schvalene.filter((p: any) => !p.exported_at));
     }
-    // Kontrola pred odovzdaním — zle zaúčtovateľná faktúra do súboru nejde.
-    const { prekazkaDokladu } = await import("./pohoda-kontrola");
+    /*
+      Kontrola pred odovzdaním. Faktúra cudzej firmy a duplicita do súboru
+      nejdú nikdy; obsahová prekážka (zlé DPH, chýbajúce členenie, kurz…) je
+      „Závažné“ upozornenie — po potvrdení ide doklad aj tak (Patrik 13. 11.).
+    */
+    const { prekazkaStavuDokladu, prekazkaDokladu } = await import("./pohoda-kontrola");
     const { zoradNaExport } = await import("./export-radenie");
+    const zavazne: string[] = [];
     const ok = zoradNaExport(schvalene, data.radenie ?? null).filter((p: any) => {
-      const dovod = prekazkaDokladu(prijataAkoDoklad(p), firma ?? {}, nastavenia);
-      if (dovod) preskocene.push(dovod);
-      return !dovod;
+      const d = prijataAkoDoklad(p);
+      const stav = prekazkaStavuDokladu(d);
+      if (stav) return preskocene.push(stav), false;
+      const dovod = prekazkaDokladu(d, firma ?? {}, { ...nastavenia, ajSPrekazkami: false });
+      if (dovod) zavazne.push(dovod);
+      return true;
     });
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
     /*
-      Upozornenia (sadzba DPH, prenesenie, predkontácia) export nezastavia —
-      prvé volanie ich vráti a súbor nevyrobí; po potvrdení sa zavolá znova
-      s `potvrdene_varovania`.
+      Závažné aj upozornenia (sadzba DPH, prenesenie, predkontácia) export
+      nezastavia — prvé volanie ich vráti a súbor nevyrobí; po potvrdení sa
+      zavolá znova s `potvrdene_varovania`.
     */
     if (!data.potvrdene_varovania) {
       const { varovaniaPrijatejPredExportom } = await import("./export-varovania");
       const varovania = ok.flatMap((p: any) => varovaniaPrijatejPredExportom(p, firma, nastavenia));
-      if (varovania.length)
+      if (varovania.length || zavazne.length)
         return {
           xml: "",
           fileName: "",
           subory: [] as { xml: string; fileName: string; pocet: number }[],
           pocet: 0,
           preskocene,
+          zavazne,
           varovania,
         };
     }
@@ -290,6 +315,7 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
       subory,
       pocet: ok.length,
       preskocene,
+      zavazne: [] as string[],
       varovania: [] as string[],
     };
   });

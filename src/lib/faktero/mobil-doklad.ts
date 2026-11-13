@@ -80,6 +80,8 @@ export function dokladNaZaznam(
     // DIČ a adresa z eKasy — server ich uloží, keď na ne má stĺpce.
     supplier_dic: r.supplier_dic ?? null,
     supplier_address: r.supplier_address ?? null,
+    // Štát predajcu (eKasa SK, český QR CZ, z fotky) — zahraničný bloček nesie sadzby svojho štátu.
+    supplier_country: r.supplier_country ?? null,
     document_number: r.document_number ?? null,
     issue_date: r.date ?? null,
     total_amount: spolu,

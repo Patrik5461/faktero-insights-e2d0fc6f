@@ -1048,6 +1048,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "rd.cudziaUlozena": "The invoice does not belong to this company — saved with an exclamation mark, it will not be booked.",
   "rd.inaFirma": "another company",
   "rd.chybaUlozenia": "The document could not be saved.",
+  "rd.dphNesedi": "VAT breakdown does not match the statutory rates",
+  "rd.dphNesediPopis": "The document cannot be saved like this. Fix the rates and VAT on the web in Unprocessed documents — the document is already there.",
   "rd.dodavatel": "Supplier",
   "rd.cislo": "Document number",
   "rd.vystavene": "Issued",

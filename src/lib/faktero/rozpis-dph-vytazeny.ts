@@ -28,6 +28,9 @@ import {
 } from "./rozpis-dph-kontrola";
 import { jePolozkaZaokruhlenia } from "./zaokruhlenie-blocku";
 import { krajinaDane, sadzbyKrajiny, zoradPodlaSadzby } from "./vat-rates";
+import { lenZakonneSadzby, napravRozpisDph } from "./napravy-dph-vytazenia";
+import { krajinaDodavatelaDph, skontrolujDph, zakonneSadzby } from "./dph-pravidlo";
+import { sadzbyStatuSHistoriou } from "./sadzby-eu";
 
 /** Riadok rozpisu v tvare nespracovaných dokladov a `vat_breakdown`. */
 export type RiadokRozpisuVytazeny = {
@@ -47,6 +50,8 @@ export type VysledokRozpisu = {
   sumy: { bezDph: number; dph: number } | null;
   /** Celá faktúra je v prenesení daňovej povinnosti. */
   prenesenie: boolean;
+  /** Čo sa na rozpise deterministicky opravilo (`napravy-dph-vytazenia.ts`). */
+  naprava?: string;
 };
 
 export type KontextRozpisu = { krajina?: string | null; datumDodania?: string | null };
@@ -66,6 +71,37 @@ function textPrenesenia(ai: Record<string, unknown>): string {
   return [ai.reverse_charge_text, ai.vat_note, ai.note]
     .filter((x) => typeof x === "string")
     .join(" ");
+}
+
+/**
+ * Vyzerá doklad, na ktorom sa „celkom“ rovná základu a DPH je nenulová, ako
+ * samozdanenie (prenesenie)? Príznak alebo veta o prenesení, zmienka
+ * „samozdanenie“ / „reverse charge“ v texte, riadok rozpisu či položka
+ * v prenesení, alebo DPH presne zo základu × zákonná sadzba.
+ */
+function jeSamozdanenie(ai: Record<string, unknown>, zaklad: number, dph: number, krajina?: string | null): boolean {
+  if (dokladSPrenesenim(ai)) return true;
+  const texty = [
+    textPrenesenia(ai),
+    ...(Array.isArray(ai.items) ? (ai.items as any[]).map((p) => String(p?.description ?? p?.name ?? "")) : []),
+  ]
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (/samozdan|samovymer|self[\s-]?assess|reverse[\s-]?charge|prenesen\w*\s+danov|prenesenie/.test(texty)) return true;
+  const riadky = [
+    ...(Array.isArray(ai.vat_breakdown) ? (ai.vat_breakdown as any[]) : []),
+    ...(Array.isArray(ai.items) ? (ai.items as any[]) : []),
+  ];
+  if (riadky.some((r) => r?.vat_category === "reverse_charge" || r?.reverse_charge === true || r?.pdp === true))
+    return true;
+  const dod = krajinaDodavatela(ai);
+  const sadzby = new Set([
+    ...zakonneSadzby(krajinaDane(krajina ?? "SK"), null),
+    ...(dod ? sadzbyStatuSHistoriou(dod) : []),
+  ]);
+  return [...sadzby].some((s) => s > 0 && Math.abs((Math.abs(zaklad) * s) / 100 - Math.abs(dph)) <= 0.02 + 1e-9);
 }
 
 /** Doklad hovorí o prenesení daňovej povinnosti (príznak alebo veta). */
@@ -276,6 +312,14 @@ function zoSum(
   return { sadzba: 0, zaklad: zz, dph: dd, vat_category: "needs_review" };
 }
 
+/** Krajina dodávateľa z vyťaženia (ISO kód), keď ju doklad uvádza. */
+function krajinaDodavatela(ai: Record<string, unknown>): string | null {
+  return krajinaDodavatelaDph(
+    ai.supplier_country as string | null | undefined,
+    (ai.supplier_ic_dph ?? ai.ic_dph) as string | null | undefined,
+  );
+}
+
 /**
  * Rozpis DPH z výstupu AI. `kontext.krajina` je krajina firmy (sadzby),
  * `datumDodania` deň, ku ktorému sa sadzby overujú — bez neho sa vezme
@@ -286,9 +330,32 @@ export function rozpisZVytazenia(
   kontext: KontextRozpisu = {},
 ): VysledokRozpisu {
   if (!ai) return { rozpis: [], zdroj: "ziadny", kontrola: OK, sumy: null, prenesenie: false };
-  const zaklad = num(ai.amount_without_vat);
   const dph = num(ai.vat_amount);
-  const spolu = num(ai.amount_total);
+  /*
+    Suma dokladu je po zaokrúhlení („Zaokrúhlenie“, haliérové vyrovnanie) —
+    rozpis DPH je bez neho, tak sa porovnáva so sumou pred zaokrúhlením.
+  */
+  const zaokr = num(ai.rounding);
+  const spoluSurove = num(ai.amount_total);
+  const spolu =
+    spoluSurove !== null && zaokr !== null && Math.abs(zaokr) <= 0.05 ? r2(spoluSurove - zaokr) : spoluSurove;
+  let zaklad = num(ai.amount_without_vat);
+  /*
+    (b) Základ hlavičky = suma s DPH (AI prečítala „Celkom“ ako základ):
+    základ sa rovná sume dokladu a DPH je nenulová → základ = suma − DPH.
+    NIE pri prenesení: tam je „celkom“ naozaj základ a vytlačená DPH je
+    samozdanená (odberateľ ju priznáva sám) — preto ani vtedy, keď DPH sedí
+    na základ × zákonná sadzba (presne to je samozdanenie).
+  */
+  if (
+    zaklad !== null &&
+    spolu !== null &&
+    dph !== null &&
+    Math.abs(dph) > 0.004 &&
+    Math.abs(zaklad - spolu) <= 0.02 &&
+    !jeSamozdanenie(ai, zaklad, dph, kontext.krajina)
+  )
+    zaklad = r2(spolu - dph);
   const z = zaklad ?? (spolu !== null && dph !== null ? spolu - dph : null);
   const d = dph ?? (spolu !== null && z !== null ? spolu - z : null);
   const datum =
@@ -297,7 +364,7 @@ export function rozpisZVytazenia(
       (x) => typeof x === "string" && /^\d{4}-\d{2}-\d{2}/.test(x),
     ) as string | undefined) ??
     null;
-  const kx = { krajina: kontext.krajina ?? "SK", datumDodania: datum };
+  const kx = { krajina: kontext.krajina ?? "SK", datumDodania: datum, krajinaDodavatela: krajinaDodavatela(ai) };
 
   const sPrenesenim = dokladSPrenesenim(ai);
   const neplatitel =
@@ -334,10 +401,95 @@ export function rozpisZVytazenia(
       kx,
     ),
   }));
-  const vybrany = vyhodnotene.find((k) => k.kontrola.ok) ?? vyhodnotene[0]!;
-  const rozpis = zoradPodlaSadzby(vybrany.rozpis, "sadzba");
+  let vybrany: (typeof vyhodnotene)[number] & { naprava?: string } =
+    vyhodnotene.find((k) => k.kontrola.ok) ?? vyhodnotene[0]!;
+  /*
+    Žiadny kandidát neprešiel — deterministická náprava (základ s DPH,
+    chýbajúci riadok bez dane). Prejde len taká, po ktorej kontrola sedí;
+    inak ostáva pôvodný kandidát s chybami a doklad ide na kontrolu.
+  */
+  if (!vybrany.kontrola.ok) {
+    const poloziek = Array.isArray(ai.items) ? (ai.items as unknown[]).length : 0;
+    for (const k of vyhodnotene) {
+      const n = napravRozpisDph(k.rozpis, sumy, ai, poloziek);
+      if (!n) continue;
+      const kontrola = skontrolujRozpisDph(
+        n.rozpis.map((r) => ({ rate: r.sadzba, base: r.zaklad, vat: r.dph, vat_category: r.vat_category })),
+        sumy,
+        kx,
+      );
+      if (kontrola.ok) {
+        vybrany = { zdroj: k.zdroj, rozpis: n.rozpis, kontrola, naprava: n.naprava };
+        break;
+      }
+      /*
+        Súčty po náprave sedia a ostal len neurčený dôvod nulovej dane
+        doplneného riadku — taký rozpis je úplný a veta pre človeka konkrétna
+        („Riadok 0 % so základom 8,50 nemá dôvod…“); doklad ide na kontrolu.
+      */
+      if (!vybrany.naprava && kontrola.chyby.every((c) => c.kod === "neplatna_kategoria"))
+        vybrany = { zdroj: k.zdroj, rozpis: n.rozpis, kontrola, naprava: n.naprava };
+    }
+  }
+  /*
+    Poistka: sadzba mimo zákonných sa neuloží nikdy — ani keď doklad ide na
+    kontrolu. Kontrola (a dôvod na kontrolu) ostáva z pôvodného rozpisu.
+  */
+  const rozpis = zoradPodlaSadzby(
+    lenZakonneSadzby(vybrany.rozpis, {
+      krajina: kx.krajina,
+      den: kx.datumDodania,
+      krajinaDodavatela: krajinaDodavatela(ai),
+    }),
+    "sadzba",
+  );
+  /*
+    Spoločné pravidlo (`dph-pravidlo.ts`) — to isté, čo stráži zápis do
+    databázy. Keď kontrola rozpisu prešla, no pravidlo nie, doklad ide na
+    kontrolu s jeho vetou (inak by ho zápis odmietol).
+  */
+  let kontrola = vybrany.kontrola;
+  /* Poistka vynulovala DPH riadku 0 % (sadzbu nikto neuviedol) — rozpis nie je úplný. */
+  const dphPred = r2(vybrany.rozpis.reduce((a, r) => a + r.dph, 0));
+  const dphPo = r2(rozpis.reduce((a, r) => a + r.dph, 0));
+  if (kontrola.ok && Math.abs(dphPred - dphPo) > 0.004)
+    kontrola = {
+      ok: false,
+      chyby: [
+        {
+          kod: "neplatna_sadzba",
+          sprava: "Pri časti DPH doklad neuvádza sadzbu a žiadna zákonná sadzba na ňu nesedí — doplňte rozpis DPH po sadzbách.",
+        },
+      ],
+    };
+  if (kontrola.ok && rozpis.length) {
+    const chyby = skontrolujDph({
+      rozpis,
+      zaklad: sumy.bezDph,
+      dph: sumy.dph,
+      krajina: krajinaDane(kx.krajina),
+      den: kx.datumDodania,
+      poloziek: Array.isArray(ai.items) ? (ai.items as unknown[]).length : undefined,
+      krajinaDodavatela: krajinaDodavatela(ai),
+    });
+    if (chyby.length)
+      kontrola = {
+        ok: false,
+        chyby: chyby.map((c) => ({
+          kod: c.kod === "sadzba" ? "neplatna_sadzba" : c.kod === "dph" ? "riadok_dph" : "suma_zakladov",
+          sprava: c.text,
+        })),
+      };
+  }
   const prenesenie = rozpis.length > 0 && rozpis.every((r) => r.vat_category === "reverse_charge");
-  return { rozpis, zdroj: vybrany.zdroj, kontrola: vybrany.kontrola, sumy, prenesenie };
+  return {
+    rozpis,
+    zdroj: vybrany.zdroj,
+    kontrola,
+    sumy,
+    prenesenie,
+    ...(vybrany.naprava ? { naprava: vybrany.naprava } : {}),
+  };
 }
 
 /**
@@ -361,7 +513,10 @@ Rekapitulácia v STĹPCOCH (napr. „Nie je predmetom DPH | Oslobodené | 1. zn�
 Celkom“) mapuj podľa TEXTU hlavičky stĺpca, nie podľa poradia: „Nie je predmetom“ → out_of_scope,
 „Oslobodené“ → exempt, „Základná“ → 23 %, „1. znížená“ / „Znížená“ → 19 %, „2. znížená“ → 5 % (SK od 2025;
 keď je pri stĺpci vytlačené percento, ber to). Stĺpec „Celkom“ / „Spolu“ NIKDY nie je riadok rozpisu — je
-len na kontrolu súčtov. Súčet "base" všetkých riadkov sa musí rovnať "amount_without_vat" a súčet "vat"
+len na kontrolu súčtov. ZÁPORNÁ suma v stĺpci „Nie je predmetom DPH“ / „Oslobodené“ / 0 %, ktorá je
+odpočtom zálohy („Odpočítané na zálohách“, „ZF …“), NIE JE riadok rozpisu — patrí do "advance_deduction".
+Riadok v prenesení daňovej povinnosti má "vat": 0 a "rate" takú, aká je vytlačená (0 alebo sadzba
+plnenia, napr. 23); "base" je vždy BEZ DPH, nikdy suma s DPH. Súčet "base" všetkých riadkov sa musí rovnať "amount_without_vat" a súčet "vat"
 "vat_amount" (v tej istej mene). Pri každej položke v "items" pridaj aj "vat_category" (rovnaké hodnoty)
 a položky v prenesení majú "reverse_charge": true.
 Pri každej položke uveď v "total" sumu riadku a do "items_total_with_vat" (true/false) napíš, či sú
@@ -381,6 +536,7 @@ export function kontrolaUlozenehoBlocku(
     vat_breakdown?: unknown;
     issue_date?: string | null;
     supplier_ic_dph?: string | null;
+    supplier_country?: string | null;
   },
   krajina?: string | null,
 ): VysledokKontroly {
@@ -410,5 +566,8 @@ export function kontrolaUlozenehoBlocku(
   return skontrolujRozpisDph(rozpis, sumy, {
     krajina: krajina ?? "SK",
     datumDodania: d.issue_date ?? null,
+    // Zahraničný bloček (HU palivo 27 %) nesie sadzby svojho štátu — ako spúšťač.
+    krajinaDodavatela: d.supplier_country ?? null,
+    icDphDodavatela: d.supplier_ic_dph ?? null,
   });
 }

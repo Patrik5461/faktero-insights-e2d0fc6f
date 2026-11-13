@@ -2,6 +2,7 @@ import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { mnozne, CAKAJUCE_BLOCKY } from "@/lib/faktero/mnozne";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
@@ -704,21 +705,28 @@ function DokladyPage() {
     setExporting(true);
     try {
       const ids = selected.size ? Array.from(selected) : undefined;
-      const res = await exportFn({
-        // Balí sa presne to, čo je na obrazovke — označené, inak celá záložka
-        // vo vybranom mesiaci. Nie celý mesiac bez ohľadu na záložku.
-        data: {
-          company_id: cid,
-          ids: ids ?? rows.map((r) => r.id),
-          month: null,
-          mark_exported: markExported,
-          datum_zauctovania: volby?.datumZauctovania ?? null,
-          aj_odovzdane: volby ? volby.ajOdovzdane : undefined,
-          radenie: volby?.radenie ?? null,
-          polozky: volby?.polozky ?? null,
-          format,
-        },
-      });
+      // Závažné chyby export nezastavia — okno sa spýta „Exportovať aj tak“.
+      const res = await exportSPotvrdenim(
+        (potvrdene) =>
+          exportFn({
+            // Balí sa presne to, čo je na obrazovke — označené, inak celá záložka
+            // vo vybranom mesiaci. Nie celý mesiac bez ohľadu na záložku.
+            data: {
+              company_id: cid,
+              ids: ids ?? rows.map((r) => r.id),
+              month: null,
+              mark_exported: markExported,
+              datum_zauctovania: volby?.datumZauctovania ?? null,
+              aj_odovzdane: volby ? volby.ajOdovzdane : undefined,
+              radenie: volby?.radenie ?? null,
+              polozky: volby?.polozky ?? null,
+              format,
+              potvrdene_varovania: potvrdene,
+            },
+          }),
+        t,
+      );
+      if (!res) return;
       const stiahni = (blob: Blob, nazov: string) => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);

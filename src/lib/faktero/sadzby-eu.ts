@@ -62,6 +62,33 @@ export function sadzbyStatu(kod: string | null | undefined): number[] {
   return [...new Set([s.zakladna, ...s.znizene, 0])].sort((a, b) => b - a);
 }
 
+/**
+ * Sadzby, ktoré štát mal 2023–2026 a dnes už neplatia, plus regionálne
+ * (ostrovy, autonómne oblasti) — doklad od zahraničného dodávateľa
+ * (hotel, palivo) môže niesť ktorúkoľvek z nich podľa dňa dodania.
+ * Pri prijatých dokladoch ich preto akceptujeme spolu so súčasnými
+ * (`dph-pravidlo.ts` → zahraničný dodávateľ). Pri zmene sadzby štátu sem
+ * pridaj tú starú.
+ */
+export const HISTORICKE_SADZBY_EU: Record<string, number[]> = {
+  CY: [3],
+  EE: [20, 22, 5],
+  ES: [5, 0],
+  FI: [24, 13.5],
+  GR: [17, 9, 4],
+  LU: [16, 14, 13, 7],
+  MT: [12],
+  PT: [22, 16, 12, 9, 5, 4],
+  RO: [19, 9, 5],
+  SE: [6],
+};
+
+/** Súčasné aj historické (2023–2026) a regionálne sadzby štátu, od najvyššej, vrátane nuly. */
+export function sadzbyStatuSHistoriou(kod: string | null | undefined): number[] {
+  const k = String(kod ?? "").toUpperCase();
+  return [...new Set([...sadzbyStatu(k), ...(HISTORICKE_SADZBY_EU[k] ?? [])])].sort((a, b) => b - a);
+}
+
 export function zakladnaSadzbaStatu(kod: string | null | undefined): number {
   return statEu(kod)?.zakladna ?? 0;
 }

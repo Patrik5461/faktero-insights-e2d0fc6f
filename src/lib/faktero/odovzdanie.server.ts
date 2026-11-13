@@ -32,7 +32,24 @@ export type OdovzdanieVstup = {
   oznacit: boolean;
   /** Preskočiť už odovzdané doklady. */
   lenNove: boolean;
+  /**
+   * Ručné odovzdanie: človek videl závažné chyby (`zavazneOdovzdania`) a
+   * potvrdil „Exportovať aj tak“ — doklady s obsahovou prekážkou idú do XML.
+   * Mesačný cron ho nezapína (nemá kto potvrdiť), tam sa vynechajú ako doteraz.
+   */
+  potvrdeneVarovania?: boolean;
 };
+
+/**
+ * Režim obsahových prekážok v balíku: `vynechat` (cron, predvolene),
+ * `zistit` (len zoznam závažných chýb pred potvrdením), `povolit` (po ňom).
+ */
+type RezimPrekazok = "vynechat" | "zistit" | "povolit";
+
+/** Signál z `zostavBalik` v režime `zistit` — balík sa ďalej nestavia. */
+class ZavazneNajdene {
+  constructor(readonly zavazne: string[]) {}
+}
 
 const MESIACE = [
   "január",
@@ -116,6 +133,8 @@ export type Balik = {
   /** Prijaté faktúry v balíku (označia sa ako odovzdané). */
   prijateIds?: string[];
   pocetPrijatych?: number;
+  /** Doklady, ktoré išli do XML napriek závažnej chybe (po potvrdení). */
+  zavazne?: string[];
   /** Číselníky, ktoré v balíku išli — zapisujú sa do `pohoda_odoslane`. */
   ciselniky: { agenda: string; id: string; verzia: string }[];
   pocetCiselnikov: number;
@@ -133,9 +152,12 @@ export type Balik = {
  */
 export async function zostavBalik(
   supabase: Klient,
-  vstup: OdovzdanieVstup & { stropPriloh?: number },
+  vstup: OdovzdanieVstup & { stropPriloh?: number; _rezim?: RezimPrekazok },
 ): Promise<{ balik: Balik; company: Riadok }> {
   const { od, do: doDatumu, nazov } = rozsahMesiaca(vstup.mesiac);
+  const rezim: RezimPrekazok = vstup._rezim ?? (vstup.potvrdeneVarovania ? "povolit" : "vynechat");
+  /** Obsahové prekážky: v `zistit` zoznam na potvrdenie, v `povolit` doklady v XML napriek chybe. */
+  const zavazne: string[] = [];
 
   const [{ data: company, error: cErr }, { data: vsetky }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", vstup.companyId).single(),
@@ -395,6 +417,18 @@ export async function zostavBalik(
       invoice,
       items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
     }));
+    /*
+      Obsahové prekážky vydaných faktúr (`pohodaPrekazka`) — pri ručnom
+      odovzdaní len „Závažné“; po potvrdení ide faktúra do XML (Patrik 13. 11.).
+    */
+    if (rezim !== "vynechat") {
+      const { pohodaPrekazka } = await import("./export.server");
+      for (const b of balikFaktur) {
+        const dovod = pohodaPrekazka(b.invoice, company, { items: b.items, nastavenia });
+        if (dovod) zavazne.push(dovod);
+      }
+    }
+    const nastFaktur = rezim === "povolit" ? { ...nastavenia, ajSPrekazkami: true } : nastavenia;
     // Jedna nevyviezteľná faktúra nesmie zhodiť celý balík — pôjde do vynechaných.
     const { fakturyDoBalika } = await import("./odovzdanie-faktury");
     const vystup = await fakturyDoBalika(
@@ -404,7 +438,7 @@ export async function zostavBalik(
         EXPORT_STRATEGIES.pohoda_xml.build({
           company,
           invoices: vyber,
-          nastavenia,
+          nastavenia: nastFaktur,
           zalohy,
           opravovane,
           povodneCisla,
@@ -465,10 +499,22 @@ export async function zostavBalik(
 
   const preskoceneFaktur = [...preskocene];
   /*
-    Kontrola pred odovzdaním: doklad, ktorý by Pohoda zaúčtovala zle, do XML
-    nejde ani sa neoznačí — ostane v súpiske a v zozname vynechaných.
+    Kontrola pred odovzdaním: duplicita a cudzí doklad do XML nejdú nikdy.
+    Doklad, ktorý by Pohoda zaúčtovala zle (obsahová prekážka), cron vynechá —
+    ostane v súpiske a v zozname vynechaných; ručné odovzdanie ho po
+    potvrdení pustí (`rezim`).
   */
-  const { prekazkaDokladu } = await import("./pohoda-kontrola");
+  const { prekazkaDokladu, prekazkaStavuDokladu } = await import("./pohoda-kontrola");
+  /** `true` = doklad ide do XML. */
+  const doXml = (d: Riadok, nast: Riadok): boolean => {
+    const stav = prekazkaStavuDokladu(d);
+    if (stav) return preskocene.push(stav), false;
+    const dovod = prekazkaDokladu(d, company, { ...nast, ajSPrekazkami: false });
+    if (!dovod) return true;
+    if (rezim === "vynechat") return preskocene.push(dovod), false;
+    zavazne.push(dovod);
+    return true;
+  };
   // Duplicitný doklad (ten istý dvakrát v evidencii) do XML nejde — `_duplicita`.
   {
     const { oznacDuplicity } = await import("./duplicita-zauctovania.server");
@@ -484,13 +530,13 @@ export async function zostavBalik(
       ...(await (await import("./predkontacie.server")).nastaveniaDokladov(supabase, company, doklady)),
       partneriVPohode: nastavenia.partneriVPohode,
     };
-    for (const d of doklady) {
-      const dovod = prekazkaDokladu(d, company, nastDokladov);
-      if (dovod) preskocene.push(dovod);
-      else dokladyDoXml.push(d);
-    }
+    for (const d of doklady) if (doXml(d, nastDokladov)) dokladyDoXml.push(d);
     if (dokladyDoXml.length) {
-      xmlDokladov = buildPohodaExpensesXml({ company, doklady: dokladyDoXml, nastavenia: nastDokladov });
+      xmlDokladov = buildPohodaExpensesXml({
+        company,
+        doklady: dokladyDoXml,
+        nastavenia: { ...nastDokladov, ajSPrekazkami: rezim === "povolit" },
+      });
       if (xmlDokladov) zip.file("pohoda-prijate-doklady.xml", xmlDokladov);
       else dokladyDoXml = [];
     }
@@ -544,16 +590,12 @@ export async function zostavBalik(
       )),
       partneriVPohode: nastavenia.partneriVPohode,
     };
-    for (const p of prijate) {
-      const dovod = prekazkaDokladu(prijataAkoDoklad(p), company, nastPrijatych);
-      if (dovod) preskocene.push(dovod);
-      else prijateDoXml.push(p);
-    }
+    for (const p of prijate) if (doXml(prijataAkoDoklad(p), nastPrijatych)) prijateDoXml.push(p);
     if (prijateDoXml.length) {
       xmlPrijatych = buildPohodaExpensesXml({
         company,
         doklady: prijateDoXml.map(prijataAkoDoklad),
-        nastavenia: nastPrijatych,
+        nastavenia: { ...nastPrijatych, ajSPrekazkami: rezim === "povolit" },
       });
       if (xmlPrijatych) zip.file("pohoda-prijate-faktury.xml", xmlPrijatych);
       else prijateDoXml = [];
@@ -607,6 +649,17 @@ export async function zostavBalik(
       ),
     );
   }
+
+  // Pred potvrdením stačí zoznam závažných chýb — PDF a skeny sa nesťahujú.
+  if (rezim === "zistit" && zavazne.length) throw new ZavazneNajdene(zavazne);
+  if (zavazne.length)
+    zip.file(
+      "pohoda-skontrolovat.txt",
+      "\uFEFF" +
+        "Tieto doklady sú v XML pre Pohodu napriek závažnej chybe — po importe ich skontrolujte v Pohode:\n" +
+        zavazne.map((d) => `- ${d}`).join("\n") +
+        "\n",
+    );
 
   const pokladnicaDoXml: Riadok[] = [];
   if (pokladnica?.length) {
@@ -805,6 +858,7 @@ export async function zostavBalik(
       ostatneIds: ostatne.map((d: Riadok) => d.id),
       preskocene,
       preskoceneFaktur,
+      zavazne,
       vynechanePrilohy,
       fakturyIds: faktury.map((f: Riadok) => f.id),
       dokladyIds: dokladyDoXml.map((d: Riadok) => d.id),
@@ -853,6 +907,24 @@ export async function zostavBalik(
 /** Úprava po dávkach — tisíc id v `.in()` by prerástlo dĺžku adresy PostgREST. */
 async function poDavkach(ids: string[], krok: (kus: string[]) => PromiseLike<unknown>, davka = 200) {
   for (let i = 0; i < ids.length; i += davka) await krok(ids.slice(i, i + davka));
+}
+
+/**
+ * Balík pre ručné odovzdanie (stiahnutie, mail). Bez `potvrdeneVarovania`
+ * sa pri závažných chybách (obsahové prekážky) balík nedostaví a vráti sa
+ * len ich zoznam na potvrdenie; bez nich vznikne balík rovno. Po potvrdení
+ * idú doklady so závažnou chybou do XML.
+ */
+export async function zostavBalikRucne(
+  supabase: Klient,
+  vstup: OdovzdanieVstup & { stropPriloh?: number },
+): Promise<{ balik: Balik; company: Riadok; zavazne?: undefined } | { balik?: undefined; zavazne: string[] }> {
+  try {
+    return await zostavBalik(supabase, { ...vstup, _rezim: vstup.potvrdeneVarovania ? "povolit" : "zistit" });
+  } catch (e) {
+    if (e instanceof ZavazneNajdene) return { zavazne: e.zavazne };
+    throw e;
+  }
 }
 
 export async function oznacOdovzdane(

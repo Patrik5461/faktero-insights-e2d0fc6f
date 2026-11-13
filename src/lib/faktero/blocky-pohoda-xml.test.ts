@@ -136,6 +136,42 @@ describe("pohodaXmlBlockov", () => {
     expect(preskocene[0]).toMatch(/^X1 — bloček v mene CZK nemá kurz/);
   });
 
+  it("ručný export po potvrdení: doklad so závažnou chybou ide do XML a je v `zavazne`", () => {
+    // Patrik 13. 11. 2026: upozorniť, ale dovoliť exportovať aj napriek významným chybám.
+    const { subory, preskocene, zavazne } = pohodaXmlBlockov({
+      ...zaklad,
+      firma,
+      rows: [blocek, { ...blocek, id: "b2", document_number: "X1", currency: "CZK" }],
+      nastavenia: {},
+      ajSPrekazkami: true,
+    });
+    expect(subory[0].doklady.map((d) => d.id)).toEqual(["b1", "b2"]);
+    expect(polozkyBalika(subory[0].xml)).toHaveLength(2);
+    expect(preskocene).toEqual([]);
+    expect(zavazne).toHaveLength(1);
+    expect(zavazne[0]).toMatch(/^X1 — bloček v mene CZK nemá kurz/);
+  });
+
+  it("ani po potvrdení nejde duplicita a už odovzdaný doklad pri označení", () => {
+    const { subory, preskocene, zavazne } = pohodaXmlBlockov({
+      ...zaklad,
+      oznacit: true,
+      firma,
+      rows: [
+        blocek,
+        { ...blocek, id: "b2", document_number: "D1", _duplicita: "ten istý bloček je v evidencii dvakrát" },
+        { ...blocek, id: "b3", document_number: "O1", exported_at: "2026-10-01T00:00:00Z" },
+      ],
+      nastavenia: {},
+      ajSPrekazkami: true,
+    });
+    expect(subory[0].doklady.map((d) => d.id)).toEqual(["b1"]);
+    expect(zavazne).toEqual([]);
+    expect(preskocene).toHaveLength(2);
+    expect(preskocene[0]).toBe("D1 — ten istý bloček je v evidencii dvakrát");
+    expect(preskocene[1]).toMatch(/^O1 — už je odovzdaný do Pohody/);
+  });
+
   it("pri označení ako odovzdané vynechá už odovzdané", () => {
     const { subory, preskocene } = pohodaXmlBlockov({
       ...zaklad,

@@ -31,5 +31,7 @@ export function zlucEetSFotkou(
   if (eet.supplier_ico) v.supplier_ico = eet.supplier_ico;
   if (eet.supplier_dic) v.supplier_dic = eet.supplier_dic;
   if (eet.supplier_ic_dph) v.supplier_ic_dph = eet.supplier_ic_dph;
+  // Český QR = český predajca (sadzby 21/12 %), aj keď fotka tvrdí inak.
+  v.supplier_country = "CZ";
   return v;
 }

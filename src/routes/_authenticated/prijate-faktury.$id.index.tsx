@@ -96,6 +96,8 @@ import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { useDizajn } from "@/hooks/useDizajn";
 import { AutomatickyZaradena } from "@/components/faktero/AutomatickyZaradena";
 import { PrijataDetailKompaktna } from "@/components/faktero/PrijataDetailKompaktna";
+import { UpozornenieZlejDph } from "@/components/faktero/OpravaRozpisuDph";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
 import { VazbaZalohyPrijatej } from "@/components/faktero/VazbaZalohyPrijatej";
 
@@ -165,6 +167,7 @@ function PurchaseInvoiceDetail() {
   const nahladDetail = useNahladVDetaile();
   // Kompaktné rozloženie má vlastné usporiadanie detailu (jeden stĺpec kariet).
   const kompaktne = useDizajn() === "kompaktny";
+  const krajinaFirmyDph = useKrajinaDane();
   const [oknoUhrad, setOknoUhrad] = useState(false);
   // Bez tohto ostal na neexistujúcom doklade navždy nápis „Načítavam…".
   const [nenajdene, setNenajdene] = useState(false);
@@ -1301,6 +1304,14 @@ function PurchaseInvoiceDetail() {
             naKontroluDovod={(row as any).na_kontrolu_dovod}
           />
           <UpozornenieKontrolyEfaktury invoiceId={row.id} />
+          {/* Uložená faktúra so zlou DPH (staré dáta) — jasné upozornenie a oprava rozpisu. */}
+          <UpozornenieZlejDph
+            tabulka="purchase_invoices"
+            doklad={row}
+            krajina={krajinaFirmyDph}
+            zamknute={Boolean(row.exported_at || (row as any).locked_at)}
+            onOpravene={() => void load()}
+          />
         </div>
         {!navrh && !pdfRozlozenie && <div className="mb-4">{stitkyAStav}</div>}
         <DetailSNahladom

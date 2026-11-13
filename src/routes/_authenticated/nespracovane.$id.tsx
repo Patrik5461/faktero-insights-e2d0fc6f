@@ -8,7 +8,8 @@ import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu"
 import { nahranieDokladu } from "@/lib/faktero/kto-kedy";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { UpozornenieRozpisuDph, potvrdNesuladRozpisu } from "@/components/faktero/UpozornenieRozpisuDph";
-import { VolbaSadzbyDph } from "@/components/faktero/VolbaSadzbyDph";
+import { EditorRozpisuDph } from "@/components/faktero/EditorRozpisuDph";
+import { kontrolaNespracovaneho, sadzbyNaVyber } from "@/components/faktero/dph-formular";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
 import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero/NavrhAi";
@@ -51,7 +52,6 @@ import {
   chybajuce,
   rozdielPoloziek,
   kontrolaSumy,
-  kontrolaSadziebUdajov,
   upravCelkomDokladu,
   sucty,
   type DruhNespracovaneho,
@@ -60,7 +60,6 @@ import {
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { OdpocetZalohyNespracovaneho } from "@/components/faktero/OdpocetZalohyNespracovaneho";
-import { sadzbyNespracovaneho } from "@/lib/faktero/nespracovane-sadzby";
 import { potvrd } from "@/lib/potvrdenie";
 import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
@@ -193,8 +192,9 @@ function Detail() {
   // Sadzby podľa krajiny firmy (CZ 21/12/0), nie napevno slovenské.
   const krajinaFirmy = d?.krajinaFirmy ?? null;
   const sadzby = useMemo(
-    () => sadzbyNespracovaneho(krajinaFirmy, u?.datumVystavenia || null),
-    [krajinaFirmy, u?.datumVystavenia],
+    // Zákonné sadzby v deň dodania (bez neho vystavenia) — Patrik 13. 11.
+    () => sadzbyNaVyber(krajinaFirmy, u?.datumDodania || u?.datumVystavenia || null, u?.dodavatel?.krajina),
+    [krajinaFirmy, u?.datumDodania, u?.datumVystavenia, u?.dodavatel?.krajina],
   );
 
   if (nenajdene)
@@ -221,12 +221,14 @@ function Detail() {
 
   const set = (z: Partial<UdajeNespracovaneho>) => setU({ ...u, ...z });
   const setDod = (z: Partial<UdajeNespracovaneho["dodavatel"]>) => setU({ ...u, dodavatel: { ...u.dodavatel, ...z } });
-  // Zmena rozpisu ruší „Rozpis je správny“ — kontrola beží znova.
-  const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
-    set({ rozpis: u.rozpis.map((r, j) => (j === i ? { ...r, ...z } : r)), celkom: null, rozpisPotvrdeny: false });
   // Rozpis DPH: daň = základ × sadzba, platná sadzba, súčty voči sumám z dokladu.
   // + súčet podľa sadzieb voči sume dokladu (0,01 € na sadzbu).
-  const kontrolaRozpisu = kontrolaSadziebUdajov(u, krajinaFirmy);
+  /*
+    Pravidlo DPH (Patrik 13. 11.) — zákonná sadzba v deň dodania, DPH zo
+    základu, súčty a súlad so sumou dokladu. Kedysi potvrdený nesúlad
+    („Rozpis je správny“) kontrolu neobíde — zlá DPH sa neuloží.
+  */
+  const kontrolaRozpisu = kontrolaNespracovaneho(u, krajinaFirmy, druh);
 
   /*
     Smer faktúry podľa IBAN-u — nastavenie „Automaticky určiť typ faktúry
@@ -319,14 +321,12 @@ function Detail() {
     if (u && druh === "blocek" && !ajDuplicitu && !ajCudziu && !(await potvrdRozdielSumy(kontrolaSumy(u), u.mena || "EUR", t)))
       return;
     /*
-      Rozpis DPH, ktorý nesedí, sa neuloží potichu: buď ho človek opraví,
-      alebo vedome vytvorí doklad, ktorý pôjde na kontrolu.
+      Rozpis DPH, ktorý nesedí (sadzba mimo zákonných, DPH nezodpovedá
+      základu, súčet nesedí s dokladom), sa neuloží — Patrik 13. 11.
     */
-    if (druh && druh !== "ostatny" && !kontrolaRozpisu.ok && !ajDuplicitu && !ajCudziu) {
-      // „Pokračovať aj tak“ sa zapíše (rozpisPotvrdeny) — vytvorený doklad nejde na kontrolu a už sa nepýta.
-      if (!(await potvrdNesuladRozpisu(kontrolaRozpisu, t))) return;
-      if (udaje) udaje = { ...udaje, rozpisPotvrdeny: true };
-      setU(udaje);
+    if (druh && druh !== "ostatny" && !kontrolaRozpisu.ok) {
+      await potvrdNesuladRozpisu(kontrolaRozpisu, t);
+      return;
     }
     // Pri opakovaní kvôli duplicite už človek vlastnú faktúru potvrdil.
     if (vlastnyUcet && !ajDuplicitu) {
@@ -902,49 +902,18 @@ function Detail() {
                 </section>
 
                 <section className="rounded-xl border border-border bg-card p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-foreground">{t("Sumy podľa sadzieb DPH")}</span>
-                    <button type="button" onClick={() => set({ rozpis: [...u.rozpis, { sadzba: sadzby[0] ?? 23, zaklad: 0, dph: 0 }], celkom: null })} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                      <Plus className="h-3.5 w-3.5" /> {t("Pridať sadzbu")}
-                    </button>
-                  </div>
-                  <table className="w-full text-sm">
-                    <thead className="text-left text-xs text-muted-foreground">
-                      <tr>
-                        <th className="py-1 pr-2 font-medium">{t("Sadzba")}</th>
-                        <th className="py-1 pr-2 text-right font-medium">{t("Základ")}</th>
-                        <th className="py-1 pr-2 text-right font-medium">{t("DPH")}</th>
-                        <th><span className="sr-only">{t("Akcie")}</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {u.rozpis.map((r, i) => (
-                        <tr key={i}>
-                          <td className="py-1 pr-2">
-                            <VolbaSadzbyDph riadok={r} sadzby={sadzby} onChange={(z) => setRozpis(i, z)} className="w-24 max-w-full rounded-md border border-input bg-background px-1.5 py-1.5 text-sm sm:w-40 sm:px-2" />
-                          </td>
-                          <td className="py-1 pr-2">
-                            <DesatinnePole hodnota={r.zaklad} naZmenu={(z) => {
-                              setRozpis(i, { zaklad: z, dph: Math.round(z * Number(r.sadzba)) / 100 });
-                            }} className="w-full min-w-[5.5rem] rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
-                          </td>
-                          <td className="py-1 pr-2">
-                            <DesatinnePole hodnota={r.dph} naZmenu={(v) => setRozpis(i, { dph: v })} className="w-full min-w-[5.5rem] rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums" />
-                          </td>
-                          <td className="py-1 text-right">
-                            <button type="button" aria-label={t("Odstrániť sadzbu")} onClick={() => set({ rozpis: u.rozpis.filter((_, j) => j !== i), celkom: null })} className="rounded p-1 text-muted-foreground hover:bg-secondary">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <UpozornenieRozpisuDph
-                    className="mt-2"
+                  <div className="mb-2 text-sm font-semibold text-foreground">{t("Sumy podľa sadzieb DPH")}</div>
+                  <EditorRozpisuDph
+                    riadky={u.rozpis}
+                    onChange={(r) =>
+                      set({ rozpis: r as UdajeNespracovaneho["rozpis"], celkom: null, rozpisPotvrdeny: false })
+                    }
+                    sadzby={sadzby}
+                    mena={u.mena}
                     kontrola={kontrolaRozpisu}
-                    onPotvrd={() => set({ kontrolaDph: undefined, rozpisPotvrdeny: true })}
+                    minRiadkov={0}
                   />
+                  <UpozornenieRozpisuDph className="mt-2" kontrola={kontrolaRozpisu} />
                   <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-destructive" : ""}`}>
                     <span className="text-muted-foreground">
                       {t("Základ {zaklad} · DPH {dph}", { zaklad: s.zaklad.toFixed(2), dph: s.dph.toFixed(2) })}

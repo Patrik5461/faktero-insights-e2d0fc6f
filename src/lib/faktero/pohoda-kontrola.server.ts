@@ -62,7 +62,7 @@ function varovanieChybajucejSkratky(
   return varovanieSkratky(cislo, chybajuceSkratky(kody, mapa));
 }
 
-/** Ešte neodovzdané doklady, ktoré by kontrola pred odovzdaním zastavila. */
+/** Ešte neodovzdané doklady so závažnou chybou — konektor ich zastaví, ručný export ich pustí až po potvrdení. */
 export async function zastaveneDoklady(
   supabase: Klient,
   companyId: string,

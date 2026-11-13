@@ -20,6 +20,8 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
         company_id: z.string().uuid(),
         druh: z.enum(["vydane", "prijate", "blocky"]),
         riadky: z.array(z.record(z.string(), z.unknown())).max(STROP_RIADKOV),
+        /** Človek videl závažné chyby (`zavazne`) a prevod potvrdil — doklady idú do XML aj tak. */
+        potvrdene_varovania: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -49,7 +51,7 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
       await import("./export.server");
     const { nastaveniaFaktur, nastaveniaDokladovPohody } = await import("./export-priprava.server");
     const { doplnkyExportu } = await import("./export-nastavenia.server");
-    const { prekazkaDokladu } = await import("./pohoda-kontrola");
+    const { prekazkaDokladu, prekazkaStavuDokladu } = await import("./pohoda-kontrola");
     // Partneri z tabuľky v adresári Faktera nie sú — párovať ich nie je s čím.
     const doplnky = {
       ...(await doplnkyExportu(supabase, company)),
@@ -57,32 +59,41 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
     };
 
     const preskocene: string[] = [...chyby];
+    /*
+      Obsahové prekážky (zlé DPH, chýbajúce členenie…) prevod nezastavia —
+      prvé volanie vráti `zavazne` bez súboru, po potvrdení idú doklady do
+      XML aj tak (Patrik 13. 11. 2026).
+    */
+    const zavazne: string[] = [];
+    const aj = Boolean(data.potvrdene_varovania);
     let xml = "";
     let pocet = 0;
     if (data.druh === "vydane") {
       const nastavenia = { ...nastaveniaFaktur(company), ...doplnky };
-      const ok = faktury.filter(({ invoice, items }) => {
-        const dovod = pohodaPrekazka(invoice as any, company, {
-          items: items as any[],
-          nastavenia,
-        });
-        if (dovod) preskocene.push(dovod);
-        return !dovod;
-      });
-      pocet = ok.length;
-      if (ok.length) xml = buildPohodaInvoiceXml({ company, invoices: ok as any, nastavenia });
+      for (const { invoice, items } of faktury) {
+        const dovod = pohodaPrekazka(invoice as any, company, { items: items as any[], nastavenia });
+        if (dovod) zavazne.push(dovod);
+      }
+      if (zavazne.length && !aj) return { xml: "", fileName: "", pocet: 0, preskocene, zavazne, varovania: [] as string[] };
+      pocet = faktury.length;
+      if (faktury.length)
+        xml = buildPohodaInvoiceXml({ company, invoices: faktury as any, nastavenia: { ...nastavenia, ajSPrekazkami: true } });
     } else {
       const nastavenia = {
         ...(await nastaveniaDokladovPohody(supabase, company, doklady)),
         ...doplnky,
       };
       const ok = doklady.filter((d) => {
+        const stav = prekazkaStavuDokladu(d as any);
+        if (stav) return preskocene.push(stav), false;
         const dovod = prekazkaDokladu(d as any, company, nastavenia as any);
-        if (dovod) preskocene.push(dovod);
-        return !dovod;
+        if (dovod) zavazne.push(dovod);
+        return true;
       });
+      if (zavazne.length && !aj) return { xml: "", fileName: "", pocet: 0, preskocene, zavazne, varovania: [] as string[] };
       pocet = ok.length;
-      if (ok.length) xml = buildPohodaExpensesXml({ company, doklady: ok as any, nastavenia });
+      if (ok.length)
+        xml = buildPohodaExpensesXml({ company, doklady: ok as any, nastavenia: { ...nastavenia, ajSPrekazkami: true } });
     }
     if (!xml)
       throw new Error(preskocene.slice(0, 10).join(" · ") || "Žiadny doklad sa nedal previesť.");
@@ -93,5 +104,7 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
       fileName: `pohoda-${data.druh === "vydane" ? "vydane-faktury" : data.druh === "prijate" ? "prijate-faktury" : "blocky"}-${dnes}.xml`,
       pocet,
       preskocene,
+      zavazne: [] as string[],
+      varovania: [] as string[],
     };
   });

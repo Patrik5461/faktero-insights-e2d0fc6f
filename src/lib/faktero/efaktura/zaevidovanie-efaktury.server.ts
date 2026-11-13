@@ -252,12 +252,25 @@ export async function zaevidujPrijatuEfakturu(
       }
     }
 
-    if (zaradenie.kam === "nespracovane") {
+    /*
+      DPH eFaktúry nie je po zákonných sadzbách (dph-pravidlo.ts) — prijatá
+      faktúra by neprešla (spúšťač v databáze ju odmietne), preto ide do
+      Nespracovaných, kde ju človek opraví.
+    */
+    let zlaDph = false;
+    if (zaradenie.kam !== "nespracovane") {
+      const { overDphZapisu } = await import("../dph-pravidlo.server");
+      zlaDph =
+        (await overDphZapisu(supabase, companyId, "purchase_invoices", { ...riadok, status: "received" }))
+          .length > 0;
+    }
+
+    if (zaradenie.kam === "nespracovane" || zlaDph) {
       const id = await doNespracovanych(supabase, {
         companyId,
         userId: args.userId,
         r,
-        druh: zaradenie.druh,
+        druh: zaradenie.kam === "nespracovane" ? zaradenie.druh : r.druh === "dobropis" ? "dobropis" : "faktura",
         xml,
         receivedId,
       });

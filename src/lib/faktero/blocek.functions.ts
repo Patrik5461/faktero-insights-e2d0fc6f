@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { krajinaBlocku } from "./krajina-blocku";
 import { nastavZaokruhlenie, zaokruhlenieZPoloziek } from "./zaokruhlenie-blocku";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -53,6 +54,11 @@ export type BlocekVysledok = {
   supplier_dic?: string;
   supplier_ic_dph?: string;
   supplier_address?: string;
+  /**
+   * Štát predajcu (ISO) — eKasa SK, český QR CZ, z fotky podľa krajiny/IČ
+   * DPH/adresy. Zahraničný bloček nesie sadzby svojho štátu (pravidlo DPH).
+   */
+  supplier_country?: string;
   total?: number;
   vat_amount?: number;
   net_amount?: number;
@@ -141,6 +147,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           supplier_ico: d.ico,
           supplier_dic: d.dic,
           supplier_ic_dph: firma?.platitelDph ? (firma.dic ?? d.dic) : undefined,
+          supplier_country: "CZ",
           total: d.suma,
           currency: "CZK",
           date: d.datum,
@@ -176,6 +183,8 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           supplier_dic: d.dic,
           supplier_ic_dph: d.ic_dph,
           supplier_address: d.adresa,
+          // eKasa je slovenská pokladnica.
+          supplier_country: "SK",
           total: d.suma,
           vat_amount: d.dph,
           // Základ bez zaokrúhlenia — to je samostatná položka bločku.
@@ -211,6 +220,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           poznamka: "Doklad sa vo Finančnej správe nenašiel — údaje sú len z QR kódu.",
           supplier_ico: d.ico,
           supplier_ic_dph: d.ic_dph,
+          supplier_country: "SK",
           total: d.suma,
           vat_amount: d.dph,
           currency: d.mena ?? "EUR",
@@ -293,8 +303,14 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
     const { rozpisZVytazenia } = await import("./rozpis-dph-vytazeny");
     const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
     const sumaBezZaokr = ocr.total != null ? round2(Number(ocr.total) - (zaokr || 0)) : null;
+    const krajinaPredajcu = krajinaBlocku({
+      krajina: ocr.supplier_country,
+      icDph: ocr.ic_dph,
+      adresa: ocr.supplier_address,
+    });
     const rozpisFoto = rozpisZVytazenia(
       {
+        supplier_country: krajinaPredajcu,
         amount_without_vat: ocr.net_amount ?? null,
         vat_amount: ocr.vat_amount ?? null,
         amount_total: sumaBezZaokr,
@@ -315,8 +331,18 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       supplier: ocr.supplier ?? undefined,
       supplier_ico: ocr.ico ?? undefined,
       supplier_ic_dph: ocr.ic_dph ?? undefined,
+      ...(ocr.supplier_address ? { supplier_address: ocr.supplier_address } : {}),
+      ...(krajinaPredajcu ? { supplier_country: krajinaPredajcu } : {}),
       total: ocr.total ?? undefined,
-      vat_amount: ocr.vat_amount ?? undefined,
+      /*
+        DPH hlavičky zo skontrolovaného rozpisu (súčet riadkov po zákonných
+        sadzbách) — keď rozpis prešiel kontrolou alebo ho náprava opravila,
+        hlavička s ním musí sedieť; inak ostáva, čo je na bločku.
+      */
+      vat_amount:
+        rozpisOk && rozpisFoto.kontrola.ok
+          ? round2(rozpisFoto.rozpis.reduce((a, r) => a + r.dph, 0))
+          : (ocr.vat_amount ?? undefined),
       vat_rate:
         rozpisFoto.rozpis.length === 1
           ? rozpisFoto.rozpis[0]!.sadzba

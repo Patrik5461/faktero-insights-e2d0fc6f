@@ -1051,6 +1051,8 @@ export const sk = {
   "rd.cudziaUlozena": "Faktúra nepatrí tejto firme — uložená s výkričníkom, nezaúčtuje sa.",
   "rd.inaFirma": "iná firma",
   "rd.chybaUlozenia": "Doklad sa nepodarilo uložiť.",
+  "rd.dphNesedi": "Rozpis DPH nesedí so zákonnými sadzbami",
+  "rd.dphNesediPopis": "Doklad sa takto neuloží. Opravte sadzby a DPH na webe v Nespracovaných dokladoch — doklad tam už je.",
   "rd.dodavatel": "Dodávateľ",
   "rd.cislo": "Číslo dokladu",
   "rd.vystavene": "Vystavené",

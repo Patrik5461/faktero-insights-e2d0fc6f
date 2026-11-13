@@ -1037,6 +1037,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "rd.cudziaUlozena": "Faktura nepatří této firmě — uložena s vykřičníkem, nezaúčtuje se.",
   "rd.inaFirma": "jiná firma",
   "rd.chybaUlozenia": "Doklad se nepodařilo uložit.",
+  "rd.dphNesedi": "Rozpis DPH nesedí se zákonnými sazbami",
+  "rd.dphNesediPopis": "Doklad se takto neuloží. Opravte sazby a DPH na webu v Nezpracovaných dokladech — doklad tam už je.",
   "rd.dodavatel": "Dodavatel",
   "rd.cislo": "Číslo dokladu",
   "rd.vystavene": "Vystaveno",

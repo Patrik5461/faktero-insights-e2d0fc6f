@@ -10,6 +10,8 @@
  * Čistá logika bez I/O — používa ju vyťaženie aj opravný skript.
  */
 import { krajinaDane, sadzbyKrajiny } from "@/lib/faktero/vat-rates";
+import { sadzbyStatuSHistoriou, statEu } from "@/lib/faktero/sadzby-eu";
+import { krajinaDodavatelaDph } from "@/lib/faktero/dph-pravidlo";
 
 /**
  * Kategória riadku rozpisu DPH (Patrik 5. 11.):
@@ -109,7 +111,14 @@ const sedi = (a: number, b: number, tol = TOLERANCIA_DPH) => Math.abs(a - b) <= 
 export function skontrolujRozpisDph(
   r: RiadokDph[],
   suma: { bezDph: number; dph: number },
-  kontext: { krajina: string; datumDodania?: string | null },
+  kontext: {
+    krajina: string;
+    datumDodania?: string | null;
+    /** Krajina dodávateľa (ISO) — zahraničný smie mať sadzby svojho štátu. */
+    krajinaDodavatela?: string | null;
+    /** IČ DPH dodávateľa — keď krajina chýba, odvodí sa z prefixu. */
+    icDphDodavatela?: string | null;
+  },
 ): VysledokKontroly {
   const chyby: VysledokKontroly["chyby"] = [];
   const krajina = krajinaDane(kontext.krajina);
@@ -119,10 +128,24 @@ export function skontrolujRozpisDph(
     bez dátumu dnešné. Inú hodnotu (napr. „1,46 %“ dopočítanú z pomeru dane
     a základu) nikdy neprijmeme.
   */
-  const povolene = sadzbyKrajiny(
-    krajina,
-    datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) ? datum : null,
-  );
+  const denOk = datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) ? datum : null;
+  let povolene = sadzbyKrajiny(krajina, denOk);
+  /*
+    Zahraničný dodávateľ (bloček za palivo v Maďarsku, hotel v Rakúsku) nesie
+    sadzbu svojho štátu — súčasnú aj historickú, ako pravidlo `skontrolujDph`.
+    Krajina mimo EÚ: sadzbu nevieme overiť, ponecháme len zdaniteľné sadzby
+    z dokladu (výpočet a súčty sa kontrolujú ďalej).
+  */
+  const dod = krajinaDodavatelaDph(kontext.krajinaDodavatela, kontext.icDphDodavatela);
+  if (dod && dod !== krajina) {
+    const cudzie =
+      dod === "SK" || dod === "CZ" || dod === "DE"
+        ? sadzbyKrajiny(dod, denOk)
+        : statEu(dod)
+          ? sadzbyStatuSHistoriou(dod)
+          : (r ?? []).map((x) => cislo(x.rate));
+    povolene = [...new Set([...povolene, ...cudzie])];
+  }
 
   let sumaZakladov = 0;
   let sumaDph = 0;
@@ -372,6 +395,7 @@ export function kontrolaSadziebPrijatej(
     issue_date?: string | null;
     type?: string | null;
     supplier_ic_dph?: string | null;
+    supplier_country?: string | null;
     rozpis_dph_potvrdeny?: unknown;
   },
   krajina?: string | null,
@@ -391,6 +415,8 @@ export function kontrolaSadziebPrijatej(
     skontrolujRozpisDph(riadky, { bezDph, dph }, {
       krajina: krajina ?? "SK",
       datumDodania: d.delivery_date || d.issue_date || null,
+      krajinaDodavatela: d.supplier_country ?? null,
+      icDphDodavatela: d.supplier_ic_dph ?? null,
     }),
     riadky,
     d.amount_total as number,

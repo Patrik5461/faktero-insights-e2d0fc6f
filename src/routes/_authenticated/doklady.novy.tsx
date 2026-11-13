@@ -82,15 +82,18 @@ import { AutomatickyZaradena } from "@/components/faktero/AutomatickyZaradena";
 import {
   UpozornenieRozpisuDph,
   potvrdNesuladRozpisu,
-  ulozPotvrdenieRozpisu,
 } from "@/components/faktero/UpozornenieRozpisuDph";
+import { EditorRozpisuDph } from "@/components/faktero/EditorRozpisuDph";
+import { hlaskaSpustacaDph, krajinaDodavatelaDph, krajinaZIcDph } from "@/lib/faktero/dph-pravidlo";
+import { SADZBY_EU } from "@/lib/faktero/sadzby-eu";
 import {
-  jeRozpisPotvrdeny,
-  podpisRozpisu,
-  riadkyUlozenehoDokladu,
-  sNesuladomDokladu,
-} from "@/lib/faktero/rozpis-dph-kontrola";
-import { kontrolaUlozenehoBlocku } from "@/lib/faktero/rozpis-dph-vytazeny";
+  hlavnaSadzba,
+  kontrolaFormulara,
+  rozpisZDokladu,
+  sadzbyNaVyber,
+  suctyRozpisu,
+  type RiadokRozpisu,
+} from "@/components/faktero/dph-formular";
 import { NahladDokladuNastroje } from "@/components/faktero/PrijataUpravaKompaktna";
 import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
 import { RozlozenieSNahladom } from "@/components/faktero/RozlozenieSNahladom";
@@ -123,10 +126,24 @@ export const Route = createFileRoute("/_authenticated/doklady/novy")({
 
 type DokladSearch = { id?: string; prenos?: string };
 
+/** Názov štátu v jazyku rozhrania (Intl), inak slovenský z tabuľky sadzieb. */
+function nazovStatu(kod: string, jazyk: string, nahradny: string): string {
+  try {
+    return new Intl.DisplayNames([jazyk], { type: "region" }).of(kod) ?? nahradny;
+  } catch {
+    return nahradny;
+  }
+}
+
 type Form = {
   supplier_name: string;
   supplier_ico: string;
   supplier_ic_dph: string;
+  /**
+   * Krajina zahraničného dodávateľa (ISO). Prázdne = podľa IČ DPH, inak
+   * tuzemský. Zahraničný bloček (palivo v Maďarsku) nesie sadzby svojho štátu.
+   */
+  supplier_country: string;
   document_number: string;
   issue_date: string;
   /** Prázdne, kým si človek nevyberie — z predvolenej hotovosti ubúdalo v pokladni. */
@@ -156,6 +173,7 @@ const EMPTY: Form = {
   supplier_name: "",
   supplier_ico: "",
   supplier_ic_dph: "",
+  supplier_country: "",
   document_number: "",
   issue_date: dnesBratislava(),
   /*
@@ -356,6 +374,7 @@ function NovyDokladPage() {
         supplier_name: data.supplier_name ?? "",
         supplier_ico: data.supplier_ico ?? "",
         supplier_ic_dph: data.supplier_ic_dph ?? "",
+        supplier_country: ((data as { supplier_country?: string | null }).supplier_country ?? "").toUpperCase(),
         document_number: data.document_number ?? "",
         issue_date: data.issue_date ?? "",
         total_amount: data.total_amount?.toString() ?? "",
@@ -454,22 +473,6 @@ function NovyDokladPage() {
     (Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.zaklad) || 0), 0) - (Number(form.net_amount) || 0)) >= 0.005 ||
       Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.dph) || 0), 0) - (Number(form.vat_amount) || 0)) >= 0.005);
   /*
-    Rozpis DPH: sadzba povolená v krajine, daň = základ × sadzba, druh plnenia
-    pri 0 % (mimo DPH, oslobodené, prenesenie). Nesediaci sa neuloží potichu —
-    server doklad označí na kontrolu.
-  */
-  const kontrolaRozpisuBezSumy = kontrolaUlozenehoBlocku(
-    {
-      net_amount: form.net_amount === "" ? null : form.net_amount,
-      vat_amount: form.vat_amount === "" ? null : form.vat_amount,
-      vat_rate: form.vat_rate === "" ? null : form.vat_rate,
-      vat_breakdown: (rozpisDph?.length ?? 0) > 1 ? rozpisDph : null,
-      issue_date: form.issue_date || null,
-      supplier_ic_dph: form.supplier_ic_dph || null,
-    },
-    krajina,
-  );
-  /*
     Rozpis tak, ako sa uloží (jedna sadzba nasleduje polia základ/DPH), a súčet
     podľa sadzieb voči sume bločku bez zaokrúhlenia — „Sadzba DPH / súčet nesedí
     s dokladom“. Potvrdený nesúlad (`rozpis_dph_potvrdeny`) sa znova nehlási.
@@ -488,26 +491,61 @@ function NovyDokladPage() {
       : rozpisDph?.length
         ? rozpisDph
         : null;
-  const riadkyRozpisu = riadkyUlozenehoDokladu({
-    vat_breakdown: rozpisNaUlozenie,
-    vat_rate: form.vat_rate === "" ? null : form.vat_rate,
-    net_amount: form.net_amount === "" ? null : form.net_amount,
-    vat_amount: form.vat_amount,
+  /*
+    Rozpis DPH po sadzbách — jediné miesto, kde sa DPH bločku zadáva (Patrik
+    13. 11.): sadzba len zo zákonných, DPH zo základu (doladenie ±0,02),
+    „Suma bez DPH“, „DPH“ a sadzba hlavičky sú súčty rozpisu.
+  */
+  /*
+    Krajina dodávateľa (13. 11.): zvolená, inak z prefixu IČ DPH. Zahraničný
+    bloček ponúkne aj sadzby štátu dodávateľa (HU 27 %, AT 20 %…) a kontrola
+    ich prijme — inak by sa maďarské palivo nedalo uložiť.
+  */
+  const krajinaDodavatela = krajinaDodavatelaDph(form.supplier_country, form.supplier_ic_dph);
+  const sadzbyRozpisu = sadzbyNaVyber(krajina, form.issue_date || null, krajinaDodavatela);
+  const rozpisEditora: RiadokRozpisu[] = rozpisDph?.length
+    ? rozpisZDokladu({
+        vat_breakdown:
+          rozpisDph.length === 1
+            ? [{ ...rozpisDph[0]!, sadzba: Number(form.vat_rate) || rozpisDph[0]!.sadzba, zaklad: Number(form.net_amount) || 0, dph: Number(form.vat_amount) || 0 }]
+            : rozpisDph,
+      })
+    : rozpisZDokladu({ vat_rate: form.vat_rate, zaklad: form.net_amount, dph: form.vat_amount }).concat(
+        form.net_amount === "" && form.vat_amount === ""
+          ? [{ sadzba: Number(form.vat_rate) || (sadzbyRozpisu[0] ?? 0), zaklad: 0, dph: 0 }]
+          : [],
+      );
+  /*
+    Pravidlo DPH (Patrik 13. 11.): zákonná sadzba v deň vystavenia, DPH zo
+    základu, súčty = hlavička (`skontrolujDph`, to isté stráži databáza) a
+    súčet podľa sadzieb voči sume bločku bez zaokrúhlenia. Nesediaci sa neuloží.
+  */
+  const kontrolaRozpisuDph = kontrolaFormulara({
+    riadky: rozpisEditora,
+    zaklad: form.net_amount === "" ? null : Number(form.net_amount) || 0,
+    dph: form.vat_amount === "" ? null : Number(form.vat_amount) || 0,
+    krajina,
+    den: form.issue_date || null,
+    poloziek: polozky.length || undefined,
+    krajinaDodavatela,
+    celkomDokladu:
+      form.total_amount === ""
+        ? null
+        : Math.round((Math.abs(Number(form.total_amount) || 0) - (Number(zaokruhlenie) || 0)) * 100) / 100,
+    mena: form.currency,
+    hotovost: form.payment_method === "hotovost",
   });
-  // Doklad od neplatiteľa bez dane — sadzba sa nekontroluje (ako v kontrolaUlozenehoBlocku).
-  const bezDaneNeplatitel = !String(form.supplier_ic_dph ?? "").trim() && riadkyRozpisu.every((r) => !r.vat);
-  const kontrolaRozpisuDph =
-    form.total_amount === "" || bezDaneNeplatitel
-      ? kontrolaRozpisuBezSumy
-      : sNesuladomDokladu(
-          kontrolaRozpisuBezSumy,
-          riadkyRozpisu,
-          Math.round((Math.abs(Number(form.total_amount) || 0) - (Number(zaokruhlenie) || 0)) * 100) / 100,
-          form.currency,
-          form.payment_method === "hotovost",
-        );
-  const podpisRozpisuDph = podpisRozpisu(riadkyRozpisu, form.total_amount);
-  const rozpisPotvrdeny = jeRozpisPotvrdeny(ulozeny?.rozpis_dph_potvrdeny, podpisRozpisuDph);
+  function zmenRozpisDph(r: RiadokRozpisu[]) {
+    setRozpisDph(r as BlocekVysledok["vat_breakdown"]);
+    const s = suctyRozpisu(r);
+    const sadzba = hlavnaSadzba(r);
+    setForm((f) => ({
+      ...f,
+      net_amount: s.zaklad.toFixed(2),
+      vat_amount: s.dph.toFixed(2),
+      vat_rate: sadzba == null ? f.vat_rate : String(sadzba),
+    }));
+  }
   const kontrolaSumy = kontrolaSumyBlocku({
     celkom: form.total_amount,
     zaklad: form.net_amount,
@@ -656,6 +694,7 @@ function NovyDokladPage() {
     if (r.supplier) updateForm("supplier_name", r.supplier);
     if (r.supplier_ico) updateForm("supplier_ico", r.supplier_ico);
     if (r.supplier_ic_dph) updateForm("supplier_ic_dph", r.supplier_ic_dph);
+    if (r.supplier_country) updateForm("supplier_country", r.supplier_country.toUpperCase());
     dodavatelZBlocku.current = { dic: r.supplier_dic, adresa: r.supplier_address };
     if (r.document_number) updateForm("document_number", r.document_number);
     if (r.date) updateForm("issue_date", r.date);
@@ -792,20 +831,16 @@ function NovyDokladPage() {
     }
     // Súčet, ktorý nesedí so sumou bločku, sa uloží len po potvrdení.
     if (!(await potvrdRozdielSumy(kontrolaSumy, form.currency || "EUR", t))) return;
-    if (
-      kontrolaSumy.sedi &&
-      rozpisNesedi &&
-      !(await potvrd(
-        t("Rozpis DPH podľa sadzieb nesedí so základom a DPH") +
-          "\n" +
-          t("Do Pohody pôjde rozpis z bločku, nie sumy v poliach. Uložiť aj tak?"),
-        { potvrdit: t("Uložiť aj tak"), zrusit: t("Späť") },
-      ))
-    )
+    // Rozpis a polia základ/DPH sa rozišli (starý doklad) — neuloží sa, kým sa nezosúladia.
+    if (rozpisNesedi) {
+      toast.error(t("Rozpis DPH podľa sadzieb nesedí so základom a DPH — upravte riadky rozpisu."));
       return;
-    // Zlá sadzba / súčet nesedí s bločkom: „Pokračovať aj tak“ sa zapíše a znova sa nepýta.
-    const potvrdilNesulad = !kontrolaRozpisuDph.ok && !rozpisPotvrdeny;
-    if (potvrdilNesulad && !(await potvrdNesuladRozpisu(kontrolaRozpisuDph, t))) return;
+    }
+    // Zlá sadzba / súčet nesedí s bločkom: doklad sa neuloží (Patrik 13. 11.), okno povie, čo nesedí.
+    if (!kontrolaRozpisuDph.ok) {
+      await potvrdNesuladRozpisu(kontrolaRozpisuDph, t);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -815,6 +850,8 @@ function NovyDokladPage() {
         supplier_name: form.supplier_name || null,
         supplier_ico: form.supplier_ico || null,
         supplier_ic_dph: form.supplier_ic_dph || null,
+        // Zvolená krajina, inak z IČ DPH (server ju doplní rovnako).
+        supplier_country: krajinaDodavatela,
         document_number: form.document_number || null,
         issue_date: form.issue_date || null,
         total_amount: form.total_amount ? Number(form.total_amount) : null,
@@ -846,7 +883,7 @@ function NovyDokladPage() {
         // je vidieť, za čo sa platilo, aj keď je doklad len jedna suma.
         items: polozky.length ? polozky : null,
         // Rozpis s jednou sadzbou nasleduje polia základ/DPH — inak by export vzal starú sumu.
-        vat_breakdown: rozpisNaUlozenie,
+        vat_breakdown: rozpisNaUlozenie ?? (form.net_amount !== "" ? rozpisEditora : null),
       };
       let stav = search.id ? stavDokladu : "new";
       let presunutyDoNespracovanych = false;
@@ -869,11 +906,7 @@ function NovyDokladPage() {
         });
         if (novy?.status === "processed" && !novy?.nespracovany_id) stav = "processed";
         presunutyDoNespracovanych = Boolean(novy?.nespracovany_id);
-        if (potvrdilNesulad && novy?.id && !novy?.nespracovany_id)
-          await ulozPotvrdenieRozpisu("expense_documents", novy.id, podpisRozpisuDph, kontrolaRozpisuDph);
       }
-      if (potvrdilNesulad && search.id)
-        await ulozPotvrdenieRozpisu("expense_documents", search.id, podpisRozpisuDph, kontrolaRozpisuDph);
       const rovnoSpracovany = !search.id && stav === "processed";
       if (spracovat && search.id) {
         const v = await stavFn({ data: { company_id: cid, ids: [search.id], stav: "processed" } });
@@ -925,7 +958,8 @@ function NovyDokladPage() {
               }
             : undefined,
         });
-      else toast.error(chybaZapisu(e, "Uloženie zlyhalo"));
+      // Databáza (spúšťač FAKTERO_DPH) odmietla DPH mimo zákonných sadzieb.
+      else toast.error(hlaskaSpustacaDph(e) ?? chybaZapisu(e, "Uloženie zlyhalo"));
     } finally {
       setSaving(false);
     }
@@ -1485,6 +1519,34 @@ function NovyDokladPage() {
                 value={form.supplier_ic_dph}
                 onChange={(v) => updateForm("supplier_ic_dph", v)}
               />
+              {/* Zahraničný bloček nesie sadzby štátu dodávateľa — keď ju IČ DPH neprezradí, vyberie sa tu. */}
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">{t("Krajina dodávateľa")}</span>
+                <select
+                  value={form.supplier_country}
+                  onChange={(e) => updateForm("supplier_country", e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">
+                    {krajinaZIcDph(form.supplier_ic_dph)
+                      ? t("Podľa IČ DPH ({krajina})", { krajina: krajinaZIcDph(form.supplier_ic_dph)! })
+                      : t("Tuzemský dodávateľ")}
+                  </option>
+                  <optgroup label={t("Zahraničný dodávateľ")}>
+                    {SADZBY_EU.filter((s) => s.kod !== krajina).map((s) => (
+                      <option key={s.kod} value={s.kod}>
+                        {s.kod} — {nazovStatu(s.kod, jazyk, s.nazov)}
+                      </option>
+                    ))}
+                    {form.supplier_country &&
+                      form.supplier_country !== krajina &&
+                      !SADZBY_EU.some((s) => s.kod === form.supplier_country) && (
+                        <option value={form.supplier_country}>{form.supplier_country}</option>
+                      )}
+                  </optgroup>
+                  {form.supplier_country === krajina && <option value={krajina}>{krajina}</option>}
+                </select>
+              </label>
               <Field
                 label={t("Číslo dokladu")}
                 value={form.document_number}
@@ -1516,18 +1578,16 @@ function NovyDokladPage() {
                   ))}
                 </select>
               </label>
-              <Field
-                label={t("Suma bez DPH")}
-                type="number"
-                value={form.net_amount}
-                onChange={(v) => updateForm("net_amount", v)}
-              />
-              <Field
-                label={t("DPH")}
-                type="number"
-                value={form.vat_amount}
-                onChange={(v) => updateForm("vat_amount", v)}
-              />
+              <div className="min-w-0 sm:col-span-2">
+                <span className="mb-1 block text-xs text-muted-foreground">{t("Rozpis DPH podľa sadzieb")}</span>
+                <EditorRozpisuDph
+                  riadky={rozpisEditora}
+                  onChange={zmenRozpisDph}
+                  sadzby={sadzbyRozpisu}
+                  mena={form.currency || "EUR"}
+                  kontrola={kontrolaRozpisuDph}
+                />
+              </div>
               <label className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Zaokrúhlenie (bez DPH)")}</span>
                 <VstupZaokruhlenia
@@ -1545,14 +1605,8 @@ function NovyDokladPage() {
                   updateForm("total_amount", v);
                 }}
               />
-              <Field
-                label={t("Sadzba DPH %")}
-                type="number"
-                value={form.vat_rate}
-                onChange={(v) => updateForm("vat_rate", v)}
-              />
               {!kontrolaRozpisuDph.ok ? (
-                <UpozornenieRozpisuDph className="sm:col-span-2" kontrola={kontrolaRozpisuDph} potvrdene={rozpisPotvrdeny} />
+                <UpozornenieRozpisuDph className="sm:col-span-2" kontrola={kontrolaRozpisuDph} />
               ) : null}
               {!kontrolaSumy.sedi || rozpisNesedi ? (
                 <div className="space-y-2 sm:col-span-2">
