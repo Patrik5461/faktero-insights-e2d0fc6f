@@ -198,6 +198,8 @@ export default {
     });
 
     await t.krok("SEPA XML (camt.053) prejde schémou ISO 20022", async () => {
+      // Export brány nemá zostatky — bez počiatočného by camt.053 mal nuly (S14).
+      await page.getByRole("textbox", { name: "Počiatočný zostatok" }).fill("100");
       const cesta = await t.stiahni(
         () => page.getByRole("button", { name: "SEPA XML (camt.053)" }).click(),
         "camt",
@@ -208,6 +210,8 @@ export default {
       const s = xml.toString("utf8");
       t.over(s.includes("<Othr><Id>STRIPE</Id></Othr>"), "účet brány v Othr/Id");
       t.over((s.match(/<Ntry>/g) ?? []).length === 5, "počet pohybov v camt");
+      // Počiatočný 100 + príjmy 64,91 − výdavky 64,91 = konečný 100.
+      t.over((s.match(/>100\.00</g) ?? []).length >= 2, "počiatočný a konečný zostatok 100,00");
     });
   },
 };

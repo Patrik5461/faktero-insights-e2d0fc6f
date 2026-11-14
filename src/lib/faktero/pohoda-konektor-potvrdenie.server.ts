@@ -417,7 +417,16 @@ export async function spracujPolozkyOdpovede(
       .in("polozka_id", ids.slice(i, i + 150))
       .order("created_at", { ascending: false })
       .limit(2000);
-    if (error) hod(error);
+    if (error) {
+      /*
+        Bez tabuľky dávok (migrácia ešte nie je) nemá konektor čo potvrdzovať —
+        odpoveď na ručný súbor či mesačný balík sa spracuje ďalej po starom.
+      */
+      if (chybaChybajucejTabulky(error)) {
+        return { spracovanych: polozky.length, zalozenych: polozky.length, chyby, upozornenia, chybaBaliku: null, nezname: 0, nesparovane: polozky };
+      }
+      hod(error);
+    }
     riadky.push(...((data ?? []) as RiadokKonektora[]));
   }
   const dotknuteJoby = new Set<string>();
