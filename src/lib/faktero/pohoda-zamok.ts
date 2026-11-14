@@ -201,6 +201,23 @@ export const ZAMOK_DOKLADU = [
   "category",
 ] as const;
 
+/**
+ * Pokladničný doklad (`cash_entries`) — to, čo číta `polozkyPokladne`, plus
+ * pokladňa a číselný rad (audit 14. 11. 2026, S21). Spúšťač zakazuje aj
+ * zmazanie odovzdaného dokladu.
+ */
+export const ZAMOK_POKLADNE = [
+  "entry_number",
+  "entry_date",
+  "type",
+  "amount",
+  "description",
+  "category",
+  "note",
+  "pokladna_id",
+  "number_series_id",
+] as const;
+
 /** Polia vydanej faktúry, ktorých zmenu zapisuje `historia_dokladov` (agenda `faktura`). */
 export const HISTORIA_FAKTURY = [
   "invoice_number",

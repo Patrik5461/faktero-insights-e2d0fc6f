@@ -65,6 +65,13 @@ export function KonvertorExcel() {
       [t("Stĺpce s hviezdičkou sú povinné. Vzorový riadok prepíšte alebo zmažte.")],
       [t("Dátumy ako 2026-10-01 alebo 1.10.2026, sumy s desatinnou čiarkou alebo bodkou.")],
       [t("Predkontácia a členenie DPH sú skratky z Pohody; prázdne = predvolené kódy firmy.")],
+      [t("Sadzba DPH je pri tuzemskom plnení povinná; pri plnení bez DPH napíšte 0.")],
+      [
+        t(
+          "Pri prenesení daňovej povinnosti a pri partnerovi zo zahraničia vyplňte stĺpec Režim DPH (napr. prenesenie, EÚ tovar, EÚ služba, vývoz, nadobudnutie z EÚ).",
+        ),
+      ],
+      [t("Doklad v cudzej mene potrebuje kurz — počet jednotiek meny za 1 jednotku domácej meny.")],
     ]);
     navod["!cols"] = [{ wch: 110 }];
     XLSX.utils.book_append_sheet(wb, navod, t("Návod"));

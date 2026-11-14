@@ -325,6 +325,7 @@ function zalohovaAkoDoklad(d: Record<string, unknown>, spolu: number): Record<st
     _samozdanenieCele: false,
     _rezim: null,
     odpocet: null,
+    _odpocetZalohy: null,
     _datumDph: d.issue_date,
     _typPohody: "receivedAdvanceInvoice",
     _zalohova: true,
@@ -390,6 +391,12 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     _dodaciList: p.delivery_note_number,
     // Kurz ECB (jednotky meny za 1 €) — bez neho sa faktúra v cudzej mene do Pohody nevyvezie.
     _kurz: p.exchange_rate,
+    /*
+      Odpočet nezdanenej zálohy (suma s DPH, o ktorú je menej na úhradu) —
+      do Pohody ako „ruční odpočet zálohy“ bez DPH (audit 14. 11. 2026, S4).
+      Zdanená záloha je záporný riadok rozpisu DPH, sem nepatrí.
+    */
+    _odpocetZalohy: Number(p.advance_amount) > 0 ? Number(p.advance_amount) : null,
     _datumDph: p.delivery_date || p.issue_date,
     // Kedy faktúra do firmy prišla — pre voľbu dátumu zápisu a odpočtu.
     _datumDorucenia: p.received_date || String(p.created_at ?? "").slice(0, 10) || null,

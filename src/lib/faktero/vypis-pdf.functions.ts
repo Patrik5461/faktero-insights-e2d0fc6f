@@ -389,6 +389,11 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       predkontacie?: Record<string, string> | null;
       ucet?: string | null;
       mena?: string | null;
+      /**
+       * Počiatočný zostatok zadaný ručne — pre camt.053 z výpisu, ktorý pri
+       * pohyboch zostatky nemá (S14). Bez neho by výpis mal nulové zostatky.
+       */
+      pociatocnyZostatok?: number | null;
       /*
         Dva formáty, dva rôzne dialógy v Pohode. `pohoda` je dávka do
         *Súbor → Dátová komunikácia → XML import*; `sepa` je camt.053 do
@@ -430,7 +435,30 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       const { buildCamt053 } = await import("./bank-statements-own.server");
       const c = company as Record<string, string | null>;
       const zoradene = [...data.pohyby].sort((a, b) => a.datum.localeCompare(b.datum));
-      const zostatky = zostatkyNaExport(zoradene);
+      /*
+        Zostatky z pohybov, inak z ručne zadaného počiatočného (konečný sa
+        dopočíta z pohybov). Bez oboch sa camt.053 nezostaví — s nulovými
+        zostatkami nesedel sám so sebou a POHODA by zapísala vymyslený
+        zostatok účtu (S14).
+      */
+      const zPohybov = zostatkyNaExport(zoradene);
+      const rucny = Number(data.pociatocnyZostatok);
+      const zostatky =
+        zPohybov ??
+        (data.pociatocnyZostatok != null && String(data.pociatocnyZostatok).trim() !== "" && Number.isFinite(rucny)
+          ? {
+              pociatocny: Math.round(rucny * 100) / 100,
+              konecny:
+                Math.round(
+                  (rucny + zoradene.reduce((a, p) => a + (p.smer === "vydaj" ? -p.suma : p.suma), 0)) * 100,
+                ) / 100,
+            }
+          : null);
+      if (!zostatky) {
+        throw new Error(
+          "Výpis nemá pri pohyboch zostatky — zadajte počiatočný zostatok z hlavičky výpisu, inak by SEPA XML malo nulové zostatky.",
+        );
+      }
       const mena = data.mena || (c.default_currency ?? "EUR");
 
       const obsah = buildCamt053({
@@ -467,8 +495,8 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
           Konečný zostatok sa dopočítava z vyvezených pohybov — viď
           `zostatkyNaExport`.
         */
-        opening: zostatky?.pociatocny ?? 0,
-        closing: zostatky?.konecny ?? 0,
+        opening: zostatky.pociatocny,
+        closing: zostatky.konecny,
         sequenceNumber: poradieVypisu(data.cisloVypisu),
         note: "Prepis PDF výpisu z banky, zostavilo Faktero.",
       });
@@ -491,17 +519,39 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       .eq("aktivne", true);
     const pohyby = data.pohyby.map((p) => {
       const r = pravidloPohybu((pravidlaBanky ?? []) as any[], p, data.ucet);
+      // Id a kurz z prehliadača sa neberú — id pohybu z PDF je odtlačok jeho obsahu, kurz dopočíta server.
+      const cisty: VypisPohyb = { ...p, id: null, kurz: null };
       return r
-        ? { ...p, predkontacia: (r as { predkontacia: string }).predkontacia }
-        : { ...p, predkontacia: null };
+        ? { ...cisty, predkontacia: (r as { predkontacia: string }).predkontacia }
+        : { ...cisty, predkontacia: null };
     });
+
+    /*
+      Výpis v cudzej mene (V10): pohyby idú ako `foreignCurrency` s kurzom ku
+      dňu pohybu podľa pravidla krajiny firmy (SK ECB zo dňa predtým, CZ ČNB).
+    */
+    const { domacaMena, krajinaKurzu } = await import("./kurzy");
+    const domaca = domacaMena((company as any)?.country);
+    const menaVypisu = String(data.mena ?? "").trim().toUpperCase() || domaca;
+    let pohybySKurzom = pohyby;
+    if (menaVypisu !== domaca) {
+      const { kurzPreDoklad } = await import("./kurzy.server");
+      const kurzy = new Map<string, number | null>();
+      for (const den of [...new Set(pohyby.map((p) => String(p.datum)))]) {
+        const k = await kurzPreDoklad(menaVypisu, den, krajinaKurzu((company as any)?.country)).catch(() => null);
+        kurzy.set(den, k?.kurz ?? null);
+      }
+      pohybySKurzom = pohyby.map((p) => ({ ...p, kurz: kurzy.get(String(p.datum)) ?? null }));
+    }
 
     const { buildPohodaBankXml } = await import("./export.server");
     const content = buildPohodaBankXml({
       company: company as never,
-      pohyby,
+      pohyby: pohybySKurzom,
       cisloVypisu: data.cisloVypisu ?? null,
       datumVypisu: data.datumVypisu ?? null,
+      ucet: data.ucet ?? null,
+      mena: menaVypisu,
       nastavenia: {
         banka: data.banka ?? null,
         predkontaciaBanka: data.predkontacia ?? null,

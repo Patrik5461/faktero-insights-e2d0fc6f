@@ -182,7 +182,7 @@ describe("adresár a sklad", () => {
     pohyby: [],
     zakaznici: [zakaznik],
     zasoby: [zasoba],
-    nastavenia: { sklad: "TOVAR" },
+    nastavenia: { sklad: "TOVAR", cenovaSkupina: "Predaj" },
   });
 
   it("kontakt aj karta sú v dávke a XML je platné", () => {
@@ -366,7 +366,7 @@ describe("skladové pohyby", () => {
       pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
       pohyb({ id: "bbb", type: "vydaj", quantity: -4, created_at: "2026-03-01T09:00:00Z" }),
     ]),
-    nastavenia: { sklad: "TOVAR" },
+    nastavenia: { sklad: "TOVAR", cenovaSkupina: "Predaj" },
   });
 
   it("príjemka aj výdajka sú platné XML", () => {
@@ -414,7 +414,7 @@ describe("skladové pohyby", () => {
       skupinyPohybov: zoskupPohyby([
         pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
       ]),
-      nastavenia: { sklad: "TOVAR" },
+      nastavenia: { sklad: "TOVAR", cenovaSkupina: "Predaj" },
     });
     expect(sKartami.indexOf("stk:stock")).toBeLessThan(sKartami.indexOf("pri:prijemka"));
   });

@@ -6,6 +6,7 @@
 */
 
 import type { PohodaNastavenia } from "./export.server";
+import type { PolozkaOdpoctuPohody } from "./zalohy-odpocty";
 
 type Klient = any;
 type Riadok = Record<string, any>;
@@ -32,7 +33,7 @@ export async function pripravFaktury(
   invs: Riadok[],
 ): Promise<{
   bundle: { invoice: Riadok; items: Riadok[] }[];
-  zalohy: Record<string, { cislo: string | null; zaklad: number; dph: number; sadzba: number }>;
+  zalohy: Record<string, PolozkaOdpoctuPohody[]>;
 }> {
   // Po dávkach a stránkach — pri stovkách faktúr je položiek viac než 1 000.
   const { riadkyPreIds } = await import("./strankovanie");
@@ -93,17 +94,16 @@ export async function pripravFaktury(
   }));
 
   /*
-    Pohoda berie odpočet ako jednu položku s jednou sadzbou — rovnako ako
-    konektor; zálohy v rôznych sadzbách sa vynechajú a ozvú sa. Nezdanená
-    záloha ide bez DPH s odkazom na zálohovú faktúru (`zalohaPrePohodu`).
+    Pohoda: odpočet ako položky `invoiceAdvancePaymentItem`, po jednej na
+    sadzbu dokladu k platbe (nezdanená záloha bez DPH) — ten istý výpočet ako
+    balík a konektor (`zalohyPrePohodu`). Odpočet, ktorý sa zapísať nedá,
+    zastaví kontrola pred exportom (`prekazkaOdpoctuPohody` v `pohodaPrekazka`),
+    nevynechá sa ticho (audit 14. 11. 2026, K2).
   */
-  const { zalohaPrePohodu } = await import("./zalohy-odpocty");
-  const zalohy: Record<
-    string,
-    { cislo: string | null; zaklad: number; dph: number; sadzba: number }
-  > = {};
+  const { zalohyPrePohodu } = await import("./zalohy-odpocty");
+  const zalohy: Record<string, PolozkaOdpoctuPohody[]> = {};
   for (const [id, zoz] of Object.entries(odpocty)) {
-    const z = zalohaPrePohodu(zoz);
+    const z = zalohyPrePohodu(zoz);
     if (z) zalohy[id] = z;
   }
   return { bundle, zalohy };
@@ -134,5 +134,6 @@ export async function nastaveniaDokladovPohody(
     ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, String(company?.id ?? ""), company?.pohoda_pokladna)),
     predkontaciaPokladna: company?.pohoda_predkontacia_pokladna,
     sklad: company?.pohoda_sklad,
+    cenovaSkupina: company?.pohoda_cenova_skupina,
   } as PohodaNastavenia;
 }

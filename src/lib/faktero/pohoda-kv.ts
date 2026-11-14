@@ -71,8 +71,12 @@ export function kvPrijatehoPrePohodu(o: {
   clenenieDph?: string | null;
 }): string {
   if (o.cz) return "";
-  // Nadobudnutie z EÚ samozdaní v Pohode interný doklad (B.1), faktúra ide bez členenia.
-  return kvPrijatehoDokladu({ ...o, nadobudnutieDoB1: false });
+  /*
+    Nadobudnutie tovaru z EÚ ide do Pohody s členením PDnadEU (samozdanenie
+    priamo na faktúre, export.server.ts) — do KV B.1 ako vo výkaze Faktera.
+    Predtým sa počítalo s interným dokladom, ktorý export nikdy nerobil (V6).
+  */
+  return kvPrijatehoDokladu({ ...o, nadobudnutieDoB1: true });
 }
 
 /*

@@ -31,6 +31,7 @@ import { jeRucna, type ZdrojHodnoty } from "./clenenie-vystavenej";
 import { rezimFirmy } from "./dph-rezim";
 import { kvAutoBlocku, kvAutoPrijatej } from "./kv-auto";
 import { typPrijatej } from "./pravidla-uctovania";
+import { SYSTEMOVE_CLENENIA_DPH } from "./predkontacie-systemove";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Riadok = Record<string, any>;
@@ -193,4 +194,87 @@ export function zmenaClenePrijatych(row: Riadok, v: VysledokPrijatych, o: { lenD
     if ((row[zdrojStlpec] ?? null) !== zdroj) zmena[zdrojStlpec] = zdroj;
   }
   return zmena;
+}
+
+// ───────────── export do Pohody: členenie režimu bez kódu na doklade ─────────────
+
+/*
+  Prijatý doklad, ktorý ide do Pohody bez vlastného členenia DPH (nezaúčtovaný,
+  starší, bez behu automatiky), nesmie dostať predvolené tuzemské členenie
+  firmy (PD), keď jeho režim hovorí inak:
+
+   - nadobudnutie tovaru z EÚ (`dph_rezim = 'nadobudnutie'`) → PDnadEU
+     „Nadobudnutie tovaru z iného štátu EU“ (1303 P04; bez nároku PBnadEU P06).
+     POHODA SK z tohto členenia samozdaní daň (r. 05–08, riadok D01) aj
+     odpočet a doklad patrí do KV B.1 — ako výkazy Faktera (nález V6;
+     predtým PD s DPH 0 = žiadne samozdanenie).
+   - tuzemský doklad bez nároku na odpočet (`odpocet = false`) → PB
+     „Tuzemské plnenia - bez nároku“ (1302 P03) — POHODA DPH neodpočíta
+     a doklad nejde do KV B.2/B.3 (nález V5; predtým PD s plnou DPH).
+
+  Kódy zo štandardného číselníka POHODY SK (predkontacie-systemove.ts);
+  firma s vlastným číselníkom dostane rovnaký kód alebo kód podľa popisu.
+  `null` = režim nič osobitné nechce (rieši volajúci ako doteraz).
+*/
+
+type KodPrijatych = { kod: string; popis?: string | null; agenda?: string | null; druh?: string | null; aktivne?: boolean | null };
+
+function prijateKody(zoznam: KodPrijatych[]): { kod: string; popis: string }[] {
+  return zoznam
+    .filter((z) => (z.druh ?? "clenenie_dph") === "clenenie_dph" && z.aktivne !== false && String(z.kod ?? "").trim())
+    .filter((z) => {
+      const a = String(z.agenda ?? "");
+      const riadok = /\b([PUD])\d{2}\b/i.exec(a)?.[1] ?? /^\d+\s+([PUD])$/i.exec(a.trim())?.[1];
+      return (riadok ?? String(z.kod).charAt(0)).toUpperCase() === "P";
+    })
+    .map((z) => ({ kod: String(z.kod).trim(), popis: String(z.popis ?? "") }));
+}
+
+function kodPrijatych(
+  presny: string,
+  re: RegExp[],
+  ciselnik: KodPrijatych[] | null | undefined,
+  krajina: string,
+): string | null {
+  const hladaj = (zoznam: { kod: string; popis: string }[]) => {
+    const p = zoznam.find((z) => z.kod === presny);
+    if (p) return p.kod;
+    for (const r of re) {
+      const hit = zoznam.filter((z) => r.test(z.popis));
+      if (hit.length) return [...hit].sort((a, b) => a.popis.length - b.popis.length)[0].kod;
+    }
+    return null;
+  };
+  const vlastne = hladaj(prijateKody(ciselnik ?? []));
+  if (vlastne || krajina !== "SK") return vlastne;
+  return hladaj(prijateKody(SYSTEMOVE_CLENENIA_DPH.map(([kod, popis, agenda]) => ({ kod, popis, agenda }))));
+}
+
+export function clenenieRezimuPrijatej(
+  d: Riadok,
+  firma: { krajina?: string | null; platitel: boolean },
+  ciselnik?: KodPrijatych[] | null,
+): string | null {
+  if (!firma.platitel) return null;
+  const krajina = String(firma.krajina || "SK").toUpperCase();
+  if (krajina === "DE") return null;
+  const rezim = String(d?._rezim ?? d?.dph_rezim ?? "").trim();
+  const bezNaroku = d?.odpocet === false;
+  if (rezim === "nadobudnutie")
+    return bezNaroku
+      ? kodPrijatych("PBnadEU", [/nadobud.*tovar.*bez n[áa]roku/i], ciselnik, krajina)
+      : kodPrijatych("PDnadEU", [/^nadobudnutie tovaru z in/i, /nadobud.*tovar.*(e[uú]|člensk)/i], ciselnik, krajina);
+  if (!bezNaroku) return null;
+  // Bez nároku len tuzemský doklad s DPH — prenesenie, dovoz a cudzia DPH majú vlastné kódy.
+  if (rezim && rezim !== "tuzemsko") return null;
+  if (d?._pdp || d?.reverse_charge) return null;
+  const dodavatel = String(d?.supplier_country ?? "").trim().toUpperCase();
+  const icDph = String(d?.supplier_ic_dph ?? "").trim().toUpperCase();
+  if ((dodavatel && dodavatel !== krajina) || (/^[A-Z]{2}/.test(icDph) && icDph.slice(0, 2) !== krajina)) return null;
+  const rozpis = Array.isArray(d?.vat_breakdown) ? d.vat_breakdown : [];
+  const dph = rozpis.length
+    ? rozpis.reduce((a: number, x: Riadok) => a + Math.abs(Number(x?.dph ?? 0)), 0)
+    : Math.abs(Number(d?.vat_amount ?? 0));
+  if (dph < 0.005) return null;
+  return kodPrijatych("PB", [/tuzem.*bez n[áa]roku/i, /bez n[áa]roku/i], ciselnik, krajina);
 }

@@ -68,7 +68,7 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
 
     const { data: ucet, error: e2 } = await supabaseAdmin
       .from("bank_accounts")
-      .select("id, company_id, iban")
+      .select("id, company_id, iban, currency")
       .eq("id", vypis.bank_account_id)
       .maybeSingle();
     if (e2) throw new Error(e2.message);
@@ -108,7 +108,7 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
     const txs = await vsetkyRiadky<any>((zac, kon) =>
       supabaseAdmin
         .from("bank_transactions")
-        .select("booking_date, amount, variable_symbol, counterparty, counterparty_iban, description")
+        .select("id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description")
         .eq("bank_account_id", ucet.id)
         .gte("booking_date", vypis.period_start)
         .lte("booking_date", vypis.period_end)
@@ -126,11 +126,37 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       .eq("druh", "banka")
       .eq("aktivne", true);
 
+    /*
+      Účet v cudzej mene (V10): každý pohyb dostane kurz ku dňu zaúčtovania
+      podľa pravidla krajiny firmy (SK: ECB zo dňa predtým, § 24 ZoÚ; CZ: ČNB
+      v ten deň) — ten istý zdroj ako faktúry. Keď kurz nie je, POHODA si ho
+      doplní z kurzového lístka.
+    */
+    const { domacaMena, krajinaKurzu } = await import("./kurzy");
+    const domaca = domacaMena((company as any)?.country);
+    const menaUctu = String(ucet.currency ?? "").trim().toUpperCase() || domaca;
+    const kurzyDni = new Map<string, number | null>();
+    if (menaUctu !== domaca) {
+      const { kurzPreDoklad } = await import("./kurzy.server");
+      for (const den of [...new Set(txs.map((t) => String(t.booking_date)))]) {
+        const k = await kurzPreDoklad(menaUctu, den, krajinaKurzu((company as any)?.country)).catch(() => null);
+        kurzyDni.set(den, k?.kurz ?? null);
+      }
+    }
+
+    const { odhadniOznacenie } = await import("./vypis-oznacenie");
+    const { symbolyZTextu } = await import("./banka-pohoda-id");
     const pohyby: VypisPohyb[] = txs.map((t) => {
       const popis = String(t.description ?? "");
       // Pohyby z bankových notifikácií majú IBAN protistrany len v texte („… · IBAN SK…“).
       const ibanZTextu = /IBAN\s+([A-Z]{2}\d{2}[0-9A-Z ]{10,36})\s*$/i.exec(popis)?.[1] ?? null;
+      // KS a ŠS banky píšu do textu platby (`/VS…/SS…/KS…`) — N7.
+      const symboly = symbolyZTextu(popis);
       const p: VypisPohyb = {
+        id: t.id ?? null,
+        kurz: kurzyDni.get(String(t.booking_date)) ?? null,
+        ks: symboly.ks,
+        ss: symboly.ss,
         datum: t.booking_date,
         suma: Math.abs(Number(t.amount)),
         smer: Number(t.amount) < 0 ? "vydaj" : "prijem",
@@ -139,6 +165,9 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
         protiucet: (t.counterparty_iban ?? ibanZTextu)?.replace(/\s+/g, "") ?? null,
         vs: t.variable_symbol ?? null,
       };
+      // Označenie (poplatok, úrok, splátka…) ako pri prevodníku z PDF — ide do poznámky
+      // a vyberie predkontáciu podľa označenia (N7).
+      p.oznacenie = odhadniOznacenie({ popis: p.popis, protistrana: p.protistrana, smer: p.smer, vs: p.vs });
       const r = pravidloPohybu((pravidla ?? []) as any[], p, ucet.iban);
       return { ...p, predkontacia: r ? (r as { predkontacia: string }).predkontacia : null };
     });
@@ -148,6 +177,13 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       company: company as never,
       pohyby,
       datumVypisu: vypis.period_end,
+      /*
+        Číslo výpisu = mesiac (výpisy zostavené Fakterom sú mesačné), poradie
+        pohybu ide do `numberMovement`. Predtým sa neposielalo vôbec.
+      */
+      cisloVypisu: String(Number(String(vypis.period_end).slice(5, 7)) || ""),
+      ucet: ucet.iban,
+      mena: menaUctu,
       nastavenia: {
         // Skratka bankového účtu v POHODE; bez nej by POHODA dala pohyby na predvolený účet.
         banka,

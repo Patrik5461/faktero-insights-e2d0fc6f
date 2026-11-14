@@ -36,6 +36,7 @@ const POLIA = [
   "pohoda_pokladna",
   "pohoda_banka",
   "pohoda_sklad",
+  "pohoda_cenova_skupina",
   "pohoda_odkaz_na_pdf",
   "pohoda_ico_z_mena",
 ] as const;
@@ -190,6 +191,17 @@ function Stranka() {
             onChange={f("pohoda_sklad")}
             placeholder={t("napr. {x}", { x: "TOVAR" })}
           />
+          <div>
+            <In
+              label={t("Cenová skupina skladových kariet v Pohode")}
+              value={c.pohoda_cenova_skupina ?? ""}
+              onChange={f("pohoda_cenova_skupina")}
+              placeholder={t("napr. {x}", { x: "Predaj" })}
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t("Pohoda bez nej skladovú kartu nezaloží — bez nej sa karty ani príjemky a výdajky neposielajú.")}
+            </span>
+          </div>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-1 text-base font-semibold text-foreground">

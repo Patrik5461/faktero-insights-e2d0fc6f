@@ -134,6 +134,8 @@ export function VypisDoPohody({ zdroj: odkial }: { zdroj: "banka" | "brana" }) {
   const [datumVypisu, setDatumVypisu] = useState("");
   const [ucet, setUcet] = useState<string | null>(null);
   const [mena, setMena] = useState<string | null>(null);
+  // Počiatočný zostatok z hlavičky výpisu — pre SEPA XML, keď pohyby zostatky nemajú.
+  const [pociatocny, setPociatocny] = useState("");
   const [riadky, setRiadky] = useState<Riadok[]>([]);
 
   const [nastavenia, setNastavenia] = useState(zPamate);
@@ -390,6 +392,10 @@ export function VypisDoPohody({ zdroj: odkial }: { zdroj: "banka" | "brana" }) {
           predkontacie: nastavenia.predkontacie as Record<string, string>,
           ucet,
           mena,
+          pociatocnyZostatok:
+            pociatocny.trim() !== "" && Number.isFinite(Number(pociatocny.replace(",", ".").replace(/\s+/g, "")))
+              ? Number(pociatocny.replace(",", ".").replace(/\s+/g, ""))
+              : null,
           format,
         },
       });
@@ -826,15 +832,24 @@ export function VypisDoPohody({ zdroj: odkial }: { zdroj: "banka" | "brana" }) {
                       )}
                     </>
                   )}
-                  {!maZostatky && (
-                    <>
-                      {" "}
-                      {t(
-                        "Pozor: tento výpis nemá pri pohyboch zostatky, takže v SEPA XML budú počiatočný aj konečný zostatok nulové — dopíšte ich v Pohode.",
-                      )}
-                    </>
-                  )}
                 </p>
+                {!maZostatky && (
+                  <label className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="min-w-0">
+                      {t(
+                        "Výpis nemá pri pohyboch zostatky. Pre SEPA XML zadajte počiatočný zostatok z hlavičky výpisu — konečný sa dopočíta z pohybov.",
+                      )}
+                    </span>
+                    <input
+                      className="w-36 rounded-md border border-input bg-background px-2 py-1.5 text-sm tabular-nums"
+                      inputMode="decimal"
+                      aria-label={t("Počiatočný zostatok")}
+                      placeholder={t("Počiatočný zostatok")}
+                      value={pociatocny}
+                      onChange={(e) => setPociatocny(e.target.value)}
+                    />
+                  </label>
+                )}
               </div>
             </>
           )}

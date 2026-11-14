@@ -4,7 +4,7 @@
  * Odpoveďou je surové XML, nie JSON, aby ho naplánovaná úloha mohla uložiť
  * priamo do vstupného priečinka a spustiť `Pohoda.exe /XML`.
  *
- *   GET /api/v1/pohoda/davka           — dávka a zápis do histórie
+ *   GET /api/v1/pohoda/davka           — dávka a zápis „na ceste“ (odovzdané až po odpovedi POHODY)
  *   GET /api/v1/pohoda/davka?nahlad=1  — to isté, ale bez zápisu (na vyskúšanie; jediné, čo smie testovací kľúč)
  *   GET /api/v1/pohoda/davka?od=2026-01-01
  *   GET /api/v1/pohoda/davka?cast=prelom   — len doklady minulých rokov (databáza minulého roka)
@@ -30,8 +30,9 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
         const url = new URL(request.url);
         const nahlad = url.searchParams.get("nahlad") === "1";
         /*
-          Bez náhľadu dávka zapíše históriu a označí doklady za odovzdané
-          (zamkne ich). Testovací kľúč smie len čítať — dostane len náhľad.
+          Bez náhľadu dávka zapíše, že doklady sú na ceste (do potvrdenia
+          POHODOU ďalšia dávka nepošle tie isté). Odovzdané a zamknuté budú až
+          po odpovedi (`/odpoved`). Testovací kľúč smie len čítať — náhľad.
         */
         if (kluc.mode === "test" && !nahlad) {
           return new Response(
@@ -85,8 +86,10 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
             },
           });
         } catch (e) {
+          // Bez tabuľky položiek (migrácia) sa ostrá dávka nevydá — nič sa neoznačilo.
+          const bezTabulky = e instanceof Error && e.name === "KonektorBezTabulky";
           return new Response(e instanceof Error ? e.message : "Interná chyba", {
-            status: 500,
+            status: bezTabulky ? 503 : 500,
             headers: { "content-type": "text/plain; charset=utf-8" },
           });
         }

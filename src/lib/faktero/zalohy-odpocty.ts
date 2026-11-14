@@ -16,6 +16,8 @@ export type RiadokOdpoctu = { sadzba: number; zaklad: number; dph: number };
 export type OdpocetZalohy = {
   /** Číslo zálohovej faktúry. */
   zaloha: string;
+  /** Id zálohovej faktúry (konektor podľa neho hľadá jej číslo v Pohode). */
+  zalohaId?: string | null;
   /** Číslo dokladu k prijatej platbe; bez neho je záloha nezdanená. */
   doklad: string | null;
   /** Variabilný symbol zálohy (pre ISDOC). */
@@ -138,31 +140,73 @@ export function polozkyOdpoctu(
   );
 }
 
+/** Jedna položka `invoiceAdvancePaymentItem` — jedna sadzba, odkaz na zálohovú faktúru. */
+export type PolozkaOdpoctuPohody = { cislo: string | null; zaklad: number; dph: number; sadzba: number };
+
 /**
- * Odpočet zálohy pre Pohodu — jedna položka `invoiceAdvancePaymentItem`
- * s jednou sadzbou a odkazom na zálohovú faktúru (`sourceDocument`, číslo
- * zálohovej faktúry, ktoré Pohoda pri importe zálohovej dostala ako
- * `numberRequested`).
+ * Odpočet zálohy pre Pohodu — položky `invoiceAdvancePaymentItem`, každá
+ * s jednou sadzbou a odkazom na svoju zálohovú faktúru (`sourceDocument`,
+ * číslo zálohovej faktúry, ktoré Pohoda pri importe zálohovej dostala ako
+ * `numberRequested`). Jediný výpočet pre ručný súbor, balík aj konektor.
  *
- *  - Zdanené zálohy (s dokladom k prijatej platbe): základ a daň dokladu
- *    k platbe, ak majú jednu sadzbu.
- *  - Nezdanené zálohy (bez dokladu k platbe): celá odpočítaná suma bez DPH
+ *  - Zdanená záloha (s dokladom k prijatej platbe): po jednej položke na
+ *    sadzbu dokladu k platbe (pomerne k odpočítanej sume, `riadkyOdpoctu`) —
+ *    rovnako ako Pohoda sama rozpíše odpočet zálohy vo viacerých sadzbách.
+ *  - Nezdanená záloha (bez dokladu k platbe): celá odpočítaná suma bez DPH
  *    (`rateVAT none`) — daň z vyúčtovania ostáva celá, len sa zníži suma
  *    na úhradu a Pohoda zálohu spáruje.
- *  - Zmes zdanených a nezdanených alebo viac sadzieb: `null` (ručný odpočet).
+ *
+ * `null`, keď sa odpočet zapísať nedá (zdanená záloha bez riadkov dokladu
+ * k platbe, nulová suma) — export ho musí zastaviť, nie ticho vynechať
+ * (`prekazkaOdpoctuPohody`).
+ *
+ * `cisloVPohode` — číslo zálohovej faktúry, ktoré jej pridelila Pohoda
+ * (konektor ho pozná zo spätnej väzby), inak naše číslo.
  */
-export function zalohaPrePohodu(
+export function zalohyPrePohodu(
   odpocty: OdpocetZalohy[] | null | undefined,
-): { cislo: string | null; zaklad: number; dph: number; sadzba: number } | null {
+  cisloVPohode?: (o: OdpocetZalohy) => string | null | undefined,
+): PolozkaOdpoctuPohody[] | null {
   if (!odpocty?.length) return null;
-  const cislo = odpocty.length === 1 ? odpocty[0].zaloha || null : null;
-  if (odpoctyZapisatelne(odpocty)) {
-    const s = suhrnOdpoctov(odpocty);
-    return s.length === 1 ? { cislo, ...s[0] } : null;
+  const out: PolozkaOdpoctuPohody[] = [];
+  for (const o of odpocty) {
+    const cislo = (cisloVPohode?.(o) || o.zaloha || "").trim() || null;
+    if (!(Number(o.suma) > 0)) return null;
+    if (o.doklad) {
+      const riadky = o.riadky.filter((r) => r.zaklad || r.dph);
+      if (!riadky.length) return null;
+      for (const r of riadky) out.push({ cislo, sadzba: r.sadzba, zaklad: r2(r.zaklad), dph: r2(r.dph) });
+    } else {
+      out.push({ cislo, sadzba: 0, zaklad: r2(o.suma), dph: 0 });
+    }
   }
-  if (odpocty.every((o) => !o.doklad)) {
-    const suma = sumaOdpoctov(odpocty);
-    return suma > 0 ? { cislo, zaklad: suma, dph: 0, sadzba: 0 } : null;
-  }
-  return null;
+  return out;
+}
+
+/**
+ * Faktúra s odpočtom zálohy, ktorý sa do Pohody zapísať nedá — závažná chyba
+ * pred exportom (ručný súbor ju ukáže s potvrdením, balík a konektor faktúru
+ * vynechajú). Predtým faktúra odišla bez odpočtu bez jedinej hlášky
+ * (PALIERA FA20260006, audit 14. 11. 2026, nález K2).
+ *
+ * Kontroluje sa len vtedy, keď volajúci odpočty načítal (`_odpocty` je na
+ * faktúre, aj keď `null`) — inak sa o odpočte nedá nič povedať.
+ */
+export function prekazkaOdpoctuPohody(invoice: {
+  type?: unknown;
+  advance_amount?: unknown;
+  invoice_number?: unknown;
+  _odpocty?: OdpocetZalohy[] | null;
+}): string | null {
+  if (!invoice || !("_odpocty" in invoice)) return null;
+  const typ = String(invoice.type ?? "");
+  // Zálohová faktúra a doklad k platbe nesú v `advance_amount` vlastnú sumu.
+  if (typ === "proforma" || typ === "advance_payment") return null;
+  const cislo = String(invoice.invoice_number ?? "?");
+  if (!invoice._odpocty?.length)
+    return Number(invoice.advance_amount ?? 0) > 0
+      ? `${cislo} — odpočet zálohy ${Number(invoice.advance_amount).toFixed(2)} bez väzby na zálohovú faktúru — do Pohody by išla bez odpočtu; pripojte zálohovú faktúru alebo odpočet zaúčtujte v Pohode ručne`
+      : null;
+  if (zalohyPrePohodu(invoice._odpocty)) return null;
+  return `${cislo} — odpočet zálohy sa nedá zapísať do Pohody (doklad k prijatej platbe bez súm) — do Pohody by išla bez odpočtu; skontrolujte doklad k platbe alebo odpočet zaúčtujte v Pohode ručne`;
 }

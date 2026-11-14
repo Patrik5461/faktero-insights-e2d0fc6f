@@ -28,6 +28,7 @@ import { chybaUlozenehoRozuctovaniaVystavenej } from "./rozuctovanie-vystavenej"
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
 import { domacaMena } from "./kurzy";
 import { isAccountingDocument } from "./uctovny-doklad";
+import { chybaClenenieMimoTuzemska } from "./clenenie-vystavenej";
 import {
   DOVOD_NEPLATITEL_PRIJATY,
   DOVOD_NEPLATITEL_VYSTAVENA,
@@ -220,7 +221,8 @@ export function varovanieKvPrijatej(d: Riadok, company?: Riadok | null): string 
     maDph: rozpis.some((r) => Math.abs(Number(r?.dph ?? 0)) > 0.005) || Boolean(d?._pdp),
     odpocet: d?.odpocet,
     clenenieDph: d?.pohoda_clenenie_dph,
-    nadobudnutieDoB1: false,
+    // Nadobudnutie ide do Pohody s PDnadEU a KV B.1 (pohoda-kv.ts).
+    nadobudnutieDoB1: true,
   });
   if (/^(B1|B2|C2)$/.test(kv)) {
     if (!cisloRaw)
@@ -294,6 +296,12 @@ export function prekazkaVydanej(
   // Neplatiteľ daň nevyčísľuje — faktúra s DPH by v Pohode išla do priznania.
   if (jeNeplatitel(company) && Math.abs(Number(invoice?.vat_total ?? 0)) > 0.005)
     return `${cislo} — ${DOVOD_NEPLATITEL_VYSTAVENA}`;
+
+  // OSS, dodanie do EÚ a vývoz s tuzemským členením DPH alebo KV (nálezy K1, V2).
+  {
+    const dovod = chybaClenenieMimoTuzemska(invoice, company?.country);
+    if (dovod) return `${cislo} — ${dovod}`;
+  }
 
   /*
     Rozúčtovanie, ktoré po úprave faktúry nesedí so sumami položiek — bez

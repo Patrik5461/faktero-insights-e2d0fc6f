@@ -144,6 +144,12 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
         /** Prázdne / chýba = celý kalendár. */
         installment_ids: z.array(z.string().uuid()).max(600).optional(),
         oznacit: z.boolean().default(false),
+        /**
+         * Už exportované splátky: chýba = opýtať sa (vráti `potrebne_potvrdenie`),
+         * `true` = pridať ich znova (to isté id — POHODA ich odmietne ako duplicitu),
+         * `false` = vynechať ich (V8).
+         */
+        aj_exportovane: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -159,7 +165,7 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase
         .from("companies")
-        .select("id, ico, country, uctovanie_nastavenia")
+        .select("id, ico, country, uctovanie_nastavenia, pohoda_predkontacia_rozuctovat")
         .eq("id", data.company_id)
         .maybeSingle(),
     ]);
@@ -192,6 +198,46 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!splatky?.length) throw new Error("Nie je čo exportovať — vyberte aspoň jednu splátku.");
 
+    /*
+      Celý kalendár = splátky so splatnosťou do konca bežného roka (S11).
+      Záväzky na roky dopredu by v POHODE skončili v účtovnej jednotke, kam
+      nepatria; ďalší rok sa exportujú, keď príde (alebo výberom).
+    */
+    const { dnesBratislava } = await import("./datum-vystavenia");
+    const koniecRoka = `${dnesBratislava().slice(0, 4)}-12-31`;
+    const celyKalendar = !data.installment_ids?.length;
+    const buduce = celyKalendar
+      ? (splatky as { due_date: string }[]).filter((s) => String(s.due_date) > koniecRoka).length
+      : 0;
+    let kandidati = celyKalendar
+      ? (splatky as any[]).filter((s) => String(s.due_date) <= koniecRoka)
+      : (splatky as any[]);
+    /*
+      Už exportované splátky (V8): bez výslovnej odpovede sa nič nezostaví —
+      okno sa najprv opýta. Pri „len nové“ sa vynechajú.
+    */
+    const uzExportovane = kandidati.filter((s) => s.exported_at).length;
+    if (uzExportovane && data.aj_exportovane === undefined) {
+      return {
+        xml: "",
+        nazov: "",
+        pocet: 0,
+        vyhrady: [] as string[],
+        oznacene: false,
+        potrebne_potvrdenie: true,
+        uz_exportovane: uzExportovane,
+        nove: kandidati.length - uzExportovane,
+      };
+    }
+    if (data.aj_exportovane === false) kandidati = kandidati.filter((s) => !s.exported_at);
+    if (!kandidati.length) {
+      throw new Error(
+        uzExportovane
+          ? "Nie je čo exportovať — vybrané splátky už sú v Pohode. Ak ste ich v Pohode zmazali, použite Vrátiť z Pohody."
+          : `Nie je čo exportovať — kalendár nemá splátky so splatnosťou do ${koniecRoka.slice(0, 4)}. Ďalšie roky exportujte výberom splátok.`,
+      );
+    }
+
     const [{ xmlSplatokDoPohody, nazovSuboruSplatok }, { doplnkyExportu }, { predkontacieNaSkratky, chybajuceSkratky }] =
       await Promise.all([
         import("./financovanie-pohoda"),
@@ -203,7 +249,8 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
       ico: firma?.ico,
       krajinaFirmy: firma?.country,
       zmluva,
-      splatky,
+      splatky: kandidati,
+      predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat ?? null,
       prelozPredkontacie: (xml) => predkontacieNaSkratky(xml, doplnky?.mapaPredkontacii),
       chybajuceSkratky: (kody) => chybajuceSkratky(kody, doplnky?.mapaPredkontacii),
     });
@@ -211,6 +258,16 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
       throw new Error(vysledok.vyhrady[0] ?? "Nie je čo exportovať.");
     }
     vysledok.vyhrady.unshift(...vyhradyRadu);
+    if (buduce) {
+      vysledok.vyhrady.push(
+        `Splátky so splatnosťou po ${koniecRoka.slice(0, 4)} (${buduce}) sa neexportovali — účtovná jednotka POHODY je na jeden rok. Exportujte ich v ich roku alebo výberom.`,
+      );
+    }
+    if (uzExportovane && data.aj_exportovane) {
+      vysledok.vyhrady.push(
+        `Už exportované splátky (${uzExportovane}) idú s tým istým označením — POHODA ich s kontrolou duplicity odmietne. Ak ste ich v Pohode zmazali, najprv ich vráťte z Pohody.`,
+      );
+    }
 
     let oznacene = false;
     if (data.oznacit && vysledok.idSplatok.length) {
@@ -233,7 +290,56 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
       pocet: vysledok.pocet,
       vyhrady: vysledok.vyhrady,
       oznacene,
+      potrebne_potvrdenie: false,
+      uz_exportovane: uzExportovane,
+      nove: kandidati.filter((s) => !s.exported_at).length,
     };
+  });
+
+/**
+ * Vrátenie splátok z Pohody (V8): zruší označenie exportu a zvýši verziu,
+ * takže ďalší export pôjde pod novým `dataPackItem@id`. Záväzok v POHODE
+ * treba najprv zmazať ručne — inak tam bude dvakrát.
+ */
+export const vratSplatkyZPohodyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        contract_id: z.string().uuid(),
+        installment_ids: z.array(z.string().uuid()).min(1).max(600),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await overClena(context, data.company_id);
+    const supabase = context.supabase as any;
+    const { data: riadky, error } = await supabase
+      .from("financing_installments")
+      .select("id, exported_at, pohoda_verzia")
+      .eq("company_id", data.company_id)
+      .eq("contract_id", data.contract_id)
+      .in("id", data.installment_ids);
+    if (error) {
+      throw new Error(
+        chybaStlpca(error)
+          ? "Vrátenie splátok z Pohody ešte nie je v databáze zapnuté (chýba migrácia 20261114150000)."
+          : error.message,
+      );
+    }
+    const exportovane = ((riadky ?? []) as { id: string; exported_at: string | null; pohoda_verzia: number | null }[]).filter(
+      (r) => r.exported_at,
+    );
+    for (const r of exportovane) {
+      const { error: e } = await supabase
+        .from("financing_installments")
+        .update({ exported_at: null, pohoda_verzia: Math.trunc(Number(r.pohoda_verzia) || 0) + 1 })
+        .eq("company_id", data.company_id)
+        .eq("id", r.id);
+      if (e) throw new Error(e.message);
+    }
+    return { ok: true, vratene: exportovane.length };
   });
 
 /**

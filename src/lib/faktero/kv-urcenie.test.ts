@@ -394,10 +394,10 @@ describe("výkaz Faktera a export do Pohody dávajú ten istý riadok", () => {
     expect(castPrijatej(f)).toBe(pohoda);
   });
 
-  it("nadobudnutie z EÚ: Faktero B.1 z faktúry, Pohoda cez interný doklad", () => {
+  it("nadobudnutie z EÚ: Faktero aj Pohoda B.1 z faktúry (PDnadEU, nález V6)", () => {
     const o = { blocek: false, dobropis: false, pdp: false, rezim: "nadobudnutie", maDph: true };
     expect(kvPrijatehoDokladu({ ...o, nadobudnutieDoB1: true })).toBe("B1");
-    expect(kvPrijatehoPrePohodu({ ...o, cz: false })).toBe("");
+    expect(kvPrijatehoPrePohodu({ ...o, cz: false })).toBe("B1");
   });
 
   it("zálohová faktúra do KV nepatrí", () => {

@@ -38,8 +38,34 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
 
     const { prevedRiadky } = await import("./konvertor");
     const { domacaMena } = await import("./kurzy");
+    /*
+      Číselníky firmy (členenia DPH, KV) — tie isté, z ktorých dostane
+      členenie doklad uložený vo Fakteri.
+    */
+    const kontextVydanych =
+      data.druh === "vydane"
+        ? await (await import("./clenenie-vystavenej.server")).nacitajKontextClenenia(supabase, company.id)
+        : null;
+    const kontextPrijatych =
+      data.druh === "prijate"
+        ? await (await import("./clenenie-prijatych.server")).nacitajKontextPrijatych(supabase, company.id)
+        : null;
     const { faktury, doklady, chyby } = prevedRiadky(data.druh, data.riadky, {
+      ...(kontextVydanych
+        ? {
+            kontextVydanych: {
+              ciselnik: kontextVydanych.ciselnik,
+              kvCiselnik: kontextVydanych.kvCiselnik,
+              odhad: kontextVydanych.odhad,
+            },
+          }
+        : {}),
+      ...(kontextPrijatych
+        ? { kontextPrijatych: { ciselnik: kontextPrijatych.ciselnik, kvCiselnik: kontextPrijatych.kvCiselnik } }
+        : {}),
       domacaMena: domacaMena(company.country),
+      // Krajina sadzieb, platiteľ DPH a členenie ako pri doklade uloženom vo Fakteri.
+      firma: company,
     });
     if (!faktury.length && !doklady.length) {
       throw new Error(

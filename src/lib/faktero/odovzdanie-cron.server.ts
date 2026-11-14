@@ -57,6 +57,8 @@ export async function runMesacneOdovzdanie(opts: { mesiac?: string; teraz?: Date
         mesiac,
         oznacit: true,
         lenNove: true,
+        // V11: aj doklady z predošlých mesiacov, ktoré pribudli po ich odovzdaní.
+        ajStarsieNeodovzdane: true,
         stropPriloh: STROP_PRILOH_MAILOM,
       });
 

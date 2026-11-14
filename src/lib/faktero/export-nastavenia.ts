@@ -158,10 +158,11 @@ export function datumyPrijateho(
           ? ([dodanie, dorucenie].filter(Boolean).sort().at(-1) ?? "")
           : dodanie;
   const najskor = d.samozdanenie ? dodanie : ([dodanie, den(d.prijatie)].filter(Boolean).sort().at(-1) ?? "");
-  const odpocet =
-    d.samozdanenie && n.datumOdpoctu !== "zauctovanie"
-      ? dodanie
-      : ([zvoleny, najskor].filter(Boolean).sort().at(-1) ?? "");
+  /*
+    Samozdanenie: daň aj odpočet vždy v deň dodania — ani voľba „odpočet =
+    zaúčtovanie“ ho neposunie (nález V4; výkazy Faktera `denOdpoctu`).
+  */
+  const odpocet = d.samozdanenie ? dodanie : ([zvoleny, najskor].filter(Boolean).sort().at(-1) ?? "");
   return { zapis, odpocet };
 }
 

@@ -24,7 +24,7 @@ export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
       (`potvrdeneVarovania`) idú doklady do XML aj tak.
     */
     const zostavene = await zostavBalikRucne(supabase, data);
-    if (!zostavene.balik) return { zavazne: zostavene.zavazne, varovania: [] as string[] };
+    if (!zostavene.balik) return { zavazne: zostavene.zavazne, varovania: zostavene.varovania };
     const { balik } = zostavene;
 
     let jobId: string | undefined;
@@ -81,7 +81,7 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
       ...data,
       stropPriloh: STROP_PRILOH_MAILOM,
     });
-    if (!zostavene.balik) return { zavazne: zostavene.zavazne, varovania: [] as string[] };
+    if (!zostavene.balik) return { zavazne: zostavene.zavazne, varovania: zostavene.varovania };
     const { balik, company } = zostavene;
 
     const prijemca = (data.email || company.uctovnik_email || "").trim();

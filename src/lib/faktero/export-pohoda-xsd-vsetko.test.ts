@@ -134,6 +134,7 @@ const nastavenia: any = {
   predkontaciaPokladna: "1Pv",
   predkontaciaBanka: "1Bv",
   sklad: "HLAVNY",
+  cenovaSkupina: "Predaj",
   blockyPodlaPlatby: true,
 };
 
@@ -1159,11 +1160,11 @@ describe("Pohoda — zálohové faktúry (vydané aj prijaté)", () => {
   });
 
   it("vydaná zálohová: číslo z Faktera (numberRequested), na ňu odkáže odpočet nezdanenej zálohy bez DPH", async () => {
-    const { zalohaPrePohodu } = await import("./zalohy-odpocty");
-    const zaloha = zalohaPrePohodu([
+    const { zalohyPrePohodu } = await import("./zalohy-odpocty");
+    const zaloha = zalohyPrePohodu([
       { zaloha: "ZF2026001", doklad: null, vs: null, suma: 61.5, riadky: [] },
     ]);
-    expect(zaloha).toEqual({ cislo: "ZF2026001", zaklad: 61.5, dph: 0, sadzba: 0 });
+    expect(zaloha).toEqual([{ cislo: "ZF2026001", zaklad: 61.5, dph: 0, sadzba: 0 }]);
     const zf = buildPohodaInvoiceXml({
       company: firmaSK,
       nastavenia,
@@ -1190,19 +1191,22 @@ describe("Pohoda — zálohové faktúry (vydané aj prijaté)", () => {
     expect(hodnota(x, "typ:priceNone")).toBe("-61.50");
   });
 
-  it("zalohaPrePohodu: zdanená po sadzbe, zmes zdanenej a nezdanenej sa nezapíše", async () => {
-    const { zalohaPrePohodu } = await import("./zalohy-odpocty");
+  it("zalohyPrePohodu: zdanená po sadzbe, zmes zdanenej a nezdanenej po zálohách (audit 14. 11., K2)", async () => {
+    const { zalohyPrePohodu } = await import("./zalohy-odpocty");
     expect(
-      zalohaPrePohodu([
+      zalohyPrePohodu([
         { zaloha: "ZF1", doklad: "DP1", vs: null, suma: 123, riadky: [{ sadzba: 23, zaklad: 100, dph: 23 }] },
       ]),
-    ).toEqual({ cislo: "ZF1", sadzba: 23, zaklad: 100, dph: 23 });
+    ).toEqual([{ cislo: "ZF1", sadzba: 23, zaklad: 100, dph: 23 }]);
     expect(
-      zalohaPrePohodu([
+      zalohyPrePohodu([
         { zaloha: "ZF1", doklad: "DP1", vs: null, suma: 123, riadky: [{ sadzba: 23, zaklad: 100, dph: 23 }] },
         { zaloha: "ZF2", doklad: null, vs: null, suma: 50, riadky: [] },
       ]),
-    ).toBeNull();
-    expect(zalohaPrePohodu([])).toBeNull();
+    ).toEqual([
+      { cislo: "ZF1", sadzba: 23, zaklad: 100, dph: 23 },
+      { cislo: "ZF2", sadzba: 0, zaklad: 50, dph: 0 },
+    ]);
+    expect(zalohyPrePohodu([])).toBeNull();
   });
 });

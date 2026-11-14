@@ -33,6 +33,11 @@ export type OdovzdanieVstup = {
   /** Preskočiť už odovzdané doklady. */
   lenNove: boolean;
   /**
+   * Pridať aj neodovzdané doklady z predošlých mesiacov (neskoro zadané) —
+   * mesačný cron. Len s `lenNove`.
+   */
+  ajStarsieNeodovzdane?: boolean;
+  /**
    * Ručné odovzdanie: človek videl závažné chyby (`zavazneOdovzdania`) a
    * potvrdil „Exportovať aj tak“ — doklady s obsahovou prekážkou idú do XML.
    * Mesačný cron ho nezapína (nemá kto potvrdiť), tam sa vynechajú ako doteraz.
@@ -48,7 +53,11 @@ type RezimPrekazok = "vynechat" | "zistit" | "povolit";
 
 /** Signál z `zostavBalik` v režime `zistit` — balík sa ďalej nestavia. */
 class ZavazneNajdene {
-  constructor(readonly zavazne: string[]) {}
+  constructor(
+    readonly zavazne: string[],
+    /** Upozornenia ako pri ručnom exporte prijatých (export-varovania.ts). */
+    readonly varovania: string[] = [],
+  ) {}
 }
 
 const MESIACE = [
@@ -135,6 +144,14 @@ export type Balik = {
   pocetPrijatych?: number;
   /** Doklady, ktoré išli do XML napriek závažnej chybe (po potvrdení). */
   zavazne?: string[];
+  /** Doklady z predošlých mesiacov, ktoré pribudli neskôr (V11, cron). */
+  neskoroZadane?: number;
+  /**
+   * Upozornenia k prijatým faktúram v XML (sadzba DPH, prenesenie bez
+   * príznaku, chýbajúca predkontácia) — ručný balík ich ukáže na potvrdenie
+   * ako ručný export, v balíku sú v pohoda-skontrolovat.txt a v maile.
+   */
+  varovania?: string[];
   /** Číselníky, ktoré v balíku išli — zapisujú sa do `pohoda_odoslane`. */
   ciselniky: { agenda: string; id: string; verzia: string }[];
   pocetCiselnikov: number;
@@ -147,6 +164,48 @@ export type Balik = {
 };
 
 /**
+ * `pohoda-skontrolovat.txt` v balíku: doklady v XML napriek závažnej chybe a
+ * upozornenia k prijatým (ako pri ručnom exporte). Bez nich `null`.
+ */
+export function suborSkontrolovat(zavazne: string[], varovania: string[]): string | null {
+  if (!zavazne.length && !varovania.length) return null;
+  return (
+    "\uFEFF" +
+    (zavazne.length
+      ? "Tieto doklady sú v XML pre Pohodu napriek závažnej chybe — po importe ich skontrolujte v Pohode:\n" +
+        zavazne.map((d) => `- ${d}`).join("\n") +
+        "\n"
+      : "") +
+    (varovania.length
+      ? `${zavazne.length ? "\n" : ""}Upozornenia — po importe skontrolujte v Pohode:\n` +
+        varovania.map((d) => `- ${d}`).join("\n") +
+        "\n"
+      : "")
+  );
+}
+
+/**
+ * Spodná hranica pre neskoro zadané doklady: najskorší začiatok obdobia, za
+ * ktoré firma niečo odovzdala (balík, súbor, konektor), najviac rok pred
+ * mesiacom balíka. Bez histórie odovzdaní len mesiac sám — doklady spred
+ * používania Faktera sa nepribaľujú.
+ */
+export async function hranicaNeskoroZadanych(supabase: Klient, companyId: string, od: string): Promise<string> {
+  const { data } = await supabase
+    .from("export_jobs")
+    .select("date_from")
+    .eq("company_id", companyId)
+    .eq("target_system", "pohoda")
+    .not("date_from", "is", null)
+    .order("date_from", { ascending: true })
+    .limit(1);
+  const prvy = String(data?.[0]?.date_from ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(prvy) || prvy >= od) return od;
+  const rokPred = `${Number(od.slice(0, 4)) - 1}${od.slice(4)}`;
+  return prvy > rokPred ? `${prvy.slice(0, 8)}01` : rokPred;
+}
+
+/**
  * Zostaví balík za mesiac. Nič nezapisuje — o tom, či sa doklady označia za
  * odovzdané, rozhoduje volajúci.
  */
@@ -155,9 +214,20 @@ export async function zostavBalik(
   vstup: OdovzdanieVstup & { stropPriloh?: number; _rezim?: RezimPrekazok },
 ): Promise<{ balik: Balik; company: Riadok }> {
   const { od, do: doDatumu, nazov } = rozsahMesiaca(vstup.mesiac);
+  /*
+    V11 (audit 14. 11. 2026): mesačný cron posielal len doklady s dátumom
+    v minulom mesiaci — doklad zadaný neskôr (bloček z minulého mesiaca
+    nahratý až po 5.) neodišiel nikdy. S `ajStarsieNeodovzdane` (cron, len
+    nové) ide aj to, čo z predošlých mesiacov ešte neodišlo — najviac rok
+    dozadu a nie pred prvým odovzdaním z Faktera.
+  */
+  const odVyberu =
+    vstup.ajStarsieNeodovzdane && vstup.lenNove ? await hranicaNeskoroZadanych(supabase, vstup.companyId, od) : od;
   const rezim: RezimPrekazok = vstup._rezim ?? (vstup.potvrdeneVarovania ? "povolit" : "vynechat");
   /** Obsahové prekážky: v `zistit` zoznam na potvrdenie, v `povolit` doklady v XML napriek chybe. */
   const zavazne: string[] = [];
+  /** Upozornenia k prijatým (export-varovania.ts) — doklad nezastavia, ukážu sa. */
+  const varovania: string[] = [];
 
   const [{ data: company, error: cErr }, { data: vsetky }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", vstup.companyId).single(),
@@ -166,7 +236,7 @@ export async function zostavBalik(
         .from("invoices")
         .select("*")
         .eq("company_id", vstup.companyId)
-        .gte("issue_date", od)
+        .gte("issue_date", odVyberu)
         .lt("issue_date", doDatumu)
         .neq("status", "draft")
         .neq("status", "cancelled")
@@ -213,7 +283,7 @@ export async function zostavBalik(
           .eq("company_id", vstup.companyId)
           // Nespracovaný bloček (`new`) účtovníčke nejde — ešte ho nik neskontroloval.
           .neq("status", "new")
-          .gte("issue_date", od)
+          .gte("issue_date", odVyberu)
           .lt("issue_date", doDatumu)
           .order("issue_date")
           .order("id")
@@ -224,7 +294,7 @@ export async function zostavBalik(
           .from("cash_entries")
           .select("*")
           .eq("company_id", vstup.companyId)
-          .gte("entry_date", od)
+          .gte("entry_date", odVyberu)
           .lt("entry_date", doDatumu)
           .order("entry_date")
           .order("id")
@@ -238,7 +308,7 @@ export async function zostavBalik(
           "*, other_document_files(path, name, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
           )
           .eq("company_id", vstup.companyId)
-          .gte("received_date", od)
+          .gte("received_date", odVyberu)
           .lt("received_date", doDatumu)
           .order("received_date")
           .order("id")
@@ -264,7 +334,7 @@ export async function zostavBalik(
       .from("purchase_invoices")
       .select("*")
       .eq("company_id", vstup.companyId)
-      .gte("issue_date", od)
+      .gte("issue_date", odVyberu)
       .lt("issue_date", doDatumu)
       .is("deleted_at", null)
       // Aj prijaté zálohové — v Pohode sa evidujú kvôli odpočtu zálohy (bez DPH, neúčtujú sa).
@@ -331,6 +401,7 @@ export async function zostavBalik(
     ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, company.id, company.pohoda_pokladna)),
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
+    cenovaSkupina: (company as any).pohoda_cenova_skupina,
     // Nastavenia exportu, skratky bankových účtov a partneri v adresári Pohody.
     ...(await (await import("./export-nastavenia.server")).doplnkyExportu(supabase, company)),
   };
@@ -395,14 +466,14 @@ export async function zostavBalik(
       ...new Set([...(nastavenia.partneriVPohode ?? []), ...zakaznici.map((z: Riadok) => String(z.id))]),
     ];
   const zasoby =
-    company.pohoda_posielat_sklad && company.pohoda_sklad
+    company.pohoda_posielat_sklad && company.pohoda_sklad && (company as any).pohoda_cenova_skupina
       ? await nacitajZasoby(supabase, vstup.companyId)
       : [];
   const { nove: zakazkyNove, kody: zakazky } = company.pohoda_posielat_zakazky
     ? await nacitajZakazky(supabase, vstup.companyId, faktury)
     : { nove: [] as Riadok[], kody: {} as Record<string, string> };
   const pohyby =
-    company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad
+    company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad && (company as any).pohoda_cenova_skupina
       ? await nacitajPohyby(supabase, vstup.companyId, zasoby)
       : [];
 
@@ -591,6 +662,12 @@ export async function zostavBalik(
       partneriVPohode: nastavenia.partneriVPohode,
     };
     for (const p of prijate) if (doXml(prijataAkoDoklad(p), nastPrijatych)) prijateDoXml.push(p);
+    /*
+      Upozornenia ako pri ručnom exporte prijatých (audit 14. 11., S7) —
+      balík ich predtým nikomu neukázal.
+    */
+    const { varovaniaPrijatejPredExportom } = await import("./export-varovania");
+    for (const p of prijateDoXml) varovania.push(...varovaniaPrijatejPredExportom(p, company, nastPrijatych));
     if (prijateDoXml.length) {
       xmlPrijatych = buildPohodaExpensesXml({
         company,
@@ -658,15 +735,11 @@ export async function zostavBalik(
   }
 
   // Pred potvrdením stačí zoznam závažných chýb — PDF a skeny sa nesťahujú.
-  if (rezim === "zistit" && zavazne.length) throw new ZavazneNajdene(zavazne);
-  if (zavazne.length)
-    zip.file(
-      "pohoda-skontrolovat.txt",
-      "\uFEFF" +
-        "Tieto doklady sú v XML pre Pohodu napriek závažnej chybe — po importe ich skontrolujte v Pohode:\n" +
-        zavazne.map((d) => `- ${d}`).join("\n") +
-        "\n",
-    );
+  if (rezim === "zistit" && (zavazne.length || varovania.length)) throw new ZavazneNajdene(zavazne, varovania);
+  {
+    const skontrolovat = suborSkontrolovat(zavazne, varovania);
+    if (skontrolovat) zip.file("pohoda-skontrolovat.txt", skontrolovat);
+  }
 
   const pokladnicaDoXml: Riadok[] = [];
   if (pokladnica?.length) {
@@ -866,6 +939,13 @@ export async function zostavBalik(
       preskocene,
       preskoceneFaktur,
       zavazne,
+      varovania,
+      neskoroZadane:
+        odVyberu < od
+          ? [...faktury, ...dokladyDoXml, ...prijateDoXml].filter(
+              (d: Riadok) => String(d.issue_date ?? "") < od,
+            ).length + pokladnicaDoXml.filter((p: Riadok) => String(p.entry_date ?? "") < od).length
+          : 0,
       vynechanePrilohy,
       fakturyIds: faktury.map((f: Riadok) => f.id),
       dokladyIds: dokladyDoXml.map((d: Riadok) => d.id),
@@ -925,11 +1005,14 @@ async function poDavkach(ids: string[], krok: (kus: string[]) => PromiseLike<unk
 export async function zostavBalikRucne(
   supabase: Klient,
   vstup: OdovzdanieVstup & { stropPriloh?: number },
-): Promise<{ balik: Balik; company: Riadok; zavazne?: undefined } | { balik?: undefined; zavazne: string[] }> {
+): Promise<
+  | { balik: Balik; company: Riadok; zavazne?: undefined; varovania?: undefined }
+  | { balik?: undefined; zavazne: string[]; varovania: string[] }
+> {
   try {
     return await zostavBalik(supabase, { ...vstup, _rezim: vstup.potvrdeneVarovania ? "povolit" : "zistit" });
   } catch (e) {
-    if (e instanceof ZavazneNajdene) return { zavazne: e.zavazne };
+    if (e instanceof ZavazneNajdene) return { zavazne: e.zavazne, varovania: e.varovania };
     throw e;
   }
 }
@@ -1095,6 +1178,13 @@ export async function posliBalikMailom(opts: {
       : "",
     balik.preskocene.length
       ? `\nPozn.: do XML sa nedostali tieto doklady: ${balik.preskocene.join(", ")}. Sú v súpiske a treba ich zadať ručne.`
+      : "",
+    balik.neskoroZadane
+      ? `\nPozn.: v balíku je aj ${balik.neskoroZadane} dokladov z predošlých mesiacov, ktoré do Faktera pribudli neskôr — v Pohode patria do obdobia podľa svojho dátumu.`
+      : "",
+    // Upozornenia k prijatým (sadzba DPH, prenesenie, predkontácia) — ako pri ručnom exporte.
+    balik.zavazne?.length || balik.varovania?.length
+      ? `\nNa kontrolu po importe (aj v súbore pohoda-skontrolovat.txt): ${[...(balik.zavazne ?? []), ...(balik.varovania ?? [])].join("; ")}.`
       : "",
     poznamka ? `\n${poznamka}` : "",
     ``,

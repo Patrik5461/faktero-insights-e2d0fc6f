@@ -2,11 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, GitCompare, Loader2, SendHorizontal, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Clock, GitCompare, Loader2, PlugZap, SendHorizontal, ShieldCheck } from "lucide-react";
 import {
+  potvrdZmazanieVPohodeFn,
   rozdielyOprotiPohodeFn,
   zastaveneDokladyFn,
 } from "@/lib/faktero/pohoda-kontrola.functions";
+import { potvrd } from "@/lib/potvrdenie";
 import { NAZVY_POLI } from "@/lib/faktero/pohoda-rozdiely";
 import { usePoslatOpravuDoPohody, type DruhOpravy } from "./PoslatOpravuDoPohody";
 import { useT } from "@/lib/i18n/useT";
@@ -29,6 +31,47 @@ const DRUH: Record<DruhOpravy, string> = {
   prijata: "Prijatá faktúra",
   doklad: "Bloček",
 };
+
+/** Druhy položiek konektora (aj číselníky a pokladňa). */
+const DRUH_KONEKTORA: Record<string, string> = {
+  ...DRUH,
+  pokladna: "Pokladničný doklad",
+  adresar: "Adresár",
+  sklad: "Skladová karta",
+  zakazka: "Zákazka",
+  pohyb: "Skladový pohyb",
+  storno: "Storno faktúry",
+  storno_opravy: "Storno pôvodného dokladu",
+};
+
+type StavKonektora = {
+  pouziva: boolean;
+  cakajuce: { id: string; kedy: string; poloziek: number; vyprsana: boolean }[];
+  odmietnute: { druh: string; id: string; cislo: string; chyba: string; kedy: string | null; vyprsane: boolean }[];
+  opravy: {
+    druh: "faktura" | "prijata" | "doklad" | "pokladna";
+    id: string;
+    cislo: string;
+    verzia: number;
+    dovod: string;
+    povodneCislo: string | null;
+    potvrditZmazanie: boolean;
+  }[];
+  opravyCakaju: string[];
+  starsie: { od: string; faktur: number; prijatych: number; dokladov: number; pokladnicnych: number };
+};
+
+/** Detail dokladu konektora — pokladňa a číselníky nemajú vlastný detail, len text. */
+function DokladKonektora({ druh, id, cislo }: { druh: string; id: string; cislo: string }) {
+  const { t } = useT();
+  if (druh === "faktura" || druh === "prijata" || druh === "doklad")
+    return (
+      <OdkazDokladu druh={druh} id={id}>
+        {cislo || t("bez čísla")}
+      </OdkazDokladu>
+    );
+  return <span className="cislo-dokladu font-medium">{cislo || t("bez čísla")}</span>;
+}
 
 /** Odkaz na detail dokladu podľa druhu. */
 function OdkazDokladu({
@@ -74,6 +117,8 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
   const nacitajZastavene = useServerFn(zastaveneDokladyFn);
   const nacitajRozdiely = useServerFn(rozdielyOprotiPohodeFn);
   const poslatOpravu = usePoslatOpravuDoPohody();
+  const potvrdZmazanie = useServerFn(potvrdZmazanieVPohodeFn);
+  const [konektor, setKonektor] = useState<StavKonektora | null>(null);
   const [zastavene, setZastavene] = useState<Zastaveny[] | null>(null);
   const [varovania, setVarovania] = useState<Zastaveny[]>([]);
   const [rozdiely, setRozdiely] = useState<{
@@ -83,12 +128,13 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
   } | null>(null);
   const [busy, setBusy] = useState<"" | "kontrola" | "rozdiely">("");
 
-  async function skontroluj() {
+  async function skontroluj(): Promise<void> {
     setBusy("kontrola");
     try {
       const r = await nacitajZastavene({ data: { company_id: companyId } });
       setZastavene(r.doklady as Zastaveny[]);
       setVarovania(((r as any).varovania ?? []) as Zastaveny[]);
+      setKonektor(((r as any).konektor ?? null) as StavKonektora | null);
     } catch (e: any) {
       toast.error(t(e?.message ?? "Nepodarilo sa"));
     } finally {
@@ -106,6 +152,35 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
       setBusy("");
     }
   }
+
+  async function zmazaneVPohode(o: StavKonektora["opravy"][number]) {
+    const ok = await potvrd(
+      o.povodneCislo
+        ? t("Pôvodný doklad č. {cislo} ste v POHODE naozaj zmazali? Konektor potom pošle opravu ako nový doklad — keby tam pôvodný ostal, bude v POHODE dvakrát.", { cislo: o.povodneCislo })
+        : t("Pôvodný doklad ste v POHODE naozaj zmazali? Konektor potom pošle opravu ako nový doklad — keby tam pôvodný ostal, bude v POHODE dvakrát."),
+      { potvrdit: t("Áno, je zmazaný"), zrusit: t("Zrušiť"), nebezpecne: false },
+    );
+    if (!ok) return;
+    try {
+      await potvrdZmazanie({ data: { company_id: companyId, druh: o.druh, id: o.id } });
+      toast.success(t("Konektor opravu pošle pri najbližšom behu."));
+      void skontroluj();
+    } catch (e: any) {
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
+    }
+  }
+
+  const starsieSpolu = konektor
+    ? konektor.starsie.faktur + konektor.starsie.prijatych + konektor.starsie.dokladov + konektor.starsie.pokladnicnych
+    : 0;
+  const konektorMaCoUkazat =
+    !!konektor &&
+    konektor.pouziva &&
+    (konektor.cakajuce.length > 0 ||
+      konektor.odmietnute.length > 0 ||
+      konektor.opravy.length > 0 ||
+      konektor.opravyCakaju.length > 0 ||
+      starsieSpolu > 0);
 
   const pokladna = zastavene?.some((z) => z.dovod.includes("bez pokladne"));
   const clenenie = zastavene?.some((z) => z.dovod.includes("Predkontácie"));
@@ -200,6 +275,123 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
               )}
             </div>
           </>
+        )}
+        {konektor?.pouziva && !konektorMaCoUkazat && (
+          <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <PlugZap className="h-4 w-4 shrink-0 text-primary" />
+            {t("Konektor: všetko odoslané POHODA potvrdila.")}
+          </p>
+        )}
+        {konektorMaCoUkazat && konektor && (
+          <div className="mt-4 border-t border-border pt-3">
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <PlugZap className="h-4 w-4 shrink-0 text-primary" /> {t("Konektor do Pohody")}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t(
+                "Doklad je odovzdaný až vtedy, keď jeho import POHODA potvrdí. Čo POHODA odmietla alebo nepotvrdila, ostáva vo Fakteri neodovzdané a konektor to pošle znova.",
+              )}
+            </p>
+            {konektor.cakajuce.map((c) => (
+              <p
+                key={c.id}
+                className={`mt-2 flex items-center gap-1.5 text-sm ${c.vyprsana ? "text-warning" : "text-foreground"}`}
+              >
+                <Clock className="h-4 w-4 shrink-0" />
+                {c.vyprsana
+                  ? t("Dávka z {kedy} ({n} položiek) — POHODA ju nepotvrdila; pri ďalšom behu konektora pôjde znova.", {
+                      kedy: new Date(c.kedy).toLocaleString(loc),
+                      n: c.poloziek,
+                    })
+                  : t("Dávka z {kedy} ({n} položiek) čaká na odpoveď POHODY.", {
+                      kedy: new Date(c.kedy).toLocaleString(loc),
+                      n: c.poloziek,
+                    })}
+              </p>
+            ))}
+            {konektor.opravy.length > 0 && (
+              <div className="mt-3">
+                <p className="flex items-center gap-1.5 text-sm font-medium text-warning">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  {t("Opravy, ktoré konektor drží: {n}", { n: konektor.opravy.length })}
+                </p>
+                <ul className="mt-2 max-h-72 divide-y divide-border overflow-y-auto text-sm">
+                  {konektor.opravy.map((o) => (
+                    <li key={`o-${o.druh}-${o.id}`} className="py-2">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-xs text-muted-foreground">{t(DRUH_KONEKTORA[o.druh] ?? o.druh)}</span>
+                        <DokladKonektora druh={o.druh} id={o.id} cislo={o.cislo} />
+                        {o.potvrditZmazanie && (
+                          <button
+                            onClick={() => void zmazaneVPohode(o)}
+                            className="ml-auto inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium hover:bg-secondary"
+                          >
+                            {t("Pôvodný je v POHODE zmazaný")}
+                          </button>
+                        )}
+                      </div>
+                      <div className="min-w-0 break-words text-muted-foreground">
+                        {o.dovod.split(" — ").slice(1).join(" — ") || o.dovod}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {konektor.opravyCakaju.length > 0 && (
+              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                {konektor.opravyCakaju.map((v) => (
+                  <li key={v} className="min-w-0 break-words">
+                    {v}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {konektor.odmietnute.length > 0 && (
+              <div className="mt-3">
+                <p className="flex items-center gap-1.5 text-sm font-medium text-warning">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  {t("POHODA neprijala: {n}", { n: konektor.odmietnute.length })}
+                </p>
+                <ul className="mt-2 max-h-72 divide-y divide-border overflow-y-auto text-sm">
+                  {konektor.odmietnute.map((o) => (
+                    <li key={`r-${o.druh}-${o.id}`} className="py-2">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-xs text-muted-foreground">
+                          {t(DRUH_KONEKTORA[o.druh] ?? o.druh)}
+                        </span>
+                        <DokladKonektora druh={o.druh} id={o.id} cislo={o.cislo} />
+                        {o.kedy && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(o.kedy).toLocaleDateString(loc)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 break-words text-muted-foreground">
+                        {o.vyprsane ? t("Nepotvrdené") + " — " : ""}
+                        {o.chyba}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {starsieSpolu > 0 && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {t(
+                  "Neodovzdané doklady s dátumom pred {od}: {n} (faktúry {f}, prijaté {p}, bločky {d}, pokladňa {k}). Konektor ich neposiela — sú staršie ako jeho spustenie; odovzdajte ich balíkom alebo ručným exportom.",
+                  {
+                    od: new Date(konektor.starsie.od).toLocaleDateString(loc),
+                    n: starsieSpolu,
+                    f: konektor.starsie.faktur,
+                    p: konektor.starsie.prijatych,
+                    d: konektor.starsie.dokladov,
+                    k: konektor.starsie.pokladnicnych,
+                  },
+                )}
+              </p>
+            )}
+          </div>
         )}
       </section>
 

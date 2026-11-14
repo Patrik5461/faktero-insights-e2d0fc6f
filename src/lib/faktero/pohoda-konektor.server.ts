@@ -15,7 +15,8 @@
  * Windows, druhú spustenú inštanciu Pohody a Stormware ju sám neodporúča
  * vystavovať mimo vnútornej siete.
  */
-import type { OdpocetZalohy, PohodaNastavenia } from "./export.server";
+import type { PohodaNastavenia } from "./export.server";
+import type { PolozkaOdpoctuPohody as OdpocetZalohy } from "./zalohy-odpocty";
 import { rozoberBalikOdpovede, type VysledokDokladu } from "./pohoda-odpoved";
 import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
 
@@ -196,7 +197,27 @@ export async function zostavDavku(
           return vstup.cast === "prelom" ? Boolean(rok) && rok < rokTeraz : !rok || rok >= rokTeraz;
         });
   const lenBezny = vstup.cast !== "prelom";
-  const od = vstup.od || predvolenyZaciatok(vstup.dnes ?? new Date());
+  const dnes = vstup.dnes ?? new Date();
+  /*
+    K3: dávka, na ktorú POHODA do limitu neodpovedala, sa vráti do fronty; čo je
+    práve na ceste (čaká na odpoveď), druhýkrát nejde. Bez tabuľky položiek
+    (migrácia) sa ostrá dávka nevydá vôbec — `KonektorBezTabulky`.
+  */
+  const potvrdenie = await import("./pohoda-konektor-potvrdenie.server");
+  if (vstup.oznacit) await potvrdenie.vyprsNepotvrdene(supabase, vstup.companyId, dnes);
+  const naCeste = await potvrdenie.cakajuceZaznamy(supabase, vstup.companyId, !vstup.oznacit);
+  const neNaCeste =
+    (druh: Parameters<typeof naCeste.get>[0]) =>
+    (r: Riadok): boolean =>
+      !naCeste.get(druh)?.has(String(r?.id));
+  const pocetNaCeste = [...naCeste.values()].reduce((a, s) => a + s.size, 0);
+  /*
+    V11: výber podľa stavu (neodovzdané), nie podľa okna „od minulého mesiaca“ —
+    neskoro zadaný doklad by inak neodišiel nikdy. Spodná hranica je mesiac
+    pred prvým spustením konektora: staršie doklady konektor neposiela (patria
+    do odovzdania, ktoré firma robila predtým) a Kontrola Pohody ich ukáže.
+  */
+  const od = vstup.od || (await zaciatokKonektora(supabase, vstup.companyId, dnes));
 
   const { data: company, error: cErr } = await supabase
     .from("companies")
@@ -212,11 +233,14 @@ export async function zostavDavku(
       .select("*")
       .eq("company_id", vstup.companyId)
       .gte("issue_date", od)
+      // Len neodovzdané — strop sa inak minul na už odovzdaných a nové neodišli (S21).
+      .is("exported_at", null)
       .neq("status", "draft")
       .neq("status", "cancelled")
       .is("deleted_at", null)
       .order("issue_date")
-      .limit(STROP_DAVKY),
+      .order("id")
+      .limit(STROP_DAVKY + pocetNaCeste),
     // Všetky odovzdané — orezaný zoznam by staršie faktúry poslal druhýkrát.
     vsetkoAkoData((zac, kon) =>
       supabase
@@ -237,14 +261,16 @@ export async function zostavDavku(
     supabase,
     vstup.companyId,
     "vystavena",
-    (vsetkyFaktury ?? []).filter((f: Riadok) => !odovzdane.has(f.id)),
+    (vsetkyFaktury ?? [])
+      .filter((f: Riadok) => !odovzdane.has(f.id) && neNaCeste("faktura")(f))
+      .slice(0, STROP_DAVKY),
   );
   // Prázdne kódy tak, ako ich ukazuje detail („automaticky“), doplnené aj na doklad.
   const faktury = await (
     await import("./clenenie-vystavenej.server")
   ).zauctovanieNaExport(supabase, vstup.companyId, vCasti(fakturySch, "issue_date"), { ulozit: true });
 
-  const [{ data: dokladyNeschvalene }, { data: pokladnicaVsetko }] = await Promise.all([
+  const [{ data: dokladyVsetkyRiadky }, { data: pokladnicaRiadky }] = await Promise.all([
     supabase
       .from("expense_documents")
       .select("*")
@@ -254,7 +280,8 @@ export async function zostavDavku(
       // Most si doklady berie sám — nespracovaný doklad ešte nikto neskontroloval.
       .eq("status", "processed")
       .order("issue_date")
-      .limit(STROP_DAVKY),
+      .order("id")
+      .limit(STROP_DAVKY + pocetNaCeste),
     supabase
       .from("cash_entries")
       .select("*")
@@ -262,8 +289,11 @@ export async function zostavDavku(
       .gte("entry_date", od)
       .is("exported_at", null)
       .order("entry_date")
-      .limit(STROP_DAVKY),
+      .order("id")
+      .limit(STROP_DAVKY + pocetNaCeste),
   ]);
+  const dokladyNeschvalene = (dokladyVsetkyRiadky ?? []).filter(neNaCeste("doklad")).slice(0, STROP_DAVKY);
+  const pokladnicaVsetko = (pokladnicaRiadky ?? []).filter(neNaCeste("pokladna")).slice(0, STROP_DAVKY);
 
   /*
     Prijaté faktúry — len zaúčtované (účtovník ich prešiel, ako v Doklado) a
@@ -281,7 +311,8 @@ export async function zostavDavku(
     .is("deleted_at", null)
     .in("type", ["regular", "proforma"])
     .order("issue_date")
-    .limit(STROP_DAVKY);
+    .order("id")
+    .limit(STROP_DAVKY + pocetNaCeste);
   const { zapocitatelna } = await import("./samofakturacia");
   const { prijataAkoDoklad } = await import("./prijate-do-pohody");
   const { ok: dokladySch } = await lenSchvalene(supabase, vstup.companyId, "doklad", dokladyNeschvalene ?? []);
@@ -310,6 +341,7 @@ export async function zostavDavku(
     "prijata",
     (prijateRiadky ?? []).filter(
       (p: Riadok) =>
+        neNaCeste("prijata")(p) &&
         zapocitatelna(p) &&
         // Nezaúčtovaná zálohová ide sama — koncept ani stornovaná nie.
         !(p.type === "proforma" && (p.status === "draft" || p.status === "cancelled")),
@@ -325,6 +357,32 @@ export async function zostavDavku(
     await oznacDuplicity(supabase, vstup.companyId, "prijata", prijate);
     await oznacDuplicity(supabase, vstup.companyId, "blocek", doklady ?? []);
   }
+
+  /*
+    V13: oprava dokladu vráteného z POHODY. POHODA cez XML doklad neprepíše
+    ani nezmaže (invoice/voucher nemajú actionType) — najprv ide storno
+    pôvodnej verzie (keď poznáme jej číslo v POHODE), oprava až po jeho
+    potvrdení; inak sa doklad zadrží do potvrdenia zmazania v Kontrole Pohody.
+  */
+  const opravy = await potvrdenie.opravyVDavke(
+    supabase,
+    vstup.companyId,
+    [
+      ...faktury.map((f: Riadok) => ({ druh: "faktura" as const, riadok: f, cislo: String(f.invoice_number ?? "") })),
+      ...prijate.map((p: Riadok) => ({ druh: "prijata" as const, riadok: p, cislo: String(p.invoice_number ?? "") })),
+      ...doklady.map((d: Riadok) => ({ druh: "doklad" as const, riadok: d, cislo: String(d.document_number || d.supplier_name || "") })),
+      ...pokladnica.map((p: Riadok) => ({ druh: "pokladna" as const, riadok: p, cislo: String(p.entry_number ?? "") })),
+    ],
+    await cislaVPohode(supabase, vstup.companyId),
+    !vstup.oznacit,
+  );
+  if (opravy.vyradit.size)
+    for (const zoznam of [faktury, prijate, doklady, pokladnica] as Riadok[][])
+      for (let i = zoznam.length - 1; i >= 0; i--) if (opravy.vyradit.has(String(zoznam[i]?.id))) zoznam.splice(i, 1);
+  // Storno pôvodných verzií ide len do bežnej databázy (ako ostatné storná).
+  const stornaOpravXml = lenBezny ? opravy.stornaXml : "";
+  const stornaOprav = lenBezny ? opravy.stornaOprav : [];
+  const hlaskyOprav = [...opravy.drzane.map((d) => d.dovod), ...opravy.cakaju];
 
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.
@@ -348,7 +406,7 @@ export async function zostavDavku(
           )
         : [];
   const zasoby =
-    lenBezny && company.pohoda_posielat_sklad && company.pohoda_sklad
+    lenBezny && company.pohoda_posielat_sklad && company.pohoda_sklad && (company as any).pohoda_cenova_skupina
       ? await nacitajZasoby(supabase, vstup.companyId)
       : [];
   const { nove: zakazkyNoveVsetky, kody: zakazky } = company.pohoda_posielat_zakazky
@@ -360,9 +418,17 @@ export async function zostavDavku(
   // Pohyby majú zmysel len vtedy, keď sú v Pohode karty — položka sa na kartu
   // odvoláva. Posielajú sa preto až tie, ktorých karta už odišla.
   const pohyby =
-    lenBezny && company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad
+    lenBezny && company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad && (company as any).pohoda_cenova_skupina
       ? await nacitajPohyby(supabase, vstup.companyId, zasoby)
       : [];
+  // Čo je na ceste (čaká na odpoveď POHODY), druhýkrát nejde (K3).
+  for (const [zoznam, druh] of [
+    [zakaznici, "adresar"],
+    [zasoby, "sklad"],
+    [zakazkyNove, "zakazka"],
+    [pohyby, "pohyb"],
+  ] as [Riadok[], "adresar" | "sklad" | "zakazka" | "pohyb"][])
+    for (let i = zoznam.length - 1; i >= 0; i--) if (!neNaCeste(druh)(zoznam[i])) zoznam.splice(i, 1);
   const { zoskupPohyby } = await import("./export.server");
   const skupinyPohybov = zoskupPohyby(pohyby);
 
@@ -380,6 +446,7 @@ export async function zostavDavku(
     nastaveniaExportu(company.uctovanie_nastavenia).dokladKPlatbe,
   );
   const hlaskaStorien = hlaskaRucnychStorien(stornaRucne);
+  for (let i = storna.length - 1; i >= 0; i--) if (!neNaCeste("storno")(storna[i])) storna.splice(i, 1);
   const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
 
   const prazdna =
@@ -391,7 +458,8 @@ export async function zostavDavku(
     !zasoby.length &&
     !zakazkyNove.length &&
     !pohyby.length &&
-    !storna.length;
+    !storna.length &&
+    !stornaOprav.length;
   /*
     Žiadosť o predkontácie a členenia DPH ide s dávkou, kým na ňu Pohoda
     neodpovie — príznak zhodí až spracovanie odpovede. Keď inak nie je čo
@@ -431,7 +499,7 @@ export async function zostavDavku(
       zakaziek: 0,
       pohybov: 0,
       storien: 0,
-      preskocene: pokladnaChyba ? [pokladnaChyba] : [],
+      preskocene: [...(pokladnaChyba ? [pokladnaChyba] : []), ...hlaskyOprav],
     };
   }
 
@@ -472,6 +540,7 @@ export async function zostavDavku(
     ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, vstup.companyId, company.pohoda_pokladna)),
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
+    cenovaSkupina: (company as any).pohoda_cenova_skupina,
   };
   // Karty, ktoré idú v tejto dávke, sú v Pohode skôr než doklady (adresár ide prvý).
   if (parovatPartnerov)
@@ -505,11 +574,21 @@ export async function zostavDavku(
     if (dovod) preskoceneDoklady.push(dovod);
     return !dovod;
   });
+  /*
+    Upozornenia pri prijatých (sadzba DPH, ktorá neexistuje, členenie s
+    prenesením bez príznaku, chýbajúca predkontácia — export-varovania.ts)
+    ručný export ukáže na potvrdenie. Konektor nemá kto potvrdiť: doklad
+    zadrží a Kontrola Pohody ho ukáže medzi závažnými (audit 14. 11., S7).
+  */
+  const { varovaniaPrijatejPredExportom } = await import("./export-varovania");
   const prijateOk = prijate.filter((p: Riadok) => {
-    const dovod = prekazkaDokladu(prijataAkoDoklad(p), company, nastavenia as any);
+    const dovod =
+      prekazkaDokladu(prijataAkoDoklad(p), company, nastavenia as any) ??
+      (varovaniaPrijatejPredExportom(p, company, nastavenia as any)[0] ?? null);
     if (dovod) preskoceneDoklady.push(dovod);
     return !dovod;
   });
+  preskoceneDoklady.push(...hlaskyOprav);
   // Všetko zastavila kontrola — prázdny balík by schéma Pohody neprijala.
   if (
     preskocene.length === faktury.length &&
@@ -520,7 +599,8 @@ export async function zostavDavku(
     !zasoby.length &&
     !zakazkyNove.length &&
     !pohyby.length &&
-    !storna.length
+    !storna.length &&
+    !stornaOprav.length
   ) {
     return {
       xml: "",
@@ -559,9 +639,12 @@ export async function zostavDavku(
     opravovane,
     povodneCisla,
   });
+  // Storno pôvodných verzií opravených dokladov (V13) — pred opravou samotnou ide len storno.
+  const { pridajPolozky, polozkyZDavky } = await import("./pohoda-konektor-davka");
+  const davkaSoStornami = pridajPolozky(davkaXml, stornaOpravXml);
   const xml = ciselniky
-    ? (await import("./predkontacie")).pridajZiadost(davkaXml, company.ico)
-    : davkaXml;
+    ? (await import("./predkontacie")).pridajZiadost(davkaSoStornami, company.ico)
+    : davkaSoStornami;
 
   const cislaPreskocenych = new Set<string>(
     preskocene.map((d: string) => String(d).split(" — ")[0]),
@@ -570,23 +653,50 @@ export async function zostavDavku(
 
   let jobId: string | null = null;
   if (vstup.oznacit) {
-    jobId = await zapisOdovzdanie(supabase, {
+    /*
+      K3: zapíše sa len to, že dávka odišla — položky sú `odoslane` a
+      odovzdané (zamknuté) budú až po odpovedi POHODY (`spracujOdpoved`).
+      Id položiek sa berú z hotového XML, takže sa zapíše presne to, čo išlo.
+    */
+    const teraz = new Date().toISOString();
+    const verziaDokladu = (r: Riadok) => ({ id: String(r.id), verzia: r.pohoda_verzia });
+    const vSkupinach = new Set(skupinyPohybov.flatMap((s) => s.pohyby.map((m: Riadok) => String(m.id))));
+    jobId = await potvrdenie.zapisDavku(supabase, {
       companyId: vstup.companyId,
       od,
       xml,
       faktury,
-      vyvezenePocet: vyvezene.length,
+      pocetFaktur: vyvezene.length,
       cislaPreskocenych,
       preskocene,
-      dokladyIds: dokladyOk.map((d: Riadok) => d.id),
-      prijateIds: prijateOk.map((p: Riadok) => p.id),
-      pokladnicaIds: (pokladnica ?? []).map((p: Riadok) => p.id),
-      zakaznici,
-      zasoby,
-      zakazkyNove,
-      pohyby,
-      // Aj ručné storná — zapíšu sa ako vybavené, aby sa hláška neopakovala v každej dávke.
-      storna: [...storna, ...stornaRucne],
+      polozky: polozkyZDavky(
+        xml,
+        {
+          faktury: vyvezene.map(verziaDokladu),
+          doklady: dokladyOk.map(verziaDokladu),
+          prijate: prijateOk.map(verziaDokladu),
+          pokladna: (pokladnica ?? []).map(verziaDokladu),
+          adresar: zakaznici.map((z: Riadok) => ({ id: String(z.id), verzia: z.updated_at })),
+          sklad: zasoby.map((z: Riadok) => ({ id: String(z.id), verzia: z.updated_at })),
+          zakazka: zakazkyNove.map((z: Riadok) => ({ id: String(z.id), verzia: z.updated_at })),
+          // Pohyb sa nemení, takže verzia je len jeho vznik.
+          pohyby: skupinyPohybov.map((s) => ({
+            id: String(s.id),
+            pohyby: s.pohyby.map((m: Riadok) => ({ id: String(m.id), verzia: m.created_at })),
+          })),
+          storna,
+          stornaOprav,
+        },
+        teraz,
+      ),
+      bezPotvrdenia: [
+        // Ručné storná (doklad k platbe) sa nikam neposielajú — vybavené, aby sa hláška neopakovala.
+        ...stornaRucne.map((s: { id: string }) => ({ agenda: "storno", id: s.id, verzia: teraz })),
+        // Pohyb s nulovým množstvom do príjemky ani výdajky nejde — nie je čo potvrdzovať.
+        ...pohyby
+          .filter((m: Riadok) => !vSkupinach.has(String(m.id)))
+          .map((m: Riadok) => ({ agenda: "pohyb", id: String(m.id), verzia: String(m.created_at) })),
+      ],
     });
   }
 
@@ -602,10 +712,27 @@ export async function zostavDavku(
     zasob: zasoby.length,
     zakaziek: zakazkyNove.length,
     pohybov: pohyby.length,
-    storien: storna.length,
+    storien: storna.length + stornaOprav.length,
     preskocene: [...preskocene, ...preskoceneDoklady, ...(hlaskaStorien ? [hlaskaStorien] : [])],
     ciselniky,
   };
+}
+
+/**
+ * Spodná hranica dávky konektora (V11): prvý deň mesiaca pred jeho prvým
+ * spustením — neskoro zadaný doklad s dátumom po nej odíde vždy, keď ešte
+ * nie je odovzdaný. Pred prvým spustením minulý mesiac ako doteraz.
+ */
+export async function zaciatokKonektora(supabase: Klient, companyId: string, dnes: Date): Promise<string> {
+  const { data } = await supabase
+    .from("export_jobs")
+    .select("created_at")
+    .eq("company_id", companyId)
+    .eq("file_name", "pohoda-davka.xml")
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const prvy = data?.[0]?.created_at ? new Date(String(data[0].created_at)) : null;
+  return predvolenyZaciatok(prvy && !Number.isNaN(prvy.getTime()) && prvy < dnes ? prvy : dnes);
 }
 
 /**
@@ -665,107 +792,56 @@ export async function nacitajVazby(
   faktury: Riadok[],
   cisla: Map<string, string>,
 ): Promise<{
-  zalohy: Record<string, OdpocetZalohy>;
+  zalohy: Record<string, OdpocetZalohy[]>;
   opravovane: Record<string, string>;
   povodneCisla: Record<string, string>;
 }> {
-  const zalohy: Record<string, OdpocetZalohy> = {};
+  const zalohy: Record<string, OdpocetZalohy[]> = {};
   const opravovane: Record<string, string> = {};
   // Číslo opravovanej faktúry vo Fakteri — SK Pohoda ho chce pri dobropise
   // aj vtedy, keď pôvodná faktúra v Pohode (zatiaľ) nie je.
   const povodneCisla: Record<string, string> = {};
 
   /*
-    Odpočty zálohy sú vo vlastnej tabuľke — faktúra si ich môže odpočítať viac.
-    Starý stĺpec na faktúre by druhú a ďalšiu zálohu zamlčal.
+    Odpočty záloh — ten istý výpočet ako ručný súbor (`pripravFaktury`):
+    riadky dokladu k prijatej platbe po sadzbách, nezdanená záloha bez DPH
+    (`nacitajOdpocty` + `zalohyPrePohodu`). Predtým sa sadzba počítala
+    z pomeru DPH a základu zálohovej faktúry — pri zálohe 23 % + 0 % vyšlo
+    8 % a odpočet skončil v priehradke 19 % (audit 14. 11. 2026, V1).
+
+    Faktúra dostane `_odpocty`, aby `pohodaPrekazka` odpočet, ktorý sa
+    zapísať nedá, zastavila — predtým odišla bez odpočtu, len so zápisom
+    do logu servera (K2).
   */
-  const { data: odpoctyRiadky } = faktury.length
-    ? await supabase
-        .from("invoice_advances")
-        .select("invoice_id, advance_invoice_id, amount")
-        .eq("company_id", companyId)
-        .in(
-          "invoice_id",
-          faktury.map((f: Riadok) => String(f.id)),
-        )
-    : { data: [] as any[] };
-  const odpoctyPodlaFaktury = new Map<string, { zaloha: string; suma: number }[]>();
-  for (const r of odpoctyRiadky ?? []) {
-    const zoz = odpoctyPodlaFaktury.get(String(r.invoice_id)) ?? [];
-    zoz.push({ zaloha: String(r.advance_invoice_id), suma: Number(r.amount) });
-    odpoctyPodlaFaktury.set(String(r.invoice_id), zoz);
+  const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
+  const { zalohyPrePohodu } = await import("./zalohy-odpocty");
+  const odpocty = await nacitajOdpocty(
+    supabase,
+    companyId,
+    faktury.map((f: Riadok) => String(f.id)),
+  );
+  for (const f of faktury) {
+    const zoz = odpocty[String(f.id)] ?? null;
+    (f as any)._odpocty = zoz;
+    // Číslo zálohovej faktúry v Pohode, ak ho poznáme zo spätnej väzby; inak naše (`numberRequested`).
+    const z = zalohyPrePohodu(zoz, (o) => (o.zalohaId ? cisla.get(o.zalohaId) : null));
+    if (z) zalohy[String(f.id)] = z;
   }
 
-  const zalohoveIds = [...odpoctyPodlaFaktury.values()].flat().map((o) => o.zaloha);
   const opraveneIds = faktury
     .filter((f: Riadok) => (f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id)
     .map((f: Riadok) => String(f.opravuje_fakturu_id));
-
-  const potrebne = [...new Set([...zalohoveIds, ...opraveneIds])];
+  const potrebne = [...new Set(opraveneIds)];
   const { data: suvisiace } = potrebne.length
     ? await supabase
         .from("invoices")
-        .select("id, invoice_number, subtotal, vat_total")
+        .select("id, invoice_number")
         .eq("company_id", companyId)
         .in("id", potrebne)
     : { data: [] };
   const podlaId = new Map<string, Riadok>((suvisiace ?? []).map((f: Riadok) => [String(f.id), f]));
-  /*
-    Zdanená záloha má doklad k prijatej platbe. Bez neho je nezdanená a jej
-    odpočet ide bez DPH (sadzba „none“) — daň z vyúčtovania sa neznižuje.
-  */
-  const { data: kPlatbe } = zalohoveIds.length
-    ? await supabase
-        .from("invoices")
-        .select("advance_invoice_id, status")
-        .eq("company_id", companyId)
-        .eq("type", "advance_payment")
-        .is("deleted_at", null)
-        .in("advance_invoice_id", [...new Set(zalohoveIds)])
-    : { data: [] as any[] };
-  const zdanene = new Set(
-    (kPlatbe ?? [])
-      .filter((d: Riadok) => d.status !== "draft" && d.status !== "cancelled")
-      .map((d: Riadok) => String(d.advance_invoice_id)),
-  );
 
   for (const f of faktury) {
-    const odpocty = odpoctyPodlaFaktury.get(String(f.id)) ?? [];
-    if (odpocty.length) {
-      const sadzby = new Set<number>();
-      let suma = 0;
-      const cislaZaloh: string[] = [];
-      for (const o of odpocty) {
-        const zalohova = podlaId.get(o.zaloha);
-        const sadzba = !zalohova ? null : zdanene.has(o.zaloha) ? sadzbaZalohy(zalohova) : 0;
-        if (sadzba === null) continue;
-        sadzby.add(sadzba);
-        suma += o.suma;
-        const cislo = cisla.get(o.zaloha) ?? (zalohova?.invoice_number as string | undefined);
-        if (cislo) cislaZaloh.push(String(cislo));
-      }
-      /*
-        Pohoda berie odpočet ako jednu položku s jednou sadzbou. Zálohy s
-        rôznymi sadzbami sa do nej nevtesnajú — radšej sa odpočet vynechá a
-        ozve sa to v logu, než aby doklad odišiel s tichou chybou v DPH.
-      */
-      if (sadzby.size > 1) {
-        console.warn(
-          `[pohoda] faktúra ${f.invoice_number ?? f.id}: zálohy majú rôzne sadzby DPH, odpočet do XML nejde`,
-        );
-      } else if (sadzby.size === 1 && suma > 0) {
-        const sadzba = [...sadzby][0];
-        // Odpočítaná suma je s daňou — odberateľ ju už zaplatil celú.
-        const zaklad = Math.round((suma / (1 + sadzba / 100)) * 100) / 100;
-        zalohy[String(f.id)] = {
-          cislo: cislaZaloh.length === 1 ? cislaZaloh[0] : null,
-          zaklad,
-          dph: Math.round((suma - zaklad) * 100) / 100,
-          sadzba,
-        };
-      }
-    }
-
     if ((f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id) {
       const cislo = cisla.get(String(f.opravuje_fakturu_id));
       if (cislo) opravovane[String(f.id)] = cislo;
@@ -775,21 +851,6 @@ export async function nacitajVazby(
   }
 
   return { zalohy, opravovane, povodneCisla };
-}
-
-/**
- * Sadzba DPH zálohy — zo **zálohovej faktúry**, nie z konečnej.
- *
- * Záloha má vlastnú sadzbu a dopočítať ju z jednej sumy sa nedá. Keď zálohovú
- * faktúru nemáme (suma zadaná ručne), odpočet radšej neposielame: nesprávna
- * sadzba by bola tichá chyba v priznaní.
- */
-function sadzbaZalohy(zalohova: Riadok | null | undefined): number | null {
-  if (!zalohova) return null;
-  const zaklad = Number(zalohova.subtotal ?? 0);
-  const dan = Number(zalohova.vat_total ?? 0);
-  if (!zaklad) return dan ? null : 0;
-  return Math.round((dan / zaklad) * 100);
 }
 
 /**
@@ -973,102 +1034,6 @@ async function odkazyNaPdf(supabase: Klient, faktury: Riadok[]): Promise<Record<
   return odkazy;
 }
 
-async function zapisOdovzdanie(
-  supabase: Klient,
-  p: {
-    companyId: string;
-    od: string;
-    xml: string;
-    faktury: Riadok[];
-    vyvezenePocet: number;
-    cislaPreskocenych: Set<string>;
-    preskocene: string[];
-    dokladyIds: string[];
-    prijateIds?: string[];
-    pokladnicaIds: string[];
-    zakaznici: Riadok[];
-    zasoby: Riadok[];
-    zakazkyNove: Riadok[];
-    pohyby: Riadok[];
-    storna: { id: string; cislo: string; typ?: string | null }[];
-  },
-): Promise<string | null> {
-  const { data: job, error } = await supabase
-    .from("export_jobs")
-    .insert({
-      company_id: p.companyId,
-      created_by: null,
-      format: "pohoda_xml",
-      target_system: "pohoda",
-      status: "completed",
-      invoice_count: p.vyvezenePocet,
-      date_from: p.od,
-      date_to: p.faktury[p.faktury.length - 1]?.issue_date ?? p.od,
-      file_name: "pohoda-davka.xml",
-      file_content: p.xml,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  if (!job) return null;
-
-  if (p.faktury.length) {
-    await supabase.from("export_logs").insert(
-      p.faktury.map((f: Riadok) => ({
-        export_job_id: job.id,
-        company_id: p.companyId,
-        invoice_id: f.id,
-        invoice_number: f.invoice_number,
-        status: p.cislaPreskocenych.has(f.invoice_number) ? "skipped" : "ok",
-        error: p.preskocene.find((d) => d.startsWith(f.invoice_number)) ?? null,
-      })),
-    );
-  }
-  const teraz = new Date().toISOString();
-  if (p.dokladyIds.length) {
-    await supabase
-      .from("expense_documents")
-      .update({ status: "exported", exported_at: teraz, export_job_id: job.id })
-      .in("id", p.dokladyIds);
-  }
-  if (p.prijateIds?.length) {
-    await supabase
-      .from("purchase_invoices")
-      .update({ exported_at: teraz, export_job_id: job.id })
-      .in("id", p.prijateIds);
-  }
-  if (p.pokladnicaIds.length) {
-    await supabase
-      .from("cash_entries")
-      .update({ exported_at: teraz, export_job_id: job.id })
-      .in("id", p.pokladnicaIds);
-  }
-  // Zapisuje sa verzia, ktorú sme naozaj poslali — nie čas odoslania. Karta tak
-  // znovu odíde presne vtedy, keď ju niekto zmení, a nie stále dokola.
-  const ciselniky = [
-    ...p.zakaznici.map((z: Riadok) => ({ agenda: "adresar", id: z.id, verzia: z.updated_at })),
-    ...p.zasoby.map((s: Riadok) => ({ agenda: "sklad", id: s.id, verzia: s.updated_at })),
-    ...p.zakazkyNove.map((z: Riadok) => ({ agenda: "zakazka", id: z.id, verzia: z.updated_at })),
-    // Pohyb sa nemení, takže verzia je len jeho vznik.
-    ...p.pohyby.map((m: Riadok) => ({ agenda: "pohyb", id: m.id, verzia: m.created_at })),
-    // Storno ide raz; verzia je len na to, aby stĺpec nebol prázdny.
-    ...p.storna.map((s: { id: string }) => ({ agenda: "storno", id: s.id, verzia: teraz })),
-  ];
-  if (ciselniky.length) {
-    await supabase.from("pohoda_odoslane").upsert(
-      ciselniky.map((c) => ({
-        company_id: p.companyId,
-        agenda: c.agenda,
-        zaznam_id: c.id,
-        verzia: c.verzia,
-        odoslane_at: teraz,
-      })),
-      { onConflict: "company_id,agenda,zaznam_id" },
-    );
-  }
-  return job.id as string;
-}
-
 /*
   Rozbor `responsePack` je v `pohoda-odpoved.ts` (čistá časť — testy, skript
   na vyhodnotenie skúšky `scripts/pohoda-odpoved.ts`). Tu sa len zapisuje.
@@ -1088,7 +1053,7 @@ export function rozoberOdpoved(xml: string): VysledokDokladu[] {
  */
 export function holeId(id: string): string {
   const m = String(id).match(
-    /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:-\d+)?$/i,
+    /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:-\d+)?(?:-storno)?$/i,
   );
   return m ? m[1] : String(id);
 }
@@ -1100,7 +1065,7 @@ export type SpracovanieOdpovede = {
   chyby: string[];
   /** Upozornenia Pohody (doklad prešiel, ale niečo upravila) — na kontrolu. */
   upozornenia?: string[];
-  /** Pohoda odmietla celý balík (prihlásenie, práva, IČO). */
+  /** Pohoda odmietla celý balík (prihlásenie, práva, IČO) — dávka sa vrátila do fronty. */
   chybaBaliku?: string | null;
   /** Načítané predkontácie a členenia DPH, ak sa na ne dávka pýtala. */
   ciselniky?: { predkontacii: number; cleneni: number; vypnutych: number } | null;
@@ -1109,9 +1074,11 @@ export type SpracovanieOdpovede = {
 /**
  * Zapíše výsledok importu.
  *
- * Doklad, ktorý Pohoda odmietla, sa vráti späť do fronty — inak by zmizol:
- * u nás by bol označený za odovzdaný a v Pohode by neexistoval. Toto je hlavný
- * dôvod, prečo sa odpoveď vôbec posiela späť.
+ * Až odpoveď POHODY urobí z odoslaného dokladu odovzdaný (K3): položka s
+ * `state="ok"` (aj `recordDuplicity`) sa označí a zamkne, odmietnutá ostane
+ * vo fronte, odmietnutý celý balík vráti celú dávku. Párovanie je podľa
+ * presného `dataPackItem id` vrátane storna (V12) —
+ * `pohoda-konektor-potvrdenie.server.ts`.
  */
 export async function spracujOdpoved(
   supabase: Klient,
@@ -1123,37 +1090,75 @@ export async function spracujOdpoved(
   const ciselniky = await ulozCiselnikyZPohody(supabase, vstup);
 
   const balik = rozoberBalikOdpovede(vstup.xml);
-  const vysledky = balik.polozky.filter((v) => !jeIdCiselnika(v.id));
+  const { spracujPolozkyOdpovede } = await import("./pohoda-konektor-potvrdenie.server");
+  // Samotná žiadosť o číselníky (bez dávky) nemá čo potvrdzovať.
+  const lenCiselniky =
+    balik.polozky.length > 0 && balik.polozky.every((v) => jeIdCiselnika(v.id));
+  const r = lenCiselniky
+    ? { spracovanych: 0, zalozenych: 0, chyby: [] as string[], upozornenia: [] as string[], chybaBaliku: null, nezname: 0, nesparovane: [] }
+    : await spracujPolozkyOdpovede(supabase, { companyId: vstup.companyId, balik, jeCiselnik: jeIdCiselnika });
+  /*
+    Položky, ktoré nepatria dávke konektora — odpoveď na mesačný balík alebo
+    ručný súbor nahratá v Prepojení s Pohodou. Tie sa pri odovzdaní označili
+    hneď (človek súbor importuje sám), odpoveď im len dopíše číslo a
+    odmietnuté vráti do fronty.
+  */
+  const bezDavky = await spracujPolozkyBezDavky(supabase, vstup.companyId, r.nesparovane);
+
+  const chyby = [...r.chyby, ...bezDavky.chyby];
+  return {
+    spracovanych: r.spracovanych,
+    zalozenych: r.zalozenych - r.nesparovane.length + bezDavky.zalozenych,
+    chybnych: chyby.length,
+    chyby: chyby.slice(0, 20),
+    upozornenia: [...r.upozornenia, ...bezDavky.upozornenia].slice(0, 20),
+    chybaBaliku: r.chybaBaliku,
+    ciselniky,
+  };
+}
+
+/**
+ * Odpoveď POHODY na mesačný balík či ručný súbor (doklady nie sú v dávke
+ * konektora). Doklad sa pri ich odovzdaní označil hneď; tu sa mu dopíše
+ * číslo v POHODE a odmietnutý sa vráti do fronty. Storno (`<id>-storno`) sa
+ * pri odmietnutí vráti do fronty (V12) — predtým jeho id nesedelo s ničím.
+ */
+async function spracujPolozkyBezDavky(
+  supabase: Klient,
+  companyId: string,
+  vysledky: VysledokDokladu[],
+): Promise<{ zalozenych: number; chyby: string[]; upozornenia: string[] }> {
   const teraz = new Date().toISOString();
   const chyby: string[] = [];
   const upozornenia: string[] = [];
   let zalozenych = 0;
-  const chybaBaliku =
-    balik.stav === "error" && !balik.polozky.length
-      ? `Pohoda odmietla celý balík: ${balik.poznamka ?? "bez popisu"}`
-      : null;
-  if (chybaBaliku) chyby.push(chybaBaliku);
-
   for (const v of vysledky) {
     // Duplicita dávky = doklad už v Pohode je; vrátiť ho do fronty by ho posielalo donekonečna.
     const chyba = v.stav === "error" && !v.duplicita;
     if (chyba) chyby.push(`${v.cislo ?? v.id}: ${v.poznamka ?? "neznáma chyba"}`);
     else zalozenych++;
     if (v.stav === "warning" && v.poznamka) upozornenia.push(`${v.cislo ?? v.id}: ${v.poznamka}`);
-
-    // Číselníky nesú v identifikátore aj verziu záznamu — späť sa mapujú na
-    // holé id.
     const id = holeId(v.id);
+
+    if (/-storno$/i.test(v.id)) {
+      if (chyba)
+        await supabase
+          .from("pohoda_odoslane")
+          .delete()
+          .eq("company_id", companyId)
+          .eq("agenda", "storno")
+          .eq("zaznam_id", id);
+      continue;
+    }
 
     const { data: log } = await supabase
       .from("export_logs")
       .select("id")
-      .eq("company_id", vstup.companyId)
+      .eq("company_id", companyId)
       .eq("invoice_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
     if (log) {
       await supabase
         .from("export_logs")
@@ -1169,30 +1174,23 @@ export async function spracujOdpoved(
         .eq("id", log.id);
       continue;
     }
-
-    // Nie je to faktúra — skús prijatý doklad, pokladňu a nakoniec číselníky.
     const { data: doklad } = await supabase
       .from("expense_documents")
       .select("id")
-      .eq("company_id", vstup.companyId)
+      .eq("company_id", companyId)
       .eq("id", id)
       .maybeSingle();
     if (doklad) {
       await supabase
         .from("expense_documents")
-        .update({
-          pohoda_cislo: v.cislo,
-          ...(chyba ? { exported_at: null, status: "new" } : {}),
-        })
+        .update({ pohoda_cislo: v.cislo, ...(chyba ? { exported_at: null, status: "new" } : {}) })
         .eq("id", id);
       continue;
     }
-
-    // Prijatá faktúra — tá istá cesta ako doklad, chybná sa vráti do fronty.
     const { data: prijata } = await supabase
       .from("purchase_invoices")
       .select("id")
-      .eq("company_id", vstup.companyId)
+      .eq("company_id", companyId)
       .eq("id", id)
       .maybeSingle();
     if (prijata) {
@@ -1202,11 +1200,10 @@ export async function spracujOdpoved(
         .eq("id", id);
       continue;
     }
-
     const { data: pohyb } = await supabase
       .from("cash_entries")
       .select("id")
-      .eq("company_id", vstup.companyId)
+      .eq("company_id", companyId)
       .eq("id", id)
       .maybeSingle();
     if (pohyb) {
@@ -1216,38 +1213,20 @@ export async function spracujOdpoved(
         .eq("id", id);
       continue;
     }
-
     // Číselníky a skladové doklady: odmietnutý záznam sa vráti do fronty tým, že
     // sa zabudne, čo odišlo. Číslo im Pohoda neprideľuje.
     if (!chyba) continue;
-    await supabase
-      .from("pohoda_odoslane")
-      .delete()
-      .eq("company_id", vstup.companyId)
-      .eq("zaznam_id", id);
-
-    // Príjemka a výdajka nesie identifikátor prvého pohybu, ale nezaložených
-    // ostane celá skupina — inak by zvyšok zmizol: u nás odoslaný, v Pohode nie.
-    await vratSkupinuPohybov(supabase, vstup.companyId, id);
+    await supabase.from("pohoda_odoslane").delete().eq("company_id", companyId).eq("zaznam_id", id);
+    // Príjemka a výdajka nesie identifikátor prvého pohybu — vráti sa celá skupina.
+    await vratSkupinuPohybov(supabase, companyId, id);
   }
-
-  return {
-    spracovanych: vysledky.length,
-    zalozenych,
-    chybnych: chyby.length,
-    chyby: chyby.slice(0, 20),
-    upozornenia: upozornenia.slice(0, 20),
-    chybaBaliku,
-    ciselniky,
-  };
+  return { zalozenych, chyby, upozornenia };
 }
 
 /**
- * Vráti do fronty všetky pohyby z tej istej príjemky či výdajky.
- *
- * Doklad nesie identifikátor prvého pohybu v skupine; ostatné by po odmietnutí
- * ostali označené za odoslané a v Pohode by neboli. Skupina sa dopočíta rovnako,
- * ako sa skladala — podľa smeru, dňa a zdrojového dokladu.
+ * Vráti do fronty všetky pohyby z tej istej príjemky či výdajky (odpoveď na
+ * balík). Skupina sa dopočíta rovnako, ako sa skladala — podľa smeru, dňa a
+ * zdrojového dokladu.
  */
 async function vratSkupinuPohybov(supabase: Klient, companyId: string, id: string): Promise<void> {
   const { data: prvy } = await supabase
@@ -1257,7 +1236,6 @@ async function vratSkupinuPohybov(supabase: Klient, companyId: string, id: strin
     .eq("id", id)
     .maybeSingle();
   if (!prvy) return;
-
   const den = String(prvy.created_at ?? "").slice(0, 10);
   const { data: vDen } = await supabase
     .from("stock_movements")
@@ -1265,11 +1243,9 @@ async function vratSkupinuPohybov(supabase: Klient, companyId: string, id: strin
     .eq("company_id", companyId)
     .gte("created_at", `${den}T00:00:00Z`)
     .lt("created_at", `${den}T23:59:59.999Z`);
-
   const { zoskupPohyby } = await import("./export.server");
   const skupina = zoskupPohyby(vDen ?? []).find((s) => s.id === id);
   if (!skupina) return;
-
   await supabase
     .from("pohoda_odoslane")
     .delete()
@@ -1436,6 +1412,7 @@ rem ===========================================================
 set "URL=%ADRESA%/api/v1/pohoda/davka"
 set "ODPOVED_URL=%ADRESA%/api/v1/pohoda/odpoved"
 set "SPOJ=?"
+set "SPOJ2=?"
 if not "%CAST%"=="" (
   set "URL=%URL%?cast=%CAST%"
   set "SPOJ=&"
@@ -1444,7 +1421,10 @@ rem Pri kluci pre viac firiem povie, ktorej firme davka a odpoved patria.
 if not "%FIRMA%"=="" (
   set "URL=%URL%%SPOJ%company=%FIRMA%"
   set "ODPOVED_URL=%ODPOVED_URL%?company=%FIRMA%"
+  set "SPOJ2=&"
 )
+rem Hlasenie, ze Pohoda nic nevratila - Faktero vrati doklady do fronty hned.
+set "BEZ_URL=%ODPOVED_URL%%SPOJ2%bez_odpovede=1"
 
 rem 1. Stiahnutie davky z Faktera. Von ide bezne HTTPS, nic sa neotvara.
 set "SUBOR=%VSTUP%\\davka.xml"
@@ -1459,6 +1439,13 @@ if "%KOD%"=="204" (
 if not "%KOD%"=="200" (
   call :log "%NAZOV%: Faktero odpovedalo %KOD% - preskocene."
   if exist "%SUBOR%" del /q "%SUBOR%"
+  exit /b
+)
+rem Odrezany subor (prerusene spojenie) by Pohoda nenacitala - davka sa vrati do fronty.
+findstr /c:"</dat:dataPack>" "%SUBOR%" >nul 2>&1 || (
+  call :log "%NAZOV%: davka prisla neuplna - import sa nespusta, Faktero ju posle znova."
+  del /q "%SUBOR%"
+  curl -sS -o nul -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "neuplny subor" "%BEZ_URL%"
   exit /b
 )
 call :log "%NAZOV%: davka stiahnuta."
@@ -1480,7 +1467,10 @@ start "" /wait "%POHODA%" /XML "%MENO%" "%HESLO%" "%PRIECINOK%import.ini"
 call :log "%NAZOV%: import skoncil."
 
 rem 4. Odpoved spat do Faktera - z nej sa dozvie cisla dokladov a chyby.
-dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || call :log "%NAZOV%: Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode."
+dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || (
+  call :log "%NAZOV%: Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode. Doklady pojdu znova."
+  curl -sS -o nul -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "bez odpovede" "%BEZ_URL%"
+)
 for %%f in ("%ODPOVED%\\*.xml") do (
   for /f %%k in ('curl -sS -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "@%%f" "%ODPOVED_URL%"') do set "KOD2=%%k"
   if "!KOD2!"=="200" (
@@ -1666,6 +1656,12 @@ Môže sa doklad naimportovať dvakrát?
 Čo keď Pohoda niektorý doklad odmietne?
   Dôvod uvidíte v protokole importu a Faktero ho dostane v odpovedi.
   Taký doklad sa vráti do fronty a príde znova, keď sa chyba opraví.
+
+Kedy je doklad vo Fakteri „odovzdaný“?
+  Až keď Pohoda import potvrdí v odpovedi. Keď Pohoda odmietne celý
+  súbor (zlé meno alebo heslo, iná databáza, IČO) alebo nevráti nič,
+  doklady ostanú vo Fakteri neodovzdané a pôjdu znova pri ďalšom behu.
+  Prehľad je vo Fakteri v Exportoch → Kontrola pred odovzdaním.
 
 Ako to vypnem?
   Celé: zrušte naplánovanú úlohu (Plánovač úloh → Faktero - prenos do

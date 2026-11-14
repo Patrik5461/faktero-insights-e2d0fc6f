@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { FileDown, Settings2 } from "lucide-react";
+import { FileDown, Settings2, Undo2 } from "lucide-react";
+import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import { RadSplatok } from "./RadSplatok";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import {
   exportSplatokDoPohodyFn,
+  vratSplatkyZPohodyFn,
   ulozZauctovanieKalendaraFn,
   ulozZauctovanieSplatokFn,
 } from "@/lib/faktero/financovanie-pohoda.functions";
@@ -225,6 +227,7 @@ export function SplatkyDoPohody({
   const ulozKalendar = useServerFn(ulozZauctovanieKalendaraFn);
   const ulozSplatky = useServerFn(ulozZauctovanieSplatokFn);
   const exportuj = useServerFn(exportSplatokDoPohodyFn);
+  const vratZPohody = useServerFn(vratSplatkyZPohodyFn);
 
   const kalendar: Kody = {
     predkontacia: z(zmluva.pohoda_predkontacia),
@@ -289,14 +292,44 @@ export function SplatkyDoPohody({
           data: { company_id: cid, contract_id: zmluva.id, ...kody, rad, rozuctovanie: rozuct },
         });
       }
-      const r = await exportuj({
-        data: {
-          company_id: cid,
-          contract_id: zmluva.id,
-          ...(lenVybrane ? { installment_ids: vybrane } : {}),
-          oznacit,
-        },
-      });
+      const poziadavka = {
+        company_id: cid,
+        contract_id: zmluva.id,
+        ...(lenVybrane ? { installment_ids: vybrane } : {}),
+        oznacit,
+      };
+      let r = await exportuj({ data: poziadavka });
+      /*
+        Už exportované splátky: rovnaké id ako minule, POHODA ich s kontrolou
+        duplicity odmietne. Opýta sa, či ich vynechať, alebo stiahnuť znova.
+      */
+      if (r.potrebne_potvrdenie) {
+        let aj: boolean;
+        if (r.nove > 0) {
+          const lenNove = await potvrd(
+            t("Splátok už v Pohode: {n}. Exportovať len nové ({m})?", { n: r.uz_exportovane, m: r.nove }) +
+              "\n" +
+              t(
+                "Už exportované by Pohoda s kontrolou duplicity odmietla. Ak ste ich v Pohode zmazali, najprv ich vyberte a použite Vrátiť z Pohody.",
+              ),
+            { potvrdit: t("Len nové"), zrusit: t("Späť") },
+          );
+          if (!lenNove) return;
+          aj = false;
+        } else {
+          const znova = await potvrd(
+            t("Všetky splátky ({n}) už boli exportované. Stiahnuť súbor znova?", { n: r.uz_exportovane }) +
+              "\n" +
+              t(
+                "Súbor pôjde s tým istým označením — Pohoda s kontrolou duplicity nič nezdvojí. Ak ste ich v Pohode zmazali, použite Vrátiť z Pohody.",
+              ),
+            { potvrdit: t("Stiahnuť znova"), zrusit: t("Späť") },
+          );
+          if (!znova) return;
+          aj = true;
+        }
+        r = await exportuj({ data: { ...poziadavka, aj_exportovane: aj } });
+      }
       stiahniBajty(r.nazov, r.xml, "application/xml;charset=utf-8");
       toast.success(
         r.oznacene
@@ -306,6 +339,22 @@ export function SplatkyDoPohody({
       if (ulozeneTeraz) toast.success(t("Zaúčtovanie kalendára uložené — platí pre všetky splátky bez vlastných kódov."));
       for (const v of r.vyhrady) toast.warning(v);
       if (r.oznacene || ulozeneTeraz) await onZmena();
+    });
+
+  const vratVybrane = () =>
+    urob(async () => {
+      const ok = await potvrd(
+        t("Vrátiť vybrané splátky z Pohody?") +
+          "\n" +
+          t(
+            "Najprv ich v Pohode zmažte (Ostatné záväzky). Splátky sa označia ako neexportované a ďalší export ich pošle ako nové doklady.",
+          ),
+        { potvrdit: t("Vrátiť z Pohody"), zrusit: t("Späť") },
+      );
+      if (!ok) return;
+      const r = await vratZPohody({ data: { company_id: cid, contract_id: zmluva.id, installment_ids: vybrane } });
+      toast.success(t("Vrátené z Pohody (splátok: {n}).", { n: r.vratene }));
+      await onZmena();
     });
 
   const ulozVybranym = () =>
@@ -374,6 +423,9 @@ export function SplatkyDoPohody({
           disabled={busy || vybrane.length === 0}
         >
           <Settings2 className="h-4 w-4" /> {t("Vlastné kódy vybraným")}
+        </Button>
+        <Button variant="outline" onClick={() => void vratVybrane()} disabled={busy || vybrane.length === 0}>
+          <Undo2 className="h-4 w-4" /> {t("Vrátiť z Pohody")}
         </Button>
         <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           <input type="checkbox" checked={oznacit} onChange={(e) => setOznacit(e.target.checked)} />

@@ -1,4 +1,11 @@
-import { zoradPodlaSadzby } from "./vat-rates";
+import { krajinaDane, sadzbyKrajiny, zoradPodlaSadzby } from "./vat-rates";
+import { jeKrajinaEu } from "./rezim-odberatela";
+import { rozdelIcDph } from "./vies";
+import { rezimFirmy } from "./dph-rezim";
+import { resolveVatClassification, type KontextClenenia } from "./clenenie-vystavenej";
+import { resolveVatClassificationPrijatej, type KontextPrijatych } from "./clenenie-prijatych";
+import { prijataAkoDoklad } from "./prijate-do-pohody";
+import { platnyDruhPdp } from "./veta-prenesenia";
 /*
   Konvertor tabuľky (XLSX/CSV) na dávku XML Pohody.
 
@@ -19,6 +26,16 @@ export const DRUHY_KONVERTORA: { kod: DruhKonvertora; nazov: string }[] = [
   { kod: "prijate", nazov: "Prijaté faktúry" },
   { kod: "blocky", nazov: "Bločky" },
 ];
+
+/*
+  Režim DPH dokladu (audit 14. 11. 2026, V14). Bez neho šiel odberateľ z EÚ
+  ako tuzemské plnenie s 0 % a prijatá faktúra z EÚ ako tuzemská bez
+  samozdanenia. Hodnoty sa prevedú na tie isté polia ako pri doklade vo
+  Fakteri (`reverse_charge`, `reverse_charge_type`, `eu_plnenie`,
+  `dph_rezim`) a členenie z nich určí `resolveVatClassification(Prijatej)`.
+*/
+const REZIM_VYDANE = "Režim DPH (tuzemsko/prenesenie/EÚ tovar/EÚ služba/trojstranný/vývoz/mimo EÚ služba)";
+const REZIM_PRIJATE = "Režim DPH (tuzemsko/prenesenie/nadobudnutie z EÚ/služba zo zahraničia)";
 
 type Stlpec = { kluc: string; nazov: string; povinny?: boolean; vzor: string | number };
 
@@ -46,6 +63,9 @@ export const STLPCE_KONVERTORA: Record<DruhKonvertora, Stlpec[]> = {
     { kluc: "vs", nazov: "Variabilný symbol", vzor: "2026001" },
     { kluc: "ks", nazov: "Konštantný symbol", vzor: "" },
     { kluc: "mena", nazov: "Mena", vzor: "EUR" },
+    { kluc: "kurz", nazov: "Kurz (pri cudzej mene)", vzor: "" },
+    { kluc: "rezim", nazov: REZIM_VYDANE, vzor: "tuzemsko" },
+    { kluc: "pdpDruh", nazov: "Druh prenesenia (písmeno § 69 ods. 12, napr. j)", vzor: "" },
     { kluc: "platba", nazov: "Forma úhrady (prevod/hotovosť/karta/dobierka)", vzor: "prevod" },
     { kluc: "text", nazov: "Text nad položkami", vzor: "Fakturujeme vám za služby" },
     { kluc: "poznamka", nazov: "Poznámka", vzor: "" },
@@ -75,6 +95,7 @@ export const STLPCE_KONVERTORA: Record<DruhKonvertora, Stlpec[]> = {
     { kluc: "iban", nazov: "IBAN dodávateľa", vzor: "" },
     { kluc: "mena", nazov: "Mena", vzor: "EUR" },
     { kluc: "kurz", nazov: "Kurz (pri cudzej mene)", vzor: "" },
+    { kluc: "rezim", nazov: REZIM_PRIJATE, vzor: "tuzemsko" },
     { kluc: "platba", nazov: "Forma úhrady (prevod/hotovosť/karta/dobierka)", vzor: "prevod" },
     { kluc: "text", nazov: "Text", vzor: "Materiál na stavbu" },
     { kluc: "zaklad", nazov: "Základ DPH", povinny: true, vzor: 100 },
@@ -156,10 +177,89 @@ function platnyDatum(r: number, mes: number, d: number): string {
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-/** Sadzba „23", „23 %" alebo 0,23 (bunka vo formáte percent). */
-function sadzbaZBunky(v: unknown): number {
-  const n = cisloZBunky(v) ?? 0;
+/**
+ * Sadzba „23", „23 %" alebo 0,23 (bunka vo formáte percent). Prázdna bunka
+ * je `null` — nie 0 %: tuzemský doklad bez sadzby by inak išiel bez dane
+ * (audit 14. 11. 2026, V14). Nečíslo je `NaN`.
+ */
+function sadzbaZBunky(v: unknown): number | null {
+  if (v == null || String(v).trim() === "") return null;
+  const n = cisloZBunky(v);
+  if (n == null) return Number.NaN;
   return n > 0 && n < 1 ? r2(n * 100) : n;
+}
+
+type RezimVydanej = {
+  reverse_charge: boolean;
+  reverse_charge_type: "domestic_69" | "eu_b2b" | "export" | null;
+  eu_plnenie: "tovar" | "sluzba" | "trojstranny" | null;
+};
+
+/** Režim DPH vydanej faktúry zo stĺpca. Prázdne = tuzemsko, neznáme = `null`. */
+export function rezimVydanejZBunky(v: unknown): RezimVydanej | null {
+  const s = normNazov(v).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  if (!s || s.startsWith("tuzem")) return { reverse_charge: false, reverse_charge_type: null, eu_plnenie: null };
+  if (s.startsWith("pren") || s.includes("pdp") || s.includes("69"))
+    return { reverse_charge: true, reverse_charge_type: "domestic_69", eu_plnenie: null };
+  if (s.startsWith("troj")) return { reverse_charge: true, reverse_charge_type: "eu_b2b", eu_plnenie: "trojstranny" };
+  if (s.startsWith("eu")) {
+    if (s.includes("tovar")) return { reverse_charge: true, reverse_charge_type: "eu_b2b", eu_plnenie: "tovar" };
+    if (s.includes("sluz")) return { reverse_charge: true, reverse_charge_type: "eu_b2b", eu_plnenie: "sluzba" };
+    if (s.includes("troj")) return { reverse_charge: true, reverse_charge_type: "eu_b2b", eu_plnenie: "trojstranny" };
+    return null;
+  }
+  if (s.startsWith("vyvoz") || s.startsWith("export"))
+    return { reverse_charge: true, reverse_charge_type: "export", eu_plnenie: "tovar" };
+  if (s.startsWith("mimo")) {
+    if (s.includes("sluz")) return { reverse_charge: true, reverse_charge_type: "export", eu_plnenie: "sluzba" };
+    if (s.includes("tovar")) return { reverse_charge: true, reverse_charge_type: "export", eu_plnenie: "tovar" };
+    return null;
+  }
+  return null;
+}
+
+type RezimPrijatej = { reverse_charge: boolean; dph_rezim: "tuzemsko" | "samozdanenie" | "nadobudnutie" | null };
+
+/** Režim DPH prijatej faktúry zo stĺpca. Prázdne = tuzemsko, neznáme = `null`. */
+export function rezimPrijatejZBunky(v: unknown): RezimPrijatej | null {
+  const s = normNazov(v).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  if (!s || s.startsWith("tuzem")) return { reverse_charge: false, dph_rezim: null };
+  // Tuzemské prenesenie (§ 69 ods. 12) — `reverse_charge`, režim prázdny (ako formulár).
+  if (s.startsWith("pren") || s.includes("pdp") || s.includes("69"))
+    return { reverse_charge: true, dph_rezim: null };
+  if (s.startsWith("nadob") || (s.startsWith("eu") && s.includes("tovar")))
+    return { reverse_charge: false, dph_rezim: "nadobudnutie" };
+  if (s.includes("sluz") || s.startsWith("samozd"))
+    return { reverse_charge: false, dph_rezim: "samozdanenie" };
+  return null;
+}
+
+/** Je partner z iného štátu (podľa IČ DPH, inak krajiny)? */
+function partnerZoZahranicia(icDph: unknown, krajina: unknown, domov: string): "eu" | "mimo_eu" | null {
+  const ic = rozdelIcDph(String(icDph ?? ""));
+  const kod = (ic?.kod === "EL" ? "GR" : ic?.kod) || String(krajina ?? "").trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(kod) || kod === domov) return null;
+  return jeKrajinaEu(kod) ? "eu" : "mimo_eu";
+}
+
+/**
+ * Overí sadzbu tuzemského plnenia: povinná a platná v krajine firmy ku dňu
+ * dodania (S16 — 20 % v roku 2026 či CZ 21 % na SK firme ticho skončili
+ * v inej priehradke). Vráti chybu alebo `null`.
+ */
+function chybaSadzby(
+  sadzba: number | null,
+  o: { krajina: string; den: string; kde: string; platitel: boolean },
+): string | null {
+  if (sadzba == null)
+    return o.platitel
+      ? `${o.kde}: chýba sadzba DPH — pri plnení bez DPH napíšte 0, pri prenesení či EÚ vyplňte Režim DPH`
+      : null;
+  if (Number.isNaN(sadzba)) return `${o.kde}: sadzba DPH nie je číslo`;
+  const platne = sadzbyKrajiny(krajinaDane(o.krajina), o.den);
+  if (!platne.some((x) => Math.abs(x - sadzba) < 0.001))
+    return `${o.kde}: sadzba ${sadzba} % k ${o.den} neplatí (platné: ${platne.join(", ")} %)`;
+  return null;
 }
 
 function platbaZBunky(v: unknown): string {
@@ -212,16 +312,43 @@ const text = (v: unknown, max = 255) =>
     .trim()
     .slice(0, max);
 
+/** Voliteľný dátum: prázdny = `""`, vyplnený zlý = `null` (chyba, nie ticho zahodiť — S16). */
+function volitelnyDatum(v: unknown): string | null {
+  if (v == null || String(v).trim() === "") return "";
+  return datumZBunky(v) || null;
+}
+
+/** Variabilný symbol: len číslice, najviac 10. „EU-1" nie je VS 1 (S16). */
+function vsZBunky(v: unknown): string | null {
+  const s = text(v, 40).replace(/\s/g, "");
+  if (!s) return "";
+  return /^\d{1,10}$/.test(s) ? s : null;
+}
+
 /**
  * Prevedie riadky šablóny na doklady. `riadky` sú objekty podľa hlavičky
  * (tak, ako ich vráti `sheet_to_json`); prázdne riadky sa preskočia.
+ *
+ * `firma` (riadok `companies`) určí krajinu sadzieb, platiteľa DPH a
+ * členenie DPH / KV tými istými funkciami ako doklad uložený vo Fakteri
+ * (`resolveVatClassification`, `resolveVatClassificationPrijatej`). Bez nej
+ * slovenský platiteľ a členenie z nastavení exportu.
  */
 export function prevedRiadky(
   druh: DruhKonvertora,
   riadky: Record<string, unknown>[],
-  opts: { domacaMena?: string } = {},
+  opts: {
+    domacaMena?: string;
+    firma?: Record<string, any> | null;
+    /** Číselníky firmy pre členenie (`nacitajKontextClenenia` / `nacitajKontextPrijatych`). */
+    kontextVydanych?: KontextClenenia;
+    kontextPrijatych?: KontextPrijatych;
+  } = {},
 ): VysledokKonvertora {
   const domaca = (opts.domacaMena || "EUR").toUpperCase();
+  const firma = opts.firma ?? null;
+  const krajina = krajinaDane(firma?.country);
+  const platitel = firma ? rezimFirmy(firma).platitel : true;
   const chyby: string[] = [];
   const zoznam = riadkyPodlaKluca(druh, riadky)
     .map((r, i) => ({ r, cisloRiadku: i + 2 }))
@@ -264,11 +391,61 @@ export function prevedRiadky(
       );
       continue;
     }
+    // Voliteľné dátumy: zlý dátum je chyba, nie ticho prázdne pole (S16).
+    const zlyDatum = (["dodanie", "splatnost", "dorucenie"] as const).find(
+      (k) => k in h && volitelnyDatum(h[k]) === null,
+    );
+    if (zlyDatum) {
+      const nazov = STLPCE_KONVERTORA[druh].find((s) => s.kluc === zlyDatum)?.nazov ?? zlyDatum;
+      chyby.push(`${odkial}: „${nazov}" nie je platný dátum (napr. 2026-10-01 alebo 1.10.2026)`);
+      continue;
+    }
     const mena = (text(h.mena, 3) || domaca).toUpperCase();
+    /*
+      Cudzia mena bez kurzu sa nedá zaúčtovať — Pohoda by dostala kurz 0
+      (V15). Je to chyba riadku, nie varovanie, ktoré sa dá odkliknúť.
+    */
+    const kurz = cisloZBunky(h.kurz);
+    if (mena !== domaca && !(kurz != null && kurz > 0)) {
+      chyby.push(`${odkial}: doklad v mene ${mena} potrebuje kurz (počet ${mena} za 1 ${domaca})`);
+      continue;
+    }
+    const vs = vsZBunky(h.vs);
+    if (vs === null) {
+      chyby.push(`${odkial}: variabilný symbol smie mať len číslice (najviac 10)`);
+      continue;
+    }
     const id = `XLS-${druh}-${odtlacok(`${kluc}|${vystavenie}`)}`;
     const dodanie = datumZBunky(h.dodanie);
+    const denSadzby = dodanie || vystavenie;
 
     if (druh === "vydane") {
+      const typ = normNazov(h.typ);
+      if (typ && !typ.startsWith("fakt") && !typ.startsWith("dobropis")) {
+        chyby.push(
+          `${odkial}: typ „${text(h.typ, 30)}" konvertor nepozná — len faktúra alebo dobropis` +
+            (/zaloh|proforma/.test(typ) ? " (zálohovú faktúru zadajte vo Fakteri alebo priamo v Pohode)" : ""),
+        );
+        continue;
+      }
+      const rezim = rezimVydanejZBunky(h.rezim);
+      if (!rezim) {
+        chyby.push(`${odkial}: Režim DPH „${text(h.rezim, 40)}" konvertor nepozná`);
+        continue;
+      }
+      // Odberateľ zo zahraničia bez vyplneného režimu by išiel ako tuzemské plnenie.
+      const zahranicie = platitel ? partnerZoZahranicia(h.icDph, h.krajina, krajina) : null;
+      if (!rezim.reverse_charge && zahranicie && (zahranicie === "mimo_eu" || rozdelIcDph(String(h.icDph ?? "")))) {
+        chyby.push(
+          `${odkial}: odberateľ je ${zahranicie === "eu" ? "z iného štátu EÚ" : "mimo EÚ"} — vyplňte Režim DPH (napr. EÚ tovar, EÚ služba, vývoz)`,
+        );
+        continue;
+      }
+      const pdpDruh = text(h.pdpDruh, 5).replace(/[).\s]/g, "");
+      if (pdpDruh && !platnyDruhPdp(krajina, pdpDruh)) {
+        chyby.push(`${odkial}: druh prenesenia „${pdpDruh}" nepoznáme (písmeno § 69 ods. 12)`);
+        continue;
+      }
       const items: Record<string, unknown>[] = [];
       let zla = "";
       for (const { r, cisloRiadku } of sk) {
@@ -278,15 +455,32 @@ export function prevedRiadky(
           zla = `Riadok ${cisloRiadku}: jednotková cena nie je číslo`;
           break;
         }
-        const sadzba = sadzbaZBunky(r.sadzba);
+        let sadzba = sadzbaZBunky(r.sadzba);
+        if (rezim.reverse_charge || !platitel) {
+          // Bez dane: prenesenie, EÚ a vývoz (aj neplatiteľ) — položka s 0 % ako vo Fakteri.
+          if (sadzba != null && sadzba !== 0) {
+            zla = !platitel
+              ? `Riadok ${cisloRiadku}: firma nie je platiteľ DPH — sadzbu nechajte prázdnu`
+              : `Riadok ${cisloRiadku}: pri režime ${text(h.rezim, 30)} sa DPH neúčtuje — sadzbu nechajte prázdnu`;
+            break;
+          }
+          sadzba = 0;
+        } else {
+          const ch = chybaSadzby(sadzba, { krajina, den: denSadzby, kde: `Riadok ${cisloRiadku}`, platitel });
+          if (ch) {
+            zla = ch;
+            break;
+          }
+        }
+        const s = sadzba ?? 0;
         const zaklad = r2(mnozstvo * cena);
-        const dph = r2((zaklad * sadzba) / 100);
+        const dph = r2((zaklad * s) / 100);
         items.push({
           name: text(r.polozka, 90),
           quantity: mnozstvo,
           unit: text(r.mj, 10) || "ks",
           unit_price: cena,
-          vat_rate: sadzba,
+          vat_rate: s,
           subtotal: zaklad,
           vat_amount: dph,
           total: r2(zaklad + dph),
@@ -298,41 +492,65 @@ export function prevedRiadky(
         chyby.push(zla);
         continue;
       }
-      const dobropis = normNazov(h.typ).startsWith("dobropis");
-      faktury.push({
-        invoice: {
-          id,
-          type: dobropis ? "credit_note" : "regular",
-          invoice_number: text(h.cislo, 32),
-          issue_date: vystavenie,
-          delivery_date: dodanie || vystavenie,
-          due_date: datumZBunky(h.splatnost) || null,
-          customer_name: text(h.partner, 96),
-          customer_ico: text(h.ico, 15) || null,
-          customer_dic: text(h.dic, 18) || null,
-          customer_ic_dph: text(h.icDph, 18) || null,
-          customer_street: text(h.ulica, 64) || null,
-          customer_city: text(h.mesto, 45) || null,
-          customer_zip: text(h.psc, 15) || null,
-          customer_country: text(h.krajina, 2).toUpperCase() || null,
-          customer_email: text(h.email, 98) || null,
-          variable_symbol: text(h.vs, 20).replace(/\D/g, "") || null,
-          constant_symbol: text(h.ks, 4).replace(/\D/g, "") || null,
-          currency: mena,
-          payment_method: platbaZBunky(h.platba),
-          intro_note: text(h.text, 240) || null,
-          notes: text(h.poznamka, 200) || null,
-          total: r2(items.reduce((a, it) => a + Number(it.total), 0)),
-          reverse_charge: false,
-          status: "issued",
-        },
-        items,
-      });
+      const dobropis = typ.startsWith("dobropis");
+      const invoice: Record<string, unknown> = {
+        id,
+        type: dobropis ? "credit_note" : "regular",
+        invoice_number: text(h.cislo, 32),
+        issue_date: vystavenie,
+        delivery_date: dodanie || vystavenie,
+        due_date: datumZBunky(h.splatnost) || null,
+        customer_name: text(h.partner, 96),
+        customer_ico: text(h.ico, 15) || null,
+        customer_dic: text(h.dic, 18) || null,
+        customer_ic_dph: text(h.icDph, 18) || null,
+        customer_street: text(h.ulica, 64) || null,
+        customer_city: text(h.mesto, 45) || null,
+        customer_zip: text(h.psc, 15) || null,
+        customer_country: text(h.krajina, 2).toUpperCase() || null,
+        customer_email: text(h.email, 98) || null,
+        variable_symbol: vs || null,
+        constant_symbol: text(h.ks, 4).replace(/\D/g, "") || null,
+        currency: mena,
+        exchange_rate: mena !== domaca ? kurz : null,
+        payment_method: platbaZBunky(h.platba),
+        intro_note: text(h.text, 240) || null,
+        notes: text(h.poznamka, 200) || null,
+        subtotal: r2(items.reduce((a, it) => a + Number(it.subtotal), 0)),
+        vat_total: r2(items.reduce((a, it) => a + Number(it.vat_amount), 0)),
+        total: r2(items.reduce((a, it) => a + Number(it.total), 0)),
+        ...rezim,
+        pdp_druh: rezim.reverse_charge_type === "domestic_69" ? platnyDruhPdp(krajina, pdpDruh) : null,
+        status: "issued",
+      };
+      /*
+        Členenie DPH a KV — to isté, čo dostane faktúra uložená vo Fakteri
+        (`resolveVatClassification`). Vyplnené členenie v položkách prebíja.
+      */
+      if (firma) {
+        const v = resolveVatClassification(firma as any, invoice as any, opts.kontextVydanych ?? {});
+        invoice.pohoda_clenenie_dph = v.pohoda_clenenie_dph;
+        invoice.kv_clenenie = v.kv_clenenie;
+        // Bez členenia by export dal predvolené tuzemské — radšej zastaviť.
+        if (rezim.reverse_charge && platitel && !v.pohoda_clenenie_dph && items.some((it) => !it.pohoda_clenenie_dph)) {
+          chyby.push(`${odkial}: členenie DPH pre režim ${text(h.rezim, 30)} sa nedá určiť — vyplňte stĺpec Členenie DPH`);
+          continue;
+        }
+      }
+      faktury.push({ invoice, items });
       continue;
     }
 
+    const rezimPrijatej = druh === "prijate" ? rezimPrijatejZBunky(h.rezim) : { reverse_charge: false, dph_rezim: null };
+    if (!rezimPrijatej) {
+      chyby.push(`${odkial}: Režim DPH „${text(h.rezim, 40)}" konvertor nepozná`);
+      continue;
+    }
+    const samozdanenie = rezimPrijatej.reverse_charge || rezimPrijatej.dph_rezim != null;
+    const zahranicie = platitel ? partnerZoZahranicia(h.icDph, h.krajina, krajina) : null;
+
     // Prijatá faktúra a bloček — rozpis po sadzbách.
-    const po = new Map<number, { sadzba: number; zaklad: number; dph: number }>();
+    const po = new Map<number, { sadzba: number; zaklad: number; dph: number; pdp?: boolean }>();
     let zla = "";
     for (const { r, cisloRiadku } of sk) {
       const zaklad = cisloZBunky(r.zaklad);
@@ -340,58 +558,121 @@ export function prevedRiadky(
         zla = `Riadok ${cisloRiadku}: základ DPH nie je číslo`;
         break;
       }
-      const sadzba = sadzbaZBunky(r.sadzba);
-      const dph = cisloZBunky(r.dph) ?? r2((zaklad * sadzba) / 100);
-      const x = po.get(sadzba) ?? { sadzba, zaklad: 0, dph: 0 };
+      let sadzba = sadzbaZBunky(r.sadzba);
+      if (samozdanenie) {
+        // Samozdanenie: dodávateľ daň neúčtoval; sadzbu (ak chýba) doplní export (`sadzbaSamozdanenia`).
+        if (Number(cisloZBunky(r.dph) ?? 0)) {
+          zla = `Riadok ${cisloRiadku}: pri režime ${text(h.rezim, 30)} dodávateľ DPH neúčtuje — stĺpec DPH nechajte prázdny`;
+          break;
+        }
+        if (sadzba != null && Number.isNaN(sadzba)) {
+          zla = `Riadok ${cisloRiadku}: sadzba DPH nie je číslo`;
+          break;
+        }
+        sadzba = sadzba ?? 0;
+      } else if (!zahranicie) {
+        // Cudzia DPH (hotel v Rakúsku) má sadzby inej krajiny — tú nekontrolujeme.
+        const ch = chybaSadzby(sadzba, { krajina, den: denSadzby, kde: `Riadok ${cisloRiadku}`, platitel });
+        if (ch) {
+          zla = ch;
+          break;
+        }
+      } else if (sadzba == null || Number.isNaN(sadzba)) {
+        zla = `Riadok ${cisloRiadku}: chýba sadzba DPH (pri doklade bez DPH napíšte 0)`;
+        break;
+      }
+      const s = sadzba ?? 0;
+      const dph = samozdanenie ? 0 : (cisloZBunky(r.dph) ?? r2((zaklad * s) / 100));
+      const x = po.get(s) ?? { sadzba: s, zaklad: 0, dph: 0, ...(samozdanenie ? { pdp: true } : {}) };
       x.zaklad = r2(x.zaklad + zaklad);
       x.dph = r2(x.dph + dph);
-      po.set(sadzba, x);
+      po.set(s, x);
     }
     if (zla) {
       chyby.push(zla);
       continue;
     }
     const rozpis = zoradPodlaSadzby([...po.values()], "sadzba");
-    const spolu = r2(rozpis.reduce((a, x) => a + x.zaklad + x.dph, 0));
-    const spolocne = {
-      id,
-      supplier_name: text(h.partner, 96),
-      supplier_ico: text(h.ico, 15) || null,
-      supplier_ic_dph: text(h.icDph, 18) || null,
-      document_number: text(h.cislo, 32) || null,
-      issue_date: vystavenie,
-      currency: mena,
-      payment_method: platbaZBunky(h.platba),
-      note: text(h.poznamka, 200) || null,
-      pohoda_predkontacia: text(h.predkontacia, 30) || null,
-      pohoda_clenenie_dph: text(h.clenenie, 30) || null,
-      total_amount: spolu,
-      net_amount: r2(rozpis.reduce((a, x) => a + x.zaklad, 0)),
-      vat_amount: r2(rozpis.reduce((a, x) => a + x.dph, 0)),
-      vat_breakdown: rozpis,
-    };
-    if (druh === "blocky") {
-      doklady.push(spolocne);
+    const zakladSpolu = r2(rozpis.reduce((a, x) => a + x.zaklad, 0));
+    const dphSpolu = r2(rozpis.reduce((a, x) => a + x.dph, 0));
+    const spolu = r2(zakladSpolu + dphSpolu);
+    // Zahraničný dodávateľ bez dane a bez režimu by išiel ako tuzemský nákup bez samozdanenia.
+    if (druh === "prijate" && !samozdanenie && zahranicie && !dphSpolu && zakladSpolu) {
+      chyby.push(
+        `${odkial}: dodávateľ je zo zahraničia a faktúra je bez DPH — vyplňte Režim DPH (nadobudnutie z EÚ, služba zo zahraničia)`,
+      );
       continue;
     }
-    const vs = text(h.vs, 20).replace(/\D/g, "");
-    doklady.push({
-      ...spolocne,
+    if (druh === "blocky") {
+      doklady.push({
+        id,
+        supplier_name: text(h.partner, 96),
+        supplier_ico: text(h.ico, 15) || null,
+        supplier_ic_dph: text(h.icDph, 18) || null,
+        document_number: text(h.cislo, 32) || null,
+        issue_date: vystavenie,
+        currency: mena,
+        payment_method: platbaZBunky(h.platba),
+        note: text(h.poznamka, 200) || null,
+        pohoda_predkontacia: text(h.predkontacia, 30) || null,
+        pohoda_clenenie_dph: text(h.clenenie, 30) || null,
+        total_amount: spolu,
+        net_amount: zakladSpolu,
+        vat_amount: dphSpolu,
+        vat_breakdown: rozpis,
+      });
+      continue;
+    }
+    /*
+      Prijatá faktúra ide cez `prijataAkoDoklad` — ten istý prevod ako
+      faktúra uložená vo Fakteri: dátum prijatia (`_datumPrijatia`) posúva
+      odpočet (V15), samozdanenie a prenesenie nesú `_samozdanenie`/`_pdp`.
+    */
+    const riadok: Record<string, any> = {
+      id,
+      company_id: firma?.id ?? null,
+      type: "invoice",
+      invoice_number: text(h.cislo, 32),
+      variable_symbol: vs || null,
+      issue_date: vystavenie,
+      delivery_date: dodanie || null,
+      received_date: datumZBunky(h.dorucenie) || null,
+      due_date: datumZBunky(h.splatnost) || null,
+      supplier_name: text(h.partner, 96),
+      supplier_ico: text(h.ico, 15) || null,
       supplier_dic: text(h.dic, 18) || null,
+      supplier_ic_dph: text(h.icDph, 18) || null,
       supplier_street: text(h.ulica, 64) || null,
       supplier_city: text(h.mesto, 45) || null,
       supplier_zip: text(h.psc, 15) || null,
       supplier_country: text(h.krajina, 2).toUpperCase() || null,
-      _typPohody: spolu < 0 ? "receivedCreditNotice" : "receivedInvoice",
-      _povodneCislo: text(h.cislo, 32),
-      _symVar: vs || null,
-      _datumDph: dodanie || vystavenie,
-      _datumDorucenia: datumZBunky(h.dorucenie) || null,
-      _splatnost: datumZBunky(h.splatnost) || null,
-      _ucetDodavatela: text(h.iban, 34).replace(/\s/g, "") || null,
-      _kurz: cisloZBunky(h.kurz),
-      _text: text(h.text, 240) || null,
-    });
+      supplier_iban: text(h.iban, 34).replace(/\s/g, "") || null,
+      currency: mena,
+      exchange_rate: mena !== domaca ? kurz : null,
+      payment_method: platbaZBunky(h.platba),
+      intro_note: text(h.text, 240) || null,
+      note: text(h.poznamka, 200) || null,
+      pohoda_predkontacia: text(h.predkontacia, 30) || null,
+      pohoda_clenenie_dph: text(h.clenenie, 30) || null,
+      amount_without_vat: zakladSpolu,
+      vat_amount: dphSpolu,
+      amount_total: spolu,
+      vat_breakdown: rozpis,
+      ...rezimPrijatej,
+    };
+    if (firma) {
+      const v = resolveVatClassificationPrijatej(firma as any, "prijata", riadok, opts.kontextPrijatych ?? {});
+      riadok.pohoda_clenenie_dph = v.pohoda_clenenie_dph;
+      riadok.kv_clenenie = v.kv_clenenie;
+      // Samozdanenie bez členenia by export zapísal ako tuzemský nákup — radšej zastaviť.
+      if (samozdanenie && platitel && !v.pohoda_clenenie_dph) {
+        chyby.push(
+          `${odkial}: členenie DPH pre režim ${text(h.rezim, 30)} sa nedá určiť z číselníka firmy — vyplňte stĺpec Členenie DPH`,
+        );
+        continue;
+      }
+    }
+    doklady.push(prijataAkoDoklad(riadok));
   }
 
   return { faktury, doklady, chyby };

@@ -715,6 +715,11 @@ export async function zostavVypisUctu(
     opening: sums.opening,
     closing: sums.closing,
     partialFrom: ciastocnyOd,
+    /*
+      Vlastné výpisy sú mesačné — poradové číslo výpisu v roku je mesiac
+      konca obdobia. Predtým išla nula (S14) a POHODA mala všetky výpisy č. 0.
+    */
+    sequenceNumber: Number(String(end).slice(5, 7)) || null,
   };
   return { ok: true, input, najstarsi, ciastocnyOd };
 }

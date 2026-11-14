@@ -70,12 +70,20 @@ describe("resolveVatClassification — systémový fallback (1d)", () => {
         vat_total: 0,
         reverse_charge: true,
         reverse_charge_type: "eu_b2b",
+        eu_plnenie: "sluzba",
         customer_country: "CZ",
         customer_ic_dph: "CZ12345678",
       },
       { ciselnik },
     );
     expect([eu.pohoda_clenenie_dph, eu.kv_clenenie]).toEqual(["UDsluzEU", null]);
+    // Dodanie do EÚ bez druhu je tovar (ako priznanie a API) — firma kód nemá → štandardný UDdodEU POHODY SK.
+    const euTovar = resolveVatClassification(
+      platitel,
+      { type: "regular", vat_total: 0, reverse_charge: true, reverse_charge_type: "eu_b2b", customer_country: "CZ" },
+      { ciselnik },
+    );
+    expect([euTovar.pohoda_clenenie_dph, euTovar.kv_clenenie]).toEqual(["UDdodEU", null]);
     const vyvoz = resolveVatClassification(
       platitel,
       { type: "regular", vat_total: 0, reverse_charge: true, reverse_charge_type: "export", customer_country: "US" },

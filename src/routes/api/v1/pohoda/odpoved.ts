@@ -7,6 +7,10 @@
  *
  *   POST /api/v1/pohoda/odpoved
  *   Content-Type: text/xml   (telo je súbor z `response_dir`)
+ *   POST /api/v1/pohoda/odpoved?bez_odpovede=1 — POHODA nevrátila nič, vráť dávku do fronty
+ *
+ * Doklad je odovzdaný (a zamknutý) až tu, po potvrdení POHODOU — pri
+ * stiahnutí dávky sa len zapíše, že je na ceste.
  */
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -33,6 +37,27 @@ export const Route = createFileRoute("/api/v1/pohoda/odpoved")({
         }
 
         try {
+          /*
+            Konektor hlási, že POHODA nevrátila žiadnu odpoveď (alebo dávka prišla
+            odrezaná) — posledná čakajúca dávka sa vráti do fronty hneď (K3).
+          */
+          if (new URL(request.url).searchParams.get("bez_odpovede") === "1") {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { odmietniPoslednuDavku } = await import(
+              "@/lib/faktero/pohoda-konektor-potvrdenie.server"
+            );
+            const r = await odmietniPoslednuDavku(
+              supabaseAdmin,
+              kluc.company_id,
+              "POHODA nevrátila žiadnu odpoveď (zlé meno alebo heslo, iná databáza, POHODA sa nespustila alebo dávka prišla neúplná) — doklady sa vrátili do fronty a pôjdu znova v ďalšej dávke.",
+            );
+            const { zapisVolanieKonektora } = await import("@/lib/faktero/api-auth.server");
+            await zapisVolanieKonektora(kluc, request, 200);
+            return new Response(JSON.stringify({ ok: true, ...r }), {
+              status: 200,
+              headers: { "content-type": "application/json; charset=utf-8" },
+            });
+          }
           const { dekodujOdpoved, spracujOdpoved } =
             await import("@/lib/faktero/pohoda-konektor.server");
           // Pohoda zapisuje odpoveď vo Windows-1250; kódovanie sa berie z

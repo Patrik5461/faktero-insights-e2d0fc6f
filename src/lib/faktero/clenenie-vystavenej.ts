@@ -14,6 +14,7 @@
 */
 
 import { kodClenenia, odvodClenenia, type KodCiselnika } from "./auto-uctovanie";
+import { SYSTEMOVE_CLENENIA_DPH } from "./predkontacie-systemove";
 import { kvOpravnehoZPovodnej, kvSekcia, kvVystavenehoDokladu } from "./kv-urcenie";
 import { ZAKLADNE_CLENENIA_DPH } from "./predkontacie";
 import { rezimFirmy } from "./dph-rezim";
@@ -88,12 +89,192 @@ export function navrhClenenieVystavenej(o: {
       ),
     ).clenenieDph;
   if (tuzemskePdp && t(o.pdpFirmy)) return { kod: t(o.pdpFirmy), zdroj: "firma" };
+  /*
+    Predaj na diaľku cez OSS, dodanie do EÚ, trojstranný obchod a vývoz majú
+    vlastné členenie z číselníka Pohody (UN, UDdodEU, UDdod3, UNodpS…) —
+    predvolené tuzemské (UD) by ich poslalo do slovenského priznania a KV D.2
+    (nález K1: nemecká DPH v slovenskom priznaní), predvolené prenesenie
+    (UDpdp) do riadku tuzemského prenesenia (nález V2).
+  */
+  if (!tuzemskePdp) {
+    const mimo = clenenieMimoTuzemska(
+      {
+        reverseCharge: d.reverseCharge,
+        reverseChargeType: d.reverseChargeType,
+        euPlnenie: d.euPlnenie,
+        ossKrajina: d.ossKrajina,
+      },
+      o.krajinaFirmy,
+      o.ciselnik,
+    );
+    if (mimo !== undefined) {
+      if (mimo) return { kod: mimo, zdroj: "rezim" };
+      const kod = odvodene();
+      return kod ? { kod, zdroj: "rezim" } : null;
+    }
+  }
   // Predvolené firmy je pre bežné tuzemské plnenie — nie pre prenesenie ani doklad bez DPH.
   const sDph = d.dph == null || Math.abs(Number(d.dph) || 0) >= 0.005;
   if (!d.reverseCharge && sDph && t(o.predvoleneFirmy))
     return { kod: t(o.predvoleneFirmy), zdroj: "firma" };
   const kod = odvodene();
   return kod ? { kod, zdroj: "rezim" } : null;
+}
+
+// ───────────────── plnenie mimo tuzemska (OSS, EÚ, vývoz) ─────────────────
+
+/*
+  Členenie DPH vystavenej faktúry, ktorej plnenie nepatrí do tuzemského
+  riadku priznania. Kódy sú zo štandardného číselníka slovenskej POHODY
+  (`listClassificationVATRequest`, predkontacie-systemove.ts):
+
+    OSS (predaj na diaľku, § 68c/MOSS)  → UN       „Nezahrňovať do priznania DPH“ (5 U)
+                                                   — daň sa priznáva v OSS, nie v SK priznaní ani v KV
+    dodanie tovaru do EÚ (§ 43)         → UDdodEU  „Dodanie tovaru do iného štátu EU“ (U04)
+                                                   — r. 14 priznania + súhrnný výkaz
+    trojstranný obchod (§ 45)           → UDdod3   „… druhým podnikateľom pri trojstrannom obchode“ (U07)
+    služba do EÚ (§ 15 ods. 1)          → UDzahrSl „Miesto plnenia v zahraničí …“ (U22) — súhrnný výkaz
+    vývoz tovaru (§ 47)                 → UNodpS   „Oslobodené plnenia s možnosťou odpoč. dane“ (U08) — r. 15
+    služba mimo EÚ                      → UDzahr   „Miesto plnenia v zahraničí …“ (U12) — mimo priznania
+
+  Firma s vlastným číselníkom dostane rovnaký kód, ak ho má; inak kód podľa
+  popisu. Do KV DPH tieto plnenia nepatria (kv-urcenie.ts: oslobodené
+  dodanie a UN do KV nejdú).
+
+  Dodanie do EÚ bez bližšieho druhu (`eu_plnenie` prázdne) je tovar — tak
+  ho berie priznanie Faktera (r. 13/14, `priznanie` v dph-vykazy.ts) aj API.
+*/
+
+type MimoTuzemska = "oss" | "eu_tovar" | "trojstranny" | "eu_sluzba" | "vyvoz" | "vyvoz_sluzba";
+
+const KODY_MIMO: Record<MimoTuzemska, { kod: string; re: RegExp[] }> = {
+  oss: { kod: "UN", re: [/^nezahr[ňn]ova[ťt] do priznania/i, /nezahr/i] },
+  eu_tovar: { kod: "UDdodEU", re: [/dodanie tovaru do in[ée]ho [šs]t[áa]tu e[uú]/i, /§\s*43/i] },
+  trojstranny: { kod: "UDdod3", re: [/trojstrann/i] },
+  eu_sluzba: { kod: "UDzahrSl", re: [/slu[žz].*(e[uú]|člensk)/i, /§\s*15/i, /miesto plnenia v zahrani/i] },
+  vyvoz: { kod: "UNodpS", re: [/v[ýy]voz/i, /§\s*47/i, /oslobod\S* plnenia s mo[žz]nos[ťt]ou odpo/i] },
+  vyvoz_sluzba: { kod: "UDzahr", re: [/miesto plnenia v zahrani/i] },
+};
+
+/** Druh plnenia mimo tuzemska, alebo `null` pre tuzemské plnenie (a tuzemské prenesenie). */
+export function druhMimoTuzemska(d: {
+  reverseCharge?: boolean | null;
+  reverseChargeType?: string | null;
+  euPlnenie?: string | null;
+  ossKrajina?: string | null;
+  oss?: boolean | null;
+}): MimoTuzemska | null {
+  const t = (v: unknown) => String(v ?? "").trim();
+  if (d.oss || t(d.ossKrajina)) return "oss";
+  const typ = t(d.reverseChargeType);
+  if (typ === "domestic_69") return null;
+  const eu = t(d.euPlnenie);
+  if (typ === "export") return eu === "sluzba" ? "vyvoz_sluzba" : "vyvoz";
+  if (typ === "eu_b2b" || (eu && d.reverseCharge)) {
+    if (eu === "trojstranny") return "trojstranny";
+    return eu === "sluzba" ? "eu_sluzba" : "eu_tovar";
+  }
+  return null;
+}
+
+/** Vydané členenia z číselníka firmy; slovenská firma bez číselníka → systémový zoznam POHODY SK. */
+export function cleneniaVydanychPreRezim(
+  ciselnik: { kod: string; popis?: string | null; agenda?: string | null; druh?: string | null; aktivne?: boolean | null }[] | null | undefined,
+  krajinaFirmy?: string | null,
+): { kod: string; popis: string | null; agenda: string | null }[] {
+  const vlastne = (ciselnik ?? [])
+    .filter((z) => (z.druh ?? "clenenie_dph") === "clenenie_dph" && z.aktivne !== false && String(z.kod ?? "").trim())
+    .map((z) => ({ kod: String(z.kod).trim(), popis: z.popis ?? null, agenda: z.agenda ?? null }));
+  const sk = String(krajinaFirmy || "SK").toUpperCase() === "SK";
+  const zoznam =
+    vlastne.length || !sk
+      ? vlastne
+      : SYSTEMOVE_CLENENIA_DPH.map(([kod, popis, agenda]) => ({ kod, popis, agenda }));
+  // Len výstup: riadok priznania „U“ (bez agendy podľa prvého písmena kódu).
+  return zoznam.filter((z) => {
+    const riadok = /\b([PUD])\d{2}\b/i.exec(String(z.agenda ?? ""))?.[1] ?? /^\d+\s+([PUD])$/i.exec(String(z.agenda ?? "").trim())?.[1];
+    return (riadok ?? z.kod.charAt(0)).toUpperCase() === "U";
+  });
+}
+
+/**
+ * Členenie DPH plnenia mimo tuzemska: `undefined` = tuzemské plnenie (rieši
+ * volajúci), `null` = mimo tuzemska, ale číselník firmy vhodný kód nemá,
+ * inak kód z číselníka (systémového pre SK firmu bez vlastného).
+ */
+export function clenenieMimoTuzemska(
+  d: Parameters<typeof druhMimoTuzemska>[0],
+  krajinaFirmy: string | null | undefined,
+  ciselnik?: { kod: string; popis?: string | null; agenda?: string | null; druh?: string | null; aktivne?: boolean | null }[] | null,
+): string | null | undefined {
+  const druh = druhMimoTuzemska(d);
+  if (!druh) return undefined;
+  const { kod, re } = KODY_MIMO[druh];
+  const hladaj = (zoznam: { kod: string; popis: string | null }[]) => {
+    const presne = zoznam.find((z) => z.kod === kod);
+    if (presne) return presne.kod;
+    for (const r of re) {
+      const hit = zoznam.filter((z) => r.test(String(z.popis ?? "")));
+      if (hit.length) return [...hit].sort((a, b) => String(a.popis ?? "").length - String(b.popis ?? "").length)[0].kod;
+    }
+    return null;
+  };
+  /*
+    Číselník firmy, a keď v ňom kód nie je (skrátený zoznam, vypnutý kód),
+    slovenská firma dostane kód zo štandardného číselníka POHODY SK — ten
+    POHODA pozná vždy.
+  */
+  return (
+    hladaj(cleneniaVydanychPreRezim(ciselnik, krajinaFirmy)) ??
+    (String(krajinaFirmy || "SK").toUpperCase() === "SK" ? hladaj(cleneniaVydanychPreRezim([], "SK")) : null)
+  );
+}
+
+/** Tuzemské členenia DPH vydaných (UD, UK, prenesenie) — OSS, EÚ ani vývoz ich mať nesmú. */
+const TUZEMSKE_VYDANE = /^(UD|UK|UDpdp|UKpdp|UN§69|URozdiel|UKrozdiel)$/i;
+
+/**
+ * Prekážka exportu: plnenie mimo tuzemska (OSS, dodanie do EÚ, vývoz) má
+ * uložené tuzemské členenie DPH — POHODA by ho zaúčtovala do slovenského
+ * priznania (OSS s cudzou DPH, nálezy K1 a V2). `null` = v poriadku.
+ */
+export function chybaClenenieMimoTuzemska(
+  inv: {
+    reverse_charge?: boolean | null;
+    reverse_charge_type?: string | null;
+    eu_plnenie?: string | null;
+    oss?: boolean | null;
+    oss_country?: string | null;
+    pohoda_clenenie_dph?: string | null;
+    kv_clenenie?: string | null;
+    type?: string | null;
+  },
+  krajinaFirmy?: string | null,
+): string | null {
+  if (inv.type === "proforma") return null;
+  const druh = druhMimoTuzemska({
+    reverseCharge: inv.reverse_charge,
+    reverseChargeType: inv.reverse_charge_type,
+    euPlnenie: inv.eu_plnenie,
+    oss: inv.oss,
+    ossKrajina: inv.oss ? inv.oss_country : null,
+  });
+  if (!druh || String(krajinaFirmy || "SK").toUpperCase() !== "SK") return null;
+  const cl = String(inv.pohoda_clenenie_dph ?? "").trim();
+  const kv = String(inv.kv_clenenie ?? "").trim().toUpperCase();
+  // Do KV DPH nepatria (A.1/A.2/D.x by ich nahlásili ako tuzemské plnenie); „X“ je v poriadku.
+  if (kv && kv !== "X" && /^(A1|A2|D1|D2)/.test(kv))
+    return `členenie KV DPH ${kv}, ale ${
+      druh === "oss" ? "predaj cez OSS" : druh === "vyvoz" || druh === "vyvoz_sluzba" ? "vývoz" : "dodanie do EÚ"
+    } do kontrolného výkazu nepatrí — zrušte členenie KV v zaúčtovaní faktúry`;
+  if (!cl || !TUZEMSKE_VYDANE.test(cl)) return null;
+  const co =
+    druh === "oss"
+      ? "predaj cez OSS nepatrí do slovenského priznania DPH ani do KV (členenie UN)"
+      : druh === "vyvoz" || druh === "vyvoz_sluzba"
+        ? "vývoz nie je tuzemské plnenie (členenie UNodpS, služba UDzahr)"
+        : "dodanie do EÚ nie je tuzemské plnenie (členenie UDdodEU, služba UDzahrSl, trojstranný obchod UDdod3)";
+  return `tuzemské členenie DPH ${cl}, ale ${co} — opravte členenie v zaúčtovaní faktúry`;
 }
 
 // ───────────────── jedno rozhodnutie pre uložený doklad ─────────────────
@@ -304,6 +485,12 @@ export function resolveVatClassification(
   const maDph = Math.abs(Number(invoice.vat_total ?? 0) || 0) >= 0.005;
   const pr = ctx.pravidlo ?? null;
   const pov = opravny ? (ctx.povodna ?? null) : null;
+  const mimoTuzemska = druhMimoTuzemska({
+    reverseCharge: invoice.reverse_charge,
+    reverseChargeType: invoice.reverse_charge_type,
+    euPlnenie: invoice.eu_plnenie,
+    ossKrajina: invoice.oss_country,
+  });
 
   // ── členenie DPH (Pohoda) — nemecká firma účtuje cez DATEV, tá ho nemá.
   let clenenie: string | null = null;
@@ -314,7 +501,9 @@ export function resolveVatClassification(
       → UD“ nesmie dať UD faktúre s tuzemským prenesením (a UDpdp bežnej).
     */
     const clPr = txt(pr?.clenenie_dph);
-    if (clPr && jePdpClenenie(clPr) === tuzemskePdp) [clenenie, zdrojCl] = [clPr, "pravidlo"];
+    // Ani tuzemský kód z pravidla („všetky vystavené → UD“) nedostane OSS, EÚ či vývoz (K1, V2).
+    if (clPr && jePdpClenenie(clPr) === tuzemskePdp && !(mimoTuzemska && TUZEMSKE_VYDANE.test(clPr)))
+      [clenenie, zdrojCl] = [clPr, "pravidlo"];
     else if (!platitel) clenenie = null;
     else if (txt(pov?.pohoda_clenenie_dph)) [clenenie, zdrojCl] = [txt(pov?.pohoda_clenenie_dph), "povodna"];
     else {
@@ -355,8 +544,12 @@ export function resolveVatClassification(
     const kvPr = txt(pr?.kv_clenenie)?.toUpperCase() ?? null;
     // Opravný doklad A.1/A.2 z pravidla pre faktúry nedostane (ako spúšťač v DB);
     // A.2 patrí len tuzemskému preneseniu a prenesenie nedostane A.1 / D.2.
+    // OSS, EÚ a vývoz do KV nepatria — z pravidla len „X“.
     const kvSediRezimu =
-      kvPr && !(opravny && (kvPr === "A1" || kvSekcia(kvPr) === "A2")) && (kvSekcia(kvPr) === "A2") === tuzemskePdp
+      kvPr &&
+      !mimoTuzemska &&
+      !(opravny && (kvPr === "A1" || kvSekcia(kvPr) === "A2")) &&
+      (kvSekcia(kvPr) === "A2") === tuzemskePdp
         ? true
         : kvPr === "X";
     // Všeobecné A2 z pravidla dostane podkód (Pohoda A2 bez podkódu nepozná).

@@ -15,6 +15,7 @@ import {
   ZAMOK_DOKLADU,
   ZAMOK_FAKTURY,
   ZAMOK_POLOZKY_FAKTURY,
+  ZAMOK_POKLADNE,
   ZAMOK_PRIJATEJ,
 } from "./pohoda-zamok";
 
@@ -52,6 +53,7 @@ describe("zámok po odovzdaní — migrácia a zoznamy polí", () => {
     ["invoice_items_zamok_odovzdania", ZAMOK_POLOZKY_FAKTURY],
     ["purchase_invoices_zamok_odovzdania", ZAMOK_PRIJATEJ],
     ["expense_documents_zamok_odovzdania", ZAMOK_DOKLADU],
+    ["cash_entries_zamok_odovzdania", ZAMOK_POKLADNE],
     ["invoices_historia", HISTORIA_FAKTURY],
   ] as const)("%s nesie presne polia z pohoda-zamok.ts", (spustac, polia) => {
     expect(argumenty(spustac)).toEqual([...polia]);
@@ -76,6 +78,15 @@ describe("zámok po odovzdaní — migrácia a zoznamy polí", () => {
     ])
       expect(ZAMOK_PRIJATEJ).toContain(p);
     expect(ZAMOK_DOKLADU).toContain("items");
+  });
+
+  it("S21: pokladničný doklad je po odovzdaní zamknutý aj proti zmazaniu", () => {
+    const pokladna = sqlOdNajnovsej.find((t) => /create trigger cash_entries_zamok_odovzdania/.test(t)) ?? "";
+    expect(pokladna).toMatch(/cash_entries_zamok_odovzdania\s+before update or delete on public\.cash_entries/);
+    expect(pokladna).toContain("execute function public.zamok_odovzdaneho_dokladu(");
+    // Vrátenie z Pohody mení len príznak odovzdania a číslo v Pohode — tie voľné ostávajú.
+    for (const p of ["exported_at", "export_job_id", "pohoda_cislo", "pohoda_verzia"])
+      expect(ZAMOK_POKLADNE).not.toContain(p as any);
   });
 
   it("bločky a prijaté sa po odovzdaní nedajú zmazať natvrdo", () => {

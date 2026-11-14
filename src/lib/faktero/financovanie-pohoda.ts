@@ -79,7 +79,38 @@ export type SplatkaPreExport = {
   kv_clenenie?: string | null;
   /** Rozúčtovanie zložiek len pre túto splátku (prebíja kalendár). */
   pohoda_rozuctovanie?: Rozuctovanie | null;
+  /**
+   * Koľkokrát bola splátka vrátená z Pohody (`financing_installments.pohoda_verzia`).
+   * Je súčasťou `dataPackItem@id` — opakovaný export tej istej verzie POHODA
+   * odmietne ako duplicitu, po vrátení ide nová verzia (V8).
+   */
+  pohoda_verzia?: number | null;
+  /** Kedy bola splátka označená ako exportovaná. */
+  exported_at?: string | null;
 };
+
+/**
+ * Identifikátor balíka splátok — **stály**, ako pri ostatných exportoch
+ * (`ID_BALIKA` v export.server.ts). POHODA kontroluje duplicitu podľa dvojice
+ * `dataPack@id` + `dataPackItem@id`; predtým tu bolo `SPL<čas>`, takže každé
+ * ďalšie stiahnutie nahralo celý kalendár znova (V8).
+ */
+export const ID_BALIKA_SPLATOK = "FAKTERO";
+
+/** `dataPackItem@id` splátky: id splátky a po vrátení z Pohody aj verzia. */
+export function idSplatkyPohody(splatka: Pick<SplatkaPreExport, "id" | "pohoda_verzia">): string {
+  const v = Math.trunc(Number(splatka.pohoda_verzia) || 0);
+  return `SPL-${splatka.id}${v > 0 ? `-${v}` : ""}`;
+}
+
+/** Predkontácia hlavičky rozúčtovaného záväzku — v Pohode „Rozúčtovať“ (CZ „Rozúčtovat“). */
+export function predkontaciaRozuctovat(krajina: KrajinaDane, vlastna?: string | null): string {
+  return txt(vlastna) || (krajina === "CZ" ? "Rozúčtovat" : "Rozúčtovať");
+}
+
+/** Členenie DPH „nezahŕňať do DPH“ (type.xsd `classificationVATType`). */
+const NEZAHRNOVAT =
+  "<typ:classificationVATType>nonSubsume</typ:classificationVATType>";
 
 export type KodyZauctovania = {
   predkontacia: string | null;
@@ -317,6 +348,13 @@ export function polozkySplatky(
   return { polozky, vyhrady };
 }
 
+/** Platí sadzba v deň splatnosti? (0 = bez DPH platí vždy.) */
+export function sadzbaPlatiKuDnu(sadzba: number, den: string, krajina: KrajinaDane): boolean {
+  if (!sadzba) return true;
+  const tab = sadzbyKuDnu(krajina, den);
+  return sadzba === tab.high || sadzba === tab.low || (tab.third != null && sadzba === tab.third);
+}
+
 function priehradka(sadzba: number, den: string, krajina: KrajinaDane): Priehradka {
   if (!sadzba) return "none";
   const tab = sadzbyKuDnu(krajina, den);
@@ -402,6 +440,16 @@ export function textSplatky(zmluva: ZmluvaPreExport, splatka: SplatkaPreExport, 
 
 function polozkaXml(p: PolozkaSplatky, kody: KodyZauctovania, den: string, krajina: KrajinaDane, kv: string | null): string {
   const o = "          ";
+  /*
+    Položka bez DPH (istina, úrok § 39, poistenie, poplatok) bez výslovného
+    členenia ide „nezahŕňať do DPH“ — inak by POHODA predvolila tuzemské
+    plnenie a záväzok by sa objavil v priznaní (S13).
+  */
+  const clenenieXml = kody.clenenie
+    ? `\n${o}<inv:classificationVAT><typ:ids>${esc(kody.clenenie)}</typ:ids></inv:classificationVAT>`
+    : p.dph === 0 && !p.sadzba
+      ? `\n${o}<inv:classificationVAT>${NEZAHRNOVAT}</inv:classificationVAT>`
+      : "";
   return `
         <inv:invoiceItem>${el("inv:text", skrat(p.text, 90), o)}
           <inv:quantity>1</inv:quantity>
@@ -414,7 +462,7 @@ function polozkaXml(p: PolozkaSplatky, kody: KodyZauctovania, den: string, kraji
           )}${suma("typ:priceSum", p.zaklad + p.dph, "            ")}
           </inv:homeCurrency>${
             kody.predkontacia ? `\n${o}<inv:accounting><typ:ids>${esc(kody.predkontacia)}</typ:ids></inv:accounting>` : ""
-          }${kody.clenenie ? `\n${o}<inv:classificationVAT><typ:ids>${esc(kody.clenenie)}</typ:ids></inv:classificationVAT>` : ""}${
+          }${clenenieXml}${
             kv ? `\n${o}<inv:classificationKVDPH><typ:ids>${esc(kv)}</typ:ids></inv:classificationKVDPH>` : ""
           }
         </inv:invoiceItem>`;
@@ -424,11 +472,34 @@ function polozkaXml(p: PolozkaSplatky, kody: KodyZauctovania, den: string, kraji
 export function polozkaBalikaSplatky(
   zmluva: ZmluvaPreExport,
   splatka: SplatkaPreExport,
-  opts: { krajina?: KrajinaDane; pocetSplatok?: number } = {},
+  opts: { krajina?: KrajinaDane; pocetSplatok?: number; predkontaciaRozuctovat?: string | null } = {},
 ): { xml: string; vyhrady: string[]; kvB2: boolean; bezPredkontacie: (ZlozkaSplatky | null)[] } {
   const krajina = opts.krajina ?? "SK";
   const { polozky, vyhrady } = polozkySplatky(zmluva, splatka, krajina);
   if (!polozky.length) return { xml: "", vyhrady, kvB2: false, bezPredkontacie: [] };
+  /*
+    Časti spolu viac než splátka: záväzok by v Pohode mal inú sumu, než banka
+    stiahne — taká splátka nejde, kým sa kalendár neopraví (S12).
+  */
+  const sucetCasti = r2(polozky.reduce((a, p) => a + p.zaklad + p.dph, 0));
+  if (sucetCasti - r2(num(splatka.amount)) >= 0.01) {
+    vyhrady.push(`Splátka č. ${splatka.number} sa do Pohody neexportuje, kým sa kalendár neopraví.`);
+    return { xml: "", vyhrady, kvB2: false, bezPredkontacie: [] };
+  }
+  /*
+    Sadzba, ktorá v deň splatnosti neplatí (napr. 20 % v roku 2026), by sa
+    ticho preložila do priehradky 23 % s daňou rátanou z 20 % (S12). Daň sa
+    určuje podľa sadzby platnej v deň dodania — kalendár treba prepočítať.
+  */
+  const zlaSadzba = polozky.find((p) => p.sadzba && !sadzbaPlatiKuDnu(p.sadzba, splatka.due_date, krajina));
+  if (zlaSadzba) {
+    const tab = sadzbyKuDnu(krajina, splatka.due_date);
+    const platne = [tab.high, tab.low, ...(tab.third != null ? [tab.third] : [])].join(" / ");
+    vyhrady.push(
+      `Splátka č. ${splatka.number} (${splatka.due_date}): sadzba DPH ${zlaSadzba.sadzba} % v deň splatnosti neplatí (platí ${platne} %) — do Pohody nepôjde. Opravte sadzbu a DPH v kalendári.`,
+    );
+    return { xml: "", vyhrady, kvB2: false, bezPredkontacie: [] };
+  }
   /* Zložky, ktoré idú bez predkontácie (null = splátka bez rozpadu). */
   const bezPredkontacie: (ZlozkaSplatky | null)[] = [];
   if (txt(splatka.cislo_dokladu).length > MAX_CISLO_DOKLADU) {
@@ -460,9 +531,27 @@ export function polozkaBalikaSplatky(
   */
   const datumDodania =
     krajina === "CZ" ? el("inv:dateKHDPH", den, o) : el("inv:dateDelivery", den, o);
+  /*
+    Rozúčtovanie (V9): keď položky vedú na rôzne predkontácie, hlavička musí
+    niesť „Rozúčtovať“ — inak POHODA zaúčtuje celý záväzok predkontáciou
+    hlavičky a kódy položiek ignoruje (rovnako ako pri faktúrach v
+    export.server.ts). Rovnaký kód na všetkých položkách ide do hlavičky.
+  */
+  const pkPoloziek = new Set(polozky.map((p) => kodyPolozky(zmluva, splatka, p.zlozka).predkontacia ?? ""));
+  const rozuctovat = pkPoloziek.size > 1;
+  const pkHlavicky = rozuctovat
+    ? predkontaciaRozuctovat(krajina, opts.predkontaciaRozuctovat)
+    : [...pkPoloziek][0] || kody.predkontacia;
+  /* Záväzok bez DPH bez výslovného členenia: „nezahŕňať do DPH“ (S13). */
+  const bezDph = polozky.every((p) => p.dph === 0 && !p.sadzba);
+  const clenenieHlavicky = kody.clenenie
+    ? `\n${o}<inv:classificationVAT><typ:ids>${esc(kody.clenenie)}</typ:ids></inv:classificationVAT>`
+    : bezDph
+      ? `\n${o}<inv:classificationVAT>${NEZAHRNOVAT}</inv:classificationVAT>`
+      : "";
 
   const xml = `
-  <dat:dataPackItem id="${esc(`SPL-${splatka.id}`)}" version="2.0">
+  <dat:dataPackItem id="${esc(idSplatkyPohody(splatka))}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
         <inv:invoiceType>commitment</inv:invoiceType>${cisloZavazkuXml(rad, splatka.cislo_dokladu, o)}${el("inv:symVar", vs, o)}${el("inv:symPar", vs, o)}${el("inv:originalDocument", povodne, o)}
@@ -470,8 +559,8 @@ export function polozkaBalikaSplatky(
         <inv:dateTax>${esc(den)}</inv:dateTax>
         <inv:dateAccounting>${esc(den)}</inv:dateAccounting>${krajina === "CZ" ? datumDodania : ""}
         <inv:dateDue>${esc(den)}</inv:dateDue>${krajina === "CZ" ? "" : datumDodania}${
-          kody.predkontacia ? `\n${o}<inv:accounting><typ:ids>${esc(kody.predkontacia)}</typ:ids></inv:accounting>` : ""
-        }${kody.clenenie ? `\n${o}<inv:classificationVAT><typ:ids>${esc(kody.clenenie)}</typ:ids></inv:classificationVAT>` : ""}${
+          pkHlavicky ? `\n${o}<inv:accounting><typ:ids>${esc(pkHlavicky)}</typ:ids></inv:accounting>` : ""
+        }${clenenieHlavicky}${
           kv ? `\n${o}<inv:classificationKVDPH><typ:ids>${esc(kv)}</typ:ids></inv:classificationKVDPH>` : ""
         }${el("inv:text", textSplatky(zmluva, splatka, opts.pocetSplatok), o)}${
           partner
@@ -555,6 +644,8 @@ export function xmlSplatokDoPohody(opts: {
    * s „Neviem“, hoci predkontáciu má.
    */
   chybajuceSkratky?: (kody: string[]) => string[];
+  /** Predkontácia „Rozúčtovať“ z nastavení firmy (`pohoda_predkontacia_rozuctovat`). */
+  predkontaciaRozuctovat?: string | null;
 }): VysledokExportuSplatok {
   const krajina = krajinaDane(opts.krajinaFirmy);
   const domaca = krajina === "CZ" ? "CZK" : "EUR";
@@ -577,7 +668,11 @@ export function xmlSplatokDoPohody(opts: {
   let kvB2 = false;
   const bezKodu = new Set<ZlozkaSplatky | null>();
   for (const s of zoradene) {
-    const r = polozkaBalikaSplatky(opts.zmluva, s, { krajina, pocetSplatok });
+    const r = polozkaBalikaSplatky(opts.zmluva, s, {
+      krajina,
+      pocetSplatok,
+      predkontaciaRozuctovat: opts.predkontaciaRozuctovat,
+    });
     vyhrady.push(...r.vyhrady);
     if (!r.xml) continue;
     if (r.kvB2) kvB2 = true;
@@ -603,8 +698,22 @@ export function xmlSplatokDoPohody(opts: {
       "Splátky sú v KV DPH B.2, ale na zmluve chýba IČ DPH veriteľa — bez IČ DPH veriteľa Pohoda nezaradí záväzok do KV B.2. Doplňte ho na zmluve (Upraviť → Veriteľ).",
     );
   }
-  if (!txt(opts.zmluva.pohoda_clenenie_dph) && zoradene.some((s) => !txt(s.pohoda_clenenie_dph))) {
+  // Splátky bez DPH idú bez členenia ako „nezahŕňať do DPH“; predvolené z agendy hrozí len pri DPH.
+  if (
+    !txt(opts.zmluva.pohoda_clenenie_dph) &&
+    zoradene.some((s) => !txt(s.pohoda_clenenie_dph) && num(s.vat_amount) > 0)
+  ) {
     vyhrady.push("Kalendár nemá členenie DPH — Pohoda doplní predvolené z agendy.");
+  }
+  /*
+    Účtovná jednotka POHODY je na jeden rok — záväzky z viacerých rokov v
+    jednom súbore skončia v jednom roku alebo ich POHODA odmietne (S11).
+  */
+  const roky = [...new Set(idSplatok.map((id) => zoradene.find((s) => s.id === id)!.due_date.slice(0, 4)))].sort();
+  if (roky.length > 1) {
+    vyhrady.push(
+      `Súbor obsahuje splátky z rokov ${roky.join(", ")} — účtovná jednotka POHODY je na jeden rok. Exportujte splátky po rokoch a každý rok importujte do jeho účtovnej jednotky.`,
+    );
   }
   if (!polozky) return { xml: "", pocet: 0, idSplatok, vyhrady };
   const zahodene = opts.chybajuceSkratky?.(predkontacieVXml(polozky)) ?? [];
@@ -615,7 +724,7 @@ export function xmlSplatokDoPohody(opts: {
   }
   const telo = opts.prelozPredkontacie ? opts.prelozPredkontacie(polozky) : polozky;
   const xml = `<?xml version="1.0" encoding="utf-8"?>
-<dat:dataPack id="SPL${Date.now()}" ico="${esc(txt(opts.ico).replace(/\s/g, ""))}" application="Faktero" version="2.0" note="${esc(
+<dat:dataPack id="${ID_BALIKA_SPLATOK}" ico="${esc(txt(opts.ico).replace(/\s/g, ""))}" application="Faktero" version="2.0" note="${esc(
     skrat(`Splátky – ${txt(opts.zmluva.name)}`, 200),
   )}"
   xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"

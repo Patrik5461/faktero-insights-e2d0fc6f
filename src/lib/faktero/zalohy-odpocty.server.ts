@@ -82,6 +82,7 @@ export async function nacitajOdpocty(
     const zoz = out[String(v.invoice_id)] ?? [];
     zoz.push({
       zaloha: String(z?.invoice_number ?? ""),
+      zalohaId: String(v.advance_invoice_id),
       doklad: d ? String(d.invoice_number) : null,
       vs: z?.variable_symbol ? String(z.variable_symbol) : null,
       suma,

@@ -159,13 +159,22 @@ export async function zastaveneDoklady(
     const nast = await nastaveniaDokladovPohody(supabase, bezOdkazov(company), vsetkyDoklady);
     for (const p of prijate.data ?? []) {
       const doklad = prijataAkoDoklad(p);
-      const dovod = prekazkaDokladu(doklad, company, nast as any);
+      /*
+        Sadzba DPH, prenesenie bez príznaku, chýbajúca predkontácia
+        (export-varovania.ts): ručný export a balík ich ukážu na potvrdenie,
+        konektor nemá kto potvrdiť — zaúčtovaný doklad (ten jediný konektor
+        posiela) zadrží, preto je medzi závažnými. Pri nezaúčtovanom ostáva
+        upozornením.
+      */
+      const varovaniaPrijatej = varovaniaPrijatejPredExportom(p, company, nast as any);
+      const dovod =
+        prekazkaDokladu(doklad, company, nast as any) ??
+        (p.zauctovane_at ? (varovaniaPrijatej[0] ?? null) : null);
       if (dovod) out.push({ druh: "prijata", id: p.id, cislo: p.invoice_number, dovod });
       else {
         const varovanie =
           varovanieDokladu(doklad, nast as any, company as any) ??
-          // Sadzba DPH, prenesenie bez príznaku, chýbajúca predkontácia (export-varovania.ts).
-          (varovaniaPrijatejPredExportom(p, company, nast as any)[0] ?? null) ??
+          (varovaniaPrijatej[0] ?? null) ??
           varovanieChybajucejSkratky(p.invoice_number, nast, (n) =>
             buildPohodaExpensesXml({ company: bezOdkazov(company), doklady: [doklad], nastavenia: n }),
           );
@@ -366,4 +375,215 @@ export async function rozdielyOprotiPohode(
     }
   }
   return { doklady: out, skontrolovanych, bezXml };
+}
+
+/* ------------------------------------------------ konektor do POHODY */
+
+export type OdmietnutaPolozka = {
+  druh: string;
+  id: string;
+  cislo: string;
+  chyba: string;
+  kedy: string | null;
+  /** Nepotvrdené do limitu (nie odmietnuté POHODOU). */
+  vyprsane: boolean;
+};
+
+export type StavKonektora = {
+  /** Firma konektor aspoň raz spustila. */
+  pouziva: boolean;
+  /** Dávky, ktoré čakajú na odpoveď POHODY. */
+  cakajuce: { id: string; kedy: string; poloziek: number; vyprsana: boolean }[];
+  /** Posledný výsledok je odmietnutie alebo vypršanie — doklad pôjde znova. */
+  odmietnute: OdmietnutaPolozka[];
+  /** Opravy odovzdaných dokladov, ktoré konektor drží (V13). */
+  opravy: import("./pohoda-konektor-potvrdenie.server").DrzanaOprava[];
+  /** Opravy, pri ktorých ide najprv storno pôvodného (alebo naň čakajú). */
+  opravyCakaju: string[];
+  /** V11: neodovzdané doklady staršie ako spodná hranica konektora. */
+  starsie: { od: string; faktur: number; prijatych: number; dokladov: number; pokladnicnych: number };
+};
+
+const DRUH_POLOZKY: Record<string, string> = {
+  faktura: "Vydaná faktúra",
+  prijata: "Prijatá faktúra",
+  doklad: "Bloček",
+  pokladna: "Pokladničný doklad",
+  adresar: "Adresár",
+  sklad: "Skladová karta",
+  zakazka: "Zákazka",
+  pohyb: "Skladový pohyb",
+  storno: "Storno faktúry",
+  storno_opravy: "Storno pôvodného dokladu",
+};
+
+/**
+ * Stav konektora pre Kontrolu Pohody: čo čaká na odpoveď, čo POHODA odmietla,
+ * ktoré opravy drží a koľko starších dokladov konektor neposiela. Číta
+ * prihláseným klientom; bez migrácie `pohoda_konektor_polozky` vráti len to,
+ * čo vie bez nej.
+ */
+export async function stavKonektora(supabase: Klient, companyId: string): Promise<StavKonektora> {
+  const { jeVyprsana } = await import("./pohoda-konektor-davka");
+  const potvrdenie = await import("./pohoda-konektor-potvrdenie.server");
+  const { zaciatokKonektora, cislaVPohode } = await import("./pohoda-konektor.server");
+  const teraz = new Date();
+  const prazdny: StavKonektora = {
+    pouziva: false,
+    cakajuce: [],
+    odmietnute: [],
+    opravy: [],
+    opravyCakaju: [],
+    starsie: { od: "", faktur: 0, prijatych: 0, dokladov: 0, pokladnicnych: 0 },
+  };
+
+  const { data: joby } = await supabase
+    .from("export_jobs")
+    .select("id, created_at, status")
+    .eq("company_id", companyId)
+    .eq("file_name", potvrdenie.SUBOR_DAVKY)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (!joby?.length) return prazdny;
+  const out: StavKonektora = { ...prazdny, pouziva: true };
+
+  // Čakajúce dávky.
+  const cakajuceJoby = (joby as Riadok[]).filter((j) => j.status === "cakajuce");
+  for (const j of cakajuceJoby) {
+    const { count } = await supabase
+      .from(potvrdenie.TABULKA_KONEKTORA)
+      .select("id", { count: "exact", head: true })
+      .eq("export_job_id", j.id)
+      .eq("stav", "odoslane");
+    out.cakajuce.push({ id: j.id, kedy: j.created_at, poloziek: count ?? 0, vyprsana: jeVyprsana(j.created_at, teraz) });
+  }
+
+  // Odmietnuté a vypršané — posledný výsledok záznamu, kým ho nepotvrdí ďalšia dávka.
+  const odDna = new Date(teraz.getTime() - 60 * 86400000).toISOString();
+  const { data: riadky, error } = await supabase
+    .from(potvrdenie.TABULKA_KONEKTORA)
+    .select("druh, zaznam_id, stav, chyba, created_at, potvrdene_at, polozka_id")
+    .eq("company_id", companyId)
+    .neq("druh", "zmazane_v_pohode")
+    .gte("created_at", odDna)
+    .order("created_at", { ascending: false })
+    .limit(3000);
+  if (!error) {
+    const posledny = new Map<string, Riadok>();
+    for (const r of (riadky ?? []) as Riadok[]) {
+      const k = `${r.druh}|${r.zaznam_id}`;
+      if (!posledny.has(k)) posledny.set(k, r);
+    }
+    const zle = [...posledny.values()].filter((r) => r.stav === "chyba" || r.stav === "vyprsane");
+    const cisla = new Map<string, string>();
+    const doTabulky: [string, string, string][] = [
+      ["faktura", "invoices", "invoice_number"],
+      ["prijata", "purchase_invoices", "invoice_number"],
+      ["doklad", "expense_documents", "document_number"],
+      ["pokladna", "cash_entries", "entry_number"],
+    ];
+    const odovzdane = new Set<string>();
+    for (const [druh, tab, stlpec] of doTabulky) {
+      const ids = zle.filter((r) => r.druh === druh).map((r) => String(r.zaznam_id));
+      if (!ids.length) continue;
+      const { data } = await supabase.from(tab).select(`id, ${stlpec}, exported_at`).in("id", ids.slice(0, 300));
+      for (const d of (data ?? []) as Riadok[]) {
+        cisla.set(String(d.id), String(d[stlpec] ?? ""));
+        if (d.exported_at) odovzdane.add(String(d.id));
+      }
+    }
+    out.odmietnute = zle
+      .filter((r) => !odovzdane.has(String(r.zaznam_id)))
+      .slice(0, 100)
+      .map((r) => ({
+        druh: r.druh,
+        id: String(r.zaznam_id),
+        cislo: cisla.get(String(r.zaznam_id)) || DRUH_POLOZKY[r.druh] || r.druh,
+        chyba: String(r.chyba ?? ""),
+        kedy: r.potvrdene_at ?? r.created_at ?? null,
+        vyprsane: r.stav === "vyprsane",
+      }));
+  }
+
+  // Opravy, ktoré konektor drží (V13) — tie isté pravidlá ako pri skladaní dávky.
+  const [fakt, prij, dokl, pokl] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, pohoda_verzia")
+      .eq("company_id", companyId)
+      .is("exported_at", null)
+      .is("deleted_at", null)
+      .gt("pohoda_verzia", 0)
+      .not("status", "in", "(draft,cancelled)")
+      .limit(200),
+    supabase
+      .from("purchase_invoices")
+      .select("id, invoice_number, pohoda_verzia")
+      .eq("company_id", companyId)
+      .is("exported_at", null)
+      .is("deleted_at", null)
+      .gt("pohoda_verzia", 0)
+      .limit(200),
+    supabase
+      .from("expense_documents")
+      .select("id, document_number, supplier_name, pohoda_verzia")
+      .eq("company_id", companyId)
+      .is("exported_at", null)
+      .gt("pohoda_verzia", 0)
+      .limit(200),
+    supabase
+      .from("cash_entries")
+      .select("id, entry_number, pohoda_verzia")
+      .eq("company_id", companyId)
+      .is("exported_at", null)
+      .gt("pohoda_verzia", 0)
+      .limit(200),
+  ]);
+  const vsetkyOpravy = [
+    ...((fakt.data ?? []) as Riadok[]).map((r) => ({ druh: "faktura" as const, riadok: r, cislo: String(r.invoice_number ?? "") })),
+    ...((prij.data ?? []) as Riadok[]).map((r) => ({ druh: "prijata" as const, riadok: r, cislo: String(r.invoice_number ?? "") })),
+    ...((dokl.data ?? []) as Riadok[]).map((r) => ({
+      druh: "doklad" as const,
+      riadok: r,
+      cislo: String(r.document_number || r.supplier_name || ""),
+    })),
+    ...((pokl.data ?? []) as Riadok[]).map((r) => ({ druh: "pokladna" as const, riadok: r, cislo: String(r.entry_number ?? "") })),
+  ];
+  if (vsetkyOpravy.length) {
+    const o = await potvrdenie.opravyVDavke(
+      supabase,
+      companyId,
+      vsetkyOpravy,
+      await cislaVPohode(supabase, companyId),
+      true,
+    );
+    out.opravy = o.drzane;
+    out.opravyCakaju = o.cakaju;
+  }
+
+  // V11: neodovzdané staršie ako hranica konektora (rok pred ňou).
+  const od = await zaciatokKonektora(supabase, companyId, teraz);
+  const rokPred = `${Number(od.slice(0, 4)) - 1}${od.slice(4)}`;
+  const pocet = async (tab: string, datum: string, doplnok: (q: any) => any) => {
+    const { count } = await doplnok(
+      supabase
+        .from(tab)
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .is("exported_at", null)
+        .lt(datum, od)
+        .gte(datum, rokPred),
+    );
+    return count ?? 0;
+  };
+  out.starsie = {
+    od,
+    faktur: await pocet("invoices", "issue_date", (q) => q.is("deleted_at", null).not("status", "in", "(draft,cancelled)")),
+    prijatych: await pocet("purchase_invoices", "issue_date", (q) =>
+      q.is("deleted_at", null).not("zauctovane_at", "is", null).in("type", ["regular", "proforma"]),
+    ),
+    dokladov: await pocet("expense_documents", "issue_date", (q) => q.eq("status", "processed")),
+    pokladnicnych: await pocet("cash_entries", "entry_date", (q) => q),
+  };
+  return out;
 }
