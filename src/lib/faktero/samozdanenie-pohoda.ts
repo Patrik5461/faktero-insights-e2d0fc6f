@@ -17,6 +17,11 @@
    3. Interný doklad „Odpočet DPH“: to isté s PDsluz / PDnadEU (bez nároku
       PBsluz / PBnadEU), KV B1.
 
+  Prijatý dobropis k takej faktúre: ten istý model — dobropis s kladnými
+  sumami v `priceNone` (PDsluz/PDnadEU, KV „KN“), interné doklady „Oprava
+  priznania DPH … (dobropis)“ a „Oprava odpočtu DPH … (dobropis)“ so
+  zápornými sumami a KV B1 (do B.1 ide oprava so záporným základom a daňou).
+
   Zmiešaná faktúra (časť s DPH, časť v prenesení): bežné položky ostávajú
   (PD, KV B2 dokladu), prenesené idú do `priceNone` s PDsluz a interné
   doklady len za prenesenú časť.
@@ -123,10 +128,22 @@ export function cleneniaSamozdania(
   };
 }
 
-/** Texty interných dokladov tak, ako ich píše účtovníčka (s VS faktúry). */
-export function textySamozdania(druh: DruhSamozdania, vs: string | null | undefined): { priznanie: string; odpocet: string } {
+/**
+ * Texty interných dokladov tak, ako ich píše účtovníčka (s VS faktúry).
+ * Prijatý dobropis: „Oprava priznania / odpočtu DPH … (dobropis)“.
+ */
+export function textySamozdania(
+  druh: DruhSamozdania,
+  vs: string | null | undefined,
+  o: { dobropis?: boolean } = {},
+): { priznanie: string; odpocet: string } {
   const k = String(vs ?? "").trim() ? `, var.sym. ${String(vs).trim()}` : "";
   const coho = druh === "nadobudnutie" ? "z nadobudnutia tovaru z iného štátu EÚ" : "z nadobudnutia tovaru a služby";
+  if (o.dobropis)
+    return {
+      priznanie: `Oprava priznania DPH ${coho} (dobropis)${k}`,
+      odpocet: `Oprava odpočtu DPH ${coho} (dobropis)${k}`,
+    };
   return { priznanie: `Priznanie DPH ${coho}${k}`, odpocet: `Odpočet DPH ${coho}${k}` };
 }
 

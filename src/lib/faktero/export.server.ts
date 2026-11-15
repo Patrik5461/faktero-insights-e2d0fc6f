@@ -2135,9 +2135,17 @@ export function polozkyDokladov(opts: {
         samozdanené riadky idú do `priceNone` bez sadzby (v `priceHigh` si
         POHODA dopočítala 23 % a dodávateľovi by bolo na úhradu o daň viac)
         a daň sa prizná a odpočíta dvoma internými dokladmi s KV B1.
+
+        Prijatý dobropis k takej faktúre ide rovnako (kladné sumy, typ
+        `receivedCreditNotice` rozhoduje): samozdanené riadky v `priceNone`
+        s PDsluz/PDnadEU a KV „KN“, interné doklady Oprava priznania a Oprava
+        odpočtu DPH so ZÁPORNÝM základom a daňou (KV B1 so zápornými sumami).
+        Inak by si POHODA k riadku v `priceHigh` dopočítala 23 % a B1 na
+        dobropise odmietla ako na faktúre.
       */
       const modelSamozdania =
-        krajinaDane(company?.country) === "SK" && d?._typPohody === "receivedInvoice";
+        krajinaDane(company?.country) === "SK" &&
+        (d?._typPohody === "receivedInvoice" || d?._typPohody === "receivedCreditNotice");
       const celeSamoz = Boolean(d?._samozdanenieCele);
       const samozdanenie = <T extends { sadzba: number; dph?: number; pdp?: boolean; vat_category?: string | null }>(
         riadky: T[],
@@ -2883,6 +2891,10 @@ export function polozkyDokladov(opts: {
       // faktúry, interné doklady), CZ dátum pre kontrolné hlásenie.
       // Bloček v agende faktúr (ostatný záväzok, prijatá faktúra): dátum dodania = deň predaja.
       const datumDodania = String(d?._datumDph || (blocek ? d?.issue_date : "") || "").trim();
+      // Prijatý dobropis: deň uplatnenia DPH (aj interných dokladov samozdanenia).
+      const datumUplatneniaDobropisu = String(
+        (pevny && datumOdpoctu === pevny ? pevny : "") || d?._datumUplatnenia || d?.issue_date || "",
+      );
       const datumyVerzie =
         (!prijatyDoklad
           ? /*
@@ -2907,9 +2919,7 @@ export function polozkyDokladov(opts: {
           oprava odpočtu patrí do obdobia, v ktorom firma dobropis dostala
           (invoice.xsd `dateApplicationVAT`, § 53 ods. 2), ako vo výkazoch Faktera.
         */
-        (dobropisPrijaty && p === "inv"
-          ? el("inv:dateApplicationVAT", (pevny && datumOdpoctu === pevny ? pevny : "") || d?._datumUplatnenia || d?.issue_date, "        ")
-          : "");
+        (dobropisPrijaty && p === "inv" ? el("inv:dateApplicationVAT", datumUplatneniaDobropisu, "        ") : "");
       // Bez nároku na odpočet (Faktero ho nezapočíta do DPH): Pohoda to z čísel
       // nespozná — členenie si účtovník musí vybrať, poznámka ho na to upozorní.
       const bezOdpoctu = d?.odpocet === false && prijatyDoklad;
@@ -2998,19 +3008,27 @@ export function polozkyDokladov(opts: {
       const interneSamoz =
         druhSamoz && cleneniaSamoz && riadkySamoz.length
           ? (() => {
-              const texty = textySamozdania(druhSamoz, symVar);
+              const texty = textySamozdania(druhSamoz, symVar, { dobropis: dobropisPrijaty });
+              /*
+                Dobropis: oprava dane aj odpočtu v období, keď ho firma
+                dostala — ten istý deň ako jeho `dateApplicationVAT` (výkazy
+                Faktera, `denOdpoctu`). Sumy záporné: znižujú daň aj odpočet.
+              */
+              const den = dobropisPrijaty ? datumUplatneniaDobropisu : datumOdpoctu;
               const spolocne = {
                 rad: nastavenia?.radSamozdanenie,
                 symVar,
                 povodne,
-                den: datumOdpoctu,
-                datumUctovania: zamknutieZ(datumOdpoctu) || datumOdpoctu,
-                datumDodania: datumDodania || datumOdpoctu,
+                den,
+                datumUctovania: zamknutieZ(den) || den,
+                datumDodania: datumDodania || den,
                 textPolozky: textDokladu,
                 adresa: adresa.replace(/\n\s*<typ:email>[^<]*<\/typ:email>/, ""),
                 partnerExt: extIdPartnera(ex, nastavenia, d?.customer_id),
                 stredisko: d?.stredisko || nastavenia?.stredisko,
-                riadky: riadkySamoz,
+                riadky: dobropisPrijaty
+                  ? riadkySamoz.map((r) => ({ ...r, zaklad: -r.zaklad, dph: -r.dph }))
+                  : riadkySamoz,
                 mena: cudziaD ? menaDokladu : null,
                 kurz: kurzDokladu(d),
                 krajina: company?.country,

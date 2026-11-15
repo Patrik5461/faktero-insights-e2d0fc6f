@@ -231,7 +231,8 @@ export function varovanieKvPrijatej(d: Riadok, company?: Riadok | null): string 
     Odpočet DPH (`samozdanenie-pohoda.ts`) s číslom faktúry dodávateľa a jeho
     IČ DPH. Dodávateľ mimo EÚ IČ DPH nemá — B.1 ho vtedy neuvádza.
   */
-  const samozdanenie = kv === "B1" && d?._typPohody === "receivedInvoice";
+  const samozdanenie =
+    kv === "B1" && (d?._typPohody === "receivedInvoice" || d?._typPohody === "receivedCreditNotice");
   const co = samozdanenie
     ? "samozdanenie v kontrolnom výkaze (B1 cez interné doklady Priznanie a Odpočet DPH)"
     : `prijatá faktúra v kontrolnom výkaze (${kv})`;
@@ -654,10 +655,12 @@ export function prekazkaDokladu(
     Slovenská prijatá faktúra ide so samozdanením cez interné doklady
     (`samozdanenie-pohoda.ts`) — bez nastavenia firmy dostane systémové
     členenie POHODY SK (PDsluz, Priznanie DPH DDsluz/DDsl§69), ktoré je
-    platné. Prekážka ostáva pre bloček a prijatý dobropis.
+    platné. Rovnako prijatý dobropis (Oprava priznania a odpočtu DPH).
+    Prekážka ostáva pre bloček.
   */
   const samozdanenieInternymiDokladmi =
-    krajinaDane(company?.country) === "SK" && d?._typPohody === "receivedInvoice";
+    krajinaDane(company?.country) === "SK" &&
+    (d?._typPohody === "receivedInvoice" || d?._typPohody === "receivedCreditNotice");
   if (
     !cz &&
     !samozdanenieInternymiDokladmi &&

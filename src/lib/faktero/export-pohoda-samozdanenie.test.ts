@@ -507,3 +507,155 @@ describe("samozdanenie — okolie", () => {
     expect(hodnota(dan, "typ:priceVAT")).toBe("83.40");
   });
 });
+
+/* ---------------------------------------------- prijatý dobropis (SK) */
+
+/*
+  Prijatý dobropis k faktúre so samozdanením: dobropis s kladnými sumami
+  v `priceNone` (PDsluz/PDnadEU, KV „KN“) a interné doklady „Oprava
+  priznania DPH … (dobropis)“ a „Oprava odpočtu DPH … (dobropis)“ so
+  ZÁPORNÝM základom a daňou, KV B1. Id a čísla podľa `BEH` (opakované
+  skúšobné importy do tej istej kópie POHODY sa nesmú zraziť).
+*/
+const BEH = String(process.env.BEH ?? "").trim();
+const behHex = Buffer.from(BEH, "utf8").toString("hex").slice(0, 4).padStart(4, "0");
+const idDobropisu = (n: number) => `5a0e0002-${behHex}-4000-8000-${String(n).padStart(12, "0")}`;
+const cisloDobropisu = (n: string) => `SD${BEH}${n}`;
+
+/** Dobropis k tuzemskému preneseniu (zľava 100 € z murovania), doručený v novembri. */
+const dobropisTuzemske = {
+  ...tuzemske,
+  id: idDobropisu(1),
+  invoice_number: cisloDobropisu("2611001"),
+  variable_symbol: `${BEH.replace(/\D/g, "")}2611001`,
+  opravuje_cislo: tuzemske.invoice_number,
+  issue_date: "2026-11-10",
+  delivery_date: "2026-11-10",
+  received_date: "2026-11-12",
+  due_date: "2026-11-24",
+  amount_without_vat: -100,
+  vat_amount: 0,
+  amount_total: -100,
+  items: [{ name: "Zľava — murovanie", quantity: 1, unit: "ks", unit_price: -100, vat_rate: 23, total: -100 }],
+};
+
+/** Dobropis k nadobudnutiu tovaru z Nemecka (vrátené kotvy). */
+const dobropisDE = {
+  ...tovarDE,
+  id: idDobropisu(2),
+  invoice_number: cisloDobropisu("-GS-4411"),
+  variable_symbol: `${BEH.replace(/\D/g, "")}20264412`,
+  opravuje_cislo: tovarDE.invoice_number,
+  issue_date: "2026-11-09",
+  delivery_date: "2026-11-09",
+  received_date: "2026-11-11",
+  amount_without_vat: -86,
+  vat_amount: 0,
+  amount_total: -86,
+  items: [{ name: "Vrátené kotvy chemické", quantity: 4, unit: "ks", unit_price: -21.5, vat_rate: 0, total: -86 }],
+};
+
+describe("Pohoda SK: prijatý dobropis so samozdanením — dobropis + Oprava priznania + Oprava odpočtu DPH", () => {
+  it("tuzemské prenesenie: dobropis kladný v priceNone/PDsluz/KN, interné doklady záporné s KV B1", async () => {
+    const xml = xmlZ(dobropisTuzemske);
+    await overVsetko("S07-dobropis-prenesenie", xml);
+    const { ids, faktura, dan, odp } = casti(xml);
+    expect(ids).toEqual([dobropisTuzemske.id, `${dobropisTuzemske.id}-sam-dan`, `${dobropisTuzemske.id}-sam-odp`]);
+
+    // Dobropis: kladné sumy (typ rozhoduje), bez DPH, nič v priceHigh, KN — žiadne B1.
+    expect(faktura).toContain("<inv:invoiceType>receivedCreditNotice</inv:invoiceType>");
+    expect(hodnota(faktura, "inv:rateVAT")).toBe("none");
+    expect(hodnota(faktura, "typ:priceNone")).toBe("100.00");
+    expect(hodnota(faktura, "typ:priceHigh")).toBe("0.00");
+    expect(hodnota(faktura, "typ:priceHighVAT")).toBe("0.00");
+    const hf = hlavicka(faktura, "inv:invoice");
+    expect(kod(hf, "inv:classificationVAT")).toBe("PDsluz");
+    expect(kod(hf, "inv:classificationKVDPH")).toBe("KN");
+    expect(hodnota(hf, "inv:originalDocumentNumber")).toBe("S2610057");
+    expect(hodnota(hf, "inv:dateApplicationVAT")).toBe("2026-11-12");
+    expect(faktura).not.toContain("<typ:ids>B1</typ:ids>");
+    const [pf] = polozkyDokladu(faktura, "inv:invoiceItem");
+    expect([hodnota(pf, "typ:price"), hodnota(pf, "typ:priceVAT"), kod(pf, "inv:classificationKVDPH")]).toEqual([
+      "100.00",
+      "0.00",
+      "KN",
+    ]);
+
+    // Oprava priznania DPH: záporný základ aj daň, DDsluz, B1, číslo dobropisu od dodávateľa.
+    const hd = hlavicka(dan, "int:intDoc");
+    expect(hodnota(hd, "int:text")).toBe(
+      `Oprava priznania DPH z nadobudnutia tovaru a služby (dobropis), var.sym. ${dobropisTuzemske.variable_symbol}`,
+    );
+    expect(hodnota(hd, "int:originalDocumentNumber")).toBe(dobropisTuzemske.invoice_number);
+    expect(hodnota(hd, "int:symVar")).toBe(dobropisTuzemske.variable_symbol);
+    // Oprava v období prijatia dobropisu (ako jeho dateApplicationVAT a výkazy Faktera).
+    for (const el of ["int:date", "int:dateTax", "int:dateKVDPH"]) expect(hodnota(hd, el)).toBe("2026-11-12");
+    expect([kod(hd, "int:accounting"), kod(hd, "int:classificationVAT"), kod(hd, "int:classificationKVDPH")]).toEqual([
+      "aInt",
+      "DDsluz",
+      "B1",
+    ]);
+    const [pd] = polozkyDokladu(dan, "int:intDocItem");
+    expect(hodnota(pd, "int:rateVAT")).toBe("high");
+    expect([hodnota(pd, "typ:price"), hodnota(pd, "typ:priceVAT"), hodnota(pd, "typ:priceSum")]).toEqual([
+      "-100.00",
+      "-23.00",
+      "-123.00",
+    ]);
+    expect([hodnota(dan, "typ:priceHigh"), hodnota(dan, "typ:priceHighVAT")]).toEqual(["-100.00", "-23.00"]);
+
+    // Oprava odpočtu DPH: to isté s PDsluz a bInt.
+    const ho = hlavicka(odp, "int:intDoc");
+    expect(hodnota(ho, "int:text")).toBe(
+      `Oprava odpočtu DPH z nadobudnutia tovaru a služby (dobropis), var.sym. ${dobropisTuzemske.variable_symbol}`,
+    );
+    expect([kod(ho, "int:accounting"), kod(ho, "int:classificationVAT"), kod(ho, "int:classificationKVDPH")]).toEqual([
+      "bInt",
+      "PDsluz",
+      "B1",
+    ]);
+    expect([hodnota(odp, "typ:priceHigh"), hodnota(odp, "typ:priceHighVAT")]).toEqual(["-100.00", "-23.00"]);
+  });
+
+  it("tovar z Nemecka: PDnadEU/KN na dobropise, Oprava priznania DDnadEU a odpočtu PDnadEU so zápornými sumami", async () => {
+    const xml = xmlZ(dobropisDE);
+    expect(chybySchemy(xml)).toEqual([]);
+    expect(await overBalik(xml)).toBeNull();
+    const { faktura, dan, odp } = casti(xml);
+    expect(hodnota(faktura, "typ:priceNone")).toBe("86.00");
+    expect(kod(hlavicka(faktura, "inv:invoice"), "inv:classificationVAT")).toBe("PDnadEU");
+    expect(kod(hlavicka(faktura, "inv:invoice"), "inv:classificationKVDPH")).toBe("KN");
+    const hd = hlavicka(dan, "int:intDoc");
+    expect(kod(hd, "int:classificationVAT")).toBe("DDnadEU");
+    expect(hodnota(hd, "int:text")).toMatch(/^Oprava priznania DPH z nadobudnutia tovaru z iného štátu EÚ \(dobropis\)/);
+    expect(kod(hlavicka(odp, "int:intDoc"), "int:classificationVAT")).toBe("PDnadEU");
+    // 86 × 23 % = 19,78
+    expect([hodnota(dan, "typ:price"), hodnota(dan, "typ:priceVAT")]).toEqual(["-86.00", "-19.78"]);
+    expect([hodnota(odp, "typ:price"), hodnota(odp, "typ:priceVAT")]).toEqual(["-86.00", "-19.78"]);
+  });
+
+  it("bez nároku na odpočet: len Oprava priznania DPH, Oprava odpočtu nejde", () => {
+    const xml = xmlZ({ ...dobropisTuzemske, id: idDobropisu(3), invoice_number: cisloDobropisu("2611003"), odpocet: false });
+    expect(chybySchemy(xml)).toEqual([]);
+    const { ids, dan, odp } = casti(xml);
+    expect(ids).toHaveLength(2);
+    expect(kod(hlavicka(dan, "int:intDoc"), "int:classificationVAT")).toBe("DDsluz");
+    expect(hodnota(dan, "typ:priceVAT")).toBe("-23.00");
+    expect(odp).toBeFalsy();
+  });
+
+  it("kontrola dobropis v prenesení bez nastavenia firmy nezastaví (systémové PDsluz/DDsluz)", () => {
+    const d = prijataAkoDoklad(dobropisTuzemske);
+    expect(d._typPohody).toBe("receivedCreditNotice");
+    expect(prekazkaDokladu(d, paliera, {})).toBeNull();
+    const { faktura, dan } = casti(xmlZ(dobropisTuzemske, {}));
+    expect(kod(hlavicka(faktura, "inv:invoice"), "inv:classificationVAT")).toBe("PDsluz");
+    expect(kod(hlavicka(dan, "int:intDoc"), "int:classificationVAT")).toBe("DDsluz");
+  });
+
+  it("česká firma: dobropis ostáva opravným daňovým dokladom bez interných dokladov", () => {
+    const xml = xmlZ({ ...dobropisTuzemske, currency: "CZK" }, {}, { ...paliera, country: "CZ", ico: "27123456" });
+    expect(casti(xml).ids).toHaveLength(1);
+    expect(xml).toContain("<inv:invoiceType>receivedCorrectiveTax</inv:invoiceType>");
+  });
+});
