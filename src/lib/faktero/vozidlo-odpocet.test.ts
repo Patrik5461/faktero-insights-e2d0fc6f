@@ -205,7 +205,9 @@ describe("export s vozidlom 50 %", () => {
   it("Pohoda: bloček sa rozúčtuje na polovicu s odpočtom a polovicu bez neho", () => {
     const xml = buildPohodaExpensesXml({ company: firmaSk, doklady: [blocek], nastavenia: nast });
     const inv = parser.parse(xml).dataPack.dataPackItem.invoice;
-    expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvej položky.
+    expect(inv.invoiceHeader.accounting.ids).toBe("5PHM");
+    expect(inv.invoiceHeader.accounting.ids).not.toBe("Rozúčtovať");
     const pol = ([] as any[]).concat(inv.invoiceDetail.invoiceItem);
     expect(pol.map((p) => [p.accounting.ids, p.classificationVAT.ids])).toEqual([
       ["5PHM", "PD"],

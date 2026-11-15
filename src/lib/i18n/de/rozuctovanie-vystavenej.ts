@@ -13,8 +13,8 @@ export default {
     "Die Rechnung hat Reverse Charge nur bei einigen Positionen — teilen Sie sie über Codes je Position auf.",
   "Položky majú colné údaje (Intrastat) — rozúčtujte faktúru kódmi pri položkách, aby sa colné údaje nestratili.":
     "Die Positionen haben Zolldaten (Intrastat) — teilen Sie die Rechnung über Codes je Position auf, damit die Zolldaten erhalten bleiben.",
-  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane „Rozúčtovať“.":
-    "Eine Position ohne Code erhält den Code der Rechnung. Haben die Positionen unterschiedliche Vorkontierungen, Kostenstellen oder Tätigkeiten, erhält der Kopf in Pohoda „Rozúčtovať“ (Aufteilen).",
+  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady) a každá položka nesie svoj kód.":
+    "Eine Position ohne Code erhält den Code der Rechnung. Haben die Positionen unterschiedliche Vorkontierungen, Kostenstellen oder Tätigkeiten, erhält der Kopf in Pohoda den Code der ersten Position (oder die für aufgeteilte Belege eingestellte Vorkontierung), und jede Position trägt ihren eigenen Code.",
   "Faktúra je už v Pohode — najprv ju vráťte z Pohody.":
     "Die Rechnung ist bereits in Pohoda — holen Sie sie zuerst aus Pohoda zurück.",
 } satisfies Record<string, string>;

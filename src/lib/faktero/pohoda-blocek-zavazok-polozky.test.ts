@@ -275,8 +275,11 @@ describe("položky dokladu do Pohody (voľba firmy)", () => {
     });
     expect(chybySchemy(xml)).toEqual([]);
     const inv = balik(xml)[0].invoice;
-    expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    // POHODA SK „Rozúčtovať“ nepozná — hlavička dostane kód prvej položky
+    // v XML (Káva s vlastnou 5Rep ide prvá, ostatné zlúčené s 1Pv za ňou).
+    expect(inv.invoiceHeader.accounting.ids).toBe("5Rep");
+    expect(inv.invoiceHeader.accounting.ids).not.toBe("Rozúčtovať");
     const pol = inv.invoiceDetail.invoiceItem;
-    expect(pol.map((x: any) => x.accounting?.ids)).toContain("5Rep");
+    expect(pol.map((x: any) => x.accounting?.ids)).toEqual(["5Rep", "1Pv"]);
   });
 });

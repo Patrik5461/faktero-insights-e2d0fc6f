@@ -199,7 +199,7 @@ export const STLPCE_PREDVOLENYCH = [
   ...PREDVOLENE.flatMap((p) =>
     [p.predkontacia, p.clenenie, p.kv].filter((x): x is string => !!x),
   ),
-  // Hlavička rozúčtovaného dokladu („Rozúčtovať" v Pohode).
+  // Hlavička rozúčtovaného dokladu v Pohode (prázdne = kód prvej položky, CZ „Rozúčtovat“).
   "pohoda_predkontacia_rozuctovat",
   // Číselné rady Pohody (predpony) a predvolené stredisko.
   "pohoda_rad_prijate",

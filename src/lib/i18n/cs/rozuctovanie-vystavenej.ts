@@ -13,8 +13,8 @@ export default {
     "Faktura má přenesení daňové povinnosti jen u některých položek — rozúčtujte ji kódy u položek.",
   "Položky majú colné údaje (Intrastat) — rozúčtujte faktúru kódmi pri položkách, aby sa colné údaje nestratili.":
     "Položky mají celní údaje (Intrastat) — rozúčtujte fakturu kódy u položek, aby se celní údaje neztratily.",
-  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane „Rozúčtovať“.":
-    "Položka bez kódu dostane kód faktury. Když mají položky různé předkontace, střediska nebo činnosti, hlavička v Pohodě dostane „Rozúčtovat“.",
+  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady) a každá položka nesie svoj kód.":
+    "Položka bez kódu dostane kód faktury. Když mají položky různé předkontace, střediska nebo činnosti, hlavička v Pohodě dostane kód první položky (nebo předkontaci nastavenou pro rozúčtované doklady) a každá položka nese svůj kód.",
   "Faktúra je už v Pohode — najprv ju vráťte z Pohody.":
     "Faktura už je v Pohodě — nejprve ji vraťte z Pohody.",
 } satisfies Record<string, string>;

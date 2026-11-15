@@ -265,7 +265,7 @@ exports[`B) 11665 — PHM v hotovosti pomerom 50/30/20 % > snímka XML 1`] = `
         <vch:date>2026-10-26</vch:date>
         <vch:dateTax>2026-10-26</vch:dateTax>
         <vch:text>OMV Diesel</vch:text>
-        <vch:accounting><typ:ids>Rozúčtovať</typ:ids></vch:accounting>
+        <vch:accounting><typ:ids>1PHM</typ:ids></vch:accounting>
         <vch:classificationKVDPH><typ:ids>B3</typ:ids></vch:classificationKVDPH>
         <vch:partnerIdentity>
           <typ:address>

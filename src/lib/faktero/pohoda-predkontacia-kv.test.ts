@@ -305,7 +305,9 @@ describe("B) 11665 — PHM v hotovosti pomerom 50/30/20 %", () => {
   it("každá položka má KV B3 — aj tie s členením PN", () => {
     expect(xml).toContain("<vch:voucherType>expense</vch:voucherType>");
     const h = hlavicka(xml, "vch", "voucher");
-    expect(ids(h, "accounting")).toBe("Rozúčtovať");
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvej položky.
+    expect(ids(h, "accounting")).toBe("1PHM");
+    expect(ids(h, "accounting")).not.toBe("Rozúčtovať");
     expect(ids(h, "classificationKVDPH")).toBe("B3");
     const p = polozky(xml, "vch", "voucher");
     expect(p.map((x) => [ids(x, "accounting"), ids(x, "classificationVAT"), ids(x, "classificationKVDPH")])).toEqual([

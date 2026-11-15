@@ -843,13 +843,13 @@ function Predvolene({
           value={h.pohoda_predkontacia_rozuctovat ?? ""}
           onChange={(v) => setH({ ...h, pohoda_predkontacia_rozuctovat: v })}
           moznosti={ponuka(zaznamy, "predkontacia")}
-          placeholder={t("Rozúčtovať")}
+          placeholder={t("kód prvej položky")}
           className={vstup}
           vyber
         />
         <span className="mt-0.5 block text-xs text-muted-foreground">
           {t(
-            "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = „Rozúčtovať“.",
+            "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = kód prvej položky.",
           )}
         </span>
       </label>

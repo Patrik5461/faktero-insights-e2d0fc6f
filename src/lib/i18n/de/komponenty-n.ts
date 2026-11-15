@@ -860,8 +860,8 @@ export default {
   "= zvyšok": "= Rest",
   "Zmazať riadok {n}": "Zeile {n} löschen",
   "Pridať riadok": "Zeile hinzufügen",
-  "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou, hlavička „Rozúčtovať“.":
-    "Die Summen stimmen mit dem Beleg überein. An Pohoda geht er als Positionen mit eigener Vorkontierung, Kopf „Rozúčtovať“.",
+  "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou; hlavička dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady).":
+    "Die Summen stimmen mit dem Beleg überein. An Pohoda geht er als Positionen mit eigener Vorkontierung; der Kopf erhält den Code der ersten Position (oder die für aufgeteilte Belege eingestellte Vorkontierung).",
   "Rozúčtovanie potrebuje aspoň dva riadky — na jeden kód stačí zaúčtovanie.":
     "Eine Aufteilung braucht mindestens zwei Zeilen – für einen Code genügt die Verbuchung.",
   "Najviac 50 riadkov.": "Höchstens 50 Zeilen.",
@@ -1110,8 +1110,8 @@ export default {
   "Členenie DPH položky {n}": "MwSt.-Kennzeichen der Position {n}",
   "KV položky {n}": "KV der Position {n}",
   "z faktúry": "aus der Rechnung",
-  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v Pohode dostane „Rozúčtovať“.":
-    "Eine Position ohne Code erhält den Code der Rechnung. Haben Positionen unterschiedliche Vorkontierungen, erhält der Kopf in Pohoda „Rozúčtovať“.",
+  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v Pohode dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady) a každá položka nesie svoj kód.":
+    "Eine Position ohne Code erhält den Code der Rechnung. Haben Positionen unterschiedliche Vorkontierungen, erhält der Kopf in Pohoda den Code der ersten Position (oder die für aufgeteilte Belege eingestellte Vorkontierung), und jede Position trägt ihren eigenen Code.",
   "Prázdne pole = predvolené z": "Leeres Feld = Standard aus den",
   ". Do Pohody ide faktúra konektorom alebo mesačným balíkom; hneď ju stiahnete tlačidlom.":
     ". An Pohoda geht die Rechnung per Konnektor oder Monatspaket; sofort erhalten Sie sie über die Schaltfläche.",

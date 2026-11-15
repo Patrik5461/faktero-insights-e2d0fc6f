@@ -244,7 +244,9 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
       [{ ...prva, pohoda_predkontacia: "4Fv", kv_clenenie: "A2" }, ...zvysok],
       nast,
     );
-    expect(rozuct.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvej položky.
+    expect(rozuct.invoiceHeader.accounting.ids).toBe("4Fv");
+    expect(rozuct.invoiceHeader.accounting.ids).not.toBe("Rozúčtovať");
     const pol = [].concat(rozuct.invoiceDetail.invoiceItem);
     expect((pol[0] as any).accounting.ids).toBe("4Fv");
     expect((pol[0] as any).classificationKVDPH.ids).toBe("A2");
@@ -514,7 +516,9 @@ describe("Pohoda XML — prijaté doklady", () => {
     ];
     const inv = posli([{ ...bloček, rozuctovanie }], { predkontaciaDoklady: "5Fp" }).dataPackItem
       .invoice;
-    expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvej položky.
+    expect(inv.invoiceHeader.accounting.ids).toBe("PHM");
+    expect(inv.invoiceHeader.accounting.ids).not.toBe("Rozúčtovať");
     expect(inv.invoiceHeader.classificationVAT).toBeUndefined();
     const pol = inv.invoiceDetail.invoiceItem;
     expect(pol).toHaveLength(4);
@@ -667,8 +671,11 @@ describe("Pohoda XML — prijaté doklady", () => {
       },
     };
     const inv = posli([bloček], nast).dataPackItem.invoice;
-    expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvej položky.
+    expect(inv.invoiceHeader.accounting.ids).toBe("PHM1");
+    expect(inv.invoiceHeader.accounting.ids).not.toBe("Rozúčtovať");
     const kody = ([] as any[]).concat(inv.invoiceDetail.invoiceItem).map((p) => p.accounting.ids);
+    expect(kody[0]).toBe("PHM1");
     expect(new Set(kody)).toEqual(new Set(["PHM1", "PHM2", "PHM3"]));
   });
 

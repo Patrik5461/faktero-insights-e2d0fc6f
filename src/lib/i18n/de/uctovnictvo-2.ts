@@ -67,9 +67,9 @@ export default {
     "Der Beleg erhält in Pohoda im Reiter Dokumente einen Link, der den Scan öffnet. Der Link ist eine lange Zufallszeichenfolge.",
   "Predkontácia hlavičky pri rozúčtovanom doklade": "Kopf-Vorkontierung bei aufgeteiltem Beleg",
   "Predkontácia hlavičky pri rozúčtovaní": "Kopf-Vorkontierung bei Aufteilung",
-  Rozúčtovať: "Aufteilen",
-  "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = „Rozúčtovať“.":
-    "Ist der Beleg auf mehrere Vorkontierungen aufgeteilt, erhält der Kopf in Pohoda diesen Code und die Positionen tragen die Vorkontierungen. Leer = „Rozúčtovať“ (Aufteilen).",
+  "kód prvej položky": "Code der ersten Position",
+  "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = kód prvej položky.":
+    "Ist der Beleg auf mehrere Vorkontierungen aufgeteilt, erhält der Kopf in Pohoda diesen Code und die Positionen tragen die Vorkontierungen. Leer = Code der ersten Position.",
   "Bankové pohyby podľa označenia platby": "Bankbewegungen nach Zahlungskennzeichnung",
   Pri: "Beim",
   "bankovom výpise": "Kontoauszug",

@@ -35,7 +35,8 @@ const f2 = (n: number) => formatujCislo(n, 2);
 /**
  * Rozúčtovanie dokladu na viac riadkov — každý s vlastnou predkontáciou,
  * členením DPH a sumou. Do Pohody ide ako položky s vlastným zaúčtovaním,
- * hlavička dostane „Rozúčtovať". Pri vystavenej faktúre má riadok aj
+ * hlavička dostane kód prvej položky alebo `pohoda_predkontacia_rozuctovat`
+ * (CZ „Rozúčtovat“). Pri vystavenej faktúre má riadok aj
  * stredisko a činnosť (`sStrediskom`).
  */
 export function RozuctovaniePanel({
@@ -370,7 +371,7 @@ export function RozuctovaniePanel({
         {chyba
           ? t(chyba)
           : t(
-              "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou, hlavička „Rozúčtovať“.",
+              "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou; hlavička dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady).",
             )}
       </p>
 

@@ -404,8 +404,9 @@ const sections: HelpSection[] = [
           <em>Rozúčtovať na viac predkontácií</em>. Každý riadok má vlastnú predkontáciu, členenie
           DPH, sadzbu, základ a DPH (napr. 80 € materiál 1Fp/PD a 20 € réžia 2Fp/PN). Súčty po
           sadzbách musia sedieť s faktúrou na cent — tlačidlo <em>= zvyšok</em> doplní rozdiel. Do
-          Pohody ide faktúra s hlavičkou „Rozúčtovať“ a s položkami, z ktorých každá nesie svoje
-          kódy. Rovnako sa dá rozúčtovať aj bloček (Doklady → otvoriť doklad → Zaúčtovanie).
+          Pohody ide faktúra s položkami, z ktorých každá nesie svoje kódy; hlavička dostane kód
+          prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady v Účtovníctvo →
+          Predkontácie). Rovnako sa dá rozúčtovať aj bloček (Doklady → otvoriť doklad → Zaúčtovanie).
         </p>
         <p>
           <strong>Stiahnuť hneď:</strong> zaúčtovaná faktúra má tlačidlo{" "}

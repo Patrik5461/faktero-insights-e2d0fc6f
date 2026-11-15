@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { XmlDocument, XsdValidator } from "libxml2-wasm";
 import { xmlRegisterFsInputProviders } from "libxml2-wasm/lib/nodejs.mjs";
-import { buildPohodaInvoiceXml } from "./export.server";
+import { buildPohodaInvoiceXml, hlavickaRozuctovania } from "./export.server";
 import {
   chybaUlozenehoRozuctovaniaVystavenej,
   platneRozuctovanieVystavenej,
@@ -141,6 +141,8 @@ const rozuctovanie = [
 ];
 
 const pocet = (xml: string, s: string) => xml.split(s).length - 1;
+/** Len hlavička faktúry — kód položky by inak prešiel aj ako kód hlavičky. */
+const hlavickaXml = (xml: string) => xml.split("</inv:invoiceHeader>")[0];
 
 describe("rozúčtovanie vystavenej — rozpis a kontrola", () => {
   it("rozpis po sadzbách z položiek, dobropis kladne, zľava na doklad započítaná", () => {
@@ -203,8 +205,25 @@ describe("rozúčtovanie vystavenej — rozpis a kontrola", () => {
   });
 });
 
+describe("hlavickaRozuctovania — predkontácia hlavičky rozúčtovaného dokladu", () => {
+  it("vlastná firmy > kód prvej položky > predvolená; CZ „Rozúčtovat“", () => {
+    // Vlastná predkontácia firmy prebije všetko, aj v CZ.
+    expect(hlavickaRozuctovania("SK", "ROZ", ["3Fv", "3Fm"], "1Fv")).toBe("ROZ");
+    expect(hlavickaRozuctovania("CZ", " ROZ ", ["3Fv"], "1Fv")).toBe("ROZ");
+    // SK: POHODA „Rozúčtovať“ nepozná — prvá položka, ktorá kód má.
+    expect(hlavickaRozuctovania("SK", null, ["", null, "3Fm", "3Fv"], "1Fv")).toBe("3Fm");
+    expect(hlavickaRozuctovania("SK", "  ", [" 3Fv "], "1Fv")).toBe("3Fv");
+    // Bez kódu na položkách predvolená.
+    expect(hlavickaRozuctovania("SK", undefined, [null, ""], "1Fv")).toBe("1Fv");
+    expect(hlavickaRozuctovania("SK", undefined, [], null)).toBe("");
+    // CZ ostáva „Rozúčtovat“.
+    expect(hlavickaRozuctovania("CZ", null, ["3Fv"], "1Fv")).toBe("Rozúčtovat");
+    expect(hlavickaRozuctovania("SK", null, ["3Fv"], "1Fv")).not.toBe("Rozúčtovať");
+  });
+});
+
 describe("rozúčtovanie vystavenej — Pohoda (invoice.xsd)", () => {
-  it("rozúčtovaná faktúra: riadky namiesto položiek, hlavička Rozúčtovať, stredisko a činnosť na riadkoch", () => {
+  it("rozúčtovaná faktúra: riadky namiesto položiek, hlavička s kódom prvého riadku, stredisko a činnosť na riadkoch", () => {
     const x = buildPohodaInvoiceXml({
       company: firma,
       nastavenia,
@@ -213,7 +232,9 @@ describe("rozúčtovanie vystavenej — Pohoda (invoice.xsd)", () => {
     expect(chybySchemy(x)).toEqual([]);
     expect(pocet(x, "<inv:invoiceItem>")).toBe(3);
     expect(x).toContain("<inv:invoiceHeader>");
-    expect(x).toMatch(/<inv:invoiceHeader>[\s\S]*<inv:accounting><typ:ids>Rozúčtovať<\/typ:ids>/);
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvého riadku.
+    expect(hlavickaXml(x)).toContain("<inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>");
+    expect(x).not.toContain("Rozúčtovať");
     expect(x).toContain("<inv:text>Služby</inv:text>");
     expect(x).toContain("<inv:accounting><typ:ids>3Fm</typ:ids></inv:accounting>");
     expect(x).toContain("<inv:centre><typ:ids>KE</typ:ids></inv:centre>");
@@ -257,7 +278,7 @@ describe("rozúčtovanie vystavenej — Pohoda (invoice.xsd)", () => {
     expect(x).not.toMatch(/<typ:price>-/);
   });
 
-  it("kódy po položkách: stredisko a činnosť položky, Rozúčtovať aj pri rovnakej predkontácii", () => {
+  it("kódy po položkách: stredisko a činnosť položky, rozúčtovanie aj pri rovnakej predkontácii", () => {
     const x = buildPohodaInvoiceXml({
       company: firma,
       nastavenia,
@@ -273,13 +294,17 @@ describe("rozúčtovanie vystavenej — Pohoda (invoice.xsd)", () => {
       ],
     } as any);
     expect(chybySchemy(x)).toEqual([]);
-    expect(x).toMatch(/<inv:invoiceHeader>[\s\S]*<inv:accounting><typ:ids>Rozúčtovať<\/typ:ids>/);
+    // Hlavička dostane kód prvej položky (tu všetky 3Fv), nie „Rozúčtovať“.
+    expect(hlavickaXml(x)).toContain("<inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>");
+    expect(x).not.toContain("Rozúčtovať");
     expect(x).toContain("<inv:centre><typ:ids>ZA</typ:ids></inv:centre>");
     expect(x).toContain("<inv:activity><typ:ids>SERVIS</typ:ids></inv:activity>");
-    expect(pocet(x, "<inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>")).toBe(3);
+    // Každá z troch položiek ponecháva vlastný kód (hlavička je štvrtá).
+    expect(pocet(x.split("<inv:invoiceDetail>")[1], "<inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>")).toBe(3);
+    expect(pocet(x, "<inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>")).toBe(4);
   });
 
-  it("rovnaké stredisko na všetkých položkách ide do hlavičky, nie Rozúčtovať", () => {
+  it("rovnaké stredisko na všetkých položkách ide do hlavičky, bez rozúčtovania", () => {
     const x = buildPohodaInvoiceXml({
       company: firma,
       nastavenia,

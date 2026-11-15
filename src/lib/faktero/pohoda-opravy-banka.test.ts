@@ -224,7 +224,7 @@ describe("V8: splátky — stály balík a id splátky s verziou", () => {
 });
 
 describe("V9: rozúčtovanie splátky", () => {
-  it("rôzne predkontácie položiek → hlavička „Rozúčtovať“, každá položka vlastný kód", () => {
+  it("rôzne predkontácie položiek → hlavička s kódom prvej položky (SK), každá položka vlastný kód", () => {
     const z: ZmluvaPreExport = {
       ...leasing,
       pohoda_rozuctovanie: { istina: { predkontacia: "1Lz" }, urok: { predkontacia: "562" }, poistenie: { predkontacia: "548" } },
@@ -232,14 +232,16 @@ describe("V9: rozúčtovanie splátky", () => {
     const r = xmlSplatokDoPohody({ ico: "1", krajinaFirmy: "SK", zmluva: z, splatky: [s1] });
     expect(chybySchemy(r.xml)).toEqual([]);
     const hlavicka = r.xml.split("</inv:invoiceHeader>")[0];
-    expect(hlavicka).toContain("<inv:accounting><typ:ids>Rozúčtovať</typ:ids></inv:accounting>");
+    // POHODA SK „Rozúčtovať“ nepozná (dala by „Neviem“) — hlavička dostane kód prvej položky (istina).
+    expect(hlavicka).toContain("<inv:accounting><typ:ids>1Lz</typ:ids></inv:accounting>");
+    expect(hlavicka).not.toContain("Rozúčtovať");
     const polozky = r.xml.split("<inv:invoiceDetail>")[1];
     expect(polozky).toContain("<typ:ids>1Lz</typ:ids>");
     expect(polozky).toContain("<typ:ids>562</typ:ids>");
     expect(polozky).toContain("<typ:ids>548</typ:ids>");
   });
 
-  it("vlastná predkontácia „Rozúčtovať“ firmy a CZ verzia", () => {
+  it("vlastná predkontácia rozúčtovania firmy a CZ verzia „Rozúčtovat“", () => {
     const z: ZmluvaPreExport = { ...leasing, pohoda_rozuctovanie: { urok: { predkontacia: "562" } } };
     const vlastna = xmlSplatokDoPohody({ zmluva: z, splatky: [s1], predkontaciaRozuctovat: "ROZ" });
     expect(vlastna.xml.split("</inv:invoiceHeader>")[0]).toContain("<typ:ids>ROZ</typ:ids>");

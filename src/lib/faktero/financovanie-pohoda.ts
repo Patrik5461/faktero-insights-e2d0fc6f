@@ -103,9 +103,20 @@ export function idSplatkyPohody(splatka: Pick<SplatkaPreExport, "id" | "pohoda_v
   return `SPL-${splatka.id}${v > 0 ? `-${v}` : ""}`;
 }
 
-/** Predkontácia hlavičky rozúčtovaného záväzku — v Pohode „Rozúčtovať“ (CZ „Rozúčtovat“). */
-export function predkontaciaRozuctovat(krajina: KrajinaDane, vlastna?: string | null): string {
-  return txt(vlastna) || (krajina === "CZ" ? "Rozúčtovat" : "Rozúčtovať");
+/**
+ * Predkontácia hlavičky rozúčtovaného záväzku. Vlastná z nastavení firmy, inak
+ * SK kód prvej položky (POHODA SK „Rozúčtovať“ nepozná a dá „Neviem“ —
+ * overené naostro 15. 11. 2026), CZ „Rozúčtovat“ (neoverené).
+ */
+export function predkontaciaRozuctovat(
+  krajina: KrajinaDane,
+  vlastna?: string | null,
+  kodyPoloziek: readonly (string | null | undefined)[] = [],
+): string {
+  return (
+    txt(vlastna) ||
+    (krajina === "CZ" ? "Rozúčtovat" : kodyPoloziek.map((k) => txt(k)).find(Boolean) || "")
+  );
 }
 
 /** Členenie DPH „nezahŕňať do DPH“ (type.xsd `classificationVATType`). */
@@ -533,14 +544,14 @@ export function polozkaBalikaSplatky(
     krajina === "CZ" ? el("inv:dateKHDPH", den, o) : el("inv:dateDelivery", den, o);
   /*
     Rozúčtovanie (V9): keď položky vedú na rôzne predkontácie, hlavička musí
-    niesť „Rozúčtovať“ — inak POHODA zaúčtuje celý záväzok predkontáciou
+    niesť kód rozúčtovania (SK kód prvej položky, CZ „Rozúčtovat“) — inak POHODA zaúčtuje celý záväzok predkontáciou
     hlavičky a kódy položiek ignoruje (rovnako ako pri faktúrach v
     export.server.ts). Rovnaký kód na všetkých položkách ide do hlavičky.
   */
   const pkPoloziek = new Set(polozky.map((p) => kodyPolozky(zmluva, splatka, p.zlozka).predkontacia ?? ""));
   const rozuctovat = pkPoloziek.size > 1;
   const pkHlavicky = rozuctovat
-    ? predkontaciaRozuctovat(krajina, opts.predkontaciaRozuctovat)
+    ? predkontaciaRozuctovat(krajina, opts.predkontaciaRozuctovat, [...pkPoloziek])
     : [...pkPoloziek][0] || kody.predkontacia;
   /* Záväzok bez DPH bez výslovného členenia: „nezahŕňať do DPH“ (S13). */
   const bezDph = polozky.every((p) => p.dph === 0 && !p.sadzba);
@@ -644,7 +655,7 @@ export function xmlSplatokDoPohody(opts: {
    * s „Neviem“, hoci predkontáciu má.
    */
   chybajuceSkratky?: (kody: string[]) => string[];
-  /** Predkontácia „Rozúčtovať“ z nastavení firmy (`pohoda_predkontacia_rozuctovat`). */
+  /** Predkontácia hlavičky rozúčtovaného dokladu z nastavení firmy (`pohoda_predkontacia_rozuctovat`). */
   predkontaciaRozuctovat?: string | null;
 }): VysledokExportuSplatok {
   const krajina = krajinaDane(opts.krajinaFirmy);

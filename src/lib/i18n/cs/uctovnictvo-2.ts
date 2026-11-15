@@ -66,9 +66,9 @@ export default {
     "Doklad má v Pohodě v záložce Dokumenty odkaz, kterým se otevře sken. Odkaz je dlouhý náhodný řetězec.",
   "Predkontácia hlavičky pri rozúčtovanom doklade": "Předkontace hlavičky u rozúčtovaného dokladu",
   "Predkontácia hlavičky pri rozúčtovaní": "Předkontace hlavičky při rozúčtování",
-  Rozúčtovať: "Rozúčtovat",
-  "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = „Rozúčtovať“.":
-    "Když je doklad rozúčtován na více předkontací, hlavička v Pohodě dostane tento kód a předkontace nesou položky. Prázdné = „Rozúčtovat“.",
+  "kód prvej položky": "kód první položky",
+  "Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a predkontácie nesú položky. Prázdne = kód prvej položky.":
+    "Když je doklad rozúčtován na více předkontací, hlavička v Pohodě dostane tento kód a předkontace nesou položky. Prázdné = kód první položky.",
   "Bankové pohyby podľa označenia platby": "Bankovní pohyby podle označení platby",
   Pri: "Při",
   "bankovom výpise": "bankovním výpisu",

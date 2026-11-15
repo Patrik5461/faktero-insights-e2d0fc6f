@@ -25,7 +25,10 @@ describe("ťarchopis v exportoch", () => {
   it("Pohoda: vydaný ťarchopis s väzbou na pôvodnú faktúru a kladnými sumami", () => {
     const x = buildPohodaInvoiceXml({ company, invoices: [{ invoice, items }], opravovane: { t1: "2026001" } });
     expect(x).toContain("<inv:invoiceType>issuedDebitNote</inv:invoiceType>");
-    expect(x).toMatch(/<inv:correctiveDocument itemTransfer="false">\s*<typ:sourceDocument>\s*<typ:number>2026001<\/typ:number>/);
+    // POHODA vrubopis s correctiveDocument odmietne celý (overené 15. 11. 2026) —
+    // väzba na pôvodnú faktúru ide len cez originalDocumentNumber.
+    expect(x).not.toContain("correctiveDocument");
+    expect(x).toMatch(/<inv:originalDocumentNumber>2026001<\/inv:originalDocumentNumber>/);
     expect(x).toContain("<inv:quantity>1</inv:quantity>");
   });
   it("ISDOC: typ dokladu 3 (vrubopis)", () => {
@@ -46,6 +49,10 @@ describe("dobropis do Pohody", () => {
     expect(x).toContain("<inv:quantity>1</inv:quantity>");
     expect(x).toContain("<typ:priceHigh>10.00</typ:priceHigh>");
     expect(x).not.toContain("-10.00");
+  });
+  it("dobropis si correctiveDocument s väzbou na pôvodnú faktúru ponecháva", () => {
+    const x = buildPohodaInvoiceXml({ company, invoices: [{ invoice: dobropis, items: zaporne }], opravovane: { d1: "2026001" } });
+    expect(x).toMatch(/<inv:correctiveDocument itemTransfer="false">\s*<typ:sourceDocument>\s*<typ:number>2026001<\/typ:number>/);
   });
   it("s voľbou „dobropis kladný“ ide kladne", () => {
     const x = buildPohodaInvoiceXml({ company, invoices: [{ invoice: dobropis, items: zaporne }], nastavenia: { dobropisKladny: true } as any });

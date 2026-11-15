@@ -90,8 +90,9 @@ const sections: HelpSection[] = [
           (hotovosť, karta, prevod) — doklad, ktorý na ne sedí, ho má v ponuke navrchu. V ponuke je
           najprv názov, potom kód a účty. Poradie: kód na doklade, pravidlo automatického účtovania,
           kategória, predvolený kód druhu dokladu. Doklad sa dá aj{" "}
-          <strong>rozúčtovať na viac predkontácií a členení</strong>; v Pohode má potom hlavičku
-          „Rozúčtovať“ a kódy nesú položky.
+          <strong>rozúčtovať na viac predkontácií a členení</strong>; v Pohode potom kódy nesú
+          položky a hlavička dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované
+          doklady).
         </p>
         <p>
           <strong>Bločky do Pohody</strong> idú buď všetky ako prijaté faktúry, alebo{" "}

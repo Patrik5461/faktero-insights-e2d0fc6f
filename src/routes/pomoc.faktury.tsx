@@ -366,8 +366,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Keď faktúra obsahuje rôzne plnenia (tovar aj služby), dá sa predkontácia a členenie zadať
-          aj <strong>po položkách</strong>. Do Pohody potom faktúra ide s hlavičkou „Rozúčtovať“ a
-          každá položka nesie svoje kódy.
+          aj <strong>po položkách</strong>. Do Pohody potom každá položka ide so svojimi kódmi a
+          hlavička dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady).
         </p>
         <p>
           Viac faktúr naraz zaúčtujete v <Link to="/faktury">zozname faktúr</Link>: označte ich a

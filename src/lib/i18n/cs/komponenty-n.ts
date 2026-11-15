@@ -841,8 +841,8 @@ export default {
   "= zvyšok": "= zbytek",
   "Zmazať riadok {n}": "Smazat řádek {n}",
   "Pridať riadok": "Přidat řádek",
-  "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou, hlavička „Rozúčtovať“.":
-    "Součty sedí s dokladem. Do Pohody půjde jako položky s vlastní předkontací, hlavička „Rozúčtovat“.",
+  "Súčty sedia s dokladom. Do Pohody pôjde ako položky s vlastnou predkontáciou; hlavička dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady).":
+    "Součty sedí s dokladem. Do Pohody půjde jako položky s vlastní předkontací; hlavička dostane kód první položky (nebo předkontaci nastavenou pro rozúčtované doklady).",
   "Rozúčtovanie potrebuje aspoň dva riadky — na jeden kód stačí zaúčtovanie.":
     "Rozúčtování potřebuje alespoň dva řádky — pro jeden kód stačí zaúčtování.",
   "Najviac 50 riadkov.": "Nejvýše 50 řádků.",
@@ -1083,8 +1083,8 @@ export default {
   "Členenie DPH položky {n}": "Členění DPH položky {n}",
   "KV položky {n}": "KV položky {n}",
   "z faktúry": "z faktury",
-  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v Pohode dostane „Rozúčtovať“.":
-    "Položka bez kódu dostane kód faktury. Když mají položky různé předkontace, hlavička v Pohodě dostane „Rozúčtovat“.",
+  "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v Pohode dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady) a každá položka nesie svoj kód.":
+    "Položka bez kódu dostane kód faktury. Když mají položky různé předkontace, hlavička v Pohodě dostane kód první položky (nebo předkontaci nastavenou pro rozúčtované doklady) a každá položka nese svůj kód.",
   "Prázdne pole = predvolené z": "Prázdné pole = výchozí z",
   ". Do Pohody ide faktúra konektorom alebo mesačným balíkom; hneď ju stiahnete tlačidlom.":
     ". Do Pohody jde faktura konektorem nebo měsíčním balíkem; hned ji stáhnete tlačítkem.",

@@ -282,7 +282,7 @@ export type PohodaNastavenia = {
   kvPrijata?: string | null;
   kvDoklady?: string | null;
   /**
-   * Predkontácia hlavičky rozúčtovaného dokladu — v Pohode „Rozúčtovať";
+   * Predkontácia hlavičky rozúčtovaného dokladu (POHODA SK „Rozúčtovať“ nemá);
    * kódy potom nesú položky. Prázdne = podľa krajiny firmy.
    */
   predkontaciaRozuctovat?: string | null;
@@ -890,7 +890,7 @@ export function polozkyFaktur(opts: {
       /*
         Kódy zo zaúčtovania faktúry prebíjajú predvolené pre druh dokladu.
         Keď má niektorá položka vlastnú predkontáciu (účtovné nastavenia
-        položky), hlavička dostane „Rozúčtovať" a kódy nesú položky.
+        položky), hlavička dostane kód z `hlavickaRozuctovania` a kódy nesú položky.
       */
       const predkontaciaJedna = !uctovny
         ? ""
@@ -972,8 +972,12 @@ export function polozkyFaktur(opts: {
       const poPolozkach = uctovny && kodyPoloziek.size > 1;
       const prvy = zdrojeKodov[0];
       const predkontacia = poPolozkach
-        ? nastavenia?.predkontaciaRozuctovat?.trim() ||
-          (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
+        ? hlavickaRozuctovania(
+            company.country,
+            nastavenia?.predkontaciaRozuctovat,
+            zdrojeKodov.map((it) => pkPolozky(it)),
+            predkontaciaJedna,
+          )
         : (prvy ? pkPolozky(prvy) : "") || predkontaciaJedna;
       const strediskoHlavicky = !poPolozkach && prvy ? strediskoPolozky(prvy) : strediskoFaktury;
       const cinnostHlavicky = !poPolozkach && prvy ? cinnostPolozky(prvy) : cinnostFaktury;
@@ -1258,7 +1262,14 @@ export function polozkyFaktur(opts: {
                 "",
             ).trim()
           : "";
-      const vazba = opravovana
+      /*
+        Vrubopis (aj kladná oprava § 25a) väzbu `correctiveDocument` nesmie
+        mať: POHODA SK 14404.8 ho s ňou odmietne celý („Nebol nájdený
+        odkazovaný záznam“), hoci pôvodná faktúra v nej je — overené naostro
+        15. 11. 2026; dobropis s tou istou väzbou prejde. Pôvodné číslo pre
+        KV ide ďalej v `originalDocumentNumber`.
+      */
+      const vazba = opravovana && invoiceType !== "issuedDebitNote"
         ? `
       <inv:correctiveDocument itemTransfer="false">
         <typ:sourceDocument>
@@ -1528,6 +1539,27 @@ export function polozkyPokladne(opts: {
   </dat:dataPackItem>`;
     })
     .join("");
+}
+
+/**
+ * Predkontácia hlavičky dokladu rozúčtovaného po položkách.
+ *
+ * Vlastná z nastavení firmy má prednosť. Inak SK: kód prvej položky — POHODA
+ * SK predkontáciu „Rozúčtovať“ nemá (pevné sú len Ručne, Neviem, Bez); s ňou
+ * dala hlavičke „Neviem“ a doklad ostal nezaúčtovaný. Overené naostro
+ * 15. 11. 2026: rozúčtované doklady PALIERY majú v hlavičke bežný kód
+ * a položky vlastné, ktoré POHODA ponechá. CZ ostáva „Rozúčtovat“ (neoverené).
+ */
+export function hlavickaRozuctovania(
+  krajina: string | null | undefined,
+  vlastna: string | null | undefined,
+  kodyPoloziek: readonly (string | null | undefined)[],
+  predvolena?: string | null,
+): string {
+  const v = String(vlastna ?? "").trim();
+  if (v) return v;
+  if (krajinaDane(krajina) === "CZ") return "Rozúčtovat";
+  return kodyPoloziek.map((k) => String(k ?? "").trim()).find(Boolean) || String(predvolena ?? "").trim();
 }
 
 /* ---------------- Bankový výpis ---------------- */
@@ -2108,7 +2140,7 @@ export function polozkyDokladov(opts: {
 
       /*
         Rozúčtovaný doklad: každý riadok ide ako položka s vlastnou
-        predkontáciou a členením, hlavička nesie „Rozúčtovať". Riadky, ktoré
+        predkontáciou a členením, hlavička nesie kód z `hlavickaRozuctovania`. Riadky, ktoré
         so súčtami dokladu nesedia, sa nepoužijú — radšej jeden kód než iná daň.
       */
       /*
@@ -2151,8 +2183,12 @@ export function polozkyDokladov(opts: {
         polozkyFaktury.length > 0 && new Set(polozkyFaktury.map(kodPolozky)).size > 1;
       const predkontacia =
         rozuctovany || rozuctovanePolozky
-          ? nastavenia?.predkontaciaRozuctovat?.trim() ||
-            (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
+          ? hlavickaRozuctovania(
+              company.country,
+              nastavenia?.predkontaciaRozuctovat,
+              rozuctovany ? rozuct.map((r) => r.predkontacia || predkontaciaJedna || "") : polozkyFaktury.map(kodPolozky),
+              predkontaciaJedna,
+            )
           : predkontaciaJedna;
       /*
         Celá prijatá faktúra v prenesení daňovej povinnosti: bez vlastného

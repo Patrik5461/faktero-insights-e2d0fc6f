@@ -487,7 +487,7 @@ export function useZauctovanieVystavenej({
           </PolozkyKontajner>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
-              "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane „Rozúčtovať“.",
+              "Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, strediská alebo činnosti, hlavička v Pohode dostane kód prvej položky (alebo predkontáciu nastavenú pre rozúčtované doklady) a každá položka nesie svoj kód.",
             )}
           </p>
         </div>
