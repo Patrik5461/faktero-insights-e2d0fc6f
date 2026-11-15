@@ -242,16 +242,19 @@ export function jeIdCiselnika(id: string | null | undefined): boolean {
  * Položky dávky, ktorými sa Pohoda pýta na svoje predkontácie a členenia.
  *
  * Podvojné aj jednoduché účtovníctvo naraz — Pohoda odpovie na to, ktoré
- * firma vedie, a na druhé vráti prázdny zoznam. Overené proti list.xsd.
+ * firma vedie, a na druhé vráti chybu „nepoužíva sa pri zvolenom type
+ * účtovníctva“. Overené proti list.xsd aj naostro (POHODA SK 14404.8,
+ * 15. 11. 2026): predkontácie, strediská a činnosti Pohoda prijme len vo
+ * verzii 1.1 — s 2.0 odpovie „Podporované verzie: 1.0, 1.1“ a nevráti nič.
  */
 export function polozkyZiadosti(odsadenie = "  "): string {
   const o = odsadenie;
   return `
 ${o}<dat:dataPackItem id="CIS-PREDKONTACIE" version="2.0">
-${o}  <lst:listAccountingDoubleEntryRequest version="2.0"/>
+${o}  <lst:listAccountingDoubleEntryRequest version="1.1"/>
 ${o}</dat:dataPackItem>
 ${o}<dat:dataPackItem id="CIS-PREDKONTACIE-JU" version="2.0">
-${o}  <lst:listAccountingSingleEntryRequest version="2.0"/>
+${o}  <lst:listAccountingSingleEntryRequest version="1.1"/>
 ${o}</dat:dataPackItem>
 ${o}<dat:dataPackItem id="CIS-CLENENIE" version="2.0">
 ${o}  <lst:listClassificationVATRequest version="2.0" classificationVATVersion="2.0">
@@ -259,10 +262,10 @@ ${o}    <lst:requestClassificationVAT/>
 ${o}  </lst:listClassificationVATRequest>
 ${o}</dat:dataPackItem>
 ${o}<dat:dataPackItem id="CIS-STREDISKA" version="2.0">
-${o}  <lst:listCentreRequest version="2.0"/>
+${o}  <lst:listCentreRequest version="1.1"/>
 ${o}</dat:dataPackItem>
 ${o}<dat:dataPackItem id="CIS-CINNOSTI" version="2.0">
-${o}  <lst:listActivityRequest version="2.0"/>
+${o}  <lst:listActivityRequest version="1.1"/>
 ${o}</dat:dataPackItem>
 ${o}<dat:dataPackItem id="CIS-RADY" version="2.0">
 ${o}  <lst:listNumericalSeriesRequest version="2.0" numericalSeriesVersion="2.0">

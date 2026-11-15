@@ -87,6 +87,30 @@ describe("žiadosť do Pohody", () => {
     expect(x.match(/<dat:dataPackItem /g)).toHaveLength(8);
   });
 
+  it("predkontácie, strediská a činnosti sa pýtajú vo verzii 1.1 (POHODA SK 14404.8 odmietne 2.0)", () => {
+    const x = ziadostCiselnikov("12345678");
+    for (const el of [
+      "listAccountingDoubleEntryRequest",
+      "listAccountingSingleEntryRequest",
+      "listCentreRequest",
+      "listActivityRequest",
+    ])
+      expect(x).toContain(`<lst:${el} version="1.1"/>`);
+  });
+
+  it("rozoberie skutočnú odpoveď POHODY 1.1 (atribúty itemAccounting, prázdne strediská)", () => {
+    const xml = `<rsp:responsePackItem version="2.0" id="CIS-PREDKONTACIE" state="ok">
+		<lst:listAccountingDoubleEntry version="1.1" dateTimeStamp="2026-11-15T20:07:15" dateValidFrom="2026-11-15" state="ok">
+			<lst:itemAccounting id="515" code="022001 042000" accounting="Zaradenie do majetku" debit="022001" credit="042000" agenda="internalDocument"></lst:itemAccounting>
+		</lst:listAccountingDoubleEntry></rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-STREDISKA" state="ok">
+		<lst:listCentre version="1.1" dateTimeStamp="2026-11-15T20:07:15" dateValidFrom="2026-11-15" state="ok"></lst:listCentre></rsp:responsePackItem>`;
+    const z = rozoberCiselnikyPohody(xml, new Date("2026-11-15"));
+    expect(z).toEqual([
+      expect.objectContaining({ druh: "predkontacia", kod: "022001 042000", ucet_md: "022001", ucet_d: "042000", agenda: "internalDocument" }),
+    ]);
+  });
+
   it("do dávky sa pridá raz a s menným priestorom", () => {
     const davka = `<?xml version="1.0" encoding="utf-8"?>
 <dat:dataPack id="X" ico="1" application="Faktero" version="2.0" note="n"

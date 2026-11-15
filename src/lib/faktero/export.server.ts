@@ -1492,6 +1492,13 @@ export function polozkyPokladne(opts: {
           nastavenia?.predkontaciaPokladna
             ? `\n        <vch:accounting><typ:ids>${esc(nastavenia.predkontaciaPokladna)}</typ:ids></vch:accounting>`
             : ""
+        }${
+          /*
+            Pohyb pokladne je vždy bez DPH (priceNone). Bez členenia mu
+            POHODA dosadí tuzemské UD/PD (overené naostro 15. 11. 2026) —
+            preto výslovne „nezahŕňať do DPH“, rovnako ako banka (S13).
+          */
+          `\n        <vch:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></vch:classificationVAT>`
         }${el("vch:text", popis || "Pokladničný doklad", "        ")}${el(
           "vch:note",
           skrat(p?.note, 200),
