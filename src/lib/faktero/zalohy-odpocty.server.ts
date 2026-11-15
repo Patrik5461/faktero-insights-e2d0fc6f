@@ -53,7 +53,7 @@ export async function nacitajOdpocty(
     poDavkach<any>(zalohoveIds, (kus) =>
       supabase
         .from("invoices")
-        .select("id, invoice_number, variable_symbol")
+        .select("id, invoice_number, variable_symbol, exported_at")
         .eq("company_id", companyId)
         .in("id", kus),
     ),
@@ -87,6 +87,7 @@ export async function nacitajOdpocty(
       vs: z?.variable_symbol ? String(z.variable_symbol) : null,
       suma,
       riadky: d ? zoradPodlaSadzby(riadkyOdpoctu(suma, riadkyDokladu(d)), "sadzba") : [],
+      zalohaOdovzdana: Boolean(z?.exported_at),
     });
     out[String(v.invoice_id)] = zoz;
   }

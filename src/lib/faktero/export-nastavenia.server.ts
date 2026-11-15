@@ -21,6 +21,11 @@ export type DoplnkyExportu = {
   bankaPodlaUctu?: Record<string, string>;
   /** Preklad predkontácií (dvojíc účtov) na skratky Pohody. */
   mapaPredkontacii?: MapaPredkontaciiPohody;
+  /**
+   * Členenia DPH, ktoré má firma v číselníku Pohody vypnuté (`aktivne=false`,
+   * v Pohode „offer“) — POHODA ich pri importe nahradí UD, export ich zastaví.
+   */
+  vypnuteClenenia?: string[];
 };
 
 export async function doplnkyExportu(
@@ -56,7 +61,7 @@ async function nacitajDoplnky(
   const out: DoplnkyExportu = { export: ex };
   if (!company?.id) return out;
 
-  const [popisy, partneri, ucty] = await Promise.all([
+  const [popisy, partneri, ucty, clenenia] = await Promise.all([
     // Popis predkontácie — text dokladu „názov účtovnej položky“ aj text bločku bez popisu.
     supabase
       .from("predkontacie")
@@ -79,7 +84,29 @@ async function nacitajDoplnky(
       .from("company_bank_accounts")
       .select("id, iban, pohoda_skratka")
       .eq("company_id", company.id),
+    // Číselník členení DPH (aj vypnuté) — pre kontrolu vypnutých členení.
+    supabase
+      .from("predkontacie")
+      .select("kod, aktivne")
+      .eq("company_id", company.id)
+      .eq("druh", "clenenie_dph"),
   ]);
+
+  /*
+    Vypnuté členenie = v číselníku je len vypnuté (žiadny zapnutý riadok
+    s tým istým kódom). Chyba dotazu export nezastaví — kontrola sa vynechá.
+  */
+  if (!clenenia?.error && clenenia?.data) {
+    const zapnute = new Set<string>();
+    const vypnute = new Set<string>();
+    for (const r of clenenia.data as { kod: string | null; aktivne: boolean | null }[]) {
+      const k = String(r.kod ?? "").trim();
+      if (!k) continue;
+      (r.aktivne === false ? vypnute : zapnute).add(k);
+    }
+    const zoz = [...vypnute].filter((k) => !zapnute.has(k));
+    if (zoz.length) out.vypnuteClenenia = zoz;
+  }
 
   /*
     Skratky predkontácií Pohody: číselník z Pohody (rovnaké účty MD/D) a ručná

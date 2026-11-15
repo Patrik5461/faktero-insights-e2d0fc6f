@@ -232,7 +232,12 @@ const prijata = (o: any = {}) => ({
 });
 
 describe("K4 — prijaté prenesenie v cudzej mene: položky nesú členenie prenesenia", () => {
-  it("USD, celé v prenesení: hlavička aj položky PDpdp + B1; XML podľa XSD", async () => {
+  /*
+    Od 15. 11. 2026 (overené v POHODE SK): faktúra bez DPH s KV „KN“, daň
+    v interných dokladoch Priznanie (DDsl§69 — služba od zahraničnej osoby)
+    a Odpočet DPH s KV B1, v mene faktúry s jej kurzom.
+  */
+  it("USD, celé v prenesení: hlavička aj položky PDpdp + KN, interné doklady DDsl§69/PDpdp + B1; XML podľa XSD", async () => {
     const x = buildPohodaExpensesXml({
       company: firmaSK,
       nastavenia,
@@ -255,8 +260,12 @@ describe("K4 — prijaté prenesenie v cudzej mene: položky nesú členenie pre
     expect(await overXsd(x)).toBeNull();
     expect(x).toContain("<inv:foreignCurrency>");
     expect(clenenia(x)).toEqual(["PDpdp", "PDpdp"]);
-    expect(kv(x)).toEqual(["B1", "B1"]);
-    expect(x).toMatch(/<inv:rateVAT>high<\/inv:rateVAT>/);
+    expect(kv(x)).toEqual(["KN", "KN"]);
+    expect(x).toMatch(/<inv:rateVAT>none<\/inv:rateVAT>/);
+    expect(x).toContain("<int:classificationVAT><typ:ids>DDsl§69</typ:ids></int:classificationVAT>");
+    expect(x).toContain("<int:classificationVAT><typ:ids>PDpdp</typ:ids></int:classificationVAT>");
+    expect(x).toMatch(/<int:rateVAT>high<\/int:rateVAT>/);
+    expect(x).toContain("<int:foreignCurrency>");
   });
 });
 
@@ -330,7 +339,7 @@ describe("V5 — prijatá bez nároku na odpočet: PB, bez KV", () => {
 });
 
 describe("V6 — nadobudnutie tovaru z EÚ: PDnadEU so samozdanením a KV B.1", () => {
-  it("bez vlastného členenia: PDnadEU v hlavičke aj položkách, sadzba high s DPH 0, B1; XML podľa XSD", async () => {
+  it("bez vlastného členenia: PDnadEU bez sadzby a KN na faktúre, DDnadEU/PDnadEU s B1 v interných dokladoch; XML podľa XSD", async () => {
     const x = buildPohodaExpensesXml({
       company: firmaSK,
       nastavenia,
@@ -349,9 +358,13 @@ describe("V6 — nadobudnutie tovaru z EÚ: PDnadEU so samozdanením a KV B.1", 
     });
     expect(await overXsd(x)).toBeNull();
     expect(new Set(clenenia(x))).toEqual(new Set(["PDnadEU"]));
-    expect(new Set(kv(x))).toEqual(new Set(["B1"]));
-    expect(x).toMatch(/<inv:rateVAT>high<\/inv:rateVAT>/);
+    expect(new Set(kv(x))).toEqual(new Set(["KN"]));
+    expect(x).toMatch(/<inv:rateVAT>none<\/inv:rateVAT>/);
     expect(x).toContain("<inv:dateTax>2026-10-03</inv:dateTax>");
+    expect(x).toContain("<int:classificationVAT><typ:ids>DDnadEU</typ:ids></int:classificationVAT>");
+    expect(x).toContain("<int:classificationVAT><typ:ids>PDnadEU</typ:ids></int:classificationVAT>");
+    expect(x).toContain("<int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>");
+    expect(x).toContain("<int:dateTax>2026-10-03</int:dateTax>");
   });
 
   it("bez nároku → PBnadEU; česká firma bez číselníka nič (ostáva ako doteraz)", () => {

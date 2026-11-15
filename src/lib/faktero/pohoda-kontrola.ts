@@ -17,6 +17,7 @@ import { vyzeraAkoPredmetMailu } from "./predmet-mailu";
 */
 
 import { jeZnamaSadzba, krajinaDane } from "./vat-rates";
+import { KRAJINY_EU } from "./vies";
 import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
 import { kvPrijatehoDokladu, kvSekcia } from "./kv-urcenie";
 import { pismenoPreneseniaKv } from "./ciselnik-obrazok";
@@ -24,11 +25,11 @@ import { skratkaPredkontacie, type MapaPredkontaciiPohody } from "./pohoda-predk
 import { DOVOD_CUDZIA } from "./cudzia-faktura";
 import { DOVOD_ROZPIS_NA_KONTROLE, jeRozpisNaKontrole } from "./rozpis-na-kontrole";
 import { nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
-import { chybaUlozenehoRozuctovaniaVystavenej } from "./rozuctovanie-vystavenej";
+import { chybaUlozenehoRozuctovaniaVystavenej, platneRozuctovanieVystavenej } from "./rozuctovanie-vystavenej";
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
 import { domacaMena } from "./kurzy";
 import { isAccountingDocument } from "./uctovny-doklad";
-import { chybaClenenieMimoTuzemska } from "./clenenie-vystavenej";
+import { chybaClenenieMimoTuzemska, clenenieMimoTuzemska } from "./clenenie-vystavenej";
 import {
   DOVOD_NEPLATITEL_PRIJATY,
   DOVOD_NEPLATITEL_VYSTAVENA,
@@ -221,14 +222,28 @@ export function varovanieKvPrijatej(d: Riadok, company?: Riadok | null): string 
     maDph: rozpis.some((r) => Math.abs(Number(r?.dph ?? 0)) > 0.005) || Boolean(d?._pdp),
     odpocet: d?.odpocet,
     clenenieDph: d?.pohoda_clenenie_dph,
-    // Nadobudnutie ide do Pohody s PDnadEU a KV B.1 (pohoda-kv.ts).
+    // Nadobudnutie patrí do KV B.1 (pohoda-kv.ts).
     nadobudnutieDoB1: true,
   });
+  /*
+    Samozdanenie (prenesenie, služba zo zahraničia, tovar z EÚ) — faktúra ide
+    do Pohody s KV „KN“ a do B.1 ju dávajú interné doklady Priznanie a
+    Odpočet DPH (`samozdanenie-pohoda.ts`) s číslom faktúry dodávateľa a jeho
+    IČ DPH. Dodávateľ mimo EÚ IČ DPH nemá — B.1 ho vtedy neuvádza.
+  */
+  const samozdanenie = kv === "B1" && d?._typPohody === "receivedInvoice";
+  const co = samozdanenie
+    ? "samozdanenie v kontrolnom výkaze (B1 cez interné doklady Priznanie a Odpočet DPH)"
+    : `prijatá faktúra v kontrolnom výkaze (${kv})`;
   if (/^(B1|B2|C2)$/.test(kv)) {
-    if (!cisloRaw)
-      return `${cislo} — prijatá faktúra v kontrolnom výkaze (${kv}) bez čísla faktúry dodávateľa — doplňte ho`;
-    if (!kod(d?.supplier_ic_dph))
-      return `${cislo} — prijatá faktúra v kontrolnom výkaze (${kv}) bez IČ DPH dodávateľa — doplňte ho, alebo ak dodávateľ nie je platiteľ, faktúra nemá mať DPH`;
+    if (!cisloRaw) return `${cislo} — ${co} bez čísla faktúry dodávateľa — doplňte ho`;
+    const krajinaDodavatela = kod(d?.supplier_country).toUpperCase();
+    const mimoEu =
+      samozdanenie && /^[A-Z]{2}$/.test(krajinaDodavatela) && !(KRAJINY_EU as readonly string[]).includes(krajinaDodavatela);
+    if (!kod(d?.supplier_ic_dph) && !mimoEu)
+      return samozdanenie
+        ? `${cislo} — ${co} bez IČ DPH dodávateľa — doplňte ho`
+        : `${cislo} — ${co} bez IČ DPH dodávateľa — doplňte ho, alebo ak dodávateľ nie je platiteľ, faktúra nemá mať DPH`;
   }
   return null;
 }
@@ -301,6 +316,12 @@ export function prekazkaVydanej(
   {
     const dovod = chybaClenenieMimoTuzemska(invoice, company?.country);
     if (dovod) return `${cislo} — ${dovod}`;
+  }
+
+  // Členenie, ktoré má firma v Pohode vypnuté — Pohoda by ho zmenila na UD (15. 11. 2026).
+  if (!zalohova) {
+    const dovod = prekazkaVypnutehoClenenia(invoice, items, company, nastavenia);
+    if (dovod) return dovod;
   }
 
   /*
@@ -400,6 +421,117 @@ export function clenenieVydanejPdp(nastavenia?: Riadok | null, company?: Riadok 
   if (vlastne) return vlastne;
   void company;
   return PREDVOLENE_CLENENIE_PDP_VYDANE;
+}
+
+/*
+  Členenie DPH vydanej faktúry tak, ako ho dostane Pohoda — jediné miesto pre
+  generátor XML (`polozkyFaktur`) aj kontrolu pred exportom (vypnuté členenia).
+*/
+
+/**
+ * Číselník členení pre `clenenieMimoTuzemska` doplnený o kódy, ktoré má firma
+ * v Pohode vypnuté (`vypnuteClenenia`) — presný kód režimu sa potom nenahradí
+ * systémovým potichu, ale ostane a kontrola ho nahlási.
+ */
+function ciselnikSVypnutymi(nastavenia?: Riadok | null): Riadok[] | undefined {
+  const vypnute = (nastavenia?.vypnuteClenenia ?? []) as string[];
+  const ciselnik = (nastavenia?.cleneniaDph ?? undefined) as Riadok[] | undefined;
+  if (!vypnute.length) return ciselnik;
+  return [
+    ...(ciselnik ?? []),
+    ...vypnute.map((k) => ({ druh: "clenenie_dph", kod: k, popis: null, agenda: null, aktivne: false })),
+  ];
+}
+
+/** Členenie DPH hlavičky vydanej faktúry v Pohode; „“ = bez členenia (zálohová faktúra). */
+export function clenenieHlavickyVydanej(
+  invoice: Riadok,
+  company: Riadok,
+  nastavenia?: Riadok | null,
+): string {
+  if (String(invoice?.type ?? "regular") === "proforma") return "";
+  const tuzemskePdp = jeTuzemskePdp(invoice, company);
+  /*
+    OSS, dodanie do EÚ, trojstranný obchod a vývoz bez vlastného členenia
+    dostanú kód svojho režimu (UN, UDdodEU, UDdod3, UNodpS…) — nie
+    predvolené tuzemské (K1: OSS s UD a KV D.2) ani prenesenie (V2: UDpdp).
+  */
+  const mimo = tuzemskePdp
+    ? undefined
+    : clenenieMimoTuzemska(
+        {
+          reverseCharge: invoice?.reverse_charge,
+          reverseChargeType: invoice?.reverse_charge_type,
+          euPlnenie: invoice?.eu_plnenie,
+          oss: invoice?.oss,
+          ossKrajina: invoice?.oss ? invoice?.oss_country : null,
+        },
+        company?.country,
+        ciselnikSVypnutymi(nastavenia) as any,
+      );
+  return String(
+    kod(invoice?.pohoda_clenenie_dph) ||
+      mimo ||
+      (tuzemskePdp
+        ? clenenieVydanejPdp(nastavenia, company)
+        : invoice?.reverse_charge
+          ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
+          : nastavenia?.clenenieDph) ||
+      "",
+  );
+}
+
+/**
+ * Členenie DPH položky (alebo riadku rozúčtovania) vydanej faktúry v Pohode:
+ * vlastné, položka v prenesení dostane členenie pre prenesenie, inak členenie
+ * hlavičky. Pohoda ho z hlavičky do položiek sama nedoplní.
+ */
+export function clenenieRiadkuVydanej(
+  it: Riadok,
+  invoice: Riadok,
+  company: Riadok,
+  nastavenia: Riadok | null | undefined,
+  hlavicka: string,
+): string {
+  if (String(invoice?.type ?? "regular") === "proforma") return "";
+  const pdpRiadok = !invoice?.reverse_charge && Boolean(it?.prenesenie);
+  return kod(it?.pohoda_clenenie_dph) || (pdpRiadok ? clenenieVydanejPdp(nastavenia, company) : hlavicka);
+}
+
+/** Všetky členenia DPH, ktoré vydaná faktúra dostane v Pohode (hlavička aj riadky). */
+export function cleneniaVydanejPrePohodu(
+  invoice: Riadok,
+  items: Riadok[],
+  company: Riadok,
+  nastavenia?: Riadok | null,
+): string[] {
+  const typ = String(invoice?.type ?? "regular");
+  if (typ === "proforma") return [];
+  const hlavicka = clenenieHlavickyVydanej(invoice, company, nastavenia);
+  const rozuctovanie = isAccountingDocument(typ) ? platneRozuctovanieVystavenej(invoice as any, (items ?? []) as any[]) : [];
+  const riadky: Riadok[] = rozuctovanie.length
+    ? rozuctovanie.map((r: any) => ({ pohoda_clenenie_dph: r.clenenie }))
+    : (items ?? []);
+  const vsetky = [hlavicka, ...riadky.map((it) => clenenieRiadkuVydanej(it, invoice, company, nastavenia, hlavicka))];
+  return [...new Set(vsetky.map(kod).filter(Boolean))];
+}
+
+/**
+ * Členenie DPH, ktoré má firma v Pohode vypnuté (nie je v ponuke) — POHODA
+ * ho pri importe potichu nahradí tuzemským UD (PALIERA: UDdod3, UDzahr;
+ * overené naostro v POHODE SK 14404.8, 15. 11. 2026). `null` = v poriadku.
+ */
+export function prekazkaVypnutehoClenenia(
+  invoice: Riadok,
+  items: Riadok[],
+  company: Riadok,
+  nastavenia?: Riadok | null,
+): string | null {
+  const vypnute = new Set(((nastavenia?.vypnuteClenenia ?? []) as string[]).map((k) => kod(k).toUpperCase()).filter(Boolean));
+  if (!vypnute.size) return null;
+  const zle = cleneniaVydanejPrePohodu(invoice, items, company, nastavenia).find((c) => vypnute.has(c.toUpperCase()));
+  if (!zle) return null;
+  return `${invoice?.invoice_number ?? "?"} — členenie DPH ${zle} je v Pohode vypnuté (nie je v ponuke) — Pohoda by ho zmenila na tuzemské UD. Zapnite ho v Pohode (Nastavenie → Členenie DPH) alebo zvoľte iné.`;
 }
 
 /**
@@ -518,8 +650,17 @@ export function prekazkaDokladu(
   const pdpPolozky = Array.isArray(d?._polozkyPrijatej)
     ? d._polozkyPrijatej.filter((x: any) => x?.pdp && !kod(x?.clenenie))
     : [];
+  /*
+    Slovenská prijatá faktúra ide so samozdanením cez interné doklady
+    (`samozdanenie-pohoda.ts`) — bez nastavenia firmy dostane systémové
+    členenie POHODY SK (PDsluz, Priznanie DPH DDsluz/DDsl§69), ktoré je
+    platné. Prekážka ostáva pre bloček a prijatý dobropis.
+  */
+  const samozdanenieInternymiDokladmi =
+    krajinaDane(company?.country) === "SK" && d?._typPohody === "receivedInvoice";
   if (
     !cz &&
+    !samozdanenieInternymiDokladmi &&
     (pdpHlavicka || pdpPolozky.length) &&
     !pdpPrijate &&
     !(vlastneClenenie && pdpHlavicka && !pdpPolozky.length)

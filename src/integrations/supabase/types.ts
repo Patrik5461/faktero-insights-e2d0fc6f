@@ -1649,6 +1649,8 @@ export type Database = {
           pohoda_predkontacia_pokladna: string | null
           pohoda_predkontacia_prijata: string | null
           pohoda_predkontacia_rozuctovat: string | null
+          pohoda_predkontacia_samozdanenie_dan: string | null
+          pohoda_predkontacia_samozdanenie_odpocet: string | null
           pohoda_predkontacia_zaloha: string | null
           pohoda_predkontacie_oznaceni: Json | null
           pohoda_sklad: string | null
@@ -1689,6 +1691,7 @@ export type Database = {
           pohoda_rad_doklady: string | null
           pohoda_rad_pokladna: string | null
           pohoda_rad_interne: string | null
+          pohoda_rad_samozdanenie: string | null
           pohoda_stredisko: string | null
           pohoda_odkaz_na_doklady: boolean
           pohoda_polozky_blockov: boolean
@@ -1782,6 +1785,8 @@ export type Database = {
           pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_rozuctovat?: string | null
+          pohoda_predkontacia_samozdanenie_dan?: string | null
+          pohoda_predkontacia_samozdanenie_odpocet?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_predkontacie_oznaceni?: Json | null
           pohoda_sklad?: string | null
@@ -1822,6 +1827,7 @@ export type Database = {
           pohoda_rad_doklady?: string | null
           pohoda_rad_pokladna?: string | null
           pohoda_rad_interne?: string | null
+          pohoda_rad_samozdanenie?: string | null
           pohoda_stredisko?: string | null
           pohoda_odkaz_na_doklady?: boolean
           pohoda_polozky_blockov?: boolean
@@ -1915,6 +1921,8 @@ export type Database = {
           pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_rozuctovat?: string | null
+          pohoda_predkontacia_samozdanenie_dan?: string | null
+          pohoda_predkontacia_samozdanenie_odpocet?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_predkontacie_oznaceni?: Json | null
           pohoda_sklad?: string | null
@@ -1955,6 +1963,7 @@ export type Database = {
           pohoda_rad_doklady?: string | null
           pohoda_rad_pokladna?: string | null
           pohoda_rad_interne?: string | null
+          pohoda_rad_samozdanenie?: string | null
           pohoda_stredisko?: string | null
           pohoda_odkaz_na_doklady?: boolean
           pohoda_polozky_blockov?: boolean

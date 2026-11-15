@@ -813,6 +813,16 @@ export async function nacitajVazby(
     zapísať nedá, zastavila — predtým odišla bez odpočtu, len so zápisom
     do logu servera (K2).
   */
+  /*
+    Odkaz na doklad v Pohode (odpočet → zálohová, dobropis → pôvodná) len
+    vtedy, keď tam ten doklad je: potvrdený Pohodou (`cisla`), odovzdaný
+    (`exported_at`, aj migrovaný z Doklada) alebo ide v tej istej dávke pred
+    odkazujúcim. Inak POHODA SK 14404.8 odmietne celý doklad („Nebol nájdený
+    odkazovaný záznam“ / „Zadaný záznam sa nepodarilo nájsť“); bez odkazu ho
+    prijme a suma na úhradu sedí (overené naostro 15. 11. 2026).
+  */
+  const { odkazNaDokladPohody } = await import("./export-priprava.server");
+  const poradie = new Map(faktury.map((f: Riadok, n: number) => [String(f.id), n]));
   const { nacitajOdpocty } = await import("./zalohy-odpocty.server");
   const { zalohyPrePohodu } = await import("./zalohy-odpocty");
   const odpocty = await nacitajOdpocty(
@@ -824,7 +834,17 @@ export async function nacitajVazby(
     const zoz = odpocty[String(f.id)] ?? null;
     (f as any)._odpocty = zoz;
     // Číslo zálohovej faktúry v Pohode, ak ho poznáme zo spätnej väzby; inak naše (`numberRequested`).
-    const z = zalohyPrePohodu(zoz, (o) => (o.zalohaId ? cisla.get(o.zalohaId) : null));
+    const z = zalohyPrePohodu(
+      zoz,
+      (o) => (o.zalohaId ? cisla.get(o.zalohaId) : null),
+      (o) =>
+        odkazNaDokladPohody(
+          o.zalohaOdovzdana || (o.zalohaId ? cisla.has(String(o.zalohaId)) : false),
+          o.zalohaId,
+          f.id,
+          poradie,
+        ),
+    );
     if (z) zalohy[String(f.id)] = z;
   }
 
@@ -835,7 +855,7 @@ export async function nacitajVazby(
   const { data: suvisiace } = potrebne.length
     ? await supabase
         .from("invoices")
-        .select("id, invoice_number")
+        .select("id, invoice_number, exported_at")
         .eq("company_id", companyId)
         .in("id", potrebne)
     : { data: [] };
@@ -843,10 +863,13 @@ export async function nacitajVazby(
 
   for (const f of faktury) {
     if ((f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id) {
-      const cislo = cisla.get(String(f.opravuje_fakturu_id));
-      if (cislo) opravovane[String(f.id)] = cislo;
-      const povodne = cislo ?? podlaId.get(String(f.opravuje_fakturu_id))?.invoice_number;
-      if (povodne) povodneCisla[String(f.id)] = String(povodne);
+      const idPovodnej = String(f.opravuje_fakturu_id);
+      const povodna = podlaId.get(idPovodnej);
+      // Číslo v Pohode zo spätnej väzby, inak naše (`numberRequested` pôvodnej).
+      const cislo = cisla.get(idPovodnej) ?? (povodna?.invoice_number ? String(povodna.invoice_number) : null);
+      const vPohode = odkazNaDokladPohody(cisla.has(idPovodnej) || Boolean(povodna?.exported_at), idPovodnej, f.id, poradie);
+      if (cislo && vPohode) opravovane[String(f.id)] = cislo;
+      if (cislo) povodneCisla[String(f.id)] = cislo;
     }
   }
 

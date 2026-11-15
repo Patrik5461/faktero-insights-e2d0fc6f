@@ -304,7 +304,7 @@ describe("A1.1 PFA — kódy v každej položke", () => {
     expect(chybySchemy(xml)).toEqual([]);
   });
 
-  it("vlastné členenie položky má prednosť, prenesená položka dostane členenie PDP a B1", () => {
+  it("vlastné členenie položky má prednosť, prenesená položka dostane členenie PDP a KN (B1 v interných dokladoch)", () => {
     const xml = buildPohodaExpensesXml({
       company: FIRMA,
       nastavenia: { clenenieDphPdpPrijata: "PDpdp" } as any,
@@ -326,7 +326,8 @@ describe("A1.1 PFA — kódy v každej položke", () => {
     expect(kod(a, "classificationVAT")).toBe("PN");
     expect(kod(a, "accounting")).toBe("501000 321000");
     expect(kod(a, "classificationKVDPH")).toBe("B2");
-    expect([kod(b, "accounting"), kod(b, "classificationVAT"), kod(b, "classificationKVDPH")]).toEqual(["501000 321000", "PDpdp", "B1"]);
+    expect([kod(b, "accounting"), kod(b, "classificationVAT"), kod(b, "classificationKVDPH")]).toEqual(["501000 321000", "PDpdp", "KN"]);
+    expect(xml).toContain("<int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>");
     expect(chybySchemy(xml)).toEqual([]);
   });
 

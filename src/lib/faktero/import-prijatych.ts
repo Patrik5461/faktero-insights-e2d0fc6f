@@ -323,7 +323,15 @@ export function jePohodaXmlObsah(xml: string): boolean {
 function kodyZPohody(h: any, prvaPolozka: any, rate: string, amount: string) {
   // Členenie a KV môžu byť len na položke (prenesenie, rozúčtovanie).
   const clenenie = kodPohody(h, "classificationVAT") || (prvaPolozka ? kodPohody(prvaPolozka, "classificationVAT") : "");
-  const kv = kvZPohody(kodPohody(h, "classificationKVDPH") || (prvaPolozka ? kodPohody(prvaPolozka, "classificationKVDPH") : ""));
+  /*
+    Samozdanenie zo slovenskej Pohody (export Faktera od 15. 11. 2026 aj ručný
+    zápis účtovníčky): faktúra s PDsluz / PDnadEU (bez nároku PB…) a KV „KN“,
+    daň v interných dokladoch s KV B1. Pre Faktero je to obchod v KV B.1.
+  */
+  const nadobudnutie = /^P[DB]nadEU$/i.test(clenenie);
+  const samozdanenie = Boolean(clenenie) && (jeClenenieVPreneseni(clenenie) || /^P[DB]sluz$/i.test(clenenie));
+  const kvKod = kodPohody(h, "classificationKVDPH") || (prvaPolozka ? kodPohody(prvaPolozka, "classificationKVDPH") : "");
+  const kv = kvZPohody(kvKod) ?? ((samozdanenie || nadobudnutie) && /^KN$/i.test(kvKod.trim()) ? "B1" : null);
   const bezOdpoctu = /bez n[áa]roku na odpo[čc]et/i.test(hodnota(h, "note"));
   return {
     // SK prijatá faktúra: `dateDelivery` = dodanie, `dateTax` = dátum odpočtu (môže byť neskôr).
@@ -332,7 +340,7 @@ function kodyZPohody(h: any, prvaPolozka: any, rate: string, amount: string) {
     kv,
     predkontacia: predkontaciaZPohody(kodPohody(h, "accounting")),
     clenenieDph: alebo(clenenie),
-    dphRezim: clenenie && jeClenenieVPreneseni(clenenie) ? "samozdanenie" : null,
+    dphRezim: samozdanenie ? "samozdanenie" : nadobudnutie ? "nadobudnutie" : null,
     ...(bezOdpoctu ? { odpocet: false } : {}),
   };
 }
@@ -488,6 +496,17 @@ export function pohodaPrijate(doc: any, opts: { krajina?: string | null } = {}):
       if (/da[nň]ov[yý] doklad k p[rř][ií]jat/i.test(hodnota(h, "text"))) continue;
       const kvI = kvZPohody(kodPohody(h, "classificationKVDPH"));
       if (kvI && /^[AD]/.test(kvI)) continue;
+      /*
+        Interné doklady samozdanenia (Priznanie / Odpočet DPH k prijatej
+        faktúre, KV B1) nie sú bločky — daň patrí k faktúre, ktorá prišla
+        v tom istom súbore.
+      */
+      if (
+        kvI === "B1" ||
+        /^(DD|P[DB](sluz|nadEU|sl§69))/i.test(kodPohody(h, "classificationVAT")) ||
+        /^(priznanie|odpo[čc]et) DPH z nadobudnutia/i.test(hodnota(h, "text"))
+      )
+        continue;
       const zahranicnaI = uzol(d, "intDocSummary", "foreignCurrency");
       const menaI = hodnota(zahranicnaI, "currency", "ids");
       const denI = datumZTextu(hodnota(h, "dateTax")) ?? datumZTextu(hodnota(h, "date"));

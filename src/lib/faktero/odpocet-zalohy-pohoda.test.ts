@@ -84,8 +84,8 @@ const polozky = [
 describe("zalohyPrePohodu — jeden výpočet pre súbor, balík aj konektor", () => {
   it("zdanená záloha vo viacerých sadzbách = položka na sadzbu (K2)", () => {
     expect(zalohyPrePohodu(odpocetPaliera)).toEqual([
-      { cislo: "ZF20260002", sadzba: 23, zaklad: 1, dph: 0.23 },
-      { cislo: "ZF20260002", sadzba: 0, zaklad: 2, dph: 0 },
+      { cislo: "ZF20260002", sadzba: 23, zaklad: 1, dph: 0.23, zalohaId: "zf-2" },
+      { cislo: "ZF20260002", sadzba: 0, zaklad: 2, dph: 0, zalohaId: "zf-2" },
     ]);
   });
 
@@ -242,8 +242,8 @@ describe("konektor a balík — odpočet z dokladu k platbe, nie z pomeru záloh
     expect(zalohy["fa-6"]).toHaveLength(2);
     expect(zalohy["fa-6"]).toEqual(
       expect.arrayContaining([
-        { cislo: "ZFP-2", sadzba: 23, zaklad: 1, dph: 0.23 },
-        { cislo: "ZFP-2", sadzba: 0, zaklad: 2, dph: 0 },
+        { cislo: "ZFP-2", sadzba: 23, zaklad: 1, dph: 0.23, zalohaId: "zf-2" },
+        { cislo: "ZFP-2", sadzba: 0, zaklad: 2, dph: 0, zalohaId: "zf-2" },
       ]),
     );
     expect(f._odpocty).toHaveLength(1);

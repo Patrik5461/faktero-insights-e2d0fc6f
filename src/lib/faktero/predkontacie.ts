@@ -138,6 +138,27 @@ export const PREDVOLENE: {
     agendy: ["receivedInvoice"],
     smer: "vstup",
   },
+  /*
+    Samozdanenie prijatej faktúry (prenesenie § 69 ods. 12, služba zo
+    zahraničia § 69 ods. 3, tovar z EÚ): faktúra ide do Pohody bez DPH a daň
+    sa prizná a odpočíta dvoma internými dokladmi — každý s vlastnou
+    predkontáciou (napr. aInt / bInt). Členenie DPH a KV dávajú doklady samy
+    (DDsluz/DDsl§69/DDnadEU, PDsluz/PDnadEU, KV B1).
+  */
+  {
+    kluc: "samozdanenie_dan",
+    nazov: "Samozdanenie — interný doklad Priznanie DPH",
+    predkontacia: "pohoda_predkontacia_samozdanenie_dan",
+    agendy: ["internalDocument"],
+    smer: "vstup",
+  },
+  {
+    kluc: "samozdanenie_odpocet",
+    nazov: "Samozdanenie — interný doklad Odpočet DPH",
+    predkontacia: "pohoda_predkontacia_samozdanenie_odpocet",
+    agendy: ["internalDocument"],
+    smer: "vstup",
+  },
   {
     kluc: "doklady",
     nazov: "Bloček a výdavkový doklad",
@@ -206,6 +227,7 @@ export const STLPCE_PREDVOLENYCH = [
   "pohoda_rad_doklady",
   "pohoda_rad_pokladna",
   "pohoda_rad_interne",
+  "pohoda_rad_samozdanenie",
   "pohoda_stredisko",
   ...STLPCE_ZAOKRUHLENIA,
 ];
@@ -218,6 +240,11 @@ export const RADY_POHODY: { stlpec: string; nazov: string; agenda: string }[] = 
   {
     stlpec: "pohoda_rad_interne",
     nazov: "Interné doklady (bločky kartou)",
+    agenda: "interni_doklady",
+  },
+  {
+    stlpec: "pohoda_rad_samozdanenie",
+    nazov: "Interné doklady samozdanenia (Priznanie a Odpočet DPH)",
     agenda: "interni_doklady",
   },
 ];

@@ -27,6 +27,24 @@ export function nastaveniaFaktur(company: Riadok): PohodaNastavenia {
   };
 }
 
+/**
+ * Smie sa doklad odvolať na iný doklad v Pohode (dobropis na pôvodnú faktúru,
+ * odpočet na zálohovú)? Áno, keď odkazovaný už bol odovzdaný (`exported_at`)
+ * alebo ide v tom istom súbore/dávke PRED odkazujúcim (Pohoda spracúva
+ * položky po poradí). `poradie` — index dokladu v súbore podľa id.
+ */
+export function odkazNaDokladPohody(
+  odovzdany: unknown,
+  odkazovanyId: unknown,
+  odkazujuciId: unknown,
+  poradie: Map<string, number>,
+): boolean {
+  if (odovzdany) return true;
+  const kde = odkazovanyId ? poradie.get(String(odkazovanyId)) : undefined;
+  const ja = poradie.get(String(odkazujuciId ?? ""));
+  return kde !== undefined && ja !== undefined && kde < ja;
+}
+
 export async function pripravFaktury(
   supabase: Klient,
   companyId: string,
@@ -100,10 +118,18 @@ export async function pripravFaktury(
     zastaví kontrola pred exportom (`prekazkaOdpoctuPohody` v `pohodaPrekazka`),
     nevynechá sa ticho (audit 14. 11. 2026, K2).
   */
+  /*
+    Odkaz na zálohovú faktúru (`sourceDocument`) len vtedy, keď v Pohode je:
+    bola odovzdaná (`exported_at`, aj migrovaná z Doklada) alebo ide v tom
+    istom súbore pred touto faktúrou. Inak POHODA SK 14404.8 odmietne celý
+    doklad („Nebol nájdený odkazovaný záznam“); bez odkazu ho prijme a suma
+    na úhradu sedí (overené naostro 15. 11. 2026).
+  */
   const { zalohyPrePohodu } = await import("./zalohy-odpocty");
+  const poradie = new Map(invs.map((i, n) => [String(i.id), n]));
   const zalohy: Record<string, PolozkaOdpoctuPohody[]> = {};
   for (const [id, zoz] of Object.entries(odpocty)) {
-    const z = zalohyPrePohodu(zoz);
+    const z = zalohyPrePohodu(zoz, undefined, (o) => odkazNaDokladPohody(o.zalohaOdovzdana, o.zalohaId, id, poradie));
     if (z) zalohy[id] = z;
   }
   return { bundle, zalohy };

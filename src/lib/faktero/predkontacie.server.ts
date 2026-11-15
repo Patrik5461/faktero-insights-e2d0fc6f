@@ -169,6 +169,10 @@ export async function nastaveniaDokladov(
     radDoklady: company.pohoda_rad_doklady,
     radPokladna: company.pohoda_rad_pokladna,
     radInterne: company.pohoda_rad_interne,
+    // Samozdanenie prijatej faktúry — interné doklady Priznanie a Odpočet DPH.
+    predkontaciaSamozdanenieDan: company.pohoda_predkontacia_samozdanenie_dan ?? null,
+    predkontaciaSamozdanenieOdpocet: company.pohoda_predkontacia_samozdanenie_odpocet ?? null,
+    radSamozdanenie: company.pohoda_rad_samozdanenie ?? null,
     podlaKategorie: await kodyPodlaKategorie(supabase, company.id),
     zamknuteDo: company.locked_until ?? null,
     polozkyBlockov: Boolean(company.pohoda_polozky_blockov),

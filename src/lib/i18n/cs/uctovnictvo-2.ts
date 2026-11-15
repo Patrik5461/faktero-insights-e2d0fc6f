@@ -165,6 +165,9 @@ export default {
   "Prijatá faktúra": "Přijatá faktura",
   "Prijatá faktúra — prenesenie daňovej povinnosti":
     "Přijatá faktura — přenesení daňové povinnosti",
+  "Samozdanenie — interný doklad Priznanie DPH": "Samozdanění — interní doklad Přiznání DPH",
+  "Samozdanenie — interný doklad Odpočet DPH": "Samozdanění — interní doklad Odpočet DPH",
+  "Interné doklady samozdanenia (Priznanie a Odpočet DPH)": "Interní doklady samozdanění (Přiznání a Odpočet DPH)",
   "Bloček a výdavkový doklad": "Účtenka a výdajový doklad",
   "Pokladničný doklad": "Pokladní doklad",
   "Bankový doklad": "Bankovní doklad",

@@ -72,9 +72,11 @@ export function kvPrijatehoPrePohodu(o: {
 }): string {
   if (o.cz) return "";
   /*
-    Nadobudnutie tovaru z EÚ ide do Pohody s členením PDnadEU (samozdanenie
-    priamo na faktúre, export.server.ts) — do KV B.1 ako vo výkaze Faktera.
-    Predtým sa počítalo s interným dokladom, ktorý export nikdy nerobil (V6).
+    Nadobudnutie tovaru z EÚ aj prenesenie patria do KV B.1 ako vo výkaze
+    Faktera. Slovenská prijatá faktúra so samozdanením však B.1 nenesie sama:
+    export jej dá „KN“ a B.1 dostanú interné doklady Priznanie a Odpočet DPH
+    (`samozdanenie-pohoda.ts`, overené v POHODE SK 15. 11. 2026 — KV B1 na
+    prijatej faktúre POHODA odmietne). Tu sa určuje KV obchodného prípadu.
   */
   return kvPrijatehoDokladu({ ...o, nadobudnutieDoB1: true });
 }

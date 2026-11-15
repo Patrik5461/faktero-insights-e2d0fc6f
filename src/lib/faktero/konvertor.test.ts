@@ -358,8 +358,10 @@ describe("konvertor — audit 14. 11. 2026 (V14, V15, S16)", () => {
       nastavenia: { predkontaciaPrijata: "1Fp" } as any,
     });
     expect(xml).toContain(`<typ:ids>${r.doklady[0].pohoda_clenenie_dph}</typ:ids>`);
-    // Samozdanenie: základ v základnej sadzbe, nie „bez DPH“.
-    expect(xml).not.toContain("<typ:priceNone>200");
+    // Samozdanenie (POHODA SK, 15. 11. 2026): faktúra bez DPH, daň v interných dokladoch.
+    expect(xml).toContain("<typ:priceNone>200.00");
+    expect(xml).toContain("<int:classificationVAT><typ:ids>DDnadEU</typ:ids></int:classificationVAT>");
+    expect(xml).toContain("<int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>");
     expect(chybySchemy(xml)).toEqual([]);
     // Tuzemské prenesenie na prijatej.
     const pdp = prevedRiadky(

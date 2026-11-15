@@ -23,10 +23,14 @@ import { buildMrpUctovanie } from "./export-mrp-uctovanie";
 
 xmlRegisterFsInputProviders();
 
-const url = new URL("./schemy/pohoda/invoice.xsd", import.meta.url);
-const xsd = XsdValidator.fromDoc(XmlDocument.fromBuffer(readFileSync(url), { url: url.href }));
+const schema = (nazov: string) => {
+  const url = new URL(`./schemy/pohoda/${nazov}`, import.meta.url);
+  return XsdValidator.fromDoc(XmlDocument.fromBuffer(readFileSync(url), { url: url.href }));
+};
+// Faktúra proti invoice.xsd, interné doklady samozdanenia proti intDoc.xsd.
+const xsd: Record<string, XsdValidator> = { inv: schema("invoice.xsd"), int: schema("intDoc.xsd") };
 
-/** Každý doklad balíka proti invoice.xsd. */
+/** Každý doklad balíka proti schéme svojej agendy. */
 function chybySchemy(xml: string): string[] {
   const ns = [...new Set([...xml.matchAll(/xmlns:(\w+)="([^"]+)"/g)].map((m) => `xmlns:${m[1]}="${m[2]}"`))];
   const chyby: string[] = [];
@@ -34,7 +38,7 @@ function chybySchemy(xml: string): string[] {
     const prvok = m[1].trim().replace(/^<(\w+:\w+)\b/, `<$1 ${ns.join(" ")}`);
     const doc = XmlDocument.fromString(prvok);
     try {
-      xsd.validate(doc);
+      xsd[/^<(\w+):/.exec(prvok)![1]].validate(doc);
     } catch (e: any) {
       chyby.push(String(e?.message ?? e));
     } finally {
@@ -152,30 +156,56 @@ describe("prijatá faktúra v prenesení — jeden zdroj pravdy", () => {
   });
 });
 
-describe("Pohoda: prenesená faktúra v základnej sadzbe s členením pre prenesenie", () => {
+/** Faktúra a interné doklady samozdanenia z balíka. */
+const casti = (xml: string) => {
+  const polozky = [...xml.matchAll(/<dat:dataPackItem\b[^>]*\bid="([^"]*)"[^>]*>([\s\S]*?)<\/dat:dataPackItem>/g)];
+  const podla = (re: RegExp) => polozky.find((m) => re.test(m[1]))?.[2] ?? "";
+  return { faktura: podla(/^(?!.*-sam-)/), dan: podla(/-sam-dan$/), odp: podla(/-sam-odp$/), pocet: polozky.length };
+};
+
+/*
+  Model overený v POHODE SK 14404.8 (PALIERA, 15. 11. 2026): faktúra
+  v `priceNone` bez DPH s KV „KN“, daň v interných dokladoch Priznanie
+  (DDsluz) a Odpočet DPH (PDsluz / členenie firmy) s KV B1. Predtým išla
+  v `priceHigh` s DPH 0 — POHODA si 23 % dopočítala a na úhradu bolo o daň viac.
+*/
+describe("Pohoda: prenesená faktúra bez DPH a samozdanenie internými dokladmi", () => {
   it.each(varianty)("%s", (_n, p, clenenie) => {
     const xml = buildPohodaExpensesXml({ company: firma, nastavenia, doklady: [prijataAkoDoklad(p) as any] });
     expect(chybySchemy(xml)).toEqual([]);
-    expect(hodnota(xml, "typ:priceNone")).toBe("0.00");
-    expect(hodnota(xml, "typ:priceHigh")).toBe("1000.00");
-    expect(hodnota(xml, "typ:priceHighVAT")).toBe("0.00");
-    expect(xml).toContain(`<inv:classificationVAT><typ:ids>${clenenie}</typ:ids></inv:classificationVAT>`);
-    expect(xml).toContain("<inv:classificationKVDPH><typ:ids>B1</typ:ids></inv:classificationKVDPH>");
+    const { faktura, dan, odp, pocet } = casti(xml);
+    expect(pocet).toBe(3);
+    expect(hodnota(faktura, "typ:priceNone")).toBe("1000.00");
+    expect(hodnota(faktura, "typ:priceHigh")).toBe("0.00");
+    expect(faktura).toContain(`<inv:classificationVAT><typ:ids>${clenenie}</typ:ids></inv:classificationVAT>`);
+    expect(faktura).toContain("<inv:classificationKVDPH><typ:ids>KN</typ:ids></inv:classificationKVDPH>");
+    expect(faktura).not.toContain("<typ:ids>B1</typ:ids>");
+    expect(dan).toContain("<int:classificationVAT><typ:ids>DDsluz</typ:ids></int:classificationVAT>");
+    expect(dan).toContain("<int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>");
+    expect(hodnota(dan, "int:rateVAT")).toBe("high");
+    expect(hodnota(dan, "typ:price")).toBe("1000.00");
+    expect(hodnota(dan, "typ:priceVAT")).toBe("230.00");
+    expect(odp).toContain("<int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>");
+    expect(hodnota(odp, "typ:priceVAT")).toBe("230.00");
   });
 
-  it("zhoduje sa so správnym prípadom s reverse_charge a položkou 23 %", () => {
+  it("faktúra s položkou 23 % v prenesení: položka bez sadzby, sadzba 23 % v interných dokladoch", () => {
     const spravny = {
       ...holá,
       reverse_charge: true,
       items: [{ name: "Služba", quantity: 1, unit_price: 1000, vat_rate: 23, total: 1000 }],
     };
     const xml = buildPohodaExpensesXml({ company: firma, nastavenia, doklady: [prijataAkoDoklad(spravny) as any] });
-    expect(hodnota(xml, "typ:priceHigh")).toBe("1000.00");
-    expect(hodnota(xml, "typ:priceNone")).toBe("0.00");
-    expect(hodnota(xml, "inv:rateVAT")).toBe("high");
+    expect(chybySchemy(xml)).toEqual([]);
+    const { faktura, dan } = casti(xml);
+    expect(hodnota(faktura, "typ:priceHigh")).toBe("0.00");
+    expect(hodnota(faktura, "typ:priceNone")).toBe("1000.00");
+    expect(hodnota(faktura, "inv:rateVAT")).toBe("none");
+    expect(hodnota(dan, "int:rateVAT")).toBe("high");
+    expect(hodnota(dan, "typ:priceVAT")).toBe("230.00");
   });
 
-  it("položka v prenesení bez sadzby ide so sadzbou high", () => {
+  it("položka v prenesení bez sadzby ide bez sadzby, interné doklady v základnej sadzbe", () => {
     const p = {
       ...holá,
       dph_rezim: "samozdanenie",
@@ -183,12 +213,14 @@ describe("Pohoda: prenesená faktúra v základnej sadzbe s členením pre prene
     };
     const xml = buildPohodaExpensesXml({ company: firma, nastavenia, doklady: [prijataAkoDoklad(p) as any] });
     expect(chybySchemy(xml)).toEqual([]);
-    expect(hodnota(xml, "inv:rateVAT")).toBe("high");
-    expect(hodnota(xml, "typ:priceHigh")).toBe("1000.00");
-    expect(xml).toContain("<inv:classificationVAT><typ:ids>PDpdp</typ:ids></inv:classificationVAT>");
+    const { faktura, dan } = casti(xml);
+    expect(hodnota(faktura, "inv:rateVAT")).toBe("none");
+    expect(hodnota(faktura, "typ:priceNone")).toBe("1000.00");
+    expect(faktura).toContain("<inv:classificationVAT><typ:ids>PDpdp</typ:ids></inv:classificationVAT>");
+    expect(hodnota(dan, "int:rateVAT")).toBe("high");
   });
 
-  it("zmiešaná faktúra 23 % + prenesenie ide po riadkoch s vlastným členením", () => {
+  it("zmiešaná faktúra 23 % + prenesenie: prenesená časť bez DPH, interné doklady len za ňu", () => {
     const p = {
       ...holá,
       id: "mix",
@@ -205,20 +237,26 @@ describe("Pohoda: prenesená faktúra v základnej sadzbe s členením pre prene
     expect(jePrenesenieCele(p)).toBe(false);
     const xml = buildPohodaExpensesXml({ company: firma, nastavenia, doklady: [prijataAkoDoklad(p) as any] });
     expect(chybySchemy(xml)).toEqual([]);
-    const polozky = [...xml.matchAll(/<inv:invoiceItem>([\s\S]*?)<\/inv:invoiceItem>/g)].map((m) => m[1]);
+    const { faktura, dan } = casti(xml);
+    const polozky = [...faktura.matchAll(/<inv:invoiceItem>([\s\S]*?)<\/inv:invoiceItem>/g)].map((m) => m[1]);
     expect(polozky).toHaveLength(2);
     const pdp = polozky.find((x) => x.includes("PDpdp"))!;
     const tuzemska = polozky.find((x) => !x.includes("PDpdp"))!;
-    expect(hodnota(pdp, "inv:rateVAT")).toBe("high");
+    expect(hodnota(pdp, "inv:rateVAT")).toBe("none");
     expect(hodnota(pdp, "typ:price")).toBe("1000.00");
     expect(hodnota(pdp, "typ:priceVAT")).toBe("0.00");
-    expect(pdp).toContain("<inv:classificationKVDPH><typ:ids>B1</typ:ids></inv:classificationKVDPH>");
+    expect(pdp).toContain("<inv:classificationKVDPH><typ:ids>KN</typ:ids></inv:classificationKVDPH>");
     expect(hodnota(tuzemska, "inv:rateVAT")).toBe("high");
     expect(hodnota(tuzemska, "typ:priceVAT")).toBe("23.00");
     expect(tuzemska).toContain("<inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>");
-    expect(hodnota(xml, "typ:priceNone")).toBe("0.00");
-    expect(hodnota(xml, "typ:priceHigh")).toBe("1100.00");
-    expect(hodnota(xml, "typ:priceHighVAT")).toBe("23.00");
+    expect(tuzemska).toContain("<inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>");
+    // Hlavička zmiešanej faktúry ostáva PD / B2.
+    expect(/<inv:invoiceHeader>[\s\S]*<inv:classificationKVDPH><typ:ids>B2<\/typ:ids>/.test(faktura)).toBe(true);
+    expect(hodnota(faktura, "typ:priceNone")).toBe("1000.00");
+    expect(hodnota(faktura, "typ:priceHigh")).toBe("100.00");
+    expect(hodnota(faktura, "typ:priceHighVAT")).toBe("23.00");
+    expect(hodnota(dan, "typ:price")).toBe("1000.00");
+    expect(hodnota(dan, "typ:priceVAT")).toBe("230.00");
   });
 });
 

@@ -31,7 +31,7 @@ export default defineConfig({
      * Slovníky DE/CS sa v prehliadači načítavajú až na požiadanie
      * (`nacitajSlovnik`). Testy ich chcú mať hneď — načíta ich tento súbor.
      */
-    ...({ test: { setupFiles: ["./src/lib/i18n/testy-slovniky.ts"] } } as object),
+    ...({ test: { setupFiles: ["./src/lib/i18n/testy-slovniky.ts", "./src/lib/testy-bez-odosielania.ts"] } } as object),
     define: { __FAKTERO_VYDANIE__: JSON.stringify(vydanie) },
     preview: {
       allowedHosts: ["faktero.sk", "www.faktero.sk"],

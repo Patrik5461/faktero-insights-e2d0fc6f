@@ -45,6 +45,8 @@ import { polozkyOdpoctu, prekazkaOdpoctu, prekazkaOdpoctuPohody, sumaOdpoctov } 
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 import {
   clenenieprijatejPdp,
+  clenenieHlavickyVydanej,
+  clenenieRiadkuVydanej,
   clenenieVydanejPdp,
   idDokladuPohody,
   jeTuzemskePdp,
@@ -58,7 +60,6 @@ import { kvPodkodPrenesenia, pismenoPreneseniaKv } from "./ciselnik-obrazok";
 import { predkontacieNaSkratky, type MapaPredkontaciiPohody } from "./pohoda-predkontacia";
 import { isAccountingDocument } from "./uctovny-doklad";
 import { jeNeplatitel, jeNezahrnovat } from "./uctovanie-agenda";
-import { clenenieMimoTuzemska } from "./clenenie-vystavenej";
 import { clenenieRezimuPrijatej } from "./clenenie-prijatych";
 import { kodPokladneDokladu, menaPokladneDokladu } from "./pokladne";
 import { nakladovaCenaPohybu } from "./stock-pohyb";
@@ -72,6 +73,17 @@ import {
 } from "./export-nastavenia";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { polozkyPrijatej, sadzbaSamozdanenia, type PolozkaPrijatej } from "./prijate-do-pohody";
+import {
+  KV_FAKTURY_SAMOZDANIA,
+  KV_INTERNYCH_SAMOZDANIA,
+  cleneniaSamozdania,
+  druhSamozdania,
+  jeSamozdanenyRiadok,
+  riadkySamozdania,
+  textySamozdania,
+  type DruhSamozdania,
+  type RiadokSamozdania,
+} from "./samozdanenie-pohoda";
 import {
   clenenieBlockuPodlaZakona,
   jeHotovostnyBlocek,
@@ -301,6 +313,14 @@ export type PohodaNastavenia = {
   radDoklady?: string | null;
   radPokladna?: string | null;
   radInterne?: string | null;
+  /**
+   * Samozdanenie prijatej faktúry (prenesenie, služba zo zahraničia, tovar
+   * z EÚ): predkontácie interných dokladov „Priznanie DPH“ a „Odpočet DPH“
+   * a predpona ich radu. Prázdne = doklad bez predkontácie / predvolený rad.
+   */
+  predkontaciaSamozdanenieDan?: string | null;
+  predkontaciaSamozdanenieOdpocet?: string | null;
+  radSamozdanenie?: string | null;
   /** Evidenčné číslo zákazky podľa `job_id` prijatých dokladov. */
   zakazkyDokladov?: Record<string, string>;
   /** Odkaz na sken podľa id prijatého dokladu (záložka Dokumenty v Pohode). */
@@ -385,6 +405,12 @@ export type PohodaNastavenia = {
   dodavateliaPrijatych?: Record<string, Parameters<typeof sDoplnenymDodavatelom>[1]>;
   /** Číselník členení DPH firmy (z Pohody) — pre členenie bločku podľa zákona. */
   cleneniaDph?: KodCiselnika[];
+  /**
+   * Členenia DPH vypnuté v Pohode (nie sú v ponuke) — POHODA by ich pri
+   * importe zmenila na tuzemské UD; vydanú faktúru s nimi zastaví kontrola
+   * (`prekazkaVypnutehoClenenia`). Načíta `doplnkyExportu`.
+   */
+  vypnuteClenenia?: string[];
   /**
    * Preklad predkontácií na skratky Pohody (`pohoda-predkontacia.ts`) —
    * dvojica účtov „501000 325000“ → skratka z číselníka Pohody alebo
@@ -590,6 +616,13 @@ ${o}</inv:foreignCurrency>`;
 export type OdpocetZalohy = {
   /** Číslo zálohovej faktúry v Pohode; bez neho ide „ručný odpočet". */
   cislo?: string | null;
+  /**
+   * Zálohová faktúra v Pohode nie je — bez `sourceDocument` (POHODA by inak
+   * odmietla celý doklad), číslo ostane len v názve položky.
+   */
+  bezOdkazu?: boolean;
+  /** Id zálohovej faktúry — keď je v tom istom balíku, ale vypadla (prekážka), odkaz sa zruší. */
+  zalohaId?: string | null;
   zaklad: number;
   dph: number;
   sadzba: number;
@@ -733,6 +766,29 @@ export function polozkyZalohyBezDph(items: ItemRow[]): ItemRow[] {
   });
 }
 
+/**
+ * Poznámka položky vydanej faktúry s colnými údajmi. POHODA SK 14404.8
+ * `intrastatItem` na neskladovej položke ignoruje („Hodnota sa nepoužíva vo
+ * zvolenom type záznamu“, overené 15. 11. 2026) a kód KN by sa stratil —
+ * preto ide aj do poznámky (`inv:note`, string90), napr. „KN 85171300,
+ * pôvod CN, 0,4 kg“. Popis položky sa skráti tak, aby colné údaje ostali celé.
+ */
+export function poznamkaSColnymKodom(
+  popis: unknown,
+  colne: { kn: string; povod: string; hmotnost: number },
+): string {
+  const text = String(popis ?? "").trim();
+  if (!colne.kn) return skrat(text, 90);
+  const casti = [`KN ${colne.kn}`];
+  if (/^[A-Z]{2}$/.test(colne.povod)) casti.push(`pôvod ${colne.povod}`);
+  if (colne.hmotnost > 0) casti.push(`${String(colne.hmotnost).replace(".", ",")} kg`);
+  const colny = casti.join(", ");
+  if (!text) return skrat(colny, 90);
+  const miesto = 90 - colny.length - 3;
+  if (miesto < 1) return skrat(colny, 90);
+  return `${skrat(text, miesto).trim()} · ${colny}`;
+}
+
 export function polozkyFaktur(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
@@ -765,6 +821,18 @@ export function polozkyFaktur(opts: {
     Export) — vtedy ide ako bežná vydaná faktúra s predkontáciou zálohy.
   */
   const ex = exportFirmy(company, nastavenia);
+  /*
+    Odkaz na doklad z toho istého balíka (dobropis → pôvodná faktúra, odpočet
+    → zálohová), ktorý kontrola vyradila: v Pohode nebude a POHODA by
+    odkazujúci doklad odmietla celý („Nebol nájdený odkazovaný záznam“) —
+    odkaz sa vynechá. Na doklady mimo balíka rozhodol volajúci (`exported_at`).
+  */
+  const vstupIds = new Set(opts.invoices.map(({ invoice }) => String(invoice?.id ?? "")).filter(Boolean));
+  const ponechaneIds = new Set(vsetky.map(({ invoice }) => String(invoice?.id ?? "")).filter(Boolean));
+  const odkazVypadol = (id: unknown) => {
+    const k = String(id ?? "");
+    return !!k && vstupIds.has(k) && !ponechaneIds.has(k);
+  };
   const kPlatbeInterne = ex.dokladKPlatbe === "interne";
   const kPlatbe = vsetky.filter(
     ({ invoice }) => kPlatbeInterne && String(invoice.type) === "advance_payment",
@@ -908,31 +976,11 @@ export function polozkyFaktur(opts: {
       */
       const tuzemskePdp = jeTuzemskePdp(invoice as any, company as any);
       /*
-        OSS, dodanie do EÚ, trojstranný obchod a vývoz bez vlastného členenia
-        dostanú kód svojho režimu (UN, UDdodEU, UDdod3, UNodpS…) — nie
-        predvolené tuzemské (K1: OSS s UD a KV D.2) ani prenesenie (V2: UDpdp).
+        Členenie hlavičky — vlastné, kód režimu mimo tuzemska (OSS, EÚ, vývoz),
+        prenesenie, inak predvolené firmy. Ten istý výpočet použije kontrola
+        vypnutých členení (`clenenieHlavickyVydanej` v pohoda-kontrola.ts).
       */
-      const clenenieMimo = tuzemskePdp
-        ? undefined
-        : clenenieMimoTuzemska(
-            {
-              reverseCharge: invoice.reverse_charge,
-              reverseChargeType: (invoice as any).reverse_charge_type,
-              euPlnenie: (invoice as any).eu_plnenie,
-              oss: (invoice as any).oss,
-              ossKrajina: (invoice as any).oss ? (invoice as any).oss_country : null,
-            },
-            company.country,
-            nastavenia?.cleneniaDph,
-          );
-      const clenenieJedno =
-        String((invoice as any).pohoda_clenenie_dph ?? "").trim() ||
-        clenenieMimo ||
-        (tuzemskePdp
-          ? clenenieVydanejPdp(nastavenia, company as any)
-          : invoice.reverse_charge
-            ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
-            : nastavenia?.clenenieDph);
+      const clenenieJedno = clenenieHlavickyVydanej(invoice, company, nastavenia);
       /*
         Rozúčtovanie sumy faktúry (`invoices.rozuctovanie`): namiesto položiek
         idú do Pohody riadky rozúčtovania, každý so svojimi kódmi. Súčty po
@@ -1023,12 +1071,16 @@ export function polozkyFaktur(opts: {
         na položke je za jednotku (ako pri produkte), Intrastat chce riadok.
       */
       const krajinaUrcenia = String(invoice.customer_country ?? "").trim().toUpperCase();
-      const intrastatPolozky = (it: ItemRow) => {
+      const colnePolozky = (it: ItemRow) => {
         const kn = String((it as any).colny_kod ?? "").replace(/\D/g, "").slice(0, 8);
-        if (!kn) return "";
         const povod = String((it as any).krajina_povodu ?? "").trim().toUpperCase();
         const kg = Number((it as any).hmotnost_kg ?? 0);
         const hmotnost = kg > 0 ? Math.round(kg * Math.abs(Number(it.quantity ?? 1) || 1) * 1000) / 1000 : 0;
+        return { kn, povod, hmotnost };
+      };
+      const intrastatPolozky = (it: ItemRow) => {
+        const { kn, povod, hmotnost } = colnePolozky(it);
+        if (!kn) return "";
         return (
           `\n          <inv:intrastatItem>` +
           `\n            <inv:goodsCode>${kn}</inv:goodsCode>` +
@@ -1056,10 +1108,7 @@ export function polozkyFaktur(opts: {
           automatické z `zauctovanieNaExport`/predvolené). Pohoda ho z hlavičky
           do položiek sama nedoplní (checklist účtovníčky A1.1).
         */
-        const cl = zalohova
-          ? ""
-          : String((it as any).pohoda_clenenie_dph ?? "").trim() ||
-            (pdpRiadok ? clenenieVydanejPdp(nastavenia, company as any) : clenenie);
+        const cl = zalohova ? "" : clenenieRiadkuVydanej(it, invoice, company, nastavenia, clenenie);
         /*
           KV DPH na každej položke (len SK; CZ verzia element nemá — kontrolné
           hlásenie si Pohoda odvodí z členenia DPH): vlastné, položka
@@ -1154,7 +1203,7 @@ export function polozkyFaktur(opts: {
             Number((it as any).discount_percent ?? 0) > 0
               ? `\n          <inv:discountPercentage>${Number((it as any).discount_percent)}</inv:discountPercentage>`
               : ""
-          }${el("inv:note", skrat((it as any).description, 90), "          ")}
+          }${el("inv:note", poznamkaSColnymKodom((it as any).description, colnePolozky(it)), "          ")}
           <inv:${menaBlok}>${elSuma("typ:unitPrice", it.unit_price, "            ")}${elSuma(
             "typ:price",
             zn * Number(it.subtotal ?? 0),
@@ -1171,12 +1220,13 @@ export function polozkyFaktur(opts: {
 
       // Odpočet zálohy je vlastný druh položky, nie záporná bežná položka —
       // Pohoda ho tak vie spárovať so zálohovou faktúrou a nezaúčtuje ho ako
-      // ďalšie plnenie. Bez čísla zálohovej faktúry ostane „ručný odpočet".
+      // ďalšie plnenie. Bez čísla zálohovej faktúry ostane „ručný odpočet" —
+      // aj keď zálohová v Pohode (zatiaľ) nie je (`bezOdkazu`, 15. 11. 2026).
       const zalohaRiadok = zalohyFaktury
         .map(
           (zaloha) => `
         <inv:invoiceAdvancePaymentItem>${
-          zaloha.cislo
+          zaloha.cislo && !zaloha.bezOdkazu && !odkazVypadol(zaloha.zalohaId)
             ? `
           <inv:sourceDocument>
             <typ:number>${esc(skrat(zaloha.cislo, 32))}</typ:number>
@@ -1269,7 +1319,7 @@ export function polozkyFaktur(opts: {
         15. 11. 2026; dobropis s tou istou väzbou prejde. Pôvodné číslo pre
         KV ide ďalej v `originalDocumentNumber`.
       */
-      const vazba = opravovana && invoiceType !== "issuedDebitNote"
+      const vazba = opravovana && invoiceType !== "issuedDebitNote" && !odkazVypadol((invoice as any).opravuje_fakturu_id)
         ? `
       <inv:correctiveDocument itemTransfer="false">
         <typ:sourceDocument>
@@ -1916,6 +1966,113 @@ function kladnyDobropis(d: DokladRow): DokladRow {
   } as DokladRow;
 }
 
+/**
+ * Interný doklad samozdanenia prijatej faktúry — „Priznanie DPH“ (`dan`)
+ * alebo „Odpočet DPH“ (`odp`) tak, ako ho zadáva účtovníčka PALIERY
+ * (`samozdanenie-pohoda.ts`): dátumy = deň vzniku daňovej povinnosti, VS
+ * a číslo faktúry dodávateľa, dodávateľ ako partner, jedna položka na
+ * sadzbu (základ, daň), členenie DPH a KV B1 v hlavičke aj v položke.
+ * Faktúra v cudzej mene: položky aj v mene faktúry s jej kurzom.
+ */
+function internyDokladSamozdania(o: {
+  id: string;
+  rad: string | null | undefined;
+  symVar: string;
+  povodne: string;
+  /** Deň vzniku daňovej povinnosti (dateTax prijatej faktúry). */
+  den: string;
+  datumUctovania: string;
+  datumDodania: string;
+  text: string;
+  textPolozky: string;
+  adresa: string;
+  partnerExt: string;
+  stredisko: unknown;
+  clenenie: string;
+  predkontacia: string | null | undefined;
+  riadky: RiadokSamozdania[];
+  /** Mena faktúry, keď nie je domáca. */
+  mena: string | null;
+  kurz: number;
+  krajina: string | null | undefined;
+}): string {
+  const tab = sadzbyKuDnu(o.den, krajinaDane(o.krajina));
+  const pk = String(o.predkontacia ?? "").trim();
+  const rad = skrat(o.rad, 10);
+  const kv = KV_INTERNYCH_SAMOZDANIA;
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  // Domáca mena: v cudzej mene prepočet kurzom faktúry (SK: jednotky meny za 1 €).
+  const doma = (r: RiadokSamozdania) => {
+    if (!o.mena) return { zaklad: r.zaklad, dph: r.dph };
+    const zaklad = o.kurz > 0 ? r2(r.zaklad / o.kurz) : 0;
+    return { zaklad, dph: r2((zaklad * r.sadzba) / 100) };
+  };
+  const polozky = o.riadky
+    .map((r) => {
+      const h = doma(r);
+      return `
+        <int:intDocItem>${el("int:text", skrat(o.textPolozky, 90), "          ")}
+          <int:quantity>1</int:quantity>
+          <int:payVAT>false</int:payVAT>
+          <int:rateVAT>${kodSadzby(r.sadzba, tab)}</int:rateVAT>
+          <int:homeCurrency>${elSuma("typ:unitPrice", h.zaklad, "            ")}${elSuma("typ:price", h.zaklad, "            ")}${elSuma("typ:priceVAT", h.dph, "            ")}${elSuma("typ:priceSum", h.zaklad + h.dph, "            ")}
+          </int:homeCurrency>${
+            o.mena
+              ? `
+          <int:foreignCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma("typ:price", r.zaklad, "            ")}${elSuma("typ:priceVAT", r.dph, "            ")}${elSuma("typ:priceSum", r.zaklad + r.dph, "            ")}
+          </int:foreignCurrency>`
+              : ""
+          }${pk ? `\n          <int:accounting><typ:ids>${esc(pk)}</typ:ids></int:accounting>` : ""}
+          <int:classificationVAT><typ:ids>${esc(o.clenenie)}</typ:ids></int:classificationVAT>
+          <int:classificationKVDPH><typ:ids>${kv}</typ:ids></int:classificationKVDPH>
+        </int:intDocItem>`;
+    })
+    .join("");
+  const vPriehradke = (pr: Priehradka) =>
+    o.riadky.filter((r) => priehradka(kodSadzby(r.sadzba, tab)) === pr).map(doma);
+  const zaklad = (pr: Priehradka) => vPriehradke(pr).reduce((a, x) => a + x.zaklad, 0);
+  const dan = (pr: Priehradka) => vPriehradke(pr).reduce((a, x) => a + x.dph, 0);
+  const spoluMena = o.riadky.reduce((a, r) => a + r.zaklad + r.dph, 0);
+  const suhrn = o.mena
+    ? cudziaMenaSuhrn(o.mena, o.kurz, spoluMena, 0, "        ", o.krajina).replace(/inv:foreignCurrency/g, "int:foreignCurrency")
+    : `
+        <int:homeCurrency>${elSuma("typ:priceNone", 0, "          ")}${elSuma("typ:price3", zaklad("third"), "          ")}${elSuma("typ:price3VAT", dan("third"), "          ")}${elSuma("typ:priceLow", zaklad("low"), "          ")}${elSuma("typ:priceLowVAT", dan("low"), "          ")}${elSuma("typ:priceHigh", zaklad("high"), "          ")}${elSuma("typ:priceHighVAT", dan("high"), "          ")}
+        </int:homeCurrency>`;
+  return `
+  <dat:dataPackItem id="${esc(o.id)}" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>${rad ? `\n        <int:number><typ:ids>${esc(rad)}</typ:ids></int:number>` : ""}${el("int:symVar", o.symVar, "        ")}${el(
+        "int:originalDocumentNumber",
+        o.povodne,
+        "        ",
+      )}
+        <int:date>${esc(o.den)}</int:date>
+        <int:dateTax>${esc(o.den)}</int:dateTax>${el("int:dateAccounting", o.datumUctovania, "        ")}${el(
+          "int:dateDelivery",
+          o.datumDodania,
+          "        ",
+        )}${el("int:dateKVDPH", o.den, "        ")}${el("int:text", skrat(o.text, 240), "        ")}${
+          o.adresa
+            ? `
+        <int:partnerIdentity>${o.partnerExt}
+          <typ:address>${o.adresa}
+          </typ:address>
+        </int:partnerIdentity>`
+            : ""
+        }${odkazIds("int:centre", o.stredisko, "        ")}${pk ? `\n        <int:accounting><typ:ids>${esc(pk)}</typ:ids></int:accounting>` : ""}
+        <int:classificationVAT><typ:ids>${esc(o.clenenie)}</typ:ids></int:classificationVAT>
+        <int:classificationKVDPH><typ:ids>${kv}</typ:ids></int:classificationKVDPH>
+      </int:intDocHeader>
+      <int:intDocDetail>${polozky}
+      </int:intDocDetail>
+      <int:intDocSummary>
+        <int:roundingDocument>none</int:roundingDocument>
+        <int:roundingVAT>none</int:roundingVAT>${suhrn}
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>`;
+}
+
 /** Položky `dataPackItem` s prijatými dokladmi — bez obálky. */
 export function polozkyDokladov(opts: {
   company: CompanyRow;
@@ -1971,15 +2128,43 @@ export function polozkyDokladov(opts: {
         v `priceHigh` s daňou 0 a členením pre prenesenie a daň samozdaní.
         V `priceNone` by samozdanenie chýbalo (QA-C-PF2, 13. 11. 2026).
       */
+      /*
+        Slovenská prijatá faktúra so samozdanením (prenesenie § 69 ods. 12,
+        služba zo zahraničia § 69 ods. 3, tovar z EÚ) — model overený naostro
+        v POHODE SK 14404.8 (PALIERA, 15. 11. 2026, `samozdanenie-pohoda.ts`):
+        samozdanené riadky idú do `priceNone` bez sadzby (v `priceHigh` si
+        POHODA dopočítala 23 % a dodávateľovi by bolo na úhradu o daň viac)
+        a daň sa prizná a odpočíta dvoma internými dokladmi s KV B1.
+      */
+      const modelSamozdania =
+        krajinaDane(company?.country) === "SK" && d?._typPohody === "receivedInvoice";
+      const celeSamoz = Boolean(d?._samozdanenieCele);
       const samozdanenie = <T extends { sadzba: number; dph?: number; pdp?: boolean; vat_category?: string | null }>(
         riadky: T[],
-      ) =>
-        sadzbaSamozdanenia(riadky, {
-          cele: Boolean(d?._samozdanenieCele),
-          krajina: company?.country,
-          den: String(d?._datumDph || d?.issue_date || ""),
-        });
-      const rozpis = samozdanenie(rozpisDokladu(d) as (RozpisDph & { pdp?: boolean; vat_category?: string })[]);
+      ): (T & { _samoz?: boolean })[] =>
+        modelSamozdania
+          ? riadky.map((r) => (jeSamozdanenyRiadok(r, celeSamoz) ? { ...r, sadzba: 0, dph: 0, _samoz: true } : r))
+          : sadzbaSamozdanenia(riadky, {
+              cele: celeSamoz,
+              krajina: company?.country,
+              den: String(d?._datumDph || d?.issue_date || ""),
+            });
+      const rozpisPred = rozpisDokladu(d) as (RozpisDph & { pdp?: boolean; vat_category?: string })[];
+      const rozpis = samozdanenie(rozpisPred);
+      // Riadky interných dokladov Priznanie / Odpočet DPH (po sadzbách, v mene faktúry).
+      const riadkySamoz = modelSamozdania
+        ? riadkySamozdania(rozpisPred, {
+            cele: celeSamoz,
+            krajina: company?.country,
+            den: String(d?._datumDph || d?.issue_date || ""),
+          })
+        : [];
+      // Celá faktúra sa samozdaňuje (hlavička KN a členenie samozdanenia), inak len časť.
+      const fakturaSamoz =
+        riadkySamoz.length > 0 &&
+        rozpis.every(
+          (r) => r._samoz || !(r.zaklad || r.dph) || ["exempt", "out_of_scope"].includes(String(r.vat_category ?? "")),
+        );
       const zaSadzbu = (p: Priehradka) =>
         rozpis.filter((x) => priehradka(kodSadzby(x.sadzba, tab)) === p);
       const zaklad = (arr: RozpisDph[]) => arr.reduce((a, x) => a + x.zaklad, 0);
@@ -2123,11 +2308,22 @@ export function polozkyDokladov(opts: {
             );
       // Nadobudnutie tovaru z EÚ — samozdanenie cez PDnadEU, nie cez členenie prenesenia.
       const nadobudnutieEu = Boolean(clenenieRezimu) && String(d?._rezim ?? "") === "nadobudnutie";
+      // Samozdanenie (model SK): druh a členenia faktúry a oboch interných dokladov.
+      const druhSamoz: DruhSamozdania | null = riadkySamoz.length ? druhSamozdania(d, company?.country) : null;
+      const cleneniaSamoz = druhSamoz
+        ? cleneniaSamozdania(druhSamoz, {
+            odpocet: d?.odpocet,
+            clenenieFirmy: nastavenia?.clenenieDphPdpPrijata,
+            clenenieNadobudnutia: nadobudnutieEu ? clenenieRezimu : null,
+          })
+        : null;
       const clenenieJedno = zalohovaPrijata
         ? null
         : kPlatbe
           ? String(d?.pohoda_clenenie_dph ?? "").trim() || null
           : String(d?.pohoda_clenenie_dph ?? "").trim() ||
+          // Celá faktúra so samozdanením (PDsluz, PDnadEU, bez nároku PB…).
+          (fakturaSamoz ? cleneniaSamoz?.faktura : null) ||
           // Nadobudnutie z EÚ (PDnadEU) a bez nároku na odpočet (PB) — pred predvolenými firmy (V5, V6).
           clenenieRezimu ||
           podlaKat?.clenenie ||
@@ -2197,7 +2393,7 @@ export function polozkyDokladov(opts: {
       */
       const clenenie = rozuctovany
         ? null
-        : d?._pdp && !String(d?.pohoda_clenenie_dph ?? "").trim() && !nadobudnutieEu
+        : d?._pdp && !String(d?.pohoda_clenenie_dph ?? "").trim() && !nadobudnutieEu && !modelSamozdania
           ? clenenieprijatejPdp(nastavenia, cz) || clenenieJedno
           : clenenieJedno;
 
@@ -2293,7 +2489,14 @@ export function polozkyDokladov(opts: {
         náš vystavený (A.1/D.2).
       */
       const maDphDokladu = rozpis.some((x) => Math.abs(Number(x.dph ?? 0)) >= 0.005);
-      const kvAuto = prijatyDoklad
+      /*
+        Celá faktúra so samozdanením: KV „KN“ (nevstupuje do KV) — do KV B.1
+        ide cez interné doklady Priznanie a Odpočet DPH. KV B1 na prijatej
+        faktúre POHODA SK odmietne („Neznáma hodnota“, 15. 11. 2026).
+      */
+      const kvAuto = fakturaSamoz
+        ? KV_FAKTURY_SAMOZDANIA
+        : prijatyDoklad
         ? kvPrijatehoPrePohodu({
             cz,
             kvDokladu: d?.kv_clenenie,
@@ -2339,8 +2542,13 @@ export function polozkyDokladov(opts: {
         riadkySDanou.length > 0 &&
         riadkySDanou.every((r) => jeNezahrnovat(r.clenenie || clenenieJedno) && !String(r.kv ?? "").trim());
       const kvDokladuPrePolozky = bezOdpoctuVsetko ? "" : kvAuto;
-      const kvPolozky = (x: { kv?: unknown; pdp?: unknown; dph?: unknown }, cl: string | null | undefined): string => {
+      const kvPolozky = (
+        x: { kv?: unknown; pdp?: unknown; dph?: unknown; _samoz?: unknown },
+        cl: string | null | undefined,
+      ): string => {
         if (cz || zalohovaPrijata) return "";
+        // Samozdanená položka (model SK) do KV nejde — B.1 nesú interné doklady.
+        if (riadkySamoz.length && (fakturaSamoz || x?._samoz)) return KV_FAKTURY_SAMOZDANIA;
         return kvPolozkyPrePohodu({
           cz,
           vlastne: x?.kv,
@@ -2377,19 +2585,33 @@ export function polozkyDokladov(opts: {
             či podľa zákona) — Pohoda ho z hlavičky do položiek nedoplní.
           */
           // Nadobudnutie z EÚ: položky nesú PDnadEU dokladu, nie členenie prenesenia (V6).
-          const cl = x.pdp && !nadobudnutieEu
+          // Samozdanená položka (model SK): PDsluz / PDnadEU — pri celej faktúre členenie dokladu.
+          const cl = x._samoz && cleneniaSamoz
+            ? (fakturaSamoz ? clenenie : null) || cleneniaSamoz.faktura
+            : x.pdp && !nadobudnutieEu
             ? clenenieprijatejPdp(nastavenia, cz) || x.clenenie
             : x.clenenie || clenenie;
           // KV na položke s DPH — Pohoda ho z hlavičky do položiek nevezme (aj prijatá faktúra).
           const kvx = kvPolozky(x, cl);
           // Položka „ako doklad“ dostane predkontáciu dokladu výslovne — Pohoda ju do položiek sama nedoplní.
           const pk = kodPolozky(x);
+          /*
+            POHODA si cenu položky prepočíta ako množstvo × jednotková cena
+            (na 2 desatinné miesta). Keď to so základom nesedí (14 × 31,0143 =
+            434,20, ale 14 × 31,01 = 434,14 — overené naostro 15. 11. 2026),
+            položka ide ako 1 × základ a množstvo ostane v texte.
+          */
+          const mn = Number(x.mnozstvo ?? 1) || 1;
+          const nesedi = Math.abs(Math.round(mn * Math.round(Number(x.cena ?? 0) * 100)) / 100 - Number(x.zaklad ?? 0)) > 0.005;
+          const textPolozky = nesedi
+            ? `${x.nazov ?? ""} (${String(mn).replace(".", ",")}${x.mj ? ` ${x.mj}` : ""})`
+            : x.nazov;
           return `
-        <${p}:${koren}Item>${el(`${p}:text`, skrat(x.nazov, 90), "          ")}
-          <${p}:quantity>${mnozstvoPohody(x.mnozstvo)}</${p}:quantity>${el(`${p}:unit`, skrat(x.mj, 10), "          ")}
+        <${p}:${koren}Item>${el(`${p}:text`, skrat(textPolozky, 90), "          ")}
+          <${p}:quantity>${nesedi ? "1" : mnozstvoPohody(x.mnozstvo)}</${p}:quantity>${nesedi ? "" : el(`${p}:unit`, skrat(x.mj, 10), "          ")}
           <${p}:payVAT>false</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(x.sadzba, tab)}</${p}:rateVAT>
-          <${p}:${mb}>${elSuma("typ:unitPrice", x.cena, "            ")}${elSuma(
+          <${p}:${mb}>${elSuma("typ:unitPrice", nesedi ? x.zaklad : x.cena, "            ")}${elSuma(
             "typ:price",
             x.zaklad,
             "            ",
@@ -2461,7 +2683,7 @@ export function polozkyDokladov(opts: {
       const polozkyZRozpisu = (mena: "foreignCurrency" | "homeCurrency") =>
         `
       <${p}:${koren}Detail>${rozpis
-        .map((r: RozpisDph & { pdp?: boolean }) => {
+        .map((r: RozpisDph & { pdp?: boolean; _samoz?: boolean }) => {
           /*
             Prenesená sadzba nesie členenie pre prenesenie a KV B.1 ako položka
             prijatej faktúry — v domácej aj v cudzej mene. POHODA počíta DPH
@@ -2471,7 +2693,11 @@ export function polozkyDokladov(opts: {
           */
           const prenesena = Boolean(r.pdp || (d?._pdp && !Number(r.dph ?? 0)));
           const cl =
-            prenesena && !nadobudnutieEu ? clenenieprijatejPdp(nastavenia, cz) || clenenie : clenenie;
+            r._samoz && cleneniaSamoz
+              ? (fakturaSamoz ? clenenie : null) || cleneniaSamoz.faktura
+              : prenesena && !nadobudnutieEu
+                ? clenenieprijatejPdp(nastavenia, cz) || clenenie
+                : clenenie;
           // Členenie KV aj v cudzej mene — inak by doklad v Pohode z KV vypadol.
           const kvr = kvPolozky(r, cl);
           return `
@@ -2761,8 +2987,57 @@ export function polozkyDokladov(opts: {
           : ""
       }`;
 
+      const idPolozky = d?.id ? idDokladuPohody(d.id, d?.pohoda_verzia) : `DOK${idx + 1}`;
+      /*
+        Samozdanenie (model SK): za faktúrou dva interné doklady — Priznanie
+        DPH (DDsluz / DDsl§69 / DDnadEU) a Odpočet DPH (PDsluz / PDnadEU, bez
+        nároku PB…), oba KV B1, len za samozdanenú časť faktúry. Id položky
+        `<id faktúry>-sam-dan` / `-sam-odp` (s verziou opravy ako faktúra) —
+        konektor ich páruje k faktúre podľa uuid na začiatku.
+      */
+      const interneSamoz =
+        druhSamoz && cleneniaSamoz && riadkySamoz.length
+          ? (() => {
+              const texty = textySamozdania(druhSamoz, symVar);
+              const spolocne = {
+                rad: nastavenia?.radSamozdanenie,
+                symVar,
+                povodne,
+                den: datumOdpoctu,
+                datumUctovania: zamknutieZ(datumOdpoctu) || datumOdpoctu,
+                datumDodania: datumDodania || datumOdpoctu,
+                textPolozky: textDokladu,
+                adresa: adresa.replace(/\n\s*<typ:email>[^<]*<\/typ:email>/, ""),
+                partnerExt: extIdPartnera(ex, nastavenia, d?.customer_id),
+                stredisko: d?.stredisko || nastavenia?.stredisko,
+                riadky: riadkySamoz,
+                mena: cudziaD ? menaDokladu : null,
+                kurz: kurzDokladu(d),
+                krajina: company?.country,
+              };
+              return (
+                internyDokladSamozdania({
+                  ...spolocne,
+                  id: `${idPolozky}-sam-dan`,
+                  text: texty.priznanie,
+                  clenenie: cleneniaSamoz.priznanie,
+                  predkontacia: nastavenia?.predkontaciaSamozdanenieDan,
+                }) +
+                // Bez nároku na odpočet sa daň len prizná — Odpočet DPH nejde.
+                (cleneniaSamoz.odpocet
+                  ? internyDokladSamozdania({
+                      ...spolocne,
+                      id: `${idPolozky}-sam-odp`,
+                      text: texty.odpocet,
+                      clenenie: cleneniaSamoz.odpocet,
+                      predkontacia: nastavenia?.predkontaciaSamozdanenieOdpocet,
+                    })
+                  : "")
+              );
+            })()
+          : "";
       return `
-  <dat:dataPackItem id="${esc(d?.id ? idDokladuPohody(d.id, d?.pohoda_verzia) : `DOK${idx + 1}`)}" version="2.0">
+  <dat:dataPackItem id="${esc(idPolozky)}" version="2.0">
     <${p}:${koren} version="2.0">
       <${p}:${koren}Header>${typ}${
         rad ? `\n        <${p}:number><typ:ids>${esc(skrat(rad, 10))}</typ:ids></${p}:number>` : ""
@@ -2851,7 +3126,7 @@ menaDokladu, kurzDokladu(d), celkom - odpocetDoSuhrnu, zaokruhlenie, "        ",
           : ""
       }
     </${p}:${koren}>
-  </dat:dataPackItem>`;
+  </dat:dataPackItem>${interneSamoz}`;
     })
     .join("");
 }

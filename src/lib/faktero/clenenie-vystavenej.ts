@@ -220,14 +220,21 @@ export function clenenieMimoTuzemska(
     return null;
   };
   /*
-    Číselník firmy, a keď v ňom kód nie je (skrátený zoznam, vypnutý kód),
-    slovenská firma dostane kód zo štandardného číselníka POHODY SK — ten
-    POHODA pozná vždy.
+    Číselník firmy, a keď v ňom kód nie je (skrátený zoznam), slovenská firma
+    dostane kód zo štandardného číselníka POHODY SK.
+
+    Presný kód, ktorý firma v Pohode MÁ, ale vypnutý (nie je v ponuke), sa
+    systémovým nenahrádza: POHODA by ho pri importe potichu zmenila na
+    tuzemské UD (PALIERA UDdod3/UDzahr, overené 15. 11. 2026). Kód ostane
+    a kontrola pred exportom ho nahlási (`prekazkaVypnutehoClenenia`).
   */
-  return (
-    hladaj(cleneniaVydanychPreRezim(ciselnik, krajinaFirmy)) ??
-    (String(krajinaFirmy || "SK").toUpperCase() === "SK" ? hladaj(cleneniaVydanychPreRezim([], "SK")) : null)
+  const vlastny = hladaj(cleneniaVydanychPreRezim(ciselnik, krajinaFirmy));
+  if (vlastny) return vlastny;
+  const vypnuty = (ciselnik ?? []).find(
+    (z) => (z.druh ?? "clenenie_dph") === "clenenie_dph" && z.aktivne === false && String(z.kod ?? "").trim() === kod,
   );
+  if (vypnuty) return kod;
+  return String(krajinaFirmy || "SK").toUpperCase() === "SK" ? hladaj(cleneniaVydanychPreRezim([], "SK")) : null;
 }
 
 /** Tuzemské členenia DPH vydaných (UD, UK, prenesenie) — OSS, EÚ ani vývoz ich mať nesmú. */

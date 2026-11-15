@@ -26,6 +26,11 @@ export type OdpocetZalohy = {
   suma: number;
   /** Zdanená časť po sadzbách (kladné sumy); prázdne pri nezdanenej zálohe. */
   riadky: RiadokOdpoctu[];
+  /**
+   * Zálohová faktúra už odišla do Pohody (`exported_at`, aj migrovaná
+   * z Doklada) — len vtedy sa na ňu smie odpočet odvolať (`sourceDocument`).
+   */
+  zalohaOdovzdana?: boolean;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -141,7 +146,19 @@ export function polozkyOdpoctu(
 }
 
 /** Jedna položka `invoiceAdvancePaymentItem` — jedna sadzba, odkaz na zálohovú faktúru. */
-export type PolozkaOdpoctuPohody = { cislo: string | null; zaklad: number; dph: number; sadzba: number };
+export type PolozkaOdpoctuPohody = {
+  cislo: string | null;
+  zaklad: number;
+  dph: number;
+  sadzba: number;
+  /**
+   * Zálohová faktúra v Pohode (zatiaľ) nie je — položka ide bez
+   * `sourceDocument` (ručný odpočet), číslo ostáva len v názve položky.
+   */
+  bezOdkazu?: boolean;
+  /** Id zálohovej faktúry — generátor zruší odkaz, keď zálohová z dávky vypadla. */
+  zalohaId?: string | null;
+};
 
 /**
  * Odpočet zálohy pre Pohodu — položky `invoiceAdvancePaymentItem`, každá
@@ -162,22 +179,33 @@ export type PolozkaOdpoctuPohody = { cislo: string | null; zaklad: number; dph: 
  *
  * `cisloVPohode` — číslo zálohovej faktúry, ktoré jej pridelila Pohoda
  * (konektor ho pozná zo spätnej väzby), inak naše číslo.
+ *
+ * `odkazPovoleny` — či sa položka smie odvolať na zálohovú faktúru. POHODA SK
+ * 14404.8 odmietne CELÝ doklad („Nebol nájdený odkazovaný záznam“), keď
+ * `sourceDocument` ukazuje na doklad, ktorý v nej nie je; bez odkazu ho
+ * prijme a suma na úhradu sedí (overené naostro 15. 11. 2026). Bez funkcie
+ * sa odkazuje vždy (správanie pred 15. 11.).
  */
 export function zalohyPrePohodu(
   odpocty: OdpocetZalohy[] | null | undefined,
   cisloVPohode?: (o: OdpocetZalohy) => string | null | undefined,
+  odkazPovoleny?: (o: OdpocetZalohy) => boolean,
 ): PolozkaOdpoctuPohody[] | null {
   if (!odpocty?.length) return null;
   const out: PolozkaOdpoctuPohody[] = [];
   for (const o of odpocty) {
     const cislo = (cisloVPohode?.(o) || o.zaloha || "").trim() || null;
+    const bez = {
+      ...(o.zalohaId ? { zalohaId: String(o.zalohaId) } : {}),
+      ...(odkazPovoleny && !odkazPovoleny(o) ? { bezOdkazu: true } : {}),
+    };
     if (!(Number(o.suma) > 0)) return null;
     if (o.doklad) {
       const riadky = o.riadky.filter((r) => r.zaklad || r.dph);
       if (!riadky.length) return null;
-      for (const r of riadky) out.push({ cislo, sadzba: r.sadzba, zaklad: r2(r.zaklad), dph: r2(r.dph) });
+      for (const r of riadky) out.push({ cislo, sadzba: r.sadzba, zaklad: r2(r.zaklad), dph: r2(r.dph), ...bez });
     } else {
-      out.push({ cislo, sadzba: 0, zaklad: r2(o.suma), dph: 0 });
+      out.push({ cislo, sadzba: 0, zaklad: r2(o.suma), dph: 0, ...bez });
     }
   }
   return out;

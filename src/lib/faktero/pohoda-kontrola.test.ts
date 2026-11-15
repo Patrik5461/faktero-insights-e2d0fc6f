@@ -363,15 +363,16 @@ describe("kontrola prijatých dokladov", () => {
     reverse_charge: false,
     items: [],
   };
-  it("prenesenie bez členenia pre samozdanenie sa zastaví", () => {
-    expect(prekazkaDokladu(prijataAkoDoklad(pdp), firma, {})).toMatch(
-      /bez členenia DPH pre samozdanenie/,
-    );
+  it("prenesenie bez členenia firmy: SK prijatá faktúra prejde (systémové PDsluz), bloček sa zastaví", () => {
+    // Samozdanenie internými dokladmi (15. 11. 2026) — systémové členenie POHODY SK je platné.
+    expect(prekazkaDokladu(prijataAkoDoklad(pdp), firma, {})).toBeNull();
     expect(
       prekazkaDokladu(prijataAkoDoklad(pdp), firma, { clenenieDphPdpPrijata: "PDpdp" }),
     ).toBeNull();
+    const blocek = { ...prijataAkoDoklad(pdp), _typPohody: undefined };
+    expect(prekazkaDokladu(blocek, firma, {})).toMatch(/bez členenia DPH pre samozdanenie/);
   });
-  it("zmiešaná faktúra: PDP položky bez členenia sa zastavia", () => {
+  it("zmiešaná faktúra: PDP položky bez členenia firmy prejdú (PDsluz)", () => {
     const zm = {
       ...pdp,
       dph_rezim: null,
@@ -383,7 +384,8 @@ describe("kontrola prijatých dokladov", () => {
         { name: "Oceľ (PDP)", total: 1116.8, vat_rate: 23, pdp: true },
       ],
     };
-    expect(prekazkaDokladu(prijataAkoDoklad(zm), firma, {})).toMatch(/samozdanenie/);
+    // SK prijatá faktúra: prenesené položky dostanú PDsluz, doklad sa nezastaví.
+    expect(prekazkaDokladu(prijataAkoDoklad(zm), firma, {})).toBeNull();
   });
   it("zaúčtovaná bez predkontácie sa zastaví (FV20260460)", () => {
     const z = {
