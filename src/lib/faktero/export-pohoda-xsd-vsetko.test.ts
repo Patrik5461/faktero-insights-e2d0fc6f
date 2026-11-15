@@ -541,6 +541,11 @@ describe("Pohoda — vystavené faktúry proti invoice.xsd", () => {
       ],
     });
     uloz("26-faktura-oss", x);
+    // OSS (overené naostro 16. 11. 2026): sadzba štátu spotreby ako historická priehradka s percentom
+    // (inak POHODA dosadí slovenské 23/19 %) a povinný druh dodania (služby SB, tovar GD).
+    expect(x).toContain("<inv:rateVAT>historyHigh</inv:rateVAT>\n          <inv:percentVAT>19</inv:percentVAT>");
+    expect(x).toContain("<inv:rateVAT>historyLow</inv:rateVAT>\n          <inv:percentVAT>7</inv:percentVAT>");
+    expect(x.match(/<inv:typeServiceMOSS><typ:ids>SB<\/typ:ids><\/inv:typeServiceMOSS>/g)).toHaveLength(2);
     expect(chybySchemy(x)).toEqual([]);
     expect(x).toContain("<inv:MOSS><typ:ids>DE</typ:ids></inv:MOSS>");
     expect(hodnota(x, "typ:priceHigh")).toBe("100.00");

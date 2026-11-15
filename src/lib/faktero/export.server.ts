@@ -915,6 +915,31 @@ export function polozkyFaktur(opts: {
         : sadzbyKuDnu(denPlnenia, krajinaDane(company.country));
 
       const kody = items.map((it) => kodSadzby(Number(it.vat_rate), tab));
+      /*
+        OSS: POHODA SK berie „high/low“ ako slovenské sadzby (nemecká 19 % → 23 %,
+        7 % → 19 % — overené naostro 16. 11. 2026). Sadzba štátu spotreby ide
+        ako historická priehradka s výslovným percentom (vzor Stormware
+        „DPH v režime OSS“: historyHigh + percentVAT).
+      */
+      /*
+        OSS: druh dodania je na položke povinný (bez neho POHODA faktúru
+        odmietne: „Vyberte druh dodania“). Podľa príručky POHODY „pre tovar
+        len GD – Tovar, všetko ostatné je služba“; pre služby kód zo vzoru
+        Stormware „SB“. Tovar = skladová položka, colný kód alebo faktúra
+        označená ako dodanie tovaru. Pri 0 % sa nevyžaduje.
+      */
+      const druhDodaniaOss = (it: any) => {
+        if (!statOss || Number(it?.vat_rate ?? 0) === 0) return "";
+        const tovar =
+          Boolean(it?.stock_item_id || String(it?.colny_kod ?? "").trim()) ||
+          String((invoice as any).eu_plnenie ?? "") === "tovar";
+        return `\n          <inv:typeServiceMOSS><typ:ids>${tovar ? "GD" : "SB"}</typ:ids></inv:typeServiceMOSS>`;
+      };
+      const sadzbaPolozkyXml = (kod: string, sadzba: unknown) => {
+        if (!statOss || kod === "none") return `<inv:rateVAT>${kod}</inv:rateVAT>`;
+        const hist = kod.startsWith("history") ? kod : `history${kod.charAt(0).toUpperCase()}${kod.slice(1)}`;
+        return `<inv:rateVAT>${hist}</inv:rateVAT>\n          <inv:percentVAT>${Number(sadzba ?? 0)}</inv:percentVAT>`;
+      };
       const kosik = (p: Priehradka) => items.filter((_, i) => priehradka(kody[i]) === p);
       const zaklad = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
       const dan = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.vat_amount ?? 0), 0);
@@ -1179,7 +1204,7 @@ export function polozkyFaktur(opts: {
         <inv:invoiceItem>${el("inv:text", skrat(r.text, 90) || textRozuctovania, "          ")}
           <inv:quantity>${smerRiadkov}</inv:quantity>
           <inv:payVAT>false</inv:payVAT>
-          <inv:rateVAT>${kodSadzby(Number(r.sadzba), tab)}</inv:rateVAT>
+          ${sadzbaPolozkyXml(kodSadzby(Number(r.sadzba), tab), r.sadzba)}
           <inv:${menaBlok}>${elSuma("typ:unitPrice", Math.abs(Number(r.zaklad) || 0), "            ")}${elSuma(
             "typ:price",
             z,
@@ -1197,7 +1222,7 @@ export function polozkyFaktur(opts: {
         <inv:invoiceItem>${el("inv:text", skrat(it.name, 90), "          ")}
           <inv:quantity>${mnozstvoPohody(mnozstvo)}</inv:quantity>${el("inv:unit", skrat(it.unit ?? "ks", 10), "          ")}
           <inv:payVAT>false</inv:payVAT>
-          <inv:rateVAT>${kod}</inv:rateVAT>${
+          ${sadzbaPolozkyXml(kod, it.vat_rate)}${
             // Zľava riadku: jednotková cena je pred zľavou, Pohoda si cenu
             // položky prepočíta sama — bez percenta by vyšla vyššia suma.
             Number((it as any).discount_percent ?? 0) > 0
@@ -1213,7 +1238,7 @@ export function polozkyFaktur(opts: {
             zn * Number(it.total ?? 0),
             "            ",
           )}
-          </inv:${menaBlok}>${kodyPolozky(it)}${intrastatPolozky(it)}
+          </inv:${menaBlok}>${druhDodaniaOss(it)}${kodyPolozky(it)}${intrastatPolozky(it)}
         </inv:invoiceItem>`;
         })
         .join("");
