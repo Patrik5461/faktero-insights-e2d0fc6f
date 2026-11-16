@@ -8,26 +8,41 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertTriangle, FileText, Landmark, SearchX } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, FileText, Landmark, SearchX, CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   blocekDoNespracovanychFn,
+  detailNespracovanehoFn,
   hromadneNespracovaneFn,
   nahrajNespracovaneFn,
   nespracovaneFn,
   nespracovaneNaUhraduFn,
+  vytvorZNespracovanehoFn,
   zmazNespracovaneFn,
 } from "@/lib/faktero/nespracovane.functions";
+import { deleteExpenseFn, nastavStavDokladovFn } from "@/lib/faktero/expenses.functions";
+import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
+import {
+  dovodNevytvorenia,
+  dovodZChybyServera,
+  jeVyberatelny,
+  popisRiadku,
+  rozdelVyber,
+  textSpracovania,
+  zmenaPreBlocky,
+  type Preskoceny,
+} from "@/lib/faktero/nespracovane-hromadne";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 import { SuctovaListaVyberu } from "@/components/faktero/SuctovaListaVyberu";
 import { polozkaNespracovaneho } from "@/lib/faktero/suhrn-vyberu";
 import type { FakturaNaUhradu, Preskocena } from "@/lib/faktero/hromadny-prikaz";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { potvrd } from "@/lib/potvrdenie";
-import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
+import { DRUHY_NESPRACOVANYCH, upravCelkomDokladu } from "@/lib/faktero/nespracovane";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
@@ -86,8 +101,16 @@ function Stranka() {
   const input = useRef<HTMLInputElement>(null);
   const hromadne = useServerFn(hromadneNespracovaneFn);
   const zmaz = useServerFn(zmazNespracovaneFn);
-  // Hromadné akcie — len doklady čakajúce v Nespracovaných (bločky zo skenu sa najprv otvoria).
+  // Hromadné akcie — nespracované doklady aj bločky; výber drží kľúče riadkov (`n-…`, `b-…`).
   const [vybrane, setVybrane] = useState<Set<string>>(new Set());
+  const detail = useServerFn(detailNespracovanehoFn);
+  const vytvor = useServerFn(vytvorZNespracovanehoFn);
+  const zauctujBlocky = useServerFn(zauctujDokladyFn);
+  const stavBlocku = useServerFn(nastavStavDokladovFn);
+  const zmazBlocek = useServerFn(deleteExpenseFn);
+  // Priebeh hromadného spracovania a súhrn preskočených na konci.
+  const [priebeh, setPriebeh] = useState<{ hotovo: number; spolu: number } | null>(null);
+  const [vysledok, setVysledok] = useState<{ nadpis: string; preskocene: Preskoceny[] } | null>(null);
   const [zmena, setZmena] = useState({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
   const [hromadneBusy, setHromadneBusy] = useState(false);
   // Hromadný príkaz na úhradu z označených — IBAN, symboly a suma z vyčítaných údajov.
@@ -180,30 +203,70 @@ function Stranka() {
   useEffect(() => setVybrane(new Set()), [hladane, obdobieOd, obdobieDo]);
 
   // „Vybrať všetky“ berie len zobrazené — skrytý doklad sa nesmie hromadne zmeniť ani zmazať.
-  const vyberatelne = zobrazene.filter((r) => r.typ === "nespracovany" && r.stav !== "cita");
-  // Lišta výberu — len zobrazené a vybrané nespracované doklady.
-  const vybraneSuhrn = vyberatelne.filter((r) => vybrane.has(r.id)).map((r: any) => polozkaNespracovaneho(r));
-  const naUhraduPocet = vybraneSuhrn.filter((p) => p.naUhradu).length;
-  const prepniVyber = (id: string) =>
+  const vyberatelne = zobrazene.filter(jeVyberatelny);
+  // Lišta výberu — len zobrazené a vybrané (nespracované doklady aj bločky).
+  const { nespracovane: vybraneN, blocky: vybraneB } = rozdelVyber(zobrazene, vybrane);
+  const pocetVybranych = vybraneN.length + vybraneB.length;
+  const vybraneSuhrn = [
+    ...vybraneN.map((r: any) => polozkaNespracovaneho(r)),
+    // Bloček je zaplatený na mieste — do príkazu na úhradu nejde.
+    ...vybraneB.map((r: any) => polozkaNespracovaneho({ ...r, druh: "blocek" })),
+  ];
+  const naUhraduPocet = vybraneN.map((r: any) => polozkaNespracovaneho(r)).filter((p) => p.naUhradu).length;
+  const prepniVyber = (kluc: string) =>
     setVybrane((p) => {
       const n = new Set(p);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
+      if (n.has(kluc)) n.delete(kluc);
+      else n.add(kluc);
       return n;
     });
+  const pracujem = hromadneBusy || priebeh !== null;
+
+  /** Koniec hromadnej akcie — toast, prípadne okno s preskočenými a dôvodmi. */
+  async function dokonci(nadpis: string, preskocene: Preskoceny[]) {
+    if (preskocene.length) setVysledok({ nadpis, preskocene });
+    setVybrane(new Set());
+    obnovPoctyMenu();
+    await obnov();
+  }
 
   async function pouziHromadne() {
     const cid = getActiveCompanyId();
-    if (!cid || !vybrane.size) return;
+    if (!cid || !pocetVybranych) return;
     const z = Object.fromEntries(Object.entries(zmena).filter(([, v]) => v.trim())) as Record<string, string>;
     if (!Object.keys(z).length) return toast.error(t("Vyplňte aspoň jedno pole, ktoré sa má zmeniť."));
     setHromadneBusy(true);
+    const preskocene: Preskoceny[] = [];
+    let zmenene = 0;
     try {
-      const r = await hromadne({ data: { company_id: cid, ids: [...vybrane], zmena: z as any } });
-      toast.success(t("Zmenené doklady: {n}", { n: r.zmenene }));
-      setVybrane(new Set());
+      if (vybraneN.length) {
+        const r = await hromadne({ data: { company_id: cid, ids: vybraneN.map((r) => r.id), zmena: z as any } });
+        zmenene += r.zmenene;
+        if (r.preskocene)
+          preskocene.push({
+            popis: t("Nespracované doklady ({n})", { n: r.preskocene }),
+            dovod: { text: "Doklad sa ešte číta" },
+          });
+      }
+      if (vybraneB.length) {
+        // Bloček preberie zaúčtovanie (predkontácia, členenie, stredisko, činnosť); druh ani zákazku nie.
+        const pre = zmenaPreBlocky(z);
+        if (pre.nemenia.length)
+          preskocene.push({
+            popis: t("Bločky ({n})", { n: vybraneB.length }),
+            dovod: { text: "Druh dokladu ani zákazka sa pri bločku hromadne nemenia — otvorte bloček" },
+          });
+        if (Object.keys(pre.zmena).length) {
+          const r = await zauctujBlocky({
+            data: { company_id: cid, ids: vybraneB.map((r) => r.id), ...pre.zmena },
+          });
+          zmenene += r.zmenenych;
+          for (const p of r.preskocene) preskocene.push({ popis: p, dovod: { text: "" } });
+        }
+      }
+      toast.success(t("Zmenené doklady: {n}", { n: zmenene }));
       setZmena({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
-      await obnov();
+      await dokonci(t("Niektoré doklady sa nezmenili"), preskocene);
     } catch (e: any) {
       toast.error(e?.message ?? t("Nepodarilo sa"));
     } finally {
@@ -211,12 +274,103 @@ function Stranka() {
     }
   }
 
+  /*
+    Hromadné „Vytvoriť“ — každý nespracovaný doklad ide tým istým serverom
+    ako tlačidlo v detaile, s uloženými (vyťaženými) údajmi. Čo by detail
+    potvrdzoval, sa preskočí s dôvodom. Bloček sa označí ako spracovaný ako
+    „Spracovať“ v detaile bločku.
+  */
+  async function spracujHromadne() {
+    const cid = getActiveCompanyId();
+    if (!cid || !pocetVybranych) return;
+    const nN = vybraneN.length;
+    const nB = vybraneB.length;
+    if (
+      !(await potvrd(
+        [
+          nN ? t("Vytvoriť doklady z vybraných nespracovaných ({n}) s prečítanými údajmi?", { n: nN }) : null,
+          nB ? t("Označiť vybrané bločky ({n}) ako spracované?", { n: nB }) : null,
+          t("Doklad, pri ktorom treba niečo doplniť alebo rozhodnúť, sa preskočí a ostane tu."),
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        { potvrdit: t("Spracovať") },
+      ))
+    )
+      return;
+    const preskocene: Preskoceny[] = [];
+    let vytvorene = 0;
+    let nezauctovane = 0;
+    let hotovo = 0;
+    const krok = () => setPriebeh({ hotovo: ++hotovo, spolu: nN + nB });
+    setPriebeh({ hotovo: 0, spolu: nN + nB });
+    try {
+      for (const r of vybraneN) {
+        const popis = popisRiadku(r);
+        try {
+          const d = await detail({ data: { id: r.id } });
+          const dovod = dovodNevytvorenia({
+            druh: d.druh,
+            stav: d.stav,
+            udaje: d.udaje,
+            povinne: d.povinne,
+            nastavenia: d.nastavenia,
+            krajinaFirmy: d.krajinaFirmy,
+            vlastneUcty: d.vlastneUcty,
+            ibanOdberatela: d.ibanOdberatela,
+          });
+          if (dovod) preskocene.push({ popis, dovod });
+          else {
+            const v = await vytvor({
+              data: { id: r.id, druh: d.druh as any, udaje: upravCelkomDokladu(null, d.udaje) as any },
+            });
+            vytvorene++;
+            if (v.agenda === "prijata" && v.duplicita)
+              preskocene.push({
+                popis,
+                dovod: { text: "Faktúra je vytvorená, ale nezaúčtovaná – duplicita. Rovnaká faktúra už v evidencii je, jednu z nich zmažte." },
+              });
+            else if (v.zauctovana === false || v.cudzia) nezauctovane++;
+          }
+        } catch (e: any) {
+          preskocene.push({ popis, dovod: dovodZChybyServera(e?.message) });
+        }
+        krok();
+      }
+      for (const r of vybraneB as any[]) {
+        const popis = popisRiadku(r);
+        // Naskenovaný doklad bez znakov bločku môže byť faktúra — zaradí ho človek v detaile.
+        if (!r.skutocnyBlocek) {
+          preskocene.push({ popis, dovod: { text: "Nie je isté, že ide o bloček (môže to byť faktúra) — otvorte ho a určte druh" } });
+          krok();
+          continue;
+        }
+        try {
+          const v = await stavBlocku({ data: { company_id: cid, ids: [r.id], stav: "processed" } });
+          if (v.zmenene) vytvorene++;
+          else preskocene.push({ popis, dovod: { text: "Bez sumy, dátumu a spôsobu úhrady sa doklad nedá označiť ako spracovaný." } });
+        } catch (e: any) {
+          preskocene.push({ popis, dovod: { text: String(e?.message ?? "") || "Nepodarilo sa" } });
+        }
+        krok();
+      }
+      if (vytvorene) toast.success(t("Spracované doklady: {n}", { n: vytvorene }));
+      if (nezauctovane)
+        toast.warning(t("Nezaúčtované (chýba predkontácia či členenie DPH alebo iný odberateľ): {n}", { n: nezauctovane }));
+      if (!vytvorene && !preskocene.length) toast(t("Nebolo čo spracovať"));
+      await dokonci(t("Spracované {ok} z {n} — preskočené", { ok: vytvorene, n: nN + nB }), preskocene);
+    } finally {
+      setPriebeh(null);
+    }
+  }
+
   async function uhradVybrane() {
     const cid = getActiveCompanyId();
-    if (!cid || !vybrane.size) return;
+    if (!cid || !vybraneN.length) return;
     setPrikazBusy(true);
     try {
-      const doklady = await naUhraduFn({ data: { company_id: cid, ids: [...vybrane] } });
+      // Príkaz na úhradu len z nespracovaných dokladov — bloček je zaplatený na mieste.
+      const doklady = await naUhraduFn({ data: { company_id: cid, ids: vybraneN.map((r) => r.id) } });
       const vynechane: Preskocena[] = [];
       const faktury: FakturaNaUhradu[] = [];
       for (const d of doklady) {
@@ -233,23 +387,24 @@ function Stranka() {
   }
 
   async function zmazHromadne() {
-    if (!vybrane.size) return;
-    if (!(await potvrd(t("Presunúť vybrané doklady ({n}) do koša?", { n: vybrane.size })))) return;
+    if (!pocetVybranych) return;
+    if (!(await potvrd(t("Presunúť vybrané doklady ({n}) do koša?", { n: pocetVybranych })))) return;
     setHromadneBusy(true);
     let ok = 0;
-    for (const id of vybrane) {
+    const preskocene: Preskoceny[] = [];
+    // Nespracovaný aj bloček idú do koša tou istou cestou ako z detailu.
+    for (const r of [...vybraneN, ...vybraneB]) {
       try {
-        await zmaz({ data: { id } });
+        if (r.typ === "blocek") await zmazBlocek({ data: { id: r.id } });
+        else await zmaz({ data: { id: r.id } });
         ok++;
       } catch (e: any) {
-        toast.error(e?.message ?? t("Nepodarilo sa"));
+        preskocene.push({ popis: popisRiadku(r), dovod: { text: String(e?.message ?? "") || "Nepodarilo sa" } });
       }
     }
     toast.success(t("V koši: {n}", { n: ok }));
-    setVybrane(new Set());
     setHromadneBusy(false);
-    if (ok) obnovPoctyMenu();
-    await obnov();
+    await dokonci(t("Niektoré doklady sa nepresunuli do koša"), preskocene);
   }
 
   // Kam vedie nová karta (Ctrl+klik) — bloček sa otvorí rovno, bez presunu medzi nespracované.
@@ -358,13 +513,20 @@ function Stranka() {
           filters={[{ key: "obdobie", label: "Obdobie", type: "dateRange" }]}
         />
 
-        {vybrane.size > 0 ? (
+        {pocetVybranych > 0 ? (
           <div
             role="region"
             aria-label={t("Hromadná úprava")}
             className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm"
           >
-            <span className="font-medium">{t("Vybrané: {n}", { n: vybrane.size })}</span>
+            <span className="font-medium">
+              {t("Vybrané: {n}", { n: pocetVybranych })}
+              {vybraneB.length ? (
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {t("nespracované {n} · bločky {b}", { n: vybraneN.length, b: vybraneB.length })}
+                </span>
+              ) : null}
+            </span>
             <label className="block">
               <span className="text-xs text-muted-foreground">{t("Druh dokladu")}</span>
               <select
@@ -402,15 +564,35 @@ function Stranka() {
             ))}
             <button
               type="button"
-              disabled={hromadneBusy}
+              disabled={pracujem}
               onClick={() => void pouziHromadne()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+              title={vybraneB.length ? t("Bločkom sa zmení len predkontácia, členenie DPH, stredisko a činnosť.") : undefined}
+              className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-background px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
             >
               {hromadneBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("Zmeniť vybrané")}
             </button>
             <button
               type="button"
-              disabled={hromadneBusy}
+              disabled={pracujem}
+              onClick={() => void spracujHromadne()}
+              title={t("Vytvorí doklady z prečítaných údajov ako tlačidlo Vytvoriť v detaile; bločky označí ako spracované. Čo treba doplniť, sa preskočí.")}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+            >
+              {priebeh ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                  {t("Spracované {x} / {n}", { x: priebeh.hotovo, n: priebeh.spolu })}
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />{" "}
+                  {t(textSpracovania({ nespracovane: vybraneN.length, blocky: vybraneB.length }), { n: pocetVybranych })}
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={pracujem}
               onClick={() => void zmazHromadne()}
               className="rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-60"
             >
@@ -418,8 +600,9 @@ function Stranka() {
             </button>
             <button
               type="button"
+              disabled={pracujem}
               onClick={() => setVybrane(new Set())}
-              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary"
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-60"
             >
               {t("Zrušiť výber")}
             </button>
@@ -434,8 +617,9 @@ function Stranka() {
                   <input
                     type="checkbox"
                     aria-label={t("Vybrať všetky")}
-                    checked={vyberatelne.length > 0 && vyberatelne.every((r) => vybrane.has(r.id))}
-                    onChange={(e) => setVybrane(e.target.checked ? new Set(vyberatelne.map((r) => r.id)) : new Set())}
+                    checked={vyberatelne.length > 0 && vyberatelne.every((r) => vybrane.has(r.kluc))}
+                    disabled={pracujem}
+                    onChange={(e) => setVybrane(e.target.checked ? new Set(vyberatelne.map((r) => r.kluc)) : new Set())}
                   />
                   <span className="sr-only">{t("Výber")}</span>
                 </th>
@@ -478,12 +662,13 @@ function Stranka() {
                   className={`${TRIEDA_KLIK_RIADKU} ${posledny.riadok(r.id).className}`}
                 >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                    {r.typ === "nespracovany" && r.stav !== "cita" ? (
+                    {jeVyberatelny(r) ? (
                       <input
                         type="checkbox"
                         aria-label={t("Vybrať doklad")}
-                        checked={vybrane.has(r.id)}
-                        onChange={() => prepniVyber(r.id)}
+                        checked={vybrane.has(r.kluc)}
+                        disabled={pracujem}
+                        onChange={() => prepniVyber(r.kluc)}
                       />
                     ) : null}
                   </td>
@@ -536,13 +721,14 @@ function Stranka() {
               className={`block cursor-pointer rounded-xl border border-border p-3 hover:bg-muted/30 ${posledny.karta(r.id).className || "bg-card"}`}
             >
               <div className="flex items-start justify-between gap-2">
-                {r.typ === "nespracovany" && r.stav !== "cita" ? (
+                {jeVyberatelny(r) ? (
                   <input
                     type="checkbox"
                     aria-label={t("Vybrať doklad")}
-                    checked={vybrane.has(r.id)}
+                    checked={vybrane.has(r.kluc)}
+                    disabled={pracujem}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={() => prepniVyber(r.id)}
+                    onChange={() => prepniVyber(r.kluc)}
                     className="mt-1 h-4 w-4 shrink-0"
                   />
                 ) : null}
@@ -599,6 +785,34 @@ function Stranka() {
             </button>
           }
         />
+        {/* Súhrn hromadnej akcie — čo sa preskočilo a prečo. */}
+        <Dialog open={vysledok !== null} onOpenChange={(o) => !o && setVysledok(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogTitle>{vysledok?.nadpis}</DialogTitle>
+            <DialogDescription>
+              {t("Preskočené doklady ostali v Nespracovaných — otvorte ich a doplňte či rozhodnite v detaile.")}
+            </DialogDescription>
+            <ul className="max-h-[50vh] space-y-2 overflow-y-auto text-sm">
+              {vysledok?.preskocene.map((p, i) => (
+                <li key={i} className="rounded-md border border-border p-2">
+                  <div className="font-medium">{p.popis}</div>
+                  {p.dovod.text ? (
+                    <div className="text-xs text-muted-foreground">{t(p.dovod.text, p.dovod.params)}</div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setVysledok(null)}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+              >
+                {t("Zavrieť")}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
         {prikaz && getActiveCompanyId() ? (
           <HromadnyPrikaz
             companyId={getActiveCompanyId()!}

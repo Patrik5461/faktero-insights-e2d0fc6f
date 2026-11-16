@@ -116,6 +116,19 @@ describe("BlocekDetailKompaktny — ako detail faktúry", () => {
     expect(h).toContain("odovzdaný do Pohody");
   });
 
+  it("zaúčtovaný: Zrušiť zaúčtovanie v pätičke; nezaúčtovaný, odovzdaný a zamknutý bez neho", () => {
+    const zauctovany = { zauctovane_at: "2026-10-30T10:00:00Z", pohoda_predkontacia: "1Fp" };
+    const pata = (h: string) => h.slice(h.lastIndexOf("border-t border-border p-4"));
+    expect(pata(strom(true, zauctovany))).toContain("Zrušiť zaúčtovanie");
+    expect(strom()).not.toContain("Zrušiť zaúčtovanie");
+    expect(
+      strom(true, { ...zauctovany, exported_at: "2026-10-31T10:00:00Z" }),
+    ).not.toContain("Zrušiť zaúčtovanie");
+    expect(
+      strom(true, { ...zauctovany, locked_at: "2026-10-31T10:00:00Z" }),
+    ).not.toContain("Zrušiť zaúčtovanie");
+  });
+
   it("skrytý náhľad: len panel", () => {
     const h = strom(false);
     expect(h).not.toContain("data-nahlad-kompaktny");

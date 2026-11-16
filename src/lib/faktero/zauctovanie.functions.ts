@@ -566,10 +566,40 @@ export const zrusZauctovanieFn = createServerFn({ method: "POST" })
     }
     const { error } = await supabase
       .from("purchase_invoices")
-      .update({ zauctovane_at: null, zauctoval: null, ...(r.status === "booked" ? { status: "received" } : {}) })
+      .update({
+        zauctovane_at: null,
+        zauctoval: null,
+        // Ručne zaúčtovaná faktúra nemá auto_uctovanie_at — bez neho by ju autopilot o minútu zaúčtoval znova.
+        auto_uctovanie_at: new Date().toISOString(),
+        ...(r.status === "booked" ? { status: "received" } : {}),
+      })
       .eq("id", r.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Zrušenie zaúčtovania bločku / výdavkového dokladu (detail). Kódy ostávajú,
+ * zmizne len príznak „zaúčtované“. Odovzdaný, zamknutý doklad a doklad
+ * v uzavretom období sa nezmení — pravidlá v zrusenie-zauctovania.server.ts.
+ */
+export const zrusZauctovanieDokladuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z.object({ company_id: z.string().uuid(), id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { overPristup } = await import("./over-pristup");
+    await overPristup(context as any, data.company_id, { oblast: "doklady", zapis: true });
+    const { zrusZauctovanie, textNezrusenia } = await import("./zrusenie-zauctovania.server");
+    const v = await zrusZauctovanie(context.supabase as any, {
+      companyId: data.company_id,
+      agenda: "doklad",
+      ids: [data.id],
+    });
+    const dovod = v.dovody[data.id];
+    if (dovod) throw new Error(textNezrusenia(dovod, "doklad"));
+    return { ok: true, zrusenych: v.zrusenych };
   });
 
 /**

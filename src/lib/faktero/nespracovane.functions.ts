@@ -27,13 +27,16 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       // Bločky z appky a formulára čakajú na kontrolu v Dokladoch — patria sem tiež.
       supabase
         .from("expense_documents")
-        .select("id, supplier_name, document_number, total_amount, currency, issue_date, created_at, created_by, source")
+        .select(
+          "id, supplier_name, document_number, total_amount, currency, issue_date, created_at, created_by, source, qr_raw, ai_type:ai_raw->>document_type, ai_subtype:ai_raw->>document_subtype, ai_druh:ai_raw->>druh",
+        )
         .eq("company_id", data.company_id)
         .eq("status", "new")
         .order("created_at", { ascending: false })
         .limit(300),
     ]);
     const { zhrnutieNespracovaneho, zhrnutieBlocku } = await import("./nespracovane");
+    const { jeSkutocnyBlocek } = await import("./doklad-je-blocek");
     // Červený výkričník: odberateľ na doklade je iná firma (z AI, počíta sa pri čítaní).
     const { firmaNaPorovnanie, nesediNespracovany } = await import("./cudzia-faktura.server");
     const firma = await firmaNaPorovnanie(supabase, data.company_id);
@@ -65,7 +68,20 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         odberatelNesedi: nesedi(r),
         duplicita: duplicity.get(r.id) ?? null,
       })),
-      blocky: (blocky ?? []).map((b: any) => zhrnutieBlocku(b)),
+      /*
+        Skutočný bloček (eKasa, QR, druh bloček) sa dá hromadne spracovať;
+        naskenovaný doklad bez týchto znakov môže byť faktúra — ten sa
+        hromadne nespracuje, treba ho otvoriť a zaradiť.
+      */
+      blocky: (blocky ?? []).map((b: any) => ({
+        ...zhrnutieBlocku(b),
+        skutocnyBlocek: jeSkutocnyBlocek({
+          source: b.source,
+          qr_raw: b.qr_raw,
+          document_number: b.document_number,
+          ai_raw: { document_type: b.ai_type, document_subtype: b.ai_subtype, druh: b.ai_druh },
+        }),
+      })),
     };
   });
 

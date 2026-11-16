@@ -13,6 +13,7 @@ import {
   NotebookPen,
   Tag,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -160,6 +161,20 @@ export function HromadnaAkciaDokladov({
     }
   }
 
+  async function zrusitZauctovanie() {
+    if (
+      !(await potvrd(
+        t(
+          "Zrušiť zaúčtovanie {n} dokladov? Kódy ostanú, doklady sa dajú upraviť a zaúčtovať znova. Odovzdané do Pohody a zamknuté sa preskočia.",
+          { n: ids.length },
+        ),
+        { potvrdit: t("Zrušiť zaúčtovanie") },
+      ))
+    )
+      return;
+    await spusti({ typ: "zrusitZauctovanie" });
+  }
+
   const kv = agenda === "vystavena" ? KV_VYSTAVENE : KV_PRIJATE;
   const navrhy = c.navrhy;
 
@@ -182,6 +197,11 @@ export function HromadnaAkciaDokladov({
               <DropdownMenuItem onSelect={() => setOkno("predkontacia")}>
                 <BookOpen className="h-4 w-4" /> {t("Účtovná položka (predkontácia)…")}
               </DropdownMenuItem>
+              {agenda === "prijata" || agenda === "doklad" ? (
+                <DropdownMenuItem onSelect={() => void zrusitZauctovanie()}>
+                  <Undo2 className="h-4 w-4" /> {t("Zrušiť zaúčtovanie")}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <CreditCard className="h-4 w-4" /> {t("Typ platby")}

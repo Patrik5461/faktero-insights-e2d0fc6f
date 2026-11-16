@@ -31,7 +31,7 @@ import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
-import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
+import { navrhyKodovFn, zrusZauctovanieDokladuFn } from "@/lib/faktero/zauctovanie.functions";
 import { usePoslatOpravuDoPohody } from "@/components/faktero/PoslatOpravuDoPohody";
 import {
   HistoriaOdovzdania,
@@ -288,6 +288,22 @@ function NovyDokladPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cid]);
   const nacitajKody = useServerFn(navrhyKodovFn);
+  const zrusZauctovanie = useServerFn(zrusZauctovanieDokladuFn);
+  const [rusimZauctovanie, setRusimZauctovanie] = useState(false);
+  /** Zaúčtovaný (neodovzdaný) bloček späť medzi nezaúčtované — kódy ostávajú. */
+  async function zrusitZauctovanie() {
+    if (!ulozeny || !cid) return;
+    setRusimZauctovanie(true);
+    try {
+      await zrusZauctovanie({ data: { company_id: cid, id: ulozeny.id } });
+      toast.success(t("Zaúčtovanie zrušené"));
+      setUlozeny({ ...ulozeny, zauctovane_at: null, zauctoval: null });
+    } catch (e: any) {
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
+    } finally {
+      setRusimZauctovanie(false);
+    }
+  }
   const [kody, setKody] = useState<Navrhy | null>(null);
   useEffect(() => {
     if (!cid) return;
@@ -1874,6 +1890,25 @@ function NovyDokladPage() {
                       druh="doklad"
                       onZmena={() => window.location.reload()}
                     />
+                  </div>
+                ) : null}
+                {/* Zaúčtované automatom má vlastný štítok so „Zmeniť“ (AutoZauctovanieOdznak). */}
+                {ulozeny?.zauctovane_at &&
+                !ulozeny.exported_at &&
+                !ulozeny.locked_at &&
+                !["pravidlo", "zvyk", "ai"].includes(String(ulozeny.zauctovanie_zdroj ?? "")) ? (
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary" /> {t("Zaúčtované")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void zrusitZauctovanie()}
+                      disabled={rusimZauctovanie}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
+                    >
+                      {t("Zrušiť zaúčtovanie")}
+                    </button>
                   </div>
                 ) : null}
                 {ulozeny && !ulozeny.exported_at && (

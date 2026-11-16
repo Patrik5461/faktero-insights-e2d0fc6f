@@ -149,7 +149,8 @@ export type AkciaHromadna =
   | { typ: "uctovnaPoznamka" | "komentar"; text: string | null }
   | { typ: "stav"; stavId: string | null }
   | { typ: "stitok"; pridat?: string; odobrat?: string }
-  | { typ: "uhrada"; uhradene: boolean; datum?: string };
+  | { typ: "uhrada"; uhradene: boolean; datum?: string }
+  | { typ: "zrusitZauctovanie" };
 
 /** Filtre zoznamu podľa vlastného stavu a štítku (hodnota „_bez" = bez stavu). */
 export function filtreStavuAStitkov(

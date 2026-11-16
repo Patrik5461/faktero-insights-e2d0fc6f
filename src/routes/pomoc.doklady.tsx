@@ -197,6 +197,13 @@ const sections: HelpSection[] = [
           <strong>Vrátiť do Nespracovaných</strong>.
         </p>
         <p>
+          Zaúčtovaný bloček či prijatú faktúru vrátite medzi nezaúčtované tlačidlom{" "}
+          <strong>Zrušiť zaúčtovanie</strong> na detaile dokladu, viac dokladov naraz cez{" "}
+          <strong>Hromadná akcia</strong>. Kódy zaúčtovania ostanú a automatické účtovanie doklad
+          samo znova nezaúčtuje. Doklad odovzdaný do Pohody treba najprv vrátiť z Pohody; pri
+          zamknutom doklade a v uzavretom období sa zaúčtovanie zrušiť nedá.
+        </p>
+        <p>
           Na detaile dokladu je <strong>história zmien</strong> (kto, kedy a čo zmenil) a{" "}
           <strong>štítky</strong> — najviac päť vlastných značiek na triedenie. V komentári označíte
           kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka. Iné doklady sa

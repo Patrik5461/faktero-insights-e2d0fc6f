@@ -36,6 +36,7 @@ const akcia = z.discriminatedUnion("typ", [
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
   }),
+  z.object({ typ: z.literal("zrusitZauctovanie") }),
 ]);
 
 const TABULKA = {
@@ -73,6 +74,21 @@ export const hromadneDokladyFn = createServerFn({ method: "POST" })
     if (a.typ === "uhrada" && ag !== "prijata" && ag !== "vystavena")
       throw new Error("Úhradu sa dá označiť len na faktúrach.");
     if (a.typ === "komentar" && ag === "ostatny") throw new Error("Iné doklady komentár nemajú.");
+
+    // Zrušenie zaúčtovania má vlastné pravidlá (zámok, Pohoda, autopilot).
+    if (a.typ === "zrusitZauctovanie") {
+      if (ag !== "prijata" && ag !== "doklad")
+        throw new Error("Zaúčtovanie sa hromadne ruší len na prijatých faktúrach a dokladoch.");
+      const { overPristup } = await import("./over-pristup");
+      await overPristup(context as any, data.company_id, { oblast: "doklady", zapis: true });
+      const { zrusZauctovanie } = await import("./zrusenie-zauctovania.server");
+      const v = await zrusZauctovanie(supabase, {
+        companyId: data.company_id,
+        agenda: ag,
+        ids: data.ids,
+      });
+      return { zmenenych: v.zrusenych, preskocene: v.preskocene };
+    }
 
     const stlpce = {
       prijata:

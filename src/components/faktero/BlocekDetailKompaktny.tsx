@@ -17,7 +17,7 @@ import { kontrolaUlozenehoBlocku, nastavZaokruhlenie, zaokruhlenieZPoloziek } fr
 import { KontrolaSumyBlocku, potvrdRozdielSumy } from "./KontrolaSumyBlocku";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { kvAutoBlocku } from "@/lib/faktero/kv-auto";
-import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
+import { zauctujDokladyFn, zrusZauctovanieDokladuFn } from "@/lib/faktero/zauctovanie.functions";
 import type { PoleZauctovaniaDokladu } from "@/lib/faktero/zauctovanie-dokladu";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
@@ -110,6 +110,7 @@ export function BlocekDetailKompaktny({
   const navigate = useNavigate();
   const nacitajMena = useServerFn(menaClenovFirmy);
   const zauctuj = useServerFn(zauctujDokladyFn);
+  const zrusZauctovanie = useServerFn(zrusZauctovanieDokladuFn);
   const [mena, setMena] = useState<Record<string, string>>({});
   const [pohyb, setPohyb] = useState<{ booking_date: string; amount: number } | null>(null);
   const [ukladam, setUkladam] = useState(false);
@@ -222,6 +223,19 @@ export function BlocekDetailKompaktny({
       setUkladam(false);
     }
   }
+  /** Zaúčtovaný (a neodovzdaný) bloček späť medzi nezaúčtované — kódy ostávajú. */
+  async function zrusitZauctovanie() {
+    setUkladam(true);
+    try {
+      await zrusZauctovanie({ data: { company_id: row.company_id, id: row.id } });
+      toast.success(t("Zaúčtovanie zrušené"));
+      hotovo();
+    } catch (e: any) {
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
+    } finally {
+      setUkladam(false);
+    }
+  }
   async function zapisZaokruhlenie(suma: number) {
     setUkladam(true);
     const { error } = await supabase
@@ -308,6 +322,16 @@ export function BlocekDetailKompaktny({
         )}
         {zauctovany && !zmenene.length ? t("Zaúčtované") : t("Zaúčtovať")}
       </button>
+      {zauctovany && !zmenene.length ? (
+        <button
+          type="button"
+          onClick={() => void zrusitZauctovanie()}
+          disabled={ukladam}
+          className={TLACIDLO_DRUHE}
+        >
+          {t("Zrušiť zaúčtovanie")}
+        </button>
+      ) : null}
     </>
   );
 
