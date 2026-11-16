@@ -99,6 +99,15 @@ describe("aktívna položka lišty (AB-08)", () => {
     expect(a.skupina?.key).toBe("fakturacia");
     expect(a.polozka).toBe("/faktury" + "Dobropisy");
   });
+  it("Fakturácia → Prijaté bločky svieti podľa parametra, Doklady → Bločky bez neho", () => {
+    const a = aktivnaVListe(nav, "/doklady", { stav: "spracovane" });
+    expect(a.skupina?.key).toBe("fakturacia");
+    expect(a.polozka).toBe("/doklady" + "Prijaté bločky");
+    const b = aktivnaVListe(nav, "/doklady", {});
+    expect(b.skupina?.key).toBe("doklady");
+    expect(b.polozka).toBe("/doklady" + "Bločky");
+    expect(aktivnaVListe(nav, "/doklady", { stav: "odovzdane" }).polozka).toBe("/doklady" + "Bločky");
+  });
   it("podstránka bez položky svieti podľa predpony", () => {
     expect(aktivnaVListe(nav, "/faktury/nova", {}).skupina?.key).toBe("fakturacia");
     expect(aktivnaVListe(nav, "/neexistuje", {}).skupina).toBeNull();

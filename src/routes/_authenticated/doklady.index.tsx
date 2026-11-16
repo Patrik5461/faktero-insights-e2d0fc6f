@@ -408,7 +408,9 @@ function DokladyPage() {
         toast.warning(t("Doklad je už odovzdaný — predkontácia sa nezmenila."));
         return;
       }
-      setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, pohoda_predkontacia: kodPk } : x)));
+      // Zaúčtovaný nespracovaný bloček sa zároveň spracoval (server, zauctujDokladyFn).
+      const stav = v.spracovanych ? { status: "processed" } : {};
+      setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, pohoda_predkontacia: kodPk, ...stav } : x)));
     } catch (e: any) {
       toast.error(e?.message ?? t("Predkontáciu sa nepodarilo uložiť"));
     }

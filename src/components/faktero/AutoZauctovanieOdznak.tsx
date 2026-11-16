@@ -269,3 +269,22 @@ export function ponukaPravidlaToast(
     },
   });
 }
+
+/** Ručne zaúčtovaný bloček sa spracoval — odkaz na Fakturácia → Prijaté bločky. */
+export function toastPresunutyBlocek(
+  t: (k: string, v?: Record<string, string | number>) => string,
+  navigate: (o: any) => void,
+  pocet = 1,
+) {
+  toast.success(
+    pocet > 1
+      ? t("Zaúčtované — presunuté do Prijatých bločkov: {n}", { n: pocet })
+      : t("Zaúčtované — presunuté do Prijatých bločkov"),
+    {
+      action: {
+        label: t("Prijaté bločky"),
+        onClick: () => navigate({ to: "/doklady", search: { stav: "spracovane" } }),
+      },
+    },
+  );
+}

@@ -91,6 +91,9 @@ export const NAV: NavGroup[] = [
       { to: "/zalohove", label: "Vydané zálohové faktúry" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/prijate-zalohove", label: "Prijaté zálohové faktúry" },
+      /* Zaúčtovaný (spracovaný) bloček z Nespracovaných — tá istá agenda ako
+         Doklady → Bločky, len rovno na záložke Spracované. */
+      { to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky" },
       { to: "/ponuky", label: "Cenové ponuky" },
       { to: "/objednavky", label: "Objednávky" },
       { to: "/opakovane", label: "Opakované faktúry" },
@@ -474,6 +477,17 @@ export function aktivnaVListe(
   pathname: string,
   search: Record<string, unknown>,
 ): { skupina: NavGroup | null; polozka: string | null } {
+  /* Položka so zhodnými parametrami vyhráva naprieč skupinami — `/doklady?stav=spracovane`
+     je Fakturácia → Prijaté bločky, hoci predponu `/doklady` má skupina Doklady. */
+  for (const g of nav) {
+    const hit = g.children.find(
+      (c) =>
+        c.to === pathname &&
+        c.search &&
+        Object.entries(c.search).every(([k, v]) => String(search[k] ?? "") === v),
+    );
+    if (hit) return { skupina: g, polozka: hit.to + hit.label };
+  }
   const podlaPredpony = nav.filter((g) =>
     g.match.some((m) => pathname === m || (!g.exact && pathname.startsWith(m + "/"))),
   );

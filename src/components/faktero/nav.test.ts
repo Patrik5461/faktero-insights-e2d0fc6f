@@ -173,6 +173,29 @@ describe("filterNav", () => {
   });
 });
 
+describe("Prijaté bločky", () => {
+  const fakturacia = () => NAV.find((g) => g.key === "fakturacia")!.children;
+  it("sú vo Fakturácii hneď za prijatými zálohovými, na spracovaných bločkoch", () => {
+    const deti = fakturacia();
+    const i = deti.findIndex((c) => c.label === "Prijaté zálohové faktúry");
+    expect(deti[i + 1]).toEqual(
+      expect.objectContaining({ to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky" }),
+    );
+  });
+  it("vidí ich ten, kto vidí Bločky — a nikto iný", () => {
+    const ma = (opravnenia: unknown) =>
+      filterNav("invoicing", false, "SK", false, "custom", opravnenia)
+        .flatMap((g) => g.children.map((c) => c.label));
+    expect(ma({ doklady: "read" })).toEqual(expect.arrayContaining(["Prijaté bločky", "Bločky"]));
+    expect(ma({ faktury: "edit" })).not.toContain("Prijaté bločky");
+    expect(ma({ faktury: "edit" })).not.toContain("Bločky");
+    for (const k of ["SK", "CZ", "DE"] as const)
+      expect(filterNav("invoicing", true, k).flatMap((g) => g.children.map((c) => c.label)), k).toContain(
+        "Prijaté bločky",
+      );
+  });
+});
+
 describe("palivové karty", () => {
   it("sú v menu fakturácie aj knihy jázd, nie len tlačidlo vo Vozovom parku", () => {
     for (const view of ["invoicing", "logbook"] as const) {

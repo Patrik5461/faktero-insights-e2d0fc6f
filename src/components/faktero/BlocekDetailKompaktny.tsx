@@ -40,7 +40,7 @@ import {
 import { KodPohody } from "./KodPohody";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
 import { HistoriaOdovzdania, OpravitZauctovanie, useProgramOdovzdania } from "./OdovzdanieDokladu";
-import { ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
+import { ponukaPravidlaToast, toastPresunutyBlocek } from "./AutoZauctovanieOdznak";
 import { KomentarDokladu } from "./StavDokladu";
 import { PrilohyFaktury } from "./PrilohyFaktury";
 import { UpozornenieDuplicity, useDuplicitaDokladu } from "./DuplicitaDokladu";
@@ -214,7 +214,11 @@ export function BlocekDetailKompaktny({
         toast.error(t("Doklad je odovzdaný do Pohody — zmena sa neuložila."));
       else {
         ponukaPravidlaToast(r.ponukaPravidla, t, navigate);
-        toast.success(t("Zaúčtované"));
+        if (r.spracovanych) toastPresunutyBlocek(t, navigate);
+        else toast.success(t("Zaúčtované"));
+        // Bez sumy alebo dátumu ostáva zaúčtovaný bloček v Nespracovaných.
+        const ostava = r.ostavaVNespracovanych?.[0];
+        if (ostava) toast.warning(t("Zaúčtované, ale {dovod}", { dovod: t(ostava.dovod) }));
         hotovo();
       }
     } catch (e: any) {

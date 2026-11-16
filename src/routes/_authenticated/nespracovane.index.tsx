@@ -25,6 +25,7 @@ import {
 } from "@/lib/faktero/nespracovane.functions";
 import { deleteExpenseFn, nastavStavDokladovFn } from "@/lib/faktero/expenses.functions";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
+import { toastPresunutyBlocek } from "@/components/faktero/AutoZauctovanieOdznak";
 import {
   dovodNevytvorenia,
   dovodZChybyServera,
@@ -238,6 +239,7 @@ function Stranka() {
     setHromadneBusy(true);
     const preskocene: Preskoceny[] = [];
     let zmenene = 0;
+    let presunute = 0;
     try {
       if (vybraneN.length) {
         const r = await hromadne({ data: { company_id: cid, ids: vybraneN.map((r) => r.id), zmena: z as any } });
@@ -261,10 +263,15 @@ function Stranka() {
             data: { company_id: cid, ids: vybraneB.map((r) => r.id), ...pre.zmena },
           });
           zmenene += r.zmenenych;
+          presunute += r.spracovanych ?? 0;
           for (const p of r.preskocene) preskocene.push({ popis: p, dovod: { text: "" } });
+          // Zaúčtovaný bloček bez sumy alebo dátumu ostáva tu — v súhrne s dôvodom.
+          for (const p of r.ostavaVNespracovanych ?? []) preskocene.push({ popis: p.popis, dovod: { text: p.dovod } });
         }
       }
       toast.success(t("Zmenené doklady: {n}", { n: zmenene }));
+      // Zaúčtované bločky sa spracovali a zo zoznamu zmiznú (obnov v `dokonci`).
+      if (presunute) toastPresunutyBlocek(t, navigate, presunute);
       setZmena({ druh: "", jobId: "", stredisko: "", cinnost: "", predkontacia: "", clenenie: "" });
       await dokonci(t("Niektoré doklady sa nezmenili"), preskocene);
     } catch (e: any) {

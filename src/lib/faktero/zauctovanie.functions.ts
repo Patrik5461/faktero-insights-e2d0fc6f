@@ -637,7 +637,15 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const zmena = zmenaZauctovaniaDokladu(data as Parameters<typeof zmenaZauctovaniaDokladu>[0]);
     if (!Object.keys(zmena).length)
-      return { zmenenych: 0, preskocenych: 0, ponukaPravidla: null, preskocene: [] as string[], duplicity: [] };
+      return {
+        zmenenych: 0,
+        preskocenych: 0,
+        ponukaPravidla: null,
+        preskocene: [] as string[],
+        duplicity: [],
+        spracovanych: 0,
+        ostavaVNespracovanych: [] as { id: string; popis: string; dovod: string }[],
+      };
 
     const { data: riadky, error } = await supabase
       .from("expense_documents")
@@ -669,6 +677,8 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
       ok = ok.filter((id: string) => !vynechane.has(id));
     }
     let ponukaPravidla: Awaited<ReturnType<typeof opravaAutomatu>> = null;
+    let spracovanych = 0;
+    let ostavaVNespracovanych: { id: string; popis: string; dovod: string }[] = [];
     if (ok.length) {
       const { error: e2 } = await supabase
         .from("expense_documents")
@@ -684,6 +694,16 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
           .eq("company_id", data.company_id)
           .in("id", ok)
           .is("zauctovane_at", null);
+        /* Ručne zaúčtovaný bloček z Nespracovaných sa zároveň spracuje — presunie
+           sa do Prijatých bločkov. Bez sumy alebo dátumu ostáva a povie sa prečo. */
+        const { spracujZauctovaneBlocky } = await import("./spracovanie-po-zauctovani.server");
+        const v = await spracujZauctovaneBlocky(supabase, {
+          companyId: data.company_id,
+          ids: ok,
+          userId: context.userId,
+        });
+        spracovanych = v.spracovane.length;
+        ostavaVNespracovanych = v.ostavaju;
       }
       // Učenie z opráv — len pri jednom bločku, ako pri prijatých faktúrach.
       if (data.ids.length === 1 && ok.length === 1) {
@@ -725,6 +745,8 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
       ponukaPravidla,
       preskocene,
       duplicity,
+      spracovanych,
+      ostavaVNespracovanych,
     };
   });
 

@@ -62,6 +62,7 @@ export default {
   "Zálohové faktúry": "Anzahlungsrechnungen",
   "Prijaté faktúry": "Eingangsrechnungen",
   "Prijaté zálohové faktúry": "Eingehende Anzahlungsrechnungen",
+  "Prijaté bločky": "Eingehende Kassenbons",
   "Cenové ponuky": "Angebote",
   Objednávky: "Bestellungen",
   "Opakované faktúry": "Wiederkehrende Rechnungen",

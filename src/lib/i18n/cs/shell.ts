@@ -53,6 +53,7 @@ export default {
   "Zálohové faktúry": "Zálohové faktury",
   "Prijaté faktúry": "Přijaté faktury",
   "Prijaté zálohové faktúry": "Přijaté zálohové faktury",
+  "Prijaté bločky": "Přijaté účtenky",
   "Cenové ponuky": "Cenové nabídky",
   Objednávky: "Objednávky",
   "Opakované faktúry": "Opakované faktury",
