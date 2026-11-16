@@ -184,15 +184,18 @@ describe("export bločku so zaokrúhlením do Pohody", () => {
     pohoda_clenenie_dph: "PD",
   });
 
-  it("položky bločku: zaokrúhlenie nejde ako položka v 0 %, ale do round (priceRound)", () => {
+  it("položky bločku: zaokrúhlenie ide ako položka „Centové zaokrúhlenie“ bez DPH, nie do priceRound", () => {
+    // Tak ho píše účtovníčka v Pohode; zo súhrnu ho Pohoda nechala na „5 centov“ (skúška 16. 11.).
     const xml = buildPohodaExpensesXml({ company: firma, doklady: [blocek()], nastavenia: { polozkyBlockov: true } as any });
     expect(chybySchemy(xml)).toEqual([]);
-    expect(xml).not.toContain("Zaokrúhlenie</");
-    expect(xml).toContain("<typ:priceRound>-0.02</typ:priceRound>");
-    // Súhrn: základ 10,00 a DPH 2,30 bez zaokrúhlenia.
-    expect(xml).toContain("<typ:priceHigh>10.00</typ:priceHigh>");
-    expect(xml).toContain("<typ:priceHighVAT>2.30</typ:priceHighVAT>");
-    expect(xml).not.toContain("<inv:roundingDocument>none</inv:roundingDocument>");
+    expect(xml.match(/Centové zaokrúhlenie<\//g)).toHaveLength(1);
+    const zaokr = /<inv:invoiceItem>(?:(?!<\/inv:invoiceItem>)[\s\S])*Centové zaokrúhlenie[\s\S]*?<\/inv:invoiceItem>/.exec(xml)![0];
+    expect(zaokr).toContain("<inv:rateVAT>none</inv:rateVAT>");
+    expect(zaokr).toContain("<typ:price>-0.02</typ:price>");
+    expect(zaokr).toContain("<typ:classificationVATType>nonSubsume</typ:classificationVATType>");
+    expect(zaokr).not.toContain("<inv:accounting>");
+    expect(xml).toContain("<typ:priceRound>0.00</typ:priceRound>");
+    expect(xml).toContain("<inv:roundingDocument>none</inv:roundingDocument>");
   });
 
   it("s predkontáciou zaokrúhlenia ide jedna položka „Zaokrúhlenie“ a priceRound 0", () => {
@@ -207,10 +210,12 @@ describe("export bločku so zaokrúhlením do Pohody", () => {
     expect(xml).toContain("<typ:priceRound>0.00</typ:priceRound>");
   });
 
-  it("bez položiek: súhrn s priceRound -0.02 prejde schémou", () => {
+  it("bez položiek: položky z rozpisu DPH a k nim položka zaokrúhlenia", () => {
     const xml = buildPohodaExpensesXml({ company: firma, doklady: [blocek()] });
     expect(chybySchemy(xml)).toEqual([]);
-    expect(xml).toContain("<typ:priceRound>-0.02</typ:priceRound>");
+    expect(xml).toContain("<inv:invoiceDetail>");
+    expect(xml.match(/Centové zaokrúhlenie<\//g)).toHaveLength(1);
+    expect(xml).toContain("<typ:priceRound>0.00</typ:priceRound>");
   });
 
   it("rozúčtovanie položkami ignoruje zaokrúhlenie (nie je sadzba 0 % dokladu)", () => {

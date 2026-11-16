@@ -2834,12 +2834,21 @@ export function polozkyDokladov(opts: {
         !(predkontaciaJedna && nastavenia?.zavazkovePredkontacie?.includes(String(predkontaciaJedna)))
           ? Math.round(Math.max(0, Number(d?._odpocetZalohy ?? 0)) * 100) / 100
           : 0;
+      /*
+        Zaokrúhlenie bločku (hotovosť na 5 centov) ide do Pohody ako položka
+        „Centové zaokrúhlenie“ bez DPH (nepodlieha DPH, KV nezahŕňať) — tak
+        ho zapisuje účtovníčka. Zo súhrnu (`priceRound`) ho Pohoda pri doklade
+        nechala na vlastnom zaokrúhlení „na 5 centov“ a v doklade ho nebolo
+        vidieť (skúška 16. 11. 2026). Bloček bez položiek preto dostane
+        položky z rozpisu DPH.
+      */
+      const zaokrBlocku = blocek && Boolean(zaokruhlenie) && !cudziaD;
       const xmlZRozpisu =
         xmlPolozkyFaktury || polozkyRozuct
           ? ""
           : cudziaD && rozpis.length
             ? polozkyZRozpisu("foreignCurrency")
-            : (ex.polozkyZRozpisu || zmiesanePrenesenie || odpocetZalohyPrijatej > 0) && prijatyDoklad && rozpis.length
+            : (ex.polozkyZRozpisu || zmiesanePrenesenie || odpocetZalohyPrijatej > 0 || zaokrBlocku) && prijatyDoklad && rozpis.length
               ? polozkyZRozpisu("homeCurrency")
               : "";
 
@@ -2859,7 +2868,7 @@ export function polozkyDokladov(opts: {
       // KV len v slovenskej Pohode a „X“ (nezahŕňať) sa neposiela.
       const kvZaokr = !cz && kodyZaokr.kv && kodyZaokr.kv !== "X" ? kodyZaokr.kv : null;
       const zaokrPolozkou = Boolean(
-        pkZaokr && zaokruhlenie && !cudziaD && (xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu),
+        (pkZaokr || zaokrBlocku) && zaokruhlenie && !cudziaD && (xmlPolozkyFaktury || polozkyRozuct || xmlZRozpisu),
       );
       /*
         Časť bez DPH (pozri `bezDph`) ako vlastná položka v nulovej sadzbe —
@@ -2911,16 +2920,25 @@ export function polozkyDokladov(opts: {
               `\n      </${p}:${koren}Detail>`,
               `
         <${p}:${koren}Item>
-          <${p}:text>Zaokrúhlenie</${p}:text>
+          <${p}:text>${pkZaokr ? "Zaokrúhlenie" : "Centové zaokrúhlenie"}</${p}:text>
           <${p}:quantity>1</${p}:quantity>
           <${p}:payVAT>false</${p}:payVAT>
           <${p}:rateVAT>none</${p}:rateVAT>
           <${p}:homeCurrency>${elSuma("typ:unitPrice", zaokruhlenie, "            ")}${elSuma("typ:price", zaokruhlenie, "            ")}
-          </${p}:homeCurrency>
-          <${p}:accounting><typ:ids>${esc(pkZaokr)}</typ:ids></${p}:accounting>${
-            clZaokr ? `\n          <${p}:classificationVAT><typ:ids>${esc(clZaokr)}</typ:ids></${p}:classificationVAT>` : ""
+          </${p}:homeCurrency>${
+            pkZaokr ? `\n          <${p}:accounting><typ:ids>${esc(pkZaokr)}</typ:ids></${p}:accounting>` : ""
           }${
-            kvZaokr ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(kvZaokr)}</typ:ids></${p}:classificationKVDPH>` : ""
+            clZaokr
+              ? `\n          <${p}:classificationVAT><typ:ids>${esc(clZaokr)}</typ:ids></${p}:classificationVAT>`
+              : !pkZaokr
+                ? `\n          <${p}:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></${p}:classificationVAT>`
+                : ""
+          }${
+            kvZaokr
+              ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(kvZaokr)}</typ:ids></${p}:classificationKVDPH>`
+              : !cz && !pkZaokr && kvHlavicka
+                ? `\n          <${p}:classificationKVDPH><typ:ids>KN</typ:ids></${p}:classificationKVDPH>`
+                : ""
           }
         </${p}:${koren}Item>
       </${p}:${koren}Detail>`,

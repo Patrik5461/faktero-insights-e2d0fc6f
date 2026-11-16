@@ -321,8 +321,21 @@ exports[`B) 11665 — PHM v hotovosti pomerom 50/30/20 % > snímka XML 1`] = `
           <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
           <vch:classificationKVDPH><typ:ids>B3</typ:ids></vch:classificationKVDPH>
         </vch:voucherItem>
+        <vch:voucherItem>
+          <vch:text>Centové zaokrúhlenie</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>none</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>-0.01</typ:unitPrice>
+            <typ:price>-0.01</typ:price>
+          </vch:homeCurrency>
+          <vch:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></vch:classificationVAT>
+          <vch:classificationKVDPH><typ:ids>KN</typ:ids></vch:classificationKVDPH>
+        </vch:voucherItem>
       </vch:voucherDetail>
       <vch:voucherSummary>
+        <vch:roundingDocument>none</vch:roundingDocument>
         <vch:roundingVAT>none</vch:roundingVAT>
         <vch:homeCurrency>
           <typ:priceNone>0.00</typ:priceNone>
@@ -332,7 +345,7 @@ exports[`B) 11665 — PHM v hotovosti pomerom 50/30/20 % > snímka XML 1`] = `
           <typ:priceLowVAT>0.00</typ:priceLowVAT>
           <typ:priceHigh>109.89</typ:priceHigh>
           <typ:priceHighVAT>25.27</typ:priceHighVAT>
-          <typ:round><typ:priceRound>-0.01</typ:priceRound></typ:round>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
         </vch:homeCurrency>
       </vch:voucherSummary>
     </vch:voucher>

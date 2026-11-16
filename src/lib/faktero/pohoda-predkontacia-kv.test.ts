@@ -314,6 +314,8 @@ describe("B) 11665 — PHM v hotovosti pomerom 50/30/20 %", () => {
       ["1PHM", "PD", "B3"],
       ["2PHM", "PN", "B3"],
       ["2PHM", "PN", "B3"],
+      // Centové zaokrúhlenie (135,15 − 135,16): bez DPH, KV nezahŕňať — ako ho píše účtovníčka.
+      [null, null, "KN"],
     ]);
     expect(chybySchemy(xml, "vch", "voucher.xsd")).toEqual([]);
   });
@@ -324,7 +326,8 @@ describe("B) 11665 — PHM v hotovosti pomerom 50/30/20 %", () => {
       doklady: [{ ...blocek11665, odpocet: false }],
       nastavenia: nastaveniaPaliery(sTabulkou),
     });
-    expect(bezOdpoctu).not.toContain("classificationKVDPH");
+    // Len položka zaokrúhlenia nesie „KN“ (nezahŕňať) — žiadne iné KV.
+    expect(bezOdpoctu.match(/classificationKVDPH><typ:ids>(?!KN)/g)).toBeNull();
   });
 
   it("snímka XML", () => {

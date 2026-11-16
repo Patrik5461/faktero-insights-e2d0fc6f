@@ -316,7 +316,10 @@ describe("Pohoda — rozpis DPH namiesto sumy spolu", () => {
     expect(hodnota(bez, "vch:rateVAT")).toBe("none");
     expect(hodnota(bez, "typ:price")).toBe("5.00");
     expect(kvz(bez)).toBeNull();
-    expect(hodnota(suhrn(zaokr), "typ:priceRound")).toBe("0.02");
+    // Zaokrúhlenie bločku ide ako položka „Centové zaokrúhlenie“, súhrn ho nenesie.
+    expect(hodnota(suhrn(zaokr), "typ:priceRound")).toBe("0.00");
+    const zaokrPolozka = polozky(zaokr).find((i) => i.includes("Centové zaokrúhlenie"))!;
+    expect(hodnota(zaokrPolozka, "typ:price")).toBe("0.02");
     expect(hodnota(suhrn(zaokr), "typ:priceNone")).toBe("0.00");
   });
 

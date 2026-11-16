@@ -405,10 +405,11 @@ describe("bloček v hotovosti — výdavkový pokladničný doklad s pomerom", (
       "OMV Diesel · 50 %",
       "OMV Diesel · 30 %",
       "OMV Diesel · 20 %",
+      "Centové zaokrúhlenie",
     ]);
-    expect(polozky.map((p) => /<typ:ids>(\w+)<\/typ:ids><\/vch:accounting>/.exec(p)?.[1])).toEqual(["PHM50", "PHM", "PHM"]);
+    expect(polozky.map((p) => /<typ:ids>(\w+)<\/typ:ids><\/vch:accounting>/.exec(p)?.[1])).toEqual(["PHM50", "PHM", "PHM", undefined]);
     // Časť s odpočtom PD + KV B3; časti bez nároku PN — do KV DPH nepatria.
-    expect(polozky.map((p) => /classificationVAT><typ:ids>(\w+)/.exec(p)?.[1])).toEqual(["PD", "PN", "PN"]);
+    expect(polozky.map((p) => /classificationVAT><typ:ids>(\w+)/.exec(p)?.[1])).toEqual(["PD", "PN", "PN", undefined]);
     expect(chybySchemy(xml)).toEqual([]);
   });
 
