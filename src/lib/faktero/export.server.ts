@@ -470,6 +470,7 @@ const SCHEMY: Record<string, string> = {
   pri: "prijemka.xsd",
   vyd: "vydejka.xsd",
   ftr: "filter.xsd",
+  lqd: "automaticLiquidation.xsd",
 };
 
 /** Obálka `dataPack` okolo hotových položiek. */
@@ -1675,6 +1676,12 @@ export type VypisPohyb = {
    * z kurzového lístka.
    */
   kurz?: number | null;
+  /**
+   * Poradie pohybu vo výpise (`numberMovement`). Konektor posiela pohyby
+   * mesiaca po častiach — poradie v mesačnom výpise účtu mu dá to isté číslo,
+   * aké má pohyb v ručnom „XML pre POHODU“ za ten mesiac. Bez neho poradie v zozname.
+   */
+  poradie?: number | null;
 };
 
 /**
@@ -1730,6 +1737,50 @@ export function buildPohodaBankXml(opts: {
   });
 }
 
+/**
+ * Automatická likvidácia (párovanie) bankových pohybov s dokladmi v POHODE.
+ *
+ * XML import bankové doklady s faktúrami sám nespáruje — overené v POHODE SK
+ * 14404.8 (kópia PALIERY, 16. 11. 2026): pohyby prešli, faktúry ostali
+ * neuhradené, kým sa nespustila automatická likvidácia. Filter dátumu je na
+ * **dátum bankového dokladu** (dátum výpisu — u nás koniec mesiaca, najviac
+ * dnes), nie na dátum platby; s dňom platby POHODA nespárovala nič.
+ *
+ * Pravidlo párovania sa odkazuje cez `typ:id` — 1 je v POHODE predvolene
+ * „Výpisy“ (zoznam vráti `lst:listRulesPairingRequest`).
+ */
+export function polozkyAutomatickejLikvidacie(
+  ucty: { id: string; skratka: string; od: string; do: string }[],
+  pravidloId: number,
+): string {
+  return ucty
+    .map(
+      (u) => `
+  <dat:dataPackItem id="${esc(u.id)}" version="2.0">
+    <lqd:automaticLiquidation version="2.0">
+      <lqd:record>
+        <ftr:filter>
+          <ftr:bankAccount><typ:ids>${esc(skrat(u.skratka, 19))}</typ:ids></ftr:bankAccount>
+          <ftr:dateFrom>${esc(u.od)}</ftr:dateFrom>
+          <ftr:dateTill>${esc(u.do)}</ftr:dateTill>
+        </ftr:filter>
+      </lqd:record>
+      <lqd:ruleOfPairing><typ:id>${Math.trunc(pravidloId)}</typ:id></lqd:ruleOfPairing>
+    </lqd:automaticLiquidation>
+  </dat:dataPackItem>`,
+    )
+    .join("");
+}
+
+/**
+ * Obálka bankového výpisu okolo hotových položiek (viac účtov či mesiacov v
+ * jednom súbore — `pohoda-banka.xml` v mesačnom balíku). Tá istá ako pri
+ * {@link buildPohodaBankXml}; predkontácie sa neprekladajú, rovnako ako tam.
+ */
+export function obalkaBankovehoVypisu(company: CompanyRow, entries: string): string {
+  return obalka({ ico: company?.ico, note: "Bankový výpis z Faktero", prefixy: ["bnk"], entries });
+}
+
 /** Položky `dataPackItem` s pohybmi z výpisu — bez obálky. */
 export function polozkyBankovehoVypisu(opts: {
   company: CompanyRow;
@@ -1762,7 +1813,7 @@ export function polozkyBankovehoVypisu(opts: {
     .map((p, idx) => {
       const druh = p.smer === "prijem" ? "receipt" : "expense";
       const suma = Math.abs(Number(p.suma ?? 0));
-      const poradie = String(idx + 1);
+      const poradie = String(p.poradie ?? idx + 1);
       const ucet = rozdelUcet(p.protiucet);
 
       // Číslo výpisu a poradie pohybu sa spolu musia zmestiť do desiatich
@@ -3590,6 +3641,15 @@ export function buildPohodaDavkaXml(opts: {
   zalohy?: Record<string, OdpocetZalohy | OdpocetZalohy[]>;
   opravovane?: Record<string, string>;
   povodneCisla?: Record<string, string>;
+  /**
+   * Hotové položky bankových pohybov (`polozkyBankovehoVypisu`) — idú za
+   * faktúrami, prijatými a pokladňou, nech POHODA pri pohybe už pozná doklad,
+   * ktorý platba uhrádza. Predkontácie sa v nich neprekladajú, aby boli
+   * zhodné s ručným „XML pre POHODU“.
+   */
+  banka?: string;
+  /** Automatická likvidácia bankových pohybov (len konektor) — ide až za nimi. */
+  likvidacia?: string;
 }): string {
   // Číselníky idú prvé, nech je odberateľ v adresári a zákazka v zozname skôr,
   // než sa na ne odvolá faktúra.
@@ -3614,19 +3674,33 @@ export function buildPohodaDavkaXml(opts: {
     polozkyFaktur(opts),
     polozkyDokladov(opts),
     polozkyPokladne(opts),
-    // Storno až nakoniec — ruší doklad, ktorý v Pohode už je.
-    opts.storna?.length
-      ? polozkyStorna({
-          storna: opts.storna.map((s) => ({ ...s, cz: krajinaDane(opts.company?.country) === "CZ" })),
-        })
-      : "",
   ].join("");
+  // Storno až nakoniec — ruší doklad, ktorý v Pohode už je.
+  const storna = opts.storna?.length
+    ? polozkyStorna({
+        storna: opts.storna.map((s) => ({ ...s, cz: krajinaDane(opts.company?.country) === "CZ" })),
+      })
+    : "";
+  const prefixy = ["inv", "vch", "int", "adb", "stk", "con", "pri", "vyd", "ftr"];
+  if (!opts.banka && !opts.likvidacia) {
+    return obalka({
+      nastavenia: opts.nastavenia,
+      ico: opts.company?.ico,
+      note: "Dávka z Faktero",
+      prefixy,
+      entries: entries + storna,
+    });
+  }
+  // Bankové pohyby bez prekladu predkontácií — ostatné preložené vopred, obálka už nič neprekladá.
   return obalka({
-    nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Dávka z Faktero",
-    prefixy: ["inv", "vch", "int", "adb", "stk", "con", "pri", "vyd", "ftr"],
-    entries,
+    prefixy: [...prefixy, "bnk", ...(opts.likvidacia ? ["lqd"] : [])],
+    entries:
+      predkontacieNaSkratky(entries, opts.nastavenia?.mapaPredkontacii) +
+      (opts.banka ?? "") +
+      (opts.likvidacia ?? "") +
+      predkontacieNaSkratky(storna, opts.nastavenia?.mapaPredkontacii),
   });
 }
 

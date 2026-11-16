@@ -867,6 +867,9 @@ export type Database = {
           vybavenie_pravidlo_id: string | null
           vybavene_at: string | null
           vybavil: string | null
+          exported_at: string | null
+          export_job_id: string | null
+          pohoda_cislo: string | null
         }
         Insert: {
           amount: number
@@ -892,6 +895,9 @@ export type Database = {
           vybavenie_pravidlo_id?: string | null
           vybavene_at?: string | null
           vybavil?: string | null
+          exported_at?: string | null
+          export_job_id?: string | null
+          pohoda_cislo?: string | null
         }
         Update: {
           amount?: number
@@ -917,6 +923,9 @@ export type Database = {
           vybavenie_pravidlo_id?: string | null
           vybavene_at?: string | null
           vybavil?: string | null
+          exported_at?: string | null
+          export_job_id?: string | null
+          pohoda_cislo?: string | null
         }
         Relationships: [
           {
@@ -1643,6 +1652,7 @@ export type Database = {
           pohoda_posielat_pohyby: boolean
           pohoda_posielat_sklad: boolean
           pohoda_posielat_zakazky: boolean
+          pohoda_posielat_banku: boolean
           pohoda_predkontacia: string | null
           pohoda_predkontacia_banka: string | null
           pohoda_predkontacia_dobropis: string | null
@@ -1779,6 +1789,7 @@ export type Database = {
           pohoda_posielat_pohyby?: boolean
           pohoda_posielat_sklad?: boolean
           pohoda_posielat_zakazky?: boolean
+          pohoda_posielat_banku?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_banka?: string | null
           pohoda_predkontacia_dobropis?: string | null
@@ -1915,6 +1926,7 @@ export type Database = {
           pohoda_posielat_pohyby?: boolean
           pohoda_posielat_sklad?: boolean
           pohoda_posielat_zakazky?: boolean
+          pohoda_posielat_banku?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_banka?: string | null
           pohoda_predkontacia_dobropis?: string | null

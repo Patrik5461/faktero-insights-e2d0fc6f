@@ -1,6 +1,6 @@
 /*
-  „Čo sa do Pohody posiela“ — adresár, skladové karty, skladové pohyby a
-  zákazky. Presunuté z Prepojenia s Pohodou do Nastavení exportu na stránke
+  „Čo sa do Pohody posiela“ — adresár, skladové karty, skladové pohyby,
+  zákazky a bankové pohyby. Presunuté z Prepojenia s Pohodou do Nastavení exportu na stránke
   Predkontácie; stĺpce ostávajú na `companies` a ukladajú sa len tu.
 */
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ const POLIA = [
   "pohoda_posielat_sklad",
   "pohoda_posielat_pohyby",
   "pohoda_posielat_zakazky",
+  "pohoda_posielat_banku",
 ] as const;
 type Kluc = (typeof POLIA)[number];
 type Hodnoty = Record<Kluc, boolean>;
@@ -135,6 +136,14 @@ export function NastaveniaPosielaniaPohody({ companyId }: { companyId: string })
             "— Pohoda ju vie založiť, ale nie prepísať, tak si neskoršiu zmenu názvu prepíšte aj tam.",
           )}
         </>,
+        true,
+      )}
+      {prepinac(
+        "pohoda_posielat_banku",
+        t("Posielať bankové pohyby do Pohody (most a mesačný balík)"),
+        t(
+          "Zapnite len ak si účtovníčka výpisy z banky do Pohody nenačítava sama — inak by boli pohyby v Pohode dvakrát. Účty musia mať skratku v Pohode (Firma → Bankové účty).",
+        ),
         true,
       )}
       <div className="flex justify-end sm:col-span-2">

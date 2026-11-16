@@ -348,6 +348,15 @@ async function oznacPotvrdene(supabase: Klient, companyId: string, r: RiadokKone
         r.verzia,
       );
       return;
+    case "banka":
+      // Pohyb sa nemení ani nemá verziu — odovzdaný je prvým potvrdením.
+      await supabase
+        .from("bank_transactions")
+        .update({ exported_at: teraz, export_job_id: job, pohoda_cislo: v.cislo })
+        .eq("company_id", companyId)
+        .eq("id", r.zaznam_id)
+        .is("exported_at", null);
+      return;
     case "adresar":
     case "sklad":
     case "zakazka":

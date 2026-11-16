@@ -36,6 +36,7 @@ export type DruhPolozky =
   | "sklad"
   | "zakazka"
   | "pohyb"
+  | "banka"
   | "storno"
   | "storno_opravy"
   | "zmazane_v_pohode";
@@ -116,6 +117,8 @@ export function polozkyZDavky(
     pohyby?: { id: string; pohyby: { id: string; verzia: unknown }[] }[];
     storna?: { id: string }[];
     stornaOprav?: { id: string; predoslaVerzia: unknown }[];
+    /** Bankové pohyby (`bank_transactions.id`) — v dávke ako `BNK-<id>`. */
+    banka?: { id: string; verzia: unknown }[];
   },
   teraz: string,
 ): PolozkaDavky[] {
@@ -138,6 +141,12 @@ export function polozkyZDavky(
     doklad.set(String(s.id).toLowerCase(), {
       druh: "pohyb",
       zaznamy: s.pohyby.map((p) => ({ id: String(p.id), verzia: cas(p.verzia) })),
+    });
+  // Id pohybu nezačína uuid (`BNK-<uuid>`), páruje sa celé (malými písmenami).
+  for (const b of zaznamy.banka ?? [])
+    doklad.set(`bnk-${String(b.id).toLowerCase()}`, {
+      druh: "banka",
+      zaznamy: [{ id: String(b.id), verzia: cas(b.verzia) }],
     });
   const storno = new Map<string, Ciel>();
   for (const s of zaznamy.storna ?? [])

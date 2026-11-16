@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-11-15",
+ "vytvorene": "2026-11-16",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -995,7 +995,7 @@
     },
     {
      "nadpis": "Čo do Pohody zámerne nechodí",
-     "text": "<>\nBanka. Účtovníčka si výpis načíta priamo z banky (a Faktero jej z neho\nvie vyrobiť súbor pre Pohodu — sekcia vyššie), takže náš export by v Pohode vyrobil druhý\nkomplet bankových dokladov.\nMnožstvá na skladovej karte. Karta ide bez stavu — ten v Pohode vzniká\npríjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi. Ak chcete mať v\nPohode aj stavy, zapnite skladové pohyby : Faktero pošle príjemky a\nvýdajky a sklad si Pohoda dopočíta sama, tak ako má.\nFaktúry v cudzej mene bez kurzu. Faktúra v cudzej mene ide do Pohody so\nsumami v mene a s kurzom ECB — domáce sumy si Pohoda prepočíta. Keď kurz chýba, faktúra sa\npreskočí, povieme to a je v súpiske na ručné zadanie. Bločky v cudzej mene kurz nemajú,\ntie sa preskakujú vždy."
+     "text": "<>\nBanka. Účtovníčka si výpis načíta priamo z banky (a Faktero jej z neho\nvie vyrobiť súbor pre Pohodu — sekcia vyššie), takže náš export by v Pohode vyrobil druhý\nkomplet bankových dokladov.\nAk si účtovníčka výpisy z banky do Pohody sama nenačítava, zapnite v Účtovníctvo →\nPredkontácie a členenie DPH/KV, sekcia Nastavenia exportu,\nPosielať bankové pohyby do Pohody . Pohyby potom idú priamym prepojením aj\nv mesačnom balíku (súbor pohoda-banka.xml) — za faktúrami a ostatnými dokladmi, aby doklad,\nktorý platba uhrádza, už v Pohode bol — a každý len raz. Účet potrebuje skratku v Pohode\n(Firma → Bankové účty); pohyby účtu bez nej sa neposielajú a Kontrola Pohody to povie.\nMnožstvá na skladovej karte. Karta ide bez stavu — ten v Pohode vzniká\npríjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi. Ak chcete mať v\nPohode aj stavy, zapnite skladové pohyby : Faktero pošle príjemky a\nvýdajky a sklad si Pohoda dopočíta sama, tak ako má.\nFaktúry v cudzej mene bez kurzu. Faktúra v cudzej mene ide do Pohody so\nsumami v mene a s kurzom ECB — domáce sumy si Pohoda prepočíta. Keď kurz chýba, faktúra sa\npreskočí, povieme to a je v súpiske na ručné zadanie. Bločky v cudzej mene kurz nemajú,\ntie sa preskakujú vždy."
     },
     {
      "nadpis": "Aby v Pohode sedeli aj stavy skladu",

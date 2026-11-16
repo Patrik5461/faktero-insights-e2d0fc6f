@@ -737,6 +737,14 @@ const sections: HelpSection[] = [
           komplet bankových dokladov.
         </p>
         <p>
+          Ak si účtovníčka výpisy z banky do Pohody sama nenačítava, zapnite v Účtovníctvo →
+          Predkontácie a členenie DPH/KV, sekcia Nastavenia exportu,{" "}
+          <strong>Posielať bankové pohyby do Pohody</strong>. Pohyby potom idú priamym prepojením aj
+          v mesačnom balíku (súbor pohoda-banka.xml) — za faktúrami a ostatnými dokladmi, aby doklad,
+          ktorý platba uhrádza, už v Pohode bol — a každý len raz. Účet potrebuje skratku v Pohode
+          (Firma → Bankové účty); pohyby účtu bez nej sa neposielajú a Kontrola Pohody to povie.
+        </p>
+        <p>
           <strong>Množstvá na skladovej karte.</strong> Karta ide bez stavu — ten v Pohode vzniká
           príjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi. Ak chcete mať v
           Pohode aj stavy, zapnite <strong>skladové pohyby</strong>: Faktero pošle príjemky a

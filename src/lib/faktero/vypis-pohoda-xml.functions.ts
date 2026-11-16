@@ -10,7 +10,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { overPristup } from "./over-pristup";
-import type { VypisPohyb } from "./export.server";
 
 /** IBAN bez medzier a veľkými písmenami — na porovnanie účtov. */
 const normIban = (v: unknown) => String(v ?? "").replace(/\s+/g, "").toUpperCase();
@@ -54,7 +53,8 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       return d;
     },
   )
-  .handler(async ({ data, context }): Promise<{ fileName: string; content: string; pocet: number }> => {
+  .handler(
+    async ({ data, context }): Promise<{ fileName: string; content: string; pocet: number; uzOdoslanych: number }> => {
     await overPristup(context as never, data.company_id, { oblast: "banka" });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -118,86 +118,38 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
     );
     if (!txs.length) throw new Error("Za toto obdobie nie je na účte ani jeden pohyb.");
 
-    const { pravidloPohybu } = await import("./pravidla-uctovania");
-    const { data: pravidla } = await supabaseAdmin
-      .from("pravidla_uctovania")
-      .select("*")
-      .eq("company_id", data.company_id)
-      .eq("druh", "banka")
-      .eq("aktivne", true);
+    /*
+      Mapovanie pohybov a XML sú spoločné s konektorom a mesačným balíkom
+      (`banka-pohoda.server.ts`) — ten istý pohyb má všade to isté id aj obsah.
+    */
+    const { pravidlaBanky, xmlVypisuPrePohodu } = await import("./banka-pohoda.server");
+    const content = await xmlVypisuPrePohodu({
+      company,
+      ucet,
+      txs,
+      pravidla: await pravidlaBanky(supabaseAdmin, data.company_id),
+      banka,
+      periodEnd: vypis.period_end,
+    });
 
     /*
-      Účet v cudzej mene (V10): každý pohyb dostane kurz ku dňu zaúčtovania
-      podľa pravidla krajiny firmy (SK: ECB zo dňa predtým, § 24 ZoÚ; CZ: ČNB
-      v ten deň) — ten istý zdroj ako faktúry. Keď kurz nie je, POHODA si ho
-      doplní z kurzového lístka.
+      Pohyby, ktoré už odišli konektorom alebo balíkom (`exported_at`). Súbor
+      sa aj tak vydá — POHODA ten istý pohyb (rovnaké id) odmietne ako
+      duplicitu —, len sa to povie. Bez migrácie stĺpca sa nepočíta nič.
     */
-    const { domacaMena, krajinaKurzu } = await import("./kurzy");
-    const domaca = domacaMena((company as any)?.country);
-    const menaUctu = String(ucet.currency ?? "").trim().toUpperCase() || domaca;
-    const kurzyDni = new Map<string, number | null>();
-    if (menaUctu !== domaca) {
-      const { kurzPreDoklad } = await import("./kurzy.server");
-      for (const den of [...new Set(txs.map((t) => String(t.booking_date)))]) {
-        const k = await kurzPreDoklad(menaUctu, den, krajinaKurzu((company as any)?.country)).catch(() => null);
-        kurzyDni.set(den, k?.kurz ?? null);
-      }
+    let uzOdoslanych = 0;
+    {
+      const { count, error } = await supabaseAdmin
+        .from("bank_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("bank_account_id", ucet.id)
+        .gte("booking_date", vypis.period_start)
+        .lte("booking_date", vypis.period_end)
+        .not("exported_at", "is", null);
+      if (!error) uzOdoslanych = count ?? 0;
     }
-
-    const { odhadniOznacenie } = await import("./vypis-oznacenie");
-    const { symbolyZTextu } = await import("./banka-pohoda-id");
-    const pohyby: VypisPohyb[] = txs.map((t) => {
-      const popis = String(t.description ?? "");
-      // Pohyby z bankových notifikácií majú IBAN protistrany len v texte („… · IBAN SK…“).
-      const ibanZTextu = /IBAN\s+([A-Z]{2}\d{2}[0-9A-Z ]{10,36})\s*$/i.exec(popis)?.[1] ?? null;
-      // KS a ŠS banky píšu do textu platby (`/VS…/SS…/KS…`) — N7.
-      const symboly = symbolyZTextu(popis);
-      const p: VypisPohyb = {
-        id: t.id ?? null,
-        kurz: kurzyDni.get(String(t.booking_date)) ?? null,
-        ks: symboly.ks,
-        ss: symboly.ss,
-        datum: t.booking_date,
-        suma: Math.abs(Number(t.amount)),
-        smer: Number(t.amount) < 0 ? "vydaj" : "prijem",
-        popis: popis.replace(/\s*·\s*IBAN\s+[A-Z]{2}[0-9A-Z ]{10,40}\s*$/i, "").trim() || null,
-        protistrana: t.counterparty ?? null,
-        protiucet: (t.counterparty_iban ?? ibanZTextu)?.replace(/\s+/g, "") ?? null,
-        vs: t.variable_symbol ?? null,
-      };
-      // Označenie (poplatok, úrok, splátka…) ako pri prevodníku z PDF — ide do poznámky
-      // a vyberie predkontáciu podľa označenia (N7).
-      p.oznacenie = odhadniOznacenie({ popis: p.popis, protistrana: p.protistrana, smer: p.smer, vs: p.vs });
-      const r = pravidloPohybu((pravidla ?? []) as any[], p, ucet.iban);
-      return { ...p, predkontacia: r ? (r as { predkontacia: string }).predkontacia : null };
-    });
-
-    const { buildPohodaBankXml } = await import("./export.server");
-    const content = buildPohodaBankXml({
-      company: company as never,
-      pohyby,
-      datumVypisu: vypis.period_end,
-      /*
-        Číslo výpisu = mesiac (výpisy zostavené Fakterom sú mesačné), poradie
-        pohybu ide do `numberMovement`. Predtým sa neposielalo vôbec.
-      */
-      cisloVypisu: String(Number(String(vypis.period_end).slice(5, 7)) || ""),
-      ucet: ucet.iban,
-      mena: menaUctu,
-      nastavenia: {
-        // Skratka bankového účtu v POHODE; bez nej by POHODA dala pohyby na predvolený účet.
-        banka,
-        /*
-          Bez bnk:accounting vezme POHODA predkontáciu z nastavenia používateľa,
-          pod ktorým beží import (bank.xsd) — nie z bankového účtu. Preto ide
-          predkontácia banky z nastavení firmy pre POHODU; pravidlo pohybu má prednosť.
-        */
-        predkontaciaBanka: String((company as any)?.pohoda_predkontacia_banka ?? "").trim() || null,
-        predkontacieOznaceni: ((company as any)?.pohoda_predkontacie_oznaceni ?? {}) as Record<string, string>,
-      },
-    });
 
     const obdobie = String(vypis.period_start).slice(0, 7);
     const koniec = String(ucet.iban ?? "").replace(/\s+/g, "").slice(-4);
-    return { fileName: `pohoda-vypis-${obdobie}-${koniec}.xml`, content, pocet: pohyby.length };
+    return { fileName: `pohoda-vypis-${obdobie}-${koniec}.xml`, content, pocet: txs.length, uzOdoslanych };
   });

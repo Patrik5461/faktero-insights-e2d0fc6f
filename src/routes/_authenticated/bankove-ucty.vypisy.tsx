@@ -188,6 +188,11 @@ function BankStatementsPage() {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
       toast.success(t("XML pre POHODU je stiahnuté ({n} pohybov). Načítajte ho cez Súbor → Dátová komunikácia → XML import.", { n: r.pocet }));
+      // Pohyby, ktoré už odišli konektorom či balíkom — POHODA ich odmietne ako duplicitu, len to povieme.
+      if (r.uzOdoslanych > 0)
+        toast.warning(
+          t("{n} pohybov z tohto výpisu už do Pohody odišlo cez prepojenie alebo mesačný balík. POHODA ich pri importe odmietne ako duplicitu.", { n: r.uzOdoslanych }),
+        );
     } catch (e: any) {
       toast.error(e?.message ? t(e.message) : t("Stiahnutie zlyhalo"));
     } finally {

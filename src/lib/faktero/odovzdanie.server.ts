@@ -130,6 +130,8 @@ export type Balik = {
   pocetPokladnicnych: number;
   /** Pokladničné doklady, ktoré išli v XML (majú skratku pokladne) — označia sa ako odovzdané. */
   pokladnicaIds?: string[];
+  /** Bankové pohyby v pohoda-banka.xml (`pohoda_posielat_banku`) — označia sa ako odovzdané. */
+  bankaIds?: string[];
   /** Listy, predpisy, exekúcie a zmluvy doručené v mesiaci. */
   pocetOstatnych: number;
   ostatneIds: string[];
@@ -356,7 +358,30 @@ export async function zostavBalik(
   // Pokladňa ako ostatné doklady: „len nové“ = ešte neodovzdané (konektor ich značí rovnako).
   const pokladnica = (pokladnicaVsetko ?? []).filter((p: Riadok) => !vstup.lenNove || !p.exported_at);
 
-  if (!faktury.length && !doklady.length && !prijate.length && !pokladnica?.length && !ostatne.length) {
+  /*
+    Bankové pohyby (`pohoda_posielat_banku`) — účty so skratkou v POHODE,
+    to isté XML ako ručné „XML pre POHODU“ a konektor (id `BNK-<id>`, takže
+    POHODA pohyb, ktorý už má, odmietne ako duplicitu). „Len nové“ = ešte
+    neodovzdané; označia sa pri odovzdaní ako ostatné doklady. Len pohyby
+    mesiaca balíka (nie `odVyberu` cronu) — po zapnutí by inak odišiel rok
+    histórie, ktorú si účtovníčka mohla načítať z banky sama.
+  */
+  const banka = await (await import("./banka-pohoda.server")).bankaPreDavku(supabase, {
+    company,
+    od,
+    doDna: doDatumu,
+    ajOdovzdane: !vstup.lenNove,
+    dnes: new Date(),
+  });
+
+  if (
+    !faktury.length &&
+    !doklady.length &&
+    !prijate.length &&
+    !pokladnica?.length &&
+    !ostatne.length &&
+    !banka.zaznamy.length
+  ) {
     throw new Error(
       vstup.lenNove &&
         (vsetky?.length || vsetkyDoklady?.length || vsetkyOstatne?.length || vsetkyPrijate?.length)
@@ -801,6 +826,11 @@ export async function zostavBalik(
     // účtovníčka si ho má naimportovať vedome.
     zip.file("pohoda-storna.xml", buildPohodaStornaXml({ company, storna }));
   }
+  if (banka.entries) {
+    const { obalkaBankovehoVypisu } = await import("./export.server");
+    zip.file("pohoda-banka.xml", obalkaBankovehoVypisu(company, banka.entries));
+  }
+  preskocene.push(...banka.hlasky);
 
   // Samotné doklady. Účtovníčka potrebuje aj papier, nielen údaje — ale keď sa
   // balík posiela mailom, prílohy majú strop a údaje sú dôležitejšie.
@@ -934,6 +964,7 @@ export async function zostavBalik(
       pocetDokladov: dokladyDoXml.length,
       pocetPokladnicnych: pokladnica?.length ?? 0,
       pokladnicaIds: pokladnicaDoXml.map((p: Riadok) => p.id),
+      bankaIds: banka.zaznamy.map((z) => z.id),
       pocetOstatnych: ostatne.length,
       ostatneIds: ostatne.map((d: Riadok) => d.id),
       preskocene,
@@ -1109,6 +1140,24 @@ export async function oznacOdovzdane(
       supabase.from("cash_entries").update({ exported_at: kedy, export_job_id: job.id }).in("id", kus),
     );
   }
+  /*
+    Bankové pohyby z pohoda-banka.xml — inak by ich konektor poslal znova.
+    Už odovzdané (konektorom) si ponechajú prvé označenie. Zápis servisným
+    kľúčom: na pohyby smie písať len správca s oblasťou „banka“, odovzdáva
+    však aj účtovníčka — id pohybov zostavil server pre túto firmu.
+  */
+  if (job && balik.bankaIds?.length) {
+    const kedy = new Date().toISOString();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await poDavkach(balik.bankaIds, (kus) =>
+      supabaseAdmin
+        .from("bank_transactions")
+        .update({ exported_at: kedy, export_job_id: job.id })
+        .eq("company_id", vstup.companyId)
+        .in("id", kus)
+        .is("exported_at", null),
+    );
+  }
   if (job && balik.ostatneIds.length) {
     const kedy = new Date().toISOString();
     await poDavkach(balik.ostatneIds, (kus) =>
@@ -1164,6 +1213,7 @@ export async function posliBalikMailom(opts: {
     balik.pocetDokladov ? `${balik.pocetDokladov} prijatých dokladov` : "",
     balik.pocetPokladnicnych ? `${balik.pocetPokladnicnych} pokladničných dokladov` : "",
     balik.pocetOstatnych ? `${balik.pocetOstatnych} iných dokladov` : "",
+    balik.bankaIds?.length ? `${balik.bankaIds.length} bankových pohybov (pohoda-banka.xml)` : "",
     balik.pocetCiselnikov ? `${balik.pocetCiselnikov} záznamov číselníkov` : "",
   ].filter(Boolean);
 

@@ -40,6 +40,7 @@ const DRUH_KONEKTORA: Record<string, string> = {
   sklad: "Skladová karta",
   zakazka: "Zákazka",
   pohyb: "Skladový pohyb",
+  banka: "Bankový pohyb",
   storno: "Storno faktúry",
   storno_opravy: "Storno pôvodného dokladu",
 };
@@ -59,6 +60,7 @@ type StavKonektora = {
   }[];
   opravyCakaju: string[];
   starsie: { od: string; faktur: number; prijatych: number; dokladov: number; pokladnicnych: number };
+  banka?: { cakaju: number; naCeste: number; chyba: number; bezSkratky: string[] } | null;
 };
 
 /** Detail dokladu konektora — pokladňa a číselníky nemajú vlastný detail, len text. */
@@ -180,7 +182,10 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
       konektor.odmietnute.length > 0 ||
       konektor.opravy.length > 0 ||
       konektor.opravyCakaju.length > 0 ||
-      starsieSpolu > 0);
+      starsieSpolu > 0 ||
+      !!konektor.banka?.cakaju ||
+      !!konektor.banka?.naCeste ||
+      !!konektor.banka?.bezSkratky.length);
 
   const pokladna = zastavene?.some((z) => z.dovod.includes("bez pokladne"));
   const clenenie = zastavene?.some((z) => z.dovod.includes("Predkontácie"));
@@ -376,6 +381,26 @@ export function KontrolaPohody({ companyId }: { companyId: string }) {
                 </ul>
               </div>
             )}
+            {konektor.banka && (konektor.banka.cakaju > 0 || konektor.banka.naCeste > 0 || konektor.banka.chyba > 0) && (
+              <p className="mt-3 text-sm text-foreground">
+                {t("Bankové pohyby: {c} čaká na odoslanie, {n} na ceste, {e} POHODA neprijala.", {
+                  c: konektor.banka.cakaju,
+                  n: konektor.banka.naCeste,
+                  e: konektor.banka.chyba,
+                })}
+              </p>
+            )}
+            {konektor.banka?.bezSkratky.map((h) => (
+              <p key={h} className="mt-2 flex items-start gap-1.5 text-sm text-warning">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="min-w-0 break-words">
+                  {t(
+                    "Účet {u} nemá skratku v Pohode — jeho pohyby konektor ani balík neposielajú. Doplňte ju vo Firma → Bankové účty.",
+                    { u: h },
+                  )}
+                </span>
+              </p>
+            ))}
             {starsieSpolu > 0 && (
               <p className="mt-3 text-sm text-muted-foreground">
                 {t(

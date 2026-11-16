@@ -593,3 +593,223 @@ describe("V12 — odpoveď na mesačný balík (doklady mimo dávky konektora)",
     expect(sb.db.pohoda_odoslane).toEqual([]);
   });
 });
+
+/* ------------------------------------------------- bankové pohyby (pohoda_posielat_banku) */
+
+describe("bankové pohyby v dávke konektora", () => {
+  const BT = "55555555-5555-5555-5555-555555555555";
+  const BT2 = "66666666-6666-6666-6666-666666666666";
+  const bnk = (id: string) => `\n  <dat:dataPackItem id="BNK-${id}" version="2.0"></dat:dataPackItem>`;
+
+  async function davkaSBankou() {
+    const sb = databaza({
+      bank_transactions: [
+        { id: BT, company_id: FIRMA, exported_at: null },
+        { id: BT2, company_id: FIRMA, exported_at: null },
+      ],
+      pohoda_odoslane: [],
+    });
+    const xml = pridajPolozky(davka(), bnk(BT) + bnk(BT2));
+    const polozky = polozkyZDavky(
+      xml,
+      { faktury: [{ id: FA, verzia: 0 }], banka: [{ id: BT, verzia: "2026-11-02T08:00:00Z" }, { id: BT2, verzia: null }] },
+      "t",
+    );
+    const job = await zapisDavku(sb as any, {
+      companyId: FIRMA,
+      od: "2026-10-01",
+      xml,
+      polozky,
+      faktury: [faktura],
+      cislaPreskocenych: new Set(),
+      preskocene: [],
+      pocetFaktur: 1,
+      bezPotvrdenia: [],
+    });
+    return { sb, job, polozky };
+  }
+
+  it("pohyb sa zapíše ako položka druhu banka pod `BNK-<id>`", async () => {
+    const { polozky, sb } = await davkaSBankou();
+    expect(polozky.filter((p) => p.druh === "banka")).toEqual([
+      { polozka_id: `BNK-${BT}`, druh: "banka", zaznam_id: BT, verzia: "2026-11-02T08:00:00Z" },
+      { polozka_id: `BNK-${BT2}`, druh: "banka", zaznam_id: BT2, verzia: null },
+    ]);
+    // Pri stiahnutí sa pohyb neoznačí — je len na ceste.
+    expect(sb.db.bank_transactions!.every((t) => !t.exported_at)).toBe(true);
+    const { cakajuceZaznamy } = await import("./pohoda-konektor-potvrdenie.server");
+    expect([...((await cakajuceZaznamy(sb as any, FIRMA)).get("banka") ?? [])].sort()).toEqual([BT, BT2]);
+  });
+
+  it("potvrdený pohyb (ok aj duplicita) je odovzdaný s číslom z POHODY, odmietnutý ostane vo fronte", async () => {
+    const { sb, job } = await davkaSBankou();
+    const duplicita = (id: string) => `
+  <rsp:responsePackItem version="2.0" id="${id}" state="error"><rsp:errorDetail><rsp:recordDuplicity>
+    <rsp:agendaType>banka</rsp:agendaType><rsp:id>42</rsp:id><rsp:number>BV0043</rsp:number>
+  </rsp:recordDuplicity></rsp:errorDetail></rsp:responsePackItem>`;
+    const r = await spracujPolozkyOdpovede(sb as any, {
+      companyId: FIRMA,
+      balik: rozoberBalikOdpovede(
+        odpoved(ok(FA, "20260001") + ok(`BNK-${BT}`, "BV0042") + zle(`BNK-${BT2}`, "Neznámy bankový účet")),
+      ),
+    });
+    expect(r.chyby.join(" ")).toContain("Neznámy bankový účet");
+    const [a, b] = sb.db.bank_transactions!;
+    expect(a).toMatchObject({ export_job_id: job, pohoda_cislo: "BV0042" });
+    expect(a!.exported_at).toBeTruthy();
+    expect(b!.exported_at).toBeFalsy();
+    const riadok = sb.db.pohoda_konektor_polozky!.find((x) => x.zaznam_id === BT2)!;
+    expect(riadok).toMatchObject({ stav: "chyba" });
+    expect(String(riadok.chyba)).toContain("Neznámy bankový účet");
+
+    // Ďalšia dávka: POHODA pohyb už má (recordDuplicity) — berie sa ako potvrdenie.
+    const xml2 = pridajPolozky(davka(), bnk(BT2));
+    const job2 = await zapisDavku(sb as any, {
+      companyId: FIRMA,
+      od: "2026-10-01",
+      xml: xml2,
+      polozky: polozkyZDavky(xml2, { banka: [{ id: BT2, verzia: null }] }, "t"),
+      faktury: [],
+      cislaPreskocenych: new Set(),
+      preskocene: [],
+      pocetFaktur: 0,
+      bezPotvrdenia: [],
+    });
+    await spracujPolozkyOdpovede(sb as any, {
+      companyId: FIRMA,
+      balik: rozoberBalikOdpovede(odpoved(duplicita(`BNK-${BT2}`))),
+    });
+    expect(sb.db.bank_transactions![1]).toMatchObject({ export_job_id: job2 });
+    expect(sb.db.bank_transactions![1]!.exported_at).toBeTruthy();
+  });
+
+  it("už odovzdaný pohyb sa druhým potvrdením neprepíše", async () => {
+    const { sb } = await davkaSBankou();
+    sb.db.bank_transactions![0]!.exported_at = "2026-10-31T00:00:00Z";
+    sb.db.bank_transactions![0]!.export_job_id = "balik";
+    await spracujPolozkyOdpovede(sb as any, {
+      companyId: FIRMA,
+      balik: rozoberBalikOdpovede(odpoved(ok(`BNK-${BT}`, "BV1"))),
+    });
+    expect(sb.db.bank_transactions![0]).toMatchObject({ exported_at: "2026-10-31T00:00:00Z", export_job_id: "balik" });
+  });
+
+  it("odpoveď na balík: pohyb dostane číslo a je odovzdaný, odmietnutý sa vráti do fronty", async () => {
+    const { spracujOdpoved } = await import("./pohoda-konektor.server");
+    const sb = databaza({
+      pohoda_konektor_polozky: [],
+      bank_transactions: [
+        { id: BT, company_id: FIRMA, exported_at: null },
+        { id: BT2, company_id: FIRMA, exported_at: "2026-11-01T00:00:00Z", export_job_id: "j" },
+      ],
+      export_logs: [],
+      expense_documents: [],
+      purchase_invoices: [],
+      cash_entries: [],
+      pohoda_odoslane: [],
+      companies: [{ id: FIRMA, pohoda_nacitat_ciselniky: false }],
+    });
+    const r = await spracujOdpoved(sb as any, {
+      companyId: FIRMA,
+      xml: odpoved(ok(`BNK-${BT}`, "BV7") + zle(`BNK-${BT2}`, "Chyba")),
+    });
+    expect(r.chybnych).toBe(1);
+    expect(sb.db.bank_transactions![0]).toMatchObject({ pohoda_cislo: "BV7" });
+    expect(sb.db.bank_transactions![0]!.exported_at).toBeTruthy();
+    expect(sb.db.bank_transactions![1]).toMatchObject({ exported_at: null, export_job_id: null });
+  });
+});
+
+/* ------------------------------------------------- automatická likvidácia bankových pohybov */
+
+describe("automatická likvidácia v odpovedi POHODY", () => {
+  const BT = "77777777-7777-7777-7777-777777777777";
+  const LQD = "LQD-TABe-2026-11-16-1a2b3c4d";
+  const LQD2 = "LQD-VUB-SK-2026-11-16-9f9f9f9f";
+  const likvidacia = (id: string) => `
+  <rsp:responsePackItem version="2.0" id="${id}" state="ok">
+    <lqd:automaticLiquidationResponse version="2.0" state="ok">
+      <lqd:automaticLiquidationDetails>
+        <lqd:automaticLiquidationDetail>
+          <lqd:movementDetail><lqd:id>5</lqd:id><lqd:number>TABe111</lqd:number><lqd:bankType>receipt</lqd:bankType><lqd:datePayment>2026-11-03</lqd:datePayment></lqd:movementDetail>
+          <lqd:liquidationDetail><lqd:state>ok</lqd:state><lqd:documents><lqd:document><lqd:state>ok</lqd:state><lqd:id>9</lqd:id><lqd:number>K101c001</lqd:number></lqd:document></lqd:documents></lqd:liquidationDetail>
+        </lqd:automaticLiquidationDetail>
+        <lqd:automaticLiquidationDetail>
+          <lqd:movementDetail><lqd:id>6</lqd:id><lqd:number>TABe112</lqd:number><lqd:bankType>receipt</lqd:bankType></lqd:movementDetail>
+          <lqd:liquidationDetail><lqd:state>ok</lqd:state><lqd:documents><lqd:document><lqd:state>ok</lqd:state><lqd:id>10</lqd:id><lqd:number>K101c002</lqd:number></lqd:document></lqd:documents></lqd:liquidationDetail>
+        </lqd:automaticLiquidationDetail>
+        <lqd:automaticLiquidationDetail>
+          <lqd:movementDetail><lqd:id>7</lqd:id><lqd:number>TABe113</lqd:number><lqd:bankType>expense</lqd:bankType></lqd:movementDetail>
+          <lqd:liquidationDetail><lqd:state>warning</lqd:state><lqd:detail>K pohybu č. TABe113 nenájdený doklad (VS = 555)</lqd:detail></lqd:liquidationDetail>
+        </lqd:automaticLiquidationDetail>
+      </lqd:automaticLiquidationDetails>
+    </lqd:automaticLiquidationResponse>
+  </rsp:responsePackItem>`;
+  const odmietnuta = (id: string) => `
+  <rsp:responsePackItem version="2.0" id="${id}" state="error">
+    <lqd:automaticLiquidationResponse version="2.0" state="error">
+      <rdc:importDetails><rdc:detail><rdc:state>error</rdc:state><rdc:errno>101</rdc:errno><rdc:note>Pravidlo párovania nebolo nájdené</rdc:note></rdc:detail></rdc:importDetails>
+    </lqd:automaticLiquidationResponse>
+  </rsp:responsePackItem>`;
+
+  it("výsledok párovania ide do upozornení, s doklady sa neplete a odmietnutie nič nevráti do fronty", async () => {
+    const { spracujOdpoved } = await import("./pohoda-konektor.server");
+    const sb = databaza({
+      bank_transactions: [{ id: BT, company_id: FIRMA, exported_at: null }],
+      pohoda_odoslane: [],
+      export_logs: [],
+      expense_documents: [],
+      purchase_invoices: [],
+      cash_entries: [],
+      companies: [{ id: FIRMA, pohoda_nacitat_ciselniky: false }],
+    });
+    const xml = pridajPolozky(davka(), `\n  <dat:dataPackItem id="BNK-${BT}" version="2.0"></dat:dataPackItem>`);
+    const job = await zapisDavku(sb as any, {
+      companyId: FIRMA,
+      od: "2026-10-01",
+      xml: xml + `<dat:dataPackItem id="${LQD}" version="2.0"></dat:dataPackItem>`,
+      polozky: polozkyZDavky(xml, { faktury: [{ id: FA, verzia: 0 }], banka: [{ id: BT, verzia: null }] }, "t"),
+      faktury: [faktura],
+      cislaPreskocenych: new Set(),
+      preskocene: [],
+      pocetFaktur: 1,
+      bezPotvrdenia: [],
+    });
+    // Do položiek dávky sa likvidácia nezapíše.
+    expect(sb.db.pohoda_konektor_polozky!.some((r) => String(r.polozka_id).startsWith("LQD-"))).toBe(false);
+
+    // Pôvodné správanie pri „neznámej“ položke by hľadalo uuid v export_logs — zachytí to každý dopyt na id LQD-.
+    const dopyty: string[] = [];
+    const from = sb.from;
+    (sb as any).from = (t: string) => {
+      const q = from(t);
+      const eq = q.eq;
+      q.eq = (k: string, v: any) => (String(v).startsWith("LQD-") && dopyty.push(`${t}.${k}`), eq(k, v));
+      return q;
+    };
+    const r = await spracujOdpoved(sb as any, {
+      companyId: FIRMA,
+      xml: odpoved(ok(FA, "20260001") + ok(`BNK-${BT}`, "TABe111") + likvidacia(LQD) + odmietnuta(LQD2)),
+    });
+    expect(dopyty).toEqual([]);
+    expect(r.chybnych).toBe(0);
+    expect(r.upozornenia).toEqual(
+      expect.arrayContaining([
+        "Párovanie TABe: spárované 2, bez dokladu 1",
+        expect.stringMatching(/^Párovanie VUB-SK: POHODA automatickú likvidáciu odmietla \(Pravidlo párovania nebolo nájdené\)/),
+      ]),
+    );
+    // Doklady a pohyb sú potvrdené, nič sa nevrátilo do fronty.
+    expect(sb.db.bank_transactions![0]).toMatchObject({ export_job_id: job, pohoda_cislo: "TABe111" });
+    expect(sb.db.pohoda_konektor_polozky!.every((p) => p.stav === "ok")).toBe(true);
+    expect(sb.db.export_logs![0]).toMatchObject({ status: "ok" });
+  });
+
+  it("odpoveď len s likvidáciou nič nepáruje ani nevracia", async () => {
+    const { spracujOdpoved } = await import("./pohoda-konektor.server");
+    const sb = databaza({ pohoda_konektor_polozky: [], companies: [{ id: FIRMA, pohoda_nacitat_ciselniky: false }] });
+    const r = await spracujOdpoved(sb as any, { companyId: FIRMA, xml: odpoved(odmietnuta(LQD)) });
+    expect(r.chybnych).toBe(0);
+    expect(r.upozornenia?.[0]).toMatch(/^Párovanie TABe: POHODA automatickú likvidáciu odmietla/);
+  });
+});

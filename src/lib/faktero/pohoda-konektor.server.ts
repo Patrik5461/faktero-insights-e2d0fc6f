@@ -63,6 +63,8 @@ export type Davka = {
   zakaziek: number;
   pohybov: number;
   storien: number;
+  /** Bankové pohyby (`pohoda_posielat_banku`). */
+  bankovych?: number;
   preskocene: string[];
   /** Dávka sa pýta aj na predkontácie a členenia DPH (Nastavenie → Predkontácie). */
   ciselniky?: boolean;
@@ -449,7 +451,22 @@ export async function zostavDavku(
   for (let i = storna.length - 1; i >= 0; i--) if (!neNaCeste("storno")(storna[i])) storna.splice(i, 1);
   const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
 
+  /*
+    Bankové pohyby (`pohoda_posielat_banku`) — neodovzdané pohyby účtov so
+    skratkou v POHODE, rovnaké XML ako ručné „XML pre POHODU“. V dávke idú
+    za faktúrami, prijatými a pokladňou.
+  */
+  const banka = await (await import("./banka-pohoda.server")).bankaPreDavku(supabase, {
+    company,
+    od,
+    naCeste: naCeste.get("banka"),
+    strop: STROP_DAVKY,
+    filter: (t) => vCasti([t], "booking_date").length > 0,
+    dnes,
+  });
+
   const prazdna =
+    !banka.zaznamy.length &&
     !faktury.length &&
     !doklady?.length &&
     !prijate.length &&
@@ -499,7 +516,8 @@ export async function zostavDavku(
       zakaziek: 0,
       pohybov: 0,
       storien: 0,
-      preskocene: [...(pokladnaChyba ? [pokladnaChyba] : []), ...hlaskyOprav],
+      bankovych: 0,
+      preskocene: [...(pokladnaChyba ? [pokladnaChyba] : []), ...hlaskyOprav, ...banka.hlasky],
     };
   }
 
@@ -599,6 +617,7 @@ export async function zostavDavku(
     !zasoby.length &&
     !zakazkyNove.length &&
     !pohyby.length &&
+    !banka.zaznamy.length &&
     !storna.length &&
     !stornaOprav.length
   ) {
@@ -615,7 +634,8 @@ export async function zostavDavku(
       zakaziek: 0,
       pohybov: 0,
       storien: 0,
-      preskocene: [...preskocene, ...preskoceneDoklady],
+      bankovych: 0,
+      preskocene: [...preskocene, ...preskoceneDoklady, ...banka.hlasky],
     };
   }
 
@@ -638,6 +658,23 @@ export async function zostavDavku(
     zalohy,
     opravovane,
     povodneCisla,
+    banka: banka.entries,
+    /*
+      XML import bankové doklady s faktúrami nespáruje (overené v POHODE
+      16. 11.) — za pohybmi ide pre každý účet automatická likvidácia.
+      Do pohoda_konektor_polozky sa nezapisuje (nie je to doklad); jej
+      výsledok sa len oznámi v odpovedi (`spracujOdpoved`).
+    */
+    likvidacia: banka.skupiny.length
+      ? await (async () => {
+          const { likvidaciePreSkupiny, PRAVIDLO_PAROVANIA_ID } = await import("./banka-pohoda");
+          const { polozkyAutomatickejLikvidacie } = await import("./export.server");
+          return polozkyAutomatickejLikvidacie(
+            likvidaciePreSkupiny(banka.skupiny, dnes.toISOString().slice(0, 10)),
+            PRAVIDLO_PAROVANIA_ID,
+          );
+        })()
+      : "",
   });
   // Storno pôvodných verzií opravených dokladov (V13) — pred opravou samotnou ide len storno.
   const { pridajPolozky, polozkyZDavky } = await import("./pohoda-konektor-davka");
@@ -686,6 +723,7 @@ export async function zostavDavku(
           })),
           storna,
           stornaOprav,
+          banka: banka.zaznamy,
         },
         teraz,
       ),
@@ -713,7 +751,8 @@ export async function zostavDavku(
     zakaziek: zakazkyNove.length,
     pohybov: pohyby.length,
     storien: storna.length + stornaOprav.length,
-    preskocene: [...preskocene, ...preskoceneDoklady, ...(hlaskaStorien ? [hlaskaStorien] : [])],
+    bankovych: banka.zaznamy.length,
+    preskocene: [...preskocene, ...preskoceneDoklady, ...(hlaskaStorien ? [hlaskaStorien] : []), ...banka.hlasky],
     ciselniky,
   };
 }
@@ -1115,11 +1154,19 @@ export async function spracujOdpoved(
   const balik = rozoberBalikOdpovede(vstup.xml);
   const { spracujPolozkyOdpovede } = await import("./pohoda-konektor-potvrdenie.server");
   // Samotná žiadosť o číselníky (bez dávky) nemá čo potvrdzovať.
+  /*
+    Automatická likvidácia bankových pohybov (`LQD-…`) nie je doklad — do
+    párovania s položkami dávky ani s doklady nejde a jej odmietnutie nič
+    nevracia do fronty; výsledok párovania ide do upozornení.
+  */
+  const { jeIdLikvidacie, rozoberLikvidaciu, hlaskyLikvidacie } = await import("./banka-pohoda");
+  const mimoDokladov = (id: string) => jeIdCiselnika(id) || jeIdLikvidacie(id);
+  const hlaskyParovania = hlaskyLikvidacie(rozoberLikvidaciu(vstup.xml));
   const lenCiselniky =
-    balik.polozky.length > 0 && balik.polozky.every((v) => jeIdCiselnika(v.id));
+    balik.polozky.length > 0 && balik.polozky.every((v) => mimoDokladov(v.id));
   const r = lenCiselniky
     ? { spracovanych: 0, zalozenych: 0, chyby: [] as string[], upozornenia: [] as string[], chybaBaliku: null, nezname: 0, nesparovane: [] }
-    : await spracujPolozkyOdpovede(supabase, { companyId: vstup.companyId, balik, jeCiselnik: jeIdCiselnika });
+    : await spracujPolozkyOdpovede(supabase, { companyId: vstup.companyId, balik, jeCiselnik: mimoDokladov });
   /*
     Položky, ktoré nepatria dávke konektora — odpoveď na mesačný balík alebo
     ručný súbor nahratá v Prepojení s Pohodou. Tie sa pri odovzdaní označili
@@ -1134,7 +1181,7 @@ export async function spracujOdpoved(
     zalozenych: r.zalozenych - r.nesparovane.length + bezDavky.zalozenych,
     chybnych: chyby.length,
     chyby: chyby.slice(0, 20),
-    upozornenia: [...r.upozornenia, ...bezDavky.upozornenia].slice(0, 20),
+    upozornenia: [...hlaskyParovania, ...r.upozornenia, ...bezDavky.upozornenia].slice(0, 20),
     chybaBaliku: r.chybaBaliku,
     ciselniky,
   };
@@ -1162,6 +1209,30 @@ async function spracujPolozkyBezDavky(
     else zalozenych++;
     if (v.stav === "warning" && v.poznamka) upozornenia.push(`${v.cislo ?? v.id}: ${v.poznamka}`);
     const id = holeId(v.id);
+
+    /*
+      Bankový pohyb z balíka (`BNK-<bank_transactions.id>`): dopíše sa číslo,
+      odmietnutý sa vráti do fronty. Pohyb z PDF/XML banky (odtlačok, nie
+      uuid) vo Fakteri nie je — nie je čo zapísať.
+    */
+    const bnk = /^BNK-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(v.id);
+    if (bnk) {
+      await supabase
+        .from("bank_transactions")
+        .update({ pohoda_cislo: v.cislo, ...(chyba ? { exported_at: null, export_job_id: null } : {}) })
+        .eq("company_id", companyId)
+        .eq("id", bnk[1]!.toLowerCase());
+      // Potvrdený z ručného súboru — v POHODE je, konektor ani balík ho už neposielajú.
+      if (!chyba)
+        await supabase
+          .from("bank_transactions")
+          .update({ exported_at: teraz })
+          .eq("company_id", companyId)
+          .eq("id", bnk[1]!.toLowerCase())
+          .is("exported_at", null);
+      continue;
+    }
+    if (/^(BNK|LQD)-/i.test(v.id)) continue;
 
     if (/-storno$/i.test(v.id)) {
       if (chyba)

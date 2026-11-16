@@ -402,6 +402,11 @@ export type StavKonektora = {
   opravyCakaju: string[];
   /** V11: neodovzdané doklady staršie ako spodná hranica konektora. */
   starsie: { od: string; faktur: number; prijatych: number; dokladov: number; pokladnicnych: number };
+  /**
+   * Bankové pohyby (`pohoda_posielat_banku`): koľko čaká vo fronte, koľko je
+   * na ceste a koľko POHODA odmietla; účty bez skratky v POHODE. `null` = vypnuté.
+   */
+  banka?: { cakaju: number; naCeste: number; chyba: number; bezSkratky: string[] } | null;
 };
 
 const DRUH_POLOZKY: Record<string, string> = {
@@ -413,6 +418,7 @@ const DRUH_POLOZKY: Record<string, string> = {
   sklad: "Skladová karta",
   zakazka: "Zákazka",
   pohyb: "Skladový pohyb",
+  banka: "Bankový pohyb",
   storno: "Storno faktúry",
   storno_opravy: "Storno pôvodného dokladu",
 };
@@ -489,6 +495,22 @@ export async function stavKonektora(supabase: Klient, companyId: string): Promis
       const { data } = await supabase.from(tab).select(`id, ${stlpec}, exported_at`).in("id", ids.slice(0, 300));
       for (const d of (data ?? []) as Riadok[]) {
         cisla.set(String(d.id), String(d[stlpec] ?? ""));
+        if (d.exported_at) odovzdane.add(String(d.id));
+      }
+    }
+    // Bankový pohyb nemá číslo — ukáže sa deň, suma a protistrana.
+    const bankove = zle.filter((r) => r.druh === "banka").map((r) => String(r.zaznam_id));
+    if (bankove.length) {
+      const { data } = await supabase
+        .from("bank_transactions")
+        .select("id, booking_date, amount, currency, counterparty, exported_at")
+        .in("id", bankove.slice(0, 300));
+      for (const d of (data ?? []) as Riadok[]) {
+        const suma = Number(d.amount ?? 0).toFixed(2).replace(".", ",");
+        cisla.set(
+          String(d.id),
+          [String(d.booking_date ?? ""), `${suma} ${d.currency ?? ""}`.trim(), d.counterparty].filter(Boolean).join(" · "),
+        );
         if (d.exported_at) odovzdane.add(String(d.id));
       }
     }
@@ -585,5 +607,24 @@ export async function stavKonektora(supabase: Klient, companyId: string): Promis
     dokladov: await pocet("expense_documents", "issue_date", (q) => q.eq("status", "processed")),
     pokladnicnych: await pocet("cash_entries", "entry_date", (q) => q),
   };
+
+  // Bankové pohyby — len keď ich firma do POHODY posiela.
+  const { data: firma } = await supabase
+    .from("companies")
+    .select("id, pohoda_posielat_banku, pohoda_banka")
+    .eq("id", companyId)
+    .maybeSingle();
+  if ((firma as Riadok)?.pohoda_posielat_banku) {
+    const { stavBankyPreKontrolu } = await import("./banka-pohoda.server");
+    const b = await stavBankyPreKontrolu(supabase, firma, od);
+    const naCeste = (await potvrdenie.cakajuceZaznamy(supabase, companyId, true)).get("banka")?.size ?? 0;
+    out.banka = {
+      // Pohyb na ceste ešte nie je odovzdaný (`exported_at`), počíta sa zvlášť.
+      cakaju: Math.max(0, b.cakaju - naCeste),
+      naCeste,
+      chyba: out.odmietnute.filter((o) => o.druh === "banka").length,
+      bezSkratky: b.bezSkratky,
+    };
+  }
   return out;
 }
