@@ -1201,6 +1201,8 @@ async function zapisNespracovane(a: {
     .not("doklado_id", "is", null);
   const existuju = new Set((uz ?? []).map((r: any) => r.doklado_id));
   let nove = 0;
+  /** Nové riadky so súborom — prečíta ich AI ako nahratie (`vytazNespracovany`). */
+  const naVytazenie: string[] = [];
   for (const n of zoznam) {
     const id = String(n.documentId);
     if (existuju.has(id)) continue;
@@ -1237,7 +1239,9 @@ async function zapisNespracovane(a: {
       ]
         .filter(Boolean)
         .join("\n");
+      const novyId = crypto.randomUUID();
       const { error } = await db.from("nespracovane_doklady").insert({
+        id: novyId,
         company_id: cid,
         doklado_id: id,
         zdroj: "import",
@@ -1257,6 +1261,7 @@ async function zapisNespracovane(a: {
         created_at: n.createdAt ?? undefined,
       });
       if (error) throw new Error(error.message);
+      if (hlavny) naVytazenie.push(novyId);
       nove++;
     } catch (e) {
       s.chyby++;
@@ -1264,6 +1269,22 @@ async function zapisNespracovane(a: {
     }
   }
   log(`  nespracované doklady: ${zoznam.length} v Doklade, nových vo Fakteri ${nove}`);
+  /*
+    Doklado dáva k nespracovanému len dodávateľa, sumu a dátum — bez čítania
+    by sa vo Fakteri nerozpoznal druh (bloček / faktúra / …) ani nič ďalšie.
+    Doplnia sa len prázdne polia; údaje z Doklada ostanú (2026-11-16).
+  */
+  if (naVytazenie.length) {
+    try {
+      const { vytazNespracovanePoRade } = await import("../vytazit-nespracovane");
+      const v = await vytazNespracovanePoRade(naVytazenie, 2, (t) => log(t, false));
+      log(`  nespracované prečítané AI: ${v.filter((x) => x.ok).length} z ${v.length}`);
+    } catch (e) {
+      log(
+        `  nespracované sa nepodarilo prečítať (${(e as Error).message}) — spusti scripts/vytazit-nespracovane.ts --apply --firma ${cid}`,
+      );
+    }
+  }
 }
 
 /**

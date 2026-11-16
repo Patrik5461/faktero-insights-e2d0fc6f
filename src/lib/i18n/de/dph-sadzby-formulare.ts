@@ -41,4 +41,7 @@ export default {
     "Der tschechische QR-Code enthält nur den Gesamtbetrag. Prüfen Sie auf dem Beleg, ob es sich um 12 % handelt (Lebensmittel, Unterkunft…). Solange Sie die Aufschlüsselung nicht ändern, wird der Beleg zur Prüfung gespeichert.",
   "Celé v {sadzba} %": "Alles zu {sadzba} %",
   "Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.": "Der Beleg wird zur Prüfung markiert, bis Sie die USt.-Aufschlüsselung laut Beleg anpassen.",
+  "Ponúkajú sa sadzby platné k dátumu dodania {datum} ({sadzby} %). Ak doklad uvádza inú sadzbu, skontrolujte dátum dodania.":
+    "Angeboten werden die am Lieferdatum {datum} gültigen Steuersätze ({sadzby} %). Weist der Beleg einen anderen Satz aus, prüfen Sie das Lieferdatum.",
+  "Ponúkajú sa sadzby platné dnes ({sadzby} %). Vyplňte dátum dodania.": "Angeboten werden die heute gültigen Steuersätze ({sadzby} %). Bitte das Lieferdatum ausfüllen.",
 };

@@ -28,6 +28,12 @@ export type AiNastavenie = {
   /** Rozhovor nepotrebuje, aby model najprv premýšľal — len by minul strop. */
   bezUvazovania?: boolean;
   /**
+   * Gemini vidí stránky dokumentu vo vysokom rozlíšení (`mediaResolution`).
+   * Fotka faktúry vložená do PDF sa v predvolenom rozlíšení číta zle — METRO
+   * (RHJ, 16. 11.) dalo vymyslený dátum, IČO, základ aj DPH.
+   */
+  vysokeRozlisenie?: boolean;
+  /**
    * Schéma JSON odpovede (podmnožina OpenAPI). Gemini ju dodrží priamo;
    * OpenAI dostane len `json_object` — volajúci odpoveď aj tak overuje.
    */

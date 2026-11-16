@@ -11,10 +11,13 @@ import { useT } from "@/lib/i18n/useT";
 export function VlastnaFakturaUpozornenie({
   ucet,
   onInyDoklad,
+  onVydana,
   onZmaz,
 }: {
   ucet: UcetFirmy;
   onInyDoklad: () => void;
+  /** Prepne druh na „Vydaná faktúra“ — priradenie k vystavenej faktúre. */
+  onVydana?: () => void;
   onZmaz: () => void;
 }) {
   const { t } = useT();
@@ -32,12 +35,21 @@ export function VlastnaFakturaUpozornenie({
               ? t("IBAN {iban} patrí vášmu účtu {nazov}.", { iban: ucet.iban, nazov: ucet.nazov })
               : t("IBAN {iban} patrí vašej firme.", { iban: ucet.iban })}{" "}
             {t(
-              "Peniaze podľa nej majú prísť k vám, nie odísť — medzi prijaté faktúry nepatrí. Ak ju už máte medzi vystavenými faktúrami, doklad zmažte; inak ho uložte ako iný doklad.",
+              "Peniaze podľa nej majú prísť k vám, nie odísť — medzi prijaté faktúry nepatrí. Priraďte ju k vystavenej faktúre (súbor pôjde medzi jej prílohy), alebo ju uložte ako iný doklad.",
             )}
           </p>
         </div>
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
+        {onVydana ? (
+          <button
+            type="button"
+            onClick={onVydana}
+            className="rounded-md border border-input bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+          >
+            {t("Priradiť k vystavenej faktúre")}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onInyDoklad}

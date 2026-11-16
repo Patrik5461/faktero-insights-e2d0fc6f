@@ -146,5 +146,23 @@ export async function ocrBlocek(
     parsed.total != null ||
     (parsed.supplier ?? "").trim() !== "" ||
     (Array.isArray(parsed.items) && parsed.items.length > 0);
-  return maNieco ? parsed : null;
+  if (!maNieco) return null;
+  /*
+    Brána zákonných sadzieb (Patrik 16. 11.) — bloček z fotky nesmie niesť
+    sadzbu mimo zákonných pre krajinu predajcu a deň dokladu.
+  */
+  const { zakonneSadzbyZAi } = await import("./zakonne-sadzby-ai");
+  const vb = Array.isArray(parsed.vat_breakdown) ? parsed.vat_breakdown : null;
+  const { ai } = zakonneSadzbyZAi(
+    {
+      ...parsed,
+      supplier_ic_dph: parsed.ic_dph ?? null,
+      vat_breakdown: vb?.map((r) => ({ rate: r.rate, base: r.base, vat: r.vat })) ?? undefined,
+    } as Record<string, unknown>,
+    { krajina, den: parsed.date ?? null },
+  );
+  const out = { ...parsed, ...(ai as Partial<OcrBlocek>) } as OcrBlocek & Record<string, unknown>;
+  delete out.supplier_ic_dph;
+  if (!vb) delete out.vat_breakdown;
+  return out;
 }

@@ -8,6 +8,7 @@ import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu"
 import { nahranieDokladu } from "@/lib/faktero/kto-kedy";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { UpozornenieRozpisuDph, potvrdNesuladRozpisu } from "@/components/faktero/UpozornenieRozpisuDph";
+import { SadzbyPodlaDatumu } from "@/components/faktero/SadzbyPodlaDatumu";
 import { EditorRozpisuDph } from "@/components/faktero/EditorRozpisuDph";
 import { kontrolaNespracovaneho, sadzbyNaVyber } from "@/components/faktero/dph-formular";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
@@ -70,6 +71,7 @@ import { UpozornenieUlozenejPrijatej, type UlozenaPrijata } from "@/components/f
 import { nesediZChyby } from "@/lib/faktero/cudzia-faktura";
 import { CudziaFakturaUpozornenie, textCudzejFaktury } from "@/components/faktero/CudziaFaktura";
 import { zapamatajOtvoreny } from "@/lib/faktero/posledny-otvoreny";
+import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { smerPodlaIban } from "@/lib/faktero/nespracovane-iban";
 import {
@@ -77,6 +79,7 @@ import {
   VlastnaFakturaUpozornenie,
 } from "@/components/faktero/VlastnaFakturaUpozornenie";
 import { useHoverPola, useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
+import { NavrhVydanejUpozornenie, VydanaFakturaPanel } from "@/components/faktero/VydanaFakturaPanel";
 import { POLIA_ZVYRAZNENIA } from "@/lib/faktero/zvyraznenie-vytazenych";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
@@ -133,7 +136,8 @@ function Detail() {
       const r = await nacitaj({ data: { id } });
       setD(r);
       setDuplicita(r.duplicita ?? null);
-      setDruh((r.druh as DruhNespracovaneho) ?? "");
+      // Bez druhu, ale zjavne vlastná vystavená faktúra — predvolí sa „Vydaná faktúra“.
+      setDruh((r.druh as DruhNespracovaneho) ?? (r.vydana?.navrh ? "vydana" : ""));
       setU(r.udaje);
     } catch (e: any) {
       setNenajdene(e?.message ?? t("Doklad sa nenašiel."));
@@ -161,7 +165,7 @@ function Detail() {
   // Daňový doklad k prijatej platbe — neplatí sa, DUZP = deň prijatia platby.
   const danovy = druh === "danovy";
   useEffect(() => {
-    if (!d || !druh || druh === "ostatny") return;
+    if (!d || !druh || druh === "ostatny" || druh === "vydana") return;
     nacitajNavrhy({ data: { company_id: d.companyId, pre: blocek ? "doklad" : "prijata" } })
       .then((r) => setNavrhy(r as Navrhy))
       .catch(() => setNavrhy(null));
@@ -268,10 +272,19 @@ function Detail() {
         }
       />
     ) : null;
-  const upozornenieIban = vlastnyUcet ? (
+  /*
+    Vyzerá ako vlastná vystavená faktúra (dodávateľ je firma, jej IBAN, alebo
+    názov súboru a suma sedia na vystavenú faktúru) — ponúkne druh „Vydaná
+    faktúra“ (priradenie k vystavenej faktúre).
+  */
+  const navrhVydanej = d.vydana?.navrh && druh !== "vydana" ? d.vydana : null;
+  const upozornenieIban = navrhVydanej ? (
+    <NavrhVydanejUpozornenie navrh={navrhVydanej} onPrepni={() => setDruh("vydana")} />
+  ) : vlastnyUcet ? (
     <VlastnaFakturaUpozornenie
       ucet={vlastnyUcet}
       onInyDoklad={() => setDruh("ostatny")}
+      onVydana={() => setDruh("vydana")}
       onZmaz={() => void zmazDoklad()}
     />
   ) : smer?.smer === "prijata" ? (
@@ -469,6 +482,29 @@ function Detail() {
     }
   }
 
+  // Doklad je priradený k vystavenej faktúre (alebo z neho vznikla) — z Nespracovaných zmizol.
+  function poVydanej(v: { invoiceId: string; cislo: string }, vytvorena: boolean) {
+    toast.success(
+      vytvorena
+        ? t("Vystavená faktúra {cislo} je vytvorená, doklad je v jej prílohách", { cislo: v.cislo })
+        : t("Doklad je priložený k vystavenej faktúre {cislo}", { cislo: v.cislo }),
+      { action: { label: t("Otvoriť"), onClick: () => navigate({ to: "/faktury/$id", params: { id: v.invoiceId } }) } },
+    );
+    obnovPoctyMenu();
+    navigate({ to: d!.dalsiId ? "/nespracovane/$id" : "/nespracovane", params: { id: d!.dalsiId ?? "" } } as any);
+  }
+  const panelVydanej =
+    druh === "vydana" ? (
+      <VydanaFakturaPanel
+        key={d.id}
+        companyId={d.companyId}
+        nespracovanyId={d.id}
+        navrh={d.vydana ?? null}
+        udaje={u}
+        onHotovo={poVydanej}
+      />
+    ) : null;
+
   // Uloží rozpracované a nechá doklad prečítať znova — doplnia sa len prázdne polia.
   async function docitajDoklad() {
     if (!u) return;
@@ -556,6 +592,7 @@ function Detail() {
             companyId={d.companyId}
             rozdielVyrovna={rozdielVyrovna?.rozdiel ?? null}
             upozornenie={upozornenieVlastnej}
+            nahradaUdajov={panelVydanej}
             zvyraznenie={zvyraznenie}
             onPrepniZvyraznenie={prepniZvyraznenie}
             pravidloZDokladu={
@@ -744,6 +781,25 @@ function Detail() {
               </label>
             </section>
 
+            {panelVydanej ? (
+              <>
+                {panelVydanej}
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
+                  <button type="button" disabled={busy} onClick={ulozZmeny} className="rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold hover:bg-secondary disabled:opacity-60">
+                    {t("Uložiť zmeny")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void zmazDoklad()}
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" /> {t("Zmazať")}
+                  </button>
+                </div>
+              </>
+            ) : (
+            <>
             {/* Poradie podľa dôležitosti: zaúčtovanie hneď za druhom, platobné údaje až na konci. */}
             {druh && druh !== "ostatny" ? (
               <SekciaZauctovania>
@@ -929,8 +985,9 @@ function Detail() {
                   <EditorRozpisuDph
                     riadky={u.rozpis}
                     onChange={(r) =>
-                      // Úprava rozpisu ruší aj kontrolu návrhu z Bločkov (český QR — 21 %).
-                      set({ rozpis: r as UdajeNespracovaneho["rozpis"], celkom: null, rozpisPotvrdeny: false, kontrolaRozpisu: undefined })
+                      // Úprava rozpisu ruší aj kontrolu návrhu z Bločkov (český QR — 21 %) a sumy
+                      // prečítané AI (`kontrolaDph`) — ďalej platí suma dokladu (`celkomDokladu`).
+                      set({ rozpis: r as UdajeNespracovaneho["rozpis"], celkom: null, rozpisPotvrdeny: false, kontrolaRozpisu: undefined, kontrolaDph: undefined })
                     }
                     sadzby={sadzby}
                     mena={u.mena}
@@ -942,6 +999,13 @@ function Detail() {
                     kontrola={kontrolaRozpisu}
                     dovod={u.kontrolaRozpisu}
                     poznamka={kontrolaRozpisu?.ok === false ? undefined : t("Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.")}
+                  />
+                  <SadzbyPodlaDatumu
+                    className="mt-2"
+                    sadzby={sadzby}
+                    datum={u.datumDodania || u.datumVystavenia || null}
+                    prazdny={!u.rozpis.length}
+                    dovodPrazdneho={u.kontrolaDph?.dovod ?? null}
                   />
                   <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-destructive" : ""}`}>
                     <span className="text-muted-foreground">
@@ -1101,6 +1165,8 @@ function Detail() {
                 <Trash2 className="h-4 w-4" /> {t("Zmazať")}
               </button>
             </div>
+            </>
+            )}
           </div>
         </RozlozenieDetailu>
         <div className="mt-6 max-w-xl">

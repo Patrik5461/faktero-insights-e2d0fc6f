@@ -45,6 +45,7 @@ import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "./DatumPrijatiaInfo";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
 import { UpozornenieRozpisuDph } from "./UpozornenieRozpisuDph";
+import { SadzbyPodlaDatumu } from "./SadzbyPodlaDatumu";
 import { popisyRiadkuDph, VolbaSadzbyDph } from "./VolbaSadzbyDph";
 import { PoleDph } from "./EditorRozpisuDph";
 import { vypocitanaDph, zmenaZakladu, type RiadokRozpisu } from "./dph-formular";
@@ -84,6 +85,7 @@ export function NespracovanyKompaktny({
   pravidloZDokladu,
   rozdielVyrovna = null,
   upozornenie,
+  nahradaUdajov = null,
   zvyraznenie,
   onPrepniZvyraznenie,
 }: {
@@ -116,6 +118,11 @@ export function NespracovanyKompaktny({
   rozdielVyrovna?: number | null;
   /** Výrazné upozornenie nad údajmi (napr. vlastná vystavená faktúra podľa IBAN-u). */
   upozornenie?: ReactNode;
+  /**
+   * Namiesto údajov dokladu (vydaná faktúra: výber vystavenej faktúry) —
+   * ostáva len typ dokladu, upozornenia a tento obsah.
+   */
+  nahradaUdajov?: ReactNode;
   /** Zvýraznenie vyťažených údajov v náhľade PDF; aktívne pole určí kurzor v paneli. */
   zvyraznenie?: Omit<ZvyraznenieNahladu, "aktivne">;
   onPrepniZvyraznenie?: () => void;
@@ -143,6 +150,8 @@ export function NespracovanyKompaktny({
       rozpisPotvrdeny: false,
       // Človek rozpis upravil — návrh z Bločkov (český QR) už nie je na kontrole.
       kontrolaRozpisu: undefined,
+      // Sumy prečítané AI už neplatia — kontroluje sa voči sume dokladu (`celkomDokladu`).
+      kontrolaDph: undefined,
     });
   // Bloček: základ + DPH + zaokrúhlenie musí sedieť so sumou na cent.
   const kontrola = kontrolaSumy(u);
@@ -178,6 +187,49 @@ export function NespracovanyKompaktny({
       {pravidloZDokladu ? <div className="flex justify-center">{pravidloZDokladu}</div> : null}
     </>
   );
+
+  const nahlad = (
+    <NahladKompaktny
+      subor={subor}
+      zvyraznenie={zvyraznenie}
+      aktivnePole={zvyraznenePole}
+      onPrepniZvyraznenie={onPrepniZvyraznenie}
+      onZmaz={onZmaz}
+      busy={busy}
+    />
+  );
+  // Vydaná faktúra: len typ dokladu, upozornenia a výber vystavenej faktúry.
+  if (nahradaUdajov)
+    return (
+      <RozlozenieKompaktne nahlad={nahlad}>
+        <PanelKompaktny
+          pata={
+            <button type="button" disabled={busy} onClick={onUloz} className={TLACIDLO_DRUHE}>
+              {t("Uložiť zmeny")}
+            </button>
+          }
+        >
+          {upozornenie ? <div className="m-4">{upozornenie}</div> : null}
+          <Sekcia nadpis="Základné údaje">
+            <Pole popis="Typ dokladu" chyba={false}>
+              <select
+                aria-label={t("Druh dokladu")}
+                value={druh}
+                onChange={(e) => setDruh(e.target.value as DruhNespracovaneho)}
+                className={ram("druh")}
+              >
+                {DRUHY_NESPRACOVANYCH.map((x) => (
+                  <option key={x.kluc} value={x.kluc}>
+                    {t(x.nazov)}
+                  </option>
+                ))}
+              </select>
+            </Pole>
+            {nahradaUdajov}
+          </Sekcia>
+        </PanelKompaktny>
+      </RozlozenieKompaktne>
+    );
 
   return (
     <RozlozenieKompaktne
@@ -525,6 +577,12 @@ export function NespracovanyKompaktny({
               </div>
             ))}
             <UpozornenieRozpisuDph kontrola={kontrolaRozpisu} dovod={u.kontrolaRozpisu} poznamka={kontrolaRozpisu?.ok === false ? undefined : t("Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.")} />
+            <SadzbyPodlaDatumu
+              sadzby={sadzby}
+              datum={u.datumDodania || u.datumVystavenia || null}
+              prazdny={!u.rozpis.length}
+              dovodPrazdneho={u.kontrolaDph?.dovod ?? null}
+            />
             <div className="flex items-center justify-between text-xs">
               <button
                 type="button"
@@ -532,6 +590,7 @@ export function NespracovanyKompaktny({
                   set({
                     rozpis: [...u.rozpis, { sadzba: sadzby[0] ?? 23, zaklad: 0, dph: 0 }],
                     celkom: null,
+                    kontrolaDph: undefined,
                   })
                 }
                 className="inline-flex items-center gap-1 text-primary hover:underline"

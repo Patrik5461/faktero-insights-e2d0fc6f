@@ -330,6 +330,22 @@ export function rozpisZVytazenia(
   kontext: KontextRozpisu = {},
 ): VysledokRozpisu {
   if (!ai) return { rozpis: [], zdroj: "ziadny", kontrola: OK, sumy: null, prenesenie: false };
+  /*
+    Brána zákonných sadzieb (`zakonne-sadzby-ai.ts`) zahodila rozpis s
+    nepovolenou sadzbou — rozpis sa neskladá ani z položiek, ani zo súm
+    (to by bol zase odhad); doklad ide na kontrolu s jej vetou.
+  */
+  if (typeof ai.dph_na_kontrolu === "string" && ai.dph_na_kontrolu.trim()) {
+    const zb = num(ai.amount_without_vat);
+    const db = num(ai.vat_amount);
+    return {
+      rozpis: [],
+      zdroj: "ziadny",
+      kontrola: { ok: false, chyby: [{ kod: "neplatna_sadzba", sprava: ai.dph_na_kontrolu.trim() }] },
+      sumy: { bezDph: Math.abs(zb ?? 0), dph: Math.abs(db ?? 0) },
+      prenesenie: false,
+    };
+  }
   const dph = num(ai.vat_amount);
   /*
     Suma dokladu je po zaokrúhlení („Zaokrúhlenie“, haliérové vyrovnanie) —

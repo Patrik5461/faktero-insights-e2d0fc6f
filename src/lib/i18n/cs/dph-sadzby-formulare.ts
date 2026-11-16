@@ -41,4 +41,7 @@ export default {
     "QR kód z účtenky nese jen celkovou částku. Zkontrolujte na účtence, zda nejde o 12 % (potraviny, ubytování…). Dokud rozpis nezměníte, účtenka se uloží ke kontrole.",
   "Celé v {sadzba} %": "Celé v {sadzba} %",
   "Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.": "Doklad půjde ke kontrole, dokud rozpis DPH neupravíte podle účtenky.",
+  "Ponúkajú sa sadzby platné k dátumu dodania {datum} ({sadzby} %). Ak doklad uvádza inú sadzbu, skontrolujte dátum dodania.":
+    "Nabízejí se sazby platné k datu dodání {datum} ({sadzby} %). Pokud doklad uvádí jinou sazbu, zkontrolujte datum dodání.",
+  "Ponúkajú sa sadzby platné dnes ({sadzby} %). Vyplňte dátum dodania.": "Nabízejí se sazby platné dnes ({sadzby} %). Vyplňte datum dodání.",
 };

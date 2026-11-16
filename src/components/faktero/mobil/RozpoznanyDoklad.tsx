@@ -49,7 +49,19 @@ type Detail = {
   krajinaFirmy?: string | null;
 };
 
-export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
+/*
+  Appka ukladá len prijaté doklady — „Vydaná faktúra“ (vlastná vystavená,
+  priraďuje sa k faktúre vo Fakturácii) sa rieši na webe. Keď ju server
+  navrhne, appka druh nechá na človeku.
+*/
+type DruhApky = Exclude<DruhNespracovaneho, "vydana">;
+const DRUHY_APKY = DRUHY_NESPRACOVANYCH.filter(
+  (x): x is { kluc: DruhApky; nazov: string } => x.kluc !== "vydana",
+);
+const druhApky = (d: unknown): DruhApky | null =>
+  DRUHY_APKY.some((x) => x.kluc === d) ? (d as DruhApky) : null;
+
+export const NAZOV_DRUHU: Record<DruhApky, Kluc> = {
   faktura: "rd.druh.faktura",
   zalohova: "rd.druh.zalohova",
   danovy: "rd.druh.danovy",
@@ -58,7 +70,7 @@ export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
   ostatny: "rd.druh.ostatny",
 };
 /* Celé vety po druhoch — „Uložiť ako {druh}" by v slovenčine nemalo správny pád. */
-const ULOZIT_AKO: Record<DruhNespracovaneho, Kluc> = {
+const ULOZIT_AKO: Record<DruhApky, Kluc> = {
   faktura: "rd.ulozit.faktura",
   zalohova: "rd.ulozit.zalohova",
   danovy: "rd.ulozit.danovy",
@@ -66,7 +78,7 @@ const ULOZIT_AKO: Record<DruhNespracovaneho, Kluc> = {
   blocek: "rd.ulozit.blocek",
   ostatny: "rd.ulozit.ostatny",
 };
-const ULOZENE_AKO: Record<DruhNespracovaneho, Kluc> = {
+const ULOZENE_AKO: Record<DruhApky, Kluc> = {
   faktura: "rd.ulozene.faktura",
   zalohova: "rd.ulozene.zalohova",
   danovy: "rd.ulozene.danovy",
@@ -144,7 +156,7 @@ export function RozpoznanyDoklad({
   const [chybaNahratia, setChybaNahratia] = useState<string | null>(null);
   const [id, setId] = useState<string | null>(uzNahrane ?? null);
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [druh, setDruh] = useState<DruhNespracovaneho | null>(null);
+  const [druh, setDruh] = useState<DruhApky | null>(null);
   const [platba, setPlatba] = useState("");
   const [kategoria, setKategoria] = useState("");
   const [upravy, setUpravy] = useState<Partial<Record<PoleNaDoplnenie, string>>>({});
@@ -206,7 +218,7 @@ export function RozpoznanyDoklad({
         if (koniec) return;
         if (d.stav !== "cita") {
           const u = nacitajUdaje(d.udaje);
-          const navrh = (d.druh as DruhNespracovaneho | null) ?? null;
+          const navrh = druhApky(d.druh);
           setDetail({ ...d, udaje: u });
           setDruh(navrh);
           setPlatba(doplnZNastavenia(u, "blocek", nastavenie).platba);
@@ -411,7 +423,7 @@ export function RozpoznanyDoklad({
   const u = finalne ?? detail.udaje;
   const s = sucty(u);
   const jeFaktura = druh === "faktura" || druh === "zalohova" || druh === "danovy" || druh === "dobropis";
-  const rozpoznany = (detail.druh as DruhNespracovaneho | null) ?? null;
+  const rozpoznany = druhApky(detail.druh);
 
   const zakladDph = s.zaklad || s.dph;
   return (
@@ -530,7 +542,7 @@ export function RozpoznanyDoklad({
         ))}
 
         <div role="radiogroup" aria-label={t("rd.coToJe")} className="flex flex-wrap gap-2">
-          {DRUHY_NESPRACOVANYCH.map(({ kluc }) => (
+          {DRUHY_APKY.map(({ kluc }) => (
             <button
               key={kluc}
               role="radio"

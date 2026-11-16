@@ -224,7 +224,11 @@ export async function zalozNespracovany(
     : await predvolenePrijatie(supabase, { inbox_message_id: args.inboxMessageId, created_at: new Date().toISOString() });
   if (udaje && !udaje.datumPrijatia) udaje.datumPrijatia = prijatie;
   if (udaje && args.poznamka) udaje.poznamka = [udaje.poznamka, args.poznamka].filter(Boolean).join("\n");
-  const druh = args.druh ?? (vytazene ? navrhDruhu(args.ai, args.nazov) : null);
+  const firmaNavrhu =
+    !args.druh && vytazene && args.ai
+      ? await (await import("./nespracovane-vydana.server")).firmaPreVydanu(supabase, args.companyId).catch(() => null)
+      : null;
+  const druh = args.druh ?? (vytazene ? navrhDruhu(args.ai, args.nazov, firmaNavrhu) : null);
   // Čo človek pri tomto dodávateľovi volil naposledy — len do prázdnych polí.
   if (udaje && args.ai) {
     const { doplnUcenim } = await import("./ucenie-z-oprav.server");
@@ -336,7 +340,16 @@ export async function vytazNespracovany(id: string): Promise<void> {
     );
     const dnes = dnesBratislava();
     const povodne = nacitajUdaje(r.udaje);
-    const druh = r.druh ?? navrhDruhu(ai, r.file_name);
+    // Dodávateľ = táto firma (alebo jej IBAN) → vlastná vystavená faktúra, nie prijatá.
+    const firmaNavrhu =
+      r.druh || !r.company_id
+        ? null
+        : await (await import("./nespracovane-vydana.server")).firmaPreVydanu(supabaseAdmin, r.company_id).catch(() => null);
+    /*
+      Keď sa nič neprečítalo a doklad už údaje má (prenos z Doklada), druh sa
+      nehádá — inak by z neho bola „faktúra“ len preto, že AI neodpovedala.
+    */
+    const druh = r.druh ?? (ai || !(povodne.dodavatel.nazov || povodne.cislo) ? navrhDruhu(ai, r.file_name, firmaNavrhu) : null);
     // Čo už človek vyplnil (napr. druh z appky), sa neprepisuje.
     const nove = udajeZAi(ai, dnes, { krajina: await krajinaFirmy(supabaseAdmin, r.company_id) });
     let udaje = povodne.dodavatel.nazov || povodne.cislo ? doplnUdaje(povodne, nove) : nove;
@@ -1002,6 +1015,15 @@ export async function varovaniaNespracovaneho(
     Odberateľ z dokladu, ktorý nesedí na firmu, ukazuje detail zvlášť
     (upozornenie s voľbami Zmazať / Uložiť aj tak / Presunúť) — `cudzia-faktura.ts`.
   */
+  // Krížové kontroly proti halucinácii (IČO, DIČ ↔ IČ DPH, dátumy, náhradný model).
+  const { upozorneniaUdajov } = await import("./kontrola-udajov-dokladu");
+  out.push(
+    ...upozorneniaUdajov(u, {
+      dnes: dnesBratislava(),
+      nahrane: u.datumPrijatia || null,
+      ai: r.ai && typeof r.ai === "object" ? (r.ai as Record<string, unknown>) : null,
+    }),
+  );
   void firma;
   return out;
 }

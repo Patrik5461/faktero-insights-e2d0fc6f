@@ -86,8 +86,17 @@ export async function precitajZmluvu(base64: string, mimeType: string): Promise<
     maxOutputTokens: 32768,
     ucel: "financovanie",
   });
-  const parsed = odpovedNaJson<any>(odpoved);
-  if (!parsed) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
+  const surove = odpovedNaJson<any>(odpoved);
+  if (!surove) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
+  // Brána zákonných sadzieb (Patrik 16. 11.) — sadzba DPH splátok len zákonná, inak null.
+  const { zakonneSadzbyZAi } = await import("./zakonne-sadzby-ai");
+  const parsed = {
+    ...surove,
+    vat_rate: zakonneSadzbyZAi(
+      { vat_rate: surove.vat_rate, supplier_country: surove.provider_country, supplier_ic_dph: surove.provider_ic_dph },
+      { den: surove.first_due_date ?? null },
+    ).ai.vat_rate,
+  };
 
   const zmluva = normalizujOdpoved(parsed);
   if (!jePouzitelna(zmluva)) {

@@ -325,6 +325,8 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
         items: precitane.filter((p) => !p.zaokruhlenie),
         items_total_with_vat: true,
         issue_date: ocr.date ?? null,
+        // Brána zákonných sadzieb zahodila nepovolenú sadzbu — rozpis sa nehádá.
+        dph_na_kontrolu: (ocr as Record<string, unknown>).dph_na_kontrolu ?? null,
       },
       { krajina: eet ? "CZ" : (data.krajina ?? "SK") },
     );

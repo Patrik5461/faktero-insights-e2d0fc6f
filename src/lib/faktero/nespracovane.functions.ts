@@ -8,7 +8,7 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
   rozpracovaného, vytvorenie dokladu a zmazanie do koša.
 */
 
-const DRUH = z.enum(["faktura", "zalohova", "danovy", "dobropis", "blocek", "ostatny"]);
+const DRUH = z.enum(["faktura", "zalohova", "danovy", "dobropis", "blocek", "ostatny", "vydana"]);
 
 export const nespracovaneFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -19,7 +19,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       supabase
         .from("nespracovane_doklady")
         .select(
-          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph",
+          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph, supplier_iban:ai->>supplier_iban, invoice_number:ai->>invoice_number, amount_total:ai->>amount_total",
         )
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
@@ -62,11 +62,41 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
     const duplicity = await duplicityNespracovanych(supabase, data.company_id, rows ?? []).catch(
       () => new Map<string, { id: string; popis: string; blok: boolean }>(),
     );
+    /*
+      Návrh „Vydaná faktúra“ pri doklade bez druhu (alebo s druhom prijatej):
+      dodávateľ je firma, alebo názov súboru `fa_…_<číslo>` a suma sedia na
+      vystavenú faktúru (kópie z migrácie z Doklada).
+    */
+    const { navrhyVydanych } = await import("./nespracovane-vydana.server");
+    const vydane = await navrhyVydanych(
+      supabase,
+      data.company_id,
+      (rows ?? []).map((r: any) => ({
+        id: r.id,
+        druh: r.druh,
+        udaje: r.udaje,
+        file_name: r.file_name,
+        ai: {
+          supplier_name: r.supplier_name,
+          supplier_ico: r.supplier_ico,
+          supplier_dic: r.supplier_dic,
+          supplier_ic_dph: r.supplier_ic_dph,
+          supplier_iban: r.supplier_iban,
+          buyer_name: r.buyer_name,
+          buyer_ico: r.buyer_ico,
+          buyer_dic: r.buyer_dic,
+          buyer_ic_dph: r.buyer_ic_dph,
+          invoice_number: r.invoice_number,
+          amount_total: r.amount_total,
+        },
+      })),
+    ).catch(() => null);
     return {
       doklady: (rows ?? []).map((r: any) => ({
         ...zhrnutieNespracovaneho(r),
         odberatelNesedi: nesedi(r),
         duplicita: duplicity.get(r.id) ?? null,
+        vydanaNavrh: r.druh !== "vydana" && vydane?.get(r.id)?.navrh ? true : false,
       })),
       /*
         Skutočný bloček (eKasa, QR, druh bloček) sa dá hromadne spracovať;
@@ -250,6 +280,17 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       (await duplicityNespracovanych(supabase, r.company_id, [{ id: r.id, druh: r.druh, udaje }]).catch(() => null))?.get(
         r.id,
       ) ?? null;
+    /*
+      Vlastná vystavená faktúra — návrh druhu a vystavená faktúra s rovnakým
+      číslom (predvolená vo výbere „Priradiť k vystavenej faktúre“).
+    */
+    const { navrhyVydanych } = await import("./nespracovane-vydana.server");
+    const vydana =
+      (
+        await navrhyVydanych(supabase, r.company_id, [{ id: r.id, druh: r.druh, udaje, ai: r.ai, file_name: r.file_name }]).catch(
+          () => null,
+        )
+      )?.get(r.id) ?? null;
     const varovania = (await varovaniaNespracovaneho(supabase, r, udaje, firma)).filter(
       // Duplicitu prijatej ukazuje upozornenie s odkazom — text by ju zdvojil.
       (v) => !(duplicita && v.startsWith("Prijatá faktúra ")),
@@ -257,6 +298,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     return {
       odberatelNesedi,
       duplicita,
+      vydana,
       vlastneUcty,
       /** IBAN odberateľa z dokladu — firemný znamená, že faktúra je prijatá. */
       ibanOdberatela: typeof ai?.buyer_iban === "string" ? (ai.buyer_iban as string) : null,
@@ -354,6 +396,9 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
+    // Vydaná faktúra sa nezakladá ako prijatá — priradí sa (alebo vytvorí) v detaile.
+    if (data.druh === "vydana")
+      throw new Error("Vydaná faktúra sa priraďuje k vystavenej faktúre — otvorte doklad a použite Priradiť k vystavenej faktúre.");
     const { nacitajUdaje, chybajuce, NAZVY_POLI } = await import("./nespracovane");
     const u = nacitajUdaje(data.udaje);
     const { data: r } = await supabase.from("nespracovane_doklady").select("*").eq("id", data.id).maybeSingle();

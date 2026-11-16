@@ -24,6 +24,8 @@ import {
   zmazNespracovaneFn,
 } from "@/lib/faktero/nespracovane.functions";
 import { deleteExpenseFn, nastavStavDokladovFn } from "@/lib/faktero/expenses.functions";
+import { priradVydaneHromadneFn } from "@/lib/faktero/nespracovane-vydana.functions";
+import { textPriradenia } from "@/lib/faktero/nespracovane-vydana";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { toastPresunutyBlocek } from "@/components/faktero/AutoZauctovanieOdznak";
 import {
@@ -109,6 +111,7 @@ function Stranka() {
   const zauctujBlocky = useServerFn(zauctujDokladyFn);
   const stavBlocku = useServerFn(nastavStavDokladovFn);
   const zmazBlocek = useServerFn(deleteExpenseFn);
+  const priradVydane = useServerFn(priradVydaneHromadneFn);
   // Priebeh hromadného spracovania a súhrn preskočených na konci.
   const [priebeh, setPriebeh] = useState<{ hotovo: number; spolu: number } | null>(null);
   const [vysledok, setVysledok] = useState<{ nadpis: string; preskocene: Preskoceny[] } | null>(null);
@@ -371,6 +374,44 @@ function Stranka() {
     }
   }
 
+  /*
+    Hromadné „Priradiť k vystaveným faktúram“ — vlastné vystavené faktúry
+    (druh alebo návrh „Vydaná faktúra“) s presnou zhodou čísla: súbor ide
+    medzi prílohy faktúry a doklad zmizne. Ostatné sa preskočia s dôvodom.
+  */
+  async function priradVydaneHromadne() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneN.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Priradiť vybrané doklady ({n}) k vystaveným faktúram s rovnakým číslom? Súbor sa priloží k faktúre a doklad z Nespracovaných zmizne. Doklad bez presnej zhody sa preskočí.",
+          { n: vybraneN.length },
+        ),
+        { potvrdit: t("Priradiť") },
+      ))
+    )
+      return;
+    setHromadneBusy(true);
+    try {
+      const r = await priradVydane({ data: { company_id: cid, ids: vybraneN.map((x) => x.id) } });
+      const preskocene: Preskoceny[] = [...r.preskocene];
+      if (vybraneB.length)
+        preskocene.push({
+          popis: t("Bločky ({n})", { n: vybraneB.length }),
+          dovod: { text: "Bloček nie je vystavená faktúra" },
+        });
+      const text = textPriradenia(r.priradene, preskocene.length);
+      if (r.priradene) toast.success(t(text.text, text.params));
+      else toast(t(text.text, text.params));
+      await dokonci(t("Niektoré doklady sa nepriradili"), preskocene);
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setHromadneBusy(false);
+    }
+  }
+
   async function uhradVybrane() {
     const cid = getActiveCompanyId();
     if (!cid || !vybraneN.length) return;
@@ -433,12 +474,19 @@ function Stranka() {
     }
   }
 
-  const druhText = (r: any) =>
-    r.druh ? (
-      t(DRUHY_NESPRACOVANYCH.find((d) => d.kluc === r.druh)?.nazov ?? r.druh)
-    ) : (
-      <span className="text-muted-foreground">{t("Neurčený")}</span>
-    );
+  const druhText = (r: any) => (
+    <>
+      {r.druh ? (
+        t(DRUHY_NESPRACOVANYCH.find((d) => d.kluc === r.druh)?.nazov ?? r.druh)
+      ) : (
+        <span className="text-muted-foreground">{t("Neurčený")}</span>
+      )}
+      {/* Vlastná vystavená faktúra (dodávateľ je firma, súbor a suma sedia na vystavenú). */}
+      {r.vydanaNavrh ? (
+        <span className="dk-text-pozor block text-[11px] font-medium">{t("vyzerá ako vydaná faktúra")}</span>
+      ) : null}
+    </>
+  );
   const sumaText = (r: any) => (r.suma != null ? formatujMenu(r.suma, r.mena) : "—");
   const datumText = (r: any) => (r.datum ? datumNaDoklade(r.datum) : "—");
   const zdrojText = (r: any) => (
@@ -597,6 +645,17 @@ function Stranka() {
                 </>
               )}
             </button>
+            {vybraneN.length ? (
+              <button
+                type="button"
+                disabled={pracujem}
+                onClick={() => void priradVydaneHromadne()}
+                title={t("Vaše vystavené faktúry (napr. kópie z Doklada) priloží k faktúram s rovnakým číslom vo Fakturácii.")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-background px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
+              >
+                {t("Priradiť k vystaveným faktúram")}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={pracujem}

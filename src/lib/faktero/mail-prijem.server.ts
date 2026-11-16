@@ -128,9 +128,15 @@ kovový šrot, roxor), daj "reverse_charge": true k tým položkám v "items" a 
 
 Najprv rozhodni "document_type":
 - "faktura" — faktúra, zálohová faktúra, dobropis, blok, účtenka: doklad o nákupe tovaru či služby.
+  Patrí sem aj vyúčtovanie služieb (telefón, internet, energie, nájom), „Stav účtu" či mesačná
+  splátka za tovar od obchodníka (Orange, Telekom, e-shop) s výzvou na úhradu (VS, IBAN, splatnosť).
 - "ostatny" — všetko ostatné, čo firma dostala: exekučný príkaz, predpis poistného, list alebo
-  rozhodnutie úradu, výzva Sociálnej či zdravotnej poisťovne, zmluva, splátkový kalendár, upomienka.
+  rozhodnutie úradu, výzva Sociálnej či zdravotnej poisťovne, zmluva, splátkový kalendár banky či
+  leasingovej spoločnosti, upomienka, krycí list poistnej udalosti, objednávka, cenová ponuka.
 Keď si nie si istý, daj "faktura".
+Pri každom doklade vyplň "document_title" (nadpis, ako je vytlačený, napr. „FAKTÚRA č. 2026001",
+„Pokladničný doklad", „Dobropis") a ak je na doklade, "ekasa_uid" (UID dokladu z eKasy, „O-" a 32 znakov)
+a "cash_register_code" (kód pokladnice eKasa, 17 číslic) — inak null.
 Pri "ostatny" vyplň aj "other_kind" (jeden z kľúčov nižšie), "other_subject" (o čom dokument je,
 jednou vetou po slovensky), "other_due_date" (lehota, YYYY-MM-DD) a "summary" (1–3 vety pre
 účtovníka, čo z dokumentu vyplýva). Odosielateľa daj do "supplier_name" a sumu do "amount_total".
@@ -141,7 +147,9 @@ ${DRUHY_PRE_AI}
 Do JSON pridaj: "document_type", "other_kind", "other_subject", "other_due_date", "summary".
 Pri "faktura" vyplň aj "document_subtype": "zalohova" pre zálohovú, proforma či preddavkovú
 faktúru (nie je daňový doklad), "dobropis" pre dobropis či opravnú faktúru, "blocek" pre
-pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací lístok, "danovy_doklad_k_platbe"
+pokladničný doklad z registračnej pokladne (eKasa), účtenku z obchodu (aj elektronickú „komerčnú
+verziu účtenky", potvrdenie platby kartou z terminálu) či parkovací lístok — aj keď je to vrátenie
+tovaru so zápornou sumou (bloček nie je dobropis), "danovy_doklad_k_platbe"
 pre daňový doklad k prijatej platbe (k zálohe) — dodávateľ ho vystavil po prijatí našej zálohy („Daňový doklad
 k prijatej platbe“, „Daňový doklad k přijaté platbě“), inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
@@ -201,6 +209,36 @@ export async function precitajDoklad(
   volby?: import("./vytazenie-mena").VolbyCitania | null,
   kontext?: KontextCitania,
 ): Promise<Record<string, unknown> | null> {
+  const surove = await precitajDokladSurovo(base64, mimeType, volby, kontext);
+  if (!surove) return null;
+  /*
+    Brána zákonných sadzieb (Patrik 16. 11.: „nesmie si vymýšľať sadzbu“) —
+    každý výsledok čítania, AI aj XML, ide ďalej len so zákonnými sadzbami.
+  */
+  const { zakonneSadzbyZAi } = await import("./zakonne-sadzby-ai");
+  const { ai, zmeny } = zakonneSadzbyZAi(surove, { krajina: await krajinaFirmyCitania(kontext?.firma) });
+  if (zmeny.length) console.warn("[mail-prijem] sadzby DPH mimo zákonných:", zmeny.join("; "));
+  return ai;
+}
+
+/** Krajina firmy pre bránu sadzieb (SK, keď firmu nepoznáme). */
+async function krajinaFirmyCitania(firma: string | null | undefined): Promise<string | null> {
+  if (!firma) return null;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.from("companies").select("country").eq("id", firma).maybeSingle();
+    return (data as { country?: string | null } | null)?.country ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function precitajDokladSurovo(
+  base64: string,
+  mimeType: string,
+  volby?: import("./vytazenie-mena").VolbyCitania | null,
+  kontext?: KontextCitania,
+): Promise<Record<string, unknown> | null> {
   /*
     Faktúra so strojovými údajmi (ISDOC, ZUGFeRD / Factur-X, UBL — vložené v
     PDF alebo ako samotné XML) sa nečíta z obrázka: údaje sú presné a AI by
@@ -228,12 +266,20 @@ export async function precitajDoklad(
         odpovedal: (p) => (kto = p),
         // Doklady číta vyšší model (`modelGeminiVytazenie`), pri zlyhaní bežný.
         vytazenie: kontext?.synchronne ? false : { limitMs: LIMIT_VYSSIEHO_MODELU_MS },
+        // Fotky v PDF (METRO, RHJ 16. 11.) sa v predvolenom rozlíšení čítali s vymyslenými číslami.
+        vysokeRozlisenie: process.env.GEMINI_VYSOKE_ROZLISENIE !== "0",
       },
     );
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
     const ai = json ? (JSON.parse(json) as Record<string, unknown>) : null;
     // Polohy údajov (zvýraznenie v náhľade) vie presne len Gemini — od náhrady sa zahodia.
     if (ai && kto !== "gemini") delete ai.field_locations;
+    /*
+      Náhradný model (Gemini zlyhal — 14.–16. 11. strop kreditu) čítal fotky
+      s vymyslenými číslami. Doklad nesie príznak a v Nespracovaných ukáže
+      upozornenie „over údaje“ (`kontrola-udajov-dokladu.ts`).
+    */
+    if (ai && kto === "openai") ai.citane_nahradou = "openai";
     return ai;
   } catch (e: any) {
     console.error("[mail-prijem] čítanie dokladu zlyhalo:", e?.message ?? e);

@@ -167,9 +167,10 @@ describe("2 — prenos z Doklada na kontrole", () => {
 
 describe("4 — poistka zákonných sadzieb nikdy nevyrobí 0 % s DPH", () => {
   const sk = { krajina: "SK", den: "2026-10-01" };
-  it("neplatná sadzba, ktorú model prečítal, ostane (kontrola ju ohlási)", () => {
-    expect(lenZakonneSadzby([r(22.46, 100, 22.46)], sk)).toEqual([r(22.46, 100, 22.46)]);
-    expect(lenZakonneSadzby([r(20, 100, 20)], sk)).toEqual([r(20, 100, 20)]);
+  // 16. 11. (Patrik: „nesmie si vymýšľať sadzbu“): neplatná sadzba sa už neuloží ani na kontrolu.
+  it("neplatná sadzba, ktorú model prečítal, vypadne (kontrola ju ohlási)", () => {
+    expect(lenZakonneSadzby([r(22.46, 100, 22.46)], sk)).toEqual([]);
+    expect(lenZakonneSadzby([r(20, 100, 20)], sk)).toEqual([]);
   });
   it("0 % s nenulovou DPH bez sediacej sadzby stratí DPH (na kontrolu), so sediacou dostane jej sadzbu", () => {
     expect(lenZakonneSadzby([r(0, 300, 33, "needs_review")], sk)).toEqual([r(0, 300, 0, "needs_review")]);
@@ -183,7 +184,7 @@ describe("4 — poistka zákonných sadzieb nikdy nevyrobí 0 % s DPH", () => {
     expect(v.kontrola.ok).toBe(false);
     expect(v.rozpis.some((x) => x.sadzba === 0 && Math.abs(x.dph) > 0.004)).toBe(false);
   });
-  it("20 % v roku 2026 ostane 20 % a kontrola neprejde", () => {
+  it("20 % v roku 2026 sa neuloží a kontrola neprejde", () => {
     const v = rozpisZVytazenia(
       {
         supplier_ic_dph: "SK1",
@@ -196,7 +197,7 @@ describe("4 — poistka zákonných sadzieb nikdy nevyrobí 0 % s DPH", () => {
       { krajina: "SK" },
     );
     expect(v.kontrola.ok).toBe(false);
-    expect(v.rozpis.map((x) => x.sadzba)).toEqual([20]);
+    expect(v.rozpis.map((x) => x.sadzba)).toEqual([]);
   });
 });
 

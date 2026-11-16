@@ -108,6 +108,15 @@ function jeFirma(strana: Cisla, firma: Cisla): boolean {
 }
 
 /**
+ * Je strana dokladu (dodávateľ, odberateľ) touto firmou — podľa IČO, DIČ
+ * alebo IČ DPH? Názov sa neporovnáva (podobné mená by sa zamenili).
+ */
+export function jeStranaFirmou(strana: Strana | null | undefined, firma: Strana | null | undefined): boolean {
+  if (!strana || !firma) return false;
+  return jeFirma(cisla(strana), cisla(firma));
+}
+
+/**
  * Nepatrí doklad firme? Vráti, čo uložiť na doklad, alebo `null` (sedí,
  * alebo sa to nedá povedať).
  */

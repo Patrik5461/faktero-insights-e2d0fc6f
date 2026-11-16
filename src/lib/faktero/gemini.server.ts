@@ -19,6 +19,8 @@ export async function geminiVision(
     bezUvazovania?: boolean;
     /** Iný model než `modelGemini()` (vyťažovanie dokladov). */
     model?: string;
+    /** Stránky / obrázok vo vysokom rozlíšení (fotky dokladov v PDF). */
+    vysokeRozlisenie?: boolean;
     /** Časový limit volania v ms (predvolene 120 s). */
     limitMs?: number;
   },
@@ -102,6 +104,9 @@ async function volaj(
                   sa", hoci otázka bola jednoduchá.
                 */
                   ...(nastavenie.bezUvazovania ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+                  ...((nastavenie as { vysokeRozlisenie?: boolean }).vysokeRozlisenie
+                    ? { mediaResolution: "MEDIA_RESOLUTION_HIGH" }
+                    : {}),
                 },
               }
             : {}),

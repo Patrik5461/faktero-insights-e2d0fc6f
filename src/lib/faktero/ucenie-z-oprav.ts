@@ -47,7 +47,7 @@ export const NAZVY_POLI_UCENIA: Record<PoleUcenia, string> = {
 };
 
 /** Druhy, pri ktorých sa učí (iný doklad nemá zaúčtovanie). */
-export type DruhUcenia = Exclude<DruhNespracovaneho, "ostatny" | "danovy">;
+export type DruhUcenia = Exclude<DruhNespracovaneho, "ostatny" | "danovy" | "vydana">;
 export const DRUHY_UCENIA: DruhUcenia[] = ["faktura", "zalohova", "dobropis", "blocek"];
 export const jeDruhUcenia = (d: unknown): d is DruhUcenia => DRUHY_UCENIA.includes(d as DruhUcenia);
 

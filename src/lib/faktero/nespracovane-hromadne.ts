@@ -87,6 +87,8 @@ export function dovodNevytvorenia(p: PodkladVytvorenia): Dovod | null {
   if (p.stav === "cita") return { text: "Doklad sa ešte číta" };
   const druh = (p.druh || null) as DruhNespracovaneho | null;
   if (!druh) return { text: "Nie je určený druh dokladu" };
+  // Vlastná vystavená faktúra sa nezakladá — priradí ju „Priradiť k vystaveným faktúram“.
+  if (druh === "vydana") return { text: "Vydaná faktúra — použite Priradiť k vystaveným faktúram" };
   // Detail pri otvorení doplní sumu dokladu (`celkomDokladu`) — podľa nej sa kontroluje rozpis.
   const u = upravCelkomDokladu(null, p.udaje);
   const chyby = chybajuce(druh, u, p.povinne ?? [], p.nastavenia ?? {});

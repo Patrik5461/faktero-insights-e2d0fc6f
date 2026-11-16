@@ -370,7 +370,11 @@ export function lenZakonneSadzby<T extends { sadzba: number; zaklad: number; dph
     }
     const s = jedinaSediaca(r, povolene);
     if (s != null) vysledok.push({ ...r, sadzba: s, vat_category: "standard" as KategoriaDph });
-    else vysledok.push(r); // pôvodná (neplatná) sadzba ostáva — kontrola a editor ju ukážu
+    /*
+      Nepovolená sadzba bez jednoznačnej náhrady sa NEULOŽÍ (Patrik 16. 11.:
+      „nesmie si vymýšľať sadzbu“) — riadok vypadne, rozdiel DPH pošle
+      doklad na kontrolu (`rozpisZVytazenia`).
+    */
   }
   return vysledok;
 

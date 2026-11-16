@@ -12,7 +12,9 @@
 */
 
 import { krajinaBlocku } from "@/lib/faktero/krajina-blocku";
+import { navrhVydanej, type FirmaPreVydanu } from "./nespracovane-vydana";
 import { druhPrijatehoDokladu, jeDanovyDokladKPlatbe } from "./zalohova-rozpoznanie";
+import { opravaDruhuZoSignalov } from "./druh-dokladu-signaly";
 import { TYP_PRIJATEHO_DANOVEHO } from "./prijaty-danovy-doklad";
 import { zoradPodlaSadzby } from "./vat-rates";
 import { rozpisZVytazenia, type KontextRozpisu } from "./rozpis-dph-vytazeny";
@@ -37,7 +39,7 @@ import {
   type KontrolaSumy,
 } from "./zaokruhlenie-blocku";
 
-export type DruhNespracovaneho = "faktura" | "zalohova" | "danovy" | "dobropis" | "blocek" | "ostatny";
+export type DruhNespracovaneho = "faktura" | "zalohova" | "danovy" | "dobropis" | "blocek" | "ostatny" | "vydana";
 
 /** Druhy, z ktorých vznikne prijatá faktúra (`purchase_invoices`). */
 export type DruhPrijatej = "faktura" | "zalohova" | "danovy" | "dobropis";
@@ -60,6 +62,13 @@ export const DRUHY_NESPRACOVANYCH: { kluc: DruhNespracovaneho; nazov: string }[]
   { kluc: "dobropis", nazov: "Prijatý dobropis" },
   { kluc: "blocek", nazov: "Bloček / pokladničný doklad" },
   { kluc: "ostatny", nazov: "Iný doklad (zmluva, list, predpis…)" },
+  /*
+    Vlastná vystavená faktúra (kópia, migrácia z Doklada, preposlaný mail) —
+    nič sa z nej nezaúčtuje: súbor sa priloží k vystavenej faktúre, ktorá už
+    vo Fakturácii je, alebo z nej vznikne vystavená faktúra
+    (`nespracovane-vydana.ts`).
+  */
+  { kluc: "vydana", nazov: "Vydaná faktúra" },
 ];
 
 /**
@@ -303,9 +312,23 @@ function zaokruhlenieOddelene(
 }
 
 /** Druh dokladu podľa toho, čo prečítala AI; človek ho môže zmeniť. */
-export function navrhDruhu(ai: Record<string, unknown> | null | undefined, nazovSuboru?: string | null): DruhNespracovaneho {
+export function navrhDruhu(
+  ai: Record<string, unknown> | null | undefined,
+  nazovSuboru?: string | null,
+  /**
+   * Firma, v ktorej doklad je — keď je dodávateľom na doklade ona (IČO, DIČ,
+   * IČ DPH) alebo je IBAN príjemcu platby jej účtom, je to jej vystavená faktúra.
+   */
+  firma?: FirmaPreVydanu | null,
+): DruhNespracovaneho {
   if (!ai) return "faktura";
+  // Odpoveď modelu opravená podľa znakov na doklade (eKasa, údaje na úhradu, nadpis).
+  ai = { ...ai, ...opravaDruhuZoSignalov(ai, nazovSuboru) };
   if (ai.document_type === "ostatny") return "ostatny";
+  if (firma && String(ai.document_subtype ?? "").toLowerCase() !== "blocek") {
+    const n = navrhVydanej({ udaje: null, ai, firma, kandidati: [] });
+    if (n.navrh) return "vydana";
+  }
   const pod = String(ai.document_subtype ?? "").toLowerCase();
   if (pod === "blocek") return "blocek";
   if (pod === "dobropis" || (num(ai.amount_total) ?? 0) < 0) return "dobropis";
@@ -368,6 +391,9 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
   if (!u.rozpis.length && nove.rozpis.length) {
     u.rozpis = nove.rozpis;
     if (nove.kontrolaDph) u.kontrolaDph = nove.kontrolaDph;
+  } else if (!u.rozpis.length && nove.kontrolaDph && !u.kontrolaDph) {
+    // Rozpis sa nedal prečítať (napr. nepovolená sadzba) — dôvod na kontrolu ostane pri doklade.
+    u.kontrolaDph = nove.kontrolaDph;
   }
   if (u.celkom == null && nove.celkom != null) u.celkom = nove.celkom;
   if (u.celkomDokladu == null && nove.celkomDokladu != null) u.celkomDokladu = nove.celkomDokladu;
@@ -536,6 +562,9 @@ export function kontrolaRozpisuUdajov(
   },
   krajina?: string | null,
 ): VysledokKontroly {
+  // Rozpis s nepovolenou sadzbou sa zahodil a doklad DPH má — bez rozpisu neprejde (16. 11.).
+  if (!u.rozpis?.length && u.kontrolaDph?.dovod && Math.abs(Number(u.kontrolaDph.dph) || 0) > 0.004)
+    return { ok: false, chyby: [{ kod: "neplatna_sadzba", sprava: u.kontrolaDph.dovod }] };
   if (!u.rozpis?.length || u.rozpisPotvrdeny) return { ok: true, chyby: [] };
   const vlastne = {
     bezDph: r2(u.rozpis.reduce((a, r) => a + (Number(r.zaklad) || 0), 0)),
@@ -745,7 +774,8 @@ export function chybajuce(
 ): string[] {
   const out: string[] = [];
   if (!druh) return ["druh"];
-  if (druh === "ostatny") return out;
+  // Vydaná faktúra sa nevytvára formulárom — priradí sa k vystavenej faktúre.
+  if (druh === "ostatny" || druh === "vydana") return out;
   if (!u.dodavatel.nazov.trim()) out.push("dodavatel");
   if (!u.datumVystavenia) out.push("datumVystavenia");
   const s = sucty(u);
@@ -1131,7 +1161,9 @@ export function naUhraduZNespracovaneho(
           ? "je daňový doklad k platbe — záloha je už zaplatená"
         : druh === "ostatny"
           ? "nie je faktúra (iný doklad)"
-          : null;
+          : druh === "vydana"
+            ? "je vaša vystavená faktúra — platí ju odberateľ"
+            : null;
   return {
     id: r.id,
     invoice_number: u.cislo || null,
@@ -1187,5 +1219,6 @@ export function hromadnaZmenaUdajov(
  * zmluva, predpis) sa neúčtuje, len odloží medzi iné doklady.
  */
 export function textVytvorenia(druh: DruhNespracovaneho | "" | null | undefined): string {
+  if (druh === "vydana") return "Priradiť k vystavenej faktúre";
   return druh === "ostatny" ? "Presunúť do iných dokladov" : "Zaúčtovať";
 }

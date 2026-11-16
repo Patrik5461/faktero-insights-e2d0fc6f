@@ -376,10 +376,11 @@ describe("METRO 5 % + 23 %", () => {
     expect(v.naprava).toMatch(/Základ pri 5 % bol uvedený s DPH/);
   });
 
-  it("jedna sadzba na celý doklad (AI zlúčila) neprejde — na kontrolu, prečítaná sadzba sa nezahodí", () => {
+  it("jedna sadzba na celý doklad (AI zlúčila) neprejde — na kontrolu, nepovolená sadzba sa neuloží", () => {
     const u = udajeZAi({ ...METRO, vat_breakdown: [{ rate: 18, base: 297.06, vat: 53.07 }] }, DNES, { krajina: "SK" });
     expect(u.kontrolaDph?.dovod).toMatch(/Sadzba 18 % nie je povolená/);
-    // Revízia 13. 11.: pôvodná sadzba ostáva (editor ju ukáže „– neplatná“), nikdy 0 % s DPH.
+    // 16. 11.: nepovolená sadzba vypadne (rozpis doplní človek), nikdy 0 % s DPH.
+    expect(u.rozpis.map((x) => x.sadzba)).not.toContain(18);
     expect(u.rozpis.some((x) => x.sadzba === 0 && Math.abs(x.dph) > 0.004)).toBe(false);
     expect(kontrolaSadziebUdajov(u, "SK").ok).toBe(false);
   });
@@ -446,8 +447,8 @@ describe("zákonné sadzby", () => {
     const ai = { supplier_ic_dph: "SK1", amount_without_vat: 100, vat_amount: 20, amount_total: 120, vat_breakdown: [{ rate: 20, base: 100, vat: 20 }] };
     const v26 = rozpisZVytazenia({ ...ai, issue_date: "2026-05-01" }, { krajina: "SK" });
     expect(v26.kontrola.ok).toBe(false);
-    // Pôvodná sadzba ostane a kontrola ju ohlási — doklad sa nevytvorí, kým ju človek neopraví.
-    expect(v26.rozpis.map((x) => x.sadzba)).toEqual([20]);
+    // 16. 11.: nepovolená sadzba sa neuloží ani na kontrolu — rozpis doplní človek.
+    expect(v26.rozpis.map((x) => x.sadzba)).toEqual([]);
     const v24 = rozpisZVytazenia({ ...ai, issue_date: "2024-05-01" }, { krajina: "SK" });
     expect(v24.kontrola.ok).toBe(true);
     expect(v24.rozpis).toEqual([r(20, 100, 20)]);

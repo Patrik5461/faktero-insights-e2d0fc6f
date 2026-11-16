@@ -56,7 +56,7 @@ export function porovnanieNespracovaneho(
     krajinaFirmy?: string | null;
   } = {},
 ): DokladNaPorovnanie | null {
-  if (!druh || druh === "ostatny") return null;
+  if (!druh || druh === "ostatny" || druh === "vydana") return null;
   const blocek = druh === "blocek";
   return {
     supplier_ico: u.dodavatel.ico || null,

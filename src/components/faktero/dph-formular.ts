@@ -412,11 +412,19 @@ export function kontrolaNespracovaneho(
     mena?: string | null;
     platba?: string | null;
     polozky?: readonly unknown[] | null;
+    /** Sumy a dôvod z vyťaženia — rozpis s nepovolenou sadzbou sa zahodil (`zakonne-sadzby-ai.ts`). */
+    kontrolaDph?: { bezDph?: number; dph?: number; dovod?: string } | null;
   },
   krajina: string | null | undefined,
   druh: string | null | undefined,
 ): VysledokKontroly {
   if (!druh || druh === "ostatny" || druh === "zalohova") return { ok: true, chyby: [] };
+  /*
+    Rozpis sa nedal prečítať (nepovolená sadzba) a doklad DPH má — bez
+    rozpisu by vznikol doklad bez dane. Kým človek rozpis nedoplní, neprejde.
+  */
+  if (!u.rozpis?.length && u.kontrolaDph?.dovod && Math.abs(Number(u.kontrolaDph.dph) || 0) > 0.004)
+    return { ok: false, chyby: [{ kod: "neplatna_sadzba", sprava: u.kontrolaDph.dovod }] };
   const doklad = u.celkomDokladu ?? u.celkom;
   return kontrolaFormulara({
     riadky: u.rozpis ?? [],
