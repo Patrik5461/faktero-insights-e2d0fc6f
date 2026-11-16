@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Dávka z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:adb="http://www.stormware.cz/schema/version_2/addressbook.xsd"
+  xmlns:stk="http://www.stormware.cz/schema/version_2/stock.xsd"
+  xmlns:con="http://www.stormware.cz/schema/version_2/contract.xsd"
+  xmlns:pri="http://www.stormware.cz/schema/version_2/prijemka.xsd"
+  xmlns:vyd="http://www.stormware.cz/schema/version_2/vydejka.xsd"
+  xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="77777777-7777-7777-7777-777777777777-20260310083000" version="2.0">
+    <adb:addressbook version="2.0">
+      <adb:actionType>
+        <adb:add add="true" update="true">
+          <ftr:filter>
+            <ftr:extId>
+              <typ:ids>77777777-7777-7777-7777-777777777777</typ:ids>
+              <typ:exSystemName>Faktero</typ:exSystemName>
+            </ftr:extId>
+          </ftr:filter>
+        </adb:add>
+      </adb:actionType>
+      <adb:addressbookHeader>
+        <adb:identity>
+          <typ:extId>
+            <typ:ids>77777777-7777-7777-7777-777777777777</typ:ids>
+            <typ:exSystemName>Faktero</typ:exSystemName>
+          </typ:extId>
+          <typ:address>
+              <typ:company>ACME s.r.o.</typ:company>
+              <typ:street>Hlavná 1</typ:street>
+              <typ:city>Trnava</typ:city>
+              <typ:zip>91701</typ:zip>
+              <typ:country><typ:ids>SK</typ:ids></typ:country>
+              <typ:ico>00151653</typ:ico>
+              <typ:dic>2020304050</typ:dic>
+              <typ:icDph>SK2020304050</typ:icDph>
+          </typ:address>
+        </adb:identity>
+      </adb:addressbookHeader>
+    </adb:addressbook>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="88888888-8888-8888-8888-888888888888-20260311090000" version="2.0">
+    <stk:stock version="2.0">
+      <stk:actionType>
+        <stk:add add="true" update="true">
+          <ftr:filter>
+            <ftr:extId>
+              <typ:ids>88888888-8888-8888-8888-888888888888</typ:ids>
+              <typ:exSystemName>Faktero</typ:exSystemName>
+            </ftr:extId>
+          </ftr:filter>
+        </stk:add>
+      </stk:actionType>
+      <stk:stockHeader>
+        <stk:extId>
+          <typ:ids>88888888-8888-8888-8888-888888888888</typ:ids>
+          <typ:exSystemName>Faktero</typ:exSystemName>
+        </stk:extId>
+        <stk:stockType>card</stk:stockType>
+        <stk:code>SKR-M8</stk:code>
+        <stk:purchasingRateVAT>high</stk:purchasingRateVAT>
+        <stk:sellingRateVAT>high</stk:sellingRateVAT>
+        <stk:name>Skrutka M8</stk:name>
+        <stk:unit>ks</stk:unit>
+        <stk:storage><typ:ids>HLAVNY</typ:ids></stk:storage>
+        <stk:typePrice><typ:ids>Predaj</typ:ids></stk:typePrice>
+        <stk:purchasingPrice>0.12</stk:purchasingPrice>
+        <stk:sellingPrice payVAT="false">0.29</stk:sellingPrice>
+      </stk:stockHeader>
+    </stk:stock>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="job-1" version="2.0">
+    <con:contract version="2.0">
+      <con:contractDesc>
+        <con:number><typ:numberRequested checkDuplicity="true">Z2026-01</typ:numberRequested></con:number>
+        <con:dateStart>2026-10-01</con:dateStart>
+        <con:text>Rekonštrukcia</con:text>
+        <con:partnerIdentity>
+          <typ:address>
+            <typ:company>ACME s.r.o.</typ:company>
+          </typ:address>
+        </con:partnerIdentity>
+      </con:contractDesc>
+    </con:contract>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="m-1" version="2.0">
+    <pri:prijemka version="2.0">
+      <pri:prijemkaHeader>
+        <pri:date>2026-10-02</pri:date>
+        <pri:text>Príjem na sklad — Faktero</pri:text>
+        <pri:notPost>true</pri:notPost>
+      </pri:prijemkaHeader>
+      <pri:prijemkaDetail>
+        <pri:prijemkaItem>
+          <pri:text>Skrutka M8</pri:text>
+          <pri:quantity>100</pri:quantity>
+          <pri:unit>ks</pri:unit>
+          <pri:rateVAT>high</pri:rateVAT>
+          <pri:homeCurrency>
+            <typ:unitPrice>0.12</typ:unitPrice>
+          </pri:homeCurrency>
+          <pri:code>SKR-M8</pri:code>
+          <pri:stockItem>
+            <typ:store><typ:ids>HLAVNY</typ:ids></typ:store>
+            <typ:stockItem>
+              <typ:extId>
+                <typ:ids>88888888-8888-8888-8888-888888888888</typ:ids>
+                <typ:exSystemName>Faktero</typ:exSystemName>
+              </typ:extId>
+            </typ:stockItem>
+          </pri:stockItem>
+        </pri:prijemkaItem>
+      </pri:prijemkaDetail>
+    </pri:prijemka>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="inv-1" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:number><typ:numberRequested>FA2026001</typ:numberRequested></inv:number>
+        <inv:symVar>2026001</inv:symVar>
+        <inv:symConst>0308</inv:symConst>
+        <inv:symSpec>77</inv:symSpec>
+        <inv:date>2026-10-10</inv:date>
+        <inv:dateTax>2026-10-08</inv:dateTax>
+        <inv:dateDue>2026-10-24</inv:dateDue>
+        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:note>Ďakujeme za spoluprácu</inv:note>
+        <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>A1</typ:ids></inv:classificationKVDPH>
+        <inv:centre><typ:ids>KE</typ:ids></inv:centre>
+        <inv:activity><typ:ids>SLUZBY</typ:ids></inv:activity>
+        <inv:intNote>Interná poznámka</inv:intNote>
+        <inv:contract><typ:ids>Z2026-01</typ:ids></inv:contract>
+        <inv:numberOrder>OBJ-55/2026</inv:numberOrder>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ a.s.</typ:company>
+            <typ:street>Obchodná 5</typ:street>
+            <typ:city>Bratislava</typ:city>
+            <typ:zip>81106</typ:zip>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>35999888</typ:ico>
+            <typ:dic>2021999888</typ:dic>
+            <typ:icDph>SK2021999888</typ:icDph>
+            <typ:email>uctaren@odberatel.sk</typ:email>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:account><typ:ids>TB</typ:ids></inv:account>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Konzultácia</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:unit>hod</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>50.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>23.00</typ:priceVAT>
+            <typ:priceSum>123.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>A1</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>100.00</typ:priceHigh>
+          <typ:priceHighVAT>23.00</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="pi-1" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>receivedInvoice</inv:invoiceType>
+        <inv:symVar>2026778</inv:symVar>
+        <inv:centre><typ:ids>BA</typ:ids></inv:centre>
+        <inv:symPar>2026778</inv:symPar>
+        <inv:symConst>0308</inv:symConst>
+        <inv:numberOrder>NAK-12</inv:numberOrder>
+        <inv:originalDocument>2026-778</inv:originalDocument>
+        <inv:date>2026-10-05</inv:date>
+        <inv:dateTax>2026-10-06</inv:dateTax>
+        <inv:dateDelivery>2026-10-03</inv:dateDelivery>
+        <inv:dateDue>2026-10-19</inv:dateDue>
+        <inv:text>Materiál</inv:text>
+        <inv:accounting><typ:ids>1Fp</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Dodávateľ s.r.o.</typ:company>
+            <typ:city>Žilina</typ:city>
+            <typ:street>Priemyselná 3</typ:street>
+            <typ:zip>01001</typ:zip>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>44111222</typ:ico>
+            <typ:dic>2022111222</typ:dic>
+            <typ:icDph>SK2022111222</typ:icDph>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:paymentAccount><typ:accountNo>SK8975000000000012345671</typ:accountNo><typ:bankCode>7500</typ:bankCode></inv:paymentAccount>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Materiál</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:unit>ks</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>100.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>23.00</typ:priceVAT>
+            <typ:priceSum>123.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Fp</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>100.00</typ:priceHigh>
+          <typ:priceHighVAT>23.00</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="bl-d" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>commitment</inv:invoiceType>
+        <inv:symVar>012345</inv:symVar>
+        <inv:centre><typ:ids>BA</typ:ids></inv:centre>
+        <inv:symPar>012345</inv:symPar>
+        <inv:originalDocument>0123-45</inv:originalDocument>
+        <inv:date>2026-10-20</inv:date>
+        <inv:dateTax>2026-10-20</inv:dateTax>
+        <inv:dateDelivery>2026-10-20</inv:dateDelivery>
+        <inv:text>Čistiaci prostriedok, Papier A4, Káva</inv:text>
+        <inv:accounting><typ:ids>1Pv</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Kaufland Slovenská republika v.o.s.</typ:company>
+            <typ:city>Bratislava</typ:city>
+            <typ:street>Trnavská cesta 41/A</typ:street>
+            <typ:zip>83104</typ:zip>
+            <typ:ico>35790164</typ:ico>
+            <typ:icDph>SK2020234216</typ:icDph>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>creditcard</typ:paymentType></inv:paymentType>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Čistiaci prostriedok</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>5.00</typ:unitPrice>
+            <typ:price>10.00</typ:price>
+            <typ:priceVAT>2.30</typ:priceVAT>
+            <typ:priceSum>12.30</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Pv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Papier A4</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>10.00</typ:unitPrice>
+            <typ:price>10.00</typ:price>
+            <typ:priceVAT>2.30</typ:priceVAT>
+            <typ:priceSum>12.30</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Pv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Káva</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>low</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>4.00</typ:unitPrice>
+            <typ:price>4.00</typ:price>
+            <typ:priceVAT>0.76</typ:priceVAT>
+            <typ:priceSum>4.76</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Pv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B3</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>4.00</typ:priceLow>
+          <typ:priceLowVAT>0.76</typ:priceLowVAT>
+          <typ:priceHigh>20.00</typ:priceHigh>
+          <typ:priceHighVAT>4.60</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="c-1" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>receipt</vch:voucherType>
+        <vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>
+        <vch:date>2026-10-01</vch:date>
+        <vch:dateTax>2026-10-01</vch:dateTax>
+        <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+        <vch:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></vch:classificationVAT>
+        <vch:text>PPD1 — Vklad</vch:text>
+      </vch:voucherHeader>
+      <vch:voucherSummary>
+        <vch:homeCurrency>
+          <typ:priceNone>10.00</typ:priceNone>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="inv-old-storno" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:cancelDocument>
+        <typ:sourceDocument>
+          <typ:number>FA2025099</typ:number>
+        </typ:sourceDocument>
+      </inv:cancelDocument>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

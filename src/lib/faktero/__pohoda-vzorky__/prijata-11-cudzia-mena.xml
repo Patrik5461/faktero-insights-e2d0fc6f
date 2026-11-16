@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="pi-usd" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>receivedInvoice</inv:invoiceType>
+        <inv:symVar>2026778</inv:symVar>
+        <inv:centre><typ:ids>BA</typ:ids></inv:centre>
+        <inv:symPar>2026778</inv:symPar>
+        <inv:symConst>0308</inv:symConst>
+        <inv:numberOrder>NAK-12</inv:numberOrder>
+        <inv:originalDocument>2026-778</inv:originalDocument>
+        <inv:date>2026-10-05</inv:date>
+        <inv:dateTax>2026-10-06</inv:dateTax>
+        <inv:dateDelivery>2026-10-03</inv:dateDelivery>
+        <inv:dateDue>2026-10-19</inv:dateDue>
+        <inv:text>Faktúra č. 2026-778</inv:text>
+        <inv:accounting><typ:ids>1Fp</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Dodávateľ s.r.o.</typ:company>
+            <typ:city>Žilina</typ:city>
+            <typ:street>Priemyselná 3</typ:street>
+            <typ:zip>01001</typ:zip>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>44111222</typ:ico>
+            <typ:dic>2022111222</typ:dic>
+            <typ:icDph>SK2022111222</typ:icDph>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:paymentAccount><typ:accountNo>SK8975000000000012345671</typ:accountNo><typ:bankCode>7500</typ:bankCode></inv:paymentAccount>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Dodávateľ s.r.o. č. 2026-778</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:foreignCurrency>
+            <typ:unitPrice>100.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>23.00</typ:priceVAT>
+            <typ:priceSum>123.00</typ:priceSum>
+          </inv:foreignCurrency>
+          <inv:accounting><typ:ids>1Fp</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:foreignCurrency>
+          <typ:currency><typ:ids>USD</typ:ids></typ:currency>
+          <typ:rate>1.1</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>123.00</typ:priceSum>
+        </inv:foreignCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

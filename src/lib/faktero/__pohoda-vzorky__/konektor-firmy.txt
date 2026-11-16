@@ -1,0 +1,25 @@
+# Ktore firmy sa prenasaju do Pohody.
+#
+# Jeden riadok na firmu, hodnoty oddelene bodkociarkou:
+#
+#   KLUC;DATABAZA;NAZOV
+#   KLUC;DATABAZA;NAZOV;DATABAZA_MINULY_ROK   (na prelome rokov)
+#
+#   KLUC      - z balicka, ktory vam poslal klient (zacina fk_live_).
+#               Jeden kluc pre viac firiem ma za zavinacom ICO firmy:
+#               fk_live_...@12345678 - kluc je vo vsetkych riadkoch rovnaky.
+#   DATABAZA  - nazov databazy uctovnej jednotky v Pohode
+#               (Pohoda: Subor - Uctovne jednotky - stlpec Databaza)
+#   NAZOV     - lubovolne pomenovanie do protokolu (bez bodkociarky)
+#   DATABAZA_MINULY_ROK - volitelne; ked je vyplnena, doklady minuleho roka
+#               idu do nej a do DATABAZA len tohtorocne. Po uzavreti roka
+#               ju z riadku zmazte.
+#
+# Bez medzier okolo bodkociarky. Riadok zacinajuci na # sa preskoci,
+# takze firmu viete docasne vypnut tym, ze pred nu date #.
+#
+# Dalsieho klienta pridate tak, ze si z jeho balicka skopirujete jeho
+# riadok sem pod tento. Priecinok, davkovy subor ani ulohu uz nemenite.
+
+fk_live_abc;StwPh_36123456_2026.mdb;Vzorová firma s.r.o.
+fk_live_def;StwPh_27123456_2026.mdb;Druhá, firma

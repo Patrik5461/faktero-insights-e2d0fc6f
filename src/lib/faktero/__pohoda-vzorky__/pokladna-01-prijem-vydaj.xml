@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Pokladňa z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="c-1" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>receipt</vch:voucherType>
+        <vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>
+        <vch:date>2026-10-01</vch:date>
+        <vch:dateTax>2026-10-01</vch:dateTax>
+        <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+        <vch:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></vch:classificationVAT>
+        <vch:text>PPD1 — Vklad</vch:text>
+      </vch:voucherHeader>
+      <vch:voucherSummary>
+        <vch:homeCurrency>
+          <typ:priceNone>200.00</typ:priceNone>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="c-2" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>expense</vch:voucherType>
+        <vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>
+        <vch:date>2026-10-02</vch:date>
+        <vch:dateTax>2026-10-02</vch:dateTax>
+        <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+        <vch:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></vch:classificationVAT>
+        <vch:text>VPD1 — Známky</vch:text>
+      </vch:voucherHeader>
+      <vch:voucherSummary>
+        <vch:homeCurrency>
+          <typ:priceNone>15.20</typ:priceNone>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>
+</dat:dataPack>

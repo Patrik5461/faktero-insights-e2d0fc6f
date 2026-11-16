@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO-CISELNIKY" ico="36123456" application="Faktero" version="2.0" note="Predkontácie a členenia DPH pre Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:lst="http://www.stormware.cz/schema/version_2/list.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="CIS-PREDKONTACIE" version="2.0">
+    <lst:listAccountingDoubleEntryRequest version="1.1"/>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-PREDKONTACIE-JU" version="2.0">
+    <lst:listAccountingSingleEntryRequest version="1.1"/>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-CLENENIE" version="2.0">
+    <lst:listClassificationVATRequest version="2.0" classificationVATVersion="2.0">
+      <lst:requestClassificationVAT/>
+    </lst:listClassificationVATRequest>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-STREDISKA" version="2.0">
+    <lst:listCentreRequest version="1.1"/>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-CINNOSTI" version="2.0">
+    <lst:listActivityRequest version="1.1"/>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-RADY" version="2.0">
+    <lst:listNumericalSeriesRequest version="2.0" numericalSeriesVersion="2.0">
+      <lst:requestNumericalSeries/>
+    </lst:listNumericalSeriesRequest>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-BANKOVE-UCTY" version="2.0">
+    <lst:listBankAccountRequest version="2.0" bankAccountVersion="2.0">
+      <lst:requestBankAccount/>
+    </lst:listBankAccountRequest>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="CIS-ZAKAZKY" version="2.0">
+    <lCon:listContractRequest xmlns:lCon="http://www.stormware.cz/schema/version_2/list_contract.xsd" version="2.0" contractVersion="2.0">
+      <lCon:requestContract/>
+    </lCon:listContractRequest>
+  </dat:dataPackItem>
+</dat:dataPack>

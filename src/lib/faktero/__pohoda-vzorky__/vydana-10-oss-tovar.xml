@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Export z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="inv-oss-t" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:number><typ:numberRequested>FA2026012</typ:numberRequested></inv:number>
+        <inv:symVar>2026001</inv:symVar>
+        <inv:symConst>0308</inv:symConst>
+        <inv:symSpec>77</inv:symSpec>
+        <inv:date>2026-10-10</inv:date>
+        <inv:dateTax>2026-10-08</inv:dateTax>
+        <inv:dateDue>2026-10-24</inv:dateDue>
+        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:note>OSS — štát spotreby AT · Ďakujeme za spoluprácu</inv:note>
+        <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>UN</typ:ids></inv:classificationVAT>
+        <inv:centre><typ:ids>KE</typ:ids></inv:centre>
+        <inv:activity><typ:ids>SLUZBY</typ:ids></inv:activity>
+        <inv:intNote>Interná poznámka</inv:intNote>
+        <inv:numberOrder>OBJ-55/2026</inv:numberOrder>
+        <inv:MOSS><typ:ids>AT</typ:ids></inv:MOSS>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ a.s.</typ:company>
+            <typ:street>Obchodná 5</typ:street>
+            <typ:city>Bratislava</typ:city>
+            <typ:zip>81106</typ:zip>
+            <typ:country><typ:ids>AT</typ:ids></typ:country>
+            <typ:email>uctaren@odberatel.sk</typ:email>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:account><typ:ids>TB</typ:ids></inv:account>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Mobilný telefón</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:unit>ks</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>historyHigh</inv:rateVAT>
+          <inv:percentVAT>20</inv:percentVAT>
+          <inv:note>KN 85171300, pôvod CN, 0,4 kg</inv:note>
+          <inv:homeCurrency>
+            <typ:unitPrice>50.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>20.00</typ:priceVAT>
+            <typ:priceSum>120.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:typeServiceMOSS><typ:ids>GD</typ:ids></inv:typeServiceMOSS>
+          <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>UN</typ:ids></inv:classificationVAT>
+          <inv:intrastatItem>
+            <inv:goodsCode>85171300</inv:goodsCode>
+            <inv:countryOfOrigin>CN</inv:countryOfOrigin>
+            <inv:countryOfDestination>AT</inv:countryOfDestination>
+            <inv:ownWeight>0.4</inv:ownWeight>
+          </inv:intrastatItem>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Obal</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:unit>hod</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>historyThird</inv:rateVAT>
+          <inv:percentVAT>10</inv:percentVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>50.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>10.00</typ:priceVAT>
+            <typ:priceSum>110.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:typeServiceMOSS><typ:ids>GD</typ:ids></inv:typeServiceMOSS>
+          <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>UN</typ:ids></inv:classificationVAT>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>100.00</typ:price3>
+          <typ:price3VAT>10.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>100.00</typ:priceHigh>
+          <typ:priceHighVAT>20.00</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

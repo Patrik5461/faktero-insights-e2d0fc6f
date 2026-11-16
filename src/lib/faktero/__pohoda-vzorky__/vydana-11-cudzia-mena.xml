@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Export z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="inv-usd" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:number><typ:numberRequested>FA2026001</typ:numberRequested></inv:number>
+        <inv:symVar>2026001</inv:symVar>
+        <inv:symConst>0308</inv:symConst>
+        <inv:symSpec>77</inv:symSpec>
+        <inv:date>2026-10-10</inv:date>
+        <inv:dateTax>2026-10-08</inv:dateTax>
+        <inv:dateDue>2026-10-24</inv:dateDue>
+        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:note>Ďakujeme za spoluprácu</inv:note>
+        <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
+        <inv:centre><typ:ids>KE</typ:ids></inv:centre>
+        <inv:activity><typ:ids>SLUZBY</typ:ids></inv:activity>
+        <inv:intNote>Interná poznámka</inv:intNote>
+        <inv:numberOrder>OBJ-55/2026</inv:numberOrder>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ a.s.</typ:company>
+            <typ:street>Obchodná 5</typ:street>
+            <typ:city>Bratislava</typ:city>
+            <typ:zip>81106</typ:zip>
+            <typ:country><typ:ids>US</typ:ids></typ:country>
+            <typ:ico>35999888</typ:ico>
+            <typ:dic>2021999888</typ:dic>
+            <typ:email>uctaren@odberatel.sk</typ:email>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:account><typ:ids>TB</typ:ids></inv:account>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Konzultácia</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:unit>hod</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:foreignCurrency>
+            <typ:unitPrice>50.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>100.00</typ:priceSum>
+          </inv:foreignCurrency>
+          <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:foreignCurrency>
+          <typ:currency><typ:ids>USD</typ:ids></typ:currency>
+          <typ:rate>1.08</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>100.00</typ:priceSum>
+        </inv:foreignCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

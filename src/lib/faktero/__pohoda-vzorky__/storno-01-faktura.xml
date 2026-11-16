@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Storná z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="inv-1-storno" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:cancelDocument>
+        <typ:sourceDocument>
+          <typ:number>FA2026001</typ:number>
+        </typ:sourceDocument>
+      </inv:cancelDocument>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

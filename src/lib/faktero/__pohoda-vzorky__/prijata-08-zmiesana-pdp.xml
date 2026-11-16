@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="54613124" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="5a0e0001-0000-4000-8000-000000000006" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>receivedInvoice</inv:invoiceType>
+        <inv:symVar>261100051</inv:symVar>
+        <inv:symPar>261100051</inv:symPar>
+        <inv:originalDocument>S261100051</inv:originalDocument>
+        <inv:date>2026-10-31</inv:date>
+        <inv:dateTax>2026-11-05</inv:dateTax>
+        <inv:dateDelivery>2026-10-31</inv:dateDelivery>
+        <inv:dateDue>2026-11-14</inv:dateDue>
+        <inv:text>Materiál, Stavebné práce (PDP)</inv:text>
+        <inv:accounting><typ:ids>1</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Stavmat Žilina s.r.o.</typ:company>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>36412345</typ:ico>
+            <typ:dic>2021712345</typ:dic>
+            <typ:icDph>SK2021712345</typ:icDph>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Materiál</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>500.00</typ:unitPrice>
+            <typ:price>500.00</typ:price>
+            <typ:priceVAT>115.00</typ:priceVAT>
+            <typ:priceSum>615.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>B2</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Stavebné práce (PDP)</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>1000.00</typ:unitPrice>
+            <typ:price>1000.00</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>1000.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PDsluz</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>KN</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>1000.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>500.00</typ:priceHigh>
+          <typ:priceHighVAT>115.00</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="5a0e0001-0000-4000-8000-000000000006-sam-dan" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:number><typ:ids>26sam</typ:ids></int:number>
+        <int:symVar>261100051</int:symVar>
+        <int:originalDocumentNumber>S261100051</int:originalDocumentNumber>
+        <int:date>2026-11-05</int:date>
+        <int:dateTax>2026-11-05</int:dateTax>
+        <int:dateAccounting>2026-11-05</int:dateAccounting>
+        <int:dateDelivery>2026-10-31</int:dateDelivery>
+        <int:dateKVDPH>2026-11-05</int:dateKVDPH>
+        <int:text>Priznanie DPH z nadobudnutia tovaru a služby, var.sym. 261100051</int:text>
+        <int:partnerIdentity>
+          <typ:address>
+            <typ:company>Stavmat Žilina s.r.o.</typ:company>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>36412345</typ:ico>
+            <typ:dic>2021712345</typ:dic>
+            <typ:icDph>SK2021712345</typ:icDph>
+          </typ:address>
+        </int:partnerIdentity>
+        <int:accounting><typ:ids>aInt</typ:ids></int:accounting>
+        <int:classificationVAT><typ:ids>DDsluz</typ:ids></int:classificationVAT>
+        <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+      </int:intDocHeader>
+      <int:intDocDetail>
+        <int:intDocItem>
+          <int:text>Materiál, Stavebné práce (PDP)</int:text>
+          <int:quantity>1</int:quantity>
+          <int:payVAT>false</int:payVAT>
+          <int:rateVAT>high</int:rateVAT>
+          <int:homeCurrency>
+            <typ:unitPrice>1000.00</typ:unitPrice>
+            <typ:price>1000.00</typ:price>
+            <typ:priceVAT>230.00</typ:priceVAT>
+            <typ:priceSum>1230.00</typ:priceSum>
+          </int:homeCurrency>
+          <int:accounting><typ:ids>aInt</typ:ids></int:accounting>
+          <int:classificationVAT><typ:ids>DDsluz</typ:ids></int:classificationVAT>
+          <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+        </int:intDocItem>
+      </int:intDocDetail>
+      <int:intDocSummary>
+        <int:roundingDocument>none</int:roundingDocument>
+        <int:roundingVAT>none</int:roundingVAT>
+        <int:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>1000.00</typ:priceHigh>
+          <typ:priceHighVAT>230.00</typ:priceHighVAT>
+        </int:homeCurrency>
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="5a0e0001-0000-4000-8000-000000000006-sam-odp" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:number><typ:ids>26sam</typ:ids></int:number>
+        <int:symVar>261100051</int:symVar>
+        <int:originalDocumentNumber>S261100051</int:originalDocumentNumber>
+        <int:date>2026-11-05</int:date>
+        <int:dateTax>2026-11-05</int:dateTax>
+        <int:dateAccounting>2026-11-05</int:dateAccounting>
+        <int:dateDelivery>2026-10-31</int:dateDelivery>
+        <int:dateKVDPH>2026-11-05</int:dateKVDPH>
+        <int:text>Odpočet DPH z nadobudnutia tovaru a služby, var.sym. 261100051</int:text>
+        <int:partnerIdentity>
+          <typ:address>
+            <typ:company>Stavmat Žilina s.r.o.</typ:company>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>36412345</typ:ico>
+            <typ:dic>2021712345</typ:dic>
+            <typ:icDph>SK2021712345</typ:icDph>
+          </typ:address>
+        </int:partnerIdentity>
+        <int:accounting><typ:ids>bInt</typ:ids></int:accounting>
+        <int:classificationVAT><typ:ids>PDsluz</typ:ids></int:classificationVAT>
+        <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+      </int:intDocHeader>
+      <int:intDocDetail>
+        <int:intDocItem>
+          <int:text>Materiál, Stavebné práce (PDP)</int:text>
+          <int:quantity>1</int:quantity>
+          <int:payVAT>false</int:payVAT>
+          <int:rateVAT>high</int:rateVAT>
+          <int:homeCurrency>
+            <typ:unitPrice>1000.00</typ:unitPrice>
+            <typ:price>1000.00</typ:price>
+            <typ:priceVAT>230.00</typ:priceVAT>
+            <typ:priceSum>1230.00</typ:priceSum>
+          </int:homeCurrency>
+          <int:accounting><typ:ids>bInt</typ:ids></int:accounting>
+          <int:classificationVAT><typ:ids>PDsluz</typ:ids></int:classificationVAT>
+          <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+        </int:intDocItem>
+      </int:intDocDetail>
+      <int:intDocSummary>
+        <int:roundingDocument>none</int:roundingDocument>
+        <int:roundingVAT>none</int:roundingVAT>
+        <int:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>1000.00</typ:priceHigh>
+          <typ:priceHighVAT>230.00</typ:priceHighVAT>
+        </int:homeCurrency>
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>
+</dat:dataPack>

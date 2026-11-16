@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Dávka z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:adb="http://www.stormware.cz/schema/version_2/addressbook.xsd"
+  xmlns:stk="http://www.stormware.cz/schema/version_2/stock.xsd"
+  xmlns:con="http://www.stormware.cz/schema/version_2/contract.xsd"
+  xmlns:pri="http://www.stormware.cz/schema/version_2/prijemka.xsd"
+  xmlns:vyd="http://www.stormware.cz/schema/version_2/vydejka.xsd"
+  xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd"
+  xmlns:bnk="http://www.stormware.cz/schema/version_2/bank.xsd"
+  xmlns:lqd="http://www.stormware.cz/schema/version_2/automaticLiquidation.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="11111111-1111-1111-1111-111111111111" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:number><typ:numberRequested>20260001</typ:numberRequested></inv:number>
+        <inv:symVar>20260001</inv:symVar>
+        <inv:date>2026-10-03</inv:date>
+        <inv:dateTax>2026-10-03</inv:dateTax>
+        <inv:dateDue>2026-10-17</inv:dateDue>
+        <inv:text>Faktúra 20260001</inv:text>
+        <inv:classificationKVDPH><typ:ids>D2</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ s.r.o.</typ:company>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Práca</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:unit>ks</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>100.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>23.00</typ:priceVAT>
+            <typ:priceSum>123.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:classificationKVDPH><typ:ids>D2</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>100.00</typ:priceHigh>
+          <typ:priceHighVAT>23.00</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="44444444-4444-4444-4444-444444444444" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>receipt</vch:voucherType>
+        <vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>
+        <vch:date>2026-10-05</vch:date>
+        <vch:dateTax>2026-10-05</vch:dateTax>
+        <vch:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></vch:classificationVAT>
+        <vch:text>P1 — Tržba</vch:text>
+      </vch:voucherHeader>
+      <vch:voucherSummary>
+        <vch:homeCurrency>
+          <typ:priceNone>20.00</typ:priceNone>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000001" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>receipt</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>2</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:symVar>20260001</bnk:symVar>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-03</bnk:datePayment>
+        <bnk:accounting><typ:ids>1Bank</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Úhrada faktúry /VS20260001/SS77/KS0308</bnk:text>
+        <bnk:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ s.r.o.</typ:company>
+          </typ:address>
+        </bnk:partnerIdentity>
+        <bnk:paymentAccount>
+          <typ:accountNo>SK6807200002891987426353</typ:accountNo>
+          <typ:bankCode>0720</typ:bankCode>
+        </bnk:paymentAccount>
+        <bnk:symConst>0308</bnk:symConst>
+        <bnk:symSpec>77</bnk:symSpec>
+        <bnk:note>Úhrada faktúry</bnk:note>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>123.00</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000003" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>expense</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>3</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-07</bnk:datePayment>
+        <bnk:accounting><typ:ids>5Tel</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Faktúra za telefón</bnk:text>
+        <bnk:partnerIdentity>
+          <typ:address>
+            <typ:company>Orange Slovensko</typ:company>
+          </typ:address>
+        </bnk:partnerIdentity>
+        <bnk:note>Úhrada faktúry</bnk:note>
+        <bnk:intNote>Protiúčet: DE89370400440532013000</bnk:intNote>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>45.90</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000004" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>receipt</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>4</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-31</bnk:datePayment>
+        <bnk:accounting><typ:ids>1Bank</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Vklad</bnk:text>
+        <bnk:note>Hotovosť (vklad, výber)</bnk:note>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>10.00</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="LQD-TB-2026-11-16-18198809" version="2.0">
+    <lqd:automaticLiquidation version="2.0">
+      <lqd:record>
+        <ftr:filter>
+          <ftr:bankAccount><typ:ids>TB</typ:ids></ftr:bankAccount>
+          <ftr:dateFrom>2026-10-01</ftr:dateFrom>
+          <ftr:dateTill>2026-11-16</ftr:dateTill>
+        </ftr:filter>
+      </lqd:record>
+      <lqd:ruleOfPairing><typ:id>1</typ:id></lqd:ruleOfPairing>
+    </lqd:automaticLiquidation>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="33333333-3333-3333-3333-333333333333-storno" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:cancelDocument>
+        <typ:sourceDocument>
+          <typ:number>260148</typ:number>
+        </typ:sourceDocument>
+      </inv:cancelDocument>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

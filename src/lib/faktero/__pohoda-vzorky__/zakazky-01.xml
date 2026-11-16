@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Zákazky z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:con="http://www.stormware.cz/schema/version_2/contract.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="job-1" version="2.0">
+    <con:contract version="2.0">
+      <con:contractDesc>
+        <con:number><typ:numberRequested checkDuplicity="true">Z2026-01</typ:numberRequested></con:number>
+        <con:dateStart>2026-10-01</con:dateStart>
+        <con:text>Rekonštrukcia</con:text>
+        <con:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ a.s.</typ:company>
+          </typ:address>
+        </con:partnerIdentity>
+      </con:contractDesc>
+    </con:contract>
+  </dat:dataPackItem>
+</dat:dataPack>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="bl-v" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:number><typ:ids>26ID</typ:ids></int:number>
+        <int:symVar>012345</int:symVar>
+        <int:symPar>012345</int:symPar>
+        <int:originalDocumentNumber>0123-45</int:originalDocumentNumber>
+        <int:date>2026-10-20</int:date>
+        <int:dateTax>2026-10-20</int:dateTax>
+        <int:text>Kaufland Slovenská republika v.o.s. č. 0123-45</int:text>
+        <int:accounting><typ:ids>1Pv</typ:ids></int:accounting>
+        <int:classificationVAT><typ:ids>PD</typ:ids></int:classificationVAT>
+        <int:classificationKVDPH><typ:ids>B3</typ:ids></int:classificationKVDPH>
+        <int:partnerIdentity>
+          <typ:address>
+            <typ:company>Kaufland Slovenská republika v.o.s.</typ:company>
+            <typ:city>Bratislava</typ:city>
+            <typ:street>Trnavská cesta 41/A</typ:street>
+            <typ:zip>83104</typ:zip>
+            <typ:ico>35790164</typ:ico>
+            <typ:icDph>SK2020234216</typ:icDph>
+          </typ:address>
+        </int:partnerIdentity>
+      </int:intDocHeader>
+      <int:intDocSummary>
+        <int:roundingDocument>none</int:roundingDocument>
+        <int:roundingVAT>none</int:roundingVAT>
+        <int:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>4.00</typ:priceLow>
+          <typ:priceLowVAT>0.76</typ:priceLowVAT>
+          <typ:priceHigh>20.00</typ:priceHigh>
+          <typ:priceHighVAT>4.60</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </int:homeCurrency>
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>
+</dat:dataPack>

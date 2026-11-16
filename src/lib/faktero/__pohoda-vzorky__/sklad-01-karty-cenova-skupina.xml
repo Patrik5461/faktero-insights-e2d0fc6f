@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Skladové karty z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:stk="http://www.stormware.cz/schema/version_2/stock.xsd"
+  xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="st-1-20261001100000" version="2.0">
+    <stk:stock version="2.0">
+      <stk:actionType>
+        <stk:add add="true" update="true">
+          <ftr:filter>
+            <ftr:extId>
+              <typ:ids>st-1</typ:ids>
+              <typ:exSystemName>Faktero</typ:exSystemName>
+            </ftr:extId>
+          </ftr:filter>
+        </stk:add>
+      </stk:actionType>
+      <stk:stockHeader>
+        <stk:extId>
+          <typ:ids>st-1</typ:ids>
+          <typ:exSystemName>Faktero</typ:exSystemName>
+        </stk:extId>
+        <stk:stockType>card</stk:stockType>
+        <stk:code>PAP-A4</stk:code>
+        <stk:EAN>8591234567890</stk:EAN>
+        <stk:purchasingRateVAT>high</stk:purchasingRateVAT>
+        <stk:sellingRateVAT>high</stk:sellingRateVAT>
+        <stk:name>Papier A4</stk:name>
+        <stk:unit>bal</stk:unit>
+        <stk:storage><typ:ids>HLAVNY</typ:ids></stk:storage>
+        <stk:typePrice><typ:ids>Predaj</typ:ids></stk:typePrice>
+        <stk:purchasingPrice>3.00</stk:purchasingPrice>
+        <stk:sellingPrice payVAT="false">4.50</stk:sellingPrice>
+        <stk:limitMin>10</stk:limitMin>
+        <stk:description>80 g</stk:description>
+      </stk:stockHeader>
+    </stk:stock>
+  </dat:dataPackItem>
+</dat:dataPack>

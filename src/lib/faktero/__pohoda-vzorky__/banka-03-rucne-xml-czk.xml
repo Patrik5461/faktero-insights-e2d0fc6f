@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Bankový výpis z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:bnk="http://www.stormware.cz/schema/version_2/bank.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000021" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>receipt</bnk:bankType>
+        <bnk:account><typ:ids>TBCZK</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>1</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-05</bnk:datePayment>
+        <bnk:accounting><typ:ids>1Bank</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Príjem na účet</bnk:text>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:foreignCurrency>
+          <typ:currency><typ:ids>CZK</typ:ids></typ:currency>
+          <typ:rate>24.312</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>1000.00</typ:priceSum>
+        </bnk:foreignCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000022" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>expense</bnk:bankType>
+        <bnk:account><typ:ids>TBCZK</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>2</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-06</bnk:datePayment>
+        <bnk:accounting><typ:ids>1Bank</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Platba z účtu</bnk:text>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:foreignCurrency>
+          <typ:currency><typ:ids>CZK</typ:ids></typ:currency>
+          <typ:rate>24.4</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>300.00</typ:priceSum>
+        </bnk:foreignCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+</dat:dataPack>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Adresár z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:adb="http://www.stormware.cz/schema/version_2/addressbook.xsd"
+  xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="cu-1-20261001100000" version="2.0">
+    <adb:addressbook version="2.0">
+      <adb:actionType>
+        <adb:add add="true" update="true">
+          <ftr:filter>
+            <ftr:extId>
+              <typ:ids>cu-1</typ:ids>
+              <typ:exSystemName>Faktero</typ:exSystemName>
+            </ftr:extId>
+          </ftr:filter>
+        </adb:add>
+      </adb:actionType>
+      <adb:addressbookHeader>
+        <adb:identity>
+          <typ:extId>
+            <typ:ids>cu-1</typ:ids>
+            <typ:exSystemName>Faktero</typ:exSystemName>
+          </typ:extId>
+          <typ:address>
+              <typ:company>Odberateľ a.s.</typ:company>
+              <typ:name>Ján Novák</typ:name>
+              <typ:street>Obchodná 5</typ:street>
+              <typ:city>Bratislava</typ:city>
+              <typ:zip>81106</typ:zip>
+              <typ:country><typ:ids>SK</typ:ids></typ:country>
+              <typ:ico>35999888</typ:ico>
+              <typ:dic>2021999888</typ:dic>
+              <typ:icDph>SK2021999888</typ:icDph>
+          </typ:address>
+        </adb:identity>
+        <adb:phone>+421900000000</adb:phone>
+        <adb:email>a@b.sk</adb:email>
+      </adb:addressbookHeader>
+    </adb:addressbook>
+  </dat:dataPackItem>
+</dat:dataPack>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Skladové pohyby z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:pri="http://www.stormware.cz/schema/version_2/prijemka.xsd"
+  xmlns:vyd="http://www.stormware.cz/schema/version_2/vydejka.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="m-1" version="2.0">
+    <pri:prijemka version="2.0">
+      <pri:prijemkaHeader>
+        <pri:date>2026-10-02</pri:date>
+        <pri:text>Príjem na sklad — Faktero</pri:text>
+        <pri:notPost>true</pri:notPost>
+      </pri:prijemkaHeader>
+      <pri:prijemkaDetail>
+        <pri:prijemkaItem>
+          <pri:text>Papier A4</pri:text>
+          <pri:quantity>10</pri:quantity>
+          <pri:unit>ks</pri:unit>
+          <pri:rateVAT>high</pri:rateVAT>
+          <pri:homeCurrency>
+            <typ:unitPrice>3.00</typ:unitPrice>
+          </pri:homeCurrency>
+          <pri:code>PAP-A4</pri:code>
+          <pri:stockItem>
+            <typ:store><typ:ids>HLAVNY</typ:ids></typ:store>
+            <typ:stockItem>
+              <typ:extId>
+                <typ:ids>st-1</typ:ids>
+                <typ:exSystemName>Faktero</typ:exSystemName>
+              </typ:extId>
+            </typ:stockItem>
+          </pri:stockItem>
+        </pri:prijemkaItem>
+      </pri:prijemkaDetail>
+    </pri:prijemka>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="m-2" version="2.0">
+    <vyd:vydejka version="2.0">
+      <vyd:vydejkaHeader>
+        <vyd:date>2026-10-03</vyd:date>
+        <vyd:text>Výdaj zo skladu — Faktero</vyd:text>
+      </vyd:vydejkaHeader>
+      <vyd:vydejkaDetail>
+        <vyd:vydejkaItem>
+          <vyd:text>Papier A4</vyd:text>
+          <vyd:quantity>2</vyd:quantity>
+          <vyd:unit>ks</vyd:unit>
+          <vyd:rateVAT>high</vyd:rateVAT>
+          <vyd:homeCurrency>
+            <typ:unitPrice>4.50</typ:unitPrice>
+          </vyd:homeCurrency>
+          <vyd:code>PAP-A4</vyd:code>
+          <vyd:stockItem>
+            <typ:store><typ:ids>HLAVNY</typ:ids></typ:store>
+            <typ:stockItem>
+              <typ:extId>
+                <typ:ids>st-1</typ:ids>
+                <typ:exSystemName>Faktero</typ:exSystemName>
+              </typ:extId>
+            </typ:stockItem>
+          </vyd:stockItem>
+        </vyd:vydejkaItem>
+      </vyd:vydejkaDetail>
+    </vyd:vydejka>
+  </dat:dataPackItem>
+</dat:dataPack>

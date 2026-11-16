@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Bankový výpis z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:bnk="http://www.stormware.cz/schema/version_2/bank.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000001" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>receipt</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>1</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:symVar>20260001</bnk:symVar>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-03</bnk:datePayment>
+        <bnk:accounting><typ:ids>1Bank</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Úhrada faktúry /VS20260001/SS77/KS0308</bnk:text>
+        <bnk:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ s.r.o.</typ:company>
+          </typ:address>
+        </bnk:partnerIdentity>
+        <bnk:paymentAccount>
+          <typ:accountNo>SK6807200002891987426353</typ:accountNo>
+          <typ:bankCode>0720</typ:bankCode>
+        </bnk:paymentAccount>
+        <bnk:symConst>0308</bnk:symConst>
+        <bnk:symSpec>77</bnk:symSpec>
+        <bnk:note>Úhrada faktúry</bnk:note>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>123.00</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000002" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>expense</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>2</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-03</bnk:datePayment>
+        <bnk:accounting><typ:ids>BPopl</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Poplatok za vedenie účtu</bnk:text>
+        <bnk:note>Bankový poplatok</bnk:note>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>2.50</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000003" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>expense</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>3</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-07</bnk:datePayment>
+        <bnk:accounting><typ:ids>5Tel</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Faktúra za telefón</bnk:text>
+        <bnk:partnerIdentity>
+          <typ:address>
+            <typ:company>Orange Slovensko</typ:company>
+          </typ:address>
+        </bnk:partnerIdentity>
+        <bnk:note>Úhrada faktúry</bnk:note>
+        <bnk:intNote>Protiúčet: DE89370400440532013000</bnk:intNote>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>45.90</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="BNK-00000000-0000-4000-8000-000000000004" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>receipt</bnk:bankType>
+        <bnk:account><typ:ids>TB</typ:ids></bnk:account>
+        <bnk:statementNumber>
+          <bnk:statementNumber>10</bnk:statementNumber>
+          <bnk:numberMovement>4</bnk:numberMovement>
+        </bnk:statementNumber>
+        <bnk:dateStatement>2026-10-31</bnk:dateStatement>
+        <bnk:datePayment>2026-10-31</bnk:datePayment>
+        <bnk:accounting><typ:ids>1Bank</typ:ids></bnk:accounting>
+        <bnk:classificationVAT><typ:classificationVATType>nonSubsume</typ:classificationVATType></bnk:classificationVAT>
+        <bnk:text>Vklad</bnk:text>
+        <bnk:note>Hotovosť (vklad, výber)</bnk:note>
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>10.00</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>
+</dat:dataPack>

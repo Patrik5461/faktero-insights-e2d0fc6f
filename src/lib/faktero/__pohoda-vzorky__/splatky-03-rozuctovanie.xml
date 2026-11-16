@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Splátky – Škoda Octavia"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="SPL-s1" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>commitment</inv:invoiceType>
+        <inv:symVar>2680613</inv:symVar>
+        <inv:symPar>2680613</inv:symPar>
+        <inv:originalDocument>UZF/26/80613/1</inv:originalDocument>
+        <inv:date>2026-11-15</inv:date>
+        <inv:dateTax>2026-11-15</inv:dateTax>
+        <inv:dateAccounting>2026-11-15</inv:dateAccounting>
+        <inv:dateDue>2026-11-15</inv:dateDue>
+        <inv:dateDelivery>2026-11-15</inv:dateDelivery>
+        <inv:accounting><typ:ids>1Li</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PN</typ:ids></inv:classificationVAT>
+        <inv:text>Splátka 1/60 – leasing UZF/26/80613</inv:text>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>ČSOB Leasing, a.s.</typ:company>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:intNote>Faktero · Škoda Octavia · splátka č. 1</inv:intNote>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Istina</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>430.10</typ:unitPrice>
+            <typ:price>430.10</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>430.10</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Li</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PN</typ:ids></inv:classificationVAT>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Úrok</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>62.30</typ:unitPrice>
+            <typ:price>62.30</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>62.30</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Lu</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PN</typ:ids></inv:classificationVAT>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Poistenie</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>20.00</typ:unitPrice>
+            <typ:price>20.00</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>20.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Lp</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PN</typ:ids></inv:classificationVAT>
+        </inv:invoiceItem>
+        <inv:invoiceItem>
+          <inv:text>Ostatné (poplatky)</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>3.00</typ:unitPrice>
+            <typ:price>3.00</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>3.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>1Lz</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PN</typ:ids></inv:classificationVAT>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>515.40</typ:priceNone>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>0.00</typ:priceHigh>
+          <typ:priceHighVAT>0.00</typ:priceHighVAT>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>

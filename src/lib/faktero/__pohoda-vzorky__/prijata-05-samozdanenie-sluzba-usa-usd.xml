@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="54613124" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="5a0e0001-0000-4000-8000-000000000003" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>receivedInvoice</inv:invoiceType>
+        <inv:symVar>77812</inv:symVar>
+        <inv:symPar>77812</inv:symPar>
+        <inv:originalDocument>S-INV-77812</inv:originalDocument>
+        <inv:date>2026-10-31</inv:date>
+        <inv:dateTax>2026-10-31</inv:dateTax>
+        <inv:dateDelivery>2026-10-31</inv:dateDelivery>
+        <inv:dateDue>2026-11-14</inv:dateDue>
+        <inv:text>Claude Team — predplatné</inv:text>
+        <inv:accounting><typ:ids>1</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>PDsluz</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>KN</typ:ids></inv:classificationKVDPH>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Anthropic, PBC</typ:company>
+            <typ:city>San Francisco</typ:city>
+            <typ:street>548 Market Street</typ:street>
+            <typ:zip>94104</typ:zip>
+            <typ:country><typ:ids>US</typ:ids></typ:country>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Claude Team — predplatné</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:foreignCurrency>
+            <typ:unitPrice>100.00</typ:unitPrice>
+            <typ:price>200.00</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>200.00</typ:priceSum>
+          </inv:foreignCurrency>
+          <inv:accounting><typ:ids>1</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>PDsluz</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>KN</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:foreignCurrency>
+          <typ:currency><typ:ids>USD</typ:ids></typ:currency>
+          <typ:rate>1.1612</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>200.00</typ:priceSum>
+        </inv:foreignCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="5a0e0001-0000-4000-8000-000000000003-sam-dan" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:number><typ:ids>26sam</typ:ids></int:number>
+        <int:symVar>77812</int:symVar>
+        <int:originalDocumentNumber>S-INV-77812</int:originalDocumentNumber>
+        <int:date>2026-10-31</int:date>
+        <int:dateTax>2026-10-31</int:dateTax>
+        <int:dateAccounting>2026-10-31</int:dateAccounting>
+        <int:dateDelivery>2026-10-31</int:dateDelivery>
+        <int:dateKVDPH>2026-10-31</int:dateKVDPH>
+        <int:text>Priznanie DPH z nadobudnutia tovaru a služby, var.sym. 77812</int:text>
+        <int:partnerIdentity>
+          <typ:address>
+            <typ:company>Anthropic, PBC</typ:company>
+            <typ:city>San Francisco</typ:city>
+            <typ:street>548 Market Street</typ:street>
+            <typ:zip>94104</typ:zip>
+            <typ:country><typ:ids>US</typ:ids></typ:country>
+          </typ:address>
+        </int:partnerIdentity>
+        <int:accounting><typ:ids>aInt</typ:ids></int:accounting>
+        <int:classificationVAT><typ:ids>DDsl§69</typ:ids></int:classificationVAT>
+        <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+      </int:intDocHeader>
+      <int:intDocDetail>
+        <int:intDocItem>
+          <int:text>Claude Team — predplatné</int:text>
+          <int:quantity>1</int:quantity>
+          <int:payVAT>false</int:payVAT>
+          <int:rateVAT>high</int:rateVAT>
+          <int:homeCurrency>
+            <typ:unitPrice>172.24</typ:unitPrice>
+            <typ:price>172.24</typ:price>
+            <typ:priceVAT>39.62</typ:priceVAT>
+            <typ:priceSum>211.86</typ:priceSum>
+          </int:homeCurrency>
+          <int:foreignCurrency>
+            <typ:unitPrice>200.00</typ:unitPrice>
+            <typ:price>200.00</typ:price>
+            <typ:priceVAT>46.00</typ:priceVAT>
+            <typ:priceSum>246.00</typ:priceSum>
+          </int:foreignCurrency>
+          <int:accounting><typ:ids>aInt</typ:ids></int:accounting>
+          <int:classificationVAT><typ:ids>DDsl§69</typ:ids></int:classificationVAT>
+          <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+        </int:intDocItem>
+      </int:intDocDetail>
+      <int:intDocSummary>
+        <int:roundingDocument>none</int:roundingDocument>
+        <int:roundingVAT>none</int:roundingVAT>
+        <int:foreignCurrency>
+          <typ:currency><typ:ids>USD</typ:ids></typ:currency>
+          <typ:rate>1.1612</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>246.00</typ:priceSum>
+        </int:foreignCurrency>
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>
+  <dat:dataPackItem id="5a0e0001-0000-4000-8000-000000000003-sam-odp" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:number><typ:ids>26sam</typ:ids></int:number>
+        <int:symVar>77812</int:symVar>
+        <int:originalDocumentNumber>S-INV-77812</int:originalDocumentNumber>
+        <int:date>2026-10-31</int:date>
+        <int:dateTax>2026-10-31</int:dateTax>
+        <int:dateAccounting>2026-10-31</int:dateAccounting>
+        <int:dateDelivery>2026-10-31</int:dateDelivery>
+        <int:dateKVDPH>2026-10-31</int:dateKVDPH>
+        <int:text>Odpočet DPH z nadobudnutia tovaru a služby, var.sym. 77812</int:text>
+        <int:partnerIdentity>
+          <typ:address>
+            <typ:company>Anthropic, PBC</typ:company>
+            <typ:city>San Francisco</typ:city>
+            <typ:street>548 Market Street</typ:street>
+            <typ:zip>94104</typ:zip>
+            <typ:country><typ:ids>US</typ:ids></typ:country>
+          </typ:address>
+        </int:partnerIdentity>
+        <int:accounting><typ:ids>bInt</typ:ids></int:accounting>
+        <int:classificationVAT><typ:ids>PDsluz</typ:ids></int:classificationVAT>
+        <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+      </int:intDocHeader>
+      <int:intDocDetail>
+        <int:intDocItem>
+          <int:text>Claude Team — predplatné</int:text>
+          <int:quantity>1</int:quantity>
+          <int:payVAT>false</int:payVAT>
+          <int:rateVAT>high</int:rateVAT>
+          <int:homeCurrency>
+            <typ:unitPrice>172.24</typ:unitPrice>
+            <typ:price>172.24</typ:price>
+            <typ:priceVAT>39.62</typ:priceVAT>
+            <typ:priceSum>211.86</typ:priceSum>
+          </int:homeCurrency>
+          <int:foreignCurrency>
+            <typ:unitPrice>200.00</typ:unitPrice>
+            <typ:price>200.00</typ:price>
+            <typ:priceVAT>46.00</typ:priceVAT>
+            <typ:priceSum>246.00</typ:priceSum>
+          </int:foreignCurrency>
+          <int:accounting><typ:ids>bInt</typ:ids></int:accounting>
+          <int:classificationVAT><typ:ids>PDsluz</typ:ids></int:classificationVAT>
+          <int:classificationKVDPH><typ:ids>B1</typ:ids></int:classificationKVDPH>
+        </int:intDocItem>
+      </int:intDocDetail>
+      <int:intDocSummary>
+        <int:roundingDocument>none</int:roundingDocument>
+        <int:roundingVAT>none</int:roundingVAT>
+        <int:foreignCurrency>
+          <typ:currency><typ:ids>USD</typ:ids></typ:currency>
+          <typ:rate>1.1612</typ:rate>
+          <typ:amount>1</typ:amount>
+          <typ:priceSum>246.00</typ:priceSum>
+        </int:foreignCurrency>
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>
+</dat:dataPack>

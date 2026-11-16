@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Export z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="inv-v" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:number><typ:numberRequested>FA2026002</typ:numberRequested></inv:number>
+        <inv:symVar>2026001</inv:symVar>
+        <inv:symConst>0308</inv:symConst>
+        <inv:symSpec>77</inv:symSpec>
+        <inv:date>2026-10-10</inv:date>
+        <inv:dateTax>2026-10-08</inv:dateTax>
+        <inv:dateDue>2026-10-24</inv:dateDue>
+        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:note>Ďakujeme za spoluprácu</inv:note>
+        <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+        <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
+        <inv:classificationKVDPH><typ:ids>A1</typ:ids></inv:classificationKVDPH>
+        <inv:centre><typ:ids>KE</typ:ids></inv:centre>
+        <inv:activity><typ:ids>SLUZBY</typ:ids></inv:activity>
+        <inv:intNote>Interná poznámka</inv:intNote>
+        <inv:numberOrder>OBJ-55/2026</inv:numberOrder>
+        <inv:partnerIdentity>
+          <typ:address>
+            <typ:company>Odberateľ a.s.</typ:company>
+            <typ:street>Obchodná 5</typ:street>
+            <typ:city>Bratislava</typ:city>
+            <typ:zip>81106</typ:zip>
+            <typ:country><typ:ids>SK</typ:ids></typ:country>
+            <typ:ico>35999888</typ:ico>
+            <typ:dic>2021999888</typ:dic>
+            <typ:icDph>SK2021999888</typ:icDph>
+            <typ:email>uctaren@odberatel.sk</typ:email>
+          </typ:address>
+        </inv:partnerIdentity>
+        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
+        <inv:account><typ:ids>TB</typ:ids></inv:account>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Konzultácia</inv:text>
+          <inv:quantity>2</inv:quantity>
+          <inv:unit>hod</inv:unit>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>50.00</typ:unitPrice>
+            <typ:price>100.00</typ:price>
+            <typ:priceVAT>23.00</typ:priceVAT>
+            <typ:priceSum>123.00</typ:priceSum>
+          </inv:homeCurrency>
+          <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
+          <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
+          <inv:classificationKVDPH><typ:ids>A1</typ:ids></inv:classificationKVDPH>
+        </inv:invoiceItem>
+        <inv:invoiceAdvancePaymentItem>
+          <inv:sourceDocument>
+            <typ:number>ZF2026001</typ:number>
+          </inv:sourceDocument>
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>-50.00</typ:unitPrice>
+            <typ:price>-50.00</typ:price>
+            <typ:priceVAT>-11.50</typ:priceVAT>
+          </inv:homeCurrency>
+        </inv:invoiceAdvancePaymentItem>
+      </inv:invoiceDetail>
+      <inv:invoiceSummary>
+        <inv:roundingDocument>none</inv:roundingDocument>
+        <inv:roundingVAT>none</inv:roundingVAT>
+        <inv:homeCurrency>
+          <typ:priceNone>0.00</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>50.00</typ:priceHigh>
+          <typ:priceHighVAT>11.50</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>
+</dat:dataPack>
