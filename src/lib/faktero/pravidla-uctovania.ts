@@ -41,13 +41,14 @@ export function ponukaKodovPravidla(druh: DruhPravidla | null | undefined): "pri
   return "doklad";
 }
 
-/** Typ faktúry ako podmienka — prijaté poznajú len prvé tri. */
+/** Typ faktúry ako podmienka — prijaté poznajú faktúru, zálohovú, dobropis a daňový doklad k platbe. */
 export const TYPY_DOKLADU: { kod: string; nazov: string; prijata: boolean }[] = [
   { kod: "regular", nazov: "Faktúra", prijata: true },
   { kod: "proforma", nazov: "Zálohová faktúra", prijata: true },
   { kod: "credit_note", nazov: "Dobropis", prijata: true },
   { kod: "debit_note", nazov: "Ťarchopis", prijata: false },
-  { kod: "advance_payment", nazov: "Daňový doklad k platbe", prijata: false },
+  // Prijatý daňový doklad k prijatej platbe dostane len pravidlo s týmto typom (nie pravidlo dodávateľa pre náklady).
+  { kod: "advance_payment", nazov: "Daňový doklad k platbe", prijata: true },
 ];
 
 export const SMERY_POHYBU: { kod: "prijem" | "vydaj"; nazov: string }[] = [
@@ -148,6 +149,7 @@ export function typPrijatej(
   opravuje: string | null | undefined,
 ): string {
   if (typ === "proforma") return "proforma";
+  if (typ === "advance_payment") return "advance_payment";
   if (Number(suma ?? 0) < 0 || String(opravuje ?? "").trim()) return "credit_note";
   return "regular";
 }

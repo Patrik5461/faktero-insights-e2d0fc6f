@@ -29,6 +29,7 @@ import { chybaUlozenehoRozuctovaniaVystavenej, platneRozuctovanieVystavenej } fr
 import { ucinneClenenie as clenenieZauctovania } from "./clenenie-zauctovania";
 import { domacaMena } from "./kurzy";
 import { isAccountingDocument } from "./uctovny-doklad";
+import { TYP_POHODY_PRIJATY_DANOVY } from "./prijaty-danovy-doklad";
 import { chybaClenenieMimoTuzemska, clenenieMimoTuzemska } from "./clenenie-vystavenej";
 import {
   DOVOD_NEPLATITEL_PRIJATY,
@@ -705,8 +706,13 @@ export function prekazkaDokladu(
   )
     return `${cislo} — ${DOVOD_NEPLATITEL_PRIJATY}`;
 
-  // Zaúčtovaná prijatá faktúra musí mať predkontáciu aj členenie.
-  if (d?._zauctovane) {
+  /*
+    Zaúčtovaná prijatá faktúra musí mať predkontáciu aj členenie. Prijatý
+    daňový doklad k platbe nie: náhradná predkontácia prijatých faktúr je
+    nákladová a export ju nepoužije (interný doklad ide len s vlastnou, inak
+    bez nej — ako vystavený daňový doklad k platbe); upozorní `varovanieDokladu`.
+  */
+  if (d?._zauctovane && d?._typPohody !== TYP_POHODY_PRIJATY_DANOVY) {
     const podlaKat = nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
     const rozuct = Array.isArray(d?.rozuctovanie) ? d.rozuctovanie : [];
     const rozuctovane = (pole: string) =>
@@ -752,10 +758,27 @@ export function varovanieDokladu(
 ): string | null {
   return (
     varovanieCislaZMailu(d) ??
+    varovaniePrijatehoDanoveho(d) ??
     varovanieZavazku(d, nastavenia) ??
     varovanieNeznamehoKodu(d, nastavenia) ??
     varovanieKvPrijatej(d, company)
   );
+}
+
+/** Upozornenie pri prijatom daňovom doklade k platbe bez vlastnej predkontácie. */
+export const VAROVANIE_DANOVY_BEZ_PREDKONTACIE =
+  "Daňový doklad k prijatej platbe nemá predkontáciu (napr. 343/314) — v Pohode ho zaúčtujte ručne";
+
+/**
+ * Prijatý daňový doklad k platbe ide do Pohody ako interný doklad len
+ * s vlastnou predkontáciou (náhradná predkontácia prijatých faktúr je
+ * nákladová). Bez nej ide bez predkontácie — doklad sa nezastaví.
+ */
+export function varovaniePrijatehoDanoveho(d: Riadok): string | null {
+  if (d?._typPohody !== TYP_POHODY_PRIJATY_DANOVY) return null;
+  if (kod(d?.pohoda_predkontacia)) return null;
+  const cislo = kod(d?._povodneCislo || d?.document_number) || "?";
+  return `${cislo} — ${VAROVANIE_DANOVY_BEZ_PREDKONTACIE}`;
 }
 
 /**
@@ -782,7 +805,8 @@ export function varovanieCislaZMailu(d: Riadok): string | null {
  * pridané bez agendy); záväzkové kódy hlási `varovanieZavazku`.
  */
 function varovanieNeznamehoKodu(d: Riadok, nastavenia?: Riadok | null): string | null {
-  if (!d?._typPohody) return null;
+  // Interný doklad (prijatý daňový doklad k platbe) má kódy z inej agendy.
+  if (!d?._typPohody || d._typPohody === TYP_POHODY_PRIJATY_DANOVY) return null;
   const zname: string[] = Array.isArray(nastavenia?.predkontaciePrijatych)
     ? nastavenia.predkontaciePrijatych.map((x: unknown) => kod(x))
     : [];

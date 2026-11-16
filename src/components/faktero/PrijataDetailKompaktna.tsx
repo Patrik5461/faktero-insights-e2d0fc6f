@@ -15,6 +15,7 @@ import { formatujIban, upravIban } from "@/lib/faktero/platobny-ucet";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { typPrijatejFaktury } from "@/lib/faktero/uhrady-prijatej";
+import { jePrijatyDanovyDoklad } from "@/lib/faktero/prijaty-danovy-doklad";
 import { zadaj } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
@@ -133,7 +134,9 @@ export function PrijataDetailKompaktna({
     void nacitaj();
     onZmena();
   };
-  const uhradaMozna = !navrh && row.status !== "cancelled" && row.status !== "draft";
+  // Daňový doklad k prijatej platbe sa neplatí — záloha, ku ktorej patrí, je zaplatená.
+  const danovy = jePrijatyDanovyDoklad(row);
+  const uhradaMozna = !navrh && !danovy && row.status !== "cancelled" && row.status !== "draft";
   const polozkyVypnute =
     Array.isArray(row.polozky_vypnute) &&
     row.polozky_vypnute.length > 0 &&
@@ -207,7 +210,7 @@ export function PrijataDetailKompaktna({
         <Sekcia nadpis="Základné údaje" id="zauctovanie">
           <Hodnota popis="Typ dokladu">{t(typPrijatejFaktury(row, krajina))}</Hodnota>
           {/* Zaúčtovanie hneď za typom dokladu — ako pri nespracovanom doklade. */}
-          {row.type === "regular" && !navrh ? (
+          {(row.type === "regular" || danovy) && !navrh ? (
             <ZauctovaniePanel
               row={row}
               onZmena={onZmena}
@@ -234,14 +237,21 @@ export function PrijataDetailKompaktna({
               }
             />
           ) : null}
-          <Hodnota popis="Číslo faktúry">{row.invoice_number}</Hodnota>
+          <Hodnota popis={danovy ? "Číslo dokladu" : "Číslo faktúry"}>{row.invoice_number}</Hodnota>
+          {danovy ? (
+            <>
+              <Hodnota popis="Dátum vydania">{datumNaDoklade(row.issue_date)}</Hodnota>
+              <Hodnota popis="K zálohovej faktúre">{cisloZalohy}</Hodnota>
+            </>
+          ) : (
           <div className="grid grid-cols-2 gap-3">
             <Hodnota popis="Dátum vydania">{datumNaDoklade(row.issue_date)}</Hodnota>
             <Hodnota popis="Dátum splatnosti">
               {row.due_date ? datumNaDoklade(row.due_date) : null}
             </Hodnota>
           </div>
-          <Hodnota popis="Dátum dodania (DUZP)">
+          )}
+          <Hodnota popis={danovy ? "Dátum prijatia platby (DUZP)" : "Dátum dodania (DUZP)"}>
             {datumNaDoklade(row.delivery_date ?? row.issue_date)}
           </Hodnota>
           {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
@@ -313,7 +323,7 @@ export function PrijataDetailKompaktna({
               </Hodnota>
             </div>
           ))}
-          {stav.zaloha > 0 ? (
+          {stav.zaloha > 0 && !danovy ? (
             <div className="grid grid-cols-2 gap-3">
               <Hodnota
                 popis={cisloZalohy ? t("Odpočet zálohy č. {cislo}", { cislo: cisloZalohy }) : t("Odpočet zálohy")}
@@ -328,6 +338,10 @@ export function PrijataDetailKompaktna({
           {row.type === "proforma" ? (
             <p className="text-xs text-muted-foreground">
               {t("Nie je daňový doklad — daň prinesie ostrá faktúra.")}
+            </p>
+          ) : danovy ? (
+            <p className="text-xs text-muted-foreground">
+              {t("K zaplatenej zálohe — neplatí sa, DPH sa z neho odpočíta.")}
             </p>
           ) : null}
           {/* Uložená faktúra so zlou DPH (staré dáta, prenos len s hlavičkou) — oprava rozpisu. */}

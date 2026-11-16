@@ -12,7 +12,9 @@ import {
   polozkyZauctovane,
   udajeZAi,
   doplnUdaje,
+  jeDruhPrijatej,
   type DruhNespracovaneho,
+  type DruhPrijatej,
   type PredvolbySkenu,
   type UdajeNespracovaneho,
 } from "./nespracovane";
@@ -271,6 +273,12 @@ export async function najdiZalohovuPrijatu(
   supabase: any,
   companyId: string,
   u: Pick<UdajeNespracovaneho, "zalohaCislo" | "dodavatel">,
+  /**
+   * `faktura` (predvolené) — zálohu zúčtováva vyúčtovacia faktúra; obsadená je
+   * zálohová, ktorú už zúčtováva iná faktúra. `danovy` — daňový doklad
+   * k platbe; obsadená je zálohová, ku ktorej už iný daňový doklad je.
+   */
+  pre: "faktura" | "danovy" = "faktura",
 ): Promise<string | null> {
   try {
     const { najdiZalohovuPodlaCisla, dodavatelZalohySedi } = await import("./odpocet-zalohy-vytazenie");
@@ -287,12 +295,17 @@ export async function najdiZalohovuPrijatu(
     if (!zaloha) return null;
     const { data: obsadena } = await supabase
       .from("purchase_invoices")
-      .select("id")
+      .select("id, type")
       .eq("company_id", companyId)
       .eq("advance_invoice_id", zaloha.id)
       .is("deleted_at", null)
-      .limit(1);
-    return (obsadena ?? []).length ? null : zaloha.id;
+      .limit(50);
+    // Daňový doklad k platbe zálohu nevyúčtováva — vyúčtovacej faktúre ju neobsadí (a naopak).
+    const { jePrijatyDanovyDoklad } = await import("./prijaty-danovy-doklad");
+    const obsadzuje = ((obsadena ?? []) as any[]).some((x) =>
+      pre === "danovy" ? jePrijatyDanovyDoklad(x) : !jePrijatyDanovyDoklad(x),
+    );
+    return obsadzuje ? null : zaloha.id;
   } catch (e: any) {
     console.warn("[nespracovane] zálohovú faktúru sa nepodarilo dohľadať:", e?.message ?? e);
     return null;
@@ -384,6 +397,31 @@ const ZDROJ_BLOCKU: Record<string, string> = {
  * súbor do kbelíka cieľovej agendy a nespracovaný záznam zmaže. Píše sa cez
  * klienta prihláseného — RLS a obmedzenia rolí platia ako pri ručnom zápise.
  */
+/**
+ * Prijatá zálohová faktúra pre daňový doklad k platbe: vybraná človekom
+ * (`zalohaId` — len zálohová tej istej firmy), inak podľa čísla zálohovej
+ * na doklade a dodávateľa (`najdiZalohovuPrijatu`).
+ */
+async function zalohovaPreDanovy(
+  supabase: any,
+  companyId: string,
+  u: Pick<UdajeNespracovaneho, "zalohaId" | "zalohaCislo" | "dodavatel">,
+): Promise<string | null> {
+  const id = String(u.zalohaId ?? "").trim();
+  if (/^[0-9a-f-]{36}$/i.test(id)) {
+    const { data } = await supabase
+      .from("purchase_invoices")
+      .select("id")
+      .eq("id", id)
+      .eq("company_id", companyId)
+      .eq("type", "proforma")
+      .is("deleted_at", null)
+      .maybeSingle();
+    return data?.id ?? null;
+  }
+  return u.zalohaCislo ? najdiZalohovuPrijatu(supabase, companyId, u, "danovy") : null;
+}
+
 export async function vytvorDoklad(
   supabase: Klient,
   userId: string,
@@ -505,7 +543,8 @@ export async function vytvorDoklad(
     cudzia?: boolean;
     duplicita?: boolean;
   };
-  if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
+  if (jeDruhPrijatej(druh)) {
+    const danovy = druh === "danovy";
     const zakl = prijataZUdajov(druh, { ...u, datumPrijatia: u.datumPrijatia || (await predvolenePrijatie(supabase, r)) }, dnes);
     /*
       Tá istá faktúra už v evidencii je (rovnaké číslo, dodávateľ, suma aj
@@ -524,10 +563,16 @@ export async function vytvorDoklad(
       await strazDphZapisu(supabase, r.company_id, "purchase_invoices", { ...zakl, status: "received" });
     }
     // Odpočet zálohy na faktúre — väzba na prijatú zálohovú faktúru podľa čísla z dokladu.
+    /*
+      Daňový doklad k platbe: zálohová, ktorú človek vybral (overí sa, že je
+      zálohová tej istej firmy), inak podľa čísla zálohovej z dokladu.
+    */
     const zalohovaId =
       druh === "faktura" && zakl.advance_amount && u.zalohaCislo
         ? await najdiZalohovuPrijatu(supabase, r.company_id, u)
-        : null;
+        : danovy
+          ? await zalohovaPreDanovy(supabase, r.company_id, u)
+          : null;
     const cesta = bajty ? `${r.company_id}/${crypto.randomUUID()}.${pripona}` : null;
     if (cesta && bajty) {
       const up = await supabase.storage.from("purchase-invoices").upload(cesta, bajty, { contentType: mime });
@@ -554,7 +599,8 @@ export async function vytvorDoklad(
     const zauctovat =
       !cudzia && !duplicitna && Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
     // Zaplatená ostáva zaplatená aj zaúčtovaná (ako po zaúčtovaní v paneli).
-    const stav = (zauct: boolean) => (u.uhradene ? "paid" : zauct ? "booked" : "received");
+    // Daňový doklad k platbe je vždy zaplatený — záloha už odišla, nič sa neplatí ani nepáruje.
+    const stav = (zauct: boolean) => (u.uhradene || danovy ? "paid" : zauct ? "booked" : "received");
     const { data, error } = await supabase
       .from("purchase_invoices")
       .insert({
@@ -576,7 +622,7 @@ export async function vytvorDoklad(
         zauctoval: zauctovat ? userId : null,
         ...zdrojZauctovaniaPriVytvoreni(zauctovat),
         ...(cudzia ? { odberatel_nesedi: { ...cudzia, zistene_at: teraz } } : {}),
-        ...(zalohovaId ? { advance_invoice_id: zalohovaId } : {}),
+        ...(zalohovaId ? { advance_invoice_id: zalohovaId } : danovy ? { advance_invoice_id: null } : {}),
         ...rucnaUprava,
       })
       .select("id, pohoda_predkontacia, pohoda_clenenie_dph, category, reverse_charge")
@@ -599,7 +645,11 @@ export async function vytvorDoklad(
       návrh AI počká na potvrdenie v zaúčtovaní faktúry.
     */
     let zauctovana = zauctovat;
-    if (!cudzia && !duplicitna && !zauctovat && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
+    /*
+      Daňový doklad k platbe sa predvolenými kódmi prijatých faktúr (náklad)
+      nezaúčtuje — DPH zo zálohy sa účtuje inak; zaúčtuje ho človek.
+    */
+    if (!cudzia && !duplicitna && !zauctovat && !danovy && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
       const { kodyPrijatejUrcene } = await import("./nespracovane-nastavenia");
       const { kodyPodlaKategorie } = await import("./predkontacie.server");
       const { data: firma } = await supabase
@@ -823,7 +873,7 @@ export type DuplicitaNespracovaneho = {
   zauctovana: boolean;
 };
 
-const DRUHY_PRIJATEJ = new Set(["faktura", "zalohova", "dobropis"]);
+const DRUHY_PRIJATEJ = new Set(["faktura", "zalohova", "danovy", "dobropis"]);
 
 /**
  * Nespracované doklady, ktoré opakujú prijatú faktúru v evidencii — pre
@@ -844,7 +894,7 @@ export async function duplicityNespracovanych(
     if (!DRUHY_PRIJATEJ.has(druh)) continue;
     const u = nacitajUdaje(r.udaje);
     if (!u.cislo.trim()) continue;
-    faktury.push({ ...prijataZUdajov(druh as "faktura", u, dnes), id: r.id, status: "received" });
+    faktury.push({ ...prijataZUdajov(druh as DruhPrijatej, u, dnes), id: r.id, status: "received" });
   }
   if (!faktury.length) return out;
   const { kandidatiDuplicit } = await import("./duplicita-zauctovania.server");

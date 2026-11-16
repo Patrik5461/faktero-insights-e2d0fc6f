@@ -184,7 +184,8 @@ function sucty(
 const PrijataVstup = z.object({
   external_id: z.string().trim().max(120).nullish(),
   invoice_number: z.string().trim().min(1).max(80),
-  type: z.enum(["regular", "proforma"]).default("regular"),
+  // advance_payment = daňový doklad k prijatej platbe (k zaplatenej zálohe) — vznikne rovno zaplatený.
+  type: z.enum(["regular", "proforma", "advance_payment"]).default("regular"),
   supplier: Partner,
   issue_date: DATUM,
   delivery_date: DATUM.nullish(),
@@ -317,6 +318,14 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
   if (d.payment_date !== undefined) {
     r.payment_date = d.payment_date;
     if (d.payment_date) r.status = "paid";
+  }
+  /*
+    Daňový doklad k prijatej platbe sa neplatí — záloha je už zaplatená:
+    stav `paid`, deň platby = DUZP (dátum dodania), inak vystavenie.
+  */
+  if (d.type === "advance_payment") {
+    r.status = "paid";
+    if (!r.payment_date) r.payment_date = d.delivery_date || d.issue_date || null;
   }
   if (d.accounting) {
     nastav("pohoda_predkontacia", a.predkontacia);

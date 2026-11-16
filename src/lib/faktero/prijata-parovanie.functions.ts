@@ -66,6 +66,8 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
       .is("deleted_at", null)
       .gte("issue_date", od)
       .neq("status", "cancelled")
+      // Daňový doklad k prijatej platbe sa neplatí — záloha, ku ktorej patrí, je už zaplatená.
+      .neq("type", "advance_payment")
       // Hotovosť sa v banke neobjaví, tak ju netreba ani ťahať.
       .or("payment_method.is.null,payment_method.neq.hotovost");
     if (data.typ) dotazFaktur = dotazFaktur.eq("type", data.typ).not("status", "in", "(paid,draft)");

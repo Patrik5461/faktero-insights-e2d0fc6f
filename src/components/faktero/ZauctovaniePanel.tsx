@@ -506,7 +506,7 @@ export function ZauctovaniePanel({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    nacitajNavrhy({ data: { company_id: row.company_id } })
+    nacitajNavrhy({ data: { company_id: row.company_id, ...(row.type === "advance_payment" ? { pre: "prijata" as const, typ: "advance_payment" } : {}) } })
       .then(setNavrhy)
       .catch(() => {});
   }, [row.company_id, nacitajNavrhy]);
@@ -1034,7 +1034,7 @@ export function ZauctovaniePanel({
                   kv: navrhy?.predvoleneKv,
                 }}
                 onUlozene={() =>
-                  nacitajNavrhy({ data: { company_id: row.company_id } })
+                  nacitajNavrhy({ data: { company_id: row.company_id, ...(row.type === "advance_payment" ? { pre: "prijata" as const, typ: "advance_payment" } : {}) } })
                     .then(setNavrhy)
                     .catch(() => {})
                 }
@@ -1398,7 +1398,7 @@ export function ZauctovaniePanel({
                 kv: navrhy?.predvoleneKv,
               }}
               onUlozene={() =>
-                nacitajNavrhy({ data: { company_id: row.company_id } })
+                nacitajNavrhy({ data: { company_id: row.company_id, ...(row.type === "advance_payment" ? { pre: "prijata" as const, typ: "advance_payment" } : {}) } })
                   .then(setNavrhy)
                   .catch(() => {})
               }
@@ -1578,7 +1578,7 @@ export function ZauctovaniePanel({
                 kv: navrhy?.predvoleneKv,
               }}
               onUlozene={() =>
-                nacitajNavrhy({ data: { company_id: row.company_id } })
+                nacitajNavrhy({ data: { company_id: row.company_id, ...(row.type === "advance_payment" ? { pre: "prijata" as const, typ: "advance_payment" } : {}) } })
                   .then(setNavrhy)
                   .catch(() => {})
               }

@@ -874,6 +874,38 @@ describe("zlaté vzorky — prijaté doklady", () => {
     );
     await vzorka("prijata-14-cz-firma", x);
   });
+
+  it("prijatý daňový doklad k prijatej platbe: interný doklad s PD a KV B2, odpočet podľa prijatia", async () => {
+    /*
+      Doklad od dodávateľa k našej zaplatenej zálohe (purchase_invoices.type
+      advance_payment): DUZP = deň platby 8. 10., doklad prišiel 12. 10. →
+      dateTax a dateKVDPH 12. 10. Vlastná predkontácia „343/314“ (DPH zo
+      zálohy), členenie PD z nastavení firmy, KV B2 automaticky. Bez
+      splatnosti, účtu dodávateľa a odpočtu zálohy — záloha je zaplatená.
+    */
+    const x = prijateXml([
+      prijata({
+        id: "pi-ddp",
+        type: "advance_payment",
+        status: "paid",
+        invoice_number: "DD2026015",
+        variable_symbol: "2026015",
+        constant_symbol: null,
+        order_number: null,
+        issue_date: "2026-10-09",
+        delivery_date: "2026-10-08",
+        received_date: "2026-10-12",
+        payment_date: "2026-10-08",
+        due_date: "2026-10-09",
+        advance_invoice_id: "pi-zf",
+        pohoda_predkontacia: "343/314",
+        pohoda_clenenie_dph: null,
+        items: null,
+        vat_breakdown: [{ sadzba: 23, zaklad: 100, dph: 23 }],
+      }),
+    ]);
+    await vzorka("prijata-15-danovy-doklad-k-platbe", x);
+  });
 });
 
 /* ------------------------------------------------------------ bločky */

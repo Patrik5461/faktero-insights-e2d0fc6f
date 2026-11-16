@@ -346,7 +346,7 @@ const STL_UHRADY =
 async function prijataNaUhrady(ctx: ApiCtx, id: string) {
   const { data } = await (ctx.supabase as any)
     .from("purchase_invoices")
-    .select("id, status, amount_total, currency, payment_method, advance_invoice_id, advance_amount")
+    .select("id, type, status, amount_total, currency, payment_method, advance_invoice_id, advance_amount")
     .eq("company_id", ctx.company_id)
     .eq("id", id)
     .is("deleted_at", null)
@@ -431,6 +431,13 @@ export async function pridajUhradu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     return err("invalid_state", "Stornovaná faktúra sa neuhrádza.", 409);
   if (f.status === "draft")
     return err("invalid_state", "Koncept faktúry sa neuhrádza — najprv ho dokončite.", 409);
+  // Daňový doklad k prijatej platbe: záloha je už zaplatená (úhrada patrí k zálohovej faktúre).
+  if (f.type === "advance_payment")
+    return err(
+      "invalid_state",
+      "Daňový doklad k prijatej platbe sa neuhrádza — záloha je už zaplatená; úhradu zapíšte k prijatej zálohovej faktúre.",
+      409,
+    );
   const metoda = sposobUhradyPrijatej(d.method) ?? sposobUhradyPrijatej(f.payment_method);
   const { data, error } = await db
     .from("purchase_invoice_payments")

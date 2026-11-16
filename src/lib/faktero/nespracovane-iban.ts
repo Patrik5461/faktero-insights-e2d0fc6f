@@ -31,7 +31,7 @@ export function vlastnyUcetDokladu(
 }
 
 /** Druhy, pri ktorých by vlastná faktúra skončila omylom medzi prijatými. */
-const PRIJATE = new Set(["faktura", "zalohova", "dobropis"]);
+const PRIJATE = new Set(["faktura", "zalohova", "danovy", "dobropis"]);
 
 /**
  * Je doklad podľa IBAN-u vystavená faktúra firmy? Platí, keď je nastavenie

@@ -47,7 +47,7 @@ export const NAZVY_POLI_UCENIA: Record<PoleUcenia, string> = {
 };
 
 /** Druhy, pri ktorých sa učí (iný doklad nemá zaúčtovanie). */
-export type DruhUcenia = Exclude<DruhNespracovaneho, "ostatny">;
+export type DruhUcenia = Exclude<DruhNespracovaneho, "ostatny" | "danovy">;
 export const DRUHY_UCENIA: DruhUcenia[] = ["faktura", "zalohova", "dobropis", "blocek"];
 export const jeDruhUcenia = (d: unknown): d is DruhUcenia => DRUHY_UCENIA.includes(d as DruhUcenia);
 
@@ -271,13 +271,15 @@ export function pridajVolby(
   return out;
 }
 
-/** Druh z riadka `purchase_invoices` (rovnako ako `udajeZPrijatej`). */
+/** Druh z riadka `purchase_invoices` (rovnako ako `udajeZPrijatej`); daňový doklad k platbe `null`. */
 export function druhPrijatej(p: {
   type?: string | null;
   amount_total?: number | string | null;
   opravuje_cislo?: string | null;
-}): DruhUcenia {
+}): DruhUcenia | null {
   if (p.type === "proforma") return "zalohova";
+  // Daňový doklad k platbe sa neučí — jeho zaúčtovanie (DPH zo zálohy) nie je zvyk pre faktúry dodávateľa.
+  if (p.type === "advance_payment") return null;
   if (String(p.opravuje_cislo ?? "").trim() || Number(p.amount_total ?? 0) < 0) return "dobropis";
   return "faktura";
 }

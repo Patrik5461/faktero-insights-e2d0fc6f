@@ -8,7 +8,7 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
   rozpracovaného, vytvorenie dokladu a zmazanie do koša.
 */
 
-const DRUH = z.enum(["faktura", "zalohova", "dobropis", "blocek", "ostatny"]);
+const DRUH = z.enum(["faktura", "zalohova", "danovy", "dobropis", "blocek", "ostatny"]);
 
 export const nespracovaneFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -391,7 +391,7 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
       Odberateľ na doklade je iná firma — bez výslovného „Uložiť aj tak“ sa
       prijatá faktúra nezaloží. Rozhranie podľa predpony chyby ukáže voľby.
     */
-    if (!data.ajCudziu && (data.druh === "faktura" || data.druh === "zalohova" || data.druh === "dobropis")) {
+    if (!data.ajCudziu && (data.druh === "faktura" || data.druh === "zalohova" || data.druh === "danovy" || data.druh === "dobropis")) {
       const { nesediNespracovany, firmaNaPorovnanie } = await import("./cudzia-faktura.server");
       const { chybaCudzej } = await import("./cudzia-faktura");
       const n = nesediNespracovany({ ...r, druh: data.druh }, await firmaNaPorovnanie(supabase, r.company_id));

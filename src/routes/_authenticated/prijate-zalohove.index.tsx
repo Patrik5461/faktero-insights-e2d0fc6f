@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { obsadzujeZalohu } from "@/lib/faktero/prijaty-danovy-doklad";
 import { useT } from "@/lib/i18n/useT";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -121,13 +122,14 @@ function PrijateZalohovePage() {
     }
     const { data: faktury } = await supabase
       .from("purchase_invoices")
-      .select("invoice_number, advance_invoice_id")
+      .select("invoice_number, advance_invoice_id, type")
       .eq("company_id", cid)
       .is("deleted_at", null)
       .in("advance_invoice_id", ids);
     const mapa: Record<string, string> = {};
     for (const f of (faktury ?? []) as any[]) {
-      if (f.advance_invoice_id) mapa[f.advance_invoice_id] = f.invoice_number;
+      // Daňový doklad k platbe zálohu nezúčtováva — zúčtuje ju až vyúčtovacia faktúra.
+      if (f.advance_invoice_id && obsadzujeZalohu(f)) mapa[f.advance_invoice_id] = f.invoice_number;
     }
     setZuctovane(mapa);
   }

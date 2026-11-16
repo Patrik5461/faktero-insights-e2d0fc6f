@@ -119,12 +119,13 @@ async function najdiZalohovu(
       (r.dodavatel.nazov && norm(z.supplier_name) === norm(r.dodavatel.nazov)),
   );
   if (!kandidat) return null;
-  // Zálohu zúčtuje najviac jedna faktúra.
+  // Zálohu zúčtuje najviac jedna faktúra (daňový doklad k platbe ju nezúčtováva).
   const { data: pouzita } = await supabase
     .from("purchase_invoices")
     .select("id")
     .eq("company_id", companyId)
     .eq("advance_invoice_id", kandidat.id)
+    .neq("type", "advance_payment")
     .is("deleted_at", null)
     .limit(1);
   return pouzita?.length ? null : kandidat.id;

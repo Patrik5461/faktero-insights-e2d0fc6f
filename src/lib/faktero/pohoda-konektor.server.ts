@@ -19,6 +19,7 @@ import type { PohodaNastavenia } from "./export.server";
 import type { PolozkaOdpoctuPohody as OdpocetZalohy } from "./zalohy-odpocty";
 import { rozoberBalikOdpovede, type VysledokDokladu } from "./pohoda-odpoved";
 import { riadkyPreIds, vsetkoAkoData } from "./strankovanie";
+import { TYPY_PRIJATYCH_DO_EXPORTU } from "./prijaty-danovy-doklad";
 
 /** Riadky z databázy sa tu netypujú — modul ich len prekladá do XML. */
 type Riadok = any;
@@ -311,7 +312,7 @@ export async function zostavDavku(
     .or("zauctovane_at.not.is.null,type.eq.proforma")
     .is("exported_at", null)
     .is("deleted_at", null)
-    .in("type", ["regular", "proforma"])
+    .in("type", [...TYPY_PRIJATYCH_DO_EXPORTU])
     .order("issue_date")
     .order("id")
     .limit(STROP_DAVKY + pocetNaCeste);

@@ -141,7 +141,9 @@ ${DRUHY_PRE_AI}
 Do JSON pridaj: "document_type", "other_kind", "other_subject", "other_due_date", "summary".
 Pri "faktura" vyplň aj "document_subtype": "zalohova" pre zálohovú, proforma či preddavkovú
 faktúru (nie je daňový doklad), "dobropis" pre dobropis či opravnú faktúru, "blocek" pre
-pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací lístok, inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
+pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací lístok, "danovy_doklad_k_platbe"
+pre daňový doklad k prijatej platbe (k zálohe) — dodávateľ ho vystavil po prijatí našej zálohy („Daňový doklad
+k prijatej platbe“, „Daňový doklad k přijaté platbě“), inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
 Pri bločku pridaj "payment_method": "hotovost" (hotovosť, v hotovosti, cash), "karta" (karta,
 platobná karta, kartou, Visa, Mastercard) alebo "prevod"; keď na doklade nie je, null.

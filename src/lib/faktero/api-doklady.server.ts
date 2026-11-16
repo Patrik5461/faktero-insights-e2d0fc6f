@@ -49,6 +49,9 @@ const STL_PRIJATEJ = [
   "rozuctovanie",
   "note",
   "opravuje_cislo",
+  // Daňový doklad k prijatej platbe (type advance_payment): deň platby a zálohová faktúra, ku ktorej patrí.
+  "payment_date",
+  "advance_invoice_id",
   "order_number",
   "delivery_note_number",
   "stav_id",
@@ -129,6 +132,13 @@ export async function zoznamDokladov(ctx: ApiCtx, druh: DruhApi) {
   if (exportovane === "true") q = q.not("exported_at", "is", null);
   if (exportovane === "false") q = q.is("exported_at", null);
   if (druh === "prijata" && p.get("booked") === "true") q = q.not("zauctovane_at", "is", null);
+  // Typ prijatého dokladu: regular (faktúra, dobropis), proforma (zálohová), advance_payment (daňový doklad k platbe).
+  const typ = p.get("type");
+  if (druh === "prijata" && typ) {
+    if (!["regular", "proforma", "advance_payment"].includes(typ))
+      return err("validation_error", "type musí byť regular, proforma alebo advance_payment.");
+    q = q.eq("type", typ);
+  }
   // Pracovné značky: vlastný stav (id z /document-states) a štítok.
   const stav = p.get("stav_id");
   if (stav) {

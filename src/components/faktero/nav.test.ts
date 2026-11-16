@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { NAV, INVOICING_KEYS, LOGBOOK_KEYS, filterNav } from "./nav";
+import { NAV, INVOICING_KEYS, LOGBOOK_KEYS, filterNav, activeChildKey } from "./nav";
 import { podsekciePoloziek } from "./shell/BocnyPanel";
 
 /**
@@ -175,12 +175,20 @@ describe("filterNav", () => {
 
 describe("Prijaté bločky", () => {
   const fakturacia = () => NAV.find((g) => g.key === "fakturacia")!.children;
-  it("sú vo Fakturácii hneď za prijatými zálohovými, na spracovaných bločkoch", () => {
+  it("sú vo Fakturácii za prijatými zálohovými a daňovými dokladmi, na spracovaných bločkoch", () => {
     const deti = fakturacia();
     const i = deti.findIndex((c) => c.label === "Prijaté zálohové faktúry");
     expect(deti[i + 1]).toEqual(
+      expect.objectContaining({ to: "/prijate-faktury", search: { type: "danove" }, label: "Prijaté daňové doklady" }),
+    );
+    expect(deti[i + 2]).toEqual(
       expect.objectContaining({ to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky" }),
     );
+  });
+  it("Prijaté daňové doklady a Prijaté faktúry nesvietia naraz", () => {
+    const deti = fakturacia();
+    expect(activeChildKey(deti, "/prijate-faktury", { type: "danove" })).toBe("/prijate-fakturyPrijaté daňové doklady");
+    expect(activeChildKey(deti, "/prijate-faktury", {})).toBe("/prijate-fakturyPrijaté faktúry");
   });
   it("vidí ich ten, kto vidí Bločky — a nikto iný", () => {
     const ma = (opravnenia: unknown) =>

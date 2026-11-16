@@ -106,12 +106,14 @@ export function polozkaPrijatej(
     mena: r.currency,
     celkom,
     bezDph: r.amount_without_vat,
-    typ: r.type === "proforma" ? "proforma" : null,
+    // Daňový doklad k prijatej platbe je mimo súčtu ako vystavený (DPH zo zálohy, nie nákup) a neplatí sa.
+    typ: r.type === "proforma" ? "proforma" : r.type === "advance_payment" ? "advance_payment" : null,
     mimoSuctu: r.status === "cancelled" || o.zapocitatelna === false,
     naExport: !r.exported_at && !zrusena,
     naUhradu:
       !zrusena &&
       r.status !== "paid" &&
+      r.type !== "advance_payment" &&
       o.zapocitatelna !== false &&
       celkom > 0 &&
       !r.vyuctovanie_id &&
@@ -172,7 +174,14 @@ export function polozkaNespracovaneho(r: {
     mena: r.mena,
     celkom: r.suma ?? 0,
     bezDph: r.zaklad ?? null,
-    typ: druh === "zalohova" ? "proforma" : druh === "dobropis" ? "credit_note" : null,
+    typ:
+      druh === "zalohova"
+        ? "proforma"
+        : druh === "danovy"
+          ? "advance_payment"
+          : druh === "dobropis"
+            ? "credit_note"
+            : null,
     mimoSuctu: !doklad,
     naExport: doklad && !String(r.predkontacia ?? "").trim(),
     naUhradu:

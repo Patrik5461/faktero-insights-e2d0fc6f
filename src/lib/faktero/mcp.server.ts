@@ -436,12 +436,14 @@ export const NASTROJE: Nastroj[] = [
   {
     name: "list_purchase_invoices",
     title: "Prijaté faktúry",
-    description: "Prijaté faktúry od dodávateľov. Dátumy vystavenia vo formáte RRRR-MM-DD.",
+    description:
+      "Prijaté doklady od dodávateľov (type: regular = faktúra či dobropis, proforma = zálohová faktúra, advance_payment = daňový doklad k prijatej platbe — už zaplatený, neplatí sa). Dátumy vystavenia vo formáte RRRR-MM-DD.",
     inputSchema: {
       type: "object",
       properties: {
         issued_from: { type: "string" },
         issued_to: { type: "string" },
+        type: { type: "string", enum: ["regular", "proforma", "advance_payment"] },
         limit: { type: "integer", minimum: 1, maximum: 200, default: 50 },
       },
     },
@@ -450,7 +452,7 @@ export const NASTROJE: Nastroj[] = [
       const r = await nutne(
         await volaj(
           "GET",
-          `/api/v1/purchase-invoices${qs({ issued_from: a?.issued_from, issued_to: a?.issued_to, limit: a?.limit })}`,
+          `/api/v1/purchase-invoices${qs({ issued_from: a?.issued_from, issued_to: a?.issued_to, type: a?.type, limit: a?.limit })}`,
         ),
       );
       return { prijate: r.data ?? [], ma_dalsie: !!r.has_more };

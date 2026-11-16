@@ -16,12 +16,18 @@ export function DokladPoradie({
   id,
   createdAt,
   onOtvor,
+  typ,
 }: {
   tabulka: Tabulka;
   companyId: string;
   id: string;
   createdAt: string | null | undefined;
   onOtvor: (id: string) => void;
+  /**
+   * Typ prijatého dokladu, v rámci ktorého sa listuje (`purchase_invoices`):
+   * predvolene bežné faktúry, daňový doklad k platbe medzi daňovými dokladmi.
+   */
+  typ?: string | null;
 }) {
   const { t } = useT();
   const [susedia, setSusedia] = useState<{ predosly: string | null; dalsi: string | null }>({
@@ -39,7 +45,7 @@ export function DokladPoradie({
         .neq("id", id);
       if (tabulka === "expense_documents") q = q.neq("status", "new");
       else q = q.is("deleted_at", null);
-      if (tabulka === "purchase_invoices") q = q.eq("type", "regular");
+      if (tabulka === "purchase_invoices") q = q.eq("type", typ === "advance_payment" ? "advance_payment" : "regular");
       return q;
     };
     Promise.all([
@@ -56,7 +62,7 @@ export function DokladPoradie({
     return () => {
       zive = false;
     };
-  }, [tabulka, companyId, id, createdAt]);
+  }, [tabulka, companyId, id, createdAt, typ]);
 
   const tlacidlo =
     "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card hover:bg-secondary disabled:opacity-40";

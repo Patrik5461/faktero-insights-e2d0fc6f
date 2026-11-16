@@ -202,7 +202,7 @@ export type DetailSkenu = {
   nastavenia?: { toleranciaCenty?: number; kontrolaSplatnosti?: boolean };
 };
 
-const DRUHY = new Set<DruhNespracovaneho>(["faktura", "zalohova", "dobropis", "blocek", "ostatny"]);
+const DRUHY = new Set<DruhNespracovaneho>(["faktura", "zalohova", "danovy", "dobropis", "blocek", "ostatny"]);
 
 /**
  * Výsledok čítania zapísaný do dokladu.

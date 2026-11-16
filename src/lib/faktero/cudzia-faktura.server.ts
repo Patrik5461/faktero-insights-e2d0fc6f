@@ -71,7 +71,7 @@ export function nesediNespracovany(
   firma: Strana | null,
 ): OdberatelNesedi | null {
   if (!firma) return null;
-  if (r.druh && !["faktura", "zalohova", "dobropis"].includes(r.druh)) return null;
+  if (r.druh && !["faktura", "zalohova", "danovy", "dobropis"].includes(r.druh)) return null;
   const ai = (r.ai ?? null) as Record<string, unknown> | null;
   return overOdberatela({ odberatel: odberatelZAi(ai), dodavatel: dodavatelZAi(ai), firma });
 }

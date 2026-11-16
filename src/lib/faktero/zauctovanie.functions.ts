@@ -88,7 +88,10 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           : data.typ === "credit_note"
             ? firma?.pohoda_predkontacia_dobropis
             : firma?.pohoda_predkontacia) || null
-      : (doklad ? firma?.pohoda_predkontacia_doklady : null) || firma?.pohoda_predkontacia_prijata || null;
+      : // Prijatý daňový doklad k platbe: nákladová predkontácia prijatých faktúr sa mu nehodí (343/314).
+        data.pre === "prijata" && data.typ === "advance_payment"
+        ? null
+        : (doklad ? firma?.pohoda_predkontacia_doklady : null) || firma?.pohoda_predkontacia_prijata || null;
     const predvoleneClenenie: string | null = vystavena
       ? firma?.pohoda_clenenie_dph || null
       : (doklad ? firma?.pohoda_clenenie_dph_doklady : null) || firma?.pohoda_clenenie_dph_prijata || null;
@@ -109,7 +112,10 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           : ["issuedInvoice"]
       : doklad
         ? ["receivedInvoice", "cashPaid", "commitment", "internalDocument"]
-        : ["receivedInvoice"];
+        : data.typ === "advance_payment"
+          ? // Prijatý daňový doklad k platbe ide do Pohody ako interný doklad.
+            ["internalDocument", "receivedInvoice"]
+          : ["receivedInvoice"];
     const kluc = vystavena
       ? data.typ === "proforma" || data.typ === "advance_payment"
         ? "zaloha"
@@ -509,7 +515,8 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       */
       if (data.ids.length === 1 && ok.length === 1) {
         const r = (riadky ?? []).find((x: any) => x.id === ok[0]);
-        if (r) {
+        // Daňový doklad k prijatej platbe sa neučí (druhPrijatej → null).
+        if (r && r.type !== "advance_payment") {
           const { zaznamenajVolby } = await import("./ucenie-z-oprav.server");
           const { druhPrijatej } = await import("./ucenie-z-oprav");
           const volby: Record<string, string | undefined> = {
@@ -522,7 +529,7 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
           };
           await zaznamenajVolby(supabase, {
             companyId: data.company_id,
-            druh: druhPrijatej(r),
+            druh: druhPrijatej(r) ?? "faktura",
             dodavatel: { ico: r.supplier_ico, icDph: r.supplier_ic_dph, nazov: r.supplier_name },
             volby,
             dokladId: r.id,

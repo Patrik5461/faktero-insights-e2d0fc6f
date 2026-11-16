@@ -24,6 +24,8 @@ const UCTOVNE_TYPY = new Set([
   "receivedCreditNotice",
   "receivedDebitNote",
   "danovyDokladKPlatbe",
+  // Prijatý daňový doklad k prijatej platbe (interný doklad, odpočet DPH).
+  "prijatyDanovyDokladKPlatbe",
 ]);
 
 /**

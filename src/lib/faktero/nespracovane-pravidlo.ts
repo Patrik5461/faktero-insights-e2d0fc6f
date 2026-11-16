@@ -12,6 +12,7 @@
 */
 
 import type { DruhNespracovaneho, UdajeNespracovaneho } from "./nespracovane";
+import { typPrijatejZDruhu } from "./nespracovane";
 import {
   krajinaDokladu,
   prvePravidlo,
@@ -71,7 +72,7 @@ export function porovnanieNespracovaneho(
     typ: blocek
       ? null
       : typPrijatej(
-          druh === "zalohova" ? "proforma" : "regular",
+          typPrijatejZDruhu(druh),
           druh === "dobropis" ? -1 : 1,
           u.opravuje,
         ),
@@ -84,6 +85,12 @@ export function zhodnePravidla<T extends Pravidlo>(
   d: DokladNaPorovnanie | null,
 ): T[] {
   if (!d) return [];
+  /*
+    Daňový doklad k prijatej platbe dostane len pravidlo výslovne pre tento
+    typ dokladu — ako spúšťač `faktero_uplatni_pravidlo` (pravidlo dodávateľa
+    pre náklady by ho zaúčtovalo ako nákup).
+  */
+  if (d.typ === "advance_payment") pravidla = pravidla.filter((p) => String(p.typ_dokladu ?? "") === "advance_payment");
   const prve = prvePravidlo(pravidla, d);
   const ostatne = pravidla.filter((p) => p !== prve && pravidloSedi(p, d));
   return prve ? [prve, ...ostatne] : [];

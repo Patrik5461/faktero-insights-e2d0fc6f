@@ -12,7 +12,8 @@
 */
 
 import { krajinaBlocku } from "@/lib/faktero/krajina-blocku";
-import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
+import { druhPrijatehoDokladu, jeDanovyDokladKPlatbe } from "./zalohova-rozpoznanie";
+import { TYP_PRIJATEHO_DANOVEHO } from "./prijaty-danovy-doklad";
 import { zoradPodlaSadzby } from "./vat-rates";
 import { rozpisZVytazenia, type KontextRozpisu } from "./rozpis-dph-vytazeny";
 import {
@@ -36,11 +37,26 @@ import {
   type KontrolaSumy,
 } from "./zaokruhlenie-blocku";
 
-export type DruhNespracovaneho = "faktura" | "zalohova" | "dobropis" | "blocek" | "ostatny";
+export type DruhNespracovaneho = "faktura" | "zalohova" | "danovy" | "dobropis" | "blocek" | "ostatny";
+
+/** Druhy, z ktorých vznikne prijatá faktúra (`purchase_invoices`). */
+export type DruhPrijatej = "faktura" | "zalohova" | "danovy" | "dobropis";
+export const DRUHY_PRIJATEJ: readonly DruhPrijatej[] = ["faktura", "zalohova", "danovy", "dobropis"];
+
+/** Vznikne z dokladu tohto druhu prijatá faktúra (faktúra, zálohová, daňový doklad k platbe, dobropis)? */
+export function jeDruhPrijatej(druh: unknown): druh is DruhPrijatej {
+  return DRUHY_PRIJATEJ.includes(druh as DruhPrijatej);
+}
 
 export const DRUHY_NESPRACOVANYCH: { kluc: DruhNespracovaneho; nazov: string }[] = [
   { kluc: "faktura", nazov: "Prijatá faktúra" },
   { kluc: "zalohova", nazov: "Prijatá zálohová faktúra" },
+  /*
+    Daňový doklad k prijatej platbe od dodávateľa (k našej zaplatenej
+    zálohe) — z neho sa odpočíta DPH; neplatí sa (záloha je zaplatená).
+    Vznikne prijatý doklad typu `advance_payment` (Prijaté daňové doklady).
+  */
+  { kluc: "danovy", nazov: "Daňový doklad k prijatej platbe" },
   { kluc: "dobropis", nazov: "Prijatý dobropis" },
   { kluc: "blocek", nazov: "Bloček / pokladničný doklad" },
   { kluc: "ostatny", nazov: "Iný doklad (zmluva, list, predpis…)" },
@@ -200,6 +216,12 @@ export type UdajeNespracovaneho = {
    */
   zalohaZdanena?: { suma: number; zaklad: number; dph: number; sadzba: number | null; cislo?: string };
   /**
+   * Daňový doklad k prijatej platbe: prijatá zálohová faktúra (id v
+   * `purchase_invoices`), ku ktorej patrí — vybraná človekom. Bez nej sa pri
+   * vytvorení dohľadá podľa `zalohaCislo` (číslo zálohovej z dokladu).
+   */
+  zalohaId?: string;
+  /**
    * Nastavenie zo skenera v appke (úhrada, kategória, zákazka, predkontácia,
    * komentár). Uloží sa pri nahratí, aby platilo aj pre doklad, ktorý človek
    * nechá v Nespracovaných a dokončí na webe.
@@ -287,6 +309,16 @@ export function navrhDruhu(ai: Record<string, unknown> | null | undefined, nazov
   const pod = String(ai.document_subtype ?? "").toLowerCase();
   if (pod === "blocek") return "blocek";
   if (pod === "dobropis" || (num(ai.amount_total) ?? 0) < 0) return "dobropis";
+  // Daňový doklad k prijatej platbe — pred zálohovou (nadpis býva „… k zálohovej faktúre č.“).
+  if (
+    jeDanovyDokladKPlatbe({
+      druhOdAi: ai.document_subtype,
+      nazovDokladu: ai.document_title,
+      cisloDokladu: ai.invoice_number,
+      nazovSuboru,
+    })
+  )
+    return "danovy";
   const typ = druhPrijatehoDokladu({
     druhOdAi: ai.document_subtype,
     nazovDokladu: ai.document_title,
@@ -722,11 +754,16 @@ export function chybajuce(
     if (!u.platba) out.push("platba");
   } else {
     if (!u.cislo.trim()) out.push("cislo");
-    if (!u.splatnost) out.push("splatnost");
-    if (druh === "dobropis" && !u.opravuje.trim()) out.push("opravuje");
-    // Splatnosť pred vystavením je takmer vždy preklep v dátume (rok, mesiac).
-    if (volby.kontrolaSplatnosti !== false && u.splatnost && u.datumVystavenia && u.splatnost < u.datumVystavenia)
-      out.push("splatnostPred");
+    if (druh === "danovy") {
+      // Daňový doklad k platbe sa neplatí — splatnosť nemá; DUZP je deň prijatia platby (§ 19 ods. 4).
+      if (!u.datumDodania) out.push("datumPlatby");
+    } else {
+      if (!u.splatnost) out.push("splatnost");
+      if (druh === "dobropis" && !u.opravuje.trim()) out.push("opravuje");
+      // Splatnosť pred vystavením je takmer vždy preklep v dátume (rok, mesiac).
+      if (volby.kontrolaSplatnosti !== false && u.splatnost && u.datumVystavenia && u.splatnost < u.datumVystavenia)
+        out.push("splatnostPred");
+    }
   }
   if (povinne.includes("zakazka") && !u.jobId.trim()) out.push("zakazka");
   if (povinne.includes("stredisko") && !u.kody.stredisko.trim()) out.push("stredisko");
@@ -746,6 +783,7 @@ export const NAZVY_POLI: Record<string, string> = {
   cislo: "číslo dokladu",
   splatnost: "splatnosť",
   opravuje: "číslo opravovanej faktúry",
+  datumPlatby: "dátum prijatia platby (DUZP)",
   polozky: "súlad položiek so sumou (pridajte vyrovnávaciu položku)",
   splatnostPred: "splatnosť (je skôr ako dátum vystavenia)",
   zakazka: "zákazka",
@@ -845,6 +883,8 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   u.polozkyVypnute = !(Array.isArray(p.items) && p.items.length) && Array.isArray(p.polozky_vypnute) && p.polozky_vypnute.length > 0;
   u.opravuje = s(p.opravuje_cislo);
   if (Number(p.advance_amount ?? 0) > 0) u.zaloha = Math.abs(Number(p.advance_amount));
+  // Daňový doklad k platbe si pamätá zálohovú faktúru, ku ktorej patrí.
+  if (p.type === TYP_PRIJATEHO_DANOVEHO && p.advance_invoice_id) u.zalohaId = s(p.advance_invoice_id);
   u.jobId = s(p.job_id);
   u.vehicleId = s(p.vehicle_id);
   u.prenesenie = p.reverse_charge === true && p.dph_rezim === "samozdanenie" ? true : undefined;
@@ -858,13 +898,29 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
     intPoznamka: s(p.int_poznamka),
   };
   const druh: DruhNespracovaneho =
-    p.type === "proforma" ? "zalohova" : p.opravuje_cislo || Number(p.amount_total ?? 0) < 0 ? "dobropis" : "faktura";
+    p.type === "proforma"
+      ? "zalohova"
+      : p.type === TYP_PRIJATEHO_DANOVEHO
+        ? "danovy"
+        : p.opravuje_cislo || Number(p.amount_total ?? 0) < 0
+          ? "dobropis"
+          : "faktura";
   return { druh, udaje: u };
 }
 
-/** Riadok `purchase_invoices` z údajov (faktúra, zálohová, dobropis). */
+/** Typ `purchase_invoices.type` podľa druhu nespracovaného dokladu. */
+export function typPrijatejZDruhu(druh: unknown): "regular" | "proforma" | typeof TYP_PRIJATEHO_DANOVEHO {
+  return druh === "zalohova" ? "proforma" : druh === "danovy" ? TYP_PRIJATEHO_DANOVEHO : "regular";
+}
+
+/**
+ * Riadok `purchase_invoices` z údajov (faktúra, zálohová, daňový doklad
+ * k platbe, dobropis). Daňový doklad k platbe je rovno zaplatený (záloha už
+ * odišla): `payment_date` = deň prijatia platby (DUZP), splatnosť = vystavenie,
+ * väzba na zálohovú faktúru (`advance_invoice_id`), keď ju človek vybral.
+ */
 export function prijataZUdajov(
-  druh: "faktura" | "zalohova" | "dobropis",
+  druh: DruhPrijatej,
   u: UdajeNespracovaneho,
   dnes: string,
 ) {
@@ -896,7 +952,7 @@ export function prijataZUdajov(
     delivery_note_number: prazdne(u.dodaciList ?? ""),
     issue_date: u.datumVystavenia || dnes,
     delivery_date: u.datumDodania || u.datumVystavenia || dnes,
-    due_date: u.splatnost || u.datumVystavenia || dnes,
+    due_date: (druh === "danovy" ? "" : u.splatnost) || u.datumVystavenia || dnes,
     received_date: u.datumPrijatia || dnes,
     amount_without_vat: r2(zn * s.zaklad),
     vat_amount: r2(zn * s.dph),
@@ -916,12 +972,19 @@ export function prijataZUdajov(
       : null,
     currency: (u.mena || "EUR").toUpperCase(),
     payment_method: u.platba || "prevod",
-    type: druh === "zalohova" ? "proforma" : "regular",
+    type: typPrijatejZDruhu(druh),
     // Zo zálohovej sa daň neodpočítava.
     odpocet: druh !== "zalohova",
     opravuje_cislo: druh === "dobropis" ? prazdne(u.opravuje) : null,
     // Odpočet zaplatenej zálohy len na faktúre — na úhradu je potom zvyšok.
     advance_amount: druh === "faktura" && Number(u.zaloha ?? 0) > 0 ? r2(Math.min(Number(u.zaloha), s.celkom)) : null,
+    // Daňový doklad k platbe: zaplatený dňom platby, patrí k zálohovej faktúre.
+    ...(druh === "danovy"
+      ? {
+          payment_date: u.datumDodania || u.datumVystavenia || dnes,
+          advance_invoice_id: prazdne(u.zalohaId ?? ""),
+        }
+      : {}),
     intro_note: prazdne(u.popis ?? ""),
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
@@ -1064,6 +1127,8 @@ export function naUhraduZNespracovaneho(
       ? "je dobropis — peniaze vracia dodávateľ"
       : druh === "blocek"
         ? "je bloček — zaplatený na mieste"
+        : druh === "danovy"
+          ? "je daňový doklad k platbe — záloha je už zaplatená"
         : druh === "ostatny"
           ? "nie je faktúra (iný doklad)"
           : null;

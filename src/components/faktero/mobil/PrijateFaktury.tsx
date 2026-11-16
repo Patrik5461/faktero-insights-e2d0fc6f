@@ -95,8 +95,9 @@ export function rozoberPrijatu(r: RiadokZoServera): Faktura {
 type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "efPrijate";
 
 /** Uhrádza sa len platná faktúra — koncept ani storno nie. */
-const daSaPlatit = (f: { status: string | null }) =>
-  f.status !== "cancelled" && f.status !== "draft";
+/* Daňový doklad k prijatej platbe (`advance_payment`) sa neplatí — záloha je zaplatená. */
+const daSaPlatit = (f: { status: string | null; type?: string | null }) =>
+  f.status !== "cancelled" && f.status !== "draft" && f.type !== "advance_payment";
 
 const dnesIso = () => new Date().toLocaleDateString("sv-SE");
 

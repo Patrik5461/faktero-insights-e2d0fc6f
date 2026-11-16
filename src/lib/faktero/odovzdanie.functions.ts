@@ -10,6 +10,7 @@ import {
   type Riadok,
 } from "./odovzdanie.server";
 import { vsetkoAkoData } from "./strankovanie";
+import { TYPY_PRIJATYCH_DO_EXPORTU } from "./prijaty-danovy-doklad";
 
 export type { OdovzdanieVstup };
 
@@ -207,7 +208,7 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
           .gte("issue_date", od)
           .lt("issue_date", doDatumu)
           .is("deleted_at", null)
-          .in("type", ["regular", "proforma"])
+          .in("type", [...TYPY_PRIJATYCH_DO_EXPORTU])
           .not("status", "in", "(draft,cancelled)")
           .order("id")
           .range(zac, kon),

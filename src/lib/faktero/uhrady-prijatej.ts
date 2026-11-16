@@ -163,6 +163,7 @@ export const TYPY_PRIJATYCH = {
   proforma: ["Prijatá zálohová faktúra – tuzemská", "Prijatá zálohová faktúra – zahraničná"],
   dobropis: ["Prijatý dobropis – tuzemský", "Prijatý dobropis – zahraničný"],
   samo: ["Samofaktúra – tuzemská", "Samofaktúra – zahraničná"],
+  danovy: ["Daňový doklad k prijatej platbe – tuzemský", "Daňový doklad k prijatej platbe – zahraničný"],
 } as const;
 
 const DOMACE: Record<string, string[]> = {
@@ -186,6 +187,8 @@ export function typPrijatejFaktury(
   const druh =
     row.type === "proforma"
       ? TYPY_PRIJATYCH.proforma
+      : row.type === "advance_payment"
+        ? TYPY_PRIJATYCH.danovy
       : Number(row.amount_total ?? 0) < 0 || row.opravuje_cislo
         ? TYPY_PRIJATYCH.dobropis
         : row.samofakturacia
@@ -210,6 +213,8 @@ export function typPrijatejFaktury(
 export function nezaplateneZoznamu(
   riadky: {
     id: string;
+    /** Daňový doklad k prijatej platbe (`advance_payment`) nie je dlh — záloha je zaplatená. */
+    type?: string | null;
     status?: string | null;
     amount_total?: number | string | null;
     advance_amount?: number | string | null;
@@ -233,6 +238,7 @@ export function nezaplateneZoznamu(
   const zostatky: { suma: number; mena: string | null | undefined }[] = [];
   for (const r of riadky) {
     if (["paid", "cancelled", "draft"].includes(String(r.status))) continue;
+    if (r.type === "advance_payment") continue;
     const s = stavUhradyPrijatej({
       amount_total: r.amount_total,
       status: r.status,

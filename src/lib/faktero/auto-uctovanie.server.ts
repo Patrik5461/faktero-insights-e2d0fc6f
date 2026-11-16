@@ -338,7 +338,7 @@ async function navykPartnera(sb: Klient, typ: TypDokladu, row: Riadok): Promise<
     .select("polia")
     .eq("company_id", row.company_id)
     .eq("kluc_dodavatela", kluc)
-    .eq("druh", typ === "blocek" ? "blocek" : druhPrijatej(row))
+    .eq("druh", typ === "blocek" ? "blocek" : (druhPrijatej(row) ?? "faktura"))
     .maybeSingle();
   return navrhPola((data?.polia as Riadok | null)?.predkontacia ?? null);
 }
@@ -813,6 +813,12 @@ export async function smieSaZauctovat(typ: TypDokladu, row: Riadok, sb?: Klient)
     if (row.odberatel_nesedi) return false;
     // Zálohová nie je náklad a konektor ju neberie.
     if (row.type === "proforma") return false;
+    /*
+      Daňový doklad k prijatej platbe sa účtuje inak než náklad (DPH zo
+      zálohy, napr. 343/314) — zvyk dodávateľa či AI by ho zaúčtovali ako
+      nákup. Zaúčtuje ho človek (alebo pravidlo s typom „Daňový doklad k platbe“).
+    */
+    if (row.type === "advance_payment") return false;
     const { zapocitatelna } = await import("./samofakturacia");
     return zapocitatelna(row);
   }
@@ -965,7 +971,8 @@ export async function navrhniPreNezauctovane(
       .order("created_at", { ascending: false })
       .limit(25);
     if (typ !== "blocek") q = q.is("deleted_at", null);
-    if (typ === "prijata") q = q.in("status", ["received", "paid"]).neq("type", "proforma");
+    // Len bežné prijaté faktúry a dobropisy — zálohová ani daňový doklad k platbe nie (pozri vyššie).
+    if (typ === "prijata") q = q.in("status", ["received", "paid"]).eq("type", "regular");
     if (typ === "vystavena") q = q.not("status", "in", "(draft,cancelled)");
     if (typ === "blocek") q = q.eq("status", "processed");
     const { data, count, error } = await q;

@@ -100,6 +100,7 @@ import { UpozornenieZlejDph } from "@/components/faktero/OpravaRozpisuDph";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { KartaUhrady, UhradyOkno, useUhradyPrijatej } from "@/components/faktero/UhradyPrijatej";
 import { VazbaZalohyPrijatej } from "@/components/faktero/VazbaZalohyPrijatej";
+import { FILTER_PRIJATYCH_DANOVYCH, jePrijatyDanovyDoklad, NAZOV_PRIJATEHO_DANOVEHO } from "@/lib/faktero/prijaty-danovy-doklad";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
@@ -183,6 +184,13 @@ function PurchaseInvoiceDetail() {
   const programOdovzdania = useProgramOdovzdania(row?.export_job_id, Boolean(row?.exported_at));
   const refreshPayment = useServerFn(refreshPaymentStatus);
   const uhradyFaktury = useUhradyPrijatej(row);
+  /*
+    Daňový doklad k prijatej platbe (od dodávateľa, k zaplatenej zálohe):
+    účtuje sa a DPH sa z neho odpočíta, ale neplatí sa — bez úhrad,
+    splatnosti a príkazu. Späť ide do zoznamu Prijaté daňové doklady.
+  */
+  const danovy = jePrijatyDanovyDoklad(row);
+  const spatZoznam = danovy ? { type: FILTER_PRIJATYCH_DANOVYCH } : {};
 
   async function load() {
     const { data } = await supabase
@@ -410,7 +418,7 @@ function PurchaseInvoiceDetail() {
         id={row.id}
         onZmaz={() => void del()}
         onPatri={() => void patriTejtoFirme()}
-        onPresunute={() => navigate({ to: "/prijate-faktury" })}
+        onPresunute={() => navigate({ to: "/prijate-faktury", search: spatZoznam as never })}
       />
     ) : null;
 
@@ -422,7 +430,7 @@ function PurchaseInvoiceDetail() {
       .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("Vymazané"));
-    navigate({ to: "/prijate-faktury" });
+    navigate({ to: "/prijate-faktury", search: spatZoznam as never });
   }
 
   async function downloadPdf() {
@@ -481,6 +489,7 @@ function PurchaseInvoiceDetail() {
   const navrh = !zapocitatelna(row);
   const poSplatnosti =
     !navrh &&
+    !danovy &&
     row.status !== "paid" &&
     row.status !== "cancelled" &&
     !!row.due_date &&
@@ -496,7 +505,7 @@ function PurchaseInvoiceDetail() {
             </Link>
           </MenuAkcia>
         )}
-        {(row as any).type === "regular" && !navrh && (
+        {((row as any).type === "regular" || danovy) && !navrh && (
           <MenuAkcia ikona={BookCheck} onClick={skocNaZauctovanie}>
             {row.zauctovane_at ? t("Zaúčtovanie") : t("Zaúčtovať")}
           </MenuAkcia>
@@ -585,9 +594,11 @@ function PurchaseInvoiceDetail() {
       ? row.opravuje_cislo
         ? "Dobropis (samofaktúra)"
         : "Samofaktúra"
-      : (row as any).type === "proforma"
-        ? "Prijatá zálohová faktúra"
-        : "Prijatá faktúra",
+      : danovy
+        ? NAZOV_PRIJATEHO_DANOVEHO
+        : (row as any).type === "proforma"
+          ? "Prijatá zálohová faktúra"
+          : "Prijatá faktúra",
   );
   const stavOdznak = (
     <>
@@ -701,6 +712,7 @@ function PurchaseInvoiceDetail() {
               {!navrh ? (
                 <DokladPoradie
                   tabulka="purchase_invoices"
+                  typ={(row as any).type}
                   companyId={row.company_id}
                   id={row.id}
                   createdAt={row.created_at}
@@ -776,10 +788,16 @@ function PurchaseInvoiceDetail() {
             }
             bokom={
               <div className="space-y-3 text-sm">
-                <div>
-                  {t("Splatnosť:")} {popisSplatnosti(row)}
-                </div>
-                <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
+                {danovy ? (
+                  <div>{t("K zaplatenej zálohe — neplatí sa, DPH sa z neho odpočíta.")}</div>
+                ) : (
+                  <>
+                    <div>
+                      {t("Splatnosť:")} {popisSplatnosti(row)}
+                    </div>
+                    <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
+                  </>
+                )}
                 {uhrada && (
                   <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
                     <span className="min-w-0">
@@ -891,7 +909,7 @@ function PurchaseInvoiceDetail() {
       bezUhrady: navrh || row.status === "cancelled" || row.status === "draft",
     },
     zauctovanie:
-      row.type === "regular" && !navrh
+      (row.type === "regular" || danovy) && !navrh
         ? {
             ...stavZauctovania(row),
             predkontacia: row.pohoda_predkontacia,
@@ -978,7 +996,7 @@ function PurchaseInvoiceDetail() {
         <div className="text-sm font-semibold">{t("Dátumy")}</div>
         <Row label={t("Vystavenie")} value={datumNaDoklade(row.issue_date)} />
         <Row
-          label={t("Dodanie (daňové plnenie)")}
+          label={danovy ? t("Prijatie platby (DUZP)") : t("Dodanie (daňové plnenie)")}
           value={
             row.delivery_date
               ? datumNaDoklade(row.delivery_date)
@@ -1003,8 +1021,8 @@ function PurchaseInvoiceDetail() {
             {t("Dátum prijatia je skôr než dátum vystavenia — skontrolujte ho.")}
           </div>
         ) : null}
-        <Row label={t("Splatnosť")} value={popisSplatnosti(row)} />
-        {row.payment_date && <Row label={t("Úhrada")} value={datumNaDoklade(row.payment_date)} />}
+        {danovy ? null : <Row label={t("Splatnosť")} value={popisSplatnosti(row)} />}
+        {row.payment_date && !danovy && <Row label={t("Úhrada")} value={datumNaDoklade(row.payment_date)} />}
         {sVazbou && vazbaUhrady}
       </div>
     </div>
@@ -1082,7 +1100,7 @@ function PurchaseInvoiceDetail() {
   ) : null;
   const kartaUhradyPrijatej = (
     <>
-      {!navrh && row.status !== "cancelled" && row.status !== "draft" ? (
+      {!navrh && !danovy && row.status !== "cancelled" && row.status !== "draft" ? (
         <KartaUhrady
           row={row}
           stav={uhradyFaktury.stav}
@@ -1120,7 +1138,7 @@ function PurchaseInvoiceDetail() {
   );
   const kartaBanka = (
     <>
-      {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
+      {accounts.length > 0 && row.status !== "cancelled" && !navrh && !danovy && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-primary-hover">
             <Landmark className="h-3.5 w-3.5" /> {t("Zaplatiť cez banku")}
@@ -1259,19 +1277,21 @@ function PurchaseInvoiceDetail() {
             polozky={[
               t("Dodávateľ: {dodavatel}", { dodavatel: row.supplier_name }),
               t("Vystavená {datum}", { datum: datumNaDoklade(row.issue_date) }),
-              row.due_date ? (
+              row.due_date && !danovy ? (
                 <PoTermine aktivne={poSplatnosti}>
                   {t("splatná {splatnost}", { splatnost: popisSplatnosti(row) })}
                 </PoTermine>
               ) : null,
               (row as any).type === "proforma"
                 ? t("Nie je daňový doklad — daň prinesie ostrá faktúra.")
-                : null,
+                : danovy
+                  ? t("K zaplatenej zálohe — neplatí sa, DPH sa z neho odpočíta.")
+                  : null,
             ]}
           />
         }
         primaryAction={
-          !navrh && row.status !== "paid" && row.status !== "cancelled" ? (
+          !navrh && !danovy && row.status !== "paid" && row.status !== "cancelled" ? (
             <PrimarnaAkcia onClick={markPaid}>
               <CheckCircle2 /> {t("Označiť ako zaplatené")}
             </PrimarnaAkcia>
@@ -1285,6 +1305,7 @@ function PurchaseInvoiceDetail() {
             {!navrh ? (
               <DokladPoradie
                 tabulka="purchase_invoices"
+                typ={(row as any).type}
                 companyId={row.company_id}
                 id={row.id}
                 createdAt={row.created_at}
@@ -1340,9 +1361,9 @@ function PurchaseInvoiceDetail() {
               <UdajePreUctovnika u={udajeUctovnika} />
               {kartaUhradyPrijatej}
               {/* Zaúčtovanie pred platobnými údajmi — je pre účtovníka dôležitejšie. */}
-              {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+              {(row.type === "regular" || danovy) && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
               {kartaPohodaZalohy}
-              {kartaPlatba(true)}
+              {danovy ? null : kartaPlatba(true)}
               {kartaBanka}
               {kartaZakazka}
               {kartyHore}
@@ -1391,7 +1412,7 @@ function PurchaseInvoiceDetail() {
                     onZmena={load}
                   />
                 )}
-                {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+                {(row.type === "regular" || danovy) && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
                 {kartaPohodaZalohy}
                 {kartaKomentare}
                 {!navrh && <KtoKedyDokladu companyId={row.company_id} agenda="prijata" row={row} />}
@@ -1440,7 +1461,7 @@ function PurchaseInvoiceDetail() {
                   </div>
                 </div>
                 {/* Platba hneď pod sumárom — doteraz bola až pod zákazkou. */}
-                {kartaPlatba(false)}
+                {danovy ? null : kartaPlatba(false)}
                 {kartaZakazka}
                 {kartaBanka}
               </aside>

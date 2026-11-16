@@ -659,7 +659,7 @@ export function obdlznikZBodov(ax: number, ay: number, bx: number, by: number): 
 
 /** Polia, ktoré formulár pri danom druhu dokladu ukazuje (rovnako ako stránka). */
 export function poliaPreDruh(druh: string | null | undefined): KlucPola[] {
-  const faktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
+  const faktura = druh === "faktura" || druh === "zalohova" || druh === "danovy" || druh === "dobropis";
   if (druh === "ostatny") return ["dodavatel.nazov", "ostatny.predmet", "ostatny.lehota"];
   const dodavatel: KlucPola[] = ["dodavatel.nazov", "dodavatel.ico", "dodavatel.icDph"];
   if (!druh) return dodavatel;

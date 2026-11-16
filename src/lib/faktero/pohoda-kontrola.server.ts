@@ -18,6 +18,7 @@ import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
 import { chybajuceSkratky, predkontacieVXml, varovanieSkratky } from "./pohoda-predkontacia";
 import type { PohodaNastavenia } from "./export.server";
+import { TYPY_PRIJATYCH_DO_EXPORTU } from "./prijaty-danovy-doklad";
 
 type Klient = any;
 type Riadok = Record<string, any>;
@@ -94,7 +95,7 @@ export async function zastaveneDoklady(
         .is("exported_at", null)
         .gte("issue_date", odDna)
         .is("deleted_at", null)
-        .in("type", ["regular", "proforma"])
+        .in("type", [...TYPY_PRIJATYCH_DO_EXPORTU])
         .not("status", "in", "(draft,cancelled)")
         .order("id")
         .range(z, k),
@@ -602,7 +603,7 @@ export async function stavKonektora(supabase: Klient, companyId: string): Promis
     od,
     faktur: await pocet("invoices", "issue_date", (q) => q.is("deleted_at", null).not("status", "in", "(draft,cancelled)")),
     prijatych: await pocet("purchase_invoices", "issue_date", (q) =>
-      q.is("deleted_at", null).not("zauctovane_at", "is", null).in("type", ["regular", "proforma"]),
+      q.is("deleted_at", null).not("zauctovane_at", "is", null).in("type", [...TYPY_PRIJATYCH_DO_EXPORTU]),
     ),
     dokladov: await pocet("expense_documents", "issue_date", (q) => q.eq("status", "processed")),
     pokladnicnych: await pocet("cash_entries", "entry_date", (q) => q),

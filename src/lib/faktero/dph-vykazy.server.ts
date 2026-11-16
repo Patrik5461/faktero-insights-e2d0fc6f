@@ -3,6 +3,7 @@ import { sadzbyKrajiny, zoradPodlaSadzby } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
 import { rozpisPrijatej } from "./prijate-do-pohody";
+import { TYPY_PRIJATYCH_S_DPH, VYTKA_DVOJITA_DPH_ZALOHY, dvojitaDphZalohy } from "./prijaty-danovy-doklad";
 import { ideDoPriznania } from "./rozpis-dph-kontrola";
 /**
  * Doklady za zdaňovacie obdobie pre výkazy k DPH.
@@ -159,14 +160,16 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, supplier_ico, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, kv_zdroj, pohoda_predkontacia, pohoda_clenenie_dph, clenenie_zdroj, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi, na_kontrolu_at, na_kontrolu_dovod",
+          "id, type, advance_invoice_id, advance_amount, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, supplier_ico, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, kv_zdroj, pohoda_predkontacia, pohoda_clenenie_dph, clenenie_zdroj, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi, na_kontrolu_at, na_kontrolu_dovod",
         )
         .eq("company_id", companyId)
         /*
           Prijatá zálohová faktúra nie je daňový doklad — daň z nej odpočítať
-          nemožno, tú prinesie až ostrá faktúra od dodávateľa.
+          nemožno, tú prinesie až ostrá faktúra od dodávateľa alebo daňový
+          doklad k prijatej platbe (`advance_payment`), ktorý sa odpočítava
+          ako faktúra: v období dňa platby (DUZP), najskôr dňom prijatia.
         */
-        .eq("type", "regular")
+        .in("type", [...TYPY_PRIJATYCH_S_DPH])
         .is("deleted_at", null)
         .order("id")
         .range(zac, kon),
@@ -584,6 +587,13 @@ export async function nacitajVstup(
   }
 
   const prijate: PrijataFaktura[] = [];
+  /*
+    Vyúčtovacia faktúra, ktorá zálohu so zaevidovaným daňovým dokladom
+    k platbe odpočítala len zo sumy na úhradu (nezdanená záloha) — DPH zálohy
+    by bola vo výkaze dvakrát. Zdanená záloha patrí do rozpisu DPH ako
+    záporný riadok (`odpocet-zalohy-vytazenie.ts`).
+  */
+  const dvojitaDph = new Set(dvojitaDphZalohy((prijateRes.data ?? []) as any[]).map((x) => x.fakturaId));
   for (const p0 of (prijateRes.data ?? []) as any[]) {
     /*
       Koncept (draft) ešte nie je prijatý doklad a stornovaná faktúra už nie —
@@ -745,6 +755,7 @@ export async function nacitajVstup(
         : riadkyPrijatej(p, zaklad, dan, den, cudziaP);
     const cisloP = p.invoice_number ?? p.supplier_name ?? "prijatá faktúra";
     if (p.na_kontrolu_at) vytkaNaKontrolu(cisloP, p.na_kontrolu_dovod);
+    if (dvojitaDph.has(String(p.id))) vytky.push({ doklad: cisloP, text: VYTKA_DVOJITA_DPH_ZALOHY });
     if (!cudziaP && rezimP === "tuzemsko") vytkaSadzby(cisloP, riadkyP);
     /*
       Faktúra od platiteľa bez dane, ktorú nič neoznačilo za prenesenie ani za

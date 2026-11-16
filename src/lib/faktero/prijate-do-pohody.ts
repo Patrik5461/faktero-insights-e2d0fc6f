@@ -13,6 +13,7 @@ import { krajinaDane, najblizsiaSadzba, zakladnaSadzba, zoradPodlaSadzby } from 
 import { prepocitajPolozku, sumySamofaktury } from "./samofakturacia";
 import { maPopisPrijatej, textPrijatejFaktury } from "./text-dokladu";
 import { jeRozpisNaKontrole } from "./rozpis-na-kontrole";
+import { jePrijatyDanovyDoklad, NAZOV_PRIJATEHO_DANOVEHO, TYP_POHODY_PRIJATY_DANOVY } from "./prijaty-danovy-doklad";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
@@ -302,7 +303,37 @@ export function textPrijatej(p: any): string {
 export function prijataAkoDoklad(p: any): Record<string, unknown> {
   const spolu = Number(p?.amount_total ?? 0);
   const doklad = prijataAkoDokladZaklad(p, spolu);
-  return p?.type === "proforma" ? zalohovaAkoDoklad(doklad, spolu) : doklad;
+  if (p?.type === "proforma") return zalohovaAkoDoklad(doklad, spolu);
+  return jePrijatyDanovyDoklad(p) ? danovyKPlatbeAkoDoklad(doklad, p) : doklad;
+}
+
+export { TYP_POHODY_PRIJATY_DANOVY };
+
+/**
+ * Prijatý daňový doklad k prijatej platbe (`type = 'advance_payment'`) do
+ * Pohody ako interný doklad — zrkadlo vystaveného `danovyDokladKPlatbe`, len
+ * s odpočtom DPH (členenie PD, KV B.2). Záloha je zaplatená, takže doklad
+ * nemá splatnosť, účet na úhradu ani odpočet zálohy. Dátum dodania = deň
+ * prijatia platby; odpočet (`dateTax`, `dateKVDPH`) neskorší z neho
+ * a dátumu prijatia dokladu ako pri prijatej faktúre.
+ */
+function danovyKPlatbeAkoDoklad(d: Record<string, unknown>, p: any): Record<string, unknown> {
+  const cislo = String(p?.invoice_number ?? "").trim();
+  return {
+    ...d,
+    _agenda: "int",
+    _typPohody: TYP_POHODY_PRIJATY_DANOVY,
+    _text: `${NAZOV_PRIJATEHO_DANOVEHO} ${cislo}`.trim(),
+    _textBezPopisu: false,
+    _odpocetZalohy: null,
+    _ucetDodavatela: null,
+    _splatnost: null,
+    _opravujeCislo: null,
+    _datumDph: p?.delivery_date || p?.payment_date || p?.issue_date,
+    _samozdanenie: false,
+    _samozdanenieCele: false,
+    _pdp: false,
+  };
 }
 
 /**

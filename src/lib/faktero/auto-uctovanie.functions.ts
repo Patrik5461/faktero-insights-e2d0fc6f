@@ -102,7 +102,8 @@ export const naKontroluFn = createServerFn({ method: "POST" })
         .order(m.datum, { ascending: false })
         .limit(500);
       if (typ !== "blocek") q = q.is("deleted_at", null);
-      if (typ === "prijata") q = q.in("status", ["received", "paid"]).neq("type", "proforma");
+      // Zálohová ani daňový doklad k platbe sa autopilotom neúčtujú (auto-uctovanie.server.ts).
+      if (typ === "prijata") q = q.in("status", ["received", "paid"]).eq("type", "regular");
       if (typ === "vystavena")
         q = q.not("status", "in", "(draft,cancelled)").neq("type", "proforma");
       if (typ === "blocek") q = q.eq("status", "processed");

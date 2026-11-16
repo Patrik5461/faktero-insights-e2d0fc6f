@@ -67,6 +67,7 @@ import { suhrnZPoloziek } from "@/lib/faktero/suhrn-dph";
 import { polozkaPrijatej } from "@/lib/faktero/suhrn-vyberu";
 import { ZAPLATENE_NA_MIESTE } from "@/lib/faktero/hromadny-prikaz";
 import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
+import { FILTER_PRIJATYCH_DANOVYCH, typZoznamuPrijatych, filterTypuPrijatych } from "@/lib/faktero/prijaty-danovy-doklad";
 import { jeCiastocneUhradena, nezaplateneZoznamu, sumyUhradPodlaFaktury } from "@/lib/faktero/uhrady-prijatej";
 import { SuctyPoMenach, useFormatMenyFirmy } from "@/components/faktero/SuctyPoMenach";
 import { celkomPrijatychPoMenach } from "@/lib/faktero/sucty-zoznamov";
@@ -103,8 +104,29 @@ import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
 import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
 import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
-  head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Prijaté faktúry — Faktero") }] }),
-  validateSearch: (s: Record<string, unknown>) => ({ ...zoznamSearch(s) }),
+  head: ({ match }) => ({
+    meta: [
+      {
+        title: preloz(
+          match.context.jazyk,
+          (match.search as any)?.type === FILTER_PRIJATYCH_DANOVYCH
+            ? "Prijaté daňové doklady — Faktero"
+            : "Prijaté faktúry — Faktero",
+        ),
+      },
+    ],
+  }),
+  /*
+    `type=danove` = Prijaté daňové doklady (daňové doklady k prijatej platbe
+    od dodávateľov, `purchase_invoices.type = advance_payment`). Bez parametra
+    len bežné prijaté faktúry a dobropisy.
+  */
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): ReturnType<typeof zoznamSearch> & { type?: typeof FILTER_PRIJATYCH_DANOVYCH } => {
+    const type = filterTypuPrijatych(s.type);
+    return { ...zoznamSearch(s), ...(type ? { type } : {}) };
+  },
   component: PurchaseInvoicesPage,
 });
 
@@ -168,6 +190,9 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
 
 function PurchaseInvoicesPage() {
   const { t, jazyk } = useT();
+  const { type: typFiltra } = Route.useSearch();
+  /** Zoznam prijatých daňových dokladov k platbe — záloha je zaplatená, nič sa tu neplatí. */
+  const danove = typFiltra === FILTER_PRIJATYCH_DANOVYCH;
   const menyFirmy = useFormatMenyFirmy();
   const navigate = useNavigate();
   // Naposledy otvorená faktúra — zvýraznený riadok po návrate z detailu.
@@ -808,7 +833,8 @@ function PurchaseInvoicesPage() {
         .select(SELECT_PRIJATYCH, spocitaj ? { count: "exact" } : undefined)
         .eq("company_id", cid)
         // Prijaté zálohy majú vlastný zoznam — tu by len nafukovali sumy.
-        .eq("type", "regular")
+        // Daňové doklady k platbe tiež (Prijaté daňové doklady, `type=danove`).
+        .eq("type", typZoznamuPrijatych(typFiltra))
         .is("deleted_at", null)
         .order("issue_date", { ascending: false })
         .order("id")
@@ -915,7 +941,7 @@ function PurchaseInvoicesPage() {
   }
   useEffect(() => {
     load();
-  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra]);
+  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra, typFiltra]);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -1047,9 +1073,26 @@ function PurchaseInvoicesPage() {
         />
       ) : null}
       <PageHeader
-        title={t("Prijaté faktúry")}
-        description={t("Evidencia nákupných faktúr od dodávateľov.")}
+        title={danove ? t("Prijaté daňové doklady") : t("Prijaté faktúry")}
+        description={
+          danove
+            ? t("Daňové doklady k prijatej platbe od dodávateľov — k zaplatenej zálohe; DPH z nich sa odpočíta. Neplatia sa.")
+            : t("Evidencia nákupných faktúr od dodávateľov.")
+        }
         action={
+          danove ? (
+            <div className="flex flex-wrap gap-2">
+              <NahratDoklad label={t("Nahrať doklad")} />
+              <HlavickaViac akcie={[{ label: "Excel", icon: Download, onClick: stiahniExcelPrijatych }]} />
+              <Link
+                to="/prijate-faktury/nova"
+                search={{ typ: "advance_payment" } as never}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" /> {t("Nový daňový doklad")}
+              </Link>
+            </div>
+          ) : (
           <div className="flex flex-wrap gap-2">
             <NahratDoklad label={t("Nahrať faktúru")} />
             <Link
@@ -1067,6 +1110,7 @@ function PurchaseInvoicesPage() {
               <Plus className="h-4 w-4" /> {t("Nová prijatá faktúra")}
             </Link>
           </div>
+          )
         }
       />
       <PageBody>
@@ -1075,6 +1119,8 @@ function PurchaseInvoicesPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard label={t("Počet faktúr")} value={String(totals.count)} />
           <StatCard label={t("Celková suma")} value={<SuctyPoMenach sucty={totals.total} />} />
+          {danove ? null : (
+            <>
           <StatCard
             label={t("Nezaplatené")}
             value={<SuctyPoMenach sucty={totals.unpaid} />}
@@ -1085,6 +1131,8 @@ function PurchaseInvoicesPage() {
             value={String(totals.overdueCount)}
             tone={totals.overdueCount > 0 ? "rose" : undefined}
           />
+            </>
+          )}
         </div>
 
         {/* Hľadá sa len podľa mena dodávateľa (ilike v dotaze), preto taký popis. */}
@@ -1099,7 +1147,7 @@ function PurchaseInvoicesPage() {
                 type: "select",
                 options: [
                   ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
-                  { value: CIASTOCNE, label: "Čiastočne uhradená" },
+                  ...(danove ? [] : [{ value: CIASTOCNE, label: "Čiastočne uhradená" }]),
                 ],
               },
               {
@@ -1122,16 +1170,21 @@ function PurchaseInvoicesPage() {
                   { value: "nie", label: "Neexportované" },
                 ],
               },
-              {
-                key: "platba",
-                label: "Platba",
-                type: "select",
-                options: [
-                  { value: "sparovana", label: "Spárovaná" },
-                  { value: "navrh", label: "Nájdená" },
-                  { value: "nenajdena", label: "Nenájdená" },
-                ],
-              },
+              // Daňový doklad k platbe sa neplatí — filter platby nemá zmysel.
+              ...(danove
+                ? []
+                : [
+                    {
+                      key: "platba",
+                      label: "Platba",
+                      type: "select" as const,
+                      options: [
+                        { value: "sparovana", label: "Spárovaná" },
+                        { value: "navrh", label: "Nájdená" },
+                        { value: "nenajdena", label: "Nenájdená" },
+                      ],
+                    },
+                  ]),
               ...filtreStavuAStitkov(cis.stavy, cis.stitky),
             ]}
             previewToggle={bocny}
@@ -1211,6 +1264,9 @@ function PurchaseInvoicesPage() {
                 onHotovo={() => void load()}
               />
             ) : null}
+            {/* Daňový doklad k platbe je zaplatený zálohou — príkaz ani „prijaté“ (zmenilo by stav zaplatenej) nie. */}
+            {danove ? null : (
+              <>
             <button
               onClick={() => setPrikaz(true)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
@@ -1224,6 +1280,8 @@ function PurchaseInvoicesPage() {
             >
               <Check className="h-3.5 w-3.5" /> {t("Označiť ako prijaté")}
             </button>
+              </>
+            )}
             <button
               onClick={otvorZauctovanie}
               disabled={hromadneBusy}
@@ -1273,7 +1331,7 @@ function PurchaseInvoicesPage() {
           tenký pás. Nič sa nepáruje potichu — aj istá dvojica čaká na klik,
           lebo potvrdením sa faktúra označí za zaplatenú.
         */}
-        <div className="mt-4">
+        <div className={danove ? "hidden" : "mt-4"}>
           <PasNavrhovPlatieb
             pocet={navrhyVZozname.length}
             istych={isteVZozname.length}
@@ -1288,7 +1346,11 @@ function PurchaseInvoicesPage() {
         <ResponsiveTable
           items={postupne.viditelne}
           loading={loading}
-          emptyText={"Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra\"."}
+          emptyText={
+            danove
+              ? "Žiadne prijaté daňové doklady. Vytvoríte ich v Nespracovaných dokladoch (druh „Daňový doklad k prijatej platbe“)."
+              : "Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra\"."
+          }
           mobileCard={(r: any) => (
             <MobileListCard
               ciel={{ to: "/prijate-faktury/$id", params: { id: r.id } }}
@@ -1689,6 +1751,7 @@ function PurchaseInvoicesPage() {
           polozky={vybraneSuhrn}
           onZrusit={() => setSelected(new Set())}
           akcie={
+            danove ? null : (
             <button
               type="button"
               onClick={() => setPrikaz(true)}
@@ -1698,6 +1761,7 @@ function PurchaseInvoicesPage() {
             >
               <Landmark className="h-3.5 w-3.5" /> {t("Uhradiť ({n})", { n: naUhraduPocet })}
             </button>
+            )
           }
         />
       </PageBody>

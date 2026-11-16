@@ -50,6 +50,7 @@ import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
   chybajuce,
+  jeDruhPrijatej,
   rozdielPoloziek,
   kontrolaSumy,
   upravCelkomDokladu,
@@ -60,6 +61,7 @@ import {
 } from "@/lib/faktero/nespracovane";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { OdpocetZalohyNespracovaneho } from "@/components/faktero/OdpocetZalohyNespracovaneho";
+import { ZalohaDanovehoDokladu } from "@/components/faktero/ZalohaDanovehoDokladu";
 import { potvrd } from "@/lib/potvrdenie";
 import { KontrolaSumyBlocku, VstupZaokruhlenia, potvrdRozdielSumy } from "@/components/faktero/KontrolaSumyBlocku";
 import { PREDPONA_DUPLICITY } from "@/lib/faktero/prijate-duplicity";
@@ -155,7 +157,9 @@ function Detail() {
   }, [d?.stav]);
 
   const blocek = druh === "blocek";
-  const faktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
+  const faktura = jeDruhPrijatej(druh);
+  // Daňový doklad k prijatej platbe — neplatí sa, DUZP = deň prijatia platby.
+  const danovy = druh === "danovy";
   useEffect(() => {
     if (!d || !druh || druh === "ostatny") return;
     nacitajNavrhy({ data: { company_id: d.companyId, pre: blocek ? "doklad" : "prijata" } })
@@ -249,7 +253,7 @@ function Detail() {
     aj tak (faktúra vznikne s červeným výkričníkom a nezaúčtuje sa) a Presunúť
     k firme, ku ktorej patrí. Len pri prijatých druhoch.
   */
-  const jePrijata = druh === "faktura" || druh === "zalohova" || druh === "dobropis" || druh === "";
+  const jePrijata = jeDruhPrijatej(druh) || druh === "";
   const upozornenieCudzej =
     d.odberatelNesedi && jePrijata ? (
       <CudziaFakturaUpozornenie
@@ -842,8 +846,16 @@ function Detail() {
                     {faktura && (
                       <>
                         <label className="block text-sm">
-                          <span className="text-xs text-muted-foreground">{t("Dátum dodania (DUZP)")}</span>
-                          <input type="date" value={u.datumDodania} onChange={(e) => set({ datumDodania: e.target.value })} className={`${vstup} border-input`} />
+                          <span className="text-xs text-muted-foreground">
+                            {danovy ? t("Dátum prijatia platby (DUZP)") : t("Dátum dodania (DUZP)")}
+                          </span>
+                          <input
+                            type="date"
+                            aria-label={danovy ? t("Dátum prijatia platby (DUZP)") : t("Dátum dodania (DUZP)")}
+                            value={u.datumDodania}
+                            onChange={(e) => set({ datumDodania: e.target.value })}
+                            className={`${vstup} ${danovy ? ram("datumPlatby") : "border-input"}`}
+                          />
                         </label>
                         {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
                         <label className="block text-sm">
@@ -858,10 +870,21 @@ function Detail() {
                             bezOdpoctu={druh === "zalohova"}
                           />
                         </label>
-                        <label className="block text-sm">
-                          <span className="text-xs text-muted-foreground">{t("Splatnosť")}</span>
-                          <input type="date" aria-label={t("Splatnosť")} value={u.splatnost} onChange={(e) => set({ splatnost: e.target.value })} className={`${vstup} ${ram("splatnost")}`} />
-                        </label>
+                        {danovy ? (
+                          <ZalohaDanovehoDokladu
+                            companyId={d.companyId}
+                            ico={u.dodavatel.ico}
+                            nazov={u.dodavatel.nazov}
+                            value={u.zalohaId ?? ""}
+                            onChange={(v) => set({ zalohaId: v })}
+                            vstup={`${vstup} border-input`}
+                          />
+                        ) : (
+                          <label className="block text-sm">
+                            <span className="text-xs text-muted-foreground">{t("Splatnosť")}</span>
+                            <input type="date" aria-label={t("Splatnosť")} value={u.splatnost} onChange={(e) => set({ splatnost: e.target.value })} className={`${vstup} ${ram("splatnost")}`} />
+                          </label>
+                        )}
                       </>
                     )}
                     {druh === "dobropis" && (

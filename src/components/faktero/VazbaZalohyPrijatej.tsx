@@ -12,6 +12,8 @@ import { useT } from "@/lib/i18n/useT";
 */
 type Doklad = {
   id: string;
+  /** `advance_payment` = daňový doklad k prijatej platbe (k tejto zálohe). */
+  type?: string | null;
   invoice_number: string | null;
   amount_total: number | null;
   status: string | null;
@@ -29,7 +31,7 @@ export function VazbaZalohyPrijatej({ row }: { row: any }) {
       if (jeZalohova) {
         const { data } = await supabase
           .from("purchase_invoices")
-          .select("id, invoice_number, amount_total, status")
+          .select("id, type, invoice_number, amount_total, status")
           .eq("company_id", row.company_id)
           .eq("advance_invoice_id", row.id)
           .is("deleted_at", null)
@@ -54,6 +56,25 @@ export function VazbaZalohyPrijatej({ row }: { row: any }) {
   }, [row?.id, row?.company_id, row?.advance_invoice_id, jeZalohova]);
 
   const mena = row?.currency ?? "EUR";
+  // Daňový doklad k platbe patrí k zálohe, ale nezúčtováva ju — ukazuje sa zvlášť.
+  const danovy = row?.type === "advance_payment";
+  if (!jeZalohova && zaloha && danovy)
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 text-sm">
+        <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="text-muted-foreground">{t("Daňový doklad k zálohovej faktúre")}</span>
+        <Link
+          to="/prijate-faktury/$id"
+          params={{ id: zaloha.id }}
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {zaloha.invoice_number || t("bez čísla")}
+        </Link>
+        <span className="tabular-nums text-muted-foreground">
+          ({formatujMenu(Number(zaloha.amount_total ?? 0), mena)})
+        </span>
+      </div>
+    );
   if (!jeZalohova && zaloha)
     return (
       <div className="flex flex-wrap items-center gap-1.5 text-sm">
@@ -72,23 +93,38 @@ export function VazbaZalohyPrijatej({ row }: { row: any }) {
         </span>
       </div>
     );
+  const vyuctovacie = faktury.filter((f) => f.type !== "advance_payment");
+  const danove = faktury.filter((f) => f.type === "advance_payment");
+  const odkazy = (zoznam: Doklad[]) =>
+    zoznam.map((f, i) => (
+      <span key={f.id}>
+        <Link
+          to="/prijate-faktury/$id"
+          params={{ id: f.id }}
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {f.invoice_number || t("bez čísla")}
+        </Link>
+        {i < zoznam.length - 1 ? "," : ""}
+      </span>
+    ));
   if (jeZalohova && faktury.length)
     return (
-      <div className="flex flex-wrap items-center gap-1.5 text-sm">
-        <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <span className="text-muted-foreground">{t("Zúčtovaná vo faktúre")}</span>
-        {faktury.map((f, i) => (
-          <span key={f.id}>
-            <Link
-              to="/prijate-faktury/$id"
-              params={{ id: f.id }}
-              className="font-medium text-primary underline-offset-2 hover:underline"
-            >
-              {f.invoice_number || t("bez čísla")}
-            </Link>
-            {i < faktury.length - 1 ? "," : ""}
-          </span>
-        ))}
+      <div className="space-y-1">
+        {vyuctovacie.length ? (
+          <div className="flex flex-wrap items-center gap-1.5 text-sm">
+            <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="text-muted-foreground">{t("Zúčtovaná vo faktúre")}</span>
+            {odkazy(vyuctovacie)}
+          </div>
+        ) : null}
+        {danove.length ? (
+          <div className="flex flex-wrap items-center gap-1.5 text-sm">
+            <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="text-muted-foreground">{t("Daňový doklad k platbe")}</span>
+            {odkazy(danove)}
+          </div>
+        ) : null}
       </div>
     );
   return null;

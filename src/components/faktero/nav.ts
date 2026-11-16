@@ -91,6 +91,8 @@ export const NAV: NavGroup[] = [
       { to: "/zalohove", label: "Vydané zálohové faktúry" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/prijate-zalohove", label: "Prijaté zálohové faktúry" },
+      // Daňové doklady k prijatej platbe od dodávateľov (purchase_invoices.type = advance_payment).
+      { to: "/prijate-faktury", search: { type: "danove" }, label: "Prijaté daňové doklady" },
       /* Zaúčtovaný (spracovaný) bloček z Nespracovaných — tá istá agenda ako
          Doklady → Bločky, len rovno na záložke Spracované. */
       { to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky" },

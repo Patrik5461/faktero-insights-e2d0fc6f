@@ -29,7 +29,11 @@ export function useUhradyPrijatej(row: any | null) {
   const [zaloha, setZaloha] = useState(0);
   const [nacitane, setNacitane] = useState(false);
   const id = row?.id as string | undefined;
-  const zalohaId = row?.advance_invoice_id as string | undefined;
+  /*
+    Daňový doklad k prijatej platbe (`advance_payment`) ukazuje na zálohovú,
+    ku ktorej patrí, ale zálohu nezúčtováva — odpočet zálohy sa k nemu neráta.
+  */
+  const zalohaId = (row?.type === "advance_payment" ? undefined : row?.advance_invoice_id) as string | undefined;
   const nacitaj = useCallback(async () => {
     if (!id) return;
     const [{ data }, z] = await Promise.all([

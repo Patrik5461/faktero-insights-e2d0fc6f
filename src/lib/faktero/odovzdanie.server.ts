@@ -4,6 +4,7 @@ import { dokladDoBalika } from "./odovzdanie-faktury";
 import { hodnotaStlpca, kodStlpca, rozpisVystavenej, stlpceRozpisu } from "./rozpis-dph-exportu";
 import { rozpisBlocku } from "./rozuctovanie";
 import { cestaPatriFirme } from "./cesta-firmy";
+import { TYPY_PRIJATYCH_DO_EXPORTU } from "./prijaty-danovy-doklad";
 
 /**
  * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
@@ -340,7 +341,7 @@ export async function zostavBalik(
       .lt("issue_date", doDatumu)
       .is("deleted_at", null)
       // Aj prijaté zálohové — v Pohode sa evidujú kvôli odpočtu zálohy (bez DPH, neúčtujú sa).
-      .in("type", ["regular", "proforma"])
+      .in("type", [...TYPY_PRIJATYCH_DO_EXPORTU])
       .not("status", "in", "(draft,cancelled)")
       .order("issue_date")
       .order("id")
@@ -750,7 +751,7 @@ export async function zostavBalik(
           p.pohoda_predkontacia ?? "",
           p.pohoda_clenenie_dph ?? "",
           p.zauctovane_at ? "áno" : "nie",
-          p.type === "proforma" ? "zálohová" : "faktúra",
+          p.type === "proforma" ? "zálohová" : p.type === "advance_payment" ? "daňový doklad k platbe" : "faktúra",
           ...stlpcePrijatych.map((st) => hodnotaStlpca(rozpisPrijatych[i] ?? [], st)),
           p.kv_clenenie ?? "",
           p.dph_rezim ?? "",

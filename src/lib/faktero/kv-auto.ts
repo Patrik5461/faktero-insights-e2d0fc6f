@@ -183,10 +183,11 @@ export function kvAutoNespracovaneho(
   if (druh === "blocek")
     return kvAutoBlocku({ vat_amount: dph, odpocet: true, pohoda_clenenie_dph: o.clenenie }, o);
   if (druh === "zalohova") return "";
-  if (druh === "faktura" || druh === "dobropis")
+  // Daňový doklad k prijatej platbe: odpočet DPH ako z faktúry (B.2/B.3).
+  if (druh === "faktura" || druh === "dobropis" || druh === "danovy")
     return kvAutoPrijatej(
       {
-        type: "regular",
+        type: druh === "danovy" ? "advance_payment" : "regular",
         amount_total: druh === "dobropis" ? -Math.abs(cislo(u.celkom)) || -1 : cislo(u.celkom),
         vat_amount: dph,
         dph_rezim: u.prenesenie ? "samozdanenie" : null,

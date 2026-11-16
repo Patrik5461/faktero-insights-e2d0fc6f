@@ -41,6 +41,7 @@ import {
   suhrnOdpoctov,
   type OdpocetZalohy,
 } from "./zalohy-odpocty";
+import { jePrijatyDanovyDoklad, NAZOV_PRIJATEHO_DANOVEHO } from "./prijaty-danovy-doklad";
 
 export type AgendaUctovania = "vystavena" | "prijata" | "doklad";
 /** Ako ide doklad do účtovníctva: faktúra, pokladničný doklad alebo interný doklad. */
@@ -466,9 +467,16 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
 
 /** Prijatá faktúra (`purchase_invoices`). */
 export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUctovania {
-  const kat = nast.podlaKategorie?.[String(p?.category ?? "")];
-  const predkontacia =
-    t(p?.pohoda_predkontacia) ?? t(kat?.predkontacia) ?? t(nast.predkontaciaPrijata);
+  /*
+    Prijatý daňový doklad k platbe (k našej zaplatenej zálohe): odpočet DPH
+    ako prijatá faktúra, ale nie náklad — predkontácia len vlastná (napr.
+    343/314), nákladová náhrada prijatých faktúr sa nepoužije.
+  */
+  const danovyKPlatbe = jePrijatyDanovyDoklad(p);
+  const kat = danovyKPlatbe ? undefined : nast.podlaKategorie?.[String(p?.category ?? "")];
+  const predkontacia = danovyKPlatbe
+    ? t(p?.pohoda_predkontacia)
+    : t(p?.pohoda_predkontacia) ?? t(kat?.predkontacia) ?? t(nast.predkontaciaPrijata);
   /*
     Prenesenie daňovej povinnosti (§ 69): formulár ukladá `dph_rezim:
     "samozdanenie"`, čítanie dokladu `reverse_charge`. Takú faktúru treba
@@ -563,15 +571,18 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     rad: t(p?.pohoda_rad) ?? t(nast.radPrijate),
     pokladna: null,
     // Predmet → položky (aj z eFaktúry, keď doklad vlastné nemá) → „Faktúra č.“.
-    text:
-      (!maPopisPrijatej(p) && Array.isArray(p?._nazvyPoloziekZdroja)
+    text: danovyKPlatbe
+      ? `${NAZOV_PRIJATEHO_DANOVEHO} ${t(p?.invoice_number) ?? ""}`.trim()
+      : (!maPopisPrijatej(p) && Array.isArray(p?._nazvyPoloziekZdroja)
         ? textZNazvov(p._nazvyPoloziekZdroja)
         : "") || textPrijatejFaktury(p),
     poznamka: t(p?.note),
     intPoznamka: t(p?.int_poznamka),
     prenesenieDph: prenesenie,
-    odpocetZalohy: Math.abs(Number(p?.advance_amount ?? 0)),
-    dokladKPlatbe: false,
+    // Daňový doklad k platbe zálohu neodpočítava — sám je daňou zo zálohy.
+    odpocetZalohy: danovyKPlatbe ? 0 : Math.abs(Number(p?.advance_amount ?? 0)),
+    // Money S3: druh „D“ (daňový doklad k platbe) aj pri prijatej faktúre.
+    dokladKPlatbe: danovyKPlatbe,
     dphRezim: t(p?.dph_rezim),
     /*
       Položky prepočítané na základ a daň (`polozkyPrijatej`) — z čítania

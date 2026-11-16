@@ -73,6 +73,7 @@ import {
 } from "./export-nastavenia";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { polozkyPrijatej, sadzbaSamozdanenia, type PolozkaPrijatej } from "./prijate-do-pohody";
+import { TYP_POHODY_PRIJATY_DANOVY } from "./prijaty-danovy-doklad";
 import {
   KV_FAKTURY_SAMOZDANIA,
   KV_INTERNYCH_SAMOZDANIA,
@@ -2373,10 +2374,19 @@ export function polozkyDokladov(opts: {
         pred exportom upozorní.
       */
       const kPlatbe = d?._typPohody === "danovyDokladKPlatbe";
-      const podlaKat = zalohovaPrijata || kPlatbe ? null : nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+      /*
+        Prijatý daňový doklad k platbe (od dodávateľa, interný doklad): len
+        vlastná predkontácia — náhrada prijatých dokladov je nákladová (518/321),
+        doklad sa však účtuje ako daň zo zálohy (napr. 343/314). Bez vlastnej
+        ide bez predkontácie, kontrola upozorní (`varovaniePrijatehoDanoveho`).
+        Členenie a KV ako prijatá faktúra (PD, B.2).
+      */
+      const kPlatbePrijaty = d?._typPohody === TYP_POHODY_PRIJATY_DANOVY;
+      const podlaKat =
+        zalohovaPrijata || kPlatbe || kPlatbePrijaty ? null : nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
       const predkontaciaJedna = zalohovaPrijata
         ? null
-        : kPlatbe
+        : kPlatbe || kPlatbePrijaty
           ? String(d?.pohoda_predkontacia ?? "").trim() || null
           : String(d?.pohoda_predkontacia ?? "").trim() ||
           podlaKat?.predkontacia ||
@@ -2530,7 +2540,10 @@ export function polozkyDokladov(opts: {
       */
       const textAuto =
         skrat(
-          d?._text ||
+          // Prijatý daňový doklad k platbe v českej Pohode česky.
+          (kPlatbePrijaty && cz
+            ? String(d?._text ?? "").replace("Daňový doklad k prijatej platbe", "Daňový doklad k přijaté platbě")
+            : d?._text) ||
             (blocek
               ? textBlockuNaExport({
                   poznamka: d?.note,
@@ -2585,7 +2598,7 @@ export function polozkyDokladov(opts: {
             cz,
             kvDokladu: d?.kv_clenenie,
             predvolene:
-              blocek || typPohody === "receivedInvoice"
+              blocek || typPohody === "receivedInvoice" || kPlatbePrijaty
                 ? kvZPredvoleneho(blocek ? nastavenia?.kvDoklady : nastavenia?.kvPrijata)
                 : null,
             blocek,
@@ -3006,7 +3019,13 @@ export function polozkyDokladov(opts: {
             ? // Obdobie kontrolného hlásenia = obdobie odpočtu (neskorší z DUZP a prijatia).
               el(`${p}:dateKHDPH`, datumOdpoctu, "        ")
             : (p !== "vch" && d?._typPohody && !zalohovaPrijata) || (p === "inv" && blocek)
-              ? el(`${p}:dateDelivery`, datumDodania, "        ")
+              ? el(`${p}:dateDelivery`, datumDodania, "        ") +
+                /*
+                  Prijatý daňový doklad k platbe (interný doklad): obdobie KV
+                  DPH = obdobie odpočtu (neskorší z DUZP a prijatia), ako
+                  `dateTax` — bez neho by ho Pohoda nechala prázdne.
+                */
+                (p === "int" && kPlatbePrijaty ? el("int:dateKVDPH", datumOdpoctu, "        ") : "")
               : "") +
         /*
           Prijatý dobropis (CZ opravný daňový doklad): dátum uplatnenia DPH —
@@ -3166,7 +3185,7 @@ export function polozkyDokladov(opts: {
             ? el(
                 `${p}:dateAccounting`,
                 // Daňový doklad k platbe: dátum účtovného prípadu vždy (inak ho Pohoda nechá prázdny).
-                zamknutieZ(datumZapisu) || (kPlatbe ? datumZapisu : null),
+                zamknutieZ(datumZapisu) || (kPlatbe || kPlatbePrijaty ? datumZapisu : null),
                 "        ",
               )
             : ""

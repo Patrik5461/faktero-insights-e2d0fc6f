@@ -1,5 +1,6 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { DesatinnePole } from "@/components/faktero/DesatinnePole";
+import { ZalohaDanovehoDokladu } from "./ZalohaDanovehoDokladu";
 import { OdpocetZalohyNespracovaneho } from "@/components/faktero/OdpocetZalohyNespracovaneho";
 import { UpozornenieObjednavky } from "./PovinnaObjednavka";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -31,6 +32,7 @@ import { oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
+  jeDruhPrijatej,
   kontrolaSumy,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
@@ -125,7 +127,9 @@ export function NespracovanyKompaktny({
   const hoverPola = useHoverPola(poleZPrvku);
   const zvyraznenePole = hoverPola.pole ?? aktivnePole;
   const blocek = druh === "blocek";
-  const faktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
+  const faktura = jeDruhPrijatej(druh);
+  // Daňový doklad k prijatej platbe — neplatí sa (bez splatnosti), DUZP = deň prijatia platby.
+  const danovy = druh === "danovy";
   const zle = (k: string) => chyby.includes(k);
   const ram = (k: string) => `${ramik} ${zle(k) ? "dk-ramik-chyba" : "border-input"}`;
   const set = (z: Partial<UdajeNespracovaneho>) => setU({ ...u, ...z });
@@ -296,7 +300,17 @@ export function NespracovanyKompaktny({
                     className={ram("datumVystavenia")}
                   />
                 </Pole>
-                {faktura ? (
+                {danovy ? (
+                  <Pole popis="Dátum prijatia platby (DUZP)" chyba={zle("datumPlatby")}>
+                    <input
+                      type="date"
+                      aria-label={t("Dátum prijatia platby (DUZP)")}
+                      value={u.datumDodania}
+                      onChange={(e) => set({ datumDodania: e.target.value })}
+                      className={ram("datumPlatby")}
+                    />
+                  </Pole>
+                ) : faktura ? (
                   <Pole popis="Dátum splatnosti" chyba={zle("splatnost")}>
                     <input
                       type="date"
@@ -322,7 +336,16 @@ export function NespracovanyKompaktny({
                   </Pole>
                 )}
               </div>
-              {faktura ? (
+              {danovy ? (
+                <ZalohaDanovehoDokladu
+                  companyId={companyId ?? getActiveCompanyId()}
+                  ico={u.dodavatel.ico}
+                  nazov={u.dodavatel.nazov}
+                  value={u.zalohaId ?? ""}
+                  onChange={(v) => set({ zalohaId: v })}
+                  vstup={ram("")}
+                />
+              ) : faktura ? (
                 <Pole popis="Dátum dodania (DUZP)">
                   <input
                     type="date"

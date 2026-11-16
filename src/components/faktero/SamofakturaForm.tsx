@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { obsadzujeZalohu } from "@/lib/faktero/prijaty-danovy-doklad";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -350,14 +351,17 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       const { data: pouzite } = ids.length
         ? await supabase
             .from("purchase_invoices")
-            .select("id, advance_invoice_id")
+            .select("id, type, advance_invoice_id")
             .eq("company_id", cid)
             .is("deleted_at", null)
             .in("advance_invoice_id", ids)
         : { data: [] as any[] };
       if (zrusene) return;
+      // Daňový doklad k platbe zálohu nezúčtováva — zálohu neobsadzuje.
       const obsadene = new Set(
-        (pouzite ?? []).filter((r: any) => r.id !== id).map((r: any) => r.advance_invoice_id),
+        (pouzite ?? [])
+          .filter((r: any) => r.id !== id && obsadzujeZalohu(r))
+          .map((r: any) => r.advance_invoice_id),
       );
       setZalohy(
         (proformy ?? [])

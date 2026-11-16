@@ -630,8 +630,17 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    for (const r of p.riadky) {
+    /*
+      Riadky tej istej sadzby sa spoja: vyúčtovacia faktúra so zdanenou
+      zálohou má v rozpise plné plnenie a záporný riadok zálohy (300/69 a
+      −100/−23) — do KV patrí jeden riadok s rozdielom (200/46), ako ho
+      z dokladu zostaví aj Pohoda. DPH zálohy je v KV raz, na daňovom doklade
+      k prijatej platbe.
+    */
+    for (const r of spojRiadkyPodlaSadzby(p.riadky)) {
       if (r.sadzba <= 0 && r.dan === 0) continue;
+      // Záloha pokryla celé plnenie sadzby (rozdiel 0) — prázdny riadok do KV nejde.
+      if (r.zaklad === 0 && r.dan === 0) continue;
       const riadok: KvB1B2 = {
         dod: p.dodavatelIcDph?.trim() || undefined,
         f: p.cislo,
@@ -1146,4 +1155,16 @@ export function riadokZoSum(zaklad: number, dan: number, den?: string | null): S
   const d = centy(dan);
   if (z === 0) return { sadzba: 0, zaklad: z, dan: d };
   return { sadzba: najblizsiaSadzba((d / z) * 100, "SK"), zaklad: z, dan: d };
+}
+
+/** Riadky rovnakej sadzby sčítané do jedného (poradie podľa prvého výskytu). */
+export function spojRiadkyPodlaSadzby<T extends { sadzba: number; zaklad: number; dan: number }>(riadky: T[]): T[] {
+  const po = new Map<number, T>();
+  for (const r of riadky) {
+    const k = Number(r.sadzba);
+    const x = po.get(k);
+    if (!x) po.set(k, { ...r });
+    else po.set(k, { ...x, zaklad: Math.round((x.zaklad + r.zaklad) * 100) / 100, dan: Math.round((x.dan + r.dan) * 100) / 100 });
+  }
+  return [...po.values()];
 }

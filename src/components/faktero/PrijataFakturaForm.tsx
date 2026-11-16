@@ -1,4 +1,5 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
+import { obsadzujeZalohu, jePrijatyDanovyDoklad } from "@/lib/faktero/prijaty-danovy-doklad";
 import { vsPrijatejNaUlozenie, vsZCislaPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -77,6 +78,9 @@ function klucDuplicity(...v: unknown[]): string {
  * Bez úpravy sa preklep v sume dal opraviť len zmazaním a napísaním odznova,
  * čo je na účtovnom doklade zbytočne drsné.
  */
+/** Druh prijatého dokladu vo formulári (`purchase_invoices.type`). */
+type TypPrijatejFormulara = "regular" | "proforma" | "advance_payment";
+
 export function PrijataFakturaForm({
   id,
   druh = "regular",
@@ -84,7 +88,7 @@ export function PrijataFakturaForm({
 }: {
   id?: string;
   /** Predvolený druh dokladu pri zakladaní — zo zoznamu prijatých záloh. */
-  druh?: "regular" | "proforma";
+  druh?: TypPrijatejFormulara;
   /** Kompaktné rozloženie úpravy: vľavo náhľad dokladu, vpravo panel s poliami. */
   kompaktne?: boolean;
 }) {
@@ -129,7 +133,11 @@ export function PrijataFakturaForm({
       Zálohová faktúra od dodávateľa nie je daňový doklad — platí sa, ale daň
       prinesie až ostrá faktúra. Preto má vlastný typ a do výkazov nevstupuje.
     */
-    type: druh as "regular" | "proforma",
+    /*
+      advance_payment = daňový doklad k prijatej platbe (k zaplatenej zálohe):
+      daňový doklad, ktorý sa neplatí — uloží sa ako zaplatený k dňu platby.
+    */
+    type: druh as TypPrijatejFormulara,
     /** Prijatá záloha, ktorú táto faktúra zúčtováva. */
     advance_invoice_id: "",
     /** Odpočet nezdanenej zálohy — vlastné pole, nie záporná DPH v rozpise (k úhrade = suma − záloha). */
@@ -382,7 +390,7 @@ export function PrijataFakturaForm({
         delivery_date: data.delivery_date ?? "",
         odpocet: data.odpocet !== false,
         opravuje_cislo: data.opravuje_cislo ?? "",
-        type: ((data as any).type ?? "regular") as "regular" | "proforma",
+        type: ((data as any).type ?? "regular") as TypPrijatejFormulara,
         advance_invoice_id: (data as any).advance_invoice_id ?? "",
         advance_amount:
           (data as any).advance_amount != null
@@ -449,7 +457,7 @@ export function PrijataFakturaForm({
     const cid = getActiveCompanyId();
     const ico = form.supplier_ico.trim();
     const nazov = form.supplier_name.trim();
-    if (!cid || form.type !== "regular" || (!ico && !nazov)) {
+    if (!cid || (form.type !== "regular" && form.type !== "advance_payment") || (!ico && !nazov)) {
       setZalohy([]);
       return;
     }
@@ -471,13 +479,22 @@ export function PrijataFakturaForm({
       const { data: pouzite } = ids.length
         ? await supabase
             .from("purchase_invoices")
-            .select("advance_invoice_id")
+            .select("id, type, advance_invoice_id")
             .eq("company_id", cid)
             .is("deleted_at", null)
             .in("advance_invoice_id", ids)
         : { data: [] as any[] };
       if (zrusene) return;
-      const obsadene = new Set((pouzite ?? []).map((r: any) => r.advance_invoice_id));
+      /*
+        Faktúre sa ponúka záloha, ktorú ešte nezúčtovala iná faktúra (daňový
+        doklad k platbe ju nezúčtováva); daňovému dokladu záloha bez iného
+        daňového dokladu.
+      */
+      const danovy = form.type === "advance_payment";
+      const ine = (pouzite ?? []).filter((r: any) => r.id !== id);
+      const obsadene = new Set(
+        ine.filter((r: any) => (danovy ? jePrijatyDanovyDoklad(r) : obsadzujeZalohu(r))).map((r: any) => r.advance_invoice_id),
+      );
       setZalohy(
         (proformy ?? [])
           .filter((z: any) => !obsadene.has(z.id) || z.id === form.advance_invoice_id)
@@ -693,7 +710,8 @@ export function PrijataFakturaForm({
         invoice_number: form.invoice_number.trim(),
         issue_date: form.issue_date,
         received_date: form.received_date,
-        due_date: form.due_date,
+        // Daňový doklad k platbe sa neplatí — splatnosť = vystavenie, aby nikde nesvietil po splatnosti.
+        due_date: form.type === "advance_payment" ? form.issue_date : form.due_date,
         amount_without_vat: sumaZPola(form.amount_without_vat || "0") || 0,
         vat_amount: sumaZPola(form.vat_amount || "0") || 0,
         amount_total: sumaZPola(form.amount_total || "0") || 0,
@@ -712,9 +730,13 @@ export function PrijataFakturaForm({
         note: form.note || null,
         job_id: form.job_id || null,
         vehicle_id: form.vehicle_id || null,
-        status: form.status,
+        // Daňový doklad k platbe: záloha je zaplatená — doklad je uhradený dňom prijatia platby (DUZP).
+        status: form.type === "advance_payment" ? ("paid" as const) : form.status,
+        ...(form.type === "advance_payment"
+          ? { payment_date: form.delivery_date || form.issue_date }
+          : {}),
         dph_rezim: form.dph_rezim || null,
-        delivery_date: form.delivery_date || null,
+        delivery_date: form.type === "advance_payment" ? form.delivery_date || form.issue_date : form.delivery_date || null,
         // Zo zálohovej faktúry sa daň neodpočítava a výkazy ju nevidia.
         odpocet: form.type === "proforma" ? false : form.odpocet,
         opravuje_cislo: form.opravuje_cislo.trim() || null,
@@ -724,7 +746,9 @@ export function PrijataFakturaForm({
         // Prázdne = predvolené (alebo z pravidla — doplní ho spúšťač v databáze).
         pohoda_clenenie_dph: form.type === "proforma" ? null : kody.clenenie.trim() || null,
         advance_invoice_id:
-          form.type === "regular" && form.advance_invoice_id ? form.advance_invoice_id : null,
+          (form.type === "regular" || form.type === "advance_payment") && form.advance_invoice_id
+            ? form.advance_invoice_id
+            : null,
         file_path,
         file_mime,
         file_size,
@@ -976,18 +1000,40 @@ export function PrijataFakturaForm({
       <Field label="Druh dokladu">
         <select
           value={form.type}
-          onChange={(e) => set("type", e.target.value as "regular" | "proforma")}
+          onChange={(e) => set("type", e.target.value as TypPrijatejFormulara)}
           className="input"
         >
           <option value="regular">{t("Prijatá faktúra (daňový doklad)")}</option>
           <option value="proforma">{t("Prijatá zálohová faktúra")}</option>
+          <option value="advance_payment">{t("Daňový doklad k prijatej platbe")}</option>
         </select>
+        {form.type === "advance_payment" && (
+          <span className="mt-1 block text-xs text-muted-foreground">
+            {t("K zaplatenej zálohe — neplatí sa, DPH sa z neho odpočíta.")}
+          </span>
+        )}
         {form.type === "proforma" && (
           <span className="mt-1 block text-xs text-muted-foreground">
             {t("Do výkazov k DPH nevstupuje. Daň si odpočítate až z ostrej faktúry.")}
           </span>
         )}
       </Field>
+      {form.type === "advance_payment" && (
+        <Field label="K prijatej zálohovej faktúre">
+          <select
+            value={form.advance_invoice_id}
+            onChange={(e) => set("advance_invoice_id", e.target.value)}
+            className="input"
+          >
+            <option value="">{t("— žiadnu —")}</option>
+            {zalohy.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       {form.type === "regular" && zalohy.length > 0 && (
         <Field label="Zúčtováva prijatú zálohu">
           <select
@@ -1029,7 +1075,7 @@ export function PrijataFakturaForm({
       </Field>
       {/* Dátum dodania = deň daňového plnenia: rozhoduje o období DPH
         a ide do kontrolného výkazu aj do Pohody (dateTax). */}
-      <Field label="Dátum dodania (daňového plnenia)">
+      <Field label={form.type === "advance_payment" ? "Dátum prijatia platby (DUZP)" : "Dátum dodania (daňového plnenia)"}>
         <input
           type="date"
           value={form.delivery_date}
@@ -1037,7 +1083,9 @@ export function PrijataFakturaForm({
           className="input"
         />
         <span className="mt-1 block text-xs text-muted-foreground">
-          {t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
+          {form.type === "advance_payment"
+            ? t("Deň, keď dodávateľ prijal zálohu — rozhoduje o období odpočtu DPH. Prázdne = dátum vystavenia.")
+            : t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
         </span>
       </Field>
       <Field label="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
@@ -1057,6 +1105,7 @@ export function PrijataFakturaForm({
           bezOdpoctu={form.type === "proforma"}
         />
       </Field>
+      {form.type === "advance_payment" ? null : (
       <Field label="Dátum splatnosti">
         <input
           type="date"
@@ -1066,6 +1115,7 @@ export function PrijataFakturaForm({
           className="input"
         />
       </Field>
+      )}
       <Field label="Spôsob platby">
         <select
           value={form.payment_method}
@@ -1081,6 +1131,7 @@ export function PrijataFakturaForm({
           <option value="zapocet">{t("Zápočet")}</option>
         </select>
       </Field>
+      {form.type === "advance_payment" ? null : (
       <Field label="Stav">
         <select
           value={form.status}
@@ -1093,6 +1144,7 @@ export function PrijataFakturaForm({
           <option value="paid">{t("Zaplatené")}</option>
         </select>
       </Field>
+      )}
     </>
   );
   const poliaSum = (
@@ -1307,7 +1359,9 @@ export function PrijataFakturaForm({
         titulok={t(
           form.type === "proforma"
             ? "Úprava prijatej zálohovej faktúry"
-            : "Úprava prijatej faktúry",
+            : form.type === "advance_payment"
+              ? "Úprava daňového dokladu k prijatej platbe"
+              : "Úprava prijatej faktúry",
         )}
         priloha={prilohaCesta ? { cesta: prilohaCesta, mime: prilohaMime } : null}
         onSubmit={submit}
@@ -1354,6 +1408,10 @@ export function PrijataFakturaForm({
             ? upravujeme
               ? "Úprava prijatej zálohovej faktúry"
               : "Nová prijatá zálohová faktúra"
+            : form.type === "advance_payment"
+              ? upravujeme
+                ? "Úprava daňového dokladu k prijatej platbe"
+                : "Nový daňový doklad k prijatej platbe"
             : upravujeme
               ? "Úprava prijatej faktúry"
               : "Nová prijatá faktúra",
@@ -1361,6 +1419,8 @@ export function PrijataFakturaForm({
         description={t(
           form.type === "proforma"
             ? "Zálohová faktúra od dodávateľa — platí sa, ale daň z nej neodpočítavate."
+            : form.type === "advance_payment"
+              ? "Daňový doklad, ktorý dodávateľ vystavil k vašej zaplatenej zálohe — DPH si z neho odpočítate, neplatí sa."
             : upravujeme
               ? "Opravte údaje dokladu. Doklad z uzamknutého obdobia sa zmeniť nedá."
               : "Zaevidujte faktúru od dodávateľa (nákup / výdavok).",

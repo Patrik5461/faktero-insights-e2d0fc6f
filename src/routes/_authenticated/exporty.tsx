@@ -46,6 +46,7 @@ import { SuctyPoMenach } from "@/components/faktero/SuctyPoMenach";
 import { riadkyPreIds, vsetkyRiadky } from "@/lib/faktero/strankovanie";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { TYPY_PRIJATYCH_S_DPH } from "@/lib/faktero/prijaty-danovy-doklad";
 /** Kľúč podľa počtu: 1 / 2–4 / 5 a viac (slovenské tvary, preklad ich zjednotí). */
 const tvar = (n: number, jeden: string, dva: string, pat: string) =>
   n === 1 ? jeden : n >= 2 && n <= 4 ? dva : pat;
@@ -1101,7 +1102,8 @@ function ZauctovaneDoProgramu() {
           od,
           doDna,
         )
-          .eq("type", "regular")
+          // Aj prijaté daňové doklady k platbe — odpočet DPH zo zaplatenej zálohy.
+          .in("type", [...TYPY_PRIJATYCH_S_DPH])
           .is("deleted_at", null)
           .order("issue_date", { ascending: false })
           .order("id")

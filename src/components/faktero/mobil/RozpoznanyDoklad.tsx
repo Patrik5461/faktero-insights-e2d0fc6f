@@ -52,6 +52,7 @@ type Detail = {
 export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
   faktura: "rd.druh.faktura",
   zalohova: "rd.druh.zalohova",
+  danovy: "rd.druh.danovy",
   dobropis: "rd.druh.dobropis",
   blocek: "rd.druh.blocek",
   ostatny: "rd.druh.ostatny",
@@ -60,6 +61,7 @@ export const NAZOV_DRUHU: Record<DruhNespracovaneho, Kluc> = {
 const ULOZIT_AKO: Record<DruhNespracovaneho, Kluc> = {
   faktura: "rd.ulozit.faktura",
   zalohova: "rd.ulozit.zalohova",
+  danovy: "rd.ulozit.danovy",
   dobropis: "rd.ulozit.dobropis",
   blocek: "rd.ulozit.blocek",
   ostatny: "rd.ulozit.ostatny",
@@ -67,6 +69,7 @@ const ULOZIT_AKO: Record<DruhNespracovaneho, Kluc> = {
 const ULOZENE_AKO: Record<DruhNespracovaneho, Kluc> = {
   faktura: "rd.ulozene.faktura",
   zalohova: "rd.ulozene.zalohova",
+  danovy: "rd.ulozene.danovy",
   dobropis: "rd.ulozene.dobropis",
   blocek: "rd.ulozene.blocek",
   ostatny: "rd.ulozene.ostatny",
@@ -407,7 +410,7 @@ export function RozpoznanyDoklad({
   if (!detail) return null;
   const u = finalne ?? detail.udaje;
   const s = sucty(u);
-  const jeFaktura = druh === "faktura" || druh === "zalohova" || druh === "dobropis";
+  const jeFaktura = druh === "faktura" || druh === "zalohova" || druh === "danovy" || druh === "dobropis";
   const rozpoznany = (detail.druh as DruhNespracovaneho | null) ?? null;
 
   const zakladDph = s.zaklad || s.dph;

@@ -203,8 +203,9 @@ function DphPage() {
             )
             .is("deleted_at", null)
             // Ako výkaz: prijatá zálohová nie je daňový doklad a faktúra iného
-            // odberateľa (nepotvrdená) do odpočtu nejde.
-            .eq("type", "regular")
+            // odberateľa (nepotvrdená) do odpočtu nejde. Daňový doklad
+            // k prijatej platbe (DPH zo zaplatenej zálohy) áno.
+            .in("type", ["regular", "advance_payment"])
             .is("odberatel_nesedi", null)
             .order("issue_date", { ascending: true })
             .order("id")

@@ -92,6 +92,36 @@ export function jeZalohovaFaktura(p: PodkladyRozpoznania): boolean {
   return CISLO_ZALOHY.test(cislo);
 }
 
+/*
+  Daňový doklad k prijatej platbe (od dodávateľa, k našej zaplatenej zálohe):
+  „Daňový doklad k prijatej platbe“, CZ „Daňový doklad k přijaté platbě“,
+  „Daňový doklad k záloze / k úhrade zálohy“, „Doklad k prijatej platbe“.
+  Po normalizácii (bez diakritiky) „prijatej“ aj „přijaté“ = „prijat…“.
+*/
+const DANOVY_K_PLATBE = [
+  /danov\w* doklad\w* (?:k|ku|o|na) (?:prijat\w* |uhrad\w* |zaplaten\w* )?(?:platb|zaloh|zaloz|preddavk|uhrad)/,
+  /doklad\w* (?:k|o) prijat\w* platb/,
+  /tax (?:document|invoice|receipt) (?:for|on|to) (?:the |a |an )?(?:received |advance )?(?:payment|advance|deposit)/,
+  /steuerbeleg (?:zur|uber die|fur die) (?:erhaltene[nr]? )?(?:zahlung|anzahlung)/,
+];
+
+/**
+ * `true`, keď doklad vyzerá ako daňový doklad k prijatej platbe (k zálohe).
+ * Rozhoduje odpoveď modelu (`danovy_doklad_k_platbe`), inak nadpis, číslo,
+ * názov súboru. Má prednosť pred zálohovou — v nadpise býva aj „k zálohovej
+ * faktúre č. …“.
+ */
+export function jeDanovyDokladKPlatbe(p: PodkladyRozpoznania): boolean {
+  const druh = NORMALIZUJ(p.druhOdAi);
+  if (druh && (druh.includes("k platbe") || druh.includes("danovy doklad k"))) return true;
+  const text = [p.nazovDokladu, p.cisloDokladu, p.nazovSuboru, p.predmetMailu]
+    .map(NORMALIZUJ)
+    .filter(Boolean)
+    .join(" | ");
+  if (!text) return false;
+  return DANOVY_K_PLATBE.some((r) => r.test(text));
+}
+
 /** Druh dokladu pre stĺpec `purchase_invoices.type`. */
 export function druhPrijatehoDokladu(p: PodkladyRozpoznania): "regular" | "proforma" {
   return jeZalohovaFaktura(p) ? "proforma" : "regular";

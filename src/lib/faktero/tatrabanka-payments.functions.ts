@@ -54,13 +54,15 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
     const { data: inv } = await supabaseAdmin
       .from("purchase_invoices")
       .select(
-        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at, note, advance_amount, advance_invoice_id",
+        "id, company_id, supplier_name, supplier_iban, invoice_number, amount_total, currency, status, variable_symbol, constant_symbol, specific_symbol, deleted_at, created_at, note, advance_amount, advance_invoice_id, type",
       )
       .eq("id", data.invoice_id)
       .eq("company_id", data.company_id)
       .maybeSingle();
     if (!inv || inv.deleted_at) throw new Error("invoice_not_found");
     if (inv.status === "paid") throw new Error("invoice_already_paid");
+    // Daňový doklad k prijatej platbe: záloha je zaplatená, platiť sa nemá čo.
+    if ((inv as any).type === "advance_payment") throw new Error("invoice_already_paid");
     // Pri zapnutom schvaľovaní sa platí len schválená — rovnako ako v hromadnom príkaze.
     const { lenSchvalene } = await import("./schvalovanie.server");
     const { cakaju } = await lenSchvalene(supabaseAdmin, data.company_id, "prijata", [inv]);
