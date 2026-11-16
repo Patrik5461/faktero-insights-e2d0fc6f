@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
   davkovySubor,
+  httpSkript,
   nastavenieUlohy,
   navod,
   nazovBalicka,
@@ -137,6 +138,7 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     zip.file("faktero-pohoda.cmd", davkovySubor({ adresa }));
+    zip.file("faktero-http.ps1", httpSkript());
     /*
       Bez BOM, na rozdiel od návodu: `for /f "eol=#"` porovnáva **prvý znak**
       riadku, a BOM by sa pred mriežku postavil — hlavička so vysvetlivkami by

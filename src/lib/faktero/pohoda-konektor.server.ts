@@ -1322,6 +1322,37 @@ export function nazovBalicka(firma: string): string {
  * Kľúč sa vyrába tu a vloží sa rovno do súboru — nikde sa nezobrazuje a nemá
  * ako skončiť v mailoch ani v chate.
  */
+/**
+ * Pomocník dávkového súboru na HTTPS (stiahnutie dávky, odoslanie odpovede).
+ *
+ * Predtým to robil `curl`, ktorý Windows Server 2016 (a Windows 10 pred
+ * verziou 1803, Server 2012) nemá — most by u takej účtovníčky nespravil nič
+ * (overené 16. 11. 2026 na Server 2016 s POHODOU). PowerShell 3+ je všade;
+ * TLS 1.2 sa zapína výslovne, staršie .NET ho samo neponúkne. Vypíše len
+ * HTTP kód (0 = spojenie zlyhalo). Odpoveď POHODY ide ako surové bajty
+ * (Windows-1250), nič sa neprekóduje.
+ */
+export function httpSkript(): string {
+  return `param([string]$Url, [string]$Kluc, [string]$Vystup, [string]$Subor, [string]$Text)
+# Faktero - HTTPS pre faktero-pohoda.cmd. Nemente.
+$ErrorActionPreference = 'Stop'
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
+$h = @{ Authorization = "Bearer $Kluc" }
+try {
+  if ($Subor) {
+    $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $Url -Headers $h -ContentType 'text/xml' -InFile $Subor
+  } elseif ($PSBoundParameters.ContainsKey('Text')) {
+    $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $Url -Headers $h -ContentType 'text/xml' -Body ([Text.Encoding]::UTF8.GetBytes($Text))
+  } else {
+    $r = Invoke-WebRequest -UseBasicParsing -Uri $Url -Headers $h -OutFile $Vystup -PassThru
+  }
+  [int]$r.StatusCode
+} catch {
+  if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+}
+`;
+}
+
 export function davkovySubor(p: { adresa: string }): string {
   // Bez diakritiky zámerne: dávkový súbor sa vykonáva v kódovej stránke, ktorú
   // si Windows volí sám, a rozsypané hlásenie by len mýlilo.
@@ -1450,9 +1481,11 @@ rem Hlasenie, ze Pohoda nic nevratila - Faktero vrati doklady do fronty hned.
 set "BEZ_URL=%ODPOVED_URL%%SPOJ2%bez_odpovede=1"
 
 rem 1. Stiahnutie davky z Faktera. Von ide bezne HTTPS, nic sa neotvara.
+rem    Cez PowerShell (faktero-http.ps1) - Windows Server 2016 a starsie nemaju program na HTTPS z prikazoveho riadku.
 set "SUBOR=%VSTUP%\\davka.xml"
 if exist "%SUBOR%" del /q "%SUBOR%"
-for /f %%k in ('curl -sS -o "%SUBOR%" -w "%%{http_code}" -H "Authorization: Bearer %KLUC%" "%URL%"') do set "KOD=%%k"
+set "KOD=0"
+for /f %%k in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIECINOK%faktero-http.ps1" -Url "%URL%" -Kluc "%KLUC%" -Vystup "%SUBOR%"') do set "KOD=%%k"
 
 if "%KOD%"=="204" (
   call :log "%NAZOV% %CAST%: nic nove na prenos."
@@ -1468,12 +1501,45 @@ rem Odrezany subor (prerusene spojenie) by Pohoda nenacitala - davka sa vrati do
 findstr /c:"</dat:dataPack>" "%SUBOR%" >nul 2>&1 || (
   call :log "%NAZOV%: davka prisla neuplna - import sa nespusta, Faktero ju posle znova."
   del /q "%SUBOR%"
-  curl -sS -o nul -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "neuplny subor" "%BEZ_URL%"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIECINOK%faktero-http.ps1" -Url "%BEZ_URL%" -Kluc "%KLUC%" -Text "neuplny subor" >nul
   exit /b
 )
 call :log "%NAZOV%: davka stiahnuta."
 
-rem 2. Konfiguracia importu. Pise sa zakazdym, lebo databaza je ina firma od firmy.
+rem 2. a 3. Import do Pohody (podprogram :importuj nizsie).
+call :importuj
+rem POHODA na SQL serveri databazu s koncovkou .mdb nenajde ("Nepodarilo sa
+rem otvorit databazovy subor") a odpoved nevrati - skusi sa este bez koncovky.
+dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || (
+  if /i "!DB:~-4!"==".mdb" (
+    set "DB=!DB:~0,-4!"
+    call :log "%NAZOV%: databaza s koncovkou .mdb sa neotvorila - skusam !DB!"
+    call :importuj
+  )
+)
+
+rem 4. Odpoved spat do Faktera - z nej sa dozvie cisla dokladov a chyby.
+dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || (
+  call :log "%NAZOV%: Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode. Doklady pojdu znova."
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIECINOK%faktero-http.ps1" -Url "%BEZ_URL%" -Kluc "%KLUC%" -Text "bez odpovede" >nul
+)
+for %%f in ("%ODPOVED%\\*.xml") do (
+  set "KOD2=0"
+  for /f %%k in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIECINOK%faktero-http.ps1" -Url "%ODPOVED_URL%" -Kluc "%KLUC%" -Subor "%%f"') do set "KOD2=%%k"
+  if "!KOD2!"=="200" (
+    move /y "%%f" "%HOTOVO%" >nul
+    call :log "%NAZOV%: odpoved odoslana (%%~nxf)"
+  ) else (
+    call :log "%NAZOV%: odpoved sa odoslat nepodarila (!KOD2!): %%~nxf"
+  )
+)
+exit /b
+
+rem ===========================================================
+rem  Import jednej davky do databazy %DB%
+rem ===========================================================
+:importuj
+rem Konfiguracia importu. Pise sa zakazdym, lebo databaza je ina firma od firmy.
 > "%PRIECINOK%import.ini" (
   echo [XML]
   echo database=%DB%
@@ -1484,25 +1550,10 @@ rem 2. Konfiguracia importu. Pise sa zakazdym, lebo databaza je ina firma od fir
   echo Move_to=%HOTOVO%
 )
 
-rem 3. Nacitanie do Pohody. /wait - inak by sa pokracovalo skor, nez skonci.
-call :log "%NAZOV% %CAST%: spustam import do Pohody ^(%DB%^)..."
+rem Nacitanie do Pohody. /wait - inak by sa pokracovalo skor, nez skonci.
+call :log "%NAZOV% %CAST%: spustam import do Pohody (%DB%)..."
 start "" /wait "%POHODA%" /XML "%MENO%" "%HESLO%" "%PRIECINOK%import.ini"
 call :log "%NAZOV%: import skoncil."
-
-rem 4. Odpoved spat do Faktera - z nej sa dozvie cisla dokladov a chyby.
-dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || (
-  call :log "%NAZOV%: Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode. Doklady pojdu znova."
-  curl -sS -o nul -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "bez odpovede" "%BEZ_URL%"
-)
-for %%f in ("%ODPOVED%\\*.xml") do (
-  for /f %%k in ('curl -sS -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "@%%f" "%ODPOVED_URL%"') do set "KOD2=%%k"
-  if "!KOD2!"=="200" (
-    move /y "%%f" "%HOTOVO%" >nul
-    call :log "%NAZOV%: odpoved odoslana ^(%%~nxf^)"
-  ) else (
-    call :log "%NAZOV%: odpoved sa odoslat nepodarila ^(!KOD2!^): %%~nxf"
-  )
-)
 exit /b
 
 :koniec

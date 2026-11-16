@@ -8,6 +8,7 @@ import {
   rozoberOdpoved,
   nazovBalicka,
   davkovySubor,
+  httpSkript,
   zoznamFiriem,
   nastavenieUlohy,
 } from "./pohoda-konektor.server";
@@ -788,7 +789,7 @@ describe("balíček pre viac firiem", () => {
     expect(usek).toContain('for /f "tokens=1,2 delims=@" %%x in ("%KLUC%")');
     expect(usek).toContain('set "URL=%URL%%SPOJ%company=%FIRMA%"');
     expect(usek).toContain('set "ODPOVED_URL=%ODPOVED_URL%?company=%FIRMA%"');
-    expect(usek).toContain('--data-binary "@%%f" "%ODPOVED_URL%"');
+    expect(usek).toContain('-Url "%ODPOVED_URL%" -Kluc "%KLUC%" -Subor "%%f"');
     // Firma sa vyberá pred delením na prelom rokov, nech platí pre obe časti.
     expect(usek.indexOf('set "FIRMA=%%y"')).toBeLessThan(usek.indexOf('set "CAST=prelom"'));
     // Bez zavináča ostáva FIRMA prázdna a URL bez parametra.
@@ -804,9 +805,24 @@ describe("balíček pre viac firiem", () => {
     ]);
   });
 
+  it("HTTPS ide cez PowerShell, nie curl (Windows Server 2016 curl nemá)", () => {
+    expect(cmd).not.toMatch(/\bcurl\b/);
+    expect(cmd).toContain('powershell -NoProfile -ExecutionPolicy Bypass -File "%PRIECINOK%faktero-http.ps1" -Url "%URL%" -Kluc "%KLUC%" -Vystup "%SUBOR%"');
+    const ps = httpSkript();
+    expect(ps).toContain("Tls12");
+    expect(ps).toContain("-InFile $Subor");
+    expect(ps).toContain("-OutFile $Vystup -PassThru");
+  });
+
   it("kľúč ani databáza nie sú zapečené v dávkovom súbore", () => {
     expect(cmd).not.toContain("fk_live_");
-    expect(cmd).not.toContain(".mdb");
+    expect(cmd).not.toContain("StwPh_");
+  });
+
+  it("databázu s koncovkou .mdb skúsi na SQL POHODE znova bez nej", () => {
+    expect(cmd).toContain('if /i "!DB:~-4!"==".mdb" (');
+    expect(cmd).toContain('set "DB=!DB:~0,-4!"');
+    expect(cmd.match(/call :importuj/g)).toHaveLength(2);
   });
 
   /*
