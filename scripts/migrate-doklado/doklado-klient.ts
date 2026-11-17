@@ -57,12 +57,13 @@ type Odpoved = {
 };
 
 export class DokladoKlient {
+  private readonly kluc: string;
   private posledne = 0;
   private readonly odstup: number;
   volani = 0;
 
   constructor(
-    private readonly kluc: string,
+    kluc: string,
     private readonly o: {
       adresa?: string;
       /** Najviac požiadaviek za sekundu. */
@@ -70,7 +71,9 @@ export class DokladoKlient {
       log: (riadok: string) => void;
     },
   ) {
-    if (!kluc) throw new Error("Chýba DOKLADO_API_KEY.");
+    // Kľúč vložený cez terminál môže niesť riadiace znaky (ESC[I / ESC[O) — odstrániť.
+    this.kluc = String(kluc ?? "").replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/[\x00-\x1f\x7f]/g, "").trim();
+    if (!this.kluc) throw new Error("Chýba DOKLADO_API_KEY.");
     this.odstup = 1000 / (o.zaSekundu ?? 4);
   }
 
