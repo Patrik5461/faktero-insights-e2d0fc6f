@@ -244,6 +244,10 @@ begin
       'id', coalesce(_id, gen_random_uuid()),
       'name', left('Test – ' || _p.name, 200),
       'ico', null,
+      -- Vymyslený vzorový účet (kód banky 1200 nepatrí žiadnej banke): QR a PAYME
+      -- fungujú na skúšku, ale nikto nezaplatí na skutočný účet firmy.
+      'iban', 'SK3112000000198742637541',
+      'swift', null,
       'testovacia_pre', _parent,
       'created_at', now(),
       'updated_at', now(),
