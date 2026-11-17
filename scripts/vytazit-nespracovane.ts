@@ -16,6 +16,7 @@
     ... --firma <uuid>              # len jedna firma
     ... --paralelne 2               # koľko naraz (predvolene 2)
     ... --vsetky-zdroje             # nielen „import“, ale každý riadok so súborom a bez `ai`
+    ... --od 2026-05-01             # len doklady nahraté v Doklade/Fakteri od dátumu (staré sa nečítajú)
 */
 import { createRequire } from "node:module";
 
@@ -85,6 +86,8 @@ async function main() {
     .order("created_at", { ascending: true })
     .limit(1000);
   if (!argv.includes("--vsetky-zdroje")) q = q.eq("zdroj", "import");
+  const od = hodnota("--od");
+  if (od) q = q.gte("created_at", od);
   if (firma) q = q.eq("company_id", firma);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
