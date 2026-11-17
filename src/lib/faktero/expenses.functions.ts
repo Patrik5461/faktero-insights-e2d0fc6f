@@ -344,11 +344,24 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       icDph: data.supplier_ic_dph,
       adresa: supplier_address,
     });
+    /*
+      Český bloček z QR: rozpis je návrh 21 % (sadzbu QR nepovie) alebo rozpis
+      z fotky nesedí so sumou z QR — na kontrolu, kým ho človek nepotvrdí.
+      Zapisuje sa rovno pri vložení: samostatný UPDATE po ňom nechával chvíľu,
+      keď bol bloček v Bločkoch bez príznaku kontroly (autopilot zaúčtovania
+      by ho mohol vziať; E2E apka-skener ho tak občas prečítal, 17. 11.).
+    */
+    const dovodEet = neplatitel
+      ? null
+      : navrhEet
+        ? DOVOD_NAVRHU_SADZBY_QR
+        : dovodKontrolyEet(data as any, kontrola_dph);
     const zapis = (spracovany: boolean) =>
       supabase
         .from("expense_documents")
         .insert({
           ...data,
+          ...(dovodEet ? { na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: dovodEet } : {}),
           supplier_country: supplierCountry,
           // Ručný zápis bez obrázka nesmie mať zdroj „fotka“.
           source: zdrojVydavku(data.source, Boolean(data.file_path)),
@@ -387,23 +400,6 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
     if (!row) throw new Error("Doklad sa nepodarilo uložiť.");
-    /*
-      Český bloček z QR: rozpis je návrh 21 % (sadzbu QR nepovie) alebo rozpis
-      z fotky nesedí so sumou z QR — na kontrolu, kým ho človek nepotvrdí.
-    */
-    const dovodEet = neplatitel
-      ? null
-      : navrhEet
-        ? DOVOD_NAVRHU_SADZBY_QR
-        : dovodKontrolyEet(row as any, kontrola_dph);
-    if (dovodEet) {
-      const { error: eK } = await supabase
-        .from("expense_documents")
-        .update({ na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: dovodEet } as any)
-        .eq("id", row.id);
-      if (eK) console.warn("[doklad] na kontrolu (český QR) sa nezapísalo:", eK.message);
-      else Object.assign(row as any, { na_kontrolu_at: new Date().toISOString(), na_kontrolu_dovod: dovodEet });
-    }
     /*
       Rozpis DPH, ktorý nesedí so základom a DPH alebo nesie sadzbu, čo
       v krajine neplatí, sa neuloží potichu — doklad ide na kontrolu s

@@ -155,10 +155,19 @@ export function navrhVydanej(args: {
     const odberatel: Strana | null = ai
       ? { nazov: s(ai.buyer_name) || null, ico: s(ai.buyer_ico) || null, dic: s(ai.buyer_dic) || null, icDph: s(ai.buyer_ic_dph) || null }
       : null;
-    if (jeStranaFirmou(dodavatel, firma.strana) && !jeStranaFirmou(odberatel, firma.strana))
+    const dodavatelJeFirma = jeStranaFirmou(dodavatel, firma.strana);
+    const odberatelJeFirma = jeStranaFirmou(odberatel, firma.strana);
+    if (dodavatelJeFirma && !odberatelJeFirma)
       dovody.push({ text: "Dodávateľ na doklade je vaša firma (IČO / DIČ / IČ DPH)." });
+    /*
+      Firemný IBAN je signál len vtedy, keď mu identifikácia strán neodporuje:
+      odberateľ je podľa IČO / DIČ / IČ DPH firma a dodávateľ iný subjekt =
+      prijatá faktúra, aj keď sa IBAN zhoduje (preklep, cudzí účet zle prečítaný
+      ako príjemca, testovací IBAN). Inak by ju appka nechala bez druhu (17. 11.).
+    */
     const ucet = vlastnyUcetDokladu(s(dod?.iban) || s(ai?.supplier_iban), firma.ucty ?? []);
-    if (ucet) dovody.push({ text: "IBAN {iban} na doklade je váš.", params: { iban: ucet.iban } });
+    const stranyOdporuju = odberatelJeFirma && !dodavatelJeFirma && Boolean(dodavatel.ico || dodavatel.dic || dodavatel.icDph);
+    if (ucet && !stranyOdporuju) dovody.push({ text: "IBAN {iban} na doklade je váš.", params: { iban: ucet.iban } });
   }
   const zoSuboru = cisloZNazvuSuboru(args.nazovSuboru);
   if (

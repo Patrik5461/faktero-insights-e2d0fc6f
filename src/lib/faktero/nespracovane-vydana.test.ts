@@ -107,6 +107,22 @@ describe("návrh „Vydaná faktúra“", () => {
     expect(n.dovody[0]).toEqual({ text: "IBAN {iban} na doklade je váš.", params: { iban: "SK31 1200 0000 1987 4263 7541" } });
   });
 
+  it("firemný IBAN pri cudzom dodávateľovi a firme ako odberateľovi — prijatá (E2E apka-sken 17. 11.)", () => {
+    const firma = { ...FIRMA, ucty: [{ iban: "SK3112000000198742637541" }] };
+    const ai = {
+      supplier_name: "Dodávateľ s.r.o.",
+      supplier_ico: "51234567",
+      supplier_iban: "SK3112000000198742637541",
+      buyer_ico: "57348324",
+      document_type: "faktura",
+    };
+    expect(navrhVydanej({ udaje: null, ai, firma, kandidati: [] }).navrh).toBe(false);
+    expect(navrhDruhu(ai, "doklad-z-appky.pdf", firma)).toBe("faktura");
+    // Bez odberateľa na doklade IBAN rozhoduje ďalej.
+    const bezOdb = { ...ai, buyer_ico: null };
+    expect(navrhVydanej({ udaje: null, ai: bezOdb, firma, kandidati: [] }).navrh).toBe(true);
+  });
+
   it("cudzí dodávateľ — prijatá faktúra", () => {
     const ai = { supplier_name: "METRO", supplier_ico: "35725664", buyer_ico: "57348324", invoice_number: "2026018" };
     expect(navrhVydanej({ udaje: null, ai, firma: FIRMA, kandidati: VYDANE }).navrh).toBe(false);
