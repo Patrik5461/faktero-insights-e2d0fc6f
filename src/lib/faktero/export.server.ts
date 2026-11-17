@@ -1,5 +1,6 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
+import { dokladBezDphNeplatitela } from "./neplatitel-export";
 import { bezZakazanychXml } from "@/lib/bezpecny-text";
 import { intNoteSEfakturou } from "./efaktura-odoslana";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
@@ -2262,7 +2263,18 @@ export function polozkyDokladov(opts: {
   );
 
   return doklady
-    .map((d0, idx) => {
+    .map((dPovodny, idx) => {
+      /*
+        Neplatiteľ DPH: prijatý doklad bez rozpisu DPH — celá suma v nulovej
+        sadzbe (priceNone), členenie PN, bez KV (`neplatitel-export.ts`).
+        Prenesenie (samozdanenie) ostáva. Prekážky sa kontrolovali vyššie na
+        doklade tak, ako je uložený.
+      */
+      const d0 = dokladBezDphNeplatitela(dPovodny, company as any, [
+        nastavenia?.podlaKategorie?.[String(dPovodny?.category ?? "")]?.clenenie,
+        !dPovodny?._typPohody ? nastavenia?.clenenieDphDoklady : null,
+        nastavenia?.clenenieDphPrijata,
+      ]);
       /*
         SK: prijatý dobropis vždy s kladnými sumami — záporný by Pohoda
         zaúčtovala zle. CZ Pohoda dobropis nepozná, len prijatý opravný daňový

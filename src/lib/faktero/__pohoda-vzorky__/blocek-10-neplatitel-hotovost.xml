@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="FAKTERO" ico="36123456" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
+  xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+  <dat:dataPackItem id="bl-np" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>expense</vch:voucherType>
+        <vch:cashAccount><typ:ids>HP</typ:ids></vch:cashAccount>
+        <vch:symPar>012345</vch:symPar>
+        <vch:originalDocument>0123-45</vch:originalDocument>
+        <vch:date>2026-10-20</vch:date>
+        <vch:dateTax>2026-10-20</vch:dateTax>
+        <vch:text>Čistiaci prostriedok, Papier A4, Káva</vch:text>
+        <vch:note>Bez nároku na odpočet DPH</vch:note>
+        <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+        <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
+        <vch:partnerIdentity>
+          <typ:address>
+            <typ:company>Kaufland Slovenská republika v.o.s.</typ:company>
+            <typ:city>Bratislava</typ:city>
+            <typ:street>Trnavská cesta 41/A</typ:street>
+            <typ:zip>83104</typ:zip>
+            <typ:ico>35790164</typ:ico>
+            <typ:icDph>SK2020234216</typ:icDph>
+          </typ:address>
+        </vch:partnerIdentity>
+      </vch:voucherHeader>
+      <vch:voucherDetail>
+        <vch:voucherItem>
+          <vch:text>Čistiaci prostriedok (2)</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>none</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>12.29</typ:unitPrice>
+            <typ:price>12.29</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>12.29</typ:priceSum>
+          </vch:homeCurrency>
+          <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+          <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
+        </vch:voucherItem>
+        <vch:voucherItem>
+          <vch:text>Papier A4</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>none</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>12.30</typ:unitPrice>
+            <typ:price>12.30</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>12.30</typ:priceSum>
+          </vch:homeCurrency>
+          <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+          <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
+        </vch:voucherItem>
+        <vch:voucherItem>
+          <vch:text>Káva</vch:text>
+          <vch:quantity>1</vch:quantity>
+          <vch:payVAT>false</vch:payVAT>
+          <vch:rateVAT>none</vch:rateVAT>
+          <vch:homeCurrency>
+            <typ:unitPrice>4.76</typ:unitPrice>
+            <typ:price>4.76</typ:price>
+            <typ:priceVAT>0.00</typ:priceVAT>
+            <typ:priceSum>4.76</typ:priceSum>
+          </vch:homeCurrency>
+          <vch:accounting><typ:ids>1Pv</typ:ids></vch:accounting>
+          <vch:classificationVAT><typ:ids>PN</typ:ids></vch:classificationVAT>
+        </vch:voucherItem>
+      </vch:voucherDetail>
+      <vch:voucherSummary>
+        <vch:roundingDocument>none</vch:roundingDocument>
+        <vch:roundingVAT>none</vch:roundingVAT>
+        <vch:homeCurrency>
+          <typ:priceNone>29.35</typ:priceNone>
+          <typ:price3>0.00</typ:price3>
+          <typ:price3VAT>0.00</typ:price3VAT>
+          <typ:priceLow>0.00</typ:priceLow>
+          <typ:priceLowVAT>0.00</typ:priceLowVAT>
+          <typ:priceHigh>0.00</typ:priceHigh>
+          <typ:priceHighVAT>0.00</typ:priceHighVAT>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>
+</dat:dataPack>

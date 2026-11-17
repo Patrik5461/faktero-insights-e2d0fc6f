@@ -91,11 +91,15 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
     // by program prijal a zaúčtoval zle — taký doklad sa vynechá s dôvodom.
     const { prekazkaZaokruhlenia } = await import("./zauctovanie-export");
     const { prekazkaUctovania } = await import("./uctovanie-agenda");
-    const ok = schvalene.filter((d) => {
-      const dovod = prekazkaUctovania(d, firma) ?? prekazkaZaokruhlenia(d);
-      if (dovod) preskocene.push(dovod);
-      return !dovod;
-    });
+    // Neplatiteľ DPH: prijaté doklady bez rozpisu DPH — celá suma ako základ bez DPH (`neplatitel-export.ts`).
+    const { uctovanieBezDphNeplatitela } = await import("./neplatitel-export");
+    const ok = schvalene
+      .filter((d) => {
+        const dovod = prekazkaUctovania(d, firma) ?? prekazkaZaokruhlenia(d);
+        if (dovod) preskocene.push(dovod);
+        return !dovod;
+      })
+      .map((d) => uctovanieBezDphNeplatitela(d, firma));
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const kody = await kodyUctovania(supabase, data.company_id);

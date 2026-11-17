@@ -88,6 +88,15 @@ const firmaSK: any = {
   zip: "94901",
   iban: "SK3112000000198742637541",
 };
+/* Neplatiteľ DPH (režim „sk_neplatitel“) — prijaté doklady bez rozpisu DPH. */
+const firmaNeplatitel: any = {
+  ...firmaSK,
+  id: "c-np",
+  name: "Neplatiteľ s.r.o.",
+  ic_dph: null,
+  vat_payer: false,
+  vat_scheme: "sk_neplatitel",
+};
 const firmaCZ: any = { ...firmaSK, ico: "27123456", dic: "CZ27123456", ic_dph: null, country: "CZ" };
 
 const nastavenia: any = {
@@ -915,6 +924,24 @@ describe("zlaté vzorky — prijaté doklady", () => {
     ]);
     await vzorka("prijata-15-danovy-doklad-k-platbe", x);
   });
+
+  /*
+    Neplatiteľ DPH (17. 11. 2026, `neplatitel-export.ts`): celá suma s DPH
+    dodávateľa ako základ bez DPH (priceNone), členenie PN, bez KV.
+  */
+  it("neplatiteľ: prijatá faktúra 23 % → celá suma v priceNone, PN, bez KV", async () => {
+    await vzorka(
+      "prijata-16-neplatitel",
+      prijateXml([prijata({ id: "pi-np", company_id: "c-np", odpocet: false })], nastavenia, firmaNeplatitel),
+    );
+  });
+
+  it("neplatiteľ s prenesením (samozdanenie) — ako doteraz", async () => {
+    await vzorka(
+      "prijata-17-neplatitel-prenesenie",
+      prijateXml([{ ...tuzemske, company_id: "c-np" }], nastSam, { ...firmaNeplatitel, ico: "54613124" }),
+    );
+  });
 });
 
 /* ------------------------------------------------------------ bločky */
@@ -1099,6 +1126,28 @@ describe("zlaté vzorky — bločky", () => {
     });
     expect(subory).toHaveLength(1);
     await vzorka("blocek-09-phm-pomer-odpoctu", subory[0]!.xml);
+  });
+
+  it("neplatiteľ: hotovostný bloček 23 % + 19 % so zaokrúhlením → pokladňa, celá suma v priceNone", async () => {
+    const x = buildPohodaExpensesXml({
+      company: firmaNeplatitel,
+      doklady: [
+        {
+          ...kaufland,
+          id: "bl-np",
+          company_id: "c-np",
+          payment_method: "hotovost",
+          odpocet: false,
+          total_amount: 29.35,
+          items: [
+            ...kaufland.items,
+            { name: "Zaokrúhlenie", quantity: 1, unit_price: -0.01, total: -0.01, zaokruhlenie: true },
+          ],
+        },
+      ],
+      nastavenia: { ...podlaPlatby, polozkyBlockov: true },
+    });
+    await vzorka("blocek-10-neplatitel-hotovost", x);
   });
 });
 
