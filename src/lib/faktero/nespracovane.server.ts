@@ -241,6 +241,8 @@ export async function zalozNespracovany(
     });
   }
   if (udaje) udaje = await poNastaveniach(supabase, args.companyId, druh, udaje, args.predvolby, args.ai);
+  // Doklad o úhrade nie je daňový doklad — bez rozpisu DPH a položiek, s údajmi úhrady.
+  if (udaje && druh === "uhrada") udaje = (await import("./nespracovane-uhrada")).udajePreUhradu(udaje, args.ai);
   // Ešte nevyťažený doklad: nastavenie zo skenera počká v údajoch na vyťaženie.
   const predvolby = args.predvolby && Object.values(args.predvolby).some(Boolean) ? args.predvolby : null;
   const { error } = await supabase.from("nespracovane_doklady").insert({
@@ -370,6 +372,9 @@ export async function vytazNespracovany(id: string): Promise<void> {
       udaje = await poNastaveniach(supabaseAdmin, r.company_id, druh as DruhNespracovaneho | null, udaje, povodne.predvolby, ai);
     }
     if (!udaje.datumPrijatia) udaje.datumPrijatia = povodne.datumPrijatia || (await predvolenePrijatie(supabaseAdmin, r));
+    // Doklad o úhrade nie je daňový doklad — bez rozpisu DPH a položiek, s údajmi úhrady.
+    if (druh === "uhrada")
+      udaje = (await import("./nespracovane-uhrada")).udajePreUhradu(udaje, (ai ?? r.ai ?? null) as Record<string, unknown> | null);
     await supabaseAdmin
       .from("nespracovane_doklady")
       .update({

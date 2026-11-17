@@ -8,7 +8,7 @@ import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
   rozpracovaného, vytvorenie dokladu a zmazanie do koša.
 */
 
-const DRUH = z.enum(["faktura", "zalohova", "danovy", "dobropis", "blocek", "ostatny", "vydana"]);
+const DRUH = z.enum(["faktura", "zalohova", "danovy", "dobropis", "blocek", "ostatny", "vydana", "uhrada"]);
 
 export const nespracovaneFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -19,7 +19,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       supabase
         .from("nespracovane_doklady")
         .select(
-          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph, supplier_iban:ai->>supplier_iban, invoice_number:ai->>invoice_number, amount_total:ai->>amount_total",
+          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph, supplier_iban:ai->>supplier_iban, invoice_number:ai->>invoice_number, amount_total:ai->>amount_total, document_type:ai->>document_type, document_subtype:ai->>document_subtype, document_title:ai->>document_title, ekasa_uid:ai->>ekasa_uid, cash_register_code:ai->>cash_register_code, document_number:ai->>document_number, paid_invoice_number:ai->>paid_invoice_number, vat_amount:ai->>vat_amount, ai_items:ai->items, ai_vat_breakdown:ai->vat_breakdown",
         )
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
@@ -91,12 +91,34 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         },
       })),
     ).catch(() => null);
+    // Návrh „Doklad o úhrade“ (bloček „ÚHRADA FAKTÚRY“) pri doklade iného druhu.
+    const { jeDokladOUhrade } = await import("./nespracovane-uhrada");
+    const uhradaNavrh = (r: any) =>
+      r.druh !== "uhrada" &&
+      r.druh !== "vydana" &&
+      jeDokladOUhrade(
+        {
+          document_type: r.document_type,
+          document_subtype: r.document_subtype,
+          document_title: r.document_title,
+          ekasa_uid: r.ekasa_uid,
+          cash_register_code: r.cash_register_code,
+          document_number: r.document_number,
+          invoice_number: r.invoice_number,
+          paid_invoice_number: r.paid_invoice_number,
+          vat_amount: r.vat_amount,
+          items: r.ai_items,
+          vat_breakdown: r.ai_vat_breakdown,
+        },
+        r.file_name,
+      );
     return {
       doklady: (rows ?? []).map((r: any) => ({
         ...zhrnutieNespracovaneho(r),
         odberatelNesedi: nesedi(r),
         duplicita: duplicity.get(r.id) ?? null,
         vydanaNavrh: r.druh !== "vydana" && vydane?.get(r.id)?.navrh ? true : false,
+        uhradaNavrh: uhradaNavrh(r),
       })),
       /*
         Skutočný bloček (eKasa, QR, druh bloček) sa dá hromadne spracovať;
@@ -202,7 +224,9 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { nacitajUdaje, udajeZAi } = await import("./nespracovane");
     const dnes = dnesBratislava();
     const ulozene = nacitajUdaje(r.udaje);
-    const udaje = ulozene.dodavatel.nazov || ulozene.cislo || !r.ai ? ulozene : udajeZAi(r.ai, dnes);
+    let udaje = ulozene.dodavatel.nazov || ulozene.cislo || !r.ai ? ulozene : udajeZAi(r.ai, dnes);
+    // Doklad o úhrade — bez rozpisu DPH, s údajmi úhrady (číslo faktúry, suma, deň, spôsob).
+    if (r.druh === "uhrada") udaje = (await import("./nespracovane-uhrada")).udajePreUhradu(udaje, r.ai ?? null);
     // Starší doklad bez dátumu prijatia: kedy prišiel mail, inak kedy bol nahratý.
     if (!udaje.datumPrijatia) {
       const { predvolenePrijatie } = await import("./nespracovane.server");
@@ -291,14 +315,44 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
           () => null,
         )
       )?.get(r.id) ?? null;
+    /*
+      Doklad o úhrade — údaje úhrady a prijaté faktúry, ku ktorým patrí
+      (najlepšia zhoda predvolená vo výbere), aj pri inom druhu ako návrh.
+    */
+    const { navrhyUhrad } = await import("./nespracovane-uhrada.server");
+    const uhrada =
+      (
+        await navrhyUhrad(supabase, r.company_id, [{ id: r.id, druh: r.druh, udaje, ai: r.ai, file_name: r.file_name }], {
+          vzdy: true,
+        }).catch(
+          () => null,
+        )
+      )?.get(r.id) ?? null;
+    /*
+      Dá sa z dokladu založiť aj faktúra? Len keď súbor nesie samotnú faktúru
+      (rozpis DPH, dodávateľ, dátum) — inak sa tlačidlo neponúkne a povie prečo.
+    */
+    let fakturaZUhrady: { mozno: boolean; dovod: string | null } | null = null;
+    if (uhrada) {
+      const { fakturaZDokladuUhrady } = await import("./nespracovane-uhrada");
+      const z = fakturaZDokladuUhrady({
+        ai: r.ai ?? null,
+        uhrada: uhrada.uhrada,
+        udajeFaktury: udajeZAi(r.ai ?? null, dnes, { krajina: (firma as any)?.country ?? null }),
+      });
+      fakturaZUhrady = z.ok ? { mozno: true, dovod: null } : { mozno: false, dovod: z.dovod };
+    }
     const varovania = (await varovaniaNespracovaneho(supabase, r, udaje, firma)).filter(
       // Duplicitu prijatej ukazuje upozornenie s odkazom — text by ju zdvojil.
-      (v) => !(duplicita && v.startsWith("Prijatá faktúra ")),
+      // Pri doklade o úhrade je prijatá faktúra s rovnakým číslom práve tá, ku ktorej patrí.
+      (v) => !((duplicita || r.druh === "uhrada") && v.startsWith("Prijatá faktúra ")),
     );
     return {
       odberatelNesedi,
       duplicita,
       vydana,
+      uhrada,
+      fakturaZUhrady,
       vlastneUcty,
       /** IBAN odberateľa z dokladu — firemný znamená, že faktúra je prijatá. */
       ibanOdberatela: typeof ai?.buyer_iban === "string" ? (ai.buyer_iban as string) : null,
@@ -347,9 +401,15 @@ export const ulozNespracovaneFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const { nacitajUdaje } = await import("./nespracovane");
+    let udaje = nacitajUdaje(data.udaje);
+    // Doklad o úhrade sa ukladá bez rozpisu DPH a položiek (nie je daňový doklad).
+    if (data.druh === "uhrada") {
+      const { data: zdroj } = await supabase.from("nespracovane_doklady").select("ai").eq("id", data.id).maybeSingle();
+      udaje = (await import("./nespracovane-uhrada")).udajePreUhradu(udaje, (zdroj?.ai ?? null) as Record<string, unknown> | null);
+    }
     const { data: r, error } = await supabase
       .from("nespracovane_doklady")
-      .update({ druh: data.druh, udaje: nacitajUdaje(data.udaje), updated_at: new Date().toISOString() })
+      .update({ druh: data.druh, udaje, updated_at: new Date().toISOString() })
       .eq("id", data.id)
       .select("id");
     if (error) throw new Error(error.message);
@@ -399,6 +459,9 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
     // Vydaná faktúra sa nezakladá ako prijatá — priradí sa (alebo vytvorí) v detaile.
     if (data.druh === "vydana")
       throw new Error("Vydaná faktúra sa priraďuje k vystavenej faktúre — otvorte doklad a použite Priradiť k vystavenej faktúre.");
+    // Doklad o úhrade nie je daňový doklad — priradí sa k prijatej faktúre v detaile.
+    if (data.druh === "uhrada")
+      throw new Error("Doklad o úhrade sa priraďuje k prijatej faktúre — otvorte doklad a použite Priradiť k faktúre ako doklad o úhrade.");
     const { nacitajUdaje, chybajuce, NAZVY_POLI } = await import("./nespracovane");
     const u = nacitajUdaje(data.udaje);
     const { data: r } = await supabase.from("nespracovane_doklady").select("*").eq("id", data.id).maybeSingle();

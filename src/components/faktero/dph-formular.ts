@@ -418,7 +418,9 @@ export function kontrolaNespracovaneho(
   krajina: string | null | undefined,
   druh: string | null | undefined,
 ): VysledokKontroly {
-  if (!druh || druh === "ostatny" || druh === "zalohova") return { ok: true, chyby: [] };
+  // Doklad o úhrade nie je daňový doklad — DPH nemá (rozpis je prázdny), nekontroluje sa.
+  if (!druh || druh === "ostatny" || druh === "zalohova" || druh === "uhrada" || druh === "vydana")
+    return { ok: true, chyby: [] };
   /*
     Rozpis sa nedal prečítať (nepovolená sadzba) a doklad DPH má — bez
     rozpisu by vznikol doklad bez dane. Kým človek rozpis nedoplní, neprejde.

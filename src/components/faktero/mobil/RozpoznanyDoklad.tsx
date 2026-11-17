@@ -54,9 +54,10 @@ type Detail = {
   priraďuje sa k faktúre vo Fakturácii) sa rieši na webe. Keď ju server
   navrhne, appka druh nechá na človeku.
 */
-type DruhApky = Exclude<DruhNespracovaneho, "vydana">;
+type DruhApky = Exclude<DruhNespracovaneho, "vydana" | "uhrada">;
+// Doklad o úhrade sa tiež priraďuje na webe (k prijatej faktúre).
 const DRUHY_APKY = DRUHY_NESPRACOVANYCH.filter(
-  (x): x is { kluc: DruhApky; nazov: string } => x.kluc !== "vydana",
+  (x): x is { kluc: DruhApky; nazov: string } => x.kluc !== "vydana" && x.kluc !== "uhrada",
 );
 const druhApky = (d: unknown): DruhApky | null =>
   DRUHY_APKY.some((x) => x.kluc === d) ? (d as DruhApky) : null;

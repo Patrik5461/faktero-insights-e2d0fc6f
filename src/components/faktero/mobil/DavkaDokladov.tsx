@@ -391,7 +391,8 @@ function PolozkaDavky({
   const u = d.udaje;
   const celkom = u ? sucty(u).celkom : 0;
   // Dávka „vydanú“ nepozná (`davka-dokladov.ts` ju vráti ako neurčený druh).
-  const nazov = d.druh && d.druh !== "vydana" ? t(NAZOV_DRUHU[d.druh]) : t("davka.dokladN", { n: poradie });
+  const nazov =
+    d.druh && d.druh !== "vydana" && d.druh !== "uhrada" ? t(NAZOV_DRUHU[d.druh]) : t("davka.dokladN", { n: poradie });
   const dodavatel = u?.dodavatel.nazov || (d.druh ? "" : d.nazov);
 
   let stav: { text: string; ikona: React.ReactNode; farba: string };

@@ -80,6 +80,8 @@ import {
 } from "@/components/faktero/VlastnaFakturaUpozornenie";
 import { useHoverPola, useZobrazitZvyraznenie } from "@/components/faktero/ZvyraznenieVytazenych";
 import { NavrhVydanejUpozornenie, VydanaFakturaPanel } from "@/components/faktero/VydanaFakturaPanel";
+import { NavrhUhradyUpozornenie, UhradaDokladPanel, type VysledokUhradyUi } from "@/components/faktero/UhradaDokladPanel";
+import { udajePreUhradu } from "@/lib/faktero/nespracovane-uhrada";
 import { POLIA_ZVYRAZNENIA } from "@/lib/faktero/zvyraznenie-vytazenych";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/$id")({
@@ -137,7 +139,7 @@ function Detail() {
       setD(r);
       setDuplicita(r.duplicita ?? null);
       // Bez druhu, ale zjavne vlastná vystavená faktúra — predvolí sa „Vydaná faktúra“.
-      setDruh((r.druh as DruhNespracovaneho) ?? (r.vydana?.navrh ? "vydana" : ""));
+      setDruh((r.druh as DruhNespracovaneho) ?? (r.uhrada?.navrh ? "uhrada" : r.vydana?.navrh ? "vydana" : ""));
       setU(r.udaje);
     } catch (e: any) {
       setNenajdene(e?.message ?? t("Doklad sa nenašiel."));
@@ -165,7 +167,7 @@ function Detail() {
   // Daňový doklad k prijatej platbe — neplatí sa, DUZP = deň prijatia platby.
   const danovy = druh === "danovy";
   useEffect(() => {
-    if (!d || !druh || druh === "ostatny" || druh === "vydana") return;
+    if (!d || !druh || druh === "ostatny" || druh === "vydana" || druh === "uhrada") return;
     nacitajNavrhy({ data: { company_id: d.companyId, pre: blocek ? "doklad" : "prijata" } })
       .then((r) => setNavrhy(r as Navrhy))
       .catch(() => setNavrhy(null));
@@ -179,6 +181,19 @@ function Detail() {
   */
   const druhNavrhu = druh === "faktura" || druh === "zalohova" || druh === "dobropis" || druh === "blocek" ? druh : null;
   const navrhAi = useNavrhZauctovania("nespracovany", d?.id, Boolean(d && d.stav !== "cita" && druhNavrhu), druhNavrhu);
+  /*
+    Doklad o úhrade nie je daňový doklad — po zmene druhu sa rozpis DPH
+    a položky vyprázdnia a doplnia sa údaje úhrady (číslo faktúry, suma, deň).
+  */
+  useEffect(() => {
+    if (druh !== "uhrada") return;
+    setU((p) =>
+      p && (!p.uhrada || p.rozpis.length || p.polozky.length || p.kontrolaDph)
+        ? udajePreUhradu({ ...p, uhrada: p.uhrada ?? d?.uhrada?.uhrada }, null)
+        : p,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [druh, d?.uhrada]);
   useEffect(() => {
     if (navrhAi?.stav !== "navrh") return;
     setU((p) => (p ? doplnNavrhDoUdajov(p, navrhAi.polia, navrhAi.dovod) : p));
@@ -294,9 +309,15 @@ function Detail() {
     duplicita && jePrijata ? (
       <UpozornenieUlozenejPrijatej duplicita={duplicita} busy={busy} onZmaz={() => void zmazDoklad()} />
     ) : null;
+  // Bloček „ÚHRADA FAKTÚRY“ zaradený inak — ponúkne druh „Doklad o úhrade“.
+  const upozornenieUhrady =
+    d.uhrada?.navrh && druh !== "uhrada" ? (
+      <NavrhUhradyUpozornenie cislo={d.uhrada.uhrada.cisloFaktury} onPrepni={() => setDruh("uhrada")} />
+    ) : null;
   const upozornenieVlastnej =
-    upozornenieDuplicity || upozornenieCudzej || upozornenieIban ? (
+    upozornenieUhrady || upozornenieDuplicity || upozornenieCudzej || upozornenieIban ? (
       <div className="space-y-2">
+        {upozornenieUhrady}
         {upozornenieDuplicity}
         {upozornenieCudzej}
         {upozornenieIban}
@@ -493,6 +514,26 @@ function Detail() {
     obnovPoctyMenu();
     navigate({ to: d!.dalsiId ? "/nespracovane/$id" : "/nespracovane", params: { id: d!.dalsiId ?? "" } } as any);
   }
+  // Doklad o úhrade je priložený k prijatej faktúre (alebo z neho vznikla) — z Nespracovaných zmizol.
+  function poUhrade(v: VysledokUhradyUi, vytvorena: boolean) {
+    toast.success(
+      vytvorena
+        ? v.uhradene
+          ? t("Prijatá faktúra {cislo} je vytvorená a označená ako uhradená", { cislo: v.cislo })
+          : t("Prijatá faktúra {cislo} je vytvorená", { cislo: v.cislo })
+        : v.uhradene
+          ? t("Doklad o úhrade je priložený k faktúre {cislo} a faktúra je označená ako uhradená", { cislo: v.cislo })
+          : t("Doklad o úhrade je priložený k faktúre {cislo}", { cislo: v.cislo }),
+      {
+        action: {
+          label: t("Otvoriť"),
+          onClick: () => navigate({ to: "/prijate-faktury/$id", params: { id: v.purchaseInvoiceId } }),
+        },
+      },
+    );
+    obnovPoctyMenu();
+    navigate({ to: d!.dalsiId ? "/nespracovane/$id" : "/nespracovane", params: { id: d!.dalsiId ?? "" } } as any);
+  }
   const panelVydanej =
     druh === "vydana" ? (
       <VydanaFakturaPanel
@@ -502,6 +543,20 @@ function Detail() {
         navrh={d.vydana ?? null}
         udaje={u}
         onHotovo={poVydanej}
+      />
+    ) : druh === "uhrada" ? (
+      <UhradaDokladPanel
+        key={d.id}
+        companyId={d.companyId}
+        nespracovanyId={d.id}
+        udaje={u}
+        setUdaje={(x) => setU(x)}
+        zhody={d.uhrada?.zhody ?? []}
+        fakturaZUhrady={d.fakturaZUhrady ?? null}
+        onUloz={async () => {
+          await uloz({ data: { id, druh: "uhrada", udaje: u as any } });
+        }}
+        onHotovo={poUhrade}
       />
     ) : null;
 

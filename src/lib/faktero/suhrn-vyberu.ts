@@ -170,7 +170,7 @@ export function polozkaNespracovaneho(r: {
 }): PolozkaSuhrnu {
   const druh = r.druh ?? "";
   // Iný doklad ani vlastná vystavená faktúra nie sú náklad — do súčtov nejdú.
-  const doklad = druh !== "ostatny" && druh !== "vydana";
+  const doklad = druh !== "ostatny" && druh !== "vydana" && druh !== "uhrada";
   return {
     mena: r.mena,
     celkom: r.suma ?? 0,

@@ -26,6 +26,8 @@ import {
 import { deleteExpenseFn, nastavStavDokladovFn } from "@/lib/faktero/expenses.functions";
 import { priradVydaneHromadneFn } from "@/lib/faktero/nespracovane-vydana.functions";
 import { textPriradenia } from "@/lib/faktero/nespracovane-vydana";
+import { priradUhradyHromadneFn } from "@/lib/faktero/nespracovane-uhrada.functions";
+import { textPriradeniaUhrad } from "@/lib/faktero/nespracovane-uhrada";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { toastPresunutyBlocek } from "@/components/faktero/AutoZauctovanieOdznak";
 import {
@@ -112,6 +114,7 @@ function Stranka() {
   const stavBlocku = useServerFn(nastavStavDokladovFn);
   const zmazBlocek = useServerFn(deleteExpenseFn);
   const priradVydane = useServerFn(priradVydaneHromadneFn);
+  const priradUhrady = useServerFn(priradUhradyHromadneFn);
   // Priebeh hromadného spracovania a súhrn preskočených na konci.
   const [priebeh, setPriebeh] = useState<{ hotovo: number; spolu: number } | null>(null);
   const [vysledok, setVysledok] = useState<{ nadpis: string; preskocene: Preskoceny[] } | null>(null);
@@ -412,6 +415,46 @@ function Stranka() {
     }
   }
 
+  /*
+    Hromadné „Priradiť doklady o úhrade“ — bločky „ÚHRADA FAKTÚRY“ (druh alebo
+    návrh „Doklad o úhrade“) s presnou zhodou čísla aj sumy: súbor ide medzi
+    prílohy prijatej faktúry, nezaplatená sa označí ako uhradená a doklad
+    zmizne. Ostatné sa preskočia s dôvodom.
+  */
+  const vybraneUhrady = vybraneN.filter((r: any) => r.druh === "uhrada" || r.uhradaNavrh);
+  async function priradUhradyHromadne() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneN.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Priradiť vybrané doklady o úhrade ({n}) k prijatým faktúram? Súbor sa priloží k faktúre, nezaplatená faktúra sa označí ako uhradená a doklad z Nespracovaných zmizne. Doklad bez presnej zhody čísla a sumy sa preskočí.",
+          { n: vybraneN.length },
+        ),
+        { potvrdit: t("Priradiť") },
+      ))
+    )
+      return;
+    setHromadneBusy(true);
+    try {
+      const r = await priradUhrady({ data: { company_id: cid, ids: vybraneN.map((x) => x.id) } });
+      const preskocene: Preskoceny[] = [...r.preskocene];
+      if (vybraneB.length)
+        preskocene.push({
+          popis: t("Bločky ({n})", { n: vybraneB.length }),
+          dovod: { text: "Bloček nie je doklad o úhrade" },
+        });
+      const text = textPriradeniaUhrad(r.priradene, preskocene.length);
+      if (r.priradene) toast.success(t(text.text, text.params));
+      else toast(t(text.text, text.params));
+      await dokonci(t("Niektoré doklady sa nepriradili"), preskocene);
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setHromadneBusy(false);
+    }
+  }
+
   async function uhradVybrane() {
     const cid = getActiveCompanyId();
     if (!cid || !vybraneN.length) return;
@@ -484,6 +527,10 @@ function Stranka() {
       {/* Vlastná vystavená faktúra (dodávateľ je firma, súbor a suma sedia na vystavenú). */}
       {r.vydanaNavrh ? (
         <span className="dk-text-pozor block text-[11px] font-medium">{t("vyzerá ako vydaná faktúra")}</span>
+      ) : null}
+      {/* Bloček „ÚHRADA FAKTÚRY“ — len potvrdenie o zaplatení prijatej faktúry. */}
+      {r.uhradaNavrh ? (
+        <span className="dk-text-pozor block text-[11px] font-medium">{t("vyzerá ako doklad o úhrade")}</span>
       ) : null}
     </>
   );
@@ -654,6 +701,17 @@ function Stranka() {
                 className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-background px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
               >
                 {t("Priradiť k vystaveným faktúram")}
+              </button>
+            ) : null}
+            {vybraneUhrady.length ? (
+              <button
+                type="button"
+                disabled={pracujem}
+                onClick={() => void priradUhradyHromadne()}
+                title={t("Doklady o úhrade (napr. bloček „Úhrada faktúry“) priloží k prijatým faktúram s rovnakým číslom a sumou a nezaplatené označí ako uhradené.")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-background px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-60"
+              >
+                {t("Priradiť doklady o úhrade")}
               </button>
             ) : null}
             <button

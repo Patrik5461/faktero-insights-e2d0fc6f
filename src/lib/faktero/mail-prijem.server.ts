@@ -153,6 +153,15 @@ tovaru so zápornou sumou (bloček nie je dobropis), "danovy_doklad_k_platbe"
 pre daňový doklad k prijatej platbe (k zálohe) — dodávateľ ho vystavil po prijatí našej zálohy („Daňový doklad
 k prijatej platbe“, „Daňový doklad k přijaté platbě“), inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
+DOKLAD O ÚHRADE: pokladničný doklad alebo potvrdenie, ktorým sa len PLATÍ faktúra („ÚHRADA FAKTÚRY",
+„Úhrada faktúry č.", „Platba faktúry", „Zaplatenie faktúry"; jediný riadok je „Faktúra č. …" so sumou
+a doklad nemá rekapituláciu DPH), je "document_subtype": "uhrada_faktury" — NIE "blocek" ani "ostra";
+DPH si k nemu nevymýšľaj ("vat_breakdown": [] a "vat_amount": null, ak rekapitulácia DPH na ňom nie je).
+Pri ňom vyplň "paid_invoice_number" (číslo uhrádzanej faktúry presne ako na doklade, napr. „0/0/0002/052152"),
+"paid_amount" (zaplatená suma), "payment_date" (dátum dokladu, YYYY-MM-DD), "payment_method" a
+"contains_invoice": true, keď súbor obsahuje aj samotnú faktúru s rekapituláciou DPH (vtedy údaje
+dodávateľa, "invoice_number", sumy a "vat_breakdown" vyplň z tej faktúry), inak false. Pri ostatných
+dokladoch "paid_invoice_number", "paid_amount", "payment_date" a "contains_invoice" null.
 Pri bločku pridaj "payment_method": "hotovost" (hotovosť, v hotovosti, cash), "karta" (karta,
 platobná karta, kartou, Visa, Mastercard) alebo "prevod"; keď na doklade nie je, null.
 Pri bločku aj faktúre pridaj "rounding": zaokrúhlenie sumy tak, ako je na doklade

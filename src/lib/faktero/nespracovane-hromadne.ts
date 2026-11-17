@@ -89,6 +89,8 @@ export function dovodNevytvorenia(p: PodkladVytvorenia): Dovod | null {
   if (!druh) return { text: "Nie je určený druh dokladu" };
   // Vlastná vystavená faktúra sa nezakladá — priradí ju „Priradiť k vystaveným faktúram“.
   if (druh === "vydana") return { text: "Vydaná faktúra — použite Priradiť k vystaveným faktúram" };
+  // Doklad o úhrade sa nezakladá — priradí ho „Priradiť doklady o úhrade“.
+  if (druh === "uhrada") return { text: "Doklad o úhrade — použite Priradiť doklady o úhrade" };
   // Detail pri otvorení doplní sumu dokladu (`celkomDokladu`) — podľa nej sa kontroluje rozpis.
   const u = upravCelkomDokladu(null, p.udaje);
   const chyby = chybajuce(druh, u, p.povinne ?? [], p.nastavenia ?? {});

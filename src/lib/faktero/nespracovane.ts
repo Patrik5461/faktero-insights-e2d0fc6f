@@ -13,6 +13,7 @@
 
 import { krajinaBlocku } from "@/lib/faktero/krajina-blocku";
 import { navrhVydanej, type FirmaPreVydanu } from "./nespracovane-vydana";
+import { jeDokladOUhrade, type UdajeUhrady } from "./nespracovane-uhrada";
 import { druhPrijatehoDokladu, jeDanovyDokladKPlatbe } from "./zalohova-rozpoznanie";
 import { opravaDruhuZoSignalov } from "./druh-dokladu-signaly";
 import { TYP_PRIJATEHO_DANOVEHO } from "./prijaty-danovy-doklad";
@@ -39,7 +40,15 @@ import {
   type KontrolaSumy,
 } from "./zaokruhlenie-blocku";
 
-export type DruhNespracovaneho = "faktura" | "zalohova" | "danovy" | "dobropis" | "blocek" | "ostatny" | "vydana";
+export type DruhNespracovaneho =
+  | "faktura"
+  | "zalohova"
+  | "danovy"
+  | "dobropis"
+  | "blocek"
+  | "ostatny"
+  | "vydana"
+  | "uhrada";
 
 /** Druhy, z ktorých vznikne prijatá faktúra (`purchase_invoices`). */
 export type DruhPrijatej = "faktura" | "zalohova" | "danovy" | "dobropis";
@@ -69,6 +78,13 @@ export const DRUHY_NESPRACOVANYCH: { kluc: DruhNespracovaneho; nazov: string }[]
     (`nespracovane-vydana.ts`).
   */
   { kluc: "vydana", nazov: "Vydaná faktúra" },
+  /*
+    Potvrdenie o zaplatení prijatej faktúry (bloček „ÚHRADA FAKTÚRY“ z METRA,
+    potvrdenie platby kartou) — nie je daňový doklad, DPH nemá. Súbor sa
+    priloží k prijatej faktúre a tá sa označí ako uhradená
+    (`nespracovane-uhrada.ts`).
+  */
+  { kluc: "uhrada", nazov: "Doklad o úhrade" },
 ];
 
 /**
@@ -236,6 +252,8 @@ export type UdajeNespracovaneho = {
    * nechá v Nespracovaných a dokončí na webe.
    */
   predvolby?: PredvolbySkenu;
+  /** Doklad o úhrade: číslo uhrádzanej faktúry, zaplatená suma, deň a spôsob úhrady. */
+  uhrada?: UdajeUhrady;
 };
 
 /** Nastavenie dokladu zo skenera — rovnaké polia ako `NastavenieSkenu` v appke. */
@@ -322,6 +340,8 @@ export function navrhDruhu(
   firma?: FirmaPreVydanu | null,
 ): DruhNespracovaneho {
   if (!ai) return "faktura";
+  // Potvrdenie o úhrade faktúry (bloček „ÚHRADA FAKTÚRY“) — nie bloček ani faktúra.
+  if (jeDokladOUhrade(ai, nazovSuboru)) return "uhrada";
   // Odpoveď modelu opravená podľa znakov na doklade (eKasa, údaje na úhradu, nadpis).
   ai = { ...ai, ...opravaDruhuZoSignalov(ai, nazovSuboru) };
   if (ai.document_type === "ostatny") return "ostatny";
@@ -774,8 +794,8 @@ export function chybajuce(
 ): string[] {
   const out: string[] = [];
   if (!druh) return ["druh"];
-  // Vydaná faktúra sa nevytvára formulárom — priradí sa k vystavenej faktúre.
-  if (druh === "ostatny" || druh === "vydana") return out;
+  // Vydaná faktúra a doklad o úhrade sa nevytvárajú formulárom — priradia sa k faktúre.
+  if (druh === "ostatny" || druh === "vydana" || druh === "uhrada") return out;
   if (!u.dodavatel.nazov.trim()) out.push("dodavatel");
   if (!u.datumVystavenia) out.push("datumVystavenia");
   const s = sucty(u);
@@ -1163,7 +1183,9 @@ export function naUhraduZNespracovaneho(
           ? "nie je faktúra (iný doklad)"
           : druh === "vydana"
             ? "je vaša vystavená faktúra — platí ju odberateľ"
-            : null;
+            : druh === "uhrada"
+              ? "je doklad o úhrade — faktúra je už zaplatená"
+              : null;
   return {
     id: r.id,
     invoice_number: u.cislo || null,
@@ -1220,5 +1242,6 @@ export function hromadnaZmenaUdajov(
  */
 export function textVytvorenia(druh: DruhNespracovaneho | "" | null | undefined): string {
   if (druh === "vydana") return "Priradiť k vystavenej faktúre";
+  if (druh === "uhrada") return "Priradiť k faktúre ako doklad o úhrade";
   return druh === "ostatny" ? "Presunúť do iných dokladov" : "Zaúčtovať";
 }
