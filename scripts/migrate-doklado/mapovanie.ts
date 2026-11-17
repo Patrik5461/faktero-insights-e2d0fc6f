@@ -612,9 +612,11 @@ export function vystavena(d: FakturaV2, o: Volby) {
       status: zaplatena ? "paid" : "issued",
       paid_at: zaplatena ? `${splatnost <= o.dnes ? splatnost : vystavenie}T12:00:00Z` : null,
       invoice_number: text(d.invoiceNumber) ?? `DOKLADO-${d.documentId}`,
-      sequence_number: text(d.invoiceNumber)
-        ? (sablonaZCisla(String(d.invoiceNumber), vystavenie)?.poradie ?? null)
-        : null,
+      // Poradie väčšie ako int (číslo bez šablóny, napr. 40224068001466) sa neukladá.
+      sequence_number: (() => {
+        const p = text(d.invoiceNumber) ? (sablonaZCisla(String(d.invoiceNumber), vystavenie)?.poradie ?? null) : null;
+        return p != null && p <= 2147483647 ? p : null;
+      })(),
       variable_symbol: text(pay.vs) ?? (lenCislice(d.invoiceNumber) || null),
       constant_symbol: text(pay.ks),
       specific_symbol: text(pay.ss),
