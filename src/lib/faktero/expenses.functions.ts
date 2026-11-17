@@ -240,6 +240,11 @@ export const createExpenseFn = createServerFn({ method: "POST" })
     if (navrhEet) Object.assign(data, navrhEet);
     const zAppky = zdroj === ZDROJ_APKY;
     /*
+      Neplatiteľ DPH si daň neodpočíta (17. 11.): bloček bez odpočtu a rozpis
+      sa nekontroluje — na kontrolu kvôli sadzbám nejde.
+    */
+    const neplatitel = await (await import("./neplatitel-dph.server")).firmaJeNeplatitel(supabase, data.company_id);
+    /*
       Bloček z appky bez fotky sa neuloží. Appka má tlačidlo Uložiť dovtedy
       neaktívne; toto je poistka, keby sa to niekde obišlo. Web (formulár)
       značku neposiela, tam sa dá uložiť aj bez prílohy ako doteraz. Staršie
@@ -348,6 +353,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
           // Ručný zápis bez obrázka nesmie mať zdroj „fotka“.
           source: zdrojVydavku(data.source, Boolean(data.file_path)),
           ...kurz,
+          ...(neplatitel ? { odpocet: false } : {}),
           created_by: userId,
           ...(aj_duplicitu ? { duplicita_potvrdena: true } : {}),
           ...(spracovany
@@ -385,7 +391,11 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       Český bloček z QR: rozpis je návrh 21 % (sadzbu QR nepovie) alebo rozpis
       z fotky nesedí so sumou z QR — na kontrolu, kým ho človek nepotvrdí.
     */
-    const dovodEet = navrhEet ? DOVOD_NAVRHU_SADZBY_QR : dovodKontrolyEet(row as any, kontrola_dph);
+    const dovodEet = neplatitel
+      ? null
+      : navrhEet
+        ? DOVOD_NAVRHU_SADZBY_QR
+        : dovodKontrolyEet(row as any, kontrola_dph);
     if (dovodEet) {
       const { error: eK } = await supabase
         .from("expense_documents")
@@ -399,7 +409,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       v krajine neplatí, sa neuloží potichu — doklad ide na kontrolu s
       dôvodom. Zvlášť, aby chýbajúci stĺpec nezablokoval uloženie.
     */
-    try {
+    if (!neplatitel) try {
       const { kontrolaUlozenehoBlocku } = await import("./rozpis-dph-vytazeny");
       const { data: firmaK } = await supabase
         .from("companies")

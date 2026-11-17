@@ -39,7 +39,7 @@ import {
   Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useNeplatitelDph } from "@/lib/faktero/krajina-firmy";
 import { agendaPreKrajinu } from "@/lib/faktero/agendy-krajiny";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
 import { vyberFirmy } from "@/lib/mobile/start";
@@ -2230,6 +2230,8 @@ export function Potvrdenie({
   onSpat: () => void;
 }) {
   const { t, locale: loc } = usePreklad();
+  /* Neplatiteľ DPH (17. 11.): DPH sa neodpočítava — rozpis ani jeho kontrola sa neukazujú. */
+  const neplatitel = useNeplatitelDph();
   const mena = vysledok.currency ?? "EUR";
   const suma = (n?: number) => (n == null ? "—" : formatovacMeny(mena, loc)(n));
   /* Fotka je povinná (Patrik, 2026-10-29) — chýba skôr než úhrada, pýta sa prvá. */
@@ -2325,7 +2327,12 @@ export function Potvrdenie({
             {vysledok.supplier ?? t("app.neznamyPredajca")}
             {vysledok.date ? ` · ${datum(vysledok.date, loc)}` : ""}
           </div>
-          {vysledok.vat_amount != null && (
+          {neplatitel ? (
+            <div data-testid="app-neplatitel-dph" className="mt-2 text-xs text-app-text-2">
+              {t("rd.neplatitelDph")}
+            </div>
+          ) : null}
+          {!neplatitel && vysledok.vat_amount != null && (
             <div className="mt-2 text-xs text-app-text-2">
               {t("app.zTohoDph", { suma: suma(vysledok.vat_amount) })}
               {vysledok.vat_breakdown?.length
@@ -2333,7 +2340,7 @@ export function Potvrdenie({
                 : ""}
             </div>
           )}
-          {vysledok.kontrola_dph ? (
+          {!neplatitel && vysledok.kontrola_dph ? (
             <div role="alert" className="mt-2 rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-2 text-xs">
               {/* Český QR (EET): sadzba nie je v kóde — návrh 21 %, kým ju nepovie fotka. */}
               <div className="font-semibold text-app-pozor">

@@ -13,7 +13,9 @@ import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { formatujIban, upravIban } from "@/lib/faktero/platobny-ucet";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useNeplatitelDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaNeplatitelaDph } from "./PoznamkaNeplatitelaDph";
+import { bezKontrolyRozpisuDph, prijataVPreneseni } from "@/lib/faktero/neplatitel-dph";
 import { typPrijatejFaktury } from "@/lib/faktero/uhrady-prijatej";
 import { jePrijatyDanovyDoklad } from "@/lib/faktero/prijaty-danovy-doklad";
 import { zadaj } from "@/lib/potvrdenie";
@@ -75,6 +77,8 @@ export function PrijataDetailKompaktna({
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
   const krajina = useKrajinaDane();
+  // Neplatiteľ DPH: rozpis sa neukazuje — DPH sa neodpočítava, celá suma je náklad (17. 11.).
+  const neplatitel = useNeplatitelDph();
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [mena, setMena] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -310,7 +314,10 @@ export function PrijataDetailKompaktna({
             </Hodnota>
             <Hodnota popis="Mena">{menaDokladu}</Hodnota>
           </div>
-          {rozpis.map((r) => (
+          {bezKontrolyRozpisuDph(neplatitel, prijataVPreneseni(row)) && row.type !== "proforma" ? (
+            <PoznamkaNeplatitelaDph />
+          ) : null}
+          {!bezKontrolyRozpisuDph(neplatitel, prijataVPreneseni(row)) && rozpis.map((r) => (
             <div
               key={`${r.sadzba}-${r.pdp ? 1 : 0}-${(r as any).vat_category ?? ""}`}
               className="grid grid-cols-2 gap-3"

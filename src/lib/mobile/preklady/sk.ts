@@ -1156,6 +1156,7 @@ export const sk = {
   "ph.mesiac.poznamka": "Tržby a náklady bez DPH · {mena}",
   "rd.rozpoznaneDruh": "Rozpoznané: {druh}",
   "rd.zakladDph": "Základ / DPH",
+  "rd.neplatitelDph": "Neplatiteľ DPH — DPH sa neodpočítava, celá suma ide do nákladov.",
   "rd.ulozitADalsi": "Uložiť a ďalší",
   "rd.preskocit": "Preskočiť",
   "rd.dokladZ": "Doklad {n} z {spolu}",

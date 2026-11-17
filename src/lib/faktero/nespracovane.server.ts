@@ -70,14 +70,19 @@ async function oznacNaKontroluDph(
 ): Promise<void> {
   const { kontrolaSadziebUdajov } = await import("./nespracovane");
   const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
-  const krajina = await krajinaFirmy(supabase, companyId);
+  const { firmaPreDph } = await import("./neplatitel-dph.server");
+  const { jeNeplatitel } = await import("./uctovanie-agenda");
+  const firma = await firmaPreDph(supabase, companyId);
+  const krajina = (firma?.country as string | null | undefined) ?? null;
+  // Neplatiteľ DPH: rozpis sa nekontroluje — doklad kvôli sadzbám na kontrolu nejde (17. 11.).
+  const volby = { neplatitel: jeNeplatitel(firma) };
   /*
     Človek nesúlad vo formulári vedome potvrdil („Pokračovať aj tak“ / „Rozpis
     je správny“): na kontrolu nejde a vytvorený doklad nesie podpis potvrdenia,
     aby sa formulár prijatej faktúry či bločku nepýtal znova.
   */
   if (u.rozpisPotvrdeny) {
-    const nepotvrdene = kontrolaSadziebUdajov({ ...u, rozpisPotvrdeny: false }, krajina);
+    const nepotvrdene = kontrolaSadziebUdajov({ ...u, rozpisPotvrdeny: false }, krajina, volby);
     if (nepotvrdene.ok) return;
     const { podpisRozpisu, riadkyUlozenehoDokladu } = await import("./rozpis-dph-kontrola");
     const stlpce =
@@ -103,9 +108,9 @@ async function oznacNaKontroluDph(
     if (error) console.warn(`[nespracovane] ${tabulka} potvrdenie rozpisu sa nezapísalo:`, error.message);
     return;
   }
-  const k = kontrolaSadziebUdajov(u, krajina);
+  const k = kontrolaSadziebUdajov(u, krajina, volby);
   // Rozpis z Bločkov bol na kontrole (český QR: návrh 21 %) a človek ho nezmenil.
-  const dovodZBlocku = u.kontrolaRozpisu?.trim() || null;
+  const dovodZBlocku = volby.neplatitel ? null : u.kontrolaRozpisu?.trim() || null;
   if (k.ok && !dovodZBlocku) return;
   const { error } = await supabase
     .from(tabulka)
@@ -497,6 +502,13 @@ export async function vytvorDoklad(
 
   const nastavenia = await nastaveniaNespracovanychFirmy(supabase, r.company_id);
   /*
+    Neplatiteľ DPH si daň neodpočíta — prijatý doklad ide vždy bez odpočtu
+    (aj keď pravidlo hovorí inak); databáza to stráži aj spúšťačom.
+  */
+  const neplatitel = await (await import("./neplatitel-dph.server")).firmaJeNeplatitel(supabase, r.company_id);
+  const bezOdpoctu = neplatitel ? { odpocet: false } : {};
+  if (neplatitel) u = (await import("./neplatitel-dph")).doplnRozpisNeplatitela(u, true);
+  /*
     Malý rozdiel položiek oproti sume (tolerancia firmy) doplní vyrovnávacia
     položka, aby export sedel na cent. Hotovostné zaokrúhlenie na 5 centov
     rieši export bločku sám (predkontácia pre zaokrúhlenie).
@@ -624,6 +636,7 @@ export async function vytvorDoklad(
       .insert({
         ...zakl,
         ...(await zPravidla(zakl)),
+        ...bezOdpoctu,
         company_id: r.company_id,
         created_by: autor,
         nahrane_at: nahraneAt,
@@ -757,6 +770,7 @@ export async function vytvorDoklad(
         ...blocekZUdajov(u),
         ...kurzBlocku,
         ...(await zPravidla(blocekZUdajov(u), true)),
+        ...bezOdpoctu,
         ...(volby.ajDuplicitu ? { duplicita_potvrdena: true } : {}),
         predmet_mailu: predmetMailu,
         inbox_message_id: r.inbox_message_id ?? null,

@@ -21,7 +21,9 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { VozidloPicker } from "@/components/faktero/VozidloPicker";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { RegistrPlatcuDph } from "@/components/faktero/RegistrPlatcuDph";
-import { useKrajinaDane, useMenaFirmy } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useMenaFirmy, useNeplatitelDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaNeplatitelaDph } from "@/components/faktero/PoznamkaNeplatitelaDph";
+import { bezKontrolyRozpisuDph, prijataVPreneseni } from "@/lib/faktero/neplatitel-dph";
 import {
   UpozornenieRozpisuDph,
   potvrdNesuladRozpisu,
@@ -150,6 +152,12 @@ export function PrijataFakturaForm({
   */
   const menaFirmy = useMenaFirmy();
   const krajinaDane = useKrajinaDane();
+  /*
+    Neplatiteľ DPH (Patrik 17. 11.): daň si neodpočíta — faktúra bez odpočtu,
+    rozpis DPH sa nepýta ani nekontroluje, zadáva sa len suma dokladu.
+    Prenesenie (samozdanenie § 7 / § 7a) sa kontroluje ďalej.
+  */
+  const neplatitel = useNeplatitelDph();
   /*
     Rozpis DPH po sadzbách — jediné miesto, kde sa DPH zadáva (Patrik 13. 11.):
     sadzba len zo zákonných, DPH zo základu, „Bez DPH“ a „DPH“ sú súčty.
@@ -584,7 +592,10 @@ export function PrijataFakturaForm({
     krajina: krajinaDane,
     poloziek: polozkyDokladu.length || undefined,
   });
-  const sadzbyPrijatej = { kontrola: kontrolaPrijatej };
+  const bezRozpisu = bezKontrolyRozpisuDph(neplatitel, prijataVPreneseni({ dph_rezim: form.dph_rezim }));
+  const sadzbyPrijatej = {
+    kontrola: bezRozpisu ? { ...kontrolaPrijatej, ok: true, chyby: [] } : kontrolaPrijatej,
+  };
   const dobropisPrijatej =
     Boolean(form.opravuje_cislo.trim()) || (sumaZPola(form.amount_total || "0") || 0) < 0;
   const historickeRozpisu = historickeSadzbyNaVyber(krajinaDane, krajinaDodavatela);
@@ -738,7 +749,8 @@ export function PrijataFakturaForm({
         dph_rezim: form.dph_rezim || null,
         delivery_date: form.type === "advance_payment" ? form.delivery_date || form.issue_date : form.delivery_date || null,
         // Zo zálohovej faktúry sa daň neodpočítava a výkazy ju nevidia.
-        odpocet: form.type === "proforma" ? false : form.odpocet,
+        // Neplatiteľ si daň neodpočíta nikdy (databáza to stráži aj sama).
+        odpocet: form.type === "proforma" || neplatitel ? false : form.odpocet,
         opravuje_cislo: form.opravuje_cislo.trim() || null,
         type: form.type,
         // Prázdne = automaticky (alebo z pravidla — doplní ho spúšťač v databáze).
@@ -1149,6 +1161,24 @@ export function PrijataFakturaForm({
   );
   const poliaSum = (
     <>
+      {bezRozpisu ? (
+        <>
+          <PoznamkaNeplatitelaDph className="col-span-full" />
+          {/* Celá suma ako jeden riadok bez dane — prečítaný rozpis ostáva, kým sa suma nezmení. */}
+          <Field label="Suma dokladu">
+            <DesatinnePole
+              aria-label={t("Suma dokladu")}
+              hodnota={sumaZPola(form.amount_total || "0") || 0}
+              naZmenu={(v) =>
+                zmenRozpis([
+                  { sadzba: 0, zaklad: Math.round(((Number(v) || 0) - zaokruhlenie) * 100) / 100, dph: 0 },
+                ])
+              }
+              className="input text-right tabular-nums font-semibold"
+            />
+          </Field>
+        </>
+      ) : (
       <div className="col-span-full min-w-0">
         <span className="mb-1 block text-xs font-medium text-muted-foreground">{t("Rozpis DPH podľa sadzieb")}</span>
         <EditorRozpisuDph
@@ -1162,6 +1192,7 @@ export function PrijataFakturaForm({
           kompaktne={kompaktne}
         />
       </div>
+      )}
       <Field label="Zaokrúhlenie">
         <DesatinnePole
           aria-label={t("Zaokrúhlenie")}
@@ -1174,6 +1205,7 @@ export function PrijataFakturaForm({
           className="input text-right tabular-nums"
         />
       </Field>
+      {bezRozpisu ? null : (
       <Field label="Celkom">
         <input
           type="text"
@@ -1185,6 +1217,7 @@ export function PrijataFakturaForm({
           className="input bg-muted/40 font-semibold"
         />
       </Field>
+      )}
       <Field label="Mena">
         <select
           value={form.currency}
@@ -1293,7 +1326,7 @@ export function PrijataFakturaForm({
                 amount_total: sumaZPola(form.amount_total || "0"),
                 vat_amount: sumaZPola(form.vat_amount || "0"),
                 dph_rezim: form.dph_rezim,
-                odpocet: form.odpocet,
+                odpocet: neplatitel ? false : form.odpocet,
                 opravuje_cislo: form.opravuje_cislo,
                 pohoda_clenenie_dph: kody.clenenie,
               },
@@ -1318,6 +1351,7 @@ export function PrijataFakturaForm({
           </div>
         </Field>
       )}
+      {neplatitel ? null : (
       <Field label="Odpočítanie dane" ramcek>
         <span className="pole-zaskrtnutie flex items-center gap-2 text-sm">
           <input
@@ -1329,6 +1363,7 @@ export function PrijataFakturaForm({
           {t("Daň si z tejto faktúry odpočítavam")}
         </span>
       </Field>
+      )}
       <Field label="Opravuje faktúru číslo">
         <input
           value={form.opravuje_cislo}

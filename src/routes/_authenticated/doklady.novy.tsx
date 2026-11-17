@@ -56,7 +56,8 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { jeEetQr } from "@/lib/faktero/eet-cz";
 import { rozpisZoSumy } from "@/lib/faktero/blocek-eet";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useNeplatitelDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaNeplatitelaDph } from "@/components/faktero/PoznamkaNeplatitelaDph";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { rozlozChybuBlocku } from "@/lib/faktero/duplicita-zauctovania";
 import {
@@ -216,6 +217,11 @@ function NovyDokladPage() {
   const navigate = useNavigate();
   /* Podľa krajiny firmy sa čítajú sadzby DPH a mena z fotky dokladu. */
   const krajina = useKrajinaDane();
+  /*
+    Neplatiteľ DPH (Patrik 17. 11.): DPH si neodpočíta — rozpis DPH sa nepýta
+    ani nekontroluje, celá suma bločku je náklad (`neplatitel-dph.ts`).
+  */
+  const neplatitel = useNeplatitelDph();
   const search = useSearch({ from: "/_authenticated/doklady/novy" });
   const nacitaj = useServerFn(nacitajBlocekFn);
   const createFn = useServerFn(createExpenseFn);
@@ -504,6 +510,7 @@ function NovyDokladPage() {
     ho človek prepísal len v poliach, kontroluje sa aj rozpis.
   */
   const rozpisNesedi =
+    !neplatitel &&
     (rozpisDph?.length ?? 0) > 1 &&
     (Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.zaklad) || 0), 0) - (Number(form.net_amount) || 0)) >= 0.005 ||
       Math.abs(rozpisDph!.reduce((a, r) => a + (Number(r.dph) || 0), 0) - (Number(form.vat_amount) || 0)) >= 0.005);
@@ -555,7 +562,7 @@ function NovyDokladPage() {
     základu, súčty = hlavička (`skontrolujDph`, to isté stráži databáza) a
     súčet podľa sadzieb voči sume bločku bez zaokrúhlenia. Nesediaci sa neuloží.
   */
-  const kontrolaRozpisuDph = kontrolaFormulara({
+  const kontrolaRozpisuDphSadzieb = kontrolaFormulara({
     riadky: rozpisEditora,
     zaklad: form.net_amount === "" ? null : Number(form.net_amount) || 0,
     dph: form.vat_amount === "" ? null : Number(form.vat_amount) || 0,
@@ -570,6 +577,7 @@ function NovyDokladPage() {
     mena: form.currency,
     hotovost: form.payment_method === "hotovost",
   });
+  const kontrolaRozpisuDph = neplatitel ? { ok: true, chyby: [] } : kontrolaRozpisuDphSadzieb;
   function zmenRozpisDph(r: RiadokRozpisu[]) {
     // Človek rozpis upravil (napr. prepol návrh 21 % na 12 %) — rozhodol, kontrola netreba.
     setKontrolaQr(null);
@@ -909,6 +917,12 @@ function NovyDokladPage() {
       await potvrdNesuladRozpisu(kontrolaRozpisuDph, t);
       return;
     }
+    /*
+      Neplatiteľ bez základu a DPH (rozpis sa mu nepýta): celá suma bločku bez
+      zaokrúhlenia je náklad — inak by bloček nemal čo zaúčtovať.
+    */
+    const bezSumNeplatitela =
+      neplatitel && form.net_amount === "" && form.vat_amount === "" && Number(form.total_amount) !== 0 && form.total_amount !== "";
     setSaving(true);
     try {
       const payload = {
@@ -923,9 +937,13 @@ function NovyDokladPage() {
         document_number: form.document_number || null,
         issue_date: form.issue_date || null,
         total_amount: form.total_amount ? Number(form.total_amount) : null,
-        vat_amount: form.vat_amount ? Number(form.vat_amount) : null,
-        net_amount: form.net_amount ? Number(form.net_amount) : null,
-        vat_rate: form.vat_rate ? Number(form.vat_rate) : null,
+        vat_amount: form.vat_amount ? Number(form.vat_amount) : bezSumNeplatitela ? 0 : null,
+        net_amount: form.net_amount
+          ? Number(form.net_amount)
+          : bezSumNeplatitela
+            ? Math.round((Number(form.total_amount) - zaokruhlenie) * 100) / 100
+            : null,
+        vat_rate: form.vat_rate ? Number(form.vat_rate) : bezSumNeplatitela ? 0 : null,
         currency: form.currency || "EUR",
         category: form.category || null,
         // Predkontácia a členenie pre Pohodu; prázdne = predvolené z nastavení.
@@ -1554,7 +1572,7 @@ function NovyDokladPage() {
                   </RiadokPolozky>
                 ))}
               </PolozkyKontajner>
-              {rozpisDph && rozpisDph.length > 0 && (
+              {!neplatitel && rozpisDph && rozpisDph.length > 0 && (
                 <div className="border-t border-border bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
                   {t("Rozpis DPH:")}{" "}
                   {zoradPodlaSadzby(rozpisDph, "sadzba")
@@ -1648,6 +1666,9 @@ function NovyDokladPage() {
                   ))}
                 </select>
               </label>
+              {neplatitel ? (
+                <PoznamkaNeplatitelaDph className="sm:col-span-2" />
+              ) : (
               <div className="min-w-0 sm:col-span-2">
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Rozpis DPH podľa sadzieb")}</span>
                 <EditorRozpisuDph
@@ -1690,6 +1711,7 @@ function NovyDokladPage() {
                   </div>
                 ) : null}
               </div>
+              )}
               <label className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Zaokrúhlenie (bez DPH)")}</span>
                 <VstupZaokruhlenia

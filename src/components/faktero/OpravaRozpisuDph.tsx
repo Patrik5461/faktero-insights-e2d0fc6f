@@ -17,6 +17,8 @@ import { DesatinnePole } from "@/components/faktero/DesatinnePole";
 import type { VysledokKontroly } from "@/lib/faktero/rozpis-dph-kontrola";
 import { skontrolujDphDokladu } from "@/lib/faktero/dph-pravidlo";
 import { zaokruhlenieZPoloziek } from "@/lib/faktero/zaokruhlenie-blocku";
+import { useNeplatitelDph } from "@/lib/faktero/krajina-firmy";
+import { bezKontrolyRozpisuDph, prijataVPreneseni } from "@/lib/faktero/neplatitel-dph";
 import { EditorRozpisuDph } from "./EditorRozpisuDph";
 import {
   hlavnaSadzba,
@@ -304,8 +306,11 @@ export function UpozornenieZlejDph({
 }) {
   const { t } = useT();
   const [okno, setOkno] = useState(false);
+  // Neplatiteľ DPH si daň neodpočíta — sadzby rozpisu ho netrápia (17. 11., neplatitel-dph.ts).
+  const neplatitel = useNeplatitelDph();
   const kontrola = kontrolaDphDokladu(tabulka, doklad, krajina);
   if (!doklad?.id || kontrola.ok) return null;
+  if (bezKontrolyRozpisuDph(neplatitel, tabulka === "purchase_invoices" && prijataVPreneseni(doklad))) return null;
   return (
     <>
       <div

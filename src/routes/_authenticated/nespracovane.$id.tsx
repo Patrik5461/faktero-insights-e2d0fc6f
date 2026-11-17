@@ -10,6 +10,8 @@ import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktn
 import { UpozornenieRozpisuDph, potvrdNesuladRozpisu } from "@/components/faktero/UpozornenieRozpisuDph";
 import { SadzbyPodlaDatumu } from "@/components/faktero/SadzbyPodlaDatumu";
 import { EditorRozpisuDph } from "@/components/faktero/EditorRozpisuDph";
+import { PoznamkaNeplatitelaDph } from "@/components/faktero/PoznamkaNeplatitelaDph";
+import { bezKontrolyRozpisuDph } from "@/lib/faktero/neplatitel-dph";
 import { kontrolaNespracovaneho, sadzbyNaVyber } from "@/components/faktero/dph-formular";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
@@ -251,7 +253,13 @@ function Detail() {
     základu, súčty a súlad so sumou dokladu. Kedysi potvrdený nesúlad
     („Rozpis je správny“) kontrolu neobíde — zlá DPH sa neuloží.
   */
-  const kontrolaRozpisu = kontrolaNespracovaneho(u, krajinaFirmy, druh);
+  /*
+    Neplatiteľ DPH (17. 11.): DPH si neodpočíta — rozpis sa nepýta, sadzby ani
+    „bez rozpisu neprejde“ ho nezastavia. Prenesenie (§ 7 / § 7a) sa kontroluje ďalej.
+  */
+  const neplatitel = Boolean(d.neplatitelFirmy);
+  const bezRozpisu = bezKontrolyRozpisuDph(neplatitel, u.prenesenie);
+  const kontrolaRozpisu = kontrolaNespracovaneho(u, krajinaFirmy, druh, neplatitel);
 
   /*
     Smer faktúry podľa IBAN-u — nastavenie „Automaticky určiť typ faktúry
@@ -640,6 +648,7 @@ function Detail() {
             sucty={s}
             sadzby={sadzby}
             kontrolaRozpisu={kontrolaRozpisu}
+            bezRozpisuDph={bezRozpisu}
             busy={busy}
             onVytvor={() => void vytvorDoklad()}
             onUloz={() => void ulozZmeny()}
@@ -1036,7 +1045,13 @@ function Detail() {
                 </section>
 
                 <section className="rounded-xl border border-border bg-card p-4">
-                  <div className="mb-2 text-sm font-semibold text-foreground">{t("Sumy podľa sadzieb DPH")}</div>
+                  <div className="mb-2 text-sm font-semibold text-foreground">
+                    {bezRozpisu ? t("Suma dokladu") : t("Sumy podľa sadzieb DPH")}
+                  </div>
+                  {bezRozpisu ? (
+                    <PoznamkaNeplatitelaDph />
+                  ) : (
+                  <>
                   <EditorRozpisuDph
                     riadky={u.rozpis}
                     onChange={(r) =>
@@ -1062,10 +1077,14 @@ function Detail() {
                     prazdny={!u.rozpis.length}
                     dovodPrazdneho={u.kontrolaDph?.dovod ?? null}
                   />
+                  </>
+                  )}
                   <div className={`mt-2 flex flex-wrap items-center justify-end gap-3 text-sm ${zle("celkom") ? "text-destructive" : ""}`}>
-                    <span className="text-muted-foreground">
-                      {t("Základ {zaklad} · DPH {dph}", { zaklad: s.zaklad.toFixed(2), dph: s.dph.toFixed(2) })}
-                    </span>
+                    {bezRozpisu ? null : (
+                      <span className="text-muted-foreground">
+                        {t("Základ {zaklad} · DPH {dph}", { zaklad: s.zaklad.toFixed(2), dph: s.dph.toFixed(2) })}
+                      </span>
+                    )}
                     <label className="inline-flex items-center gap-2 font-medium">
                       {t("Spolu")}
                       <DesatinnePole aria-label={t("Suma spolu")} hodnota={u.celkom ?? s.celkom} naZmenu={(v) => set({ celkom: v })} className={`w-28 rounded-md border bg-background px-2 py-1.5 text-right tabular-nums ${ram("celkom")}`} />

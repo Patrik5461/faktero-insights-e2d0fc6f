@@ -7,6 +7,7 @@ import type { Kluc } from "@/lib/mobile/preklady";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { kontrolaNespracovaneho } from "@/components/faktero/dph-formular";
+import { bezKontrolyRozpisuDph } from "@/lib/faktero/neplatitel-dph";
 import {
   chybajuce,
   nacitajUdaje,
@@ -47,6 +48,8 @@ type Detail = {
   nastavenia?: { toleranciaCenty?: number; kontrolaSplatnosti?: boolean };
   /** Krajina firmy — zákonné sadzby DPH (SK/CZ). */
   krajinaFirmy?: string | null;
+  /** Firma je neplatiteľ DPH — rozpis sa nekontroluje, len veta (staršie servery neposielajú). */
+  neplatitelFirmy?: boolean | null;
 };
 
 /*
@@ -275,7 +278,9 @@ export function RozpoznanyDoklad({
     sa neuloží ani z appky (Patrik 13. 11.). Rozpis sa v appke neupravuje —
     doklad ostáva v Nespracovaných a opraví sa na webe.
   */
-  const kontrolaDph = finalne ? kontrolaNespracovaneho(finalne, detail?.krajinaFirmy ?? null, druh) : null;
+  const kontrolaDph = finalne
+    ? kontrolaNespracovaneho(finalne, detail?.krajinaFirmy ?? null, druh, detail?.neplatitelFirmy)
+    : null;
   const zlaDph = Boolean(kontrolaDph && !kontrolaDph.ok);
   const daSaUlozit = !!druh && chyba.length === 0 && !ukladam && !zlaDph;
 
@@ -575,7 +580,12 @@ export function RozpoznanyDoklad({
           {druh === "ostatny" && u.ostatny.predmet && (
             <RiadokUdaju nazov={t("rd.predmet")} hodnota={u.ostatny.predmet} />
           )}
-          {zakladDph ? (
+          {/* Neplatiteľ DPH: rozpis sa neukazuje — DPH sa neodpočítava (17. 11.). */}
+          {druh && druh !== "ostatny" && bezKontrolyRozpisuDph(detail?.neplatitelFirmy, u.prenesenie) ? (
+            <div data-testid="rd-neplatitel-dph" className="px-4 py-3.5 text-[13px] text-app-text-2">
+              {t("rd.neplatitelDph")}
+            </div>
+          ) : zakladDph ? (
             <RiadokUdaju
               nazov={t("rd.zakladDph")}
               hodnota={`${formatujMenu(s.zaklad, u.mena || "EUR", loc)} / ${formatujMenu(s.dph, u.mena || "EUR", loc)}`}

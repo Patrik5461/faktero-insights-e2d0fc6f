@@ -5,6 +5,9 @@
  * (pred nahratím súboru) a s jasnou vetou.
  */
 import { popisChybDph, skontrolujDphDokladu, type ChybaDph, type TabulkaDph } from "./dph-pravidlo";
+import { bezKontrolyRozpisuDph, prijataVPreneseni } from "./neplatitel-dph";
+import { firmaPreDph } from "./neplatitel-dph.server";
+import { jeNeplatitel } from "./uctovanie-agenda";
 
 /** Krajina firmy (`companies.country`); bez nej null (= SK). */
 export async function krajinaFirmyPreDph(db: any, companyId: string): Promise<string | null> {
@@ -12,7 +15,11 @@ export async function krajinaFirmyPreDph(db: any, companyId: string): Promise<st
   return (data?.country as string | null | undefined) ?? null;
 }
 
-/** Chyby DPH zapisovaného riadku; [] = smie sa zapísať. */
+/**
+ * Chyby DPH zapisovaného riadku; [] = smie sa zapísať. Neplatiteľa DPH
+ * (bez prenesenia) sadzby nezastavia — DPH si neodpočíta, celá suma je
+ * náklad (`neplatitel-dph.ts`, spúšťač v databáze to isté).
+ */
 export async function overDphZapisu(
   db: any,
   companyId: string,
@@ -20,7 +27,10 @@ export async function overDphZapisu(
   zmena: Record<string, unknown>,
   stary?: Record<string, unknown> | null,
 ): Promise<ChybaDph[]> {
-  return skontrolujDphDokladu(tabulka, zmena, await krajinaFirmyPreDph(db, companyId), stary);
+  const firma = await firmaPreDph(db, companyId);
+  const prenesenie = tabulka === "purchase_invoices" && prijataVPreneseni({ ...(stary ?? {}), ...zmena });
+  if (bezKontrolyRozpisuDph(jeNeplatitel(firma), prenesenie)) return [];
+  return skontrolujDphDokladu(tabulka, zmena, (firma?.country as string | null | undefined) ?? null, stary);
 }
 
 /** Ako `overDphZapisu`, ale pri chybe hodí Error s vetou pre človeka. */

@@ -1138,6 +1138,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "ph.mesiac.poznamka": "Tržby a náklady bez DPH · {mena}",
   "rd.rozpoznaneDruh": "Rozpoznáno: {druh}",
   "rd.zakladDph": "Základ / DPH",
+  "rd.neplatitelDph": "Neplátce DPH — DPH se neodečítá, celá částka jde do nákladů.",
   "rd.ulozitADalsi": "Uložit a další",
   "rd.preskocit": "Přeskočit",
   "rd.dokladZ": "Doklad {n} z {spolu}",

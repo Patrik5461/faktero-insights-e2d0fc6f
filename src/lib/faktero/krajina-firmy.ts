@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "./active-company";
 import { krajinaDane, type KrajinaDane } from "./vat-rates";
 import { rezimFirmy, type RezimDph } from "./dph-rezim";
+import { jeNeplatitel } from "./uctovanie-agenda";
 import { citaj, zapis } from "@/lib/mobile/trvale-ulozisko";
 
 /**
@@ -121,6 +122,16 @@ export function useRezimDph(): RezimDph {
   }, []);
 
   return rezim;
+}
+
+/**
+ * Aktívna firma je neplatiteľ DPH — prijatý doklad bez odpočtu, rozpis DPH sa
+ * nepýta (`neplatitel-dph.ts`). Režim nesie schému, z ktorej `jeNeplatitel`
+ * rozhoduje; kým sa firma načíta, počíta sa s platiteľom (PREDVOLENY).
+ */
+export function useNeplatitelDph(): boolean {
+  const r = useRezimDph();
+  return jeNeplatitel({ country: r.krajina, vat_scheme: r.schema });
 }
 
 export function useKrajinaDane(): KrajinaDane {

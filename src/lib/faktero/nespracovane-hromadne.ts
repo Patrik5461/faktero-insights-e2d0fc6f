@@ -74,6 +74,8 @@ export type PodkladVytvorenia = {
   povinne?: string[];
   nastavenia?: VolbyKontroly & { typPodlaIban?: boolean | null };
   krajinaFirmy?: string | null;
+  /** Firma je neplatiteľ DPH — rozpis DPH sa nekontroluje (`neplatitel-dph.ts`). */
+  neplatitelFirmy?: boolean | null;
   vlastneUcty?: UcetFirmy[] | null;
   ibanOdberatela?: string | null;
 };
@@ -97,7 +99,7 @@ export function dovodNevytvorenia(p: PodkladVytvorenia): Dovod | null {
   if (chyby.length) return { text: "Doplňte: {polia}", params: { polia: chyby.map((k) => NAZVY_POLI[k] ?? k).join(", ") } };
   if (druh === "blocek" && !kontrolaSumy(u).sedi) return { text: "Súčet nesedí so sumou bločku" };
   if (druh !== "ostatny") {
-    const k = kontrolaNespracovaneho(u, p.krajinaFirmy ?? null, druh);
+    const k = kontrolaNespracovaneho(u, p.krajinaFirmy ?? null, druh, p.neplatitelFirmy);
     if (!k.ok)
       return {
         text: "Rozpis DPH nesedí: {chyby}",

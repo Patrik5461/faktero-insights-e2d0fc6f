@@ -1147,6 +1147,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "ph.mesiac.poznamka": "Bevétel és költség nettó · {mena}",
   "rd.rozpoznaneDruh": "Felismerve: {druh}",
   "rd.zakladDph": "Nettó / ÁFA",
+  "rd.neplatitelDph": "Nem ÁFA-alany — az ÁFA nem vonható le, a teljes összeg költség.",
   "rd.ulozitADalsi": "Mentés és következő",
   "rd.preskocit": "Kihagyás",
   "rd.dokladZ": "{n}. bizonylat / {spolu}",

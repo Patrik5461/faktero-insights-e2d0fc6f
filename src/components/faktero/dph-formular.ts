@@ -23,6 +23,7 @@ import {
 } from "@/lib/faktero/dph-pravidlo";
 import { sadzbyStatuSHistoriou, statEu } from "@/lib/faktero/sadzby-eu";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { bezKontrolyRozpisuDph } from "@/lib/faktero/neplatitel-dph";
 import {
   kategoriaRiadku,
   sNesuladomDokladu,
@@ -414,13 +415,19 @@ export function kontrolaNespracovaneho(
     polozky?: readonly unknown[] | null;
     /** Sumy a dôvod z vyťaženia — rozpis s nepovolenou sadzbou sa zahodil (`zakonne-sadzby-ai.ts`). */
     kontrolaDph?: { bezDph?: number; dph?: number; dovod?: string } | null;
+    /** Celý doklad v prenesení — samozdanenie odvádza aj registrovaná osoba (§ 7 / § 7a). */
+    prenesenie?: boolean | null;
   },
   krajina: string | null | undefined,
   druh: string | null | undefined,
+  /** Firma je neplatiteľ DPH — DPH si neodpočíta, rozpis sa nepýta ani nekontroluje. */
+  neplatitel?: boolean | null,
 ): VysledokKontroly {
   // Doklad o úhrade nie je daňový doklad — DPH nemá (rozpis je prázdny), nekontroluje sa.
   if (!druh || druh === "ostatny" || druh === "zalohova" || druh === "uhrada" || druh === "vydana")
     return { ok: true, chyby: [] };
+  // Neplatiteľ (17. 11.): žiadna chyba sadzby ani „bez rozpisu neprejde“ — celá suma je náklad.
+  if (bezKontrolyRozpisuDph(neplatitel, u.prenesenie)) return { ok: true, chyby: [] };
   /*
     Rozpis sa nedal prečítať (nepovolená sadzba) a doklad DPH má — bez
     rozpisu by vznikol doklad bez dane. Kým človek rozpis nedoplní, neprejde.

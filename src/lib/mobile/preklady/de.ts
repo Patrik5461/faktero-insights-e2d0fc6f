@@ -1162,6 +1162,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "ph.mesiac.poznamka": "Umsatz und Kosten netto · {mena}",
   "rd.rozpoznaneDruh": "Erkannt: {druh}",
   "rd.zakladDph": "Netto / USt.",
+  "rd.neplatitelDph": "Kein Umsatzsteuerpflichtiger — keine Vorsteuer, der gesamte Betrag ist Aufwand.",
   "rd.ulozitADalsi": "Speichern und weiter",
   "rd.preskocit": "Überspringen",
   "rd.dokladZ": "Beleg {n} von {spolu}",

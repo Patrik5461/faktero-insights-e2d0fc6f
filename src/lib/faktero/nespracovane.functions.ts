@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { jeNeplatitel } from "@/lib/faktero/uctovanie-agenda";
 /*
   Nespracované doklady (ako v Doklado) — zoznam, nahratie, detail, uloženie
   rozpracovaného, vytvorenie dokladu a zmazanie do koša.
@@ -262,7 +263,7 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
     const { varovaniaNespracovaneho } = await import("./nespracovane.server");
     const { data: firma } = await supabase
       .from("companies")
-      .select("name, ico, ic_dph, dic, iban, povinne_polia_dokladu, country")
+      .select("name, ico, ic_dph, dic, iban, povinne_polia_dokladu, country, vat_payer, vat_scheme")
       .eq("id", r.company_id)
       .maybeSingle();
     /*
@@ -382,6 +383,8 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       /** Odosielateľ mailu a krajina firmy — tiež podmienky pravidiel. */
       odosielatelMailu,
       krajinaFirmy: ((firma as any)?.country ?? null) as string | null,
+      /** Firma je neplatiteľ DPH — rozpis DPH sa nepýta ani nekontroluje (`neplatitel-dph.ts`). */
+      neplatitelFirmy: jeNeplatitel(firma as any),
       nastavenia: {
         toleranciaCenty: nastavenia.toleranciaCenty,
         kontrolaSplatnosti: nastavenia.kontrolaSplatnosti,

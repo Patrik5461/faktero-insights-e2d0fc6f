@@ -44,6 +44,7 @@ import {
 } from "./pravidla-uctovania";
 import * as kurzy from "./kurzy";
 import { kvSPredvolenym } from "./kv-clenenie";
+import { jeNeplatitel } from "./uctovanie-agenda";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Klient = any;
@@ -127,7 +128,7 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     sb
       .from("companies")
       .select(
-        `id, country, vat_payer, ic_dph, ico, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, ${STLPCE_PREDVOLENYCH.join(", ")}`,
+        `id, country, vat_payer, vat_scheme, ic_dph, ico, locked_until, auto_uctovanie_rezim, auto_uctovanie_limit, auto_uctovanie_od, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, ${STLPCE_PREDVOLENYCH.join(", ")}`,
       )
       .eq("id", companyId)
       .maybeSingle(),
@@ -147,7 +148,8 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
   return {
     id: companyId,
     krajina: String(c?.country ?? "SK").toUpperCase(),
-    platitel: Boolean(c?.vat_payer),
+    // Neplatiteľ podľa schémy (§ 7/§ 7a má IČ DPH, ale platiteľ nie je) — jeNeplatitel.
+    platitel: !jeNeplatitel(c as any),
     icDph: c?.ic_dph ?? null,
     ico: c?.ico ?? null,
     rezim: jeRezimAutopilota(c?.auto_uctovanie_rezim) ? c.auto_uctovanie_rezim : "bezpecny",

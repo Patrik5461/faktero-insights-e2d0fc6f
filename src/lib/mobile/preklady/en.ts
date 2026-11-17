@@ -1150,6 +1150,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "ph.mesiac.poznamka": "Revenue and costs excl. VAT · {mena}",
   "rd.rozpoznaneDruh": "Recognised: {druh}",
   "rd.zakladDph": "Net / VAT",
+  "rd.neplatitelDph": "Not a VAT payer — VAT is not deducted, the whole amount is an expense.",
   "rd.ulozitADalsi": "Save and next",
   "rd.preskocit": "Skip",
   "rd.dokladZ": "Document {n} of {spolu}",

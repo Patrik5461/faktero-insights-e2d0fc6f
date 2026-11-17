@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { udajeZBlocku } from "@/lib/faktero/textova-vrstva";
 import { popisyRiadkuDph } from "./VolbaSadzbyDph";
 import { UpozornenieZlejDph } from "./OpravaRozpisuDph";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useKrajinaDane, useNeplatitelDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaNeplatitelaDph } from "./PoznamkaNeplatitelaDph";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
 import { BookCheck, Check, CheckCircle2, Loader2, Lock } from "lucide-react";
@@ -107,6 +108,8 @@ export function BlocekDetailKompaktny({
   const { t, jazyk } = useT();
   const loc = lokalJazyka(jazyk);
   const krajinaFirmy = useKrajinaDane();
+  // Neplatiteľ DPH: rozpis sa neukazuje — DPH sa neodpočítava, celá suma je náklad (17. 11.).
+  const neplatitel = useNeplatitelDph();
   const navigate = useNavigate();
   const nacitajMena = useServerFn(menaClenovFirmy);
   const zauctuj = useServerFn(zauctujDokladyFn);
@@ -555,7 +558,8 @@ export function BlocekDetailKompaktny({
             </Hodnota>
             <Hodnota popis="Mena">{menaDokladu}</Hodnota>
           </div>
-          {rozpis.map((r) => (
+          {neplatitel ? <PoznamkaNeplatitelaDph /> : null}
+          {!neplatitel && rozpis.map((r) => (
             <div key={`${r.sadzba}-${r.vat_category ?? ""}`} className="grid grid-cols-2 gap-3">
               <Hodnota popis={popisyRiadkuDph(r, t).zaklad}>
                 <span className="tabular-nums">{formatujCislo(r.zaklad, 2)}</span>

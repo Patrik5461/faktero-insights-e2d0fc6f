@@ -18,6 +18,7 @@ import { druhPrijatehoDokladu, jeDanovyDokladKPlatbe } from "./zalohova-rozpozna
 import { opravaDruhuZoSignalov } from "./druh-dokladu-signaly";
 import { TYP_PRIJATEHO_DANOVEHO } from "./prijaty-danovy-doklad";
 import { zoradPodlaSadzby } from "./vat-rates";
+import { bezKontrolyRozpisuDph } from "./neplatitel-dph";
 import { rozpisZVytazenia, type KontextRozpisu } from "./rozpis-dph-vytazeny";
 import {
   jeKategoriaDph,
@@ -579,9 +580,14 @@ export function udajeZAi(
 export function kontrolaRozpisuUdajov(
   u: Pick<UdajeNespracovaneho, "rozpis" | "kontrolaDph" | "rozpisPotvrdeny" | "datumDodania" | "datumVystavenia"> & {
     dodavatel?: Partial<UdajeNespracovaneho["dodavatel"]> | null;
+    prenesenie?: boolean | null;
   },
   krajina?: string | null,
+  /** Firma je neplatiteľ DPH — rozpis sa nekontroluje (`neplatitel-dph.ts`). */
+  volby: { neplatitel?: boolean | null } = {},
 ): VysledokKontroly {
+  // Neplatiteľ si DPH neodpočíta — rozpis netreba a sadzby ho nezastavia (17. 11.).
+  if (bezKontrolyRozpisuDph(volby.neplatitel, u.prenesenie)) return { ok: true, chyby: [] };
   // Rozpis s nepovolenou sadzbou sa zahodil a doklad DPH má — bez rozpisu neprejde (16. 11.).
   if (!u.rozpis?.length && u.kontrolaDph?.dovod && Math.abs(Number(u.kontrolaDph.dph) || 0) > 0.004)
     return { ok: false, chyby: [{ kod: "neplatna_sadzba", sprava: u.kontrolaDph.dovod }] };
@@ -649,10 +655,13 @@ export function kontrolaSadziebUdajov(
     | "zaokruhlenie"
     | "mena"
     | "platba"
-  >,
+  > & { prenesenie?: boolean | null },
   krajina?: string | null,
+  /** Firma je neplatiteľ DPH — rozpis ani súčet podľa sadzieb sa nekontroluje. */
+  volby: { neplatitel?: boolean | null } = {},
 ): VysledokKontroly {
-  const k = kontrolaRozpisuUdajov(u, krajina);
+  const k = kontrolaRozpisuUdajov(u, krajina, volby);
+  if (bezKontrolyRozpisuDph(volby.neplatitel, u.prenesenie)) return k;
   if (!u.rozpis?.length || u.rozpisPotvrdeny) return k;
   const doklad = u.celkomDokladu ?? u.celkom;
   if (doklad == null || (doklad as unknown) === "") return k;

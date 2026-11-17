@@ -46,6 +46,7 @@ import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
 import { UpozornenieRozpisuDph } from "./UpozornenieRozpisuDph";
 import { SadzbyPodlaDatumu } from "./SadzbyPodlaDatumu";
+import { PoznamkaNeplatitelaDph } from "./PoznamkaNeplatitelaDph";
 import { popisyRiadkuDph, VolbaSadzbyDph } from "./VolbaSadzbyDph";
 import { PoleDph } from "./EditorRozpisuDph";
 import { vypocitanaDph, zmenaZakladu, type RiadokRozpisu } from "./dph-formular";
@@ -76,6 +77,7 @@ export function NespracovanyKompaktny({
   sucty,
   sadzby,
   kontrolaRozpisu = null,
+  bezRozpisuDph = false,
   busy,
   onVytvor,
   onUloz,
@@ -105,6 +107,8 @@ export function NespracovanyKompaktny({
   sadzby: number[];
   /** Kontrola rozpisu DPH (`kontrolaRozpisuUdajov`) — upozornenie v „Čiastka a DPH“. */
   kontrolaRozpisu?: VysledokKontroly | null;
+  /** Neplatiteľ DPH — rozpis sa neukazuje ani nepýta, len veta (`neplatitel-dph.ts`). */
+  bezRozpisuDph?: boolean;
   busy: boolean;
   onVytvor: () => void;
   onUloz: () => void;
@@ -155,9 +159,13 @@ export function NespracovanyKompaktny({
     });
   // Bloček: základ + DPH + zaokrúhlenie musí sedieť so sumou na cent.
   const kontrola = kontrolaSumy(u);
-  const sumaSedi = blocek
-    ? sucty.celkom > 0 && kontrola.sedi
-    : sucty.celkom > 0 && Math.abs(sucty.zaklad + sucty.dph - sucty.celkom) < 0.015;
+  // Neplatiteľ bez rozpisu: stačí suma dokladu (celá je náklad).
+  const sumaSedi =
+    bezRozpisuDph && !u.rozpis.length
+      ? sucty.celkom > 0
+      : blocek
+        ? sucty.celkom > 0 && kontrola.sedi
+        : sucty.celkom > 0 && Math.abs(sucty.zaklad + sucty.dph - sucty.celkom) < 0.015;
   const ibanOk = Boolean(u.dodavatel.iban && upravIban(u.dodavatel.iban));
 
   const pata = (
@@ -547,7 +555,8 @@ export function NespracovanyKompaktny({
                 />
               </Pole>
             </div>
-            {u.rozpis.map((r, i) => (
+            {bezRozpisuDph ? <PoznamkaNeplatitelaDph /> : null}
+            {!bezRozpisuDph && u.rozpis.map((r, i) => (
               <div
                 key={i}
                 className="grid grid-cols-2 items-center gap-3"
@@ -576,6 +585,8 @@ export function NespracovanyKompaktny({
                 />
               </div>
             ))}
+            {bezRozpisuDph ? null : (
+            <>
             <UpozornenieRozpisuDph kontrola={kontrolaRozpisu} dovod={u.kontrolaRozpisu} poznamka={kontrolaRozpisu?.ok === false ? undefined : t("Doklad pôjde na kontrolu, kým rozpis DPH neupravíte podľa bločku.")} />
             <SadzbyPodlaDatumu
               sadzby={sadzby}
@@ -607,6 +618,8 @@ export function NespracovanyKompaktny({
                 </button>
               ) : null}
             </div>
+            </>
+            )}
             {blocek ? (
               <>
                 <Pole popis="Zaokrúhlenie (bez DPH)">

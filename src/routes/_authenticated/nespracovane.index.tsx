@@ -329,6 +329,7 @@ function Stranka() {
             povinne: d.povinne,
             nastavenia: d.nastavenia,
             krajinaFirmy: d.krajinaFirmy,
+            neplatitelFirmy: d.neplatitelFirmy,
             vlastneUcty: d.vlastneUcty,
             ibanOdberatela: d.ibanOdberatela,
           });

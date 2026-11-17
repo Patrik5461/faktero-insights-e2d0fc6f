@@ -274,7 +274,7 @@ export async function vytvorFakturuSUhradou(
   const { udajeZAi, chybajuce, NAZVY_POLI } = await import("./nespracovane");
   const { data: firma } = await supabase
     .from("companies")
-    .select("country, povinne_polia_dokladu")
+    .select("country, povinne_polia_dokladu, vat_payer, vat_scheme, ic_dph")
     .eq("id", r.company_id)
     .maybeSingle();
   const krajina = (firma?.country ?? null) as string | null;
@@ -304,7 +304,9 @@ export async function vytvorFakturuSUhradou(
       `Faktúra v súbore nie je čitateľná celá — chýba: ${chyby.map((k) => NAZVY_POLI[k] ?? k).join(", ")}. Zmeňte druh na Prijatá faktúra a doplňte údaje.`,
     );
   const { kontrolaNespracovaneho } = await import("@/components/faktero/dph-formular");
-  const k = kontrolaNespracovaneho(z.udaje, krajina, "faktura");
+  // Neplatiteľ DPH si daň neodpočíta — rozpis ho nezastaví (neplatitel-dph.ts).
+  const { jeNeplatitel } = await import("./uctovanie-agenda");
+  const k = kontrolaNespracovaneho(z.udaje, krajina, "faktura", jeNeplatitel(firma as any));
   if (!k.ok) {
     const { popisChybRozpisu } = await import("./rozpis-dph-kontrola");
     throw new Error(`Rozpis DPH faktúry nesedí (${popisChybRozpisu(k)}). Zmeňte druh na Prijatá faktúra a rozpis opravte.`);

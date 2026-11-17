@@ -45,7 +45,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("companies")
           .select(
-            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, vat_payer",
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, country, ic_dph, vat_payer, vat_scheme",
           )
           .eq("id", data.company_id)
           .maybeSingle(),
@@ -176,7 +176,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       // Systémové členenia (B1-1) má každá SK firma — „číselník je prázdny“ hovorí o vlastných kódoch.
       maCiselnik: ((ciselnik ?? []) as any[]).some((r) => r.zdroj !== "system"),
       /** Firma je platiteľ DPH — neplatiteľ dostane predvolené „nezahrnovať do priznania“. */
-      platitel: firma?.vat_payer !== false,
+      platitel: !(await import("./uctovanie-agenda")).jeNeplatitel(firma as any),
       strediska: ponuka(ciselnik ?? [], "stredisko"),
       cinnosti: ponuka(ciselnik ?? [], "cinnost"),
       pokladne: ponuka(ciselnik ?? [], "pokladna"),
