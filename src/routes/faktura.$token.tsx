@@ -309,7 +309,7 @@ function VerejnaFaktura() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+      <div className="mt-6 grid gap-6 sm:grid-cols-2 [&>div]:min-w-0 [overflow-wrap:anywhere]">
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("Dodávateľ")}

@@ -46,8 +46,11 @@ export async function menoAutora(userId: string | null | undefined): Promise<str
     4 — 2026-11-06: platobné údaje s QR vľavo vedľa súčtov (jeden blok, QR
         nikdy sám na ďalšej strane), úspornejšie medzery — bežný doklad
         s desiatimi položkami je na jednej strane.
+    5 — 2026-11-17: dlhý názov / adresa / e-mail dodávateľa a odberateľa sa
+        zalomí do rámika (predtým pretiekol za okraj strany), názov nad 40
+        znakov menším písmom, oba rámiky rovnako vysoké.
 */
-export const VERZIA_SABLONY_PDF = 4;
+export const VERZIA_SABLONY_PDF = 5;
 
 /*
   Dobropis sa od 2026-10 kreslí s kladnými sumami. Obsah faktúry sa nezmenil,

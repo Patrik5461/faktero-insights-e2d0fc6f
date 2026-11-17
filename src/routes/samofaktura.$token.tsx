@@ -150,7 +150,7 @@ function SamofakturaPage() {
         {f.opravuje && <p className="text-sm text-muted-foreground">{T.opravuje(f.opravuje)}</p>}
         <p className="mt-2 text-sm text-muted-foreground">{T.uvod(o?.name ?? T.odberatel)}</p>
 
-        <div className="mt-6 grid gap-6 text-sm sm:grid-cols-2">
+        <div className="mt-6 grid gap-6 text-sm sm:grid-cols-2 [&>div]:min-w-0 [overflow-wrap:anywhere]">
           <div>
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
               {T.dodavatelVy}

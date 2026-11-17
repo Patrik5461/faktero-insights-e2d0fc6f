@@ -357,50 +357,52 @@ async function vykresliFakturu(
   // ── Parties: side-by-side cards ──
   const gap = 16;
   const colW = (innerW - gap) / 2;
-  const partyH = drawPartyCard(
-    page,
-    font,
-    bold,
-    margin,
-    y,
-    colW,
-    t.dodavatel,
-    {
-      name: company.name,
-      lines: addressLines(company.street, company.zip, company.city, company.country),
-      ico: company.ico,
-      dic: company.dic,
-      ic_dph: company.ic_dph,
-      // E-mail a telefón dodávateľa sú od 2026-11 v pätičke, zápis v OR tu.
-      zapis: textZapisuVRegistri(company),
-    },
-    { ink, sub, muted, hairline, primary, surface },
-    { ico: t.ico, dic: t.dic, icDph: t.icDph },
-  );
-  const partyH2 = drawPartyCard(
-    page,
-    font,
-    bold,
-    margin + colW + gap,
-    y,
-    colW,
-    t.odberatel,
-    {
-      name: invoice.customer_name,
-      lines: addressLines(
-        invoice.customer_street,
-        invoice.customer_zip,
-        invoice.customer_city,
-        invoice.customer_country,
-      ),
-      ico: invoice.customer_ico,
-      dic: invoice.customer_dic,
-      ic_dph: invoice.customer_ic_dph,
-      email: invoice.customer_email,
-    },
-    { ink, sub, muted, hairline, primary, surface },
-    { ico: t.ico, dic: t.dic, icDph: t.icDph },
-  );
+  /*
+    Dodávateľ a odberateľ majú rámik rovnako vysoký. Najprv sa obidva len
+    zmerajú (dlhý názov sa zalomí na viac riadkov), potom sa nakreslia
+    s výškou vyššieho z nich.
+  */
+  const farbyKarty = { ink, sub, muted, hairline, primary, surface };
+  const popisKarty = { ico: t.ico, dic: t.dic, icDph: t.icDph };
+  const kartaDodavatela = {
+    name: company.name,
+    lines: addressLines(company.street, company.zip, company.city, company.country),
+    ico: company.ico,
+    dic: company.dic,
+    ic_dph: company.ic_dph,
+    // E-mail a telefón dodávateľa sú od 2026-11 v pätičke, zápis v OR tu.
+    zapis: textZapisuVRegistri(company),
+  };
+  const kartaOdberatela = {
+    name: invoice.customer_name,
+    lines: addressLines(
+      invoice.customer_street,
+      invoice.customer_zip,
+      invoice.customer_city,
+      invoice.customer_country,
+    ),
+    ico: invoice.customer_ico,
+    dic: invoice.customer_dic,
+    ic_dph: invoice.customer_ic_dph,
+    email: invoice.customer_email,
+  };
+  const karta = (vlavo: boolean, rezim: { kresli: boolean; vyska?: number }) =>
+    drawPartyCard(
+      page,
+      font,
+      bold,
+      vlavo ? margin : margin + colW + gap,
+      y,
+      colW,
+      vlavo ? t.dodavatel : t.odberatel,
+      vlavo ? kartaDodavatela : kartaOdberatela,
+      farbyKarty,
+      popisKarty,
+      rezim,
+    );
+  const vyskaKariet = Math.max(karta(true, { kresli: false }), karta(false, { kresli: false }));
+  const partyH = karta(true, { kresli: true, vyska: vyskaKariet });
+  const partyH2 = karta(false, { kresli: true, vyska: vyskaKariet });
   // Medzery medzi blokmi sú úsporné — o pár bodov viac posielalo platobné
   // údaje bežnej faktúry s textom nad položkami na druhú stranu.
   y -= Math.max(partyH, partyH2) + 12;
@@ -1809,26 +1811,54 @@ function drawPartyCard(
   c: { ink: any; sub: any; muted: any; hairline: any; primary: any; surface: any },
   /* Popisky identifikátorov v jazyku dokladu — „IČO" Nemcovi nič nepovie. */
   popis: { ico: string; dic: string; icDph: string },
+  /*
+    kresli: false karta sa len zmeria (nič nenakreslí) — kvôli rovnakej výške
+    oboch rámikov. vyska: najmenšia výška rámika.
+  */
+  rezim: { kresli: boolean; vyska?: number } = { kresli: true },
 ): number {
   const padX = 16;
+  const sirkaTextu = w - padX * 2;
+  const pis: PDFPage["drawText"] = (text, o) => {
+    if (rezim.kresli) page.drawText(text, o);
+  };
   const padTop = 14;
   let cy = y - padTop;
 
   // Label
-  page.drawText(san(label), { x: x + padX, y: cy - 4, size: 8, font: bold, color: c.primary });
+  pis(san(label), { x: x + padX, y: cy - 4, size: 8, font: bold, color: c.primary });
   cy -= 16;
 
-  // Name
-  if (p.name) {
-    page.drawText(san(p.name), { x: x + padX, y: cy - 12, size: 13, font: bold, color: c.ink });
-    cy -= 18;
+  /*
+    Názov sa zalomí podľa skutočnej šírky písma, nikdy nepretečie za rámik ani
+    za okraj strany (napr. „Domov sociálnych služieb pre dospelých v Zavare").
+    Dlhý názov (> 40 znakov) má písmo o ~15 % menšie. Prvý riadok sedí presne
+    tam, kde doteraz, ďalšie riadky majú riadkovanie 1,25.
+  */
+  const nazov = san(String(p.name ?? "").trim());
+  if (nazov) {
+    const velkost = nazov.length > 40 ? 11 : 13;
+    const riadkovanie = velkost * 1.25;
+    const riadky = wrapLines(nazov, bold, velkost, sirkaTextu);
+    riadky.forEach((riadok, i) => {
+      pis(riadok, {
+        x: x + padX,
+        y: cy - (velkost * 12) / 13 - i * riadkovanie,
+        size: velkost,
+        font: bold,
+        color: c.ink,
+      });
+    });
+    cy -= 18 + (riadky.length - 1) * riadkovanie;
   }
 
-  // Address lines
-  p.lines.forEach((l) => {
-    page.drawText(san(l), { x: x + padX, y: cy - 10, size: 9.5, font, color: c.sub });
-    cy -= 12.5;
-  });
+  // Adresa — dlhá ulica sa zalomí do šírky rámika.
+  p.lines
+    .flatMap((l) => wrapLines(san(l), font, 9.5, sirkaTextu))
+    .forEach((l) => {
+      pis(l, { x: x + padX, y: cy - 10, size: 9.5, font, color: c.sub });
+      cy -= 12.5;
+    });
 
   // Tax IDs (compact)
   const ids: [string, string][] = [];
@@ -1837,23 +1867,25 @@ function drawPartyCard(
   if (p.ic_dph) ids.push([popis.icDph, String(p.ic_dph)]);
   if (ids.length) {
     cy -= 5;
-    page.drawLine({
-      start: { x: x + padX, y: cy },
-      end: { x: x + w - padX, y: cy },
-      color: c.hairline,
-      thickness: 0.5,
-    });
+    if (rezim.kresli)
+      page.drawLine({
+        start: { x: x + padX, y: cy },
+        end: { x: x + w - padX, y: cy },
+        color: c.hairline,
+        thickness: 0.5,
+      });
     cy -= 3;
     ids.forEach(([k, v]) => {
-      page.drawText(san(k), { x: x + padX, y: cy - 10, size: 8.5, font, color: c.muted });
+      pis(san(k), { x: x + padX, y: cy - 10, size: 8.5, font, color: c.muted });
       /*
         Hodnota začína až za popiskom, nie na pevnej pozícii — nemecké
         „Firmenbuchnummer" je dlhšie než „IČO" a číslo sa naň lepilo bez
         medzery.
       */
       const sirkaPopisku = font.widthOfTextAtSize(san(k), 8.5);
-      page.drawText(san(v), {
-        x: x + padX + Math.max(48, sirkaPopisku + 8),
+      const odsadenie = Math.max(48, sirkaPopisku + 8);
+      pis(ellipsize(san(v), bold, 9.5, sirkaTextu - odsadenie), {
+        x: x + padX + odsadenie,
         y: cy - 10,
         size: 9.5,
         font: bold,
@@ -1870,19 +1902,24 @@ function drawPartyCard(
   const zapis = san(String(p.zapis ?? "").trim());
   if (zapis) {
     cy -= 2;
-    wrapLines(zapis, font, 7.5, w - padX * 2).forEach((riadok) => {
-      page.drawText(riadok, { x: x + padX, y: cy - 8, size: 7.5, font, color: c.muted });
+    wrapLines(zapis, font, 7.5, sirkaTextu).forEach((riadok) => {
+      pis(riadok, { x: x + padX, y: cy - 8, size: 7.5, font, color: c.muted });
       cy -= 9;
     });
   }
 
-  if (p.email) {
+  // Dlhý e-mail sa zalomí na prirodzenom mieste (pred „@", za bodkou), najviac na 3 riadky.
+  const email = san(String(p.email ?? "").trim());
+  if (email) {
     cy -= 2;
-    page.drawText(san(p.email), { x: x + padX, y: cy - 10, size: 9, font, color: c.muted });
-    cy -= 12;
+    zalomHodnotuPaty(email, font, 9, sirkaTextu, 3).forEach((riadok) => {
+      pis(riadok, { x: x + padX, y: cy - 10, size: 9, font, color: c.muted });
+      cy -= 12;
+    });
   }
 
-  const cardH = y - cy + 10;
+  const cardH = Math.max(y - cy + 10, rezim.vyska ?? 0);
+  if (!rezim.kresli) return cardH;
   // Background card (draw behind by overlay-rect with low cover? pdf-lib draws in z-order; we draw rect now ON TOP — workaround: draw lighter alt fill by using border only)
   page.drawRectangle({
     x,

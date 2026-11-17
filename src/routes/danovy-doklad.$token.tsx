@@ -158,7 +158,16 @@ function PlatformInvoicePage() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
+        <div
+          style={{
+            display: "grid",
+            // minmax(0, 1fr): dlhý názov odberateľa nesmie stĺpec roztiahnuť za okraj.
+            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+            gap: 24,
+            marginBottom: 24,
+            overflowWrap: "anywhere",
+          }}
+        >
           <div>
             <div
               style={{

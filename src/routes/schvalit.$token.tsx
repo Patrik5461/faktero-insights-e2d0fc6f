@@ -136,8 +136,8 @@ function ApprovalPage() {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-wrap items-start justify-between gap-4 [overflow-wrap:anywhere]">
+            <div className="min-w-0">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">
                 {t("Dodávateľ")}
               </div>
@@ -165,7 +165,7 @@ function ApprovalPage() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-xl border border-border bg-muted/20 p-4">
+          <div className="mt-6 rounded-xl border border-border bg-muted/20 p-4 [overflow-wrap:anywhere]">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">
               {t("Odberateľ")}
             </div>
