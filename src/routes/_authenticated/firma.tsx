@@ -33,6 +33,12 @@ import { overZapis, textChybyZapisu } from "@/lib/faktero/over-zapis";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { NacitavanieStav } from "@/components/faktero/web/StavyObsahu";
 import { PoleZapisVRegistri } from "@/components/faktero/ZapisVRegistri";
+import {
+  TestovaciaFirmaClenovia,
+  TestovaciaFirmaSekcia,
+  useNazovSkutocnejFirmy,
+} from "@/components/faktero/TestovaciaFirmaNastavenia";
+import { nastaveniaTestovacej } from "@/lib/faktero/testovacia-firma-ui";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: ({ match }) => ({
     meta: [{ title: preloz(match.context.jazyk ?? "sk", "Firma — Faktero") }],
@@ -47,6 +53,8 @@ function CompanyPage() {
      (`is_company_admin`). Ostatní vidia stránku len na čítanie (S-13). */
   const clen = useClenstvoFirmy();
   const spravca = clen.nacitane && jeAdminRola(clen.rola);
+  /* Po vymazaní údajov testovacej firmy sa firma načíta znova. */
+  const [nacitanie, setNacitanie] = useState(0);
   useEffect(() => {
     const id = getActiveCompanyId();
     if (!id) return;
@@ -56,7 +64,10 @@ function CompanyPage() {
       .eq("id", id)
       .single()
       .then(({ data }) => setC(data));
-  }, []);
+  }, [nacitanie]);
+  /* Testovacia firma: vysvetlenie, vymazanie údajov, členovia len v skutočnej. */
+  const test = nastaveniaTestovacej(c, clen.nacitane ? clen.rola : null);
+  const nazovSkutocnej = useNazovSkutocnejFirmy(c);
   if (!c)
     return (
       <PageBody>
@@ -81,6 +92,8 @@ function CompanyPage() {
       swift: _swift,
       dph_overit_od: _overit,
       dph_overene_at: _overene,
+      // Väzbu testovacej firmy na skutočnú mení len databáza (spúšťač).
+      testovacia_pre: _testovaciaPre,
       ...patch
     } = c;
     /* RLS pri odmietnutí nevráti chybu, len nula riadkov — bez `.select`
@@ -111,6 +124,14 @@ function CompanyPage() {
     <>
       <PageHeader title={t("Firma")} description={t("Údaje, ktoré sa zobrazia na faktúrach.")} />
       <PageBody>
+        {test.sekcia && (
+          <TestovaciaFirmaSekcia
+            companyId={c.id}
+            nazovSkutocnej={nazovSkutocnej ?? ""}
+            smieVymazat={test.vymazanie}
+            onVymazane={() => setNacitanie((n) => n + 1)}
+          />
+        )}
         {clen.nacitane && !spravca && (
           <div
             role="status"
@@ -608,7 +629,11 @@ function CompanyPage() {
 
         <VlastnySmtp companyId={c.id} />
 
-        <TeamSection companyId={c.id} spravca={spravca} />
+        {test.clenoviaZablokovani ? (
+          <TestovaciaFirmaClenovia nazovSkutocnej={nazovSkutocnej ?? ""} />
+        ) : (
+          <TeamSection companyId={c.id} spravca={spravca} />
+        )}
         </fieldset>
       </PageBody>
     </>

@@ -301,10 +301,13 @@ export const adminPriradZiadostFn = createServerFn({ method: "POST" })
     if (!zz) throw new Error("Žiadosť sa nenašla.");
     const { data: firma } = await db
       .from("companies")
-      .select("id, dic")
+      .select("id, dic, testovacia_pre")
       .eq("id", data.company_id)
       .maybeSingle();
     if (!firma) throw new Error("Firma sa nenašla.");
+    if (firma.testovacia_pre) {
+      throw new Error("Testovacia firma sa do siete Peppol neregistruje — priraď skutočnú firmu.");
+    }
     if (firma.dic && firma.dic !== zz.dic) {
       throw new Error(`Firma má DIČ ${firma.dic}, žiadosť je pre ${zz.dic}.`);
     }

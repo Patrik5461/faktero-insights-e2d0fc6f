@@ -77,8 +77,10 @@ export const adminDetailUctu = createServerFn({ method: "POST" })
 
     const { data: clenstva } = await supabaseAdmin
       .from("company_users")
-      .select("company_id, role, companies(id, name, ico, suspended_at)")
-      .eq("user_id", data.userId);
+      .select("company_id, role, companies!inner(id, name, ico, suspended_at, testovacia_pre)")
+      .eq("user_id", data.userId)
+      // Testovacia firma (náhľad) zrkadlí rodiča a zanikne s ním — samostatne sa neukazuje.
+      .is("companies.testovacia_pre", null);
 
     const idFiriem = (clenstva ?? []).map((m: any) => m.company_id);
     const [{ data: predplatne }, { data: vsetciClenovia }] = await Promise.all([

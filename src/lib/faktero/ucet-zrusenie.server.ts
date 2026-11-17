@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { firmyNaZmazanieUctu } from "./testovacia-firma-crony";
 
 /**
  * Vykonanie zrušenia účtu.
@@ -34,10 +35,13 @@ const BUCKETY = [
   "export-firmy",
   "financing-documents",
   "imports",
+  "invoice-attachments",
   "invoice-pdfs",
+  "nespracovane",
   "other-docs",
   "product-photos",
   "purchase-invoices",
+  "vehicle-docs",
 ];
 
 export type FirmaNaZmazanie = { id: string; name: string };
@@ -69,11 +73,43 @@ export async function firmyNaZmazanie(userId: string): Promise<FirmaNaZmazanie[]
     pocty.set(c.company_id as string, s);
   }
 
-  const same = idcka.filter((id) => (pocty.get(id)?.size ?? 0) <= 1);
-  if (!same.length) return [];
+  const kandidati = idcka.filter((id) => (pocty.get(id)?.size ?? 0) <= 1);
+  if (!kandidati.length) return [];
 
-  const { data: firmy } = await supabaseAdmin.from("companies").select("id, name").in("id", same);
-  return (firmy ?? []).map((f) => ({ id: f.id as string, name: (f.name as string) ?? "Firma" }));
+  const { data: firmy, error } = await supabaseAdmin
+    .from("companies")
+    .select("id, name, testovacia_pre")
+    .in("id", kandidati);
+  // Bez príznaku testovacej firmy by sa nedalo rozhodnúť, čo mazať — radšej nič.
+  if (error) throw new Error(`firmy sa nepodarilo načítať: ${error.message}`);
+
+  /*
+    Testovacie firmy sa samostatne nemažú: `faktero_zmaz_firmu` ich zmaže
+    spolu s rodičom (a s rodičom, ktorý ostáva, ostáva aj jeho testovacia).
+  */
+  const same = new Set(
+    firmyNaZmazanieUctu(
+      (firmy ?? []).map((f) => ({
+        id: f.id as string,
+        clenov: pocty.get(f.id as string)?.size ?? 0,
+        testovacia_pre: (f.testovacia_pre as string | null) ?? null,
+      })),
+    ),
+  );
+  return (firmy ?? [])
+    .filter((f) => same.has(f.id as string))
+    .map((f) => ({ id: f.id as string, name: (f.name as string) ?? "Firma" }));
+}
+
+/** Id testovacej firmy, ktorú má daná (skutočná) firma, alebo null. */
+export async function testovaciaFirmaRodica(companyId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("companies")
+    .select("id")
+    .eq("testovacia_pre", companyId)
+    .maybeSingle();
+  if (error) throw new Error(`testovaciu firmu sa nepodarilo načítať: ${error.message}`);
+  return (data?.id as string | undefined) ?? null;
 }
 
 /** Cesty všetkých súborov firmy v jednom úložisku, aj vo vnorených priečinkoch. */
@@ -144,6 +180,10 @@ export async function zrusUcet(userId: string): Promise<VysledokZrusenia> {
 
   let subory = 0;
   for (const f of same) {
+    // Testovaciu firmu zmaže RPC spolu s rodičom, jej prílohy však kaskáda
+    // nezoberie — preto najprv tie, rovnako ako rodičove.
+    const testovacia = await testovaciaFirmaRodica(f.id);
+    if (testovacia) subory += await zmazSuboryFirmy(testovacia);
     subory += await zmazSuboryFirmy(f.id);
     // Ostatné tabuľky visia na `companies` cez ON DELETE CASCADE, ale skladové
     // pohyby stráži nemennosť — preto cez RPC, ktorá si na mazanie firmy zapne

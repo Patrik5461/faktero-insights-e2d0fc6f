@@ -217,7 +217,11 @@ export async function runMonthlyStatements(period?: { start: string; end: string
   let nedostupne = 0;
   const errors: Array<{ account_id: string; export_type: string; error: string }> = [];
 
-  for (const conn of connections ?? []) {
+  // Testovacia firma k banke pripojená nebýva; keby áno, výpis sa za ňu nesťahuje.
+  const skutocne = await (
+    await import("./testovacia-firma-banka.server")
+  ).bezTestovacichFiriem(connections ?? [], "bank-statements");
+  for (const conn of skutocne) {
     if (!conn.access_token) continue;
     const { data: nacitaneUcty } = await supabaseAdmin
       .from("bank_accounts")

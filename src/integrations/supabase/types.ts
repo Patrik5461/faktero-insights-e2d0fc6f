@@ -1678,6 +1678,7 @@ export type Database = {
           street: string | null
           suspended_at: string | null
           suspended_reason: string | null
+          testovacia_pre: string | null
           swift: string | null
           uctovnik_email: string | null
           updated_at: string
@@ -1815,6 +1816,7 @@ export type Database = {
           street?: string | null
           suspended_at?: string | null
           suspended_reason?: string | null
+          testovacia_pre?: string | null
           swift?: string | null
           uctovnik_email?: string | null
           updated_at?: string
@@ -1952,6 +1954,7 @@ export type Database = {
           street?: string | null
           suspended_at?: string | null
           suspended_reason?: string | null
+          testovacia_pre?: string | null
           swift?: string | null
           uctovnik_email?: string | null
           updated_at?: string
@@ -13423,6 +13426,8 @@ export type Database = {
         }[]
       }
       faktero_zmaz_firmu: { Args: { _company_id: string }; Returns: undefined }
+      faktero_je_testovacia: { Args: { _company_id: string }; Returns: boolean }
+      faktero_obnov_testovaciu_firmu: { Args: { _company_id: string }; Returns: string }
       get_company_role: {
         Args: { _company_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["company_role"]

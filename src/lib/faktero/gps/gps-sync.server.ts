@@ -469,7 +469,7 @@ export async function behCronu(strop = CASOVY_STROP_MS) {
   const teraz = new Date();
   const { data } = await db
     .from("gps_pripojenia")
-    .select("id, aktivne, auto_sync, neuplne, posledna_sync_at, poskytovatel")
+    .select("id, company_id, aktivne, auto_sync, neuplne, posledna_sync_at, poskytovatel")
     .eq("aktivne", true)
     .eq("auto_sync", true)
     .in(
@@ -478,7 +478,15 @@ export async function behCronu(strop = CASOVY_STROP_MS) {
     )
     .order("posledna_sync_at", { ascending: true, nullsFirst: true })
     .limit(500);
-  const naRade = (data ?? []).filter((p: any) => trebaSynchronizovat(p, teraz));
+  // Testovacie firmy GPS nevolajú — preskočia sa potichu.
+  const { testovacieZoZoznamu } = await import("../testovacia-firma.server");
+  const testovacie = await testovacieZoZoznamu([
+    ...new Set<string>((data ?? []).map((p: any) => String(p.company_id))),
+  ]);
+  if (testovacie.size) console.info("[gps-cron] preskočené testovacie firmy:", [...testovacie]);
+  const naRade = (data ?? []).filter(
+    (p: any) => !testovacie.has(String(p.company_id)) && trebaSynchronizovat(p, teraz),
+  );
   const out = { naRade: naRade.length, spracovane: 0, importovane: 0, chyby: 0, ostava: 0 };
   for (const p of naRade) {
     if (Date.now() > koniec - 5000) break;

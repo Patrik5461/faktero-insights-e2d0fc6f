@@ -110,6 +110,7 @@ export const startTeslaOAuth = createServerFn({ method: "POST" })
   .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { getTeslaAuthUrl, podpisanyStav } = await import("./tesla.server");
     // Create or reuse a pending connection row; its id is used as OAuth state.
@@ -149,6 +150,12 @@ export const disconnectTesla = createServerFn({ method: "POST" })
     return { ok: true, ...upratane };
   });
 
+/** Testovacia firma sa na Teslu nepripája (nič nejde von). */
+async function zastavTestovaciu(companyId: string) {
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(companyId, "Testovacia firma — Tesla sa v testovacej firme nepripája.");
+}
+
 async function loadValidAccessToken(companyId: string): Promise<string> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { decryptSecret, encryptSecret } = await import("./payment-crypto.server");
@@ -186,6 +193,7 @@ export const syncTeslaVehicles = createServerFn({ method: "POST" })
   .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { listTeslaVehicles, TeslaAuthError } = await import("./tesla.server");
     let vehicles: any[];
@@ -307,6 +315,7 @@ export const syncTeslaSnapshots = createServerFn({ method: "POST" })
   .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const {
       getTeslaVehicleData,

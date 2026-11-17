@@ -161,6 +161,21 @@ describe("strážca", () => {
     expect(stav.rpc).toEqual([]);
   });
 
+  it("testovacia firma neodošle nič a nič sa nezapíše do stropov", async () => {
+    stav.firma = zakladFirmy({ testovacia_pre: "skutocna-firma" });
+    const e = await chyba(strazOdoslanie(odoslanie()));
+    expect(jeZastavene(e)).toBe(true);
+    expect(e.dovod).toBe("testovacia");
+    expect(e.message).toBe("Testovacia firma — e-mail sa neodoslal (náhľad)");
+    expect(stav.rpc).toEqual([]);
+  });
+
+  it("skutočná firma (testovacia_pre = null) prejde ako doteraz", async () => {
+    stav.firma = zakladFirmy({ testovacia_pre: null });
+    await strazOdoslanie(odoslanie());
+    expect(stav.rpc.some((r) => r.fn === "odosielanie_rezervuj")).toBe(true);
+  });
+
   it("nová firma: 4 adresáti v jednom maile neprejdú", async () => {
     stav.firma = zakladFirmy({ created_at: dniDozadu(0) });
     const e = await chyba(

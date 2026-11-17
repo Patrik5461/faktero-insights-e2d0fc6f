@@ -49,7 +49,13 @@ type ProfileRow = { id: string; email: string | null };
 
 export async function runLowStockAlerts() {
   const companies = await selectAll<CompanyRow>((from, to) =>
-    supabaseAdmin.from("companies").select("id, name, email, created_by").range(from, to),
+    supabaseAdmin
+      .from("companies")
+      .select("id, name, email, created_by")
+      // Testovacia firma (náhľad) e-maily neposiela — ani upozornenia na sklad.
+      .is("testovacia_pre", null)
+      .order("id")
+      .range(from, to),
   );
   const results: any[] = [];
 

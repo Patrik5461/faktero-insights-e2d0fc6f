@@ -57,7 +57,12 @@ import {
 } from "@/components/faktero/nav";
 export type { ProductMode };
 export { manualPre };
-import { PrepinacFiriem, ZoznamFiriem } from "@/components/faktero/PrepinacFiriem";
+import {
+  PrepinacFiriem,
+  StitokTestovacej,
+  ZoznamFiriem,
+} from "@/components/faktero/PrepinacFiriem";
+import { jeTestovacia } from "@/lib/faktero/testovacia-firma";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId, oznamZmenuFiriem } from "@/lib/faktero/active-company";
@@ -112,6 +117,8 @@ type Company = {
   module_employees?: boolean | null;
   /** Pri roli „custom“ oblasti, ku ktorým má človek prístup. */
   permissions?: Record<string, string> | null;
+  /** Id skutočnej firmy, ak je táto testovacia (testovacia-firma.ts). */
+  testovacia_pre?: string | null;
 };
 
 /**
@@ -503,6 +510,9 @@ export function AppShell({
               </span>
               {active && (
                 <span className="truncate text-[13px] font-semibold md:hidden">{active.name}</span>
+              )}
+              {active && jeTestovacia(active) && (
+                <StitokTestovacej kratky className="md:hidden" />
               )}
             </Link>
 

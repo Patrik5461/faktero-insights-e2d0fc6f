@@ -133,6 +133,13 @@ export const createCheckout = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertCompanyAdmin(supabaseAdmin, data.companyId, context.userId);
+    // Testovacia firma má predplatné zadarmo navždy — GoPay sa pre ňu nikdy nevolá.
+    const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+    await zastavAkTestovacia(
+      data.companyId,
+      "Testovacia firma má predplatné zadarmo — platí sa len za skutočnú firmu.",
+      supabaseAdmin,
+    );
 
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("subscription_plans")
@@ -168,9 +175,8 @@ export const createCheckout = createServerFn({ method: "POST" })
     const { prenesenieDphPredplatneho } = await import("@/lib/faktero/predplatne-dph.server");
     const prenesenieDph = await prenesenieDphPredplatneho(data.companyId);
     const naUhradu = sumaNaUhradu(plan.price_monthly_cents, prenesenieDph);
-    const { gopayCreatePayment, OPAKOVANIE_NEPOVOLENE } = await import(
-      "@/lib/faktero/gopay.server"
-    );
+    const { gopayCreatePayment, OPAKOVANIE_NEPOVOLENE } =
+      await import("@/lib/faktero/gopay.server");
     const poziadavka = {
       amountCents: naUhradu,
       currency: "EUR",

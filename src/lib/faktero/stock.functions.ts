@@ -486,9 +486,7 @@ export const completeInventory = createServerFn({ method: "POST" })
         .from("stock_items")
         .select("id, avg_purchase_price, purchase_price")
         .in("id", ids);
-      (zasoby ?? []).forEach((z) =>
-        cenaZasoby.set(z.id, cenaOcenenia(z)),
-      );
+      (zasoby ?? []).forEach((z) => cenaZasoby.set(z.id, cenaOcenenia(z)));
     }
 
     let adjustments = 0;
@@ -652,7 +650,10 @@ async function doplnChybajucePolozky(
       .eq("track_stock", true)
       .is("archived_at", null),
     supabase.from("stock_levels").select("stock_item_id, quantity").eq("warehouse_id", warehouseId),
-    supabase.from("inventory_count_items").select("stock_item_id").eq("inventory_count_id", countId),
+    supabase
+      .from("inventory_count_items")
+      .select("stock_item_id")
+      .eq("inventory_count_id", countId),
   ]);
   const levelMap = new Map<string, number>();
   (levels ?? []).forEach((l: any) => levelMap.set(l.stock_item_id, Number(l.quantity)));
@@ -1201,7 +1202,10 @@ const ImportRow = z.object({
   unit: z.string().trim().min(1).max(16).optional(),
   purchase_price: cisloImportu.refine((n) => n === undefined || n >= 0, "Záporná cena"),
   sale_price: cisloImportu.refine((n) => n === undefined || n >= 0, "Záporná cena"),
-  vat_rate: cisloImportu.refine((n) => n === undefined || (n >= 0 && n <= 100), "Neplatná sadzba DPH"),
+  vat_rate: cisloImportu.refine(
+    (n) => n === undefined || (n >= 0 && n <= 100),
+    "Neplatná sadzba DPH",
+  ),
   min_stock: cisloImportu.refine((n) => n === undefined || n >= 0, "Záporné minimum"),
   initial_stock: cisloImportu,
   warehouse_name: z.string().trim().max(255).optional().nullable(),
@@ -1324,7 +1328,10 @@ export const importStockCsv = createServerFn({ method: "POST" })
           if (r.vat_rate !== undefined && r.vat_rate !== Number(product.vat_rate))
             zmena.vat_rate = r.vat_rate;
           if (Object.keys(zmena).length) {
-            const { error } = await supabase.from("products").update(zmena as any).eq("id", product.id);
+            const { error } = await supabase
+              .from("products")
+              .update(zmena as any)
+              .eq("id", product.id);
             if (error) throw new Error(error.message);
           }
           updatedProducts++;
@@ -1358,7 +1365,10 @@ export const importStockCsv = createServerFn({ method: "POST" })
           const zmena: Record<string, any> = {};
           if (r.sku && r.sku !== stockItem.sku) zmena.sku = r.sku;
           if (r.barcode && r.barcode !== stockItem.barcode) zmena.barcode = r.barcode;
-          if (r.purchase_price !== undefined && r.purchase_price !== Number(stockItem.purchase_price))
+          if (
+            r.purchase_price !== undefined &&
+            r.purchase_price !== Number(stockItem.purchase_price)
+          )
             zmena.purchase_price = r.purchase_price;
           if (r.sale_price !== undefined && r.sale_price !== Number(stockItem.sale_price))
             zmena.sale_price = r.sale_price;
@@ -1604,7 +1614,8 @@ export const updateStockProduct = createServerFn({ method: "POST" })
   .validator((d: unknown) => UpdateStockProductInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    if (!jePlatnyColnyKod(data.colny_kod)) throw new Error("Colný kód má mať 6 až 10 číslic (napr. 8517 13 00).");
+    if (!jePlatnyColnyKod(data.colny_kod))
+      throw new Error("Colný kód má mať 6 až 10 číslic (napr. 8517 13 00).");
 
     const { error: pErr } = await supabase
       .from("products")
@@ -1708,12 +1719,17 @@ export const listUserCompaniesForTransfer = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: rows, error } = await supabase
       .from("company_users")
-      .select("company_id, companies:company_id(id, name)")
+      .select("company_id, companies:company_id(id, name, testovacia_pre)")
       .eq("user_id", userId);
     if (error) throw new Error(error.message);
-    const list = (rows ?? [])
-      .map((r: any) => r.companies)
-      .filter((c: any) => c && c.id !== data.exclude_company_id);
+    const { presunMedziFirmamiPovoleny } = await import("./testovacia-firma-parovanie");
+    const vsetky = (rows ?? []).map((r: any) => r.companies).filter(Boolean);
+    const zdroj = vsetky.find((c: any) => c.id === data.exclude_company_id);
+    // Skutočná firma ponúka len skutočné, testovacia len testovacie (pozri createTransfer).
+    const list = vsetky
+      .filter((c: any) => c.id !== data.exclude_company_id)
+      .filter((c: any) => !zdroj || presunMedziFirmamiPovoleny(zdroj, c))
+      .map((c: any) => ({ id: c.id as string, name: c.name as string }));
     return list as { id: string; name: string }[];
   });
 
@@ -1964,6 +1980,18 @@ export const createTransfer = createServerFn({ method: "POST" })
     // spoliehať nesmie — funkcia sa dá zavolať priamo s ľubovoľným UUID.
     if (data.target_company_id) {
       await assertMember(supabase, userId, data.target_company_id);
+      // Skutočná ↔ testovacia firma: ostré zásoby by sa premiešali so skúšobnými.
+      const { data: strany, error: chybaStran } = await supabase
+        .from("companies")
+        .select("id, testovacia_pre")
+        .in("id", [data.company_id, data.target_company_id]);
+      if (chybaStran) throw new Error(chybaStran.message);
+      const { presunMedziFirmamiPovoleny, HLASKA_PRESUN_TESTOVACIA } =
+        await import("./testovacia-firma-parovanie");
+      const zdroj = (strany ?? []).find((f: any) => f.id === data.company_id);
+      const ciel = (strany ?? []).find((f: any) => f.id === data.target_company_id);
+      if (!zdroj || !ciel || !presunMedziFirmamiPovoleny(zdroj, ciel))
+        throw new Error(HLASKA_PRESUN_TESTOVACIA);
     }
     // Cieľový sklad musí patriť cieľovej firme. Bez tejto kontroly by sa dal
     // príjem zaúčtovať do skladu úplne tretej firmy.

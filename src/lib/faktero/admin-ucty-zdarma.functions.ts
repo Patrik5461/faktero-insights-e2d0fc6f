@@ -57,7 +57,9 @@ export const zoznamUctovZdarma = createServerFn({ method: "GET" })
         const { count } = await supabaseAdmin
           .from("companies")
           .select("id", { count: "exact", head: true })
-          .eq("created_by", userId);
+          .eq("created_by", userId)
+          // Testovacia firma (náhľad) sa za firmu účtu nepočíta.
+          .is("testovacia_pre", null);
         firiem = count ?? 0;
       }
       vysledok.push({
@@ -93,10 +95,9 @@ export const pridajUcetZdarma = createServerFn({ method: "POST" })
 
     // Firmy, ktoré účet už má, sa prepnú hneď — inak by pravidlo platilo len
     // pre tie budúce a staré by ďalej čakali na platbu.
-    const { data: prepnute, error: chyba } = await supabaseAdmin.rpc(
-      "zrovnaj_ucty_zdarma" as any,
-      { p_email: email },
-    );
+    const { data: prepnute, error: chyba } = await supabaseAdmin.rpc("zrovnaj_ucty_zdarma" as any, {
+      p_email: email,
+    });
     if (chyba) throw new Error(chyba.message);
     return { ok: true, prepnute: Number(prepnute ?? 0) };
   });

@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Building2, Fingerprint, Lock, LogOut, Plus, QrCode } from "lucide-react";
+import { Building2, Fingerprint, FlaskConical, Lock, LogOut, Plus, QrCode } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { isBiometricAvailable, loginWithBiometric, overBiometriu } from "@/lib/mobile/biometric";
@@ -17,12 +17,13 @@ import { Logo } from "@/components/faktero/Logo";
 import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
 import { ZnackaJazd } from "./jazdy/ZnackaJazd";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { zoradSTestovacimi } from "@/lib/faktero/testovacia-firma";
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { jeKodParovania } from "@/lib/faktero/parovanie-zariadenia";
 import { QrSkener } from "./QrSkener";
 
-type Firma = { id: string; name: string };
+type Firma = { id: string; name: string; testovacia_pre?: string | null };
 
 /* ------------------------- Prihlásenie ------------------------- */
 
@@ -273,7 +274,8 @@ export function VyberFirmy({
   const { t } = usePreklad();
   // Účtovník môže mať stovky firiem — od šiestich sa dá hľadať (názov aj IČO).
   const [hladanie, setHladanie] = useState("");
-  const zobrazene = filtrujFirmy(firmy, hladanie);
+  // Testovacia firma hneď pod svojou skutočnou.
+  const zobrazene = zoradSTestovacimi(filtrujFirmy(firmy, hladanie));
   return (
     <MobilObrazovka title={t("app.vyberteFirmu")} subtitle={t("app.doVybranejFirmy")}>
       {firmy.length === 0 ? (
@@ -304,7 +306,13 @@ export function VyberFirmy({
             <p className="py-4 text-center text-sm text-app-text-2">{t("app.nicSaNenaslo")}</p>
           )}
           {zobrazene.map((f) => (
-            <VelkeTlacidlo key={f.id} icon={Building2} label={f.name} onClick={() => onVyber(f)} />
+            <VelkeTlacidlo
+              key={f.id}
+              icon={f.testovacia_pre ? FlaskConical : Building2}
+              label={f.name}
+              hint={f.testovacia_pre ? t("app.testovacia") : undefined}
+              onClick={() => onVyber(f)}
+            />
           ))}
           {onNovaFirma && !firmaSaNeda && (
             <button

@@ -47,6 +47,12 @@ async function naRadeHned(db: any, pripojenieId: string | null | undefined) {
 }
 
 /** Zoznam podporovaných poskytovateľov (bez kódu adaptérov). */
+/** Testovacia firma sa na GPS poskytovateľa nepripája (nič nejde von). */
+async function zastavTestovaciu(companyId: string) {
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(companyId, "Testovacia firma — GPS sa v testovacej firme nepripája.");
+}
+
 export const gpsKatalog = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
@@ -158,6 +164,7 @@ export const gpsTest = createServerFn({ method: "POST" })
   .validator((d: unknown) => UlozSchema.parse(d))
   .handler(async ({ data, context }) => {
     await pristup(context, data.companyId, true);
+    await zastavTestovaciu(data.companyId);
     const { adapterPodlaId } = await import("./gps/register");
     const a = adapterPodlaId(data.poskytovatel);
     if (!a) throw new Error("Neznámy poskytovateľ.");
@@ -194,6 +201,7 @@ export const gpsUloz = createServerFn({ method: "POST" })
   .validator((d: unknown) => UlozSchema.parse(d))
   .handler(async ({ data, context }) => {
     await pristup(context, data.companyId, true);
+    await zastavTestovaciu(data.companyId);
     const { adapterPodlaId } = await import("./gps/register");
     const a = adapterPodlaId(data.poskytovatel);
     if (!a) throw new Error("Neznámy poskytovateľ.");
@@ -324,6 +332,7 @@ export const gpsSynchronizuj = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await pristup(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     await nacitajPripojenie(data.companyId, data.pripojenieId);
     const { synchronizujPripojenie } = await import("./gps/gps-sync.server");
     // Pod 30 s strop nginxu; zvyšok dokončí ďalšie kliknutie alebo cron.

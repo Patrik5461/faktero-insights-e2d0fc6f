@@ -45,7 +45,17 @@ export const Route = createFileRoute("/api/public/hooks/push-overdue")({
           return Response.json({ ok: true, checked: 0, sent: 0 });
         }
 
-        const companyIds = [...new Set(invoices.map((i) => i.company_id).filter(Boolean))];
+        // Testovacie firmy upozornenia do telefónu neposielajú (potichu, s logom).
+        const { testovacieZoZoznamu } = await import("@/lib/faktero/testovacia-firma.server");
+        const vsetkyFirmy = [...new Set(invoices.map((i) => i.company_id).filter(Boolean))];
+        const testovacie = await testovacieZoZoznamu(vsetkyFirmy);
+        if (testovacie.size) {
+          console.log("[push-overdue] testovacie firmy preskočené:", testovacie.size);
+        }
+        const companyIds = vsetkyFirmy.filter((id) => !testovacie.has(id));
+        if (companyIds.length === 0) {
+          return Response.json({ ok: true, checked: invoices.length, sent: 0 });
+        }
 
         const { data: members, error: membersError } = await supabaseAdmin
           .from("company_users")

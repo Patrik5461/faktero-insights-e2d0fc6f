@@ -1,6 +1,14 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { posliPokusWebhooku } from "./webhook-odoslanie.server";
 import { ZAMOK_POKUSU_MS, poNeuspechu } from "./webhook-opakovanie";
+import {
+  jeTestovaciaFirma,
+  testovacieZoZoznamu,
+  zastavAkTestovacia,
+} from "./testovacia-firma.server";
+
+/** Hláška pri webhooku testovacej firmy (kľúč prekladu = text). */
+export const HLASKA_TESTOVACIA_WEBHOOK = "Testovacia firma — webhook sa neodoslal (náhľad).";
 
 export type FakteroEvent =
   | "invoice.created"
@@ -18,6 +26,12 @@ export async function triggerEvent(opts: {
   /** Upozornenie do telefónu; vypína ho fronta, keď ho už poslala synchronizácia banky. */
   push?: boolean;
 }) {
+  // Testovacia firma neposiela von nič — ani webhooky, ani push. Potichu (volajú to aj crony);
+  // keď sa firma nedá overiť, radšej sa nepošle nič (fail-closed).
+  if (await jeTestovaciaFirma(opts.company_id).catch(() => true)) {
+    console.log("[webhook] testovacia firma preskočená:", opts.company_id, opts.event);
+    return;
+  }
   const { data: hooks } = await supabaseAdmin
     .from("webhooks")
     .select("id, url, secret, events, active")
@@ -181,7 +195,7 @@ export async function spracujOpakovaniaWebhookov(opts: { dokedy?: number } = {})
   const teraz = new Date().toISOString();
   const { data, error } = await supabaseAdmin
     .from("webhook_delivery_logs")
-    .select("id")
+    .select("id, company_id")
     .in("status", ["pending", "retrying"])
     .lte("next_attempt_at", teraz)
     .or(`sending_until.is.null,sending_until.lt."${teraz}"`)
@@ -191,7 +205,26 @@ export async function spracujOpakovaniaWebhookov(opts: { dokedy?: number } = {})
   const hooky = new Map<string, Promise<Webhook | null>>();
   let dorucenych = 0;
   let neuspesnych = 0;
-  const riadky = (data ?? []) as { id: string }[];
+  const vsetky = (data ?? []) as { id: string; company_id: string }[];
+  // Testovacia firma: doručenie sa ukončí bez odoslania (ďalej sa neopakuje).
+  const testovacie = await testovacieZoZoznamu([...new Set(vsetky.map((r) => r.company_id))]);
+  const riadky = vsetky.filter((r) => !testovacie.has(r.company_id));
+  const testovacieRiadky = vsetky.filter((r) => testovacie.has(r.company_id)).map((r) => r.id);
+  if (testovacieRiadky.length) {
+    console.log(
+      "[webhook] testovacie firmy — doručenia ukončené bez odoslania:",
+      testovacieRiadky.length,
+    );
+    await supabaseAdmin
+      .from("webhook_delivery_logs")
+      .update({
+        status: "failed",
+        next_attempt_at: null,
+        sending_until: null,
+        error_message: HLASKA_TESTOVACIA_WEBHOOK,
+      } as any)
+      .in("id", testovacieRiadky);
+  }
   for (let i = 0; i < riadky.length; i += 5) {
     if (Date.now() > dokedy) break;
     await Promise.all(
@@ -216,6 +249,12 @@ export async function spracujOpakovaniaWebhookov(opts: { dokedy?: number } = {})
  * neposiela: prijímateľ ho už má.
  */
 export async function posliWebhookZnova(id: string) {
+  const { data: riadok } = await supabaseAdmin
+    .from("webhook_delivery_logs")
+    .select("company_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (riadok?.company_id) await zastavAkTestovacia(riadok.company_id, HLASKA_TESTOVACIA_WEBHOOK);
   const z = await zaberZaznam(id, { len_na_rade: false, stavy: ["retrying", "failed"] });
   if (!z) {
     const { data } = await supabaseAdmin

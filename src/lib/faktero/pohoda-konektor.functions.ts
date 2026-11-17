@@ -10,6 +10,10 @@ import {
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { zakladnaAdresa } from "./pohoda-konektor.server";
 import { jeAdminRola } from "./opravnenia";
+import { TestovaciaFirmaZastavene } from "./testovacia-firma";
+
+/** Hláška, keď sa konektor Pohody pýta pre testovaciu firmu. */
+const HLASKA_TESTOVACIA_POHODA = "Testovacia firma — Pohoda sa v testovacej firme nepripája.";
 
 /**
  * Vyrobí kľúč a stiahnuteľný balíček pre účtovníčku.
@@ -38,7 +42,7 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
       .in("company_id", ziadane);
     if (mErr) throw new Error(mErr.message);
 
-    const firmy = (clenstva ?? [])
+    let firmy = (clenstva ?? [])
       .filter((r: { role: string }) => jeAdminRola(r.role))
       .map(
         (r: { company: unknown }) => r.company as { id: string; name: string; ico: string | null },
@@ -46,6 +50,16 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
       .filter(Boolean);
     if (!firmy.length) {
       throw new Error("Ani k jednej z vybraných firiem nemáte právo vydať kľúč.");
+    }
+    /*
+      Testovacia firma sa s Pohodou nespája — kľúč konektora pre ňu nevznikne.
+      Pri výbere viacerých firiem sa len vynechá; keď ostane len ona, chyba.
+    */
+    const { testovacieZoZoznamu } = await import("./testovacia-firma.server");
+    const testovacie = await testovacieZoZoznamu(firmy.map((f) => f.id));
+    if (testovacie.size) {
+      firmy = firmy.filter((f) => !testovacie.has(f.id));
+      if (!firmy.length) throw new TestovaciaFirmaZastavene(HLASKA_TESTOVACIA_POHODA);
     }
 
     const rok = new Date().getFullYear();
@@ -80,7 +94,10 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
         .select("company_id")
         .eq("user_id", userId)
         .in("role", ["owner", "admin", "accountant"]);
-      const moje = new Set((vsetkyMoje ?? []).map((r: { company_id: string }) => r.company_id));
+      const mojeIds = (vsetkyMoje ?? []).map((r: { company_id: string }) => r.company_id);
+      // Testovacie firmy sa do „všetkých mojich“ nerátajú — konektor ich nedostane.
+      const mojeTestovacie = await testovacieZoZoznamu(mojeIds);
+      const moje = new Set(mojeIds.filter((id) => !mojeTestovacie.has(id)));
       // Kto vybral všetky svoje firmy, dostane kľúč aj pre tie, čo pribudnú.
       const vsetky = firmy.length >= moje.size && firmy.every((f) => moje.has(f.id));
       const { kluc, hash } = await novyKluc();

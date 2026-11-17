@@ -254,6 +254,8 @@ export async function overCakajuceFirmy(db: Db, opts: { limitMs?: number } = {})
     .from("companies")
     .select("id, country, dph_overit_od, dph_overene_at")
     .eq("dph_auto_overenie", true)
+    // Testovacia firma (náhľad) sa v registri neoveruje — nemá IČO a nastavenie DPH preberá z rodiča.
+    .is("testovacia_pre", null)
     .or(`dph_overit_od.not.is.null,dph_overene_at.is.null,dph_overene_at.lt."${hranica}"`)
     .order("dph_overit_od", { ascending: true, nullsFirst: false })
     .order("dph_overene_at", { ascending: true, nullsFirst: true })
@@ -291,6 +293,7 @@ export async function navrhSpatnehoDoplnenia(db: Db) {
   const { data, error } = await db
     .from("companies")
     .select("id, name, country, ico, dic, ic_dph, vat_payer, vat_scheme")
+    .is("testovacia_pre", null)
     .order("name");
   if (error) throw new Error(error.message);
   const out = [];

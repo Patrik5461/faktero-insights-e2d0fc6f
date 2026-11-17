@@ -301,7 +301,13 @@ export async function spustiDennySuhrn(
   const firmy = await selectByIds<{ id: string; name: string; suspended_at: string | null }>(
     [...clenoviaFirmy.keys()],
     (part, from, to) =>
-      db.from("companies").select("id, name, suspended_at").in("id", part).range(from, to),
+      db
+        .from("companies")
+        .select("id, name, suspended_at")
+        .in("id", part)
+        // Testovacia firma (náhľad) do súhrnu nepatrí — zdvojila by čísla rodiča.
+        .is("testovacia_pre", null)
+        .range(from, to),
   );
 
   const poctyLudi = new Map<string, PoctyFirmy[]>();

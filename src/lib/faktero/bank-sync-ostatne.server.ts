@@ -85,8 +85,12 @@ export async function runDailySyncOstatnych() {
     .in("provider", OSTATNE_BANKY)
     .eq("status", "connected");
 
+  // Testovacie firmy sa do banky nepýtajú (pripojenie im ani nevznikne).
+  const skutocne = await (
+    await import("./testovacia-firma-banka.server")
+  ).bezTestovacichFiriem(connections ?? [], "bank-sync");
   const results: Vysledok[] = [];
-  for (const conn of connections ?? []) results.push(await syncJedno(conn));
+  for (const conn of skutocne) results.push(await syncJedno(conn));
 
   const inserted = results.reduce((s, r) => s + r.inserted, 0);
   const failed = results.filter((r) => r.error).length;

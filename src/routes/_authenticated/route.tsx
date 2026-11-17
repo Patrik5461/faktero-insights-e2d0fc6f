@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { bezpecnyNavrat } from "@/lib/faktero/navrat-po-prihlaseni";
 import { EfakturaOznam } from "@/components/faktero/EfakturaOznam";
+import { TestovaciaFirmaPas } from "@/components/faktero/TestovaciaFirmaPas";
 import { PozvankyPas } from "@/components/faktero/MojePozvanky";
 import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
 import {
@@ -247,6 +248,16 @@ function AuthedLayout() {
   const shellProductMode: ProductMode = effectiveMode ?? productMode;
   /* Nemecké názvoslovie dobropisu (Rechnungskorrektur) len pre firmu z Nemecka. */
   const aktivna = companies.find((c: any) => c.id === activeId) ?? companies[0];
+  const prepniFirmu = (id: string) => {
+    setActiveCompanyId(id);
+    setActiveId(id);
+    /*
+      Po prepnutí na prehľad, nie na otvorenú stránku — detail faktúry či
+      rozpracovaný formulár patria predchádzajúcej firme a v novej by
+      ukazovali „nenájdené“ alebo by sa uložili do nesprávnej firmy.
+    */
+    window.location.assign(landingPathFor(shellActiveProduct));
+  };
 
   return (
     <KrajinaFirmyProvider krajina={krajinaDane(aktivna?.country)}>
@@ -255,17 +266,10 @@ function AuthedLayout() {
         activeId={activeId}
         productMode={shellProductMode}
         activeProduct={shellActiveProduct}
-        onChangeCompany={(id) => {
-          setActiveCompanyId(id);
-          setActiveId(id);
-          /*
-          Po prepnutí na prehľad, nie na otvorenú stránku — detail faktúry či
-          rozpracovaný formulár patria predchádzajúcej firme a v novej by
-          ukazovali „nenájdené“ alebo by sa uložili do nesprávnej firmy.
-        */
-          window.location.assign(landingPathFor(shellActiveProduct));
-        }}
+        onChangeCompany={prepniFirmu}
       >
+        {/* Testovacia firma — pás na každej stránke (TestovaciaFirmaPas.tsx). */}
+        <TestovaciaFirmaPas aktivna={aktivna} firmy={companies} onPrepni={prepniFirmu} />
         {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
         <PlanGateBanner companyId={activeId} />
         {/* Pozvánka do ďalšej firmy — potvrdenie priamo vo webe, nie len z e-mailu. */}

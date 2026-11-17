@@ -22,6 +22,10 @@ import {
 import { peppolId, schemaZId } from "./peppol-id";
 import { sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 import { createHash } from "node:crypto";
+import { zastavAkTestovacia } from "@/lib/faktero/testovacia-firma.server";
+
+/** Hláška, keď testovacia firma skúsi poslať eFaktúru (kľúč prekladu = text). */
+export const HLASKA_TESTOVACIA_EFAKTURA = "Testovacia firma — eFaktúra sa neodoslala (náhľad).";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -298,6 +302,8 @@ export async function sendEfaktura(
     .maybeSingle();
   if (invErr) throw invErr;
   if (!invoice) throw new Error("Faktúra nenájdená.");
+  // Testovacia firma nikdy neposiela do siete Peppol (pokrýva web, appku, API aj cron).
+  await zastavAkTestovacia(invoice.company_id, HLASKA_TESTOVACIA_EFAKTURA);
   // Schvaľovanie: odoslať až po schválení, ak si to firma zapla.
   await (await import("../schvalovanie.server")).overOdoslanie(invoice.company_id, invoiceId);
   // Prvé odoslanie len s dnešným dátumom vystavenia (rovnako ako e-mailom).
@@ -370,9 +376,13 @@ export async function sendEfaktura(
     povodneCislo = povodna?.invoice_number ?? null;
     povodnaVystavena = povodna?.issue_date ?? null;
   }
-  const zakladPredZlavou = (items ?? []).reduce((s: number, it: any) => s + Number(it.subtotal ?? 0), 0);
+  const zakladPredZlavou = (items ?? []).reduce(
+    (s: number, it: any) => s + Number(it.subtotal ?? 0),
+    0,
+  );
   const { nacitajOdpocty } = await import("../zalohy-odpocty.server");
-  const zalohy = (await nacitajOdpocty(supabaseAdmin, invoice.company_id, [invoiceId]))[invoiceId] ?? null;
+  const zalohy =
+    (await nacitajOdpocty(supabaseAdmin, invoice.company_id, [invoiceId]))[invoiceId] ?? null;
 
   /*
     Kontrola pred odoslaním — vlastné UBL z tých istých údajov a pravidlá
@@ -413,7 +423,9 @@ export async function sendEfaktura(
     protistranaPeppolId: receiverPeppolId,
     protistranaNazov: (invoice as any).customer_name ?? "",
     povodneCislo,
-    prenesenie: (invoice as any).reverse_charge ? ((invoice as any).reverse_charge_type ?? "domestic_69") : null,
+    prenesenie: (invoice as any).reverse_charge
+      ? ((invoice as any).reverse_charge_type ?? "domestic_69")
+      : null,
     zlavaDokladuPercent: zlavaNaPercento(
       (invoice as any).discount_type,
       (invoice as any).discount_value,
@@ -883,7 +895,8 @@ export async function stiahniPrijate(
       const { zaevidujAutomaticky } = await import("./zaevidovanie-efaktury.server");
       const z = await zaevidujAutomaticky(supabaseAdmin, companyId, noveIds);
       zaevidovanych = z.zaevidovanych;
-      if (z.problemy.length) console.warn("[efaktura-zaevidovanie]", z.problemy.join(" · ").slice(0, 500));
+      if (z.problemy.length)
+        console.warn("[efaktura-zaevidovanie]", z.problemy.join(" · ").slice(0, 500));
     } catch (e: any) {
       console.warn("[efaktura-zaevidovanie]", String(e?.message ?? e).slice(0, 300));
     }
@@ -1092,6 +1105,7 @@ export async function sendSamofakturaEfaktura(
     .eq("id", samofakturaId)
     .maybeSingle();
   if (!sf?.samofakturacia) throw new Error("Samofaktúra sa nenašla.");
+  await zastavAkTestovacia(sf.company_id, HLASKA_TESTOVACIA_EFAKTURA);
   if (sf.samofakturacia_stav !== "odsuhlasena") {
     throw new Error("Cez eFaktúru sa posiela až samofaktúra odsúhlasená dodávateľom.");
   }
@@ -1103,7 +1117,9 @@ export async function sendSamofakturaEfaktura(
   const { teloOdoslania } = await import("./epostak-telo");
   const { dodavatelPlatitel, prepocitajPolozku } = await import("../samofakturacia");
   const platitel = dodavatelPlatitel(sf.supplier_ic_dph);
-  const polozky = (Array.isArray(sf.items) ? sf.items : []).map((p: any) => prepocitajPolozku(p, platitel));
+  const polozky = (Array.isArray(sf.items) ? sf.items : []).map((p: any) =>
+    prepocitajPolozku(p, platitel),
+  );
   const zakladPredZlavou = polozky.reduce((s: number, p: any) => s + p.total, 0);
   const dobropis = Boolean(sf.opravuje_cislo);
 
@@ -1301,7 +1317,12 @@ export async function vytvorKlucFirmy(v: {
   const key = String(r?.key ?? "");
   const clientId = String(r?.clientId ?? r?.keyPrefix ?? "");
   if (!key || !clientId) throw new Error("ePošták nevrátil kľúč firmy (key/clientId).");
-  return { id: String(r?.id ?? ""), clientId, key, scopes: Array.isArray(r?.scopes) ? r.scopes : [] };
+  return {
+    id: String(r?.id ?? ""),
+    clientId,
+    key,
+    scopes: Array.isArray(r?.scopes) ? r.scopes : [],
+  };
 }
 
 /** Udalosti partnerského onboarding webhooku, ktoré Faktero spracúva. */
@@ -1319,7 +1340,9 @@ export type OnboardingWebhook = { url: string | null; events: string[]; isActive
 
 /** `GET /api/v1/onboarding-requests/webhook` — tajomstvo sa tu nikdy nevracia. */
 export async function citajOnboardingWebhook(): Promise<OnboardingWebhook> {
-  const r = await epostakFetch<{ webhook: OnboardingWebhook }>("/api/v1/onboarding-requests/webhook");
+  const r = await epostakFetch<{ webhook: OnboardingWebhook }>(
+    "/api/v1/onboarding-requests/webhook",
+  );
   return r?.webhook ?? null;
 }
 

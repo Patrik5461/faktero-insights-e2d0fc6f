@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { StitokTestovacejApka } from "@/components/faktero/mobil/StitokTestovacej";
 import { toast } from "sonner";
 import {
   Building2,
@@ -50,7 +51,7 @@ import { VYCHODZI_APKA, nacitajMotiv, ulozMotiv, type Motiv } from "@/lib/fakter
  * potiahnutím od ľavého okraja.
  */
 
-type Firma = { id: string; name: string };
+type Firma = { id: string; name: string; testovacia_pre?: string | null };
 
 export function MobilPanel({
   otvoreny,
@@ -208,6 +209,7 @@ export function MobilPanel({
                 <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-app-text">
                   {firma?.name ?? t("panel.bezFirmy")}
                 </span>
+                <StitokTestovacejApka firma={firma} />
               </div>
             </div>
           }

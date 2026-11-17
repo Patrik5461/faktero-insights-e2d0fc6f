@@ -45,6 +45,12 @@ export async function vytvorPozvankuUctovnika(o: {
   email: string;
 }): Promise<VysledokPozvanky> {
   const email = o.email.trim().toLowerCase();
+  // Testovacia firma eFaktúru na FS neaktivuje — pozvánka účtovníka by išla von.
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(
+    o.companyId,
+    "Testovacia firma — eFaktúra sa v testovacej firme neaktivuje (náhľad).",
+  );
 
   const odDna = new Date(Date.now() - 86_400_000).toISOString();
   const { count } = await supabaseAdmin
@@ -88,17 +94,15 @@ export async function vytvorPozvankuUctovnika(o: {
     .single();
   if (error || !poz) throw new Error(error?.message ?? "Pozvánku sa nepodarilo uložiť.");
 
-  await supabaseAdmin
-    .from("efaktura_oznam")
-    .upsert(
-      {
-        company_id: o.companyId,
-        user_id: o.userId,
-        accountant_invited_at: teraz,
-        updated_at: teraz,
-      },
-      { onConflict: "company_id,user_id" },
-    );
+  await supabaseAdmin.from("efaktura_oznam").upsert(
+    {
+      company_id: o.companyId,
+      user_id: o.userId,
+      accountant_invited_at: teraz,
+      updated_at: teraz,
+    },
+    { onConflict: "company_id,user_id" },
+  );
 
   const odkaz = odkazPozvanky(token);
   let emailOdoslany = false;

@@ -649,6 +649,7 @@ export const sk = {
   "app.email": "E-mail",
   "app.heslo": "Heslo",
   "app.vyberteFirmu": "Vyberte firmu",
+  "app.testovacia": "TESTOVACIA",
   "app.doVybranejFirmy": "Doklady sa uložia do vybranej firmy",
   "app.staciNazov": "Stačí názov, ostatné sa dá doplniť neskôr",
   "app.fakturyADoklady": "Faktúry a doklady",

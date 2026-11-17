@@ -1,4 +1,5 @@
-import { PDFDocument, PDFString, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, PDFString, degrees, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { jeTestovacia } from "./testovacia-firma";
 import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { riadkySoZlavou } from "./zlavy";
 import { textPreneseniaDokladu } from "./veta-prenesenia";
@@ -1620,7 +1621,39 @@ async function vykresliFakturu(
     }
   });
 
+  // Doklad testovacej firmy nesmie vyzerať ako skutočný (testovacia-firma.ts).
+  if (jeTestovacia(input.company)) nakresliVodotlacTest(doc.getPages(), bold);
+
   return { bajty: await doc.save(), prenesenieMimoPrvejStrany };
+}
+
+/** Text vodotlače na dokladoch testovacej firmy. */
+export const VODOTLAC_TEST = "TEST";
+
+/**
+ * Šikmá vodotlač „TEST“ cez stred každej strany. Kreslí sa len pre testovaciu
+ * firmu — PDF skutočných firiem sa nemení (preto ani VERZIA_SABLONY_PDF).
+ */
+export function nakresliVodotlacTest(strany: PDFPage[], pismo: PDFFont): void {
+  const velkost = 150;
+  const sirka = pismo.widthOfTextAtSize(VODOTLAC_TEST, velkost);
+  const uhol = 45;
+  const rad = (uhol * Math.PI) / 180;
+  for (const p of strany) {
+    const { width, height } = p.getSize();
+    // Stred textu do stredu strany: posun začiatku o polovicu šírky po uhle.
+    const x = width / 2 - (Math.cos(rad) * sirka) / 2 + (Math.sin(rad) * velkost * 0.35);
+    const y = height / 2 - (Math.sin(rad) * sirka) / 2 - (Math.cos(rad) * velkost * 0.35);
+    p.drawText(VODOTLAC_TEST, {
+      x,
+      y,
+      size: velkost,
+      font: pismo,
+      color: rgb(0.85, 0.15, 0.15),
+      opacity: 0.13,
+      rotate: degrees(uhol),
+    });
+  }
 }
 
 // Column layout — fixed widths inside innerW (sum = innerW).

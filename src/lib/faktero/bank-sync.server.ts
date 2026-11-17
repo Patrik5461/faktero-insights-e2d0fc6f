@@ -505,8 +505,12 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
     .eq("provider", "tatrabanka")
     .eq("status", "connected");
 
+  // Testovacie firmy sa do banky nepýtajú (pripojenie im ani nevznikne).
+  const skutocne = await (
+    await import("./testovacia-firma-banka.server")
+  ).bezTestovacichFiriem(connections ?? [], "bank-sync");
   const results: SyncResult[] = [];
-  for (const conn of connections ?? []) {
+  for (const conn of skutocne) {
     results.push(await syncPripojenie(supabaseAdmin, conn, daysBack, { skusitVyprsane: true }));
   }
 
@@ -538,8 +542,11 @@ export async function syncPodlaSuhlasov(
     .eq("status", "connected")
     .in("consent_id", consentIds);
 
+  const skutocne = await (
+    await import("./testovacia-firma-banka.server")
+  ).bezTestovacichFiriem(connections ?? [], "bank-sync");
   const results: SyncResult[] = [];
-  for (const conn of connections ?? []) {
+  for (const conn of skutocne) {
     const lenUcty = uctyPodlaSuhlasu?.get(conn.consent_id ?? "") ?? [];
     results.push(await syncPripojenie(supabaseAdmin, conn, daysBack, { lenUcty }));
   }

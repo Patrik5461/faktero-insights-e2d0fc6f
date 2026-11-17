@@ -26,6 +26,7 @@
 */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { popisNalezov, skontrolujObsah, type Nalez } from "./ochrana-obsahu";
+import { HLASKA_TESTOVACIA_EMAIL } from "./testovacia-firma";
 
 /*
   Stropy. Zdôvodnenie (dáta z invoice_email_logs, quote_email_logs
@@ -67,6 +68,8 @@ export const HLASKY = {
   den: `Firma môže posielať e-maily najviac ${STROPY.ZA_DEN} adresátom za 24 hodín. Ak potrebujete viac, napíšte nám na ${ADRESA_PODPORY}.`,
   mail: `Jeden e-mail či doklad sa dá poslať najviac ${STROPY.NA_MAIL} adresátom. Ak potrebujete viac, napíšte nám na ${ADRESA_PODPORY}.`,
   nedostupne: `Odosielanie e-mailov je teraz nedostupné. Skúste to o chvíľu znova.`,
+  /** Testovacia firma neposiela nič — ani na vlastnú adresu. */
+  testovacia: HLASKA_TESTOVACIA_EMAIL,
 } as const;
 
 export type DruhMailu =
@@ -141,6 +144,7 @@ type Firma = {
   created_by: string | null;
   odosielanie_overene: boolean | null;
   odosielanie_pozastavene: boolean | null;
+  testovacia_pre: string | null;
 };
 
 const DEN_MS = 86_400_000;
@@ -208,7 +212,7 @@ export async function strazOdoslanie(k: KontextOdoslania): Promise<Povolenie> {
   const { data: firmaData, error } = await supabaseAdmin
     .from("companies")
     .select(
-      "id, name, ico, email, email_sender_name, website, created_at, created_by, odosielanie_overene, odosielanie_pozastavene",
+      "id, name, ico, email, email_sender_name, website, created_at, created_by, odosielanie_overene, odosielanie_pozastavene, testovacia_pre",
     )
     .eq("id", k.companyId)
     .maybeSingle();
@@ -217,6 +221,11 @@ export async function strazOdoslanie(k: KontextOdoslania): Promise<Povolenie> {
     throw new OdosielanieZastavene(HLASKY.nedostupne, "nedostupne");
   }
   const firma = firmaData as unknown as Firma;
+  // Testovacia firma (testovacia-firma.ts) neposiela nič a nič sa jej ani
+  // nezapisuje do stropov — zastaví sa skôr než čokoľvek iné.
+  if (firma.testovacia_pre) {
+    throw new OdosielanieZastavene(HLASKY.testovacia, "testovacia");
+  }
   if (firma.odosielanie_pozastavene) {
     throw new OdosielanieZastavene(HLASKY.pozastavene, "pozastavene");
   }

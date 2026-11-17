@@ -88,17 +88,23 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       emailsMonth,
       failedWebhooks,
     ] = await Promise.all([
-      supabaseAdmin.from("companies").select("id", { count: "exact", head: true }),
+      // Testovacie firmy (náhľad) sa do štatistík nerátajú — ani ich doklady.
+      supabaseAdmin
+        .from("companies")
+        .select("id", { count: "exact", head: true })
+        .is("testovacia_pre", null),
       supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
       supabaseAdmin
         .from("companies")
         .select("id", { count: "exact", head: true })
-        .is("suspended_at", null),
+        .is("suspended_at", null)
+        .is("testovacia_pre", null),
       supabaseAdmin
         .from("invoices")
-        .select("id", { count: "exact", head: true })
+        .select("id, companies!inner(testovacia_pre)", { count: "exact", head: true })
         .gte("created_at", monthStart)
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .is("companies.testovacia_pre", null),
       supabaseAdmin
         .from("api_logs")
         .select("id", { count: "exact", head: true })
@@ -147,6 +153,9 @@ export const listAdminCompanies = createServerFn({ method: "POST" })
       .select("id, name, ico, dic, country, created_at, suspended_at, created_by", {
         count: "exact",
       })
+      // Testovacie firmy (náhľad) sa v zozname ani v počte neukazujú — sú to
+      // kópie skutočných firiem, ktoré sa nerátajú nikam.
+      .is("testovacia_pre", null)
       .order("created_at", { ascending: false })
       .range(from, to);
     if (data.q.trim()) {
@@ -476,8 +485,10 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const { data: memberships } = ids.length
       ? await supabaseAdmin
           .from("company_users")
-          .select("user_id, role, companies(id, name)")
+          .select("user_id, role, companies!inner(id, name, testovacia_pre)")
           .in("user_id", ids)
+          // Členstvo v testovacej firme zrkadlí rodiča — v zozname by sa len zdvojilo.
+          .is("companies.testovacia_pre", null)
       : { data: [] as any[] };
     const membershipMap = new Map<string, any[]>();
     ((memberships as any) ?? []).forEach((m: any) => {
@@ -527,9 +538,11 @@ export const listAdminSubscriptions = createServerFn({ method: "POST" })
     } = await supabaseAdmin
       .from("subscriptions")
       .select(
-        "id, company_id, plan, status, trial_ends_at, current_period_start, current_period_end, next_billing_at, monthly_price_cents, payment_provider, gopay_payment_id, cancel_at_period_end, companies(name, ico)",
+        "id, company_id, plan, status, trial_ends_at, current_period_start, current_period_end, next_billing_at, monthly_price_cents, payment_provider, gopay_payment_id, cancel_at_period_end, companies!inner(name, ico)",
         { count: "exact" },
       )
+      // Predplatné testovacej firmy (zadarmo) do prehľadu predplatných nepatrí.
+      .is("companies.testovacia_pre", null)
       .order("created_at", { ascending: false })
       .range(from, to);
     if (error) throw error;
@@ -918,10 +931,18 @@ export const getAdminUsage = createServerFn({ method: "GET" })
     const emails = group((emailsByCompany as any).data ?? []);
     const hooks = group((webhooksByCompany as any).data ?? []);
 
-    const ids = new Set([...inv.keys(), ...api.keys(), ...emails.keys(), ...hooks.keys()]);
-    const { data: companies } = ids.size
-      ? await supabaseAdmin.from("companies").select("id, name").in("id", Array.from(ids))
+    const vsetky = new Set([...inv.keys(), ...api.keys(), ...emails.keys(), ...hooks.keys()]);
+    const { data: companies } = vsetky.size
+      ? await supabaseAdmin
+          .from("companies")
+          .select("id, name, testovacia_pre")
+          .in("id", Array.from(vsetky))
       : { data: [] as any[] };
+    // Testovacie firmy (náhľad) sa do využitia nerátajú.
+    const testovacie = new Set<string>(
+      ((companies as any) ?? []).filter((c: any) => c.testovacia_pre).map((c: any) => c.id),
+    );
+    const ids = new Set([...vsetky].filter((id) => !testovacie.has(id)));
     const nameMap = new Map<string, string>(
       ((companies as any) ?? []).map((c: any) => [c.id, c.name]),
     );
@@ -1170,7 +1191,7 @@ export const getAdminKnihaJazd = createServerFn({ method: "GET" })
     const ids = ((suhrn ?? []) as any[]).map((r) => r.company_id);
     const [{ data: firmy }, { data: vozidla }] = await Promise.all([
       ids.length
-        ? supabaseAdmin.from("companies").select("id, name, ico").in("id", ids)
+        ? supabaseAdmin.from("companies").select("id, name, ico, testovacia_pre").in("id", ids)
         : Promise.resolve({ data: [] as any[] }),
       ids.length
         ? supabaseAdmin
@@ -1182,6 +1203,8 @@ export const getAdminKnihaJazd = createServerFn({ method: "GET" })
     ]);
     const firma = new Map<string, any>(((firmy as any[]) ?? []).map((f) => [f.id, f]));
     const rows = ((suhrn ?? []) as any[])
+      // Testovacia firma (náhľad) do prehľadu nepatrí.
+      .filter((r) => !firma.get(r.company_id)?.testovacia_pre)
       .map((r) => ({
         company_id: r.company_id as string,
         name: (firma.get(r.company_id)?.name as string) ?? "—",

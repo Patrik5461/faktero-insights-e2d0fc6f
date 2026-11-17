@@ -46,7 +46,9 @@ export async function runMesacneOdovzdanie(opts: { mesiac?: string; teraz?: Date
     .select("id, name, uctovnik_email")
     .eq("odovzdanie_automaticky", true)
     .not("uctovnik_email", "is", null)
-    .is("suspended_at", null);
+    .is("suspended_at", null)
+    // Testovacia firma účtovníkovi nič neposiela (ani neoznačuje odovzdané).
+    .is("testovacia_pre", null);
   if (error) throw new Error(error.message);
 
   const vysledky: VysledokFirmy[] = [];

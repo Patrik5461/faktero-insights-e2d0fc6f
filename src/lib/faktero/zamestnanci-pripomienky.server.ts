@@ -58,21 +58,29 @@ function dnes(): string {
  * Obsah e-mailu — mená a termíny, žiadne citlivé údaje. Českej firme ide
  * po česky (slovník `cs` musí byť načítaný, inak ostane slovenčina).
  */
-export function textPripomienok(firma: string, pripomienky: Pripomienka[], krajina: KrajinaZamestnancov = "SK") {
+export function textPripomienok(
+  firma: string,
+  pripomienky: Pripomienka[],
+  krajina: KrajinaZamestnancov = "SK",
+) {
   const cz = krajina === "CZ";
-  const t = (s: string, p?: Record<string, string | number>) => (cz ? preloz("cs", s, p) : preloz("sk", s, p));
-  const polozky = pripomienky.map((p) => (cz ? textPripomienky(p, t) : { nadpis: p.nadpis, text: p.text }));
+  const t = (s: string, p?: Record<string, string | number>) =>
+    cz ? preloz("cs", s, p) : preloz("sk", s, p);
+  const polozky = pripomienky.map((p) =>
+    cz ? textPripomienky(p, t) : { nadpis: p.nadpis, text: p.text },
+  );
   const riadky = polozky.map((p) => `• ${p.nadpis}: ${p.text}`);
   const uvod = t("Dobrý deň,");
   const vybavit = t("pre firmu {firma} treba vybaviť:", { firma });
   const zaver = t("Kartu zamestnanca nájdete vo Fakteri v časti Zamestnanci.");
   const text = `${uvod}\n\n${vybavit}\n\n${riadky.join("\n")}\n\n${zaver}\n`;
-  const html = `<p>${escapeHtml(uvod)}</p><p>${escapeHtml(t("pre firmu {firma} treba vybaviť:", { firma: "\u0000" })).replace(
-    "\u0000",
-    `<strong>${escapeHtml(firma)}</strong>`,
-  )}</p><ul>${polozky
+  const html = `<p>${escapeHtml(uvod)}</p><p>${escapeHtml(
+    t("pre firmu {firma} treba vybaviť:", { firma: "\u0000" }),
+  ).replace("\u0000", `<strong>${escapeHtml(firma)}</strong>`)}</p><ul>${polozky
     .map((p) => `<li><strong>${escapeHtml(p.nadpis)}</strong>: ${escapeHtml(p.text)}</li>`)
-    .join("")}</ul><p>${escapeHtml(t("Kartu zamestnanca nájdete vo Fakteri v časti")).trim()} <a href="https://www.faktero.sk/zamestnanci">${escapeHtml(t("Zamestnanci"))}</a>.</p>`;
+    .join(
+      "",
+    )}</ul><p>${escapeHtml(t("Kartu zamestnanca nájdete vo Fakteri v časti")).trim()} <a href="https://www.faktero.sk/zamestnanci">${escapeHtml(t("Zamestnanci"))}</a>.</p>`;
   return { text, html };
 }
 
@@ -80,7 +88,9 @@ export async function runEmployeeReminders() {
   const { data: firmy, error } = await supabaseAdmin
     .from("companies")
     .select("id, name, email, created_by, country")
-    .eq("module_employees", true);
+    .eq("module_employees", true)
+    // Testovacia firma (náhľad) e-maily neposiela.
+    .is("testovacia_pre", null);
   if (error) throw new Error(error.message);
   // Nemecká firma agendu zamestnancov nemá (agendy-krajiny.ts) — e-mail by ju posielal na stránku, ktorá ju odmietne.
   const preKrajinu = (firmy ?? []).filter((f) =>
@@ -88,14 +98,21 @@ export async function runEmployeeReminders() {
   );
 
   const dnesnyDen = dnes();
-  const vysledky: { company_id: string; pripomienok: number; odoslanych: number; chyba?: string }[] = [];
+  const vysledky: {
+    company_id: string;
+    pripomienok: number;
+    odoslanych: number;
+    chyba?: string;
+  }[] = [];
 
   for (const f of preKrajinu) {
     try {
       const [zam, zml, log] = await Promise.all([
         supabaseAdmin
           .from("employees")
-          .select("id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, sp_deregistered_at, zp_deregistered_at, medical_check_due, bozp_training_due")
+          .select(
+            "id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, sp_deregistered_at, zp_deregistered_at, medical_check_due, bozp_training_due",
+          )
           .eq("company_id", f.id)
           // Nedávno ukončení — česká firma ich potrebuje na odhlášky, slovenská ich preskočí.
           .or(`status.eq.active,end_date.gte.${pridajDni(dnesnyDen, -ODHLASKY_SPATNE_DNI)}`),
@@ -104,14 +121,24 @@ export async function runEmployeeReminders() {
           .select("id, employee_id, kind, start_date, end_date, probation_end, status")
           .eq("company_id", f.id)
           .eq("status", "active"),
-        supabaseAdmin.from("employee_reminder_log").select("employee_id, kind, due_date").eq("company_id", f.id),
+        supabaseAdmin
+          .from("employee_reminder_log")
+          .select("employee_id, kind, due_date")
+          .eq("company_id", f.id),
       ]);
       if (zam.error) throw new Error(zam.error.message);
 
       const krajina = krajinaZamestnancov((f as { country?: string | null }).country);
       if (krajina === "CZ") await nacitajSlovnik("cs");
-      const vsetky = pripomienkyZamestnancov(dnesnyDen, (zam.data ?? []) as any, (zml.data ?? []) as any, krajina);
-      const poslane = new Set((log.data ?? []).map((r: any) => `${r.employee_id}|${r.kind}|${r.due_date}`));
+      const vsetky = pripomienkyZamestnancov(
+        dnesnyDen,
+        (zam.data ?? []) as any,
+        (zml.data ?? []) as any,
+        krajina,
+      );
+      const poslane = new Set(
+        (log.data ?? []).map((r: any) => `${r.employee_id}|${r.kind}|${r.due_date}`),
+      );
       const nove = vsetky.filter((p) => !poslane.has(`${p.employee_id}|${p.druh}|${p.termin}`));
       if (!nove.length) {
         vysledky.push({ company_id: f.id, pripomienok: vsetky.length, odoslanych: 0 });
@@ -120,11 +147,20 @@ export async function runEmployeeReminders() {
 
       let prijemca = f.email as string | null;
       if (!prijemca && f.created_by) {
-        const { data: p } = await supabaseAdmin.from("profiles").select("email").eq("id", f.created_by).maybeSingle();
+        const { data: p } = await supabaseAdmin
+          .from("profiles")
+          .select("email")
+          .eq("id", f.created_by)
+          .maybeSingle();
         prijemca = (p?.email as string | null) ?? null;
       }
       if (!prijemca) {
-        vysledky.push({ company_id: f.id, pripomienok: vsetky.length, odoslanych: 0, chyba: "firma nemá e-mail" });
+        vysledky.push({
+          company_id: f.id,
+          pripomienok: vsetky.length,
+          odoslanych: 0,
+          chyba: "firma nemá e-mail",
+        });
         continue;
       }
 
@@ -141,12 +177,22 @@ export async function runEmployeeReminders() {
       });
       // Zapísať až po úspešnom odoslaní — pri chybe to cron skúsi zajtra znova.
       await supabaseAdmin.from("employee_reminder_log").upsert(
-        nove.map((p) => ({ company_id: f.id, employee_id: p.employee_id, kind: p.druh, due_date: p.termin })),
+        nove.map((p) => ({
+          company_id: f.id,
+          employee_id: p.employee_id,
+          kind: p.druh,
+          due_date: p.termin,
+        })),
         { onConflict: "employee_id,kind,due_date", ignoreDuplicates: true },
       );
       vysledky.push({ company_id: f.id, pripomienok: vsetky.length, odoslanych: nove.length });
     } catch (e: any) {
-      vysledky.push({ company_id: f.id, pripomienok: 0, odoslanych: 0, chyba: e?.message ?? "chyba" });
+      vysledky.push({
+        company_id: f.id,
+        pripomienok: 0,
+        odoslanych: 0,
+        chyba: e?.message ?? "chyba",
+      });
     }
   }
   return { den: dnesnyDen, datum: datumSk(dnesnyDen), firiem: (firmy ?? []).length, vysledky };

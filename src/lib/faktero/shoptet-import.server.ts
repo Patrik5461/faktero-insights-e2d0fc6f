@@ -20,9 +20,13 @@ export async function spustiAutoImportShoptetu(): Promise<{
     .from("shoptet_napojenia")
     .select("company_id, token_sifrovany, auto_stavy, auto_od")
     .eq("auto_import", true);
+  // Testovacie firmy Shoptet nevolajú — preskočia sa potichu.
+  const { testovacieZoZoznamu } = await import("./testovacia-firma.server");
+  const testovacie = await testovacieZoZoznamu((napojenia ?? []).map((n) => n.company_id));
+  if (testovacie.size) console.info("[shoptet] preskočené testovacie firmy:", [...testovacie]);
   let faktury = 0;
   let chyby = 0;
-  for (const n of napojenia ?? []) {
+  for (const n of (napojenia ?? []).filter((n) => !testovacie.has(n.company_id))) {
     let chyba: string | null = null;
     let vystavene = 0;
     try {

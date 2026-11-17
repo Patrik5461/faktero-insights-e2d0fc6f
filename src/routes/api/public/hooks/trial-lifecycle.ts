@@ -29,7 +29,9 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
           const in4 = new Date(Date.now() + 4 * 86_400_000).toISOString();
           const { data: expiring } = await supabaseAdmin
             .from("subscriptions")
-            .select("company_id, trial_ends_at, trial_reminder_sent_at, companies(name, email)")
+            .select(
+              "company_id, trial_ends_at, trial_reminder_sent_at, companies(name, email, testovacia_pre)",
+            )
             .eq("status", "trialing")
             .is("trial_reminder_sent_at", null)
             .gte("trial_ends_at", in3)
@@ -54,7 +56,9 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
 
           // Pôvodne sekvenčne: e-mail + DB update na každý riadok, jeden po druhom.
           // Po 5 naraz — Resend má rate limit, takže neobmedzený Promise.all nie.
-          await runInBatches(expiring ?? [], 5, async (row) => {
+          // Testovacia firma (náhľad) nemá trial a e-mail o ňom nedostane.
+          const { bezVnorenychTestovacich } = await import("@/lib/faktero/testovacia-firma-crony");
+          await runInBatches(bezVnorenychTestovacich((expiring ?? []) as any[]), 5, async (row) => {
             const to = (row as any).companies?.email as string | undefined;
             const companyName = escapeHtml((row as any).companies?.name ?? "Váš účet vo Faktere");
             if (!to || !apiKey) {

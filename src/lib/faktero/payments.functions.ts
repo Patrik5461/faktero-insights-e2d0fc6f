@@ -47,6 +47,7 @@ export const savePaymentProvider = createServerFn({ method: "POST" })
       _user_id: userId,
     });
     if (!isAdmin) throw new Error("Nemáte oprávnenie meniť nastavenia platieb.");
+    await (await import("./testovacia-firma-banka.server")).zastavBranuTestovacej(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { encryptSecret } = await import("./payment-crypto.server");
     const { randomBytes } = await import("crypto");
@@ -101,6 +102,7 @@ export const testPaymentProvider = createServerFn({ method: "POST" })
       _user_id: userId,
     });
     if (!isAdmin) throw new Error("Nemáte oprávnenie.");
+    await (await import("./testovacia-firma-banka.server")).zastavBranuTestovacej(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { decryptSecret } = await import("./payment-crypto.server");
     const { merchantTestConnection } = await import("./payments-gopay.server");
@@ -290,6 +292,7 @@ export const syncInvoicePayment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await overPristup({ supabase, userId }, data.companyId, { oblast: "faktury", zapis: true });
+    await (await import("./testovacia-firma-banka.server")).zastavBranuTestovacej(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { decryptSecret } = await import("./payment-crypto.server");
     const { merchantGetPayment } = await import("./payments-gopay.server");
@@ -395,6 +398,9 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
   .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+    const { HLASKA_TESTOVACIA_ONLINE_PLATBA } = await import("./testovacia-firma-banka.server");
+    await zastavAkTestovacia(data.companyId, HLASKA_TESTOVACIA_ONLINE_PLATBA);
     const { data: inv, error } = await supabase
       .from("invoices")
       .select("id, company_id, invoice_number, total, advance_amount, currency, status")
@@ -516,6 +522,10 @@ export const startPaymentPublic = createServerFn({ method: "POST" })
     if (link.expires_at && new Date(link.expires_at) < new Date())
       throw new Error("Platnosť odkazu vypršala.");
     if (link.gw_url && link.status === "pending") return { gwUrl: link.gw_url };
+    // Odkaz testovacej firmy GoPay nikdy nezaloží (vytvorenie odkazu to už zastaví).
+    const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+    const { HLASKA_TESTOVACIA_ONLINE_PLATBA } = await import("./testovacia-firma-banka.server");
+    await zastavAkTestovacia(link.company_id, HLASKA_TESTOVACIA_ONLINE_PLATBA);
 
     const { data: prov } = await supabaseAdmin
       .from("company_payment_providers")

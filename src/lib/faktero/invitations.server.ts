@@ -14,6 +14,9 @@ function randomToken(): string {
     .join("");
 }
 
+/** Hláška pri pozvánke do testovacej firmy (kľúč prekladu = text). */
+export const HLASKA_TESTOVACIA_POZVANKA = "Členov testovacej firmy spravujete v skutočnej firme.";
+
 export type RolaPozvanky = "admin" | "accountant" | "employee" | "custom";
 
 export async function vytvorPozvanku(
@@ -36,6 +39,9 @@ export async function vytvorPozvanku(
     throw new Error("Neplatná rola pozvánky.");
   const email = a.email.trim().toLowerCase();
   if (!email || !email.includes("@")) throw new Error("Neplatný email");
+  // Členovia testovacej firmy sa zrkadlia zo skutočnej — vlastné pozvánky nemá.
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(a.companyId, HLASKA_TESTOVACIA_POZVANKA);
   const token = randomToken();
 
   const { data: inv, error } = await supabaseAdmin

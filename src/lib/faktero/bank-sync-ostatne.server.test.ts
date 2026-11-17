@@ -14,6 +14,15 @@ const pripojenia: any[] = [];
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
     from: (tabulka: string) => {
+      // Overenie testovacích firiem — tu žiadna testovacia nie je.
+      if (tabulka === "companies") {
+        const f: any = {
+          select: () => f,
+          in: () => f,
+          not: async () => ({ data: [], error: null }),
+        };
+        return f;
+      }
       const dotaz: any = {
         select: () => dotaz,
         in: (_s: string, hodnoty: string[]) => {

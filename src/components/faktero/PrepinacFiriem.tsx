@@ -16,13 +16,35 @@ import { HLADANIE_OD } from "@/lib/faktero/hladanie-firiem";
 import { citajPosledneFirmy, zoradFirmy } from "@/lib/faktero/poradie-firiem";
 import { popisRoly } from "@/lib/faktero/rola-popis";
 import { useT } from "@/lib/i18n/useT";
+import { jeTestovacia } from "@/lib/faktero/testovacia-firma";
+import { zoradPrepinacSTestovacimi } from "@/lib/faktero/testovacia-firma-ui";
 
 export type FirmaVPrepinaci = {
   id: string;
   name: string;
   ico?: string | null;
   role: string;
+  /** Id skutočnej firmy, ak je táto testovacia. */
+  testovacia_pre?: string | null;
 };
+
+/** Výrazný štítok testovacej firmy (hlavička, zoznamy). Farby sú tokeny stavu „pozor“. */
+export function StitokTestovacej({
+  kratky = false,
+  className = "",
+}: {
+  kratky?: boolean;
+  className?: string;
+}) {
+  const { t } = useT();
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded px-1.5 py-[1px] text-[10px] font-bold uppercase leading-[14px] tracking-wide bg-warning text-warning-foreground ${className}`}
+    >
+      {kratky ? t("Testovacia") : t("Testovacia firma")}
+    </span>
+  );
+}
 
 const FARBY_AVATARA = [
   "from-emerald-500 to-teal-600",
@@ -89,7 +111,8 @@ export function ZoznamFiriem({
     ostatne,
     vsetky,
   } = useMemo(
-    () => zoradFirmy(companies, dotaz, activeId, posledne),
+    // Testovacia firma ide hneď pod svoju skutočnú (zoradSTestovacimi).
+    () => zoradPrepinacSTestovacimi(zoradFirmy(companies, dotaz, activeId, posledne)),
     [companies, dotaz, activeId, posledne],
   );
 
@@ -139,6 +162,7 @@ export function ZoznamFiriem({
   const polozka = (f: FirmaVPrepinaci, i: number) => {
     const vybrana = i === index;
     const aktivna = f.id === activeId;
+    const test = jeTestovacia(f);
     return (
       <div
         key={f.id}
@@ -150,17 +174,29 @@ export function ZoznamFiriem({
         // mousedown, aby pole neprišlo o fokus skôr, než sa klik spracuje
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => onVyber(f.id)}
-        className={`flex min-w-0 cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm ${
-          vybrana ? "bg-secondary" : ""
-        }`}
+        data-testovacia={test ? "" : undefined}
+        className={`flex min-w-0 cursor-pointer items-center gap-2.5 rounded-md py-1.5 pr-2 text-sm ${
+          test ? "pl-7" : "pl-2"
+        } ${vybrana ? "bg-secondary" : ""}`}
       >
-        <AvatarFirmy nazov={f.name} />
+        <AvatarFirmy
+          nazov={f.name}
+          className={test ? "h-5 w-5 text-[10px] opacity-80" : undefined}
+        />
         <span className="min-w-0 flex-1">
-          <span className={`block truncate ${aktivna ? "font-semibold" : "font-medium"}`}>
-            {f.name}
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className={`truncate ${aktivna ? "font-semibold" : "font-medium"}`}>
+              {f.name}
+            </span>
+            {test && <StitokTestovacej kratky />}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {f.ico ? t("IČO {ico}", { ico: f.ico }) : t("Bez IČO")} · {t(popisRoly(f.role))}
+            {test
+              ? t("Skúšanie bez dopadu na ostré údaje")
+              : f.ico
+                ? t("IČO {ico}", { ico: f.ico })
+                : t("Bez IČO")}{" "}
+            · {t(popisRoly(f.role))}
           </span>
         </span>
         {aktivna && <Check className="h-4 w-4 shrink-0 text-primary" aria-label={t("Aktívna")} />}
@@ -247,6 +283,7 @@ export function PrepinacFiriem({
       >
         <AvatarFirmy nazov={active.name} className="h-[17px] w-[17px] rounded-full text-[9px]" />
         <span className="max-w-[160px] truncate font-medium">{active.name}</span>
+        {jeTestovacia(active) && <StitokTestovacej />}
         <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent

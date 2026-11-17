@@ -31,11 +31,23 @@ export const zmazFirmuFn = createServerFn({ method: "POST" })
     if (!clenstvo) throw new Error("K tejto firme nemáte prístup.");
     if (clenstvo.role !== "owner") throw new Error("Zmazať firmu môže len jej majiteľ.");
 
-    const { count: mojeFirmy } = await supabase
+    // Testovacia firma (náhľad) sa za firmu nepočíta — s rodičom by inak „druhá
+    // firma" vždy existovala a zmazať by sa dala aj jediná skutočná.
+    const { data: moje } = await supabase
       .from("company_users")
-      .select("company_id", { count: "exact", head: true })
-      .eq("user_id", userId);
-    if ((mojeFirmy ?? 0) <= 1) {
+      .select("company_id, companies!inner(testovacia_pre)")
+      .eq("user_id", userId)
+      .is("companies.testovacia_pre", null);
+    const mojeFirmy = (moje ?? []).length;
+    const mazemTestovaciu = !(moje ?? []).some((r: any) => r.company_id === data.company_id);
+    // Testovacia firma sa samostatne nemaže — znova by sa nedala založiť.
+    // Údaje z nej vymaže tlačidlo v Nastaveniach, zanikne so skutočnou firmou.
+    if (mazemTestovaciu) {
+      throw new Error(
+        "Testovacia firma sa maže spolu so skutočnou firmou. Jej údaje vymažete v Nastaveniach firmy → Testovacia firma.",
+      );
+    }
+    if (mojeFirmy <= 1) {
       throw new Error(
         "Toto je vaša jediná firma. Ak chcete skončiť, zrušte účet v Nastaveniach — má odklad, počas ktorého sa to dá vziať späť.",
       );
@@ -52,8 +64,12 @@ export const zmazFirmuFn = createServerFn({ method: "POST" })
       throw new Error("Názov firmy nesedí — prepíšte ho presne tak, ako je uvedený.");
     }
 
-    const { zmazSuboryFirmy } = await import("@/lib/faktero/ucet-zrusenie.server");
-    const subory = await zmazSuboryFirmy(data.company_id);
+    const { zmazSuboryFirmy, testovaciaFirmaRodica } =
+      await import("@/lib/faktero/ucet-zrusenie.server");
+    // Testovaciu firmu zmaže RPC s rodičom; jej prílohy treba zmazať zvlášť.
+    const testovacia = await testovaciaFirmaRodica(data.company_id);
+    let subory = testovacia ? await zmazSuboryFirmy(testovacia) : 0;
+    subory += await zmazSuboryFirmy(data.company_id);
     const { error } = await (supabaseAdmin as any).rpc("faktero_zmaz_firmu", {
       _company_id: data.company_id,
     });

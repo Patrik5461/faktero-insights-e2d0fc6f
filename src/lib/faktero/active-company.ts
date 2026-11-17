@@ -43,7 +43,7 @@ export async function fetchMyCompanies() {
   const { data, error } = await supabase
     .from("company_users")
     .select(
-      "role, permissions, company:companies(id, name, ico, logo_url, module_employees, country)",
+      "role, permissions, company:companies(id, name, ico, logo_url, module_employees, country, testovacia_pre)",
     )
     .eq("user_id", uid)
     .order("created_at", { ascending: true });

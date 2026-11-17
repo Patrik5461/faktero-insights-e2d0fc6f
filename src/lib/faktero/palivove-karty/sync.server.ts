@@ -507,6 +507,19 @@ export async function synchronizujPripojenie(
   if (!pripojenie || !pripojenie.aktivne) {
     return { stav: "preskocene", sprava: "Pripojenie nie je aktívne.", ...prazdny };
   }
+  // Testovacia firma poskytovateľa nevolá (cron ju preskočí potichu).
+  const { jeTestovaciaFirma } = await import("../testovacia-firma.server");
+  if (await jeTestovaciaFirma(String(pripojenie.company_id))) {
+    console.info(
+      "[palivove-karty] testovacia firma, synchronizácia preskočená:",
+      pripojenie.company_id,
+    );
+    return {
+      stav: "preskocene",
+      sprava: "Testovacia firma — palivové karty sa v testovacej firme nesynchronizujú.",
+      ...prazdny,
+    };
+  }
   if (metaPoskytovatela(pripojenie.poskytovatel)?.nahratie) {
     return {
       stav: "preskocene",

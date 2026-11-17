@@ -44,6 +44,7 @@ function pametovaDb(tabulky: Record<string, any[]>) {
       select: () => q,
       eq: (s: string, v: any) => (filtre.push((r) => r[s] === v), q),
       neq: (s: string, v: any) => (filtre.push((r) => r[s] !== v), q),
+      is: (s: string, v: any) => (filtre.push((r) => (r[s] ?? null) === v), q),
       or: () => q,
       order: (stl: string, o: any) => ((zoradenie ??= { stl, asc: o?.ascending !== false }), q),
       limit: (n: number) => ((limit = n), q),

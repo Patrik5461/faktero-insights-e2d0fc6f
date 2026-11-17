@@ -162,7 +162,9 @@ export async function runStrazcaKonektora(vstup?: {
     .from("companies")
     .select("id, name, email, created_by, pohoda_konektor_upozorneny_at, suspended_at")
     .in("id", [...new Set(firmyIds)])
-    .is("suspended_at", null);
+    .is("suspended_at", null)
+    // Testovacia firma nemá konektor a e-mail tu ide mimo strážcu odosielania.
+    .is("testovacia_pre", null);
 
   const mlciace = mlciaceFirmy(kluce ?? [], firmy ?? [], dnes, dni, zDennika);
   const podlaId = new Map((firmy ?? []).map((f: Riadok) => [String(f.id), f]));

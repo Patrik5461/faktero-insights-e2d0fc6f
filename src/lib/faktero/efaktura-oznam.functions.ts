@@ -28,7 +28,11 @@ export const stavOznamuEfakturyFn = createServerFn({ method: "POST" })
 
     const [{ data: firma }, { data: profil }, { data: oznam }, { data: pozvanky }] =
       await Promise.all([
-        supabase.from("companies").select("country, dic").eq("id", data.company_id).maybeSingle(),
+        supabase
+          .from("companies")
+          .select("country, dic, testovacia_pre")
+          .eq("id", data.company_id)
+          .maybeSingle(),
         supabase
           .from("efaktura_profiles")
           .select("enabled, epostak_firm_id")
@@ -50,6 +54,10 @@ export const stavOznamuEfakturyFn = createServerFn({ method: "POST" })
           .order("created_at", { ascending: false })
           .limit(1),
       ]);
+
+    // Testovacia firma (náhľad) eFaktúru neaktivuje — oznam o nej by len mýlil.
+    if ((firma as { testovacia_pre?: string | null } | null)?.testovacia_pre)
+      return { rola, relevantne: false as const };
 
     const { jeEfakturaAktivovana, jePozvankaPlatna } = await import("./efaktura-oznam");
     const { odkazPozvanky } = await import("./efaktura-oznam.server");

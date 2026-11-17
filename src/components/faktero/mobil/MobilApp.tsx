@@ -168,6 +168,7 @@ import { BehNaPozadiOkno } from "@/components/faktero/mobil/BehNaPozadi";
 import { PovoleniaJazd } from "@/components/faktero/mobil/PovoleniaJazd";
 import { VytvorFirmu } from "@/components/faktero/mobil/VytvorFirmu";
 import { OverenieKodu, Prihlasenie, VyberFirmy, Zamok } from "@/components/faktero/mobil/Vstup";
+import { StitokTestovacejApka } from "@/components/faktero/mobil/StitokTestovacej";
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -196,7 +197,7 @@ import type { Kluc } from "@/lib/mobile/preklady";
  * dostať sa dnu, vedieť za ktorú firmu, a odfotiť doklad. Nič viac tu nie je.
  */
 
-type Firma = { id: string; name: string };
+type Firma = { id: string; name: string; testovacia_pre?: string | null };
 type Uhrada = "hotovost" | "karta" | "prevod";
 export type Krok =
   | "nacitavam"
@@ -1488,6 +1489,7 @@ function Domov({
                 <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-app-text">
                   {firma?.name ?? t("panel.bezFirmy")}
                 </span>
+                <StitokTestovacejApka firma={firma} />
                 {viacFiriem && (
                   <span className="shrink-0 text-[12px] text-app-text-2">{t("ponuky.zmenit")}</span>
                 )}

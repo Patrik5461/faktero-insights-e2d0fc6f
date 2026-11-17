@@ -57,6 +57,7 @@ export const pripojWise = createServerFn({ method: "POST" })
   .validator((d) => FirmaVstup.extend({ token: z.string().trim().min(20).max(200) }).parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { nacitajProfil, vyrobKluce } = await import("./wise.server");
     const profil = await nacitajProfil(data.token);
 
@@ -126,6 +127,7 @@ export const synchronizujWiseUcty = createServerFn({ method: "POST" })
   .validator((d) => FirmaVstup.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { nacitajUcty } = await import("./wise.server");
     const ucty = await nacitajUcty(spojenie);
@@ -151,6 +153,7 @@ export const synchronizujWisePohyby = createServerFn({ method: "POST" })
   .validator((d) => FirmaVstup.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
 
     const { nacitajPohyby } = await import("./wise.server");

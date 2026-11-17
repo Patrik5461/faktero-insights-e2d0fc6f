@@ -86,7 +86,10 @@ export async function firmyPouzivatela(
     .map((c) => c.company_id as string);
   if (!ids.length) return [];
   const [{ data: firmy }, { data: ucty }] = await Promise.all([
-    supabaseAdmin.from("companies").select("id, name, ico, dic, ic_dph, iban").in("id", ids),
+    supabaseAdmin
+      .from("companies")
+      .select("id, name, ico, dic, ic_dph, iban, testovacia_pre")
+      .in("id", ids),
     supabaseAdmin.from("bank_accounts").select("company_id, iban").in("company_id", ids),
   ]);
   return ((firmy ?? []) as any[]).map((f) => ({
@@ -95,6 +98,7 @@ export async function firmyPouzivatela(
     ico: f.ico ?? null,
     ic_dph: f.ic_dph ?? null,
     dic: f.dic ?? null,
+    testovacia_pre: f.testovacia_pre ?? null,
     ibany: [
       f.iban,
       ...((ucty ?? []) as any[]).filter((u) => u.company_id === f.id).map((u) => u.iban),

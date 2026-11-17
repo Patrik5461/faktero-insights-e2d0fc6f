@@ -6,6 +6,7 @@ import { vsVystavenej } from "@/lib/faktero/variabilny-symbol";
 import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
 import { odpoctyZapisatelne, suhrnOdpoctov, type OdpocetZalohy } from "./zalohy-odpocty";
+import { jeTestovacia } from "./testovacia-firma";
 
 /**
  * ISDOC — český národný formát elektronickej faktúry.
@@ -189,7 +190,12 @@ export function buildIsdoc(opts: {
     Doklad bez IČO dodávateľa je v Česku neplatný sám o sebe — podateľňa ho
     odmietne. Lepšie to povedať tu než vydať súbor, ktorý nikde neprejde.
   */
-  if (!String(company?.ico ?? "").trim()) {
+  /*
+    Testovacia firma IČO nemá zámerne (aby ju párovanie podľa IČO nikdy
+    nevybralo namiesto skutočnej). Jej ISDOC je len na skúšku — dodávateľ
+    dostane prázdne `ID` a `UserID` ako odberateľ bez IČO.
+  */
+  if (!String(company?.ico ?? "").trim() && !jeTestovacia(company as any)) {
     throw new Error(
       "Firma nemá vyplnené IČO. Doplňte ho v nastaveniach firmy — bez neho ISDOC neprejde.",
     );
@@ -214,7 +220,8 @@ export function buildIsdoc(opts: {
    * mena + kurz 1" by z 10 000 € spravila 10 000 Kč.
    */
   const domaca = domacaMena(opts.company?.country);
-  const zaJednotku = mena !== domaca ? domacejZaJednotku(invoice.exchange_rate, opts.company?.country) : 0;
+  const zaJednotku =
+    mena !== domaca ? domacejZaJednotku(invoice.exchange_rate, opts.company?.country) : 0;
   const cudzia = zaJednotku > 0;
   const hlavickaKurzu = cudzia
     ? kurzZaMnozstvo(invoice.exchange_rate, opts.company?.country)
@@ -332,7 +339,11 @@ export function buildIsdoc(opts: {
       (r) => `
    <TaxedDeposit>
     <ID>${esc(o.doklad ?? o.zaloha)}</ID>
-    <VariableSymbol>${esc(String(o.vs ?? o.zaloha).replace(/\D/g, "").slice(0, 10))}</VariableSymbol>
+    <VariableSymbol>${esc(
+      String(o.vs ?? o.zaloha)
+        .replace(/\D/g, "")
+        .slice(0, 10),
+    )}</VariableSymbol>
     ${sumaCurrPred("TaxableDepositAmount", r.zaklad)}
     ${sumaCurrPred("TaxInclusiveDepositAmount", r.zaklad + r.dph)}
     <ClassifiedTaxCategory>
@@ -342,7 +353,9 @@ export function buildIsdoc(opts: {
    </TaxedDeposit>`,
     ),
   );
-  const zalohyXml = zlozky.length ? `\n  <TaxedDeposits>${zlozky.join("")}\n  </TaxedDeposits>` : "";
+  const zalohyXml = zlozky.length
+    ? `\n  <TaxedDeposits>${zlozky.join("")}\n  </TaxedDeposits>`
+    : "";
 
   const ucet = ucetZIbanu(company.iban);
   /*

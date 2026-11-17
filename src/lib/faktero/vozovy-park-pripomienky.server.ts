@@ -11,6 +11,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { terminyNaRiesenie, type Termin } from "./vozovy-park";
+import { testovacieZoZoznamu } from "./testovacia-firma.server";
 
 function escapeHtml(s: string) {
   return String(s).replace(
@@ -86,6 +87,11 @@ export async function runVehicleReminders() {
       poFirmach.set(v.company_id, zoznam);
     }
   }
+
+  // Testovacia firma (náhľad) e-maily neposiela. Keď sa to nedá overiť, cron
+  // radšej spadne (fail-closed), než by poslal pripomienku za náhľad.
+  const testovacie = await testovacieZoZoznamu([...poFirmach.keys()]);
+  for (const id of testovacie) poFirmach.delete(id);
 
   const vysledky: { company_id: string; terminov: number; odoslanych: number; chyba?: string }[] =
     [];

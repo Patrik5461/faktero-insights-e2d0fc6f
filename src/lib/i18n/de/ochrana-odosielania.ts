@@ -50,4 +50,6 @@ export default {
   "Predmet a detail": "Betreff und Detail",
   Ukážka: "Vorschau",
   "Overené firmy": "Geprüfte Unternehmen",
+  "Testovacia firma — e-mail sa neodoslal (náhľad)":
+    "Testfirma — die E-Mail wurde nicht gesendet (Vorschau)",
 };

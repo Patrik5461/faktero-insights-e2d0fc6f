@@ -28,7 +28,8 @@ import { useT } from "@/lib/i18n/useT";
 import { HLADANIE_OD } from "@/lib/faktero/hladanie-firiem";
 import { citajPosledneFirmy, zoradFirmy } from "@/lib/faktero/poradie-firiem";
 import { riadkyPreIds } from "@/lib/faktero/strankovanie";
-import { AvatarFirmy } from "@/components/faktero/PrepinacFiriem";
+import { AvatarFirmy, StitokTestovacej } from "@/components/faktero/PrepinacFiriem";
+import { zoradPrepinacSTestovacimi } from "@/lib/faktero/testovacia-firma-ui";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { useKlikNaRiadok } from "@/hooks/useKlikNaRiadok";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,8 @@ type Row = {
   country: string | null;
   role: string;
   created_at: string;
+  /** Id skutočnej firmy, ak je táto testovacia. */
+  testovacia_pre: string | null;
 };
 
 /** Farby štítkov podľa vážnosti — rovnaké ako doteraz pri banke. */
@@ -93,7 +96,7 @@ function CompanyManagementPage() {
     if (!auth.user) return;
     const { data, error } = await supabase
       .from("company_users")
-      .select("role, company:companies(id, name, ico, country, created_at)")
+      .select("role, company:companies(id, name, ico, country, created_at, testovacia_pre)")
       .eq("user_id", auth.user.id)
       .order("created_at", { ascending: true });
     if (error) {
@@ -108,6 +111,7 @@ function CompanyManagementPage() {
         ico: r.company.ico ?? null,
         country: r.company.country ?? null,
         created_at: r.company.created_at,
+        testovacia_pre: r.company.testovacia_pre ?? null,
       })),
     );
   }
@@ -149,7 +153,8 @@ function CompanyManagementPage() {
   const roly = useMemo(() => [...new Set((rows ?? []).map((r) => r.role))], [rows]);
   const zobrazene = useMemo(() => {
     const podlaRoly = (rows ?? []).filter((r) => !rola || r.role === rola);
-    return zoradFirmy(podlaRoly, hladanie, activeId, posledne).vsetky;
+    // Testovacia firma hneď pod svojou skutočnou.
+    return zoradPrepinacSTestovacimi(zoradFirmy(podlaRoly, hladanie, activeId, posledne)).vsetky;
   }, [rows, rola, hladanie, activeId, posledne]);
   const sNastrojmi = (rows?.length ?? 0) >= HLADANIE_OD;
   // Účtovná kancelária má desiatky firiem — po 10/20/50/100 na stranu.
@@ -311,18 +316,22 @@ function CompanyManagementPage() {
     );
   };
 
-  const nazovFirmy = (r: Row) =>
-    r.id === activeId ? (
-      <span className="min-w-0 break-words font-semibold">{r.name}</span>
-    ) : (
-      <button
-        type="button"
-        onClick={() => switchTo(r.id)}
-        className="min-w-0 break-words text-left font-semibold hover:text-primary hover:underline"
-      >
-        {r.name}
-      </button>
-    );
+  const nazovFirmy = (r: Row) => (
+    <>
+      {r.id === activeId ? (
+        <span className="min-w-0 break-words font-semibold">{r.name}</span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => switchTo(r.id)}
+          className="min-w-0 break-words text-left font-semibold hover:text-primary hover:underline"
+        >
+          {r.name}
+        </button>
+      )}
+      {r.testovacia_pre && <StitokTestovacej kratky />}
+    </>
+  );
 
   const akcie = (r: Row) => (
     <div className="inline-flex flex-wrap justify-end gap-2">
@@ -362,6 +371,8 @@ function CompanyManagementPage() {
             >
               {t("Upraviť")}
             </button>
+            {/* Členov testovacej firmy určuje skutočná firma — pozývať sa do nej nedá. */}
+            {!r.testovacia_pre && (
             <button
               type="button"
               onClick={otvor}
@@ -369,13 +380,18 @@ function CompanyManagementPage() {
             >
               {t("Pozvať")}
             </button>
+            )}
           </>
         );
       })()}
       {/* Skúšobná firma sa dala doteraz len založiť. Mazať smie
           majiteľ a len keď mu ostane iná — poslednú firmu rieši
           zrušenie účtu, ktoré má odklad. */}
-      {r.role === "owner" && (rows?.length ?? 0) > 1 && (
+      {/* Testovacia firma sa maže spolu so skutočnou; testovacie sa do „ostane
+          mu iná“ nerátajú. */}
+      {r.role === "owner" &&
+        !r.testovacia_pre &&
+        (rows ?? []).filter((x) => !x.testovacia_pre).length > 1 && (
         <button
           onClick={() => setMazem(r)}
           className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
@@ -470,7 +486,11 @@ function CompanyManagementPage() {
             <div
               key={r.id}
               {...karta}
-              className={cn("rounded-xl border border-border bg-card p-4 text-sm shadow-sm", karta.className)}
+              className={cn(
+                "rounded-xl border border-border bg-card p-4 text-sm shadow-sm",
+                r.testovacia_pre && "ml-6",
+                karta.className,
+              )}
             >
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <AvatarFirmy nazov={r.name} />
@@ -548,7 +568,7 @@ function CompanyManagementPage() {
                   vypnute={r.id === activeId}
                   className="border-t border-border align-top"
                 >
-                  <td className="min-w-[220px] px-4 py-3">
+                  <td className={cn("min-w-[220px] py-3 pr-4", r.testovacia_pre ? "pl-10" : "pl-4")}>
                     <div className="flex min-w-0 items-center gap-2">
                       <AvatarFirmy nazov={r.name} />
                       {nazovFirmy(r)}

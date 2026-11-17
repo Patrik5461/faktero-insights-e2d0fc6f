@@ -147,9 +147,9 @@ export function isPushConfigured() {
   const fcm = Boolean(process.env.FCM_PROJECT_ID && process.env.FCM_SERVICE_ACCOUNT_JSON);
   const apns = Boolean(
     process.env.APNS_KEY_ID &&
-      process.env.APNS_TEAM_ID &&
-      process.env.APNS_PRIVATE_KEY &&
-      process.env.APNS_BUNDLE_ID,
+    process.env.APNS_TEAM_ID &&
+    process.env.APNS_PRIVATE_KEY &&
+    process.env.APNS_BUNDLE_ID,
   );
   return fcm || apns;
 }
@@ -189,6 +189,14 @@ export async function sendPush(input: SendInput) {
   if (input.user_id) {
     query = query.eq("id", input.user_id);
   } else if (input.company_id) {
+    // Testovacia firma upozornenia do telefónu neposiela (potichu, nie chyba pre cron).
+    // Fail-closed: keď sa firma nedá overiť, push sa radšej nepošle.
+    const { jeTestovaciaFirma } = await import("./testovacia-firma.server");
+    const test = await jeTestovaciaFirma(input.company_id).catch(() => true);
+    if (test) {
+      console.log("[push] testovacia firma preskočená:", input.company_id);
+      return { ok: true, sent: 0, skipped: true, reason: "testovacia" };
+    }
     const { data: members } = await supabaseAdmin
       .from("company_users")
       .select("user_id")

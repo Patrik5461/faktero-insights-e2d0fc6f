@@ -639,6 +639,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.email": "E-mail",
   "app.heslo": "Jelszó",
   "app.vyberteFirmu": "Válasszon céget",
+  "app.testovacia": "TESZT",
   "app.doVybranejFirmy": "A bizonylatok a kiválasztott céghez kerülnek",
   "app.staciNazov": "A név elég, a többit később is kiegészítheti",
   "app.fakturyADoklady": "Számlák és bizonylatok",

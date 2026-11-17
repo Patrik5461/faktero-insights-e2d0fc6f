@@ -89,6 +89,7 @@ export const saveCommanderConnection = createServerFn({ method: "POST" })
   .validator((d: unknown) => SaveSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { encryptSecret } = await import("./payment-crypto.server");
     const { data: existing } = await supabaseAdmin
@@ -171,6 +172,15 @@ async function logSync(
   }
 }
 
+/** Testovacia firma sa na Commander GPS nepripája (nič nejde von). */
+async function zastavTestovaciu(companyId: string) {
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(
+    companyId,
+    "Testovacia firma — Commander GPS sa v testovacej firme nepripája.",
+  );
+}
+
 const DECRYPT_MSG =
   "Prihlasovacie údaje Commander GPS je potrebné znova zadať. Toto sa stáva po zmene bezpečnostného kľúča systému. Zadajte prosím váš Commander username a heslo znova.";
 
@@ -179,6 +189,7 @@ export const testCommander = createServerFn({ method: "POST" })
   .validator((d: { companyId: string; username?: string; password?: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { commanderTest, CommanderAuthError, CommanderRateLimitError } =
       await import("./commander.server");
     const { isDecryptError } = await import("./payment-crypto.server");
@@ -218,6 +229,7 @@ export const syncCommanderVehicles = createServerFn({ method: "POST" })
   .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { commanderListVehicles, CommanderAuthError, CommanderRateLimitError, mapFuelType } =
       await import("./commander.server");
@@ -336,6 +348,7 @@ export const linkCommanderVehicle = createServerFn({ method: "POST" })
   .validator((d: { companyId: string; linkId: string; faktero_vehicle_id: string | null }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("commander_vehicle_links")
@@ -431,6 +444,7 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
   .validator((d: unknown) => SyncRidesSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
+    await zastavTestovaciu(data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const {
       commanderListRides,

@@ -39,6 +39,10 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
             .eq("metadata->>oauth_state", state)
             .maybeSingle();
           if (!conn) return redirect(`${back}?error=invalid_state`);
+          // Testovacia firma sa k banke nepripája (štart pripojenia to už zastaví).
+          await (
+            await import("@/lib/faktero/testovacia-firma-banka.server")
+          ).zastavBankuTestovacej(conn.company_id);
           const platiDo = (conn.metadata as any)?.oauth_state_expires as string | undefined;
           if (!platiDo || Date.parse(platiDo) < Date.now())
             return redirect(`${back}?error=expired_state`);
@@ -124,7 +128,7 @@ async function handlePaymentCallback(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: row } = await supabaseAdmin
     .from("bank_payments")
-    .select("id, purchase_invoice_id, payment_id, authorization_id, metadata, status")
+    .select("id, company_id, purchase_invoice_id, payment_id, authorization_id, metadata, status")
     .eq("id", paymentRowId)
     .maybeSingle();
 
@@ -143,6 +147,10 @@ async function handlePaymentCallback(
   }
 
   try {
+    // Platba testovacej firmy sa do banky nikdy neodošle (štart platby to už zastaví).
+    await (
+      await import("@/lib/faktero/testovacia-firma-banka.server")
+    ).zastavPlatbuTestovacej(row.company_id);
     const { getRedirectUri } = await import("@/lib/faktero/tatrabanka.server");
     const { exchangePaymentCode, submitPayment } =
       await import("@/lib/faktero/tatrabanka-payments.server");

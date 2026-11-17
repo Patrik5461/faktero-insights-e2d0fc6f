@@ -45,6 +45,7 @@ export const pripojFio = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { stiahniFio, zapisVypisFio } = await import("./fio.server");
     const vypis = await stiahniFio(data.token);
 
@@ -130,6 +131,7 @@ export const synchronizujFio = createServerFn({ method: "POST" })
   .validator((d) => PripojenieVstup.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { spojenieFio, stiahniFio, zapisVypisFio } = await import("./fio.server");
     const { conn, supabaseAdmin, token } = await spojenieFio(data.connection_id, data.company_id);
     const vypis = await stiahniFio(token);

@@ -44,8 +44,14 @@ export function navratovaAdresa(): string {
   return `${base}/api/public/transeu/callback`;
 }
 
+const HLASKA_TESTOVACIA_TRANSEU = "Testovacia firma — Trans.eu sa v testovacej firme nepripája.";
+
 /** Údaje aplikácie: vlastné od dopravcu, inak Faktera. */
 export async function konfigTranseu(companyId: string): Promise<KonfigTranseu> {
+  // Cez konfiguráciu ide každé volanie Trans.eu (prihlásenie, token, API) —
+  // testovacia firma sa s ním nespojí nikdy.
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(companyId, HLASKA_TESTOVACIA_TRANSEU);
   const a = await admin();
   const { data } = await a
     .from("transeu_napojenia")
@@ -921,9 +927,13 @@ export async function spustiSyncTranseu(): Promise<{
     .select("company_id, auto_od")
     .eq("auto_sync", true)
     .eq("stav", "pripojene");
+  // Testovacie firmy sa preskočia potichu (konfigTranseu by ich aj tak zastavil).
+  const { testovacieZoZoznamu } = await import("./testovacia-firma.server");
+  const testovacie = await testovacieZoZoznamu((napojenia ?? []).map((n) => n.company_id));
+  if (testovacie.size) console.info("[transeu-sync] preskočené testovacie firmy:", [...testovacie]);
   let objednavky = 0;
   let chyby = 0;
-  for (const n of napojenia ?? []) {
+  for (const n of (napojenia ?? []).filter((n) => !testovacie.has(n.company_id))) {
     try {
       const pred60 = new Date(Date.now() - 60 * 86_400_000).toISOString();
       const od = n.auto_od && n.auto_od > pred60 ? n.auto_od : pred60;

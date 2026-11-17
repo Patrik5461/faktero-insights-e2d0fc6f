@@ -84,10 +84,16 @@ export async function issueSubscriptionInvoiceForPayment(billingPaymentId: strin
   // 3. Kupujúci — snapshot firmy
   const { data: company } = await supabaseAdmin
     .from("companies")
-    .select("id, name, ico, dic, ic_dph, street, city, zip, country, email")
+    .select("id, name, ico, dic, ic_dph, street, city, zip, country, email, testovacia_pre")
     .eq("id", bp.company_id)
     .maybeSingle();
   if (!company) throw new Error("company not found");
+  /*
+    Testovacia firma (náhľad) má predplatné zadarmo a platiť nemá ako. Keby
+    sa platba predsa objavila, doklad za predplatné sa jej nevystaví — nesmie
+    minúť číslo z radu platformových faktúr ani odísť e-mailom.
+  */
+  if (company.testovacia_pre) return { skipped: "test_company" as const };
 
   // 4. Plán (na názov)
   const { data: plan } = await supabaseAdmin

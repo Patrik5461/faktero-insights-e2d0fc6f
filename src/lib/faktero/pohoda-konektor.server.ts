@@ -71,6 +71,26 @@ export type Davka = {
   ciselniky?: boolean;
 };
 
+/** Dávka, v ktorej nie je nič (konektor dostane 204). */
+export function prazdnaDavka(): Davka {
+  return {
+    xml: "",
+    prazdna: true,
+    jobId: null,
+    faktur: 0,
+    dokladov: 0,
+    prijatych: 0,
+    pokladnicnych: 0,
+    zakaznikov: 0,
+    zasob: 0,
+    zakaziek: 0,
+    pohybov: 0,
+    storien: 0,
+    bankovych: 0,
+    preskocene: [],
+  };
+}
+
 /**
  * Ako sa doklad volá v Pohode.
  *
@@ -191,8 +211,18 @@ export async function zostavDavku(
     cast?: "prelom" | "bezny" | null;
   },
 ): Promise<Davka> {
+  /*
+    Testovacia firma do Pohody nič neposiela — konektor dostane prázdnu dávku
+    (204) a nič sa neoznačí ako „na ceste“. Pri chybe overenia sa vyhodí, takže
+    sa tiež nič nepošle (fail-closed).
+  */
+  const { jeTestovaciaFirma } = await import("./testovacia-firma.server");
+  if (await jeTestovaciaFirma(vstup.companyId, supabase)) {
+    console.info("[pohoda-konektor] testovacia firma, dávka sa nevydá:", vstup.companyId);
+    return prazdnaDavka();
+  }
   const rokTeraz = (vstup.dnes ?? new Date()).getFullYear();
-  const vCasti = <T,>(riadky: T[], pole: string): T[] =>
+  const vCasti = <T>(riadky: T[], pole: string): T[] =>
     !vstup.cast
       ? riadky
       : riadky.filter((r: any) => {
@@ -271,7 +301,9 @@ export async function zostavDavku(
   // Prázdne kódy tak, ako ich ukazuje detail („automaticky“), doplnené aj na doklad.
   const faktury = await (
     await import("./clenenie-vystavenej.server")
-  ).zauctovanieNaExport(supabase, vstup.companyId, vCasti(fakturySch, "issue_date"), { ulozit: true });
+  ).zauctovanieNaExport(supabase, vstup.companyId, vCasti(fakturySch, "issue_date"), {
+    ulozit: true,
+  });
 
   const [{ data: dokladyVsetkyRiadky }, { data: pokladnicaRiadky }] = await Promise.all([
     supabase
@@ -295,8 +327,12 @@ export async function zostavDavku(
       .order("id")
       .limit(STROP_DAVKY + pocetNaCeste),
   ]);
-  const dokladyNeschvalene = (dokladyVsetkyRiadky ?? []).filter(neNaCeste("doklad")).slice(0, STROP_DAVKY);
-  const pokladnicaVsetko = (pokladnicaRiadky ?? []).filter(neNaCeste("pokladna")).slice(0, STROP_DAVKY);
+  const dokladyNeschvalene = (dokladyVsetkyRiadky ?? [])
+    .filter(neNaCeste("doklad"))
+    .slice(0, STROP_DAVKY);
+  const pokladnicaVsetko = (pokladnicaRiadky ?? [])
+    .filter(neNaCeste("pokladna"))
+    .slice(0, STROP_DAVKY);
 
   /*
     Prijaté faktúry — len zaúčtované (účtovník ich prešiel, ako v Doklado) a
@@ -318,7 +354,12 @@ export async function zostavDavku(
     .limit(STROP_DAVKY + pocetNaCeste);
   const { zapocitatelna } = await import("./samofakturacia");
   const { prijataAkoDoklad } = await import("./prijate-do-pohody");
-  const { ok: dokladySch } = await lenSchvalene(supabase, vstup.companyId, "doklad", dokladyNeschvalene ?? []);
+  const { ok: dokladySch } = await lenSchvalene(
+    supabase,
+    vstup.companyId,
+    "doklad",
+    dokladyNeschvalene ?? [],
+  );
   const doklady = vCasti(dokladySch, "issue_date");
   /*
     Pokladničný doklad bez pokladne Pohoda nezaloží — `cashAccount` je podľa
@@ -327,13 +368,13 @@ export async function zostavDavku(
   */
   const pokladnicaVCasti = vCasti(pokladnicaVsetko ?? [], "entry_date");
   // Viac pokladní: skratka podľa pokladne pohybu, inak predvolená/firma.
-  const nastPokladni = await (await import("./pokladne.server")).nastaveniaPokladniFirmy(
-    supabase,
-    vstup.companyId,
-    company.pohoda_pokladna,
-  );
+  const nastPokladni = await (
+    await import("./pokladne.server")
+  ).nastaveniaPokladniFirmy(supabase, vstup.companyId, company.pohoda_pokladna);
   const { pohybyBezPokladne } = await import("./export.server");
-  const bezSkratky = new Set(pohybyBezPokladne(pokladnicaVCasti, nastPokladni).map((p: Riadok) => p.id));
+  const bezSkratky = new Set(
+    pohybyBezPokladne(pokladnicaVCasti, nastPokladni).map((p: Riadok) => p.id),
+  );
   const pokladnaChyba = bezSkratky.size
     ? `Pokladňa (${bezSkratky.size}) — chýba skratka pokladne pre Pohodu, pohyby počkajú — doplňte ju v Pokladňa → Pokladne alebo v Účtovníctvo → Prepojenie s Pohodou`
     : null;
@@ -371,17 +412,34 @@ export async function zostavDavku(
     supabase,
     vstup.companyId,
     [
-      ...faktury.map((f: Riadok) => ({ druh: "faktura" as const, riadok: f, cislo: String(f.invoice_number ?? "") })),
-      ...prijate.map((p: Riadok) => ({ druh: "prijata" as const, riadok: p, cislo: String(p.invoice_number ?? "") })),
-      ...doklady.map((d: Riadok) => ({ druh: "doklad" as const, riadok: d, cislo: String(d.document_number || d.supplier_name || "") })),
-      ...pokladnica.map((p: Riadok) => ({ druh: "pokladna" as const, riadok: p, cislo: String(p.entry_number ?? "") })),
+      ...faktury.map((f: Riadok) => ({
+        druh: "faktura" as const,
+        riadok: f,
+        cislo: String(f.invoice_number ?? ""),
+      })),
+      ...prijate.map((p: Riadok) => ({
+        druh: "prijata" as const,
+        riadok: p,
+        cislo: String(p.invoice_number ?? ""),
+      })),
+      ...doklady.map((d: Riadok) => ({
+        druh: "doklad" as const,
+        riadok: d,
+        cislo: String(d.document_number || d.supplier_name || ""),
+      })),
+      ...pokladnica.map((p: Riadok) => ({
+        druh: "pokladna" as const,
+        riadok: p,
+        cislo: String(p.entry_number ?? ""),
+      })),
     ],
     await cislaVPohode(supabase, vstup.companyId),
     !vstup.oznacit,
   );
   if (opravy.vyradit.size)
     for (const zoznam of [faktury, prijate, doklady, pokladnica] as Riadok[][])
-      for (let i = zoznam.length - 1; i >= 0; i--) if (opravy.vyradit.has(String(zoznam[i]?.id))) zoznam.splice(i, 1);
+      for (let i = zoznam.length - 1; i >= 0; i--)
+        if (opravy.vyradit.has(String(zoznam[i]?.id))) zoznam.splice(i, 1);
   // Storno pôvodných verzií ide len do bežnej databázy (ako ostatné storná).
   const stornaOpravXml = lenBezny ? opravy.stornaXml : "";
   const stornaOprav = lenBezny ? opravy.stornaOprav : [];
@@ -409,7 +467,10 @@ export async function zostavDavku(
           )
         : [];
   const zasoby =
-    lenBezny && company.pohoda_posielat_sklad && company.pohoda_sklad && (company as any).pohoda_cenova_skupina
+    lenBezny &&
+    company.pohoda_posielat_sklad &&
+    company.pohoda_sklad &&
+    (company as any).pohoda_cenova_skupina
       ? await nacitajZasoby(supabase, vstup.companyId)
       : [];
   const { nove: zakazkyNoveVsetky, kody: zakazky } = company.pohoda_posielat_zakazky
@@ -421,7 +482,11 @@ export async function zostavDavku(
   // Pohyby majú zmysel len vtedy, keď sú v Pohode karty — položka sa na kartu
   // odvoláva. Posielajú sa preto až tie, ktorých karta už odišla.
   const pohyby =
-    lenBezny && company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad && (company as any).pohoda_cenova_skupina
+    lenBezny &&
+    company.pohoda_posielat_pohyby &&
+    company.pohoda_posielat_sklad &&
+    company.pohoda_sklad &&
+    (company as any).pohoda_cenova_skupina
       ? await nacitajPohyby(supabase, vstup.companyId, zasoby)
       : [];
   // Čo je na ceste (čaká na odpoveď POHODY), druhýkrát nejde (K3).
@@ -431,7 +496,8 @@ export async function zostavDavku(
     [zakazkyNove, "zakazka"],
     [pohyby, "pohyb"],
   ] as [Riadok[], "adresar" | "sklad" | "zakazka" | "pohyb"][])
-    for (let i = zoznam.length - 1; i >= 0; i--) if (!neNaCeste(druh)(zoznam[i])) zoznam.splice(i, 1);
+    for (let i = zoznam.length - 1; i >= 0; i--)
+      if (!neNaCeste(druh)(zoznam[i])) zoznam.splice(i, 1);
   const { zoskupPohyby } = await import("./export.server");
   const skupinyPohybov = zoskupPohyby(pohyby);
 
@@ -449,15 +515,23 @@ export async function zostavDavku(
     nastaveniaExportu(company.uctovanie_nastavenia).dokladKPlatbe,
   );
   const hlaskaStorien = hlaskaRucnychStorien(stornaRucne);
-  for (let i = storna.length - 1; i >= 0; i--) if (!neNaCeste("storno")(storna[i])) storna.splice(i, 1);
-  const { zalohy, opravovane, povodneCisla } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
+  for (let i = storna.length - 1; i >= 0; i--)
+    if (!neNaCeste("storno")(storna[i])) storna.splice(i, 1);
+  const { zalohy, opravovane, povodneCisla } = await nacitajVazby(
+    supabase,
+    vstup.companyId,
+    faktury,
+    cisla,
+  );
 
   /*
     Bankové pohyby (`pohoda_posielat_banku`) — neodovzdané pohyby účtov so
     skratkou v POHODE, rovnaké XML ako ručné „XML pre POHODU“. V dávke idú
     za faktúrami, prijatými a pokladňou.
   */
-  const banka = await (await import("./banka-pohoda.server")).bankaPreDavku(supabase, {
+  const banka = await (
+    await import("./banka-pohoda.server")
+  ).bankaPreDavku(supabase, {
     company,
     od,
     naCeste: naCeste.get("banka"),
@@ -554,9 +628,13 @@ export async function zostavDavku(
     kvDoklady: company.kv_clenenie_doklady,
     predkontaciaRozuctovat: company.pohoda_predkontacia_rozuctovat,
     blockyPodlaPlatby: company.pohoda_blocky_agenda === "podla_platby",
-    podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, vstup.companyId),
+    podlaKategorie: await (
+      await import("./predkontacie.server")
+    ).kodyPodlaKategorie(supabase, vstup.companyId),
     pokladna: company.pohoda_pokladna,
-    ...(await (await import("./pokladne.server")).nastaveniaPokladniFirmy(supabase, vstup.companyId, company.pohoda_pokladna)),
+    ...(await (
+      await import("./pokladne.server")
+    ).nastaveniaPokladniFirmy(supabase, vstup.companyId, company.pohoda_pokladna)),
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
     cenovaSkupina: (company as any).pohoda_cenova_skupina,
@@ -564,7 +642,10 @@ export async function zostavDavku(
   // Karty, ktoré idú v tejto dávke, sú v Pohode skôr než doklady (adresár ide prvý).
   if (parovatPartnerov)
     nastavenia.partneriVPohode = [
-      ...new Set([...(nastavenia.partneriVPohode ?? []), ...zakaznici.map((z: Riadok) => String(z.id))]),
+      ...new Set([
+        ...(nastavenia.partneriVPohode ?? []),
+        ...zakaznici.map((z: Riadok) => String(z.id)),
+      ]),
     ];
 
   const odkazy = company.pohoda_odkaz_na_pdf ? await odkazyNaPdf(supabase, faktury) : {};
@@ -577,7 +658,8 @@ export async function zostavDavku(
   for (const f of faktury) (f as any)._efakturaOdoslana = odoslane[f.id] ?? null;
 
   const { buildPohodaDavkaXml, pohodaPrekazka } = await import("./export.server");
-  const polozkyFaktury = (f: Riadok) => (polozky ?? []).filter((p: Riadok) => p.invoice_id === f.id);
+  const polozkyFaktury = (f: Riadok) =>
+    (polozky ?? []).filter((p: Riadok) => p.invoice_id === f.id);
   const preskocene = faktury
     .map((f: Riadok) => pohodaPrekazka(f, company, { items: polozkyFaktury(f), nastavenia }))
     .filter((d: string | null): d is string => !!d);
@@ -603,7 +685,8 @@ export async function zostavDavku(
   const prijateOk = prijate.filter((p: Riadok) => {
     const dovod =
       prekazkaDokladu(prijataAkoDoklad(p), company, nastavenia as any) ??
-      (varovaniaPrijatejPredExportom(p, company, nastavenia as any)[0] ?? null);
+      varovaniaPrijatejPredExportom(p, company, nastavenia as any)[0] ??
+      null;
     if (dovod) preskoceneDoklady.push(dovod);
     return !dovod;
   });
@@ -698,7 +781,9 @@ export async function zostavDavku(
     */
     const teraz = new Date().toISOString();
     const verziaDokladu = (r: Riadok) => ({ id: String(r.id), verzia: r.pohoda_verzia });
-    const vSkupinach = new Set(skupinyPohybov.flatMap((s) => s.pohyby.map((m: Riadok) => String(m.id))));
+    const vSkupinach = new Set(
+      skupinyPohybov.flatMap((s) => s.pohyby.map((m: Riadok) => String(m.id))),
+    );
     jobId = await potvrdenie.zapisDavku(supabase, {
       companyId: vstup.companyId,
       od,
@@ -734,7 +819,11 @@ export async function zostavDavku(
         // Pohyb s nulovým množstvom do príjemky ani výdajky nejde — nie je čo potvrdzovať.
         ...pohyby
           .filter((m: Riadok) => !vSkupinach.has(String(m.id)))
-          .map((m: Riadok) => ({ agenda: "pohyb", id: String(m.id), verzia: String(m.created_at) })),
+          .map((m: Riadok) => ({
+            agenda: "pohyb",
+            id: String(m.id),
+            verzia: String(m.created_at),
+          })),
       ],
     });
   }
@@ -753,7 +842,12 @@ export async function zostavDavku(
     pohybov: pohyby.length,
     storien: storna.length + stornaOprav.length,
     bankovych: banka.zaznamy.length,
-    preskocene: [...preskocene, ...preskoceneDoklady, ...(hlaskaStorien ? [hlaskaStorien] : []), ...banka.hlasky],
+    preskocene: [
+      ...preskocene,
+      ...preskoceneDoklady,
+      ...(hlaskaStorien ? [hlaskaStorien] : []),
+      ...banka.hlasky,
+    ],
     ciselniky,
   };
 }
@@ -763,7 +857,11 @@ export async function zostavDavku(
  * spustením — neskoro zadaný doklad s dátumom po nej odíde vždy, keď ešte
  * nie je odovzdaný. Pred prvým spustením minulý mesiac ako doteraz.
  */
-export async function zaciatokKonektora(supabase: Klient, companyId: string, dnes: Date): Promise<string> {
+export async function zaciatokKonektora(
+  supabase: Klient,
+  companyId: string,
+  dnes: Date,
+): Promise<string> {
   const { data } = await supabase
     .from("export_jobs")
     .select("created_at")
@@ -889,7 +987,9 @@ export async function nacitajVazby(
   }
 
   const opraveneIds = faktury
-    .filter((f: Riadok) => (f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id)
+    .filter(
+      (f: Riadok) => (f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id,
+    )
     .map((f: Riadok) => String(f.opravuje_fakturu_id));
   const potrebne = [...new Set(opraveneIds)];
   const { data: suvisiace } = potrebne.length
@@ -906,8 +1006,14 @@ export async function nacitajVazby(
       const idPovodnej = String(f.opravuje_fakturu_id);
       const povodna = podlaId.get(idPovodnej);
       // Číslo v Pohode zo spätnej väzby, inak naše (`numberRequested` pôvodnej).
-      const cislo = cisla.get(idPovodnej) ?? (povodna?.invoice_number ? String(povodna.invoice_number) : null);
-      const vPohode = odkazNaDokladPohody(cisla.has(idPovodnej) || Boolean(povodna?.exported_at), idPovodnej, f.id, poradie);
+      const cislo =
+        cisla.get(idPovodnej) ?? (povodna?.invoice_number ? String(povodna.invoice_number) : null);
+      const vPohode = odkazNaDokladPohody(
+        cisla.has(idPovodnej) || Boolean(povodna?.exported_at),
+        idPovodnej,
+        f.id,
+        poradie,
+      );
       if (cislo && vPohode) opravovane[String(f.id)] = cislo;
       if (cislo) povodneCisla[String(f.id)] = cislo;
     }
@@ -995,7 +1101,13 @@ export async function nacitajZakazky(
 ): Promise<{ nove: Riadok[]; kody: Record<string, string> }> {
   const [{ data: vsetky }, { data: odoslane }] = await Promise.all([
     vsetkoAkoData((zac, kon) =>
-      supabase.from("jobs").select("*").eq("company_id", companyId).order("created_at").order("id").range(zac, kon),
+      supabase
+        .from("jobs")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at")
+        .order("id")
+        .range(zac, kon),
     ),
     vsetkoAkoData((zac, kon) =>
       supabase
@@ -1163,11 +1275,22 @@ export async function spracujOdpoved(
   const { jeIdLikvidacie, rozoberLikvidaciu, hlaskyLikvidacie } = await import("./banka-pohoda");
   const mimoDokladov = (id: string) => jeIdCiselnika(id) || jeIdLikvidacie(id);
   const hlaskyParovania = hlaskyLikvidacie(rozoberLikvidaciu(vstup.xml));
-  const lenCiselniky =
-    balik.polozky.length > 0 && balik.polozky.every((v) => mimoDokladov(v.id));
+  const lenCiselniky = balik.polozky.length > 0 && balik.polozky.every((v) => mimoDokladov(v.id));
   const r = lenCiselniky
-    ? { spracovanych: 0, zalozenych: 0, chyby: [] as string[], upozornenia: [] as string[], chybaBaliku: null, nezname: 0, nesparovane: [] }
-    : await spracujPolozkyOdpovede(supabase, { companyId: vstup.companyId, balik, jeCiselnik: mimoDokladov });
+    ? {
+        spracovanych: 0,
+        zalozenych: 0,
+        chyby: [] as string[],
+        upozornenia: [] as string[],
+        chybaBaliku: null,
+        nezname: 0,
+        nesparovane: [],
+      }
+    : await spracujPolozkyOdpovede(supabase, {
+        companyId: vstup.companyId,
+        balik,
+        jeCiselnik: mimoDokladov,
+      });
   /*
     Položky, ktoré nepatria dávke konektora — odpoveď na mesačný balík alebo
     ručný súbor nahratá v Prepojení s Pohodou. Tie sa pri odovzdaní označili
@@ -1220,7 +1343,10 @@ async function spracujPolozkyBezDavky(
     if (bnk) {
       await supabase
         .from("bank_transactions")
-        .update({ pohoda_cislo: v.cislo, ...(chyba ? { exported_at: null, export_job_id: null } : {}) })
+        .update({
+          pohoda_cislo: v.cislo,
+          ...(chyba ? { exported_at: null, export_job_id: null } : {}),
+        })
         .eq("company_id", companyId)
         .eq("id", bnk[1]!.toLowerCase());
       // Potvrdený z ručného súboru — v POHODE je, konektor ani balík ho už neposielajú.

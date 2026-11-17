@@ -1,5 +1,7 @@
 /** Rozdeľovač dokladov — čisté pravidlá bez databázy. */
 
+import { bezTestovacich } from "./testovacia-firma-parovanie";
+
 export type FirmaNaRozdelenie = {
   id: string;
   name: string | null;
@@ -8,6 +10,8 @@ export type FirmaNaRozdelenie = {
   dic?: string | null;
   /** IBAN firmy aj jej bankových účtov. */
   ibany?: string[];
+  /** Id skutočnej firmy, keď je toto jej testovacia kópia (NULL = skutočná). */
+  testovacia_pre?: string | null;
 };
 
 /** Podľa čoho sa firma našla. */
@@ -82,7 +86,12 @@ export function vyberFirmuPodlaOdberatela(
   // Dodávateľ dokladu nie je jeho odberateľom — pokiaľ ho tak doklad výslovne nevolá.
   const dodIco = cisteIco(ai?.supplier_ico);
   const dodIcDph = cisteKod(ai?.supplier_ic_dph);
-  const firmy = vsetky.filter((f) => {
+  /*
+    Testovacia firma má rovnaké DIČ, IČ DPH, názov aj IBAN ako skutočná —
+    automaticky sa do nej nezaraďuje nikdy (inak by každý doklad skončil ako
+    „nejednoznačný“). Ručne ju vybrať ide.
+  */
+  const firmy = bezTestovacich(vsetky).filter((f) => {
     const jeDodavatel =
       (dodIco && cisteIco(f.ico) === dodIco) || (dodIcDph && cisteKod(f.ic_dph) === dodIcDph);
     const jeOdberatel = (ico && cisteIco(f.ico) === ico) || (icDph && cisteKod(f.ic_dph) === icDph);

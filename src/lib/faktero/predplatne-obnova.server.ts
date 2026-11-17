@@ -10,6 +10,7 @@
  * strhnutie a stráži sa, čo zlyhalo.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { bezVnorenychTestovacich } from "./testovacia-firma-crony";
 
 /** Po koľkých neúspešných pokusoch sa predplatné označí ako po splatnosti. */
 const MAX_POKUSOV = 3;
@@ -51,7 +52,7 @@ export async function posliUpozorneniaNaObnovu() {
   const { data: riadky } = await supabaseAdmin
     .from("subscriptions")
     .select(
-      "company_id, plan, next_billing_at, monthly_price_cents, cancel_at_period_end, gopay_subscription_id, companies(name, email, ic_dph)",
+      "company_id, plan, next_billing_at, monthly_price_cents, cancel_at_period_end, gopay_subscription_id, companies(name, email, ic_dph, testovacia_pre)",
     )
     .eq("status", "active")
     .eq("cancel_at_period_end", false)
@@ -63,7 +64,8 @@ export async function posliUpozorneniaNaObnovu() {
   let odoslane = 0;
   let zlyhalo = 0;
 
-  for (const r of riadky ?? []) {
+  // Testovacia firma (náhľad) má predplatné zadarmo — žiadne e-maily ani platby.
+  for (const r of bezVnorenychTestovacich((riadky ?? []) as any[])) {
     const email = (r as any).companies?.email as string | undefined;
     const firma = escapeHtml((r as any).companies?.name ?? "vaša firma");
     // Pripomienka len informuje — platiteľovi z EÚ ukáže sumu bez DPH podľa tvaru IČ DPH.
@@ -141,14 +143,15 @@ export async function oznacNezaplatene() {
   const hranica = new Date(Date.now() - 3 * 86_400_000).toISOString();
   const { data: riadky } = await supabaseAdmin
     .from("subscriptions")
-    .select("company_id, next_billing_at, gopay_subscription_id")
+    .select("company_id, next_billing_at, gopay_subscription_id, companies(testovacia_pre)")
     .eq("status", "active")
     .eq("cancel_at_period_end", false)
     .is("gopay_subscription_id", null)
     .lt("next_billing_at", hranica);
 
   let oznacene = 0;
-  for (const r of riadky ?? []) {
+  // Testovacia firma (náhľad) má predplatné zadarmo — žiadne e-maily ani platby.
+  for (const r of bezVnorenychTestovacich((riadky ?? []) as any[])) {
     await supabaseAdmin
       .from("subscriptions")
       .update({ status: "past_due", last_renewal_error: "Obdobie uplynulo, platba neprišla." })
@@ -169,7 +172,7 @@ export async function strhniObnovy() {
   const { data: riadky } = await supabaseAdmin
     .from("subscriptions")
     .select(
-      "company_id, plan, plan_id, next_billing_at, monthly_price_cents, renewal_attempts, gopay_subscription_id, cancel_at_period_end, companies(name, email)",
+      "company_id, plan, plan_id, next_billing_at, monthly_price_cents, renewal_attempts, gopay_subscription_id, cancel_at_period_end, companies(name, email, testovacia_pre)",
     )
     .in("status", ["active", "past_due"])
     .eq("cancel_at_period_end", false)
@@ -186,7 +189,8 @@ export async function strhniObnovy() {
   /* Účet v bráne nemá zapnuté opakované platby — iná vec než zamietnutá karta. */
   let nepodporovane = 0;
 
-  for (const r of riadky ?? []) {
+  // Testovacia firma (náhľad) má predplatné zadarmo — žiadne e-maily ani platby.
+  for (const r of bezVnorenychTestovacich((riadky ?? []) as any[])) {
     const cenaBezDph = Number(r.monthly_price_cents ?? 0);
     if (cenaBezDph <= 0) continue; // Enterprise a ručne dohodnuté plány sa neúčtujú automaticky.
     const prenesenieDph = await prenesenieDphPredplatneho(r.company_id);

@@ -455,7 +455,13 @@ export async function runCommanderDailySync(): Promise<DailyResult> {
 
   if (error) throw new Error(error.message);
 
-  for (const c of conns ?? []) {
+  // Testovacie firmy Commander nevolajú — preskočia sa potichu.
+  const { testovacieZoZoznamu } = await import("./testovacia-firma.server");
+  const testovacie = await testovacieZoZoznamu((conns ?? []).map((c) => c.company_id));
+  if (testovacie.size)
+    console.info("[commander-cron] preskočené testovacie firmy:", [...testovacie]);
+
+  for (const c of (conns ?? []).filter((c) => !testovacie.has(c.company_id))) {
     result.processed++;
     let password: string;
     try {

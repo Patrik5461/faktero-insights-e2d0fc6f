@@ -174,14 +174,17 @@ async function main() {
     console.error("Na zálohu pred zápisom treba SUPABASE_ACCESS_TOKEN a SUPABASE_PROJECT_ID.");
     process.exit(1);
   }
-  log(`=== doplnenie rozpisu DPH z Doklada ${o.dryRun ? "(DRY-RUN, nič sa nezapíše)" : "(ZÁPIS)"} ===`);
+  log(
+    `=== doplnenie rozpisu DPH z Doklada ${o.dryRun ? "(DRY-RUN, nič sa nezapíše)" : "(ZÁPIS)"} ===`,
+  );
   log(`IČO ${o.company}`);
 
   const db: Db = createClient(env.url, env.sluzba, { auth: { persistSession: false } });
   const { data: firmy, error: ef } = await db
     .from("companies")
     .select("id, name, ico, country, locked_until")
-    .eq("ico", o.company);
+    .eq("ico", o.company)
+    .is("testovacia_pre", null);
   if (ef) throw new Error(ef.message);
   const kand = (firmy ?? []).filter((f: any) => !o.firma || f.id === o.firma);
   if (kand.length !== 1) {
@@ -195,7 +198,9 @@ async function main() {
   const firma = kand[0] as any;
   const krajina = krajinaFirmy(firma.country);
   const zamok: string | null = firma.locked_until ?? null;
-  log(`Faktero: ${firma.name} (${firma.id}), krajina dane ${krajina}${zamok ? `, zamknuté do ${zamok}` : ""}`);
+  log(
+    `Faktero: ${firma.name} (${firma.id}), krajina dane ${krajina}${zamok ? `, zamknuté do ${zamok}` : ""}`,
+  );
 
   // Doklady vo Fakteri.
   const prijate = await vsetko<any>((od, po) =>
@@ -223,46 +228,42 @@ async function main() {
   const riadky: Riadok[] = [
     ...prijate
       .filter((x) => !x.deleted_at)
-      .map(
-        (x): Riadok => ({
-          tabulka: "purchase_invoices",
-          id: x.id,
-          doklado_id: String(x.doklado_id),
-          zaklad: num(x.amount_without_vat),
-          dph: num(x.vat_amount),
-          spolu: num(x.amount_total),
-          den: x.delivery_date ?? x.issue_date,
-          vystavenie: x.issue_date,
-          rozpis: x.vat_breakdown,
-          mena: x.currency ?? "EUR",
-          exportovany: Boolean(x.exported_at),
-          eur: (x.currency ?? "EUR") !== "EUR",
-          vynimka: x.type === "proforma" || x.status === "draft",
-          naKontrole: Boolean(x.na_kontrolu_at),
-          supplier_country: x.supplier_country ?? null,
-          supplier_ic_dph: x.supplier_ic_dph ?? null,
-        }),
-      ),
-    ...blocky.map(
-      (x): Riadok => ({
-        tabulka: "expense_documents",
+      .map((x): Riadok => ({
+        tabulka: "purchase_invoices",
         id: x.id,
         doklado_id: String(x.doklado_id),
-        zaklad: num(x.net_amount),
+        zaklad: num(x.amount_without_vat),
         dph: num(x.vat_amount),
-        spolu: num(x.total_amount),
-        den: x.issue_date,
+        spolu: num(x.amount_total),
+        den: x.delivery_date ?? x.issue_date,
         vystavenie: x.issue_date,
         rozpis: x.vat_breakdown,
         mena: x.currency ?? "EUR",
         exportovany: Boolean(x.exported_at),
-        eur: false,
-        vynimka: false,
+        eur: (x.currency ?? "EUR") !== "EUR",
+        vynimka: x.type === "proforma" || x.status === "draft",
         naKontrole: Boolean(x.na_kontrolu_at),
         supplier_country: x.supplier_country ?? null,
         supplier_ic_dph: x.supplier_ic_dph ?? null,
-      }),
-    ),
+      })),
+    ...blocky.map((x): Riadok => ({
+      tabulka: "expense_documents",
+      id: x.id,
+      doklado_id: String(x.doklado_id),
+      zaklad: num(x.net_amount),
+      dph: num(x.vat_amount),
+      spolu: num(x.total_amount),
+      den: x.issue_date,
+      vystavenie: x.issue_date,
+      rozpis: x.vat_breakdown,
+      mena: x.currency ?? "EUR",
+      exportovany: Boolean(x.exported_at),
+      eur: false,
+      vynimka: false,
+      naKontrole: Boolean(x.na_kontrolu_at),
+      supplier_country: x.supplier_country ?? null,
+      supplier_ic_dph: x.supplier_ic_dph ?? null,
+    })),
   ];
 
   const pocty: Record<Riadok["tabulka"], Pocty> = { purchase_invoices: {}, expense_documents: {} };
@@ -318,7 +319,10 @@ async function main() {
 
   if (naPracu.length) {
     // Obdobie len od-do dotknutých dokladov (Doklado účtuje 1 jednotku za doklad v zozname).
-    const dni = naPracu.map((r) => r.vystavenie).filter(Boolean).sort() as string[];
+    const dni = naPracu
+      .map((r) => r.vystavenie)
+      .filter(Boolean)
+      .sort() as string[];
     const od = new Date(`${dni[0] ?? "2000-01-01"}T00:00:00Z`);
     od.setUTCDate(od.getUTCDate() - 2);
     const doDna = new Date(`${dni[dni.length - 1] ?? iso(new Date())}T23:59:59Z`);
@@ -351,7 +355,11 @@ async function main() {
       }
       const druh = druhDokladu(d);
       if (druh !== (r.tabulka === "purchase_invoices" ? "prijata" : "blocek")) {
-        nahradne(r, bezDoklada(`v Doklade je iný druh dokladu (${druh})`), `v Doklade iný druh (${druh})`);
+        nahradne(
+          r,
+          bezDoklada(`v Doklade je iný druh dokladu (${druh})`),
+          `v Doklade iný druh (${druh})`,
+        );
         continue;
       }
       if (zamok && r.vystavenie && r.vystavenie <= zamok) {
@@ -360,7 +368,10 @@ async function main() {
       }
       const blocek = r.tabulka === "expense_documents";
       const den =
-        r.den ?? datum((d as any).deliveryDate) ?? datum((d as any).taxPointDate) ?? datum(d.issuedAt);
+        r.den ??
+        datum((d as any).deliveryDate) ??
+        datum((d as any).taxPointDate) ??
+        datum(d.issuedAt);
       const roz = rozpisDph(d, {
         krajina,
         den,
@@ -398,7 +409,10 @@ async function main() {
         );
         nahradne(
           r,
-          { ...roz, text: `rozpis z Doklada ${roz.zaklad} + ${roz.dph} nesedí so sumou ${r.spolu} vo Fakteri` },
+          {
+            ...roz,
+            text: `rozpis z Doklada ${roz.zaklad} + ${roz.dph} nesedí so sumou ${r.spolu} vo Fakteri`,
+          },
           "nesedí so sumou vo Fakteri",
         );
         continue;
@@ -468,7 +482,8 @@ async function main() {
       headers: { authorization: `Bearer ${env.token}`, "content-type": "application/json" },
       body: JSON.stringify({ query: sql }),
     });
-    if (!res.ok) throw new Error(`záloha sa nepodarila: ${res.status} ${(await res.text()).slice(0, 300)}`);
+    if (!res.ok)
+      throw new Error(`záloha sa nepodarila: ${res.status} ${(await res.text()).slice(0, 300)}`);
     log(`Záloha: ${tabZalohy} (${JSON.stringify(await res.json())})`);
   }
 

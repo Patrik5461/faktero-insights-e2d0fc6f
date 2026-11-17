@@ -45,6 +45,7 @@ export const zacniWallester = createServerFn({ method: "POST" })
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existuje } = await supabaseAdmin
       .from("bank_connections")
@@ -93,6 +94,7 @@ export const dokonciWallester = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, supabaseAdmin, meta } = await spojenieFirmy(data.company_id, false);
     if (!meta.private_key) throw new Error("Chýba kľúč. Začnite pripojenie odznova.");
 
@@ -154,6 +156,7 @@ export const synchronizujWallesterUcty = createServerFn({ method: "POST" })
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { nacitajUcty } = await import("./wallester.server");
     const ucty = await nacitajUcty(spojenie);
@@ -171,6 +174,7 @@ export const synchronizujWallesterPohyby = createServerFn({ method: "POST" })
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { nacitajPohyby } = await import("./wallester.server");
     const { stiahniPohybyPripojenia } = await import("./bank-sync.server");

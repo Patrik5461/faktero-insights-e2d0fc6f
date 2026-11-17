@@ -17,6 +17,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Id = z.string().uuid();
 
+/** Testovacia firma sa na poskytovateľa palivových kariet nepripája (nič nejde von). */
+async function zastavTestovaciu(companyId: string) {
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(
+    companyId,
+    "Testovacia firma — palivové karty sa v testovacej firme nepripájajú.",
+  );
+}
+
 export const ulozPripojenieKartyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
@@ -39,6 +48,7 @@ export const ulozPripojenieKartyFn = createServerFn({ method: "POST" })
       zapis: true,
       spravca: true,
     });
+    await zastavTestovaciu(data.company_id);
     const { poskytovatel } = await import("./palivove-karty/register");
     const meta = poskytovatel(data.poskytovatel);
     if (!meta?.dostupne) throw new Error("Tento poskytovateľ sa zatiaľ pripojiť nedá.");
@@ -134,6 +144,7 @@ export const synchronizujKartuFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { overPristup } = await import("./over-pristup");
     await overPristup(context as any, data.company_id, { oblast: "jazdy", zapis: true });
+    await zastavTestovaciu(data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: r } = await (supabaseAdmin as any)
       .from("palivove_karty_pripojenia")

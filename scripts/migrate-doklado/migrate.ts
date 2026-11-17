@@ -145,7 +145,10 @@ type Existujuce = {
     medzier a núl + dodávateľ + suma + rok) — tú istú faktúru zapísanú inak,
     než ju chytia kľúče vyššie, spúšťač v databáze aj tak neuloží.
   */
-  prijatePravidlom: Map<string, { id: string; doklado_id: string | null; d: DokladNaPorovnanie; popis: string }[]>;
+  prijatePravidlom: Map<
+    string,
+    { id: string; doklado_id: string | null; d: DokladNaPorovnanie; popis: string }[]
+  >;
   blocky: Map<string, { id: string; doklado_id: string | null }>;
   blockyPodlaDoklado: Set<string>;
   partneri: Map<string, { id: string; odberatel: boolean; dodavatel: boolean }>;
@@ -406,7 +409,13 @@ async function main() {
   }
 
   const firmy = await vsetko<any>((od, po) =>
-    db.from("companies").select("id, name, ico, locked_until, country").order("id").range(od, po),
+    // Testovacie firmy („Test – …“) sa nemigrujú — ani podľa IČO, ani cez --pripojit-k.
+    db
+      .from("companies")
+      .select("id, name, ico, locked_until, country")
+      .is("testovacia_pre", null)
+      .order("id")
+      .range(od, po),
   );
   const podlaIco = new Map<string, any[]>();
   for (const f of firmy) {
@@ -1054,7 +1063,9 @@ async function zapisFirmy(a: {
           m.hlavicka.issue_date,
         ) ?? pravidlom;
       if (uz === pravidlom && pravidlom)
-        log(`  duplicita: prijatá ${z.invoiceNumber} (${z.organizationName}) už je v evidencii — ${pravidlom.popis}; nezakladám`);
+        log(
+          `  duplicita: prijatá ${z.invoiceNumber} (${z.organizationName}) už je v evidencii — ${pravidlom.popis}; nezakladám`,
+        );
       if (uz) {
         if (!uz.doklado_id)
           await db
@@ -1108,7 +1119,9 @@ async function zapisFirmy(a: {
       const dup = rozlozChybuPrijatej((e as Error).message);
       if (dup) {
         s.preskocene++;
-        log(`  duplicita: prijatá ${z.invoiceNumber ?? id} už je v evidencii — ${dup.popis}; nezaložená`);
+        log(
+          `  duplicita: prijatá ${z.invoiceNumber ?? id} už je v evidencii — ${dup.popis}; nezaložená`,
+        );
         continue;
       }
       s.chyby++;

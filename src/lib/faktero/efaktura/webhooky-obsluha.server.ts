@@ -45,8 +45,12 @@ export async function prijmiZiadostiFs(
   const { encryptSecret } = await import("../payment-crypto.server");
 
   const nove: string[] = [];
-  const noveFirmy: { nazov: string | null; dic: string; email: string | null; telefon: string | null }[] =
-    [];
+  const noveFirmy: {
+    nazov: string | null;
+    dic: string;
+    email: string | null;
+    telefon: string | null;
+  }[] = [];
   for (const z of r.ziadosti) {
     const { data, error } = await db
       .from("efaktura_pds_ziadosti")
@@ -65,7 +69,11 @@ export async function prijmiZiadostiFs(
                 stav: "na_schvalenie",
                 podpis_overeny: false,
                 via: neoverena.via?.slice(0, 300) ?? null,
-                chyba: `Podpis X-PDS-Secret nesedel — čaká na ručné schválenie. ${neoverena.diagnostika}`.slice(0, 500),
+                chyba:
+                  `Podpis X-PDS-Secret nesedel — čaká na ručné schválenie. ${neoverena.diagnostika}`.slice(
+                    0,
+                    500,
+                  ),
               }
             : {}),
         },
@@ -107,13 +115,18 @@ async function firmaPodlaDic(dic: string): Promise<{ id: string; email: string |
     .from("companies")
     .select("id, email, created_at")
     .eq("dic", dic)
+    // Testovacia firma má rovnaké DIČ ako skutočná — žiadosť FS patrí len skutočnej.
+    .is("testovacia_pre", null)
     .order("created_at", { ascending: true })
     .limit(1);
   if (error) throw new Error(`Firma podľa DIČ: ${error.message}`);
   return data?.[0] ?? null;
 }
 
-async function zapniProfil(companyId: string, op: { firmId: string | null; peppolId: string | null }) {
+async function zapniProfil(
+  companyId: string,
+  op: { firmId: string | null; peppolId: string | null },
+) {
   if (!op.firmId) return;
   const { jeTestovaciRezim } = await import("./epostak.server");
   const { error } = await db.from("efaktura_profiles").upsert(
@@ -313,7 +326,13 @@ export async function spracujZiadost(id: string): Promise<string> {
   }
 
   if (zmena.stav === "registrovana" && !z.pozvanka_odoslana_at && email) {
-    await oznamRegistraciuFirme({ id, email, nazov: z.nazov, dic: z.dic, maFirmu: Boolean(zmena.company_id) });
+    await oznamRegistraciuFirme({
+      id,
+      email,
+      nazov: z.nazov,
+      dic: z.dic,
+      maFirmu: Boolean(zmena.company_id),
+    });
   }
   return String(zmena.stav);
 }
@@ -516,11 +535,19 @@ export async function zapniWebhookyFiriem(): Promise<{ zapnutych: number }> {
     .not("epostak_firm_id", "is", null);
   const { data: existujuce } = await db.from("efaktura_webhooky").select("company_id");
   const ma = new Set((existujuce ?? []).map((r: any) => r.company_id));
-  const { vytvorWebhookFirmy, UDALOSTI_PLNY, UDALOSTI_LEN_ODOSIELANIE } = await import("./epostak.server");
+  const { vytvorWebhookFirmy, UDALOSTI_PLNY, UDALOSTI_LEN_ODOSIELANIE } =
+    await import("./epostak.server");
   const { encryptSecret } = await import("../payment-crypto.server");
   let zapnutych = 0;
+  // Testovacia firma webhook u ePoštáka nedostane (nič v jej mene nejde von).
+  const { testovacieZoZoznamu } = await import("@/lib/faktero/testovacia-firma.server");
+  const testovacie = await testovacieZoZoznamu((profily ?? []).map((p: any) => p.company_id));
   for (const p of profily ?? []) {
     if (ma.has(p.company_id)) continue;
+    if (testovacie.has(p.company_id)) {
+      console.log("[efaktura-webhooky] testovacia firma preskočená:", p.company_id);
+      continue;
+    }
     try {
       // Firma „len odosielanie“ dostane len stavy odoslaných — príjem nie je náš.
       const w = await vytvorWebhookFirmy(
@@ -558,8 +585,14 @@ export async function prijmiUdalostEpostaka(args: {
   // cyklom — inak nepodpísaná 20 MB požiadavka spustila stovky dešifrovaní
   // a HMAC nad celým telom.
   if (args.telo.length > 256 * 1024) return { ok: false, dovod: "zly_tvar" };
-  const predbezne = overEpostakPodpis({ podpis: args.podpis, pecatka: args.pecatka, telo: "", tajomstvo: "-" });
-  if (!predbezne.platny && predbezne.dovod !== "nesedi_podpis") return { ok: false, dovod: predbezne.dovod };
+  const predbezne = overEpostakPodpis({
+    podpis: args.podpis,
+    pecatka: args.pecatka,
+    telo: "",
+    tajomstvo: "-",
+  });
+  if (!predbezne.platny && predbezne.dovod !== "nesedi_podpis")
+    return { ok: false, dovod: predbezne.dovod };
   const { decryptSecret } = await import("../payment-crypto.server");
   // Udalosť sa číta len na výber kandidáta; dôveruje sa jej až po podpise.
   const u = rozparsujUdalost(args.telo);

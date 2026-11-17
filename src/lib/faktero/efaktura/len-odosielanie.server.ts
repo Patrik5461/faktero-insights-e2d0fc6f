@@ -28,6 +28,11 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { overEpostakPodpis } from "./webhooky.server";
 import type { OnboardingOdpoved } from "./epostak.server";
+import { zastavAkTestovacia } from "@/lib/faktero/testovacia-firma.server";
+
+/** Hláška, keď sa testovacia firma má registrovať do Peppolu (kľúč prekladu = text). */
+export const HLASKA_TESTOVACIA_REGISTRACIA =
+  "Testovacia firma — do siete Peppol sa neregistruje (náhľad).";
 
 const db = supabaseAdmin as any;
 const web = () => (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
@@ -168,6 +173,8 @@ export async function vytvorOnboardingLenOdosielanie(
     adminUserId?: string | null;
   } = {},
 ): Promise<VysledokOdosielania> {
+  // Testovacia firma sa do siete Peppol neregistruje.
+  await zastavAkTestovacia(companyId, HLASKA_TESTOVACIA_REGISTRACIA);
   const { data: firma, error: chybaFirmy } = await db
     .from("companies")
     .select("id, dic, name")

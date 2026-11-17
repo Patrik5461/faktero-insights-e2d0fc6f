@@ -33,6 +33,15 @@ async function overClena(
     throw new Error("Na faktúry nemáte v tejto firme oprávnenie.");
 }
 
+/** Testovacia firma sa s Trans.eu nespája (nič nejde von). */
+async function zastavTestovaciu(companyId: string) {
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(
+    companyId,
+    "Testovacia firma — Trans.eu sa v testovacej firme nepripája.",
+  );
+}
+
 const admin = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 const Firma = z.object({ company_id: z.string().uuid() });
 
@@ -82,6 +91,7 @@ export const ulozAplikaciuTranseuFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "spravca", true);
+    await zastavTestovaciu(data.company_id);
     const { encryptSecret } = await import("./payment-crypto.server");
     const a = await admin();
     const { error } = await a.from("transeu_napojenia").upsert({
@@ -108,6 +118,7 @@ export const zacniPrihlasenieTranseuFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => Firma.parse(d))
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "spravca", true);
+    await zastavTestovaciu(data.company_id);
     const a = await admin();
     const { data: n } = await a
       .from("transeu_napojenia")
@@ -163,6 +174,7 @@ export const nastavAutoSyncTranseuFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => Firma.extend({ zapnut: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "spravca", true);
+    await zastavTestovaciu(data.company_id);
     const a = await admin();
     const { data: n } = await a
       .from("transeu_napojenia")

@@ -636,6 +636,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.email": "E-mail",
   "app.heslo": "Heslo",
   "app.vyberteFirmu": "Vyberte firmu",
+  "app.testovacia": "TESTOVACÍ",
   "app.doVybranejFirmy": "Doklady se uloží do vybrané firmy",
   "app.staciNazov": "Stačí název, ostatní se dá doplnit později",
   "app.fakturyADoklady": "Faktury a doklady",

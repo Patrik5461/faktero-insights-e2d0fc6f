@@ -642,6 +642,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.email": "E-mail",
   "app.heslo": "Password",
   "app.vyberteFirmu": "Choose a company",
+  "app.testovacia": "TEST",
   "app.doVybranejFirmy": "Receipts are saved to the selected company",
   "app.staciNazov": "The name is enough, the rest can be added later",
   "app.fakturyADoklady": "Invoices and receipts",

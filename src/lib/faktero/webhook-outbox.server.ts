@@ -11,7 +11,8 @@
  * a webhook prišli spolu ako doteraz.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { invoicePayload, triggerEvent } from "./webhook-trigger.server";
+import { HLASKA_TESTOVACIA_WEBHOOK, invoicePayload, triggerEvent } from "./webhook-trigger.server";
+import { testovacieZoZoznamu } from "./testovacia-firma.server";
 import { nazovBanky } from "./banka-z-iban";
 
 const DAVKA = 200;
@@ -116,7 +117,22 @@ export async function spracujWebhookOutbox(opts: { entityId?: string } = {}) {
 
   let dorucenych = 0;
   let chyb = 0;
-  const riadky = (data ?? []) as Riadok[];
+  const vsetky = (data ?? []) as Riadok[];
+  /*
+    Testovacia firma: udalosť sa označí za spracovanú bez odoslania (s poznámkou
+    v `error`), aby sa fronta nezapchala a webhook ani push nikdy neodišli.
+  */
+  const testovacie = await testovacieZoZoznamu([...new Set(vsetky.map((r) => r.company_id))]);
+  const riadky = vsetky.filter((r) => !testovacie.has(r.company_id));
+  const preskocene = vsetky.filter((r) => testovacie.has(r.company_id)).map((r) => r.id);
+  if (preskocene.length) {
+    console.log("[webhook-outbox] testovacie firmy — preskočené udalosti:", preskocene.length);
+    await supabaseAdmin
+      .from("webhook_outbox")
+      .update({ processed_at: new Date().toISOString(), error: HLASKA_TESTOVACIA_WEBHOOK })
+      .in("id", preskocene)
+      .is("processed_at", null);
+  }
   // Po piatich naraz — každý webhook čaká na odpoveď prijímateľa až 10 s.
   for (let i = 0; i < riadky.length; i += 5) {
     if (Date.now() - zaciatok > MAX_TRVANIE_MS) break;
@@ -144,5 +160,5 @@ export async function spracujWebhookOutbox(opts: { entityId?: string } = {}) {
       }),
     );
   }
-  return { cakalo: riadky.length, dorucenych, chyb };
+  return { cakalo: vsetky.length, dorucenych, chyb, preskocenych: preskocene.length };
 }

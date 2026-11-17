@@ -407,7 +407,9 @@ export async function runOverdueReminders() {
   const { data: companies } = companyIds.length
     ? await supabaseAdmin
         .from("companies")
-        .select("id, reminders_enabled, reminder_days_1, reminder_days_2, reminder_days_3")
+        .select(
+          "id, reminders_enabled, reminder_days_1, reminder_days_2, reminder_days_3, testovacia_pre",
+        )
         .in("id", companyIds)
     : { data: [] as any[] };
   const companyMap = new Map((companies ?? []).map((c) => [c.id, c]));
@@ -428,12 +430,26 @@ export async function runOverdueReminders() {
   const aktivne = invoices.filter((inv) => {
     const co: any = companyMap.get(inv.company_id);
     if (!co || co.reminders_enabled === false) {
-      results.push({ invoice_id: inv.id, reminder_number: 0, ok: false, skipped: "company_disabled" });
+      results.push({
+        invoice_id: inv.id,
+        reminder_number: 0,
+        ok: false,
+        skipped: "company_disabled",
+      });
+      return false;
+    }
+    // Testovacia firma (náhľad) neupomína nikoho, ani keby si upomienky zapla.
+    if (co.testovacia_pre) {
+      results.push({ invoice_id: inv.id, reminder_number: 0, ok: false, skipped: "test_company" });
       return false;
     }
     return true;
   });
-  const sentRows = await selectByIds<{ invoice_id: string; reminder_number: number; sent_at: string }>(
+  const sentRows = await selectByIds<{
+    invoice_id: string;
+    reminder_number: number;
+    sent_at: string;
+  }>(
     aktivne.map((i) => i.id),
     (part, from, to) =>
       supabaseAdmin
@@ -462,7 +478,12 @@ export async function runOverdueReminders() {
     });
     if (naRade.stupen) toSend.push({ invoice: inv, reminderNumber: naRade.stupen });
     else if (naRade.dovod === "importovana") {
-      results.push({ invoice_id: inv.id, reminder_number: 0, ok: false, skipped: "imported_after_due" });
+      results.push({
+        invoice_id: inv.id,
+        reminder_number: 0,
+        ok: false,
+        skipped: "imported_after_due",
+      });
     }
   }
 

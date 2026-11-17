@@ -1,4 +1,5 @@
 import { chybaZapisVRegistri } from "./zapis-v-registri";
+import { jeTestovacia } from "./testovacia-firma";
 /**
  * Čo chýba na faktúre z údajov vlastnej firmy.
  *
@@ -20,6 +21,7 @@ type Firma = {
   register_sud?: string | null;
   register_oddiel?: string | null;
   register_vlozka?: string | null;
+  testovacia_pre?: string | null;
 };
 
 export function chybajuceUdajeFirmy(
@@ -36,7 +38,8 @@ export function chybajuceUdajeFirmy(
   */
   if (String(firma.country ?? "").toUpperCase() === "DE") {
     if (prazdne(firma.dic) && prazdne(firma.ic_dph)) von.push("Steuernummer alebo USt-IdNr.");
-  } else if (prazdne(firma.ico)) von.push("IČO");
+  } else if (prazdne(firma.ico) && !jeTestovacia(firma)) von.push("IČO");
+  // Testovacia firma IČO nemá zámerne (nesmie ju nájsť párovanie podľa IČO) — nehlásiť.
   if (prazdne(firma.street) || prazdne(firma.city)) von.push("adresa");
   if (
     faktura.payment_method === "bank_transfer" &&
@@ -45,6 +48,7 @@ export function chybajuceUdajeFirmy(
   )
     von.push("IBAN");
   // s.r.o./a.s. bez zápisu v OR (§ 3a ObZ). Kým stĺpec v DB nie je, firma ho nemá — mlčať.
-  if ("registracia_text" in firma && chybaZapisVRegistri(firma)) von.push("zápis v obchodnom registri");
+  if ("registracia_text" in firma && chybaZapisVRegistri(firma))
+    von.push("zápis v obchodnom registri");
   return von;
 }

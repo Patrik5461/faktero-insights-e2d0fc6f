@@ -102,6 +102,7 @@ export const startBankConnect = createServerFn({ method: "POST" })
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin", "accountant"].includes(role))
       throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
     if (!isTatraConfigured()) throw new Error("not_configured");
@@ -156,6 +157,7 @@ export const renewBankConsent = createServerFn({ method: "POST" })
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin", "accountant"].includes(role))
       throw new Error("Banku pripája a odpája len majiteľ alebo administrátor firmy.");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
     if (!isTatraConfigured()) throw new Error("not_configured");
@@ -237,6 +239,7 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
   .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
       .from("bank_connections")
@@ -298,6 +301,7 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
   .validator((d: unknown) => AccountInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: acc } = await supabaseAdmin
       .from("bank_accounts")

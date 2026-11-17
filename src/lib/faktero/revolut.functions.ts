@@ -62,6 +62,7 @@ export const zacniRevolut = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existuje } = await supabaseAdmin
       .from("bank_connections")
@@ -109,6 +110,7 @@ export const ulozClientIdRevolut = createServerFn({ method: "POST" })
   .validator((d) => Firma.extend({ client_id: z.string().trim().min(6).max(120) }).parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, meta, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     const { error } = await supabaseAdmin
       .from("bank_connections")
@@ -126,6 +128,7 @@ export const dokonciRevolut = createServerFn({ method: "POST" })
   .validator((d) => Firma.extend({ code: z.string().trim().min(6).max(500) }).parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "spravca");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { conn, meta, supabaseAdmin, spojenie } = await spojenieFirmy(data.company_id);
     if (!spojenie.clientId) throw new Error("Chýba client ID z portálu Revolutu.");
 
@@ -186,6 +189,7 @@ export const synchronizujRevolutUcty = createServerFn({ method: "POST" })
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { spojenie, token, conn, supabaseAdmin } = await platnyToken(data.company_id);
     const { nacitajUcty } = await import("./revolut.server");
     const ucty = await nacitajUcty(spojenie, token);
@@ -203,6 +207,7 @@ export const synchronizujRevolutPohyby = createServerFn({ method: "POST" })
   .validator((d) => Firma.parse(d))
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id, "zapis");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
     const { spojenie, token, conn, supabaseAdmin } = await platnyToken(data.company_id);
     const { nacitajPohyby } = await import("./revolut.server");
     const { stiahniPohybyPripojenia } = await import("./bank-sync.server");

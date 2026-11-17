@@ -37,6 +37,15 @@ async function overClena(
   }
 }
 
+/** Testovacia firma sa na e-shop ani na Zásielkovňu nepripája (nič nejde von). */
+async function zastavTestovaciu(companyId: string) {
+  const { zastavAkTestovacia } = await import("./testovacia-firma.server");
+  await zastavAkTestovacia(
+    companyId,
+    "Testovacia firma — e-shop a Zásielkovňa sa v testovacej firme nepripájajú.",
+  );
+}
+
 const admin = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
 /* ------------------------------ Shoptet ------------------------------ */
@@ -76,6 +85,7 @@ export const pripojShoptetFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "spravca");
+    await zastavTestovaciu(data.company_id);
     const { shoptetApi } = await import("./shoptet.server");
     // Overenie tokenu: údaje e-shopu a prístup k objednávkam.
     const eshop = await shoptetApi<any>(data.token, "/api/eshop?include=orderStatuses");
@@ -123,6 +133,7 @@ export const objednavkyShoptetFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: false });
+    await zastavTestovaciu(data.company_id);
     const { shoptetApi, tokenShoptetu } = await import("./shoptet.server");
     const t = await tokenShoptetu(data.company_id);
     if (!t) throw new Error("Shoptet nie je pripojený.");
@@ -172,6 +183,7 @@ export const fakturujShoptetFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: true });
+    await zastavTestovaciu(data.company_id);
     const { shoptetApi, tokenShoptetu } = await import("./shoptet.server");
     const { fakturaZObjednavky } = await import("./shoptet");
     const { vytvorFakturu } = await import("./vytvor-fakturu.server");
@@ -231,6 +243,7 @@ export const pripojZasielkovnuFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "spravca");
+    await zastavTestovaciu(data.company_id);
     const { overHeslo } = await import("./zasielkovna.server");
     await overHeslo(data.heslo);
     const { encryptSecret } = await import("./payment-crypto.server");
@@ -267,6 +280,7 @@ export const vytvorZasielkuFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: true });
+    await zastavTestovaciu(data.company_id);
     const { hesloZasielkovne, volajZasielkovnu } = await import("./zasielkovna.server");
     const { rozdelMeno, xmlVytvorZasielku, vysledokPola } = await import("./zasielkovna");
     const n = await hesloZasielkovne(data.company_id);
@@ -339,6 +353,7 @@ export const stitokZasielkyFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: false });
+    await zastavTestovaciu(data.company_id);
     const { hesloZasielkovne, volajZasielkovnu } = await import("./zasielkovna.server");
     const { xmlStitok } = await import("./zasielkovna");
     const n = await hesloZasielkovne(data.company_id);
@@ -361,6 +376,7 @@ export const stavZasielkyFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "clen", { nazov: "faktury", zapis: true });
+    await zastavTestovaciu(data.company_id);
     const { hesloZasielkovne, volajZasielkovnu } = await import("./zasielkovna.server");
     const { xmlStav, vysledokPola } = await import("./zasielkovna");
     const n = await hesloZasielkovne(data.company_id);
@@ -396,6 +412,7 @@ export const nastavAutoImportFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await overClena(context, data.company_id, "spravca");
+    await zastavTestovaciu(data.company_id);
     if (data.zapnut && !data.stavy.length)
       throw new Error("Vyberte aspoň jeden stav objednávky, ktorý sa má fakturovať.");
     const a = await admin();

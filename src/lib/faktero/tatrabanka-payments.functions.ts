@@ -43,6 +43,7 @@ export const payPurchaseInvoice = createServerFn({ method: "POST" })
   .validator((d: unknown) => PayInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId, data.company_id);
+    await (await import("./testovacia-firma-banka.server")).zastavPlatbuTestovacej(data.company_id);
 
     const { isTatraConfigured, createPkcePair, getRedirectUri } =
       await import("./tatrabanka.server");
