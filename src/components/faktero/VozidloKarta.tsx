@@ -322,7 +322,11 @@ export function VozidloKarta({
     }
   }
 
-  async function nahraj(file: File) {
+  // Rýchle nahratie technického preukazu na začiatku formulára (aj fotka z mobilu).
+  const suborTp = useRef<HTMLInputElement>(null);
+
+  async function nahraj(file: File, druhPrepis?: string) {
+    const druh = druhPrepis ?? druhNahratia;
     if (!cid) return;
     if (file.size > MAX_SUBOR) return toast.error(t("Súbor je väčší ako 20 MB."));
     setNahravam(true);
@@ -334,7 +338,7 @@ export function VozidloKarta({
         .upload(cesta, file, { contentType: file.type || undefined });
       if (error) throw new Error(error.message);
       const dok: Dokument = {
-        druh: druhNahratia,
+        druh,
         nazov: file.name,
         file_path: cesta,
         file_mime: file.type || null,
@@ -354,13 +358,14 @@ export function VozidloKarta({
         setDokumenty((d) => [dok, ...d]);
       }
       setPlatneDo("");
-      if (druhNahratia === "tp1" || druhNahratia === "tp2") await citajDokument(cesta);
+      if (druh === "tp1" || druh === "tp2") await citajDokument(cesta);
       else toast.success(t("Dokument je nahratý."));
     } catch (e: any) {
       toast.error(e?.message ?? t("Nahratie zlyhalo."));
     } finally {
       setNahravam(false);
       if (subor.current) subor.current.value = "";
+      if (suborTp.current) suborTp.current.value = "";
     }
   }
 
@@ -458,6 +463,34 @@ export function VozidloKarta({
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0 space-y-6">
+        {smieUpravovat && (
+          <section className="rounded-xl border border-dashed border-primary/50 bg-primary/5 p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-semibold">{t("Načítať z technického preukazu")}</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t("Odfoťte alebo nahrajte technický preukaz (časť I) — značka, VIN, ŠPZ, kategória, výkon a ďalšie údaje sa vyplnia samé. Prepíšu sa len prázdne polia.")}
+                </p>
+              </div>
+              <input
+                ref={suborTp}
+                type="file"
+                accept="application/pdf,image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && void nahraj(e.target.files[0], "tp1")}
+              />
+              <button
+                type="button"
+                onClick={() => suborTp.current?.click()}
+                disabled={nahravam}
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {nahravam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {t("Nahrať technický preukaz")}
+              </button>
+            </div>
+          </section>
+        )}
         <Sekcia nadpis="Vozidlo" popis="Údaje z technického preukazu (osvedčenia o evidencii).">
           <Pole label="Názov vozidla">
             {input("name", "text", { placeholder: t("napr. Škoda Octavia — obchod") })}

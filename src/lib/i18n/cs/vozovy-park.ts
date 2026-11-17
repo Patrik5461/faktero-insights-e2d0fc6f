@@ -172,4 +172,7 @@ export default {
   "prijatá faktúra": "přijatá faktura",
   "a ďalších {n}": "a dalších {n}",
   "— bez vozidla —": "— bez vozidla —",
+  "Načítať z technického preukazu": "Načíst z technického průkazu",
+  "Odfoťte alebo nahrajte technický preukaz (časť I) — značka, VIN, ŠPZ, kategória, výkon a ďalšie údaje sa vyplnia samé. Prepíšu sa len prázdne polia.": "Vyfoťte nebo nahrajte technický průkaz (část I) — značka, VIN, SPZ, kategorie, výkon a další údaje se vyplní samy. Přepíší se jen prázdná pole.",
+  "Nahrať technický preukaz": "Nahrát technický průkaz",
 };

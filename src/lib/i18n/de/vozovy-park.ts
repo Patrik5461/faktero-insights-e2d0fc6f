@@ -174,4 +174,7 @@ export default {
   "prijatá faktúra": "Eingangsrechnung",
   "a ďalších {n}": "und {n} weitere",
   "— bez vozidla —": "— ohne Fahrzeug —",
+  "Načítať z technického preukazu": "Aus dem Fahrzeugschein übernehmen",
+  "Odfoťte alebo nahrajte technický preukaz (časť I) — značka, VIN, ŠPZ, kategória, výkon a ďalšie údaje sa vyplnia samé. Prepíšu sa len prázdne polia.": "Fotografieren oder laden Sie den Fahrzeugschein (Teil I) hoch — Marke, FIN, Kennzeichen, Klasse, Leistung und weitere Angaben werden automatisch ausgefüllt. Nur leere Felder werden überschrieben.",
+  "Nahrať technický preukaz": "Fahrzeugschein hochladen",
 };
