@@ -458,6 +458,10 @@ export default {
   Stĺpce: "Sloupce",
   "Zobrazené stĺpce": "Zobrazené sloupce",
   "IBAN nie je platný — skontrolujte ho, prosím.": "IBAN není platný — zkontrolujte ho, prosím.",
+  "pripojený v Banke": "připojený v Bance",
+  "Účet je pripojený v Banke a pridal sa sem automaticky.":
+    "Účet je připojený v Bance a přidal se sem automaticky.",
+  "Účty pripojené v Banke sa sem pridajú samy.": "Účty připojené v Bance se sem přidají samy.",
   "Tento účet už je pridaný.": "Tento účet už je přidán.",
   "Účet pridaný.": "Účet přidán.",
   "Predvolený účet zmenený. Nové faktúry ho dostanú automaticky.":

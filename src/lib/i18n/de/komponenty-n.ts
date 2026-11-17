@@ -471,6 +471,11 @@ export default {
   Stĺpce: "Spalten",
   "Zobrazené stĺpce": "Angezeigte Spalten",
   "IBAN nie je platný — skontrolujte ho, prosím.": "Die IBAN ist ungültig – bitte prüfen Sie sie.",
+  "pripojený v Banke": "unter „Bank“ verbunden",
+  "Účet je pripojený v Banke a pridal sa sem automaticky.":
+    "Das Konto ist unter „Bank“ verbunden und wurde automatisch hinzugefügt.",
+  "Účty pripojené v Banke sa sem pridajú samy.":
+    "Unter „Bank“ verbundene Konten werden hier automatisch hinzugefügt.",
   "Tento účet už je pridaný.": "Dieses Konto wurde bereits hinzugefügt.",
   "Účet pridaný.": "Konto hinzugefügt.",
   "Predvolený účet zmenený. Nové faktúry ho dostanú automaticky.":

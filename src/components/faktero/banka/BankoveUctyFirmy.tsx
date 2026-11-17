@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader2, Plus, Star, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Landmark, Loader2, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatujIban, upravIban } from "@/lib/faktero/platobny-ucet";
@@ -25,6 +25,35 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
   });
   const [pridavam, setPridavam] = useState(false);
   const [pracujem, setPracujem] = useState(false);
+  /*
+    IBAN-y účtov pripojených v Banke. Pripojený účet sa sem pridá sám
+    (spúšťač bank_accounts_do_firmy) — tu ho len označíme. Odpojenie banky
+    účet firmy neodstráni.
+  */
+  const [pripojene, setPripojene] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let zive = true;
+    supabase
+      .from("bank_accounts")
+      .select("iban")
+      .eq("company_id", companyId)
+      .not("iban", "is", null)
+      .then(({ data }) => {
+        if (!zive) return;
+        setPripojene(
+          new Set(
+            (data ?? []).map((r) =>
+              String(r.iban ?? "")
+                .replace(/\s+/g, "")
+                .toUpperCase(),
+            ),
+          ),
+        );
+      });
+    return () => {
+      zive = false;
+    };
+  }, [companyId, ucty]);
 
   async function pridaj(e: React.FormEvent) {
     e.preventDefault();
@@ -107,7 +136,8 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
       <p className="mt-1 text-sm text-muted-foreground">
         {t(
           "Na ktorý účet majú odberatelia platiť. Predvolený dostane každá nová faktúra; pri vystavení aj na hotovej faktúre sa dá zvoliť iný.",
-        )}
+        )}{" "}
+        {t("Účty pripojené v Banke sa sem pridajú samy.")}
       </p>
 
       {ucty === null ? (
@@ -125,6 +155,14 @@ export function BankoveUctyFirmy({ companyId }: { companyId: string }) {
                   {u.name || u.bank_name || t("Účet")}
                   {u.currency !== "EUR" && (
                     <span className="ml-2 text-xs text-muted-foreground">{u.currency}</span>
+                  )}
+                  {pripojene.has(u.iban.replace(/\s+/g, "").toUpperCase()) && (
+                    <span
+                      title={t("Účet je pripojený v Banke a pridal sa sem automaticky.")}
+                      className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
+                    >
+                      <Landmark className="h-3 w-3" /> {t("pripojený v Banke")}
+                    </span>
                   )}
                   {u.is_default && (
                     <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary-hover">
