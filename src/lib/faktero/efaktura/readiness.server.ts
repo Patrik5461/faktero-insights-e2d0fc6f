@@ -3,6 +3,7 @@
  * Produces a 0–100 score + list of missing requirements grouped by area.
  */
 import type { ReadinessCheck, ReadinessReport } from "./types";
+import { jeNeplatitel } from "../uctovanie-agenda";
 
 type CompanyRow = {
   id: string;
@@ -16,6 +17,8 @@ type CompanyRow = {
   country?: string | null;
   email?: string | null;
   iban?: string | null;
+  vat_payer?: boolean | null;
+  vat_scheme?: string | null;
 };
 
 type ProfileRow = {
@@ -103,7 +106,8 @@ export function computeReadiness(args: {
       key: "vat.ic_dph",
       group: "vat",
       label: "IČ DPH (ak ste platca DPH)",
-      ok: !!company.ic_dph,
+      // Neplatiteľ DPH IČ DPH nemá a mať nemusí — kontrola je splnená (RHJ mala 93 %).
+      ok: !!company.ic_dph || jeNeplatitel(company as never),
       severity: "warning",
       weight: 8,
       hint: "Povinné len pre platcov DPH.",
