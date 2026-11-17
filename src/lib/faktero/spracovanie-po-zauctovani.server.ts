@@ -39,7 +39,7 @@ export async function spracujZauctovaneBlocky(
   const { data: riadky, error } = await sb
     .from("expense_documents")
     .select(
-      "id, status, document_number, supplier_name, total_amount, issue_date, zauctovane_at, exported_at, locked_at, deleted_at",
+      "id, status, document_number, supplier_name, total_amount, issue_date, zauctovane_at, exported_at, locked_at",
     )
     .eq("company_id", args.companyId)
     .in("id", args.ids);
@@ -50,7 +50,8 @@ export async function spracujZauctovaneBlocky(
   const ostavaju: VysledokSpracovania["ostavaju"] = [];
   for (const r of (riadky ?? []) as any[]) {
     if (r.status !== "new" || !r.zauctovane_at) continue;
-    if (r.exported_at || r.locked_at || r.deleted_at) continue;
+    // expense_documents nemá deleted_at (zmazaný bloček ide do kos_dokladov a z tabuľky zmizne).
+    if (r.exported_at || r.locked_at) continue;
     if (daSaSpracovat(r)) naSpracovanie.push(r.id);
     else ostavaju.push({ id: r.id, popis: meno(r), dovod: textNespracovania(chybajuceUdaje(r)) });
   }

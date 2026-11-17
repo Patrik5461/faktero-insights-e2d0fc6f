@@ -48,7 +48,6 @@ const blocek = (id: string, x: Riadok = {}) => ({
   processed_by: null,
   exported_at: null,
   locked_at: null,
-  deleted_at: null,
   ...x,
 });
 
@@ -89,11 +88,10 @@ describe("spracujZauctovaneBlocky", () => {
     expect((await spusti([b]).v).spracovane).toEqual(["b1"]);
   });
 
-  it("odovzdaný, zamknutý, zmazaný ani nezaúčtovaný sa nemení", async () => {
+  it("odovzdaný, zamknutý ani nezaúčtovaný sa nemení", async () => {
     const riadky = [
       blocek("b1", { exported_at: "2026-11-01T00:00:00Z" }),
       blocek("b2", { locked_at: "2026-11-01T00:00:00Z" }),
-      blocek("b3", { deleted_at: "2026-11-01T00:00:00Z" }),
       blocek("b4", { zauctovane_at: null }),
     ];
     const { v, sb } = spusti(riadky);
