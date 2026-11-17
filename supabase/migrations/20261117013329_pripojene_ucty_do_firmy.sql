@@ -50,7 +50,7 @@ language sql immutable set search_path = public as $$
     and m.krajina = left(upper(regexp_replace(p_iban, '\s', '', 'g')), 2)
     and m.kod = substr(upper(regexp_replace(p_iban, '\s', '', 'g')), 5, 4)
 $$;
-revoke all on function public.banka_podla_iban(text) from public;
+revoke all on function public.banka_podla_iban(text) from public, anon, authenticated;
 
 -- Pridá pripojený účet medzi účty firmy, ak tam ešte nie je. Nikdy nezhodí
 -- zápis do bank_accounts (synchronizácia banky musí prejsť aj tak).
@@ -107,7 +107,7 @@ begin
 exception when others then
   raise warning 'pripojeny_ucet_do_firmy(%): %', p_bank_account_id, sqlerrm;
 end $$;
-revoke all on function public.pripojeny_ucet_do_firmy(uuid) from public;
+revoke all on function public.pripojeny_ucet_do_firmy(uuid) from public, anon, authenticated;
 
 create or replace function public.bank_accounts_do_firmy()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -118,7 +118,7 @@ begin
   end if;
   return null;
 end $$;
-revoke all on function public.bank_accounts_do_firmy() from public;
+revoke all on function public.bank_accounts_do_firmy() from public, anon, authenticated;
 
 drop trigger if exists bank_accounts_do_firmy on public.bank_accounts;
 create trigger bank_accounts_do_firmy after insert or update of iban on public.bank_accounts
