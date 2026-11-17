@@ -107,6 +107,15 @@ const nastavenia: any = {
   sklad: "HLAVNY",
   cenovaSkupina: "Predaj",
   blockyPodlaPlatby: true,
+  /*
+    Text predkontácie hlavičky vydanej faktúry (číselník firmy) — od 17. 11.
+    2026 ide do textu hlavičky a vlastný text faktúry je prvá textová položka.
+  */
+  popisyPredkontaciiVydanych: {
+    "3Fv": "Tržby z predaja služieb",
+    "3Dv": "Dobropis tržieb zo služieb",
+    "3Zv": "Daňový doklad k prijatej platbe",
+  },
 };
 
 const polozka = (o: any = {}) => ({

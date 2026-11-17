@@ -14,7 +14,7 @@
         <inv:date>2026-10-10</inv:date>
         <inv:dateTax>2026-10-08</inv:dateTax>
         <inv:dateDue>2026-10-24</inv:dateDue>
-        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:text>Tržby z predaja služieb</inv:text>
         <inv:note>Prenesenie daňovej povinnosti · Ďakujeme za spoluprácu</inv:note>
         <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
         <inv:classificationVAT><typ:ids>UDpdp</typ:ids></inv:classificationVAT>
@@ -40,6 +40,9 @@
         <inv:account><typ:ids>TB</typ:ids></inv:account>
       </inv:invoiceHeader>
       <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Fakturujeme vám služby za október</inv:text>
+        </inv:invoiceItem>
         <inv:invoiceItem>
           <inv:text>Stavebné práce</inv:text>
           <inv:quantity>2</inv:quantity>
@@ -85,7 +88,7 @@
         <inv:date>2026-10-10</inv:date>
         <inv:dateTax>2026-10-08</inv:dateTax>
         <inv:dateDue>2026-10-24</inv:dateDue>
-        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:text>Tržby z predaja služieb</inv:text>
         <inv:note>Prenesenie daňovej povinnosti pri položkách PDP · Ďakujeme za spoluprácu</inv:note>
         <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
         <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
@@ -111,6 +114,9 @@
         <inv:account><typ:ids>TB</typ:ids></inv:account>
       </inv:invoiceHeader>
       <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Fakturujeme vám služby za október</inv:text>
+        </inv:invoiceItem>
         <inv:invoiceItem>
           <inv:text>Konzultácia</inv:text>
           <inv:quantity>2</inv:quantity>
@@ -180,7 +186,7 @@
         <inv:date>2026-10-10</inv:date>
         <inv:dateTax>2026-10-08</inv:dateTax>
         <inv:dateDue>2026-10-24</inv:dateDue>
-        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:text>Tržby z predaja služieb</inv:text>
         <inv:note>Prenesenie daňovej povinnosti · Ďakujeme za spoluprácu</inv:note>
         <inv:accounting><typ:ids>3Fv</typ:ids></inv:accounting>
         <inv:classificationVAT><typ:ids>UDpdp</typ:ids></inv:classificationVAT>
@@ -204,6 +210,9 @@
         <inv:account><typ:ids>TB</typ:ids></inv:account>
       </inv:invoiceHeader>
       <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Fakturujeme vám služby za október</inv:text>
+        </inv:invoiceItem>
         <inv:invoiceItem>
           <inv:text>Konzultácia</inv:text>
           <inv:quantity>2</inv:quantity>

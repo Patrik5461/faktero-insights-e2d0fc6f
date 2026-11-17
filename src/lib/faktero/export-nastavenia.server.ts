@@ -17,6 +17,8 @@ type Klient = any;
 export type DoplnkyExportu = {
   export: NastaveniaExportu;
   popisyPredkontacii?: Record<string, string>;
+  /** Popis predkontácie pre text hlavičky vydanej faktúry (`popisyVydanych`). */
+  popisyPredkontaciiVydanych?: Record<string, string>;
   partneriVPohode?: string[];
   bankaPodlaUctu?: Record<string, string>;
   /** Preklad predkontácií (dvojíc účtov) na skratky Pohody. */
@@ -65,7 +67,7 @@ async function nacitajDoplnky(
     // Popis predkontácie — text dokladu „názov účtovnej položky“ aj text bločku bez popisu.
     supabase
       .from("predkontacie")
-      .select("kod, popis, zdroj, ucet_md, ucet_d")
+      .select("kod, popis, zdroj, ucet_md, ucet_d, agenda")
       .eq("company_id", company.id)
       .eq("druh", "predkontacia")
       .eq("aktivne", true),
@@ -121,6 +123,10 @@ async function nacitajDoplnky(
       if (p && !out.popisyPredkontacii[r.kod]) out.popisyPredkontacii[r.kod] = p;
     }
   }
+  if (popisy?.data) {
+    const v = popisyVydanych(popisy.data);
+    if (Object.keys(v).length) out.popisyPredkontaciiVydanych = v;
+  }
   if (partneri?.data)
     out.partneriVPohode = (partneri.data as { zaznam_id: string }[]).map((r) =>
       String(r.zaznam_id),
@@ -142,6 +148,42 @@ async function nacitajDoplnky(
       if (iban) m[iban] = s;
     }
     if (Object.keys(m).length) out.bankaPodlaUctu = m;
+  }
+  return out;
+}
+
+/**
+ * Popis predkontácie pre vydanú faktúru podľa kódu. Ten istý kód má v Pohode
+ * v každej agende iný význam („1“ = Tržby za vlastné výrobky vo vydaných, Nákup
+ * tovaru v prijatých) — prednosť má agenda vydaných faktúr, potom kód bez
+ * agendy (číselník zo súboru, ručne), potom ostatné agendy okrem nákladových.
+ */
+const NAKLADOVE_AGENDY = new Set([
+  "receivedInvoice",
+  "receivedAdvanceInvoice",
+  "commitment",
+  "cashPaid",
+  "bankIssued",
+]);
+export function popisyVydanych(
+  riadky: readonly { kod?: unknown; popis?: unknown; agenda?: unknown }[],
+): Record<string, string> {
+  const poradie = (agenda: unknown) => {
+    const a = String(agenda ?? "").trim();
+    if (a === "issuedInvoice") return 0;
+    if (!a) return 1;
+    return NAKLADOVE_AGENDY.has(a) ? -1 : 2;
+  };
+  const out: Record<string, string> = {};
+  const uroven: Record<string, number> = {};
+  for (const r of riadky) {
+    const k = String(r.kod ?? "").trim();
+    const p = String(r.popis ?? "").trim();
+    const u = poradie(r.agenda);
+    if (!k || !p || u < 0) continue;
+    if (k in uroven && uroven[k] <= u) continue;
+    out[k] = p;
+    uroven[k] = u;
   }
   return out;
 }

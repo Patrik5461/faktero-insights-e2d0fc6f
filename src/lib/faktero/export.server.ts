@@ -394,6 +394,13 @@ export type PohodaNastavenia = {
   /** Popis predkontácie podľa kódu (číselník) — pre text „účtovná položka". */
   popisyPredkontacii?: Record<string, string>;
   /**
+   * Popis predkontácie pre vydané faktúry (agenda `issuedInvoice`, inak kód
+   * bez agendy) — text hlavičky vydanej faktúry v Pohode. Ten istý kód
+   * (napr. „1“) má v Pohode v každej agende iný význam, preto vlastná mapa.
+   * Načíta `doplnkyExportu`.
+   */
+  popisyPredkontaciiVydanych?: Record<string, string>;
+  /**
    * Partneri (`customers.id`), ktorých karta už je v adresári Pohody alebo ide
    * v tej istej dávke — doklad sa s nimi spáruje cez `extId`.
    */
@@ -716,17 +723,68 @@ export function buildPohodaInvoiceXml(opts: {
  */
 function textVystavenej(invoice: InvoiceRow, ex: NastaveniaExportu, cz = false): string {
   const inv = invoice as any;
-  // Česká Pohoda dostane český text, nie slovenský.
-  const cislo =
-    inv.type === "advance_payment"
-      ? `${cz ? "Daňový doklad k přijaté platbě" : "Daňový doklad k prijatej platbe"} ${inv.invoice_number ?? ""}`.trim()
-      : `${cz ? "Faktura" : "Faktúra"} ${inv.invoice_number}`;
+  const cislo = textCislaVystavenej(invoice, cz);
   const auto = String(inv.intro_note ?? "").trim() || String(inv.notes ?? "").trim() || cislo;
   if (ex.textVystavene === "poznamka") return String(inv.notes ?? "").trim() || auto;
   if (ex.textVystavene === "odberatel_cislo")
     return partnerACislo(inv.customer_name, inv.invoice_number) || auto;
   if (ex.textVystavene === "cislo") return cislo;
   return auto;
+}
+
+/** Náhradný text vystavenej faktúry — len druh dokladu a číslo. */
+function textCislaVystavenej(invoice: InvoiceRow, cz = false): string {
+  const inv = invoice as any;
+  // Česká Pohoda dostane český text, nie slovenský.
+  return inv.type === "advance_payment"
+    ? `${cz ? "Daňový doklad k přijaté platbě" : "Daňový doklad k prijatej platbe"} ${inv.invoice_number ?? ""}`.trim()
+    : `${cz ? "Faktura" : "Faktúra"} ${inv.invoice_number}`;
+}
+
+/**
+ * Text predkontácie hlavičky vydanej faktúry z číselníka firmy
+ * (`predkontacie.popis`) — prázdny, keď kód popis nemá.
+ */
+export function popisPredkontacieVydanej(
+  nastavenia: PohodaNastavenia | null | undefined,
+  kod: string | null | undefined,
+): string {
+  const k = String(kod ?? "").trim();
+  if (!k) return "";
+  return skrat(nastavenia?.popisyPredkontaciiVydanych?.[k], 240);
+}
+
+/**
+ * Text rozdelený na riadky textových položiek Pohody (invoice.xsd:
+ * `invoiceItem/text` je string90). Zalomenie riadkov z textu ostáva, dlhý
+ * riadok sa láme po slovách — nič sa neodreže.
+ */
+export function textNaRiadky(text: unknown, max = 90): string[] {
+  const out: string[] = [];
+  for (const odsek of String(text ?? "").split(/\r?\n/)) {
+    let riadok = "";
+    for (const slovo of odsek.split(/\s+/).filter(Boolean)) {
+      // Slovo dlhšie než riadok sa rozseká.
+      let zvysok = slovo;
+      while (zvysok.length > max) {
+        if (riadok) {
+          out.push(riadok);
+          riadok = "";
+        }
+        out.push(zvysok.slice(0, max));
+        zvysok = zvysok.slice(max);
+      }
+      if (!zvysok) continue;
+      if (!riadok) riadok = zvysok;
+      else if (riadok.length + 1 + zvysok.length <= max) riadok += ` ${zvysok}`;
+      else {
+        out.push(riadok);
+        riadok = zvysok;
+      }
+    }
+    if (riadok) out.push(riadok);
+  }
+  return out;
 }
 
 /**
@@ -1196,6 +1254,29 @@ export function polozkyFaktur(opts: {
       const menaBlok = cudzia ? "foreignCurrency" : "homeCurrency";
 
       const textRozuctovania = skrat(textVystavenej(invoice, ex, cz), 90) || `Faktúra ${invoice.invoice_number ?? ""}`.trim();
+      /*
+        Text hlavičky = text predkontácie hlavičky z číselníka firmy (napr.
+        „Tržby za služby“), ako ho dáva POHODA pri ručnom zápise. Vlastný text
+        faktúry („Fakturujeme vám…“) potom ide ako prvá textová položka
+        (bez množstva a cien — POHODA SK 14404.8 ju 17. 11. 2026 prijala ako
+        textový riadok, súčty sa nezmenili). Bez popisu predkontácie alebo
+        bez položiek ostáva text faktúry v hlavičke ako doteraz.
+      */
+      const textFaktury = textVystavenej(invoice, ex, cz);
+      const maDetail = rozRiadky.length > 0 || items.length > 0;
+      const popisHlavicky = maDetail ? popisPredkontacieVydanej(nastavenia, predkontacia) : "";
+      const textHlavicky = popisHlavicky || skrat(textFaktury, 240);
+      // Samé „Faktúra 2026001“ do položiek nepatrí — číslo nesie doklad.
+      const textovePolozky =
+        popisHlavicky && skrat(textFaktury, 240) !== skrat(textCislaVystavenej(invoice, cz), 240)
+          ? textNaRiadky(textFaktury)
+              .map(
+                (r) => `
+        <inv:invoiceItem>${el("inv:text", r, "          ")}
+        </inv:invoiceItem>`,
+              )
+              .join("")
+          : "";
       const itemRows = rozRiadky.length
         ? rozRiadky
             .map((r, i) => {
@@ -1397,9 +1478,9 @@ export function polozkyFaktur(opts: {
           "        ",
         )}${el(
           "inv:text",
-          // „Text nad položkami" je to, čo sa fakturuje — patrí do textu
-          // dokladu v Pohode. Poznámka ide do poznámky.
-          skrat(textVystavenej(invoice, ex, cz), 240),
+          // Text predkontácie, inak „text nad položkami" (to, čo sa fakturuje).
+          // Poznámka ide do poznámky.
+          textHlavicky,
           "        ",
         )}${el("inv:note", poznamky, "        ")}${
           predkontacia
@@ -1448,7 +1529,7 @@ export function polozkyFaktur(opts: {
             : ""
         }
       </inv:invoiceHeader>
-      <inv:invoiceDetail>${itemRows}${zalohaRiadok}
+      <inv:invoiceDetail>${textovePolozky}${itemRows}${zalohaRiadok}
       </inv:invoiceDetail>
       <inv:invoiceSummary>${
         /*

@@ -16,7 +16,7 @@
         <inv:dateTax>2026-10-08</inv:dateTax>
         <inv:dateApplicationVAT>2026-10-10</inv:dateApplicationVAT>
         <inv:dateDue>2026-10-24</inv:dateDue>
-        <inv:text>Fakturujeme vám služby za október</inv:text>
+        <inv:text>Dobropis tržieb zo služieb</inv:text>
         <inv:note>Ďakujeme za spoluprácu</inv:note>
         <inv:accounting><typ:ids>3Dv</typ:ids></inv:accounting>
         <inv:classificationVAT><typ:ids>UD</typ:ids></inv:classificationVAT>
@@ -42,6 +42,9 @@
         <inv:account><typ:ids>TB</typ:ids></inv:account>
       </inv:invoiceHeader>
       <inv:invoiceDetail>
+        <inv:invoiceItem>
+          <inv:text>Fakturujeme vám služby za október</inv:text>
+        </inv:invoiceItem>
         <inv:invoiceItem>
           <inv:text>Konzultácia</inv:text>
           <inv:quantity>2</inv:quantity>
