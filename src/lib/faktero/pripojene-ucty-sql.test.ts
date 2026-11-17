@@ -11,7 +11,7 @@ import { nazovBanky } from "./banka-z-iban";
   účty tej istej banky vyzerali inak.
 */
 const SQL = readFileSync(
-  resolve(__dirname, "../../../supabase/migrations/20261117120000_pripojene_ucty_do_firmy.sql"),
+  resolve(__dirname, "../../../supabase/migrations/20261117013329_pripojene_ucty_do_firmy.sql"),
   "utf8",
 );
 
