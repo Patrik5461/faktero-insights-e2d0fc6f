@@ -122,6 +122,9 @@ async function zostavaUhradit(supabase: Klient, f: Record<string, any>): Promise
   return stavUhradyPrijatej({ amount_total: f.amount_total, status: f.status, uhrady: (uhrady ?? []) as any[], zaloha }).zostava;
 }
 
+/** Poznámka úhrady z Nespracovaných dokladov. */
+const POZNAMKA_NESPRACOVANE = "Doklad o úhrade z Nespracovaných dokladov";
+
 /**
  * Zapíše úhradu z dokladu k prijatej faktúre, ak ešte nie je uhradená.
  * Nikdy nevyhodí — keď úhrada neprejde, vráti dôvod (súbor už je priložený).
@@ -131,6 +134,7 @@ async function zapisUhradu(
   userId: string,
   f: Record<string, any>,
   uhrada: UdajeUhrady,
+  poznamka: string = POZNAMKA_NESPRACOVANE,
 ): Promise<{ uhradene: boolean; dovod?: Dovod }> {
   try {
     const plan = planUhrady({
@@ -149,7 +153,7 @@ async function zapisUhradu(
       currency: f.currency ?? "EUR",
       method: uhrada.sposob || f.payment_method || null,
       zdroj: "rucne",
-      note: "Doklad o úhrade z Nespracovaných dokladov",
+      note: poznamka,
       created_by: userId,
     });
     if (error)
@@ -178,17 +182,33 @@ export type VysledokUhrady = {
   dovod?: Dovod;
 };
 
+/** Doklad o úhrade, ktorého súbor ide k prijatej faktúre (nespracovaný doklad alebo bloček). */
+export type ZdrojUhrady = {
+  companyId: string;
+  /** Kbelík so súborom dokladu. */
+  kos: string;
+  filePath: string | null | undefined;
+  fileMime?: string | null;
+  fileName?: string | null;
+  uhrada: UdajeUhrady;
+  /** Poznámka zapísanej úhrady. */
+  poznamka: string;
+};
+
 /**
- * Priloží súbor dokladu o úhrade k prijatej faktúre tej istej firmy, nezaplatenú
- * faktúru označí ako uhradenú (suma, deň a spôsob z dokladu) a nespracovaný
- * záznam zmaže. Keď suma nesedí, bez `ajInuSumu` odmietne (rozhodne človek).
+ * Spoločné jadro „doklad o úhrade k prijatej faktúre“: overí faktúru (tá istá
+ * firma, druh, suma), priloží súbor dokladu medzi prílohy faktúry, zavolá
+ * `odstranZdroj` (zmazanie nespracovaného záznamu, bloček do koša) — keď
+ * zlyhá, príloha sa vráti — a nakoniec nezaplatenú faktúru označí ako
+ * uhradenú. Keď suma nesedí, bez `ajInuSumu` odmietne (rozhodne človek).
  */
-export async function priradUhradu(
+export async function prilozUhraduKFakture(
   supabase: Klient,
   userId: string,
-  r: Record<string, any>,
+  zdroj: ZdrojUhrady,
   purchaseInvoiceId: string,
-  volby: { ajInuSumu?: boolean } = {},
+  volby: { ajInuSumu?: boolean },
+  odstranZdroj: () => Promise<void>,
 ): Promise<VysledokUhrady> {
   const { data: f } = await supabase
     .from("purchase_invoices")
@@ -198,10 +218,10 @@ export async function priradUhradu(
     .eq("id", purchaseInvoiceId)
     .maybeSingle();
   if (!f || f.deleted_at) throw new Error("Prijatá faktúra sa nenašla.");
-  if (f.company_id !== r.company_id) throw new Error("Faktúra je v inej firme než doklad.");
+  if (f.company_id !== zdroj.companyId) throw new Error("Faktúra je v inej firme než doklad.");
   if (!TYPY_NA_UHRADU.includes(f.type)) throw new Error("Doklad o úhrade sa dá priradiť len k prijatej faktúre alebo zálohovej faktúre.");
-  if (!r.file_path) throw new Error("Doklad nemá súbor, ktorý by sa dal priložiť.");
-  const uhrada = udajePreUhradu(nacitajUdaje(r.udaje), r.ai ?? null).uhrada!;
+  if (!zdroj.filePath) throw new Error("Doklad nemá súbor, ktorý by sa dal priložiť.");
+  const uhrada = zdroj.uhrada;
   if (!volby.ajInuSumu && sumaSedi(uhrada.suma, f.amount_total) === false)
     throw new Error(
       `${PREDPONA_INEJ_SUMY}Suma dokladu o úhrade ${uhrada.suma} nesedí so sumou faktúry ${f.invoice_number} (${f.amount_total}).`,
@@ -213,11 +233,11 @@ export async function priradUhradu(
     .eq("purchase_invoice_id", f.id);
   if ((count ?? 0) >= MAX_PRILOH) throw new Error(`K faktúre sa dá priložiť najviac ${MAX_PRILOH} súborov.`);
 
-  const { data: subor, error: eStiahnutia } = await supabase.storage.from(KOS_NESPRACOVANYCH).download(r.file_path);
+  const { data: subor, error: eStiahnutia } = await supabase.storage.from(zdroj.kos).download(zdroj.filePath);
   if (eStiahnutia || !subor) throw new Error("Súbor dokladu sa nepodarilo načítať.");
   const bajty = new Uint8Array(await subor.arrayBuffer());
   if (bajty.length > MAX_PRILOHA) throw new Error("Súbor dokladu je väčší než 15 MB — k faktúre sa priložiť nedá.");
-  const typ = typSuboru(r.file_mime ?? "", r.file_name ?? "") ?? typSuboru("", String(r.file_path));
+  const typ = typSuboru(zdroj.fileMime ?? "", zdroj.fileName ?? "") ?? typSuboru("", String(zdroj.filePath));
   if (!typ) throw new Error("Tento typ súboru sa k faktúre priložiť nedá.");
   const zly = chybaObsahuPrilohy(typ, bajty);
   if (zly) throw new Error(zly);
@@ -231,7 +251,7 @@ export async function priradUhradu(
       company_id: f.company_id,
       purchase_invoice_id: f.id,
       path: cesta,
-      name: nazovPrilohy(r.file_name, `o úhrade ${f.invoice_number}`, POVOLENE_TYPY[typ] ?? "pdf"),
+      name: nazovPrilohy(zdroj.fileName, `o úhrade ${f.invoice_number}`, POVOLENE_TYPY[typ] ?? "pdf"),
       mime: typ,
       size: bajty.length,
       created_by: userId,
@@ -242,21 +262,57 @@ export async function priradUhradu(
     await supabase.storage.from(KOS_PRILOH).remove([cesta]);
     throw new Error(ePrilohy?.message ?? "Prílohu sa nepodarilo uložiť.");
   }
-  // Nespracovaný záznam preč — keď ho medzitým spracoval niekto iný, príloha sa vráti.
-  const { data: zmazane, error: eZmazania } = await supabase
-    .from("nespracovane_doklady")
-    .delete()
-    .eq("id", r.id)
-    .select("id");
-  if (eZmazania || !zmazane?.length) {
+  // Pôvodný záznam preč — keď to neprejde (niekto ho medzitým spracoval, chýba právo), príloha sa vráti.
+  try {
+    await odstranZdroj();
+  } catch (e) {
     await supabase.from("prilohy_dokladov").delete().eq("id", priloha.id);
     await supabase.storage.from(KOS_PRILOH).remove([cesta]);
-    throw new Error(eZmazania?.message ?? "Doklad sa nenašiel — možno ho už niekto spracoval.");
+    throw e;
   }
-  await supabase.storage.from(KOS_NESPRACOVANYCH).remove([r.file_path]);
   // Úhrada až po priložení — keď neprejde, súbor ostáva pri faktúre a človek dostane dôvod.
-  const u = await zapisUhradu(supabase, userId, f, uhrada);
+  const u = await zapisUhradu(supabase, userId, f, uhrada, zdroj.poznamka);
   return { purchaseInvoiceId: f.id, cislo: f.invoice_number, ...u };
+}
+
+/**
+ * Priloží súbor dokladu o úhrade k prijatej faktúre tej istej firmy, nezaplatenú
+ * faktúru označí ako uhradenú (suma, deň a spôsob z dokladu) a nespracovaný
+ * záznam zmaže. Keď suma nesedí, bez `ajInuSumu` odmietne (rozhodne človek).
+ */
+export async function priradUhradu(
+  supabase: Klient,
+  userId: string,
+  r: Record<string, any>,
+  purchaseInvoiceId: string,
+  volby: { ajInuSumu?: boolean } = {},
+): Promise<VysledokUhrady> {
+  const uhrada = udajePreUhradu(nacitajUdaje(r.udaje), r.ai ?? null).uhrada!;
+  return prilozUhraduKFakture(
+    supabase,
+    userId,
+    {
+      companyId: r.company_id,
+      kos: KOS_NESPRACOVANYCH,
+      filePath: r.file_path,
+      fileMime: r.file_mime,
+      fileName: r.file_name,
+      uhrada,
+      poznamka: POZNAMKA_NESPRACOVANE,
+    },
+    purchaseInvoiceId,
+    volby,
+    async () => {
+      const { data: zmazane, error: eZmazania } = await supabase
+        .from("nespracovane_doklady")
+        .delete()
+        .eq("id", r.id)
+        .select("id");
+      if (eZmazania || !zmazane?.length)
+        throw new Error(eZmazania?.message ?? "Doklad sa nenašiel — možno ho už niekto spracoval.");
+      await supabase.storage.from(KOS_NESPRACOVANYCH).remove([r.file_path]);
+    },
+  );
 }
 
 /**

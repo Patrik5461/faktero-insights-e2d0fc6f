@@ -594,35 +594,8 @@ export const deleteExpenseFn = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (!doklad) throw new Error("Doklad sa nezmazal — buď už neexistuje, alebo naň nemáte právo.");
-    const { data: pohyby } = await supabase
-      .from("bank_transactions")
-      .select("id")
-      .eq("matched_expense_id", data.id);
-    const { data: vKosi, error: chybaKosa } = await supabase
-      .from("kos_dokladov")
-      .insert({
-        company_id: doklad.company_id,
-        druh: "doklad",
-        zaznam_id: doklad.id,
-        zaznam: doklad,
-        vazby: { banka: (pohyby ?? []).map((p: any) => p.id) },
-        popis: [doklad.supplier_name, doklad.document_number].filter(Boolean).join(" · ") || "Doklad",
-        zmazal: context.userId,
-      })
-      .select("id")
-      .single();
-    if (chybaKosa) throw new Error(chybaKosa.message);
-
-    const { data: zmazane, error } = await supabase
-      .from("expense_documents")
-      .delete()
-      .eq("id", data.id)
-      .select("id");
-    if (error || !zmazane?.length) {
-      await supabase.from("kos_dokladov").delete().eq("id", vKosi.id);
-      if (error) throw new Error(error.message);
-      throw new Error("Doklad sa nezmazal — buď už neexistuje, alebo naň nemáte právo.");
-    }
+    const { blocekDoKosa } = await import("./doklad-kos.server");
+    await blocekDoKosa(supabase, context.userId, doklad);
     return { ok: true };
   });
 

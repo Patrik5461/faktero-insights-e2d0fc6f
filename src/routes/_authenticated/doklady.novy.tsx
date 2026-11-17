@@ -14,6 +14,8 @@ import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
+import { BlocekPresunOkno, BlocekUhradaPas, type RezimPresunuBlocku } from "@/components/faktero/BlocekUhrada";
+import { dovodZamku, NAZOV_ZAMKU } from "@/lib/faktero/doklady-hromadne";
 import { VyberPravidla } from "@/components/faktero/VyberPravidla";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { KodPohody } from "@/components/faktero/KodPohody";
@@ -110,7 +112,7 @@ import {
   PrimarnaAkcia,
   SekundarnaAkcia,
 } from "@/components/faktero/DocumentDetailHeader";
-import { ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
+import { ArrowRightLeft, ExternalLink, Eye, MessageSquare, Pencil, Printer, SendHorizontal, Trash2, Paperclip } from "lucide-react";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import {
@@ -284,6 +286,8 @@ function NovyDokladPage() {
   const [uprava, setUprava] = useState(false);
   const zmazFn = useServerFn(deleteExpenseFn);
   const [presunPrilohy, setPresunPrilohy] = useState(false);
+  /** Okno „Presunúť / priradiť“ bločku (úhrada faktúry → prijatá faktúra alebo Iné doklady). */
+  const [presunBlocku, setPresunBlocku] = useState<RezimPresunuBlocku | null>(null);
   const sablonyFn = useServerFn(poznamkySablonyFn);
   const [sablony, setSablony] = useState<string[]>([]);
   useEffect(() => {
@@ -384,6 +388,27 @@ function NovyDokladPage() {
       </span>
     </div>
   ) : null;
+
+  /** Bloček, ktorý je úhradou faktúry (METRO „ÚHRADA FAKTÚRY“) — ponuka priradiť alebo presunúť. */
+  const zamokBlocku = ulozeny ? dovodZamku(ulozeny, uzamknuteDo) : null;
+  const pasUhrady =
+    ulozeny && cid ? (
+      <BlocekUhradaPas
+        blocek={ulozeny}
+        zamok={zamokBlocku ? NAZOV_ZAMKU[zamokBlocku] : null}
+        onOtvor={setPresunBlocku}
+      />
+    ) : null;
+  const oknoPresunuBlocku =
+    presunBlocku && ulozeny && cid ? (
+      <BlocekPresunOkno
+        blocekId={ulozeny.id}
+        companyId={cid}
+        mena={ulozeny.currency}
+        rezim={presunBlocku}
+        onClose={() => setPresunBlocku(null)}
+      />
+    ) : null;
 
   async function obnovUlozeny() {
     if (!search.id) return;
@@ -1149,12 +1174,18 @@ function NovyDokladPage() {
                     {t("Presunúť ako prílohu")}
                   </MenuAkcia>
                 ) : null}
+                {!zamokBlocku ? (
+                  <MenuAkcia ikona={ArrowRightLeft} onClick={() => setPresunBlocku("faktura")}>
+                    {t("Presunúť / priradiť")}
+                  </MenuAkcia>
+                ) : null}
               </MenuSkupina>
             </>
           }
         />
         <PageBody>
           {pasZamku}
+          {pasUhrady}
           {ulozeny?.na_kontrolu_dovod ? (
             <AutomatickyZaradena
               id={ulozeny.id}
@@ -1240,6 +1271,7 @@ function NovyDokladPage() {
               onClose={() => setPresunPrilohy(false)}
             />
           ) : null}
+          {oknoPresunuBlocku}
         </PageBody>
       </>
     );
@@ -1302,12 +1334,23 @@ function NovyDokladPage() {
                   {t("Presunúť ako prílohu")}
                 </button>
               ) : null}
+              {ulozeny && !zamokBlocku ? (
+                <button
+                  type="button"
+                  onClick={() => setPresunBlocku("faktura")}
+                  title={t("Úhrada faktúry k prijatej faktúre ako doklad o úhrade, alebo presun do Iných dokladov")}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+                >
+                  <ArrowRightLeft className="h-4 w-4" /> {t("Presunúť / priradiť")}
+                </button>
+              ) : null}
             </div>
           ) : undefined
         }
       />
       <PageBody>
         {pasZamku}
+        {pasUhrady}
         {ulozeny?.na_kontrolu_dovod ? (
           <AutomatickyZaradena
             id={ulozeny.id}
@@ -1874,6 +1917,7 @@ function NovyDokladPage() {
                       onClose={() => setPresunPrilohy(false)}
                     />
                   ) : null}
+                  {oknoPresunuBlocku}
                 </div>
               ) : null}
               <div

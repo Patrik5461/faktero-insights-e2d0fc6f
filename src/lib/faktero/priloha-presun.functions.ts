@@ -102,21 +102,15 @@ export const presunAkoPrilohuFn = createServerFn({ method: "POST" })
 
     // Pôvodný záznam do koša — dá sa obnoviť, kým sa kôš nevysype.
     if (data.zdroj.agenda === "doklad") {
-      const { data: pohyby } = await supabase
-        .from("bank_transactions")
-        .select("id")
-        .eq("matched_expense_id", zdroj.id);
-      const { error: e1 } = await supabase.from("kos_dokladov").insert({
-        company_id: zdroj.company_id,
-        druh: "doklad",
-        zaznam_id: zdroj.id,
-        zaznam: zdroj,
-        vazby: { banka: (pohyby ?? []).map((p: any) => p.id) },
-        popis: `${nazov} (presunutý ako príloha)`,
-        zmazal: context.userId,
-      });
-      if (e1) throw new Error(e1.message);
-      await supabase.from("expense_documents").delete().eq("id", zdroj.id);
+      // Bez práva mazať (len správca firmy) sa bloček nezmaže — príloha sa vráti, nech nie je dvakrát.
+      const { blocekDoKosa } = await import("./doklad-kos.server");
+      try {
+        await blocekDoKosa(supabase, context.userId, zdroj, `${nazov} (presunutý ako príloha)`);
+      } catch (e) {
+        await supabase.from(druh.prilohy).delete().eq("path", cesta);
+        await supabase.storage.from(KOS_PRILOH).remove([cesta]);
+        throw e;
+      }
     } else {
       await supabase
         .from("purchase_invoices")

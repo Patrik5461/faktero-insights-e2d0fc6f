@@ -93,6 +93,7 @@ import { SuctovaPatickaZoznamu } from "@/components/faktero/SuctyDokladov";
 import { suhrnZPoloziek } from "@/lib/faktero/suhrn-dph";
 import { polozkaBlocku } from "@/lib/faktero/suhrn-vyberu";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { BlocekUhradaHromadne, UhradaFakturyOdznak } from "@/components/faktero/BlocekUhrada";
 import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
@@ -1082,6 +1083,18 @@ function DokladyPage() {
           {selected.size > 0 && cid && (
             <VyuctovanieZVyberu companyId={cid} druh="blocek" ids={Array.from(selected)} onHotovo={refresh} />
           )}
+          {/* Úhrada faktúry nahratá ako bloček (METRO „ÚHRADA FAKTÚRY“) → k prijatej faktúre alebo do Iných dokladov. */}
+          {selected.size > 0 && cid && (
+            <BlocekUhradaHromadne
+              companyId={cid}
+              ids={Array.from(selected)}
+              onHotovo={() => {
+                setSelected(new Set());
+                obnovPoctyMenu();
+                void refresh();
+              }}
+            />
+          )}
           {selected.size > 0 && program.inyProgram && (
             <button
               onClick={async () => {
@@ -1267,6 +1280,7 @@ function DokladyPage() {
                         <span className="font-normal text-muted-foreground italic">{t("bez názvu")}</span>
                       )}
                       <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
+                      <UhradaFakturyOdznak blocek={r} />
                       {r.locked_at ? (
                         <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label={t("Zamknutý doklad")} />
                       ) : null}
@@ -1430,6 +1444,7 @@ function DokladyPage() {
                       <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
                         <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                         {ikonaPlatby(r)}
+                        <UhradaFakturyOdznak blocek={r} />
                       </span>
                       {r.supplier_ico ? (
                         <div className="text-xs text-muted-foreground">
