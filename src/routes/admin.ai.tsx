@@ -246,25 +246,7 @@ function AdminAiPage() {
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StavPoskytovatela
-            nazov="Gemini (prvý na rade)"
-            kluc={Boolean(data?.stav.gemini.kluc)}
-            model={`${data?.stav.gemini.modelVytazenie ?? "—"} (doklady) · ${data?.stav.gemini.model ?? "—"}`}
-            poznamka={
-              [
-                umlcany
-                  ? `Odmietol volanie pre vyčerpaný kredit alebo kvótu — do ${umlcany} sa naň nechodí.`
-                  : null,
-                proVypnuty
-                  ? `${data?.stav.gemini.modelVytazenie} je preťažený — do ${proVypnuty} doklady číta rovno Claude.`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" ") || null
-            }
-            odkaz="https://aistudio.google.com/app/usage"
-          />
-          <StavPoskytovatela
-            nazov="Claude (náhrada za Gemini)"
+            nazov="Claude (prvý na rade)"
             kluc={Boolean(data?.stav.anthropic?.kluc)}
             model={`${data?.stav.anthropic?.modelVytazenie ?? "—"} (doklady) · ${data?.stav.anthropic?.model ?? "—"}`}
             poznamka={
@@ -275,7 +257,25 @@ function AdminAiPage() {
             odkaz="https://platform.claude.com/"
           />
           <StavPoskytovatela
-            nazov="OpenAI (náhrada)"
+            nazov="Gemini (prvá náhrada)"
+            kluc={Boolean(data?.stav.gemini.kluc)}
+            model={`${data?.stav.gemini.modelVytazenie ?? "—"} (doklady) · ${data?.stav.gemini.model ?? "—"}`}
+            poznamka={
+              [
+                umlcany
+                  ? `Odmietol volanie pre vyčerpaný kredit alebo kvótu — do ${umlcany} sa naň nechodí.`
+                  : null,
+                proVypnuty
+                  ? `${data?.stav.gemini.modelVytazenie} je preťažený — do ${proVypnuty} pri výpadku Claude ide rovno Gemini Flash.`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" ") || null
+            }
+            odkaz="https://aistudio.google.com/app/usage"
+          />
+          <StavPoskytovatela
+            nazov="OpenAI (posledná náhrada)"
             kluc={Boolean(data?.stav.openai.kluc)}
             model={`${data?.stav.openai.model ?? "—"} · ${data?.stav.openai.modelVidiaci ?? "—"} (obrázky)`}
             odkaz="https://platform.openai.com/usage"
@@ -312,7 +312,7 @@ function AdminAiPage() {
           <div className="border-b border-border px-4 py-3">
             <div className="font-medium">Posledné zlyhania</div>
             <div className="text-xs text-muted-foreground">
-              Zlyhané volanie ešte neznamená výpadok — keď padne Gemini, dokument dočíta OpenAI.
+              Zlyhané volanie ešte neznamená výpadok — keď padne Claude, dokument dočíta Gemini a potom OpenAI.
             </div>
           </div>
           {(data?.chyby ?? []).length === 0 ? (
