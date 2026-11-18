@@ -8,13 +8,25 @@
  * v tom istom prostredí nevyužitý. Rozpoznávanie bločkov, dokladov z pošty,
  * dodacích listov, zmlúv o financovaní aj bankových výpisov tak vypadlo naraz.
  *
- * Preto sa volá cez tieto dve funkcie: skúsi sa Gemini, a keď neuspeje, ide sa
- * na OpenAI. Do logu sa zapíše, prečo — inak by sa tichý prechod na drahší
+ * Preto sa volá cez tieto dve funkcie a poskytovatelia sa skúšajú po poradí
+ * (`poradie`). Do logu sa zapíše, prečo — inak by sa tichý prechod na drahší
  * model nikdy nezistil.
+ *
+ * - vyťažovanie dokladu: Gemini Pro → Claude Opus → Gemini Flash → OpenAI,
+ * - ostatné (predkontácia, krátky text, rýchle čítanie): Gemini Flash →
+ *   Claude Haiku → OpenAI.
+ *
+ * Bez `ANTHROPIC_API_KEY` sa Claude preskočí a správanie je ako predtým.
  */
 
 import { zmeraj } from "./ai-merac.server";
-import { modelGeminiVytazenie, modelGemini, modelOpenAi } from "./ai-modely";
+import {
+  modelClaude,
+  modelClaudeVytazenie,
+  modelGeminiVytazenie,
+  modelGemini,
+  modelOpenAi,
+} from "./ai-modely";
 
 export type AiNastavenie = {
   /** Strop odpovede. Dlhý splátkový kalendár sa do predvoleného nezmestí. */
@@ -42,7 +54,7 @@ export type AiNastavenie = {
    * Ohlási, kto naozaj odpovedal (Gemini, alebo OpenAI ako náhrada). Polohy
    * údajov na doklade vie presne len Gemini — OpenAI si ich vymýšľa.
    */
-  odpovedal?: (poskytovatel: "gemini" | "openai") => void;
+  odpovedal?: (poskytovatel: "gemini" | "openai" | "anthropic") => void;
   /**
    * Vyťažovanie dokladu — číta sa vyšším modelom (`modelGeminiVytazenie`).
    * `limitMs`: koľko času vyšší model dostane, potom (aj pri chybe) sa číta
@@ -92,6 +104,67 @@ function umlcGemini(e: unknown): void {
   );
 }
 
+/**
+ * Istič pre vyšší model (Gemini Pro, náhľad). Keď odpovie `503 high demand`
+ * (alebo 429 / preťaženie), 10 minút sa naň nechodí a doklad ide rovno na
+ * Claude — inak by každý doklad najprv čakal na zaručene neúspešné volanie.
+ * Časový limit istič nezapína: dlhý doklad nestihne aj zdravý model.
+ */
+let proTichoDo = 0;
+
+function proZapnuty(): boolean {
+  return Date.now() >= proTichoDo;
+}
+
+export function jePretazenie(e: unknown): boolean {
+  return /\b(429|503|529)\b|UNAVAILABLE|RESOURCE_EXHAUSTED|overload|high demand/i.test(
+    String((e as Error)?.message ?? e),
+  );
+}
+
+function vypniPro(e: unknown): void {
+  if (!jePretazenie(e)) return;
+  proTichoDo = Date.now() + TICHO_MS;
+  console.warn(
+    `[ai] ${modelGeminiVytazenie()} je preťažený, ${TICHO_MS / 60_000} minút sa naň nechodí:`,
+    String((e as Error)?.message ?? e).slice(0, 120),
+  );
+}
+
+/** Claude — umlčí sa len pri zlom kľúči alebo minutom kredite, nie pri výpadku. */
+let claudeTichoDo = 0;
+
+function claudeKluc(): boolean {
+  return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+}
+
+function claudeUmlcany(): boolean {
+  return claudeKluc() && Date.now() < claudeTichoDo;
+}
+
+function maClaude(): boolean {
+  return claudeKluc() && !claudeUmlcany();
+}
+
+function umlcClaude(e: unknown): void {
+  if (!/Claude (401|402|403)\b|credit balance|billing/i.test(String((e as Error)?.message ?? e)))
+    return;
+  claudeTichoDo = Date.now() + TICHO_MS;
+  console.warn(
+    `[ai] Claude odmieta volania, ${TICHO_MS / 60_000} minút sa naň nechodí:`,
+    String((e as Error)?.message ?? e).slice(0, 120),
+  );
+}
+
+/** Typy, ktoré Claude prečíta (obrázky a PDF); HEIC a pod. sa mu neposielajú. */
+function claudeVidi(mimeType: string): boolean {
+  return /^(application\/pdf|image\/(jpeg|png|gif|webp))$/i.test(mimeType);
+}
+
+/** Limit Claude pri vyťažovaní (Opus uvažuje) a pri krátkych úlohách (Haiku). */
+const LIMIT_CLAUDE_VYTAZENIE_MS = 90_000;
+const LIMIT_CLAUDE_MS = 60_000;
+
 function maOpenAi(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
@@ -103,7 +176,14 @@ function maOpenAi(): boolean {
  * a práve ono je najbližšie k odpovedi na otázku „minul sa kredit?“.
  */
 export function stavAi(): {
-  gemini: { kluc: boolean; model: string; umlcanyDo: string | null };
+  gemini: {
+    kluc: boolean;
+    model: string;
+    umlcanyDo: string | null;
+    modelVytazenie: string;
+    vytazenieVypnuteDo: string | null;
+  };
+  anthropic: { kluc: boolean; model: string; modelVytazenie: string; umlcanyDo: string | null };
   openai: { kluc: boolean; model: string; modelVidiaci: string };
 } {
   return {
@@ -111,6 +191,14 @@ export function stavAi(): {
       kluc: Boolean(process.env.GEMINI_API_KEY?.trim()),
       model: modelGemini(),
       umlcanyDo: geminiTichoDo > Date.now() ? new Date(geminiTichoDo).toISOString() : null,
+      modelVytazenie: modelGeminiVytazenie(),
+      vytazenieVypnuteDo: proTichoDo > Date.now() ? new Date(proTichoDo).toISOString() : null,
+    },
+    anthropic: {
+      kluc: claudeKluc(),
+      model: modelClaude(),
+      modelVytazenie: modelClaudeVytazenie(),
+      umlcanyDo: claudeTichoDo > Date.now() ? new Date(claudeTichoDo).toISOString() : null,
     },
     openai: {
       kluc: maOpenAi(),
@@ -121,7 +209,9 @@ export function stavAi(): {
 }
 
 function bezPoskytovatela(): never {
-  throw new Error("Rozpoznávanie dokumentov nie je nastavené — chýba kľúč ku Gemini aj k OpenAI.");
+  throw new Error(
+    "Rozpoznávanie dokumentov nie je nastavené — chýba kľúč ku Gemini, Claude aj k OpenAI.",
+  );
 }
 
 /**
@@ -226,6 +316,51 @@ async function openAiVolanie(
   return j?.choices?.[0]?.message?.content ?? "";
 }
 
+/**
+ * Jeden krok v poradí poskytovateľov. `volaj` dostane `nahrada` — true, keď
+ * predošlý krok zlyhal alebo bol vypnutý ističom, nie len bez kľúča.
+ */
+type Krok = {
+  nazov: string;
+  /** Má kľúč a nie je umlčaný. */
+  dostupny: () => boolean;
+  /** Kľúč je, ale krok je dočasne vypnutý (umlčanie, istič) — ďalší je náhrada. */
+  vypnuty?: () => boolean;
+  volaj: (nahrada: boolean) => Promise<string>;
+  /** Po zlyhaní (umlčanie, istič). */
+  poZlyhani?: (e: unknown) => void;
+  /** Chyba, po ktorej sa ďalší poskytovateľ neskúša (odrezaná odpoveď). */
+  konecna?: (e: unknown) => boolean;
+};
+
+async function poradie(kroky: Krok[]): Promise<string> {
+  let posledna: unknown = undefined;
+  let nahrada = false;
+  for (let i = 0; i < kroky.length; i++) {
+    const krok = kroky[i];
+    if (!krok.dostupny()) {
+      if (krok.vypnuty?.()) nahrada = true;
+      continue;
+    }
+    try {
+      return await krok.volaj(nahrada);
+    } catch (e) {
+      krok.poZlyhani?.(e);
+      posledna = e;
+      nahrada = true;
+      if (krok.konecna?.(e)) throw e;
+      const dalsi = kroky.slice(i + 1).find((k) => k.dostupny());
+      if (!dalsi) break;
+      console.warn(
+        `[ai] ${krok.nazov} zlyhal, čítam modelom ${dalsi.nazov}:`,
+        String((e as Error)?.message ?? e).slice(0, 200),
+      );
+    }
+  }
+  if (posledna !== undefined) throw posledna;
+  bezPoskytovatela();
+}
+
 /** Prečítanie dokumentu (obrázok alebo PDF) z jeho obsahu. */
 export async function aiVision(
   base64: string,
@@ -233,120 +368,201 @@ export async function aiVision(
   pokyn: string,
   nastavenie?: AiNastavenie,
 ): Promise<string> {
-  const naOpenAi = (nahrada = false) => {
-    nastavenie?.odpovedal?.("openai");
-    return cezOpenAi(
-      pokyn,
-      mimeType === "application/pdf"
-        ? [
-            { type: "text", text: "Prečítaj tento dokument." },
-            {
-              type: "file",
-              file: { filename: "dokument.pdf", file_data: `data:${mimeType};base64,${base64}` },
-            },
-          ]
-        : [
-            { type: "text", text: "Prečítaj tento dokument." },
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
-          ],
-      nastavenie,
-      true,
-      nahrada,
-    );
-  };
+  const vytazenie = Boolean(nastavenie?.vytazenie);
+  const limitMs =
+    typeof nastavenie?.vytazenie === "object" ? nastavenie.vytazenie.limitMs : undefined;
+  const vyssi = vytazenie ? modelGeminiVytazenie() : null;
+  const claudeModel = vytazenie ? modelClaudeVytazenie() : modelClaude();
 
-  if (!maGemini()) {
-    if (!maOpenAi()) bezPoskytovatela();
-    return naOpenAi();
-  }
-
-  /*
-    Vyťažovanie dokladu: najprv vyšší model. Keď nestihne limit alebo zlyhá
-    (kvóta, preťaženie, náhľadový model zrušený), číta sa bežným modelom —
-    meranie zapíše každé volanie so skutočne použitým modelom.
-  */
-  const vyssi = nastavenie?.vytazenie ? modelGeminiVytazenie() : null;
-  if (vyssi && vyssi !== modelGemini()) {
-    const limitMs = typeof nastavenie?.vytazenie === "object" ? nastavenie.vytazenie.limitMs : undefined;
-    try {
+  const geminiPro: Krok = {
+    nazov: vyssi ?? "",
+    dostupny: () => Boolean(vyssi && vyssi !== modelGemini() && maGemini() && proZapnuty()),
+    vypnuty: () => Boolean(vyssi && vyssi !== modelGemini() && maGemini() && !proZapnuty()),
+    volaj: async () => {
       const { geminiVision } = await import("./gemini.server");
-      return await zmeraj(
-        { poskytovatel: "gemini", model: vyssi, ucel: nastavenie?.ucel, firma: nastavenie?.firma },
+      return zmeraj(
+        { poskytovatel: "gemini", model: vyssi!, ucel: nastavenie?.ucel, firma: nastavenie?.firma },
         async (ohlasTokeny) => {
           const odpoved = await geminiVision(
             base64,
             mimeType,
             pokyn,
             // Vyšší model uvažuje vždy — vypnuté uvažovanie by odmietol.
-            { ...nastavenie, bezUvazovania: false, model: vyssi, ...(limitMs ? { limitMs } : {}) },
+            { ...nastavenie, bezUvazovania: false, model: vyssi!, ...(limitMs ? { limitMs } : {}) },
             ohlasTokeny,
           );
           nastavenie?.odpovedal?.("gemini");
           return odpoved;
         },
       );
-    } catch (e) {
-      console.warn(
-        `[ai] ${vyssi} zlyhal, čítam modelom ${modelGemini()}:`,
-        String((e as Error)?.message ?? e).slice(0, 200),
-      );
-    }
-  }
+    },
+    // Odrezaná odpoveď vyššieho modelu sa skúša ďalej — tak to bolo vždy.
+    poZlyhani: vypniPro,
+  };
 
-  try {
-    const { geminiVision } = await import("./gemini.server");
-    return await zmeraj(
-      {
-        poskytovatel: "gemini",
-        model: modelGemini(),
-        ucel: nastavenie?.ucel,
-        firma: nastavenie?.firma,
-      },
-      async (ohlasTokeny) => {
-        const odpoved = await geminiVision(base64, mimeType, pokyn, nastavenie, ohlasTokeny);
-        nastavenie?.odpovedal?.("gemini");
-        return odpoved;
-      },
-    );
-  } catch (e) {
-    umlcGemini(e);
-    if (!maOpenAi() || !opravitelna(e)) throw e;
-    console.warn(
-      "[ai] Gemini zlyhal, skúšam OpenAI:",
-      String((e as Error)?.message ?? e).slice(0, 200),
-    );
-    return naOpenAi(true);
-  }
+  const claude: Krok = {
+    nazov: claudeModel,
+    dostupny: () => maClaude() && claudeVidi(mimeType),
+    vypnuty: () => claudeUmlcany() && claudeVidi(mimeType),
+    volaj: (nahrada) =>
+      zmeraj(
+        {
+          poskytovatel: "anthropic",
+          model: claudeModel,
+          ucel: nastavenie?.ucel,
+          firma: nastavenie?.firma,
+          nahrada,
+        },
+        async (ohlasTokeny) => {
+          const { claudeVision } = await import("./anthropic.server");
+          const odpoved = await claudeVision(
+            base64,
+            mimeType,
+            pokyn,
+            {
+              model: claudeModel,
+              maxOutputTokens: nastavenie?.maxOutputTokens,
+              json: nastavenie?.json,
+              schema: nastavenie?.schema,
+              limitMs: limitMs ?? (vytazenie ? LIMIT_CLAUDE_VYTAZENIE_MS : LIMIT_CLAUDE_MS),
+            },
+            ohlasTokeny,
+          );
+          nastavenie?.odpovedal?.("anthropic");
+          return odpoved;
+        },
+      ),
+    poZlyhani: umlcClaude,
+    konecna: (e) => !opravitelna(e),
+  };
+
+  const geminiBezny: Krok = {
+    nazov: modelGemini(),
+    dostupny: maGemini,
+    vypnuty: () => Boolean(process.env.GEMINI_API_KEY?.trim()) && !maGemini(),
+    volaj: async (nahrada) => {
+      const { geminiVision } = await import("./gemini.server");
+      return zmeraj(
+        {
+          poskytovatel: "gemini",
+          model: modelGemini(),
+          ucel: nastavenie?.ucel,
+          firma: nastavenie?.firma,
+          nahrada,
+        },
+        async (ohlasTokeny) => {
+          const odpoved = await geminiVision(base64, mimeType, pokyn, nastavenie, ohlasTokeny);
+          nastavenie?.odpovedal?.("gemini");
+          return odpoved;
+        },
+      );
+    },
+    poZlyhani: umlcGemini,
+    konecna: (e) => !opravitelna(e),
+  };
+
+  const openAi: Krok = {
+    nazov: modelOpenAi(true),
+    dostupny: maOpenAi,
+    volaj: (nahrada) => {
+      nastavenie?.odpovedal?.("openai");
+      return cezOpenAi(
+        pokyn,
+        mimeType === "application/pdf"
+          ? [
+              { type: "text", text: "Prečítaj tento dokument." },
+              {
+                type: "file",
+                file: { filename: "dokument.pdf", file_data: `data:${mimeType};base64,${base64}` },
+              },
+            ]
+          : [
+              { type: "text", text: "Prečítaj tento dokument." },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
+            ],
+        nastavenie,
+        true,
+        nahrada,
+      );
+    },
+  };
+
+  /*
+    Od 18. 11. 2026 je hlavný Claude (porovnanie na 31 dokladoch: Opus 5.5 presnejší,
+    3–4× rýchlejší a bez výpadkov; Gemini Pro preview vracal 503 a čítal > 90 s).
+    Vyťažovanie dokladu: Claude Opus → Gemini Flash → OpenAI.
+    Ostatné (predkontácia, rýchle čítanie): Claude Haiku → Gemini Flash → OpenAI.
+    Gemini Pro ostáva len ako posledná možnosť pred OpenAI, keď Flash nie je.
+  */
+  return poradie(
+    vytazenie
+      ? maClaude()
+        ? [claude, geminiBezny, geminiPro, openAi]
+        : [geminiPro, geminiBezny, openAi] // bez kľúča Anthropic ako predtým
+      : [claude, geminiBezny, openAi],
+  );
 }
 
 /** To isté nad obyčajným textom — keď dokument textovú vrstvu má. */
 export async function aiText(pokyn: string, nastavenie?: AiNastavenie): Promise<string> {
-  const naOpenAi = (nahrada = false) =>
-    cezOpenAi(pokyn, [{ type: "text", text: "Pokračuj." }], nastavenie, false, nahrada);
-
-  if (!maGemini()) {
-    if (!maOpenAi()) bezPoskytovatela();
-    return naOpenAi();
-  }
-
-  try {
-    const { geminiText } = await import("./gemini.server");
-    return await zmeraj(
-      {
-        poskytovatel: "gemini",
-        model: modelGemini(),
-        ucel: nastavenie?.ucel,
-        firma: nastavenie?.firma,
+  const claudeModel = modelClaude();
+  return poradie([
+    {
+      nazov: claudeModel,
+      dostupny: maClaude,
+      vypnuty: claudeUmlcany,
+      volaj: (nahrada) =>
+        zmeraj(
+          {
+            poskytovatel: "anthropic",
+            model: claudeModel,
+            ucel: nastavenie?.ucel,
+            firma: nastavenie?.firma,
+            nahrada,
+          },
+          async (ohlasTokeny) => {
+            const { claudeText } = await import("./anthropic.server");
+            return claudeText(
+              pokyn,
+              {
+                model: claudeModel,
+                maxOutputTokens: nastavenie?.maxOutputTokens,
+                json: nastavenie?.json,
+                schema: nastavenie?.schema,
+                limitMs: LIMIT_CLAUDE_MS,
+              },
+              ohlasTokeny,
+            );
+          },
+        ),
+      poZlyhani: umlcClaude,
+      konecna: (e) => !opravitelna(e),
+    },
+    {
+      nazov: modelGemini(),
+      dostupny: maGemini,
+      vypnuty: () => Boolean(process.env.GEMINI_API_KEY?.trim()) && !maGemini(),
+      volaj: async (nahrada) => {
+        const { geminiText } = await import("./gemini.server");
+        return zmeraj(
+          {
+            poskytovatel: "gemini",
+            model: modelGemini(),
+            ucel: nastavenie?.ucel,
+            firma: nastavenie?.firma,
+            nahrada,
+          },
+          (ohlasTokeny) => geminiText(pokyn, nastavenie, ohlasTokeny),
+        );
       },
-      (ohlasTokeny) => geminiText(pokyn, nastavenie, ohlasTokeny),
-    );
-  } catch (e) {
-    umlcGemini(e);
-    if (!maOpenAi() || !opravitelna(e)) throw e;
-    console.warn(
-      "[ai] Gemini zlyhal, skúšam OpenAI:",
-      String((e as Error)?.message ?? e).slice(0, 200),
-    );
-    return naOpenAi(true);
-  }
+      poZlyhani: umlcGemini,
+      konecna: (e) => !opravitelna(e),
+    },
+    {
+      nazov: modelOpenAi(false),
+      dostupny: maOpenAi,
+      volaj: (nahrada) =>
+        cezOpenAi(pokyn, [{ type: "text", text: "Pokračuj." }], nastavenie, false, nahrada),
+    },
+  ]);
 }

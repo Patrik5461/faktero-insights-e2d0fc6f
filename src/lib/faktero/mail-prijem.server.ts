@@ -268,7 +268,7 @@ async function precitajDokladSurovo(
     const { aiVision } = await import("./ai.server");
     // Uprednostnená domáca mena firmy (nastavenie Nespracovaných) — doplnok pokynu.
     const { pokynCitania } = await import("./vytazenie-mena");
-    let kto: "gemini" | "openai" | null = null;
+    let kto: "gemini" | "openai" | "anthropic" | null = null;
     const odpoved = await aiVision(
       base64,
       mimeType,

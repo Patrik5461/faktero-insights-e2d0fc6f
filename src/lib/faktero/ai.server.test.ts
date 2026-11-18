@@ -27,6 +27,8 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   process.env.GEMINI_API_KEY = "g";
   process.env.OPENAI_API_KEY = "o";
+  // Claude má vlastné testy (`ai-claude.test.ts`); tu sa overuje pôvodné správanie.
+  delete process.env.ANTHROPIC_API_KEY;
 });
 
 describe("výber poskytovateľa", () => {

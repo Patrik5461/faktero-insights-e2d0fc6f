@@ -10,7 +10,7 @@
  */
 
 export type ZaznamAi = {
-  poskytovatel: "gemini" | "openai";
+  poskytovatel: "gemini" | "openai" | "anthropic";
   model: string;
   /** Agenda, ktorá si model vypýtala. Kľúče sú v `ai-cennik.ts`. */
   ucel?: string;

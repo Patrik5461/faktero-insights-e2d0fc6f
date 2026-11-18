@@ -27,6 +27,11 @@ export const CENNIK: Record<string, CenaModelu> = {
   "gpt-4o-mini": { vstup: 0.15, vystup: 0.6 },
   "gpt-4.1": { vstup: 2, vystup: 8 },
   "gpt-4.1-mini": { vstup: 0.4, vystup: 1.6 },
+  // Anthropic Claude — náhrada za Gemini (`modelClaudeVytazenie`, `modelClaude`).
+  "claude-opus-5-5": { vstup: 4, vystup: 20 },
+  "claude-sonnet-5-5": { vstup: 2, vystup: 10 },
+  // Do 100 tisíc tokenov vstupu; nad tým 0,50 / 2,50.
+  "claude-haiku-5-5": { vstup: 0.1, vystup: 0.5 },
 };
 
 /** Keď model v cenníku nie je (prepne sa cez premennú prostredia), berie sa stred. */
@@ -129,6 +134,7 @@ export function denPred(dni: number, dnes: Date = new Date()): string {
 export const NAZOV_POSKYTOVATELA: Record<string, string> = {
   gemini: "Gemini",
   openai: "OpenAI",
+  anthropic: "Claude",
 };
 
 export const NAZOV_UCELU: Record<string, string> = {

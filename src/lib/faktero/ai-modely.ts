@@ -25,3 +25,16 @@ export function modelOpenAi(vidiaci: boolean): string {
     ? process.env.OPENAI_VISION_MODEL || "gpt-4o"
     : process.env.OPENAI_MODEL || "gpt-4o-mini";
 }
+
+/**
+ * Claude ako náhrada pri vyťažovaní dokladov — ide hneď po `modelGeminiVytazenie()`,
+ * keď náhľadový Gemini Pro odpovie „high demand“ (503) alebo nestihne.
+ */
+export function modelClaudeVytazenie(): string {
+  return process.env.CLAUDE_MODEL_VYTAZENIE?.trim() || "claude-opus-5-5";
+}
+
+/** Claude ako náhrada za rýchly `modelGemini()` (predkontácia, krátke texty). */
+export function modelClaude(): string {
+  return process.env.CLAUDE_MODEL?.trim() || "claude-haiku-5-5";
+}

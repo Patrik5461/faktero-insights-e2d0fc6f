@@ -136,6 +136,8 @@ export const getSystemHealth = createServerFn({ method: "GET" })
     // ── 4. Integration secrets (warn-level) ──────────────────────────────
     const integrations: Array<{ key: string; label: string }> = [
       { key: "OPENAI_API_KEY", label: "OpenAI (AI asistent)" },
+      { key: "GEMINI_API_KEY", label: "Gemini (čítanie dokladov)" },
+      { key: "ANTHROPIC_API_KEY", label: "Claude / Anthropic (náhrada za Gemini)" },
       { key: "RESEND_API_KEY", label: "Resend (e-maily)" },
       { key: "RESEND_WEBHOOK_SECRET", label: "Resend webhook (doklady mailom)" },
       { key: "RESEND_INBOUND_API_KEY", label: "Resend čítanie pošty (doklady mailom)" },

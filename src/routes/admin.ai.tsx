@@ -206,6 +206,10 @@ function AdminAiPage() {
         minute: "2-digit",
       })
     : null;
+  const casText = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" }) : null;
+  const proVypnuty = casText(data?.stav.gemini.vytazenieVypnuteDo);
+  const claudeUmlcany = casText(data?.stav.anthropic?.umlcanyDo);
 
   return (
     <>
@@ -235,22 +239,40 @@ function AdminAiPage() {
         )}
 
         <div className="mb-4 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-          Zostatok kreditu ani Google, ani OpenAI cez rozhranie nedávajú, preto sa tu ukazuje
+          Zostatok kreditu Google, Anthropic ani OpenAI cez rozhranie nedávajú, preto sa tu ukazuje
           vlastné meranie: každé volanie modelu sa zapisuje a cena je odhad podľa verejného cenníka.
           Presnú sumu vidíte v konzole poskytovateľa.
         </div>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StavPoskytovatela
             nazov="Gemini (prvý na rade)"
             kluc={Boolean(data?.stav.gemini.kluc)}
-            model={data?.stav.gemini.model ?? "—"}
+            model={`${data?.stav.gemini.modelVytazenie ?? "—"} (doklady) · ${data?.stav.gemini.model ?? "—"}`}
             poznamka={
-              umlcany
-                ? `Odmietol volanie pre vyčerpaný kredit alebo kvótu — do ${umlcany} sa naň nechodí a platí sa OpenAI.`
-                : null
+              [
+                umlcany
+                  ? `Odmietol volanie pre vyčerpaný kredit alebo kvótu — do ${umlcany} sa naň nechodí.`
+                  : null,
+                proVypnuty
+                  ? `${data?.stav.gemini.modelVytazenie} je preťažený — do ${proVypnuty} doklady číta rovno Claude.`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" ") || null
             }
             odkaz="https://aistudio.google.com/app/usage"
+          />
+          <StavPoskytovatela
+            nazov="Claude (náhrada za Gemini)"
+            kluc={Boolean(data?.stav.anthropic?.kluc)}
+            model={`${data?.stav.anthropic?.modelVytazenie ?? "—"} (doklady) · ${data?.stav.anthropic?.model ?? "—"}`}
+            poznamka={
+              claudeUmlcany
+                ? `Odmietol volanie (kľúč alebo kredit) — do ${claudeUmlcany} sa naň nechodí.`
+                : null
+            }
+            odkaz="https://platform.claude.com/"
           />
           <StavPoskytovatela
             nazov="OpenAI (náhrada)"

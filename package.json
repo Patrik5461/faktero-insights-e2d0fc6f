@@ -26,6 +26,7 @@
     "test:db": "node scripts/test-db.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
     "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@capacitor-mlkit/barcode-scanning": "^8.1.0",
