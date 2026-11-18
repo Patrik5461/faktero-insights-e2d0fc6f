@@ -628,6 +628,29 @@ describe("Pohoda — prijaté doklady proti invoice/voucher/intDoc.xsd", () => {
     expect(hodnota(x, "inv:roundingDocument")).toBe("none");
   });
 
+  it("prijatá faktúra bez čísla aj VS: žiadne prázdne symVar/symPar/originalDocument, XML platné", () => {
+    const d = prijataAkoDoklad(
+      prijata({ id: "pi-bez", invoice_number: "", variable_symbol: null, items: null, intro_note: null }),
+    );
+    const x = buildPohodaExpensesXml({ company: firmaSK, nastavenia, doklady: [d] });
+    expect(chybySchemy(x)).toEqual([]);
+    expect(x).not.toContain("<inv:symVar>");
+    expect(x).not.toContain("<inv:symPar>");
+    expect(x).not.toContain("<inv:originalDocument>");
+    expect(x).not.toMatch(/<(inv:\w+)>\s*<\/\1>/);
+    // Text bez čísla nie je „Faktúra č.“ s prázdnom.
+    expect(hodnota(x, "inv:text")).not.toMatch(/č\.\s*$/);
+    // S VS (číslo doplnené z neho) ide VS aj ako pôvodné číslo.
+    const sVs = buildPohodaExpensesXml({
+      company: firmaSK,
+      nastavenia,
+      doklady: [prijataAkoDoklad(prijata({ id: "pi-vs", invoice_number: "2026999", variable_symbol: "2026999" }))],
+    });
+    expect(chybySchemy(sVs)).toEqual([]);
+    expect(hodnota(sVs, "inv:originalDocument")).toBe("2026999");
+    expect(hodnota(sVs, "inv:symVar")).toBe("2026999");
+  });
+
   it("prijatý dobropis: kladné sumy a pôvodné číslo opravovanej faktúry", () => {
     const x = buildPohodaExpensesXml({
       company: firmaSK,

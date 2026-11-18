@@ -80,9 +80,9 @@ describe("polia na doplnenie", () => {
     });
   });
 
-  it("chýbajúce číslo a splatnosť sa dajú doplniť v appke", () => {
+  it("chýbajúca splatnosť sa dá doplniť v appke; číslo nie je povinné (Patrik 18. 11.)", () => {
     const u = { ...faktura(), cislo: "", splatnost: "" };
-    expect(polaNaDoplnenie("faktura", u).upravitelne).toEqual(["cislo", "splatnost"]);
+    expect(polaNaDoplnenie("faktura", u).upravitelne).toEqual(["splatnost"]);
   });
 
   it("bloček číslo ani splatnosť nepotrebuje a úhradu ukazuje obrazovka sama", () => {

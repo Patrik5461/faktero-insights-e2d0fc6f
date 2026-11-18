@@ -173,7 +173,7 @@ export function PrijataDetailKompaktna({
       : polozkyDokladu;
 
   const pdf = String(row.file_mime ?? "").includes("pdf");
-  const nazovSuboru = `${row.invoice_number ?? t("Doklad")}.${
+  const nazovSuboru = `${row.invoice_number || t("Doklad")}.${
     String(row.file_path ?? "")
       .split(".")
       .pop() || "pdf"
@@ -243,7 +243,7 @@ export function PrijataDetailKompaktna({
               }
             />
           ) : null}
-          <Hodnota popis={danovy ? "Číslo dokladu" : "Číslo faktúry"}>{row.invoice_number}</Hodnota>
+          <Hodnota popis={danovy ? "Číslo dokladu" : "Číslo faktúry"}>{row.invoice_number || t("bez čísla")}</Hodnota>
           {danovy ? (
             <>
               <Hodnota popis="Dátum vydania">{datumNaDoklade(row.issue_date)}</Hodnota>

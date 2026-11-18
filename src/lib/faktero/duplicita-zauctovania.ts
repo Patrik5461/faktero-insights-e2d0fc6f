@@ -162,6 +162,21 @@ export function moznaDuplicita(a: DokladNaPorovnanie, b: DokladNaPorovnanie): bo
   return rovnakeCisloOdDodavatela(a, b) && !rovnakaSumaARok(a, b);
 }
 
+/**
+ * Možná duplicita prijatej faktúry **bez čísla** (Patrik 18. 11.): od toho
+ * istého dodávateľa s rovnakou sumou a dátumom vystavenia už faktúra je
+ * (s číslom aj bez neho). Bez čísla sa to isté s istotou povedať nedá —
+ * upozorní, uložiť sa dá po potvrdení; zaúčtovanie nezastaví.
+ */
+export function moznaDuplicitaBezCisla(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean {
+  if (!a.id || a.id === b.id || a.cislo) return false;
+  if (a.druh !== "prijata" || b.druh !== "prijata" || a.neplatny || b.neplatny) return false;
+  if (a.dobropis !== b.dobropis || a.typ !== b.typ) return false;
+  if (a.centy == null || a.centy !== b.centy) return false;
+  if (!a.datum || a.datum !== b.datum) return false;
+  return rovnakyDodavatel(a, b);
+}
+
 /** Sú `a` a `b` ten istý doklad (podľa pravidla vyššie)? */
 export function suDuplicitne(a: DokladNaPorovnanie, b: DokladNaPorovnanie): boolean {
   if (!a.id || a.id === b.id) return false;
@@ -318,6 +333,13 @@ export function rozlozChybuPrijatej(sprava: unknown): { popis: string; id: strin
   const zvysok = s.slice(i + PREDPONA_ULOZENEJ_PRIJATEJ.length);
   const m = /\s*\[([0-9a-f-]{36})\]/i.exec(zvysok);
   return { popis: (m ? zvysok.slice(0, m.index) : zvysok).trim(), id: m ? m[1] : null };
+}
+
+/** Text možnej duplicity faktúry bez čísla — tá istá suma a deň od toho istého dodávateľa. */
+export function textMoznejDuplicityBezCisla(r: Riadok): string {
+  return `Faktúra od toho istého dodávateľa s rovnakou sumou a dátumom vystavenia už v evidencii je: ${popisPrijatej(r)}${
+    r.issue_date ? `, vystavená ${datumSk(r.issue_date)}` : ""
+  }. Táto faktúra nemá číslo, takže sa nedá overiť, či ide o tú istú. Ak nejde o duplicitu, uložte ju.`;
 }
 
 /**

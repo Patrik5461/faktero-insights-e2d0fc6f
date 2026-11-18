@@ -56,8 +56,8 @@ export const ulozenaPrijataFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { najdiUlozenuPrijatu } = await import("./duplicita-zauctovania.server");
-    const { popisPrijatej, textMoznejDuplicity } = await import("./duplicita-zauctovania");
+    const { najdiUlozenuPrijatu, textMoznejDuplicityPrijatej } = await import("./duplicita-zauctovania.server");
+    const { popisPrijatej } = await import("./duplicita-zauctovania");
     const { vylucit_id, company_id, ...faktura } = data;
     const { blok, mozna } = await najdiUlozenuPrijatu(
       context.supabase as any,
@@ -67,6 +67,6 @@ export const ulozenaPrijataFn = createServerFn({ method: "POST" })
     );
     return {
       blok: blok ? { id: String(blok.id), popis: popisPrijatej(blok) } : null,
-      mozna: mozna ? { id: String(mozna.id), popis: popisPrijatej(mozna), text: textMoznejDuplicity(mozna) } : null,
+      mozna: mozna ? { id: String(mozna.id), popis: popisPrijatej(mozna), text: textMoznejDuplicityPrijatej(faktura, mozna) } : null,
     };
   });

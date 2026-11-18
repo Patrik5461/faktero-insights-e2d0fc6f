@@ -77,7 +77,8 @@ describe("nespracované doklady", () => {
 
   it("povinné polia podľa druhu", () => {
     const u = udajeZAi({ supplier_name: "Orange", amount_without_vat: 100, vat_amount: 23, amount_total: 123 }, "2026-10-07");
-    expect(chybajuce("faktura", u)).toEqual(["cislo", "splatnost"]);
+    // Číslo nie je povinné (Patrik 18. 11.) — bez neho sa vezme VS.
+    expect(chybajuce("faktura", u)).toEqual(["splatnost"]);
     expect(chybajuce("blocek", u)).toEqual(["platba"]);
     expect(chybajuce("ostatny", u)).toEqual([]);
     expect(chybajuce(null, u)).toEqual(["druh"]);

@@ -532,7 +532,7 @@ function PurchaseInvoicesPage() {
           }
           const bytes = new Uint8Array(await resp.arrayBuffer());
           const ext = r.file_path.split(".").pop() || "pdf";
-          const safe = String(r.invoice_number ?? r.id).replace(/[^\w.-]+/g, "_");
+          const safe = String(r.invoice_number || r.id).replace(/[^\w.-]+/g, "_");
           zip.file(`${safe}.${ext}`, bytes);
           ok++;
         } catch {
@@ -1366,7 +1366,7 @@ function PurchaseInvoicesPage() {
               vyberPopis={t("Vybrať riadok")}
               title={
                 <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-                  {r.invoice_number}
+                  {r.invoice_number || <span className="text-muted-foreground">{t("bez čísla")}</span>}
                   <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                   {duplicity.has(r.id) && (
                     <StavOdznak ton="pozor" maly
@@ -1407,7 +1407,7 @@ function PurchaseInvoicesPage() {
               amount={fmtMoney(Number(r.amount_total ?? 0), r.currency)}
               actions={
                 r.file_path ? (
-                  <TlacidloNahladu popis={r.invoice_number} onClick={() => okno.otvor(r.id)} />
+                  <TlacidloNahladu popis={r.invoice_number || t("bez čísla")} onClick={() => okno.otvor(r.id)} />
                 ) : undefined
               }
             />
@@ -1516,12 +1516,12 @@ function PurchaseInvoicesPage() {
                   </td>
                   <td data-stlpec-ikona className="w-8 px-1 py-3 text-center">{ikonaPlatby(r)}</td>
                   <td className="cislo-dokladu whitespace-nowrap p-3">
-                    {r.invoice_number}
+                    {r.invoice_number || <span className="text-muted-foreground">{t("bez čísla")}</span>}
                     <span className="ml-1.5 inline-flex align-middle">
                       <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
                     </span>
                     {r.file_path && (
-                      <TlacidloNahladu popis={r.invoice_number} onClick={() => okno.otvor(r.id)} className="ml-1 align-middle" />
+                      <TlacidloNahladu popis={r.invoice_number || t("bez čísla")} onClick={() => okno.otvor(r.id)} className="ml-1 align-middle" />
                     )}
                     {duplicity.has(r.id) && (
                       <StavOdznak ton="pozor" maly className="ml-2"

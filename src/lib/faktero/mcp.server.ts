@@ -520,7 +520,10 @@ export const NASTROJE: Nastroj[] = [
     inputSchema: {
       type: "object",
       properties: {
-        invoice_number: { type: "string", description: "Číslo faktúry dodávateľa" },
+        invoice_number: {
+          type: "string",
+          description: "Číslo faktúry dodávateľa. Nepovinné — bez neho sa vezme variable_symbol, bez oboch sa uloží bez čísla.",
+        },
         supplier: {
           type: "object",
           properties: {
@@ -581,7 +584,7 @@ export const NASTROJE: Nastroj[] = [
         },
         ...ZNACKY,
       },
-      required: ["invoice_number", "supplier", "issue_date"],
+      required: ["supplier", "issue_date"],
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     async vykonaj(a, volaj) {

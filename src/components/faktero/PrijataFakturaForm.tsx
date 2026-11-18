@@ -1,6 +1,10 @@
 import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { obsadzujeZalohu, jePrijatyDanovyDoklad } from "@/lib/faktero/prijaty-danovy-doklad";
-import { vsPrijatejNaUlozenie, vsZCislaPrijatej } from "@/lib/faktero/variabilny-symbol";
+import {
+  cisloPrijatejNaUlozenie,
+  vsPrijatejNaUlozenie,
+  vsZCislaPrijatej,
+} from "@/lib/faktero/variabilny-symbol";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -662,7 +666,6 @@ export function PrijataFakturaForm({
     const cid = getActiveCompanyId();
     if (!cid) return toast.error(t("Vyberte firmu."));
     if (!form.supplier_name.trim()) return toast.error(t("Zadajte dodávateľa."));
-    if (!form.invoice_number.trim()) return toast.error(t("Zadajte číslo faktúry."));
     // Splatnosť pred vystavením je takmer vždy preklep v roku či mesiaci.
     if (form.due_date && form.issue_date && form.due_date < form.issue_date)
       return toast.error(t("Splatnosť je skôr ako dátum vystavenia — skontrolujte dátumy."));
@@ -672,6 +675,19 @@ export function PrijataFakturaForm({
       return;
     }
     const zalohaSuma = Math.abs(sumaZPola(form.advance_amount || "0") || 0);
+    /*
+      Faktúra bez čísla (Patrik 18. 11.): číslo doplní variabilný symbol; bez
+      oboch sa po potvrdení uloží bez čísla.
+    */
+    const cisloFaktury = cisloPrijatejNaUlozenie(form.invoice_number, form.variable_symbol);
+    if (
+      !cisloFaktury &&
+      !(await potvrd(t("Faktúra nemá číslo. Uložiť ju bez čísla?"), {
+        potvrdit: t("Uložiť bez čísla"),
+        zrusit: t("Späť"),
+      }))
+    )
+      return;
 
     setBusy(true);
     try {
@@ -695,7 +711,7 @@ export function PrijataFakturaForm({
       */
       const suma = sumaZPola(form.amount_total || "0") || 0;
       const kluc = klucDuplicity(
-        form.invoice_number,
+        cisloFaktury,
         form.supplier_ico,
         form.supplier_name,
         suma,
@@ -709,7 +725,7 @@ export function PrijataFakturaForm({
           : await hladajDuplicitu({
               data: {
                 company_id: cid,
-                invoice_number: form.invoice_number.trim(),
+                invoice_number: cisloFaktury,
                 supplier_ico: form.supplier_ico.trim() || null,
                 supplier_name: form.supplier_name.trim(),
                 amount_total: suma,
@@ -770,12 +786,12 @@ export function PrijataFakturaForm({
         // IBAN bez medzier, aby sa dal rovno použiť v platobnom príkaze.
         supplier_iban: form.supplier_iban.replace(/\s+/g, "").toUpperCase() || null,
         // Bez VS sa vezme číslo faktúry, keď je celé z číslic (tak ho dáva väčšina dodávateľov).
-        variable_symbol: vsPrijatejNaUlozenie(form.variable_symbol, form.invoice_number),
+        variable_symbol: vsPrijatejNaUlozenie(form.variable_symbol, cisloFaktury),
         constant_symbol: form.constant_symbol.trim() || null,
         specific_symbol: form.specific_symbol.trim() || null,
         order_number: form.order_number.trim() || null,
         delivery_note_number: form.delivery_note_number.trim() || null,
-        invoice_number: form.invoice_number.trim(),
+        invoice_number: cisloFaktury,
         issue_date: form.issue_date,
         received_date: form.received_date,
         // Daňový doklad k platbe sa neplatí — splatnosť = vystavenie, aby nikde nesvietil po splatnosti.
@@ -1127,11 +1143,12 @@ export function PrijataFakturaForm({
           </select>
         </Field>
       )}
-      <Field label="Číslo faktúry dodávateľa *">
+      <Field label="Číslo faktúry dodávateľa">
         <input
-          required
           value={form.invoice_number}
           onChange={(e) => set("invoice_number", e.target.value)}
+          // Bez čísla sa doplní variabilný symbol (cisloPrijatejNaUlozenie).
+          placeholder={form.variable_symbol.trim() || t("Faktúra bez čísla")}
           className="input"
         />
       </Field>

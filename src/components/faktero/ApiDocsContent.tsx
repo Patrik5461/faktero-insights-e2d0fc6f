@@ -813,6 +813,11 @@ curl https://faktero.sk/api/v1/invoices \\
             </div>
             <p className="mt-3 text-sm text-muted-foreground">
               {t(
+                "invoice_number je nepovinné. Keď ho faktúra nemá, Faktero použije variable_symbol; bez oboch sa faktúra uloží bez čísla (prázdny reťazec). Faktúru bez čísla nevie overiť ako duplicitu podľa čísla — API ju zapíše vždy, upozornenie na rovnakého dodávateľa, sumu a deň ukáže až formulár vo Fakteri.",
+              )}
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
                 "datum_dph je dátum daňovej povinnosti — podľa neho prijatá faktúra vstupuje do obdobia odpočtu DPH, kontrolného výkazu a do Pohody (dátum DPH a dátum KV DPH). Bez neho sa pri zápise vyplní DUZP (delivery_date), bez DUZP dátum vystavenia, pri dobropise dátum prijatia. Pri úprave (PUT) sa posunie s novým DUZP, ak sa doteraz zhodoval s pôvodným; null ho vyprázdni a platí neskorší z DUZP a dátumu prijatia. GET vracia datum_dph tak, ako je uložený (null = nevyplnený).",
               )}
             </p>

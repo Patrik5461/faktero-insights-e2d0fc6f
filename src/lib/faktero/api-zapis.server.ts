@@ -9,7 +9,7 @@
 import { chybaZaokruhleniaBlocku } from "./zaokruhlenie-blocku";
 import { krajinaBlocku } from "./krajina-blocku";
 import { z } from "zod";
-import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
+import { cisloPrijatejNaUlozenie, vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import type { ApiCtx } from "./api-auth.server";
 import { err, ok } from "./api-auth.server";
 import { ZnackyVstup, maZnacky } from "./api-evidencia";
@@ -184,7 +184,11 @@ function sucty(
 
 const PrijataVstup = z.object({
   external_id: z.string().trim().max(120).nullish(),
-  invoice_number: z.string().trim().min(1).max(80),
+  /**
+   * Číslo faktúry dodávateľa — nepovinné (Patrik 18. 11.): bez neho sa vezme
+   * variable_symbol, bez oboch sa faktúra uloží bez čísla.
+   */
+  invoice_number: z.string().trim().max(80).nullish(),
   // advance_payment = daňový doklad k prijatej platbe (k zaplatenej zálohe) — vznikne rovno zaplatený.
   type: z.enum(["regular", "proforma", "advance_payment"]).default("regular"),
   supplier: Partner,
@@ -264,7 +268,8 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
     nastav("supplier_country", d.supplier.country?.toUpperCase() ?? null);
     nastav("supplier_email", d.supplier.email ?? null);
   }
-  nastav("invoice_number", d.invoice_number);
+  // Stĺpec je NOT NULL — null z API je „bez čísla“ (prázdne).
+  if (d.invoice_number !== undefined) r.invoice_number = d.invoice_number ?? "";
   nastav("type", d.type);
   nastav("issue_date", d.issue_date);
   nastav("delivery_date", d.delivery_date);
@@ -455,6 +460,7 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   }
   const teraz = new Date().toISOString();
   const { riadok, sumy: s } = riadokPrijatej(d, teraz);
+  riadok.invoice_number = cisloPrijatejNaUlozenie(d.invoice_number, d.variable_symbol);
   if (s.spolu == null)
     return err("validation_error", "Zadajte položky (items) alebo sumy (amount_total).");
   riadok.datum_dph = datumDphNovejPrijatej(riadok);
@@ -517,7 +523,7 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
       ...riadok,
       ...kurz,
       ...zn.riadok,
-      variable_symbol: vsPrijatejNaUlozenie(d.variable_symbol, d.invoice_number),
+      variable_symbol: vsPrijatejNaUlozenie(d.variable_symbol, riadok.invoice_number),
       status: riadok.status ?? "received",
       company_id: ctx.company_id,
       customer_id,
@@ -545,6 +551,12 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .is("deleted_at", null)
     .maybeSingle();
   if (!stary) return err("not_found", "Prijatá faktúra sa nenašla.", 404);
+  // Vymazané číslo: doplní ho VS (nový alebo doterajší), inak ostane prázdne.
+  if ("invoice_number" in riadok)
+    riadok.invoice_number = cisloPrijatejNaUlozenie(
+      riadok.invoice_number,
+      "variable_symbol" in riadok ? riadok.variable_symbol : stary.variable_symbol,
+    );
   // Dátum daňovej povinnosti nasleduje DUZP, kým ho nikto nezmenil (ide aj cez zámok obdobia).
   if (!("datum_dph" in riadok)) {
     const nasledujuci = datumDphPoUpravePrijatej(stary, riadok);

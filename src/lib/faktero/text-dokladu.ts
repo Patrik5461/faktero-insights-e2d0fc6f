@@ -75,7 +75,9 @@ export function textPrijatejFaktury(p: {
   if (predmet) return predmet.slice(0, 240);
   const zPoloziek = textZNazvov(nazvyPoloziek(p?.items));
   if (zPoloziek) return zPoloziek;
-  return `Faktúra č. ${t(p?.invoice_number)}`.trim();
+  // Faktúra bez čísla (Patrik 18. 11.) — nie „Faktúra č.“ s prázdnom.
+  const cislo = t(p?.invoice_number);
+  return cislo ? `Faktúra č. ${cislo}` : "Faktúra";
 }
 
 /** Má prijatá faktúra vlastný popis (predmet alebo položky)? Inak ide len „Faktúra č.“. */

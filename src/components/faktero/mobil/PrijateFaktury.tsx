@@ -482,7 +482,7 @@ function DetailPrijatej({
   return (
     <MobilObrazovka
       title={f.supplier_name ?? t("pf.bezDodavatela")}
-      subtitle={f.invoice_number ?? undefined}
+      subtitle={f.invoice_number || undefined}
       onBack={onSpat}
     >
       <div className="space-y-4">
@@ -649,7 +649,7 @@ function DetailPrijatej({
 
         <Card className="space-y-2 p-4 text-[14px]">
           <Riadok label={t("pd.ico")} value={f.supplier_ico ?? "—"} />
-          <Riadok label={t("pf.cislo")} value={f.invoice_number ?? "—"} />
+          <Riadok label={t("pf.cislo")} value={f.invoice_number || "—"} />
           <Riadok label={t("pf.vs")} value={vsPrijatej(f) || "—"} />
           <Riadok label={t("pf.datumVystavenia")} value={datum(f.issue_date, loc)} />
         </Card>

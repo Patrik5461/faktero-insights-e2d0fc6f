@@ -155,7 +155,8 @@ describe("riadky do databázy", () => {
     const r = riadokPrijatejFaktury(zaklad, { stav: "exported", dnes: "2026-09-21", zdrojAplikacie: "Doklado" });
     expect(r).toMatchObject({
       supplier_name: "Neurčený dodávateľ",
-      invoice_number: "bez čísla",
+      // Bez čísla aj VS ostane prázdne (Patrik 18. 11.), nie „bez čísla“.
+      invoice_number: "",
       issue_date: "2026-09-21",
       due_date: "2026-09-21",
       amount_total: 123,
@@ -164,6 +165,9 @@ describe("riadky do databázy", () => {
     });
     expect(r.note).toContain("Dobropis");
     expect(r.note).toContain("Importované z Doklado");
+    // S VS sa číslo doplní z neho.
+    const sVs = riadokPrijatejFaktury({ ...zaklad, vs: "20261234" }, { stav: "exported", dnes: "2026-09-21", zdrojAplikacie: "Doklado" });
+    expect(sVs.invoice_number).toBe("20261234");
   });
 
   it("rozpis DPH: z hlavičky s jednou zákonnou sadzbou, zmiešaná bez položiek → koncept", async () => {

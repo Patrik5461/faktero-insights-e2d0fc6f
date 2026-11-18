@@ -441,7 +441,7 @@ function PurchaseInvoiceDetail() {
       .from("purchase-invoices")
       // Bez koncovky sa súbor uloží ako „VS-2026-777" a systém ho nevie otvoriť.
       .createSignedUrl(row.file_path, 60, {
-        download: `${(row.invoice_number ?? "faktura").replace(/[^A-Za-z0-9._-]+/g, "_")}.${(
+        download: `${(row.invoice_number || "faktura").replace(/[^A-Za-z0-9._-]+/g, "_")}.${(
           row.file_path.split(".").pop() ?? "pdf"
         ).toLowerCase()}`,
       });

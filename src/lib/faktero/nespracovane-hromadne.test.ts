@@ -39,7 +39,9 @@ describe("hromadné akcie v Nespracovaných", () => {
     expect(dovodNevytvorenia({ druh: "faktura", stav: "cita", udaje: u })?.text).toBe("Doklad sa ešte číta");
     const d = dovodNevytvorenia({ druh: "faktura", udaje: u });
     expect(d?.text).toBe("Doplňte: {polia}");
-    expect(d?.params?.polia).toContain("číslo dokladu");
+    expect(d?.params?.polia).toContain("splatnosť");
+    // Číslo faktúry nie je povinné (Patrik 18. 11.).
+    expect(d?.params?.polia).not.toContain("číslo dokladu");
   });
 
   it("kompletný bloček prejde, bloček s nesedeným súčtom nie", () => {

@@ -143,3 +143,19 @@ describe("bloček bez QR: iný nákup (audit 8. 11.)", () => {
     expect(suDuplicitne(zBlocku(listok), zBlocku({ ...listok, id: "p2", duplicita_potvrdena: true }))).toBe(false);
   });
 });
+
+describe("faktúra bez čísla", () => {
+  it("moznaDuplicitaBezCisla: len bez čísla, rovnaký dodávateľ, suma a deň", async () => {
+    const { moznaDuplicitaBezCisla, suDuplicitne, zPrijatej } = await import("./duplicita-zauctovania");
+    const a = zPrijatej({ id: "a", invoice_number: "", supplier_ico: "123", amount_total: 10, issue_date: "2026-11-01" });
+    const b = zPrijatej({ id: "b", invoice_number: "X-1", supplier_ico: "123", amount_total: 10, issue_date: "2026-11-01" });
+    expect(moznaDuplicitaBezCisla(a, b)).toBe(true);
+    // S číslom platí pravidlo podľa čísla, nie toto.
+    expect(moznaDuplicitaBezCisla(b, a)).toBe(false);
+    // Bez čísla to nikdy nie je istá duplicita (zaúčtovanie nezastaví).
+    expect(suDuplicitne(a, b)).toBe(false);
+    expect(moznaDuplicitaBezCisla(a, { ...b, centy: 1001 })).toBe(false);
+    expect(moznaDuplicitaBezCisla(a, { ...b, datum: "2026-11-02" })).toBe(false);
+    expect(moznaDuplicitaBezCisla(a, { ...b, neplatny: true })).toBe(false);
+  });
+});

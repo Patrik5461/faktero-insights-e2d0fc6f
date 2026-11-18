@@ -10,9 +10,12 @@ import {
   chybaUlozenejPrijatej,
   duplicityDokladu,
   moznaDuplicita,
+  moznaDuplicitaBezCisla,
   naPorovnanie,
   suDuplicitne,
   textDuplicity,
+  textMoznejDuplicity,
+  textMoznejDuplicityBezCisla,
   type DruhDuplicity,
   type Duplicita,
 } from "./duplicita-zauctovania";
@@ -204,7 +207,28 @@ export async function najdiUlozenuPrijatu(
     deleted_at: null,
     id: vylucitId || faktura.id || "nova-prijata",
   });
-  if (!novy.cislo) return { blok: null, mozna: null };
+  /*
+    Bez čísla (Patrik 18. 11.): istá duplicita sa nedá určiť — rovnaký
+    dodávateľ, suma a deň vystavenia je len „možná“ (potvrdenie, nie zákaz).
+  */
+  if (!novy.cislo) {
+    if (novy.centy == null || !novy.datum) return { blok: null, mozna: null };
+    const { data, error } = await sb
+      .from("purchase_invoices")
+      .select(STLPCE.prijata)
+      .eq("company_id", companyId)
+      .is("deleted_at", null)
+      .eq("issue_date", novy.datum)
+      .eq("amount_total", Number(faktura.amount_total))
+      .limit(50);
+    if (error) throw new Error(error.message);
+    const mozna =
+      ((data ?? []) as Riadok[])
+        .filter((k) => k.id !== novy.id && (!vylucitId || k.id !== vylucitId))
+        .sort((x, y) => Number(Boolean(y.exported_at || y.zauctovane_at)) - Number(Boolean(x.exported_at || x.zauctovane_at)))
+        .find((k) => moznaDuplicitaBezCisla(novy, naPorovnanie("prijata", k))) ?? null;
+    return { blok: null, mozna };
+  }
   const kandidati = (await kandidatiDuplicit(sb, companyId, "prijata", [faktura])).filter(
     (k) => k.id !== novy.id && (!vylucitId || k.id !== vylucitId),
   );
@@ -220,6 +244,13 @@ export async function najdiUlozenuPrijatu(
  * (iná suma či rok), kým ju človek nepotvrdí (`ajMoznu`). Chyby nesú
  * predpony, podľa ktorých rozhranie ukáže odkaz alebo potvrdenie.
  */
+/** Text možnej duplicity — podľa toho, či nová faktúra má číslo. */
+export function textMoznejDuplicityPrijatej(faktura: Riadok, mozna: Riadok): string {
+  return naPorovnanie("prijata", { ...faktura, id: "nova-prijata" }).cislo
+    ? textMoznejDuplicity(mozna)
+    : textMoznejDuplicityBezCisla(mozna);
+}
+
 export async function overUlozeniePrijatej(
   sb: Klient,
   companyId: string,
@@ -230,7 +261,6 @@ export async function overUlozeniePrijatej(
   if (blok) throw new Error(chybaUlozenejPrijatej(blok));
   if (mozna && !volby.ajMoznu) {
     const { PREDPONA_DUPLICITY } = await import("./prijate-duplicity");
-    const { textMoznejDuplicity } = await import("./duplicita-zauctovania");
-    throw new Error(`${PREDPONA_DUPLICITY}${textMoznejDuplicity(mozna)}`);
+    throw new Error(`${PREDPONA_DUPLICITY}${textMoznejDuplicityPrijatej(faktura, mozna)}`);
   }
 }

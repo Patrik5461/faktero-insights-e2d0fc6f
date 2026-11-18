@@ -1,4 +1,4 @@
-import { vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
+import { cisloPrijatejNaUlozenie, vsPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import {
   jeClenenieVPreneseni,
   kodPohody,
@@ -980,7 +980,7 @@ export function riadokPrijatejFaktury(
     supplier_dic: z.dic,
     supplier_ic_dph: z.icDph,
     supplier_iban: z.iban,
-    invoice_number: z.cislo ?? z.vs ?? "bez čísla",
+    invoice_number: cisloPrijatejNaUlozenie(z.cislo, z.vs),
     variable_symbol: vsPrijatejNaUlozenie(z.vs, z.cislo),
     issue_date: vystavenie,
     received_date: vystavenie,

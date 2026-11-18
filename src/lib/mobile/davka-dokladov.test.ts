@@ -141,13 +141,13 @@ describe("vyhodnotenie prečítaného dokladu", () => {
     expect(vyhodnotDetail({ stav: "vytazene", druh: "nieco", udaje: faktura() })?.druh).toBeNull();
   });
 
-  it("chýbajúce číslo a splatnosť faktúry", () => {
+  it("chýbajúca splatnosť faktúry (číslo nie je povinné)", () => {
     const u = faktura();
     u.cislo = "";
     u.splatnost = "";
     const v = vyhodnotDetail({ stav: "vytazene", druh: "faktura", udaje: u });
     expect(v?.stav).toBe("doplnit");
-    expect(v?.chybajuce).toEqual(expect.arrayContaining(["cislo", "splatnost"]));
+    expect(v?.chybajuce).toEqual(["splatnost"]);
   });
 
   it("úhradu bločku doplní nastavenie skenera", () => {

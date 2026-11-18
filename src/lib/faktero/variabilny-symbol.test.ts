@@ -60,3 +60,15 @@ describe("zobrazenie a uloženie", () => {
     expect(vsPrijatej(undefined)).toBe("");
   });
 });
+
+describe("číslo prijatej faktúry na uloženie (bez čísla → VS → prázdne)", () => {
+  it("zadané číslo ostane, chýbajúce doplní VS, bez oboch prázdny reťazec", async () => {
+    const { cisloPrijatejNaUlozenie } = await import("./variabilny-symbol");
+    expect(cisloPrijatejNaUlozenie(" FV/2026/42 ", "777")).toBe("FV/2026/42");
+    expect(cisloPrijatejNaUlozenie("", " 2026 555 ")).toBe("2026555");
+    expect(cisloPrijatejNaUlozenie(null, "86789175")).toBe("86789175");
+    expect(cisloPrijatejNaUlozenie("bez čísla", "123")).toBe("123");
+    expect(cisloPrijatejNaUlozenie(undefined, null)).toBe("");
+    expect(cisloPrijatejNaUlozenie("  ", "")).toBe("");
+  });
+});

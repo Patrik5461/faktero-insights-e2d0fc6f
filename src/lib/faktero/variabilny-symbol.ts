@@ -55,3 +55,16 @@ export function vsNaUlozenie(zadany: unknown, cislo: unknown): string | null {
 export function vsPrijatejNaUlozenie(zadany: unknown, cislo: unknown): string | null {
   return text(zadany) || vsZCislaPrijatej(cislo) || null;
 }
+
+/**
+ * Číslo prijatej faktúry na uloženie (Patrik 18. 11.): keď na faktúre nie je,
+ * doplní sa variabilný symbol; bez oboch ostane prázdne — nikdy null
+ * (`purchase_invoices.invoice_number` je NOT NULL). Faktúra bez čísla sa
+ * nekontroluje na duplicitu podľa čísla, ale podľa dodávateľa, sumy a dňa
+ * (`duplicita-zauctovania.ts`).
+ */
+export function cisloPrijatejNaUlozenie(cislo: unknown, vs: unknown): string {
+  const c = text(cislo);
+  // „bez čísla“ dosádzali staršie cesty (Nespracované, import) — nie je to číslo.
+  return (/^bez [čc][íi]sla$/i.test(c) ? "" : c) || text(vs).replace(/\s/g, "");
+}

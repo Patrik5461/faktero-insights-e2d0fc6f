@@ -134,3 +134,56 @@ describe("kontrola pred Pohodou", () => {
     expect(d).toBe("B1 — Duplicitný doklad — x");
   });
 });
+
+describe("prijatá faktúra bez čísla — možná duplicita podľa dodávateľa, sumy a dňa", () => {
+  const ulozena = (o: Riadok = {}) => ({
+    id: id(7),
+    company_id: FIRMA,
+    invoice_number: "FA-77",
+    supplier_ico: "36555666",
+    supplier_name: "Servis s.r.o.",
+    type: "regular",
+    status: "received",
+    amount_total: 120.5,
+    currency: "EUR",
+    issue_date: "2026-11-03",
+    deleted_at: null,
+    ...o,
+  });
+  const nova = {
+    invoice_number: "",
+    supplier_ico: "36 555 666",
+    supplier_name: "Servis",
+    type: "regular",
+    amount_total: 120.5,
+    issue_date: "2026-11-03",
+  };
+
+  it("rovnaký dodávateľ, suma a deň → `mozna` (nie blok); iný deň či suma → nič", async () => {
+    const { najdiUlozenuPrijatu, overUlozeniePrijatej } = await import("./duplicita-zauctovania.server");
+    const sb = falosnyKlient({ purchase_invoices: [ulozena()] });
+    const r = await najdiUlozenuPrijatu(sb, FIRMA, nova);
+    expect(r.blok).toBeNull();
+    expect(r.mozna?.id).toBe(id(7));
+    // Uloženie bez potvrdenia vráti otázku, s potvrdením prejde.
+    await expect(overUlozeniePrijatej(sb, FIRMA, nova)).rejects.toThrow(/nemá číslo/);
+    await expect(overUlozeniePrijatej(sb, FIRMA, nova, { ajMoznu: true })).resolves.toBeUndefined();
+
+    expect((await najdiUlozenuPrijatu(sb, FIRMA, { ...nova, issue_date: "2026-11-04" })).mozna).toBeNull();
+    expect((await najdiUlozenuPrijatu(sb, FIRMA, { ...nova, amount_total: 99 })).mozna).toBeNull();
+    // Iný dodávateľ, zmazaná či upravovaná faktúra sa nerátajú.
+    expect((await najdiUlozenuPrijatu(sb, FIRMA, { ...nova, supplier_ico: "11111111" })).mozna).toBeNull();
+    expect((await najdiUlozenuPrijatu(sb, FIRMA, nova, id(7))).mozna).toBeNull();
+    const zmazana = falosnyKlient({ purchase_invoices: [ulozena({ deleted_at: "2026-11-05" })] });
+    expect((await najdiUlozenuPrijatu(zmazana, FIRMA, nova)).mozna).toBeNull();
+  });
+
+  it("dodávateľ bez IČO sa porovná podľa názvu; dve faktúry bez čísla tiež", async () => {
+    const { najdiUlozenuPrijatu } = await import("./duplicita-zauctovania.server");
+    const sb = falosnyKlient({
+      purchase_invoices: [ulozena({ invoice_number: "", supplier_ico: null, supplier_name: "Ján Novák" })],
+    });
+    const r = await najdiUlozenuPrijatu(sb, FIRMA, { ...nova, supplier_ico: null, supplier_name: "Ján Novák" });
+    expect(r).toMatchObject({ blok: null, mozna: { id: id(7) } });
+  });
+});

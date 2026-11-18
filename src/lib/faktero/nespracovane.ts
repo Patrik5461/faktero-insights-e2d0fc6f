@@ -30,6 +30,7 @@ import {
   type VysledokKontroly,
 } from "./rozpis-dph-kontrola";
 import { datum as datumZAi } from "./mail-prijem";
+import { cisloPrijatejNaUlozenie } from "./variabilny-symbol";
 import { aiSOdpoctomZalohy, naUhraduSOdpoctom } from "./odpocet-zalohy-vytazenie";
 import { upravIban, upravVs } from "./ostatne-doklady";
 import { datumDphPoZmeneDodania, normalizujDatumDph, predvolenyDatumDph } from "./datum-dph";
@@ -826,7 +827,7 @@ export function chybajuce(
   if (druh === "blocek") {
     if (!u.platba) out.push("platba");
   } else {
-    if (!u.cislo.trim()) out.push("cislo");
+    // Číslo nie je povinné (Patrik 18. 11.): bez neho sa vezme VS, inak sa uloží bez čísla.
     if (druh === "danovy") {
       // Daňový doklad k platbe sa neplatí — splatnosť nemá; DUZP je deň prijatia platby (§ 19 ods. 4).
       if (!u.datumDodania) out.push("datumPlatby");
@@ -1083,7 +1084,8 @@ export function prijataZUdajov(
     supplier_zip: prazdne(u.dodavatel.psc),
     supplier_country: prazdne(u.dodavatel.krajina ?? "")?.toUpperCase().slice(0, 2) ?? null,
     supplier_email: prazdne(u.dodavatel.email ?? ""),
-    invoice_number: u.cislo.trim() || "bez čísla",
+    // Bez čísla variabilný symbol, bez oboch prázdne (Patrik 18. 11.) — nie „bez čísla“.
+    invoice_number: cisloPrijatejNaUlozenie(u.cislo, u.vs),
     pohoda_cislo: prazdne(u.interneCislo ?? ""),
     variable_symbol: prazdne(u.vs),
     constant_symbol: prazdne(u.ks ?? ""),

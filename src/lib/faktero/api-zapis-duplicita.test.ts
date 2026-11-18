@@ -81,4 +81,23 @@ describe("API zápis prijatej faktúry — duplicita", () => {
     expect(b.body.error.code).toBe("duplicate_document");
     expect(chybaZapisuDokladu({ message: "iná chyba" }).status).toBe(500);
   });
+
+  it("bez čísla faktúry: číslo doplní VS, bez oboch sa uloží prázdne (nie null)", async () => {
+    const { zalozPrijatu } = await import("./api-zapis.server");
+    const telo = {
+      supplier: { name: "Dodávateľ bez čísiel s.r.o.", ico: "11122233" },
+      issue_date: "2026-11-02",
+      amount_total: 50,
+      vat_breakdown: [{ rate: 23, base: 40.65, vat: 9.35 }],
+    };
+    const sVs = klient({ purchase_invoices: [] });
+    const r1 = await zalozPrijatu(ctx(sVs, { ...telo, variable_symbol: "2026555" }));
+    expect(r1.status).toBeLessThan(300);
+    expect(sVs.vlozene.at(-1)).toMatchObject({ invoice_number: "2026555", variable_symbol: "2026555" });
+
+    const bez = klient({ purchase_invoices: [] });
+    const r2 = await zalozPrijatu(ctx(bez, { ...telo, invoice_number: null }));
+    expect(r2.status).toBeLessThan(300);
+    expect(bez.vlozene.at(-1)).toMatchObject({ invoice_number: "", variable_symbol: null });
+  });
 });

@@ -66,6 +66,7 @@ import {
   type UdajeNespracovaneho,
   textVytvorenia,
 } from "@/lib/faktero/nespracovane";
+import { cisloPrijatejNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { OdpocetZalohyNespracovaneho } from "@/components/faktero/OdpocetZalohyNespracovaneho";
 import { ZalohaDanovehoDokladu } from "@/components/faktero/ZalohaDanovehoDokladu";
@@ -378,6 +379,19 @@ function Detail() {
       await potvrdNesuladRozpisu(kontrolaRozpisu, t);
       return;
     }
+    // Faktúra bez čísla aj VS sa uloží bez čísla — po potvrdení (Patrik 18. 11.).
+    if (
+      u &&
+      jeDruhPrijatej(druh) &&
+      !ajDuplicitu &&
+      !ajCudziu &&
+      !cisloPrijatejNaUlozenie(u.cislo, u.vs) &&
+      !(await potvrd(t("Faktúra nemá číslo. Uložiť ju bez čísla?"), {
+        potvrdit: t("Uložiť bez čísla"),
+        zrusit: t("Späť"),
+      }))
+    )
+      return;
     // Pri opakovaní kvôli duplicite už človek vlastnú faktúru potvrdil.
     if (vlastnyUcet && !ajDuplicitu) {
       const ano = await potvrd(

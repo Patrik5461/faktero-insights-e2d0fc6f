@@ -925,12 +925,13 @@ export async function duplicityNespracovanych(
     const druh = (r.druh || "faktura") as string;
     if (!DRUHY_PRIJATEJ.has(druh)) continue;
     const u = nacitajUdaje(r.udaje);
-    if (!u.cislo.trim()) continue;
     faktury.push({ ...prijataZUdajov(druh as DruhPrijatej, u, dnes), id: r.id, status: "received" });
   }
   if (!faktury.length) return out;
   const { kandidatiDuplicit } = await import("./duplicita-zauctovania.server");
-  const { naPorovnanie, suDuplicitne, moznaDuplicita, popisPrijatej } = await import("./duplicita-zauctovania");
+  const { naPorovnanie, suDuplicitne, moznaDuplicita, moznaDuplicitaBezCisla, popisPrijatej } = await import(
+    "./duplicita-zauctovania"
+  );
   const kandidati = (await kandidatiDuplicit(supabase, companyId, "prijata", faktury))
     .sort(
       (x, y) =>
@@ -940,7 +941,8 @@ export async function duplicityNespracovanych(
   for (const f of faktury) {
     const n = naPorovnanie("prijata", f);
     const blok = kandidati.find((x) => suDuplicitne(n, x.p));
-    const mozna = blok ? null : kandidati.find((x) => moznaDuplicita(n, x.p));
+    // Bez čísla: rovnaký dodávateľ (IČO), suma a deň vystavenia — len upozornenie.
+    const mozna = blok ? null : kandidati.find((x) => moznaDuplicita(n, x.p) || moznaDuplicitaBezCisla(n, x.p));
     const z = blok ?? mozna;
     if (!z) continue;
     out.set(f.id, {

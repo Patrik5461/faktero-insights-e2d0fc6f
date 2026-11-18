@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
-import { vsPrijatejNaUlozenie } from "./variabilny-symbol";
+import { cisloPrijatejNaUlozenie, vsPrijatejNaUlozenie } from "./variabilny-symbol";
 import { CHYBA_PRESUNU_BLOCKU, jeSkutocnyBlocek } from "./doklad-je-blocek";
 
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
@@ -108,9 +108,8 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
         supplier_name: doklad.supplier_name ?? "Neuvedený dodávateľ",
         supplier_ico: doklad.supplier_ico ?? null,
         supplier_ic_dph: doklad.supplier_ic_dph ?? null,
-        // Číslo dokladu je na prijatej faktúre povinné; keď ho bloček nemá,
-        // radšej zrozumiteľná náhrada než prázdno.
-        invoice_number: doklad.document_number ?? `DOKLAD-${String(doklad.id).slice(0, 8)}`,
+        // Bloček bez čísla → prijatá faktúra bez čísla (Patrik 18. 11.); VS bloček nemá.
+        invoice_number: cisloPrijatejNaUlozenie(doklad.document_number, null),
         // VS na doklade nie je — vezme sa číslo, keď je celé z číslic.
         variable_symbol: vsPrijatejNaUlozenie(null, doklad.document_number),
         type: typPrijatej,
