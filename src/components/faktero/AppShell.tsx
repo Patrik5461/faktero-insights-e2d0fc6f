@@ -615,7 +615,10 @@ export function AppShell({
               </button>
               {/* Hlasové ovládanie (test) — len administrátori platformy, len web (HLAS_PRE v hlas.ts). */}
               {smieHlas({ adminRole, nativna, userId: mojeId }) && (
-                <HlasoveTlacidlo className="max-md:border-white/30 max-md:text-primary-foreground max-md:hover:bg-white/15" />
+                <HlasoveTlacidlo
+                  onPrepniFirmu={onChangeCompany}
+                  className="max-md:border-white/30 max-md:text-primary-foreground max-md:hover:bg-white/15"
+                />
               )}
               <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
 

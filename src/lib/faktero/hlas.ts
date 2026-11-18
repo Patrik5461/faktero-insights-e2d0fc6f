@@ -1,7 +1,9 @@
 /*
   Hlasové ovládanie Faktera (TEST) — spoločná čistá časť pre prehliadač aj server.
 
-  Tok: človek povie príkaz → prehliadač ho prepíše (Web Speech API) → server
+  Tok: človek povie príkaz → prehliadač ho nahrá a server ho prepíše
+  (OpenAI gpt-4o-transcribe, `hlas-prepis.server.ts`; Web Speech API len ako
+  záloha) → server
   (`hlas.functions.ts` → `hlas.server.ts`) ho s kontextom stránky pošle
   Claudovi s malou sadou nástrojov → vráti krátku odpoveď a akcie
   (prechod na stránku, návrh zaúčtovania na potvrdenie).
@@ -86,7 +88,8 @@ export function dokladyNaNavrh(
   if (kontext.otvoreny && !vsetky.has(kontext.otvoreny.id))
     vsetky.set(kontext.otvoreny.id, { typ: kontext.otvoreny.typ, id: kontext.otvoreny.id });
   let vyber: DokladNaObrazovke[];
-  if (ids.length) vyber = ids.map((id) => vsetky.get(id)).filter((d): d is DokladNaObrazovke => !!d);
+  if (ids.length)
+    vyber = ids.map((id) => vsetky.get(id)).filter((d): d is DokladNaObrazovke => !!d);
   else if (kontext.oznacene.length)
     vyber = kontext.oznacene.map((id) => vsetky.get(id)).filter((d): d is DokladNaObrazovke => !!d);
   else if (kontext.otvoreny) vyber = [vsetky.get(kontext.otvoreny.id)!];
@@ -98,58 +101,66 @@ export function dokladyNaNavrh(
   };
 }
 
-/* ---------- Kam smie model navigovať ---------- */
+/* ---------- Navigácia ---------- */
 
-export const CIELE = [
-  "dashboard",
-  "nespracovane",
-  "prijate_faktury",
-  "vystavene_faktury",
-  "blocky",
-  "banka",
-  "uctovne_exporty",
-  "dph_prehlad",
-  "dph_vykazy",
-  "na_kontrolu",
-  "nastavenia",
-  "detail_nespracovany",
-  "detail_prijata",
-  "detail_vystavena",
-] as const;
-export type Ciel = (typeof CIELE)[number];
+/*
+  Kam smie model ísť, určuje katalóg stránok (`hlas-stranky.ts`, generovaný
+  z routeTree). Tu je len tvar navigácie a detail položky zo zoznamu.
+*/
 
-const CESTY: Record<Exclude<Ciel, `detail_${string}`>, string> = {
-  dashboard: "/dashboard",
-  nespracovane: "/nespracovane",
-  prijate_faktury: "/prijate-faktury",
-  vystavene_faktury: "/faktury",
-  blocky: "/doklady",
-  banka: "/bankove-ucty",
-  uctovne_exporty: "/exporty",
-  dph_prehlad: "/uctovnictvo/dph",
-  dph_vykazy: "/uctovnictvo/vykazy",
-  na_kontrolu: "/uctovnictvo/na-kontrolu",
-  nastavenia: "/nastavenia",
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export type Navigacia = { to: string; params?: { id: string }; search?: Record<string, string> };
+
+/** Čo všetko vie hlas nájsť a ukázať v zozname v paneli. */
+export type TypPolozkyHlasu =
+  TypDokladuHlasu | "ponuka" | "zakazka" | "odberatel" | "dodavatel" | "transakcia" | "produkt";
+
+export type PolozkaZoznamuHlasu = {
+  typ: TypPolozkyHlasu;
+  id: string;
+  cislo?: string | null;
+  partner?: string | null;
+  suma?: number | null;
+  mena?: string | null;
+  datum?: string | null;
+  /** Krátky stav do zoznamu („neuhradená“, „po splatnosti“…). */
+  stav?: string | null;
 };
 
-const DETAILY: Record<Extract<Ciel, `detail_${string}`>, string> = {
-  detail_nespracovany: "/nespracovane/$id",
-  detail_prijata: "/prijate-faktury/$id",
-  detail_vystavena: "/faktury/$id",
+const DETAIL_POLOZKY: Partial<Record<TypPolozkyHlasu, string>> = {
+  nespracovany: "/nespracovane/$id",
+  prijata: "/prijate-faktury/$id",
+  vystavena: "/faktury/$id",
+  ponuka: "/ponuky/$id",
+  zakazka: "/zakazky/$id",
+  produkt: "/sklad/produkty/$id",
 };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export type Navigacia = { to: string; params?: { id: string } };
-
-/** Cieľ z whitelistu → cesta routera; čokoľvek iné (aj zlé id) → null. */
-export function cestaPreCiel(ciel: string, id?: string | null): Navigacia | null {
-  if (ciel in CESTY) return { to: CESTY[ciel as keyof typeof CESTY] };
-  if (ciel in DETAILY) {
-    if (!id || !UUID.test(id)) return null;
-    return { to: DETAILY[ciel as keyof typeof DETAILY], params: { id } };
-  }
-  return null;
+/**
+ * Kam vedie klik na položku zoznamu. Bloček, kontakt, transakcia a produkt
+ * bez skladu detail nemajú — otvorí sa ich zoznam vyhľadaný podľa čísla/mena.
+ */
+export function navigaciaPolozky(
+  p: Pick<PolozkaZoznamuHlasu, "typ" | "id" | "cislo" | "partner">,
+): Navigacia | null {
+  // Produkt z cenníka bez skladovej karty (id „cennik:<uuid>“) — cenník vyhľadaný podľa mena.
+  if (p.typ === "produkt" && p.id.startsWith("cennik:"))
+    return p.partner
+      ? { to: "/produkty", search: { q: p.partner.slice(0, 80) } }
+      : { to: "/produkty" };
+  const detail = DETAIL_POLOZKY[p.typ];
+  if (detail) return UUID.test(p.id) ? { to: detail, params: { id: p.id } } : null;
+  const q = (p.cislo || p.partner || "").trim().slice(0, 80);
+  const zoznam: Partial<Record<TypPolozkyHlasu, string>> = {
+    blocek: "/doklady",
+    odberatel: "/odberatelia",
+    dodavatel: "/dodavatelia",
+    transakcia: "/bankove-ucty/transakcie",
+  };
+  const to = zoznam[p.typ];
+  if (!to) return null;
+  return q ? { to, search: { q } } : { to };
 }
 
 /* ---------- Potvrdenie hlasom ---------- */
@@ -271,11 +282,39 @@ export function naPotvrdenie(n: NavrhHlasu | null | undefined): PolozkaNavrhuHla
 
 /* ---------- Odpoveď servera ---------- */
 
+/*
+  Zápisy hlasom — jednotný mechanizmus: server (model) zápis NIKDY nevykoná,
+  len vráti `NavrhAkcie`. Panel ho ukáže s Potvrdiť/Zrušiť a po potvrdení ho
+  vykoná prehliadač existujúcou serverovou funkciou (register
+  `VYKONAVACE_ZAPISOV` v HlasoveOvladanie.tsx). Nový zápis = nový druh tu,
+  nástroj „propose_…“ v hlas.server.ts, náhľad a vykonávač v paneli.
+  Zatiaľ jediný druh: zaúčtovanie dokladov.
+*/
+export type NavrhAkcie = { druh: "zauctovanie"; navrh: NavrhHlasu };
+
+export const NAZVY_ZAPISOV: Record<NavrhAkcie["druh"], string> = {
+  zauctovanie: "Návrh zaúčtovania",
+};
+
+/** Koľko vecí potvrdenie zapíše (0 = nie je čo potvrdiť). */
+export function pocetNaPotvrdenie(a: NavrhAkcie | null | undefined): number {
+  if (!a) return 0;
+  switch (a.druh) {
+    case "zauctovanie":
+      return naPotvrdenie(a.navrh).length;
+  }
+}
+
+export type FirmaHlasu = { id: string; nazov: string; ico: string | null; testovacia: boolean };
+
 export type AkciaHlasu =
-  | { typ: "navigovat"; ciel: Ciel; navigacia: Navigacia }
-  | { typ: "navrh"; navrh: NavrhHlasu }
+  | { typ: "navigovat"; navigacia: Navigacia; nazov?: string }
+  | { typ: "navrh_akcie"; akcia: NavrhAkcie }
   | { typ: "potvrdit" }
-  | { typ: "zrusit" };
+  | { typ: "zrusit" }
+  | { typ: "zoznam"; nadpis: string; polozky: PolozkaZoznamuHlasu[]; celkom: number }
+  | { typ: "prepnut_firmu"; firma: FirmaHlasu }
+  | { typ: "vyber_firmy"; firmy: FirmaHlasu[] };
 
 export type OdpovedHlasu = {
   text: string;
@@ -353,7 +392,10 @@ export function vyberHlas<T extends HlasInfo>(
 }
 
 /** Hlasy, ktoré dáva zmysel ponúknuť vo výbere (sk, cs, pri nemčine de). */
-export function hlasyNaVyber<T extends HlasInfo>(hlasy: T[], jazyk: string | null | undefined): T[] {
+export function hlasyNaVyber<T extends HlasInfo>(
+  hlasy: T[],
+  jazyk: string | null | undefined,
+): T[] {
   const jazyky = jazyk === "de" ? ["de", "sk", "cs"] : ["sk", "cs"];
   return hlasy.filter((h) => jazyky.some((j) => zacinaJazykom(h, j)));
 }
@@ -368,4 +410,129 @@ export function textNaPrecitanie(text: string, max = 280): string {
   const rez = t.slice(0, max);
   const bodka = Math.max(rez.lastIndexOf(". "), rez.lastIndexOf("! "), rez.lastIndexOf("? "));
   return bodka > 40 ? rez.slice(0, bodka + 1) : rez + "…";
+}
+
+/* ---------- Nahrávanie príkazu (prehliadač) ---------- */
+
+/** Formát nahrávky v poradí preferencie — Chrome/Firefox webm/ogg opus, Safari mp4. */
+export const FORMATY_NAHRAVKY = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/ogg;codecs=opus",
+] as const;
+
+export function vyberFormatNahravky(podporuje: (mime: string) => boolean): string | null {
+  for (const f of FORMATY_NAHRAVKY) {
+    try {
+      if (podporuje(f)) return f;
+    } catch {
+      /* starý prehliadač — skúsi sa ďalší */
+    }
+  }
+  return null;
+}
+
+/**
+ * Detekcia ticha (VAD) nad hlasitosťou mikrofónu. Prah sa nastaví z prvých
+ * 300 ms (šum miestnosti), koniec príkazu = 1,2 s ticha po reči; bez reči
+ * sa po 7 s skončí naprázdno, celé nahrávanie najviac 30 s.
+ */
+export const VAD = {
+  kalibraciaMs: 300,
+  tichoMs: 1200,
+  bezReciMs: 7000,
+  maxMs: 30_000,
+  minPrah: 0.012,
+  maxPrah: 0.05,
+} as const;
+
+export type StavTicha = {
+  zaciatok: number;
+  sumHluku: number;
+  vzoriekHluku: number;
+  prah: number;
+  reci: boolean;
+  posledneHlasne: number;
+  /** Koľko ms bolo nad prahom (súčet) — krátke bliknutie (kašeľ, klik) nie je reč. */
+  reciMs: number;
+  poslednaVzorka: number;
+};
+
+export type KoniecNahravania = "ticho" | "max" | "bez_reci";
+
+export function novyStavTicha(t: number): StavTicha {
+  return {
+    zaciatok: t,
+    sumHluku: 0,
+    vzoriekHluku: 0,
+    prah: VAD.minPrah,
+    reci: false,
+    posledneHlasne: t,
+    reciMs: 0,
+    poslednaVzorka: t,
+  };
+}
+
+/** Jedna vzorka hlasitosti (RMS 0–1) v čase `t` (ms). `drzi` = tlačidlo držané (push-to-talk): ticho nekončí. */
+export function krokTicha(
+  s: StavTicha,
+  rms: number,
+  t: number,
+  drzi = false,
+): { stav: StavTicha; koniec: KoniecNahravania | null } {
+  const n = { ...s };
+  const ubehlo = t - s.zaciatok;
+  if (ubehlo >= VAD.maxMs) return { stav: n, koniec: "max" };
+  if (ubehlo < VAD.kalibraciaMs) {
+    n.sumHluku += rms;
+    n.vzoriekHluku += 1;
+    n.prah = Math.min(VAD.maxPrah, Math.max(VAD.minPrah, (n.sumHluku / n.vzoriekHluku) * 2.5));
+  }
+  if (rms >= n.prah) {
+    n.reci = true;
+    n.posledneHlasne = t;
+    n.reciMs += Math.min(200, Math.max(0, t - s.poslednaVzorka));
+  }
+  n.poslednaVzorka = t;
+  if (drzi) return { stav: n, koniec: null };
+  if (n.reci && t - n.posledneHlasne >= VAD.tichoMs) return { stav: n, koniec: "ticho" };
+  if (!n.reci && ubehlo >= VAD.bezReciMs) return { stav: n, koniec: "bez_reci" };
+  return { stav: n, koniec: null };
+}
+
+/**
+ * Čo spraviť po prepise na serveri. Serverový prepis má prednosť; keď
+ * zlyhá, použije sa text, ktorý popri nahrávaní zachytil prehliadač
+ * (Chrome), inak sa počúva znova prehliadačom (ak ho prehliadač má).
+ */
+/** Od koľkých ms reči (VAD) sa verí aj prepisu, ktorý sa skladá len zo slov slovníka. */
+export const REC_PRE_OZVENU_MS = 600;
+
+export function poPrepise(a: {
+  server: { text: string; prazdny: boolean; ozvena?: boolean } | { chyba: string };
+  prehliadac: string;
+  recDostupna: boolean;
+  /** Reč nameraná detekciou ticha (ms). */
+  reciMs?: number;
+}):
+  | { akcia: "odoslat"; text: string; zdroj: "server" | "prehliadac" }
+  | { akcia: "nic" }
+  | { akcia: "pocuvat_prehliadacom" }
+  | { akcia: "chyba"; text: string } {
+  const zaloha = a.prehliadac.trim();
+  if ("chyba" in a.server) {
+    if (zaloha) return { akcia: "odoslat", text: zaloha, zdroj: "prehliadac" };
+    if (a.recDostupna) return { akcia: "pocuvat_prehliadacom" };
+    return { akcia: "chyba", text: a.server.chyba };
+  }
+  const t = a.server.text.trim();
+  if (!t || a.server.prazdny) return { akcia: "nic" };
+  /*
+    Pri tichu či šume gpt-4o-transcribe „prepíše“ slová zo slovníka
+    (overené naostro 18. 11.). Prepis len zo slov slovníka sa preto berie,
+    keď reč potvrdil aj prehliadač alebo detekcia ticha nameral dosť reči.
+  */
+  if (a.server.ozvena && !zaloha && (a.reciMs ?? 0) < REC_PRE_OZVENU_MS) return { akcia: "nic" };
+  return { akcia: "odoslat", text: t, zdroj: "server" };
 }

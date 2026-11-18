@@ -27,6 +27,13 @@ export const CENNIK: Record<string, CenaModelu> = {
   "gpt-4o-mini": { vstup: 0.15, vystup: 0.6 },
   "gpt-4.1": { vstup: 2, vystup: 8 },
   "gpt-4.1-mini": { vstup: 0.4, vystup: 1.6 },
+  /* Prepis reči (hlasové ovládanie, `hlas-prepis.server.ts`): vstup = audio
+     tokeny (6 USD/M; text promptu je do nich prepočítaný), gpt-4o-transcribe
+     ≈ 0,006 USD za minútu. Whisper účtuje minúty — meria sa ako ekvivalent
+     1 000 tokenov za minútu, preto rovnaká vstupná sadzba. */
+  "gpt-4o-transcribe": { vstup: 6, vystup: 10 },
+  "gpt-4o-mini-transcribe": { vstup: 3, vystup: 5 },
+  "whisper-1": { vstup: 6, vystup: 0 },
   // Anthropic Claude — náhrada za Gemini (`modelClaudeVytazenie`, `modelClaude`).
   "claude-opus-5-5": { vstup: 4, vystup: 20 },
   "claude-sonnet-5-5": { vstup: 2, vystup: 10 },
