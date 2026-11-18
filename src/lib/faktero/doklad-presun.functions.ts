@@ -87,6 +87,16 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join(" · ");
 
+    /*
+      Naskenovaná zálohová faktúra sa nemá tváriť ako daňový doklad —
+      rozpozná sa z čísla a poznámky dokladu a zaradí sa medzi prijaté
+      zálohy.
+    */
+    const typPrijatej = druhPrijatehoDokladu({
+      cisloDokladu: doklad.document_number,
+      poznamka: poznamka || doklad.note,
+      nazovSuboru: doklad.file_path ?? null,
+    });
     const { data: faktura, error: chybaZapisu } = await supabase
       .from("purchase_invoices")
       .insert({
@@ -103,18 +113,11 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
         invoice_number: doklad.document_number ?? `DOKLAD-${String(doklad.id).slice(0, 8)}`,
         // VS na doklade nie je — vezme sa číslo, keď je celé z číslic.
         variable_symbol: vsPrijatejNaUlozenie(null, doklad.document_number),
-        /*
-          Naskenovaná zálohová faktúra sa nemá tváriť ako daňový doklad —
-          rozpozná sa z čísla a poznámky dokladu a zaradí sa medzi prijaté
-          zálohy.
-        */
-        type: druhPrijatehoDokladu({
-          cisloDokladu: doklad.document_number,
-          poznamka: poznamka || doklad.note,
-          nazovSuboru: doklad.file_path ?? null,
-        }),
+        type: typPrijatej,
         issue_date: vystavenie,
         received_date: dnes,
+        // Dátum daňovej povinnosti = deň bločku (DUZP nemá); zálohová bez neho.
+        datum_dph: typPrijatej === "proforma" ? null : vystavenie,
         due_date: oDni(vystavenie, 14),
         amount_without_vat: zaklad,
         vat_amount: dph,

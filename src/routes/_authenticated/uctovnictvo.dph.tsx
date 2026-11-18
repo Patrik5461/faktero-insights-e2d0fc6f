@@ -170,12 +170,12 @@ function DphPage() {
           supabase
             .from("invoices")
             .select(
-              "id, invoice_number, issue_date, delivery_date, opravuje_fakturu_id, customer_name, subtotal, vat_total, total, currency, exchange_rate, status, reverse_charge, type",
+              "id, invoice_number, issue_date, delivery_date, datum_dph, opravuje_fakturu_id, customer_name, subtotal, vat_total, total, currency, exchange_rate, status, reverse_charge, type",
             )
             .eq("company_id", cid)
             // Hrubý výber podľa oboch dátumov; do obdobia ho presne zaradí
             // `denDaneVystavenej` — rovnako ako priznanie (dátum dodania).
-            .or(filterDatumovObdobia(["issue_date", "delivery_date"], period.from, period.to))
+            .or(filterDatumovObdobia(["issue_date", "delivery_date", "datum_dph"], period.from, period.to))
             .is("deleted_at", null)
             .neq("status", "draft")
             .neq("status", "cancelled")
@@ -191,12 +191,12 @@ function DphPage() {
           supabase
             .from("purchase_invoices")
             .select(
-              "id, invoice_number, issue_date, delivery_date, received_date, dph_rezim, reverse_charge, opravuje_cislo, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur, vat_breakdown, samofakturacia, samofakturacia_stav",
+              "id, invoice_number, issue_date, delivery_date, received_date, datum_dph, dph_rezim, reverse_charge, opravuje_cislo, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur, vat_breakdown, samofakturacia, samofakturacia_stav",
             )
             .eq("company_id", cid)
             .or(
               filterDatumovObdobia(
-                ["issue_date", "delivery_date", "received_date"],
+                ["issue_date", "delivery_date", "received_date", "datum_dph"],
                 period.from,
                 period.to,
               ),

@@ -31,6 +31,7 @@ export type TabulkaZamku = "invoices" | "purchase_invoices" | "expense_documents
 export const ZAMOK_OBDOBIA_FAKTURY = [
   "issue_date",
   "delivery_date",
+  "datum_dph",
   "povodna_splatnost",
   "invoice_number",
   "type",
@@ -77,6 +78,7 @@ export const ZAMOK_OBDOBIA_PRIJATEJ = [
   "issue_date",
   "delivery_date",
   "received_date",
+  "datum_dph",
   "povodna_splatnost",
   "supplier_name",
   "supplier_ico",
@@ -165,6 +167,7 @@ export const VOLNE_V_POLOZKACH = ["predkontacia", "pohoda_predkontacia", "stredi
 export const NAZVY_POLI: Record<string, string> = {
   issue_date: "dátum vystavenia",
   delivery_date: "dátum dodania",
+  datum_dph: "dátum daňovej povinnosti",
   received_date: "dátum prijatia",
   due_date: "splatnosť",
   povodna_splatnost: "pôvodná splatnosť",

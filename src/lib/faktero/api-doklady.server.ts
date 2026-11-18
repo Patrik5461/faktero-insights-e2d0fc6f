@@ -30,6 +30,8 @@ const STL_PRIJATEJ = [
   "supplier_country",
   "issue_date",
   "delivery_date",
+  // Dátum daňovej povinnosti (prázdny = deň odpočtu podľa doterajšieho pravidla).
+  "datum_dph",
   "due_date",
   "received_date",
   "currency",

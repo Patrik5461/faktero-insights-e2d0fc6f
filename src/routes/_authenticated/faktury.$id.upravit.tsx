@@ -1,6 +1,8 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
 import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { MriezkaDokladu, PoleDokladu, SplatnostPole, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
+import { POPIS_DATUM_DPH, DatumDphOtaznik, DatumDphRozdiel } from "@/components/faktero/DatumDphInfo";
+import { normalizujDatumDph, predvolenyDatumDph } from "@/lib/faktero/datum-dph";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { ColneUdajePolozky } from "@/components/faktero/ColneUdajePolozky";
@@ -160,6 +162,26 @@ function EditInvoice() {
     clenenie: "",
     kv: "",
   });
+  /*
+    Dátum daňovej povinnosti: `null` = nasleduje predvolený deň (DUZP, pri
+    opravnej faktúre dátum vystavenia), kým ho používateľ nezmení.
+  */
+  const [datumDphRucne, setDatumDphRucne] = useState<string | null>(null);
+  /* Zálohová faktúra nie je daňový doklad — pole sa neukazuje. */
+  const bezDatumuDph = inv?.type === "proforma";
+  const predvolenyDph = bezDatumuDph
+    ? null
+    : predvolenyDatumDph(
+        {
+          type: inv?.type ?? null,
+          issue_date: form.issue_date || null,
+          delivery_date: form.delivery_date || null,
+          opravuje_fakturu_id: inv?.opravuje_fakturu_id ?? null,
+          payment_date: inv?.payment_date ?? null,
+        },
+        "vystavena",
+      );
+  const datumDph = bezDatumuDph ? "" : (datumDphRucne ?? predvolenyDph ?? "");
 
   useEffect(() => {
     (async () => {
@@ -180,6 +202,12 @@ function EditInvoice() {
         return;
       }
       setInv(i);
+      {
+        // Uložený dátum, ktorý sa líši od predvoleného, ostáva pevný; inak pole nasleduje DUZP.
+        const ulozeny = normalizujDatumDph((i as any).datum_dph);
+        const predvoleny = predvolenyDatumDph({ ...(i as any), datum_dph: null }, "vystavena");
+        setDatumDphRucne(ulozeny && ulozeny !== predvoleny ? ulozeny : null);
+      }
       setPdpDruh(String((i as any).pdp_druh ?? ""));
       const o = odberatelZFaktury(i);
       setOdberatel(o);
@@ -394,6 +422,18 @@ function EditInvoice() {
         // dodania sa nedala uložiť vôbec.
         // Vystavený doklad bez dátumu dodania nesmie vzniknúť — doplní sa dátum vystavenia.
         delivery_date: datumDodania || null,
+        /*
+          Dátum daňovej povinnosti len pri zmene: faktúra bez neho (null =
+          pravidlo DUZP) ho nedostane, kým ho používateľ sám nezadá — zámok
+          obdobia by inak odmietol aj „zmenu“ na ten istý deň.
+        */
+        ...(() => {
+          const ulozeny = normalizujDatumDph(inv?.datum_dph);
+          if (bezDatumuDph) return ulozeny ? { datum_dph: null } : {};
+          if (!ulozeny) return datumDphRucne ? { datum_dph: normalizujDatumDph(datumDphRucne) } : {};
+          const novy = normalizujDatumDph(datumDph);
+          return novy !== ulozeny ? { datum_dph: novy } : {};
+        })(),
         due_date: form.due_date,
         // Prázdny VS sa doplní z čísla faktúry, rovnako ako pri vystavení.
         variable_symbol: vsNaUlozenie(form.variable_symbol, form.invoice_number),
@@ -650,7 +690,11 @@ function EditInvoice() {
                     </p>
                   )}
                 </div>
-                <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datumDvojica}>
+                <PoleDokladu
+                  label={t("Dátum vystavenia")}
+                  htmlFor="datum-vystavenia"
+                  className={bezDatumuDph ? bunka.datumDvojica : bunka.datum}
+                >
                   <input
                     id="datum-vystavenia"
                     type="date"
@@ -671,7 +715,11 @@ function EditInvoice() {
                     className={VSTUP_DOKLADU}
                   />
                 </PoleDokladu>
-                <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datumDvojica}>
+                <PoleDokladu
+                  label={t("Dátum dodania")}
+                  htmlFor="datum-dodania"
+                  className={bezDatumuDph ? bunka.datumDvojica : bunka.datum}
+                >
                   <input
                     id="datum-dodania"
                     type="date"
@@ -680,6 +728,31 @@ function EditInvoice() {
                     className={VSTUP_DOKLADU}
                   />
                 </PoleDokladu>
+                {!bezDatumuDph && (
+                  <PoleDokladu
+                    label={
+                      <>
+                        {t(POPIS_DATUM_DPH)}
+                        <DatumDphOtaznik druh="vystavena" />
+                      </>
+                    }
+                    htmlFor="datum-dph"
+                    className={bunka.datumPosledny}
+                  >
+                    <input
+                      id="datum-dph"
+                      type="date"
+                      value={datumDph}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        // Rovnaký ako predvolený (alebo prázdny) = znova nasleduje DUZP.
+                        setDatumDphRucne(!v || v === predvolenyDph ? null : v);
+                      }}
+                      className={VSTUP_DOKLADU}
+                    />
+                    <DatumDphRozdiel datumDph={datumDph} dodanie={form.delivery_date || form.issue_date} />
+                  </PoleDokladu>
+                )}
                 <SplatnostPole
                   required
                   className={bunka.splatnostRiadok}
@@ -1265,8 +1338,8 @@ function EditInvoice() {
             }}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
             onKody={(k) => setForm((f) => ({ ...f, ...k }))}
-            datumDane={form.delivery_date}
-            onDatumDane={(v) => setForm((f) => ({ ...f, delivery_date: v }))}
+            datumDane={datumDph}
+            onDatumDane={(v) => setDatumDphRucne(!v || v === predvolenyDph ? null : v)}
             sposobPlatby={form.payment_method}
             onSposobPlatby={(v) => setForm((f) => ({ ...f, payment_method: v }))}
           />

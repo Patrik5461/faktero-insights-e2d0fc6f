@@ -47,6 +47,7 @@ export function DatumPrijatiaInfo({
   dobropis = false,
   samozdanenie = false,
   bezOdpoctu = false,
+  datumDph = null,
   kompaktne = false,
 }: {
   vystavenie: string | null | undefined;
@@ -56,6 +57,8 @@ export function DatumPrijatiaInfo({
   samozdanenie?: boolean;
   /** Zálohová faktúra — nie je daňový doklad, odpočet z nej nie je. */
   bezOdpoctu?: boolean;
+  /** Dátum daňovej povinnosti z dokladu — ak je vyplnený, určuje obdobie odpočtu. */
+  datumDph?: string | null;
   kompaktne?: boolean;
 }) {
   const { t } = useT();
@@ -68,6 +71,7 @@ export function DatumPrijatiaInfo({
         received_date: prijatie,
         opravuje_cislo: dobropis ? "x" : null,
         dph_rezim: samozdanenie ? "samozdanenie" : null,
+        datum_dph: datumDph || null,
       });
   if (!skoro && !obdobie) return null;
   return (

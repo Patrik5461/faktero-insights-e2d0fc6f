@@ -17,6 +17,7 @@ import { chybaDb, riadokZnaciek, strazZamku, zamknuteDoFirmy } from "./api-evide
 import { chybaUlozenejPrijatej, rozlozChybuBlocku, rozlozChybuPrijatej } from "./duplicita-zauctovania";
 import { popisChybDph, type ChybaDph } from "./dph-pravidlo";
 import { overDphZapisu } from "./dph-pravidlo.server";
+import { normalizujDatumDph, predvolenyDatumDph } from "./datum-dph";
 
 type Odpoved = { status: number; body: any };
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -191,6 +192,12 @@ const PrijataVstup = z.object({
   delivery_date: DATUM.nullish(),
   due_date: DATUM.nullish(),
   received_date: DATUM.nullish(),
+  /**
+   * Dátum daňovej povinnosti (datum-dph.ts) — určuje obdobie DPH, KV aj
+   * dátum dane v exportoch. Bez neho pri založení DUZP (bez neho vystavenie,
+   * dobropis prijatie); `null` pri úprave = doterajšie pravidlo dňa odpočtu.
+   */
+  datum_dph: DATUM.nullish(),
   currency: z.string().length(3).default("EUR"),
   exchange_rate: z.number().positive().nullish(),
   variable_symbol: z.string().max(20).nullish(),
@@ -262,6 +269,7 @@ function riadokPrijatej(d: Partial<z.infer<typeof PrijataVstup>>, teraz: string)
   nastav("issue_date", d.issue_date);
   nastav("delivery_date", d.delivery_date);
   nastav("received_date", d.received_date ?? d.issue_date);
+  nastav("datum_dph", d.datum_dph);
   nastav("due_date", d.due_date ?? d.issue_date);
   nastav("currency", d.currency?.toUpperCase());
   nastav("exchange_rate", d.exchange_rate);
@@ -402,7 +410,32 @@ async function strazUlozeniaPrijatej(
 }
 
 const STL_PRIJATEJ =
-  "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at, odberatel_nesedi";
+  "id, external_id, invoice_number, type, status, supplier_name, supplier_ico, issue_date, delivery_date, datum_dph, due_date, payment_date, currency, amount_without_vat, vat_amount, amount_total, stav_id, stitky, komentar, int_poznamka, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie, zauctovane_at, exported_at, source, created_at, updated_at, odberatel_nesedi";
+
+/**
+ * Dátum daňovej povinnosti novej prijatej faktúry: zadaný, inak predvolený
+ * (DUZP, bez neho vystavenie; dobropis prijatie).
+ */
+export function datumDphNovejPrijatej(riadok: Record<string, unknown>): string | null {
+  return normalizujDatumDph(riadok.datum_dph) ?? predvolenyDatumDph(riadok as any, "prijata");
+}
+
+/**
+ * Úprava bez `datum_dph`: ak uložený dátum daňovej povinnosti zodpovedal
+ * predvolenému dňu (DUZP), posunie sa s novými dátumami. Ručne zadaný iný
+ * dátum aj prázdny (staré doklady — doterajšie pravidlo) ostane; `undefined`
+ * = nemeniť.
+ */
+export function datumDphPoUpravePrijatej(
+  stary: Record<string, unknown>,
+  zmena: Record<string, unknown>,
+): string | null | undefined {
+  const ulozeny = normalizujDatumDph(stary.datum_dph);
+  if (!ulozeny) return undefined;
+  if (ulozeny !== predvolenyDatumDph(stary as any, "prijata")) return undefined;
+  const novy = predvolenyDatumDph({ ...stary, ...zmena } as any, "prijata");
+  return novy && novy !== ulozeny ? novy : undefined;
+}
 
 export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const v = PrijataVstup.safeParse(ctx.requestBody);
@@ -424,6 +457,7 @@ export async function zalozPrijatu(ctx: ApiCtx): Promise<Odpoved> {
   const { riadok, sumy: s } = riadokPrijatej(d, teraz);
   if (s.spolu == null)
     return err("validation_error", "Zadajte položky (items) alebo sumy (amount_total).");
+  riadok.datum_dph = datumDphNovejPrijatej(riadok);
   // DPH len po zákonných sadzbách (dph-pravidlo.ts) — skôr, než sa nahrá súbor.
   {
     const chyby = await overDphZapisu(db, ctx.company_id, "purchase_invoices", {
@@ -511,6 +545,11 @@ export async function upravPrijatu(ctx: ApiCtx, id: string): Promise<Odpoved> {
     .is("deleted_at", null)
     .maybeSingle();
   if (!stary) return err("not_found", "Prijatá faktúra sa nenašla.", 404);
+  // Dátum daňovej povinnosti nasleduje DUZP, kým ho nikto nezmenil (ide aj cez zámok obdobia).
+  if (!("datum_dph" in riadok)) {
+    const nasledujuci = datumDphPoUpravePrijatej(stary, riadok);
+    if (nasledujuci !== undefined) riadok.datum_dph = nasledujuci;
+  }
   if (maZnacky(v.data)) {
     const zn = await riadokZnaciek(ctx, v.data, stary.stitky ?? []);
     if (!zn.ok) return zn.odpoved;

@@ -395,6 +395,7 @@ export const POLIA_HISTORIE: Record<string, string> = {
   delivery_date: "Dátum dodania",
   due_date: "Splatnosť",
   received_date: "Dátum prijatia",
+  datum_dph: "Dátum daňovej povinnosti",
   amount_without_vat: "Základ",
   net_amount: "Základ",
   vat_amount: "DPH",

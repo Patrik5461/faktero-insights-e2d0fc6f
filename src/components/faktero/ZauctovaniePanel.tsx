@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
+import { datumDphDokladu } from "@/lib/faktero/datum-dph";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { VyberPravidla } from "./VyberPravidla";
 import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
@@ -793,7 +794,12 @@ export function ZauctovaniePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [h, kompaktne, zamknutaUprava]);
 
-  /** Dátum daňovej povinnosti (dodania) a typ platby sú stĺpce faktúry — ukladajú sa priamo. */
+  /*
+    Dátum daňovej povinnosti (`datum_dph`, 18. 11. 2026 — predtým tu bol
+    dátum dodania) a typ platby sú stĺpce faktúry — ukladajú sa priamo.
+    Prázdny `datum_dph` ukáže deň podľa pravidla (neskorší z DUZP a prijatia).
+  */
+  const datumDphPanelu = row.datum_dph ?? datumDphDokladu(row, "prijata") ?? "";
   async function ulozStlpec(zmena: Record<string, string | null>) {
     const { error } = await supabase
       .from("purchase_invoices")
@@ -975,8 +981,8 @@ export function ZauctovaniePanel({
               <Pole popis="Dátum daňovej povinnosti">
                 <input
                   type="date"
-                  value={row.delivery_date ?? row.issue_date ?? ""}
-                  onChange={(e) => void ulozStlpec({ delivery_date: e.target.value || null })}
+                  value={datumDphPanelu}
+                  onChange={(e) => void ulozStlpec({ datum_dph: e.target.value || null })}
                   className={`${ramik} border-input`}
                 />
               </Pole>
@@ -1149,8 +1155,8 @@ export function ZauctovaniePanel({
             <span className={popisK}>{t("Dátum daňovej povinnosti")}</span>
             <input
               type="date"
-              value={row.delivery_date ?? row.issue_date ?? ""}
-              onChange={(e) => void ulozStlpec({ delivery_date: e.target.value || null })}
+              value={datumDphPanelu}
+              onChange={(e) => void ulozStlpec({ datum_dph: e.target.value || null })}
               className={vstupK}
             />
           </label>

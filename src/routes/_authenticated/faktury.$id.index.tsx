@@ -11,6 +11,7 @@ import { importDphNeplatitela } from "@/lib/faktero/dph-neplatitel-import";
 import { NahladPdfOkno } from "@/components/faktero/NahladPdfOkno";
 import { DetailSNahladom, useNahladVDetaile, type SuborNahladu } from "@/components/faktero/BocnyNahlad";
 import { UdajePreUctovnika, type UdajeUctovnika } from "@/components/faktero/UdajePreUctovnika";
+import { datumDphDokladu, datumDphSaLisiOdDodania } from "@/lib/faktero/datum-dph";
 import { ZbaleneK } from "@/components/faktero/DetailDokladuKompaktny";
 import { useDizajn } from "@/hooks/useDizajn";
 import { VystavenaDetailKompaktna } from "@/components/faktero/VystavenaDetailKompaktna";
@@ -1183,6 +1184,8 @@ function InvoiceDetail() {
       ) : null,
     vystavenie: inv.issue_date,
     dodanie: inv.delivery_date,
+    // Zálohová faktúra nie je daňový doklad — dátum daňovej povinnosti nemá.
+    ...(inv.type !== "proforma" ? { datumDph: datumDphDokladu(inv, "vystavena") } : {}),
     splatnost: popisSplatnosti(inv),
     vs: vsVystavenej(inv) || null,
     formaUhrady: t(paymentMethodLabel(inv.payment_method)),
@@ -2091,6 +2094,12 @@ function InvoiceDetail() {
                 ? t("Koncept, dátum vystavenia {datum}", { datum: datumNaDoklade(inv.issue_date) })
                 : t("Vystavená {datum}", { datum: datumNaDoklade(inv.issue_date) }),
               <PoTermine aktivne={isOverdue}>{t("splatná {splatnost}", { splatnost: popisSplatnosti(inv) })}</PoTermine>,
+              /* Dátum daňovej povinnosti len keď je zadaný iný než DUZP — inak ho netreba opakovať. */
+              inv.type !== "proforma" &&
+              inv.datum_dph &&
+              datumDphSaLisiOdDodania(inv.datum_dph, inv.delivery_date || inv.issue_date)
+                ? t("dátum daňovej povinnosti {datum}", { datum: datumNaDoklade(inv.datum_dph) })
+                : null,
               predlzena(inv) && inv.predlzenie_poznamka ? inv.predlzenie_poznamka : null,
             ]}
           />

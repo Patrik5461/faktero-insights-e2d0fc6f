@@ -41,6 +41,8 @@ export type PrijatyNaOdpocet = {
   dph_rezim?: string | null;
   reverse_charge?: boolean | null;
   vat_amount?: number | string | null;
+  /** Dátum daňovej povinnosti zadaný na doklade — ak je, má prednosť pred pravidlom. */
+  datum_dph?: string | null;
 };
 
 /**
@@ -72,6 +74,13 @@ export function jeSamozdanenie(
  * - ostatné — neskorší z dátumu dodania (bez neho vyhotovenia) a prijatia.
  */
 export function denOdpoctu(p: PrijatyNaOdpocet): string | null {
+  /*
+    Výslovný dátum daňovej povinnosti (`datum_dph`, od 18. 11. 2026) má
+    prednosť — účtovníčka ho vidí a môže opraviť na doklade. Bez neho platí
+    pravidlo nižšie, takže staršie doklady sa nemenia.
+  */
+  const vyslovny = den(p.datum_dph);
+  if (vyslovny) return vyslovny;
   const dobropis = Boolean(p.opravuje_cislo) || Number(p.amount_total ?? 0) < 0;
   if (dobropis) return den(p.received_date) || den(p.issue_date) || den(p.delivery_date) || null;
   const plnenie = den(p.delivery_date) || den(p.issue_date);

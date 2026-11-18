@@ -181,6 +181,8 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
           variable_symbol: vsZCislaDokladu(cislo.invoice_number) || null,
           issue_date: data.datum_platby,
           delivery_date: data.datum_platby,
+          // Daň vzniká dňom prijatia platby (§ 19 ods. 4).
+          datum_dph: data.datum_platby,
           due_date: data.datum_platby,
           paid_at: data.datum_platby,
           currency: zf.currency,

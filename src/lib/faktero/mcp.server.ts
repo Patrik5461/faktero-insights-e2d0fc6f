@@ -54,6 +54,9 @@ const qs = (o: Record<string, unknown>) => {
   return s ? `?${s}` : "";
 };
 
+/** Popis voliteľného dátumu daňovej povinnosti v nástrojoch, ktoré zakladajú doklad. */
+const DATUM_DPH_POPIS = "Dátum daňovej povinnosti (RRRR-MM-DD); prázdne = DUZP";
+
 /** Z faktúry len to, čo asistent potrebuje — celé riadky by zbytočne plnili kontext. */
 const fakturaStrucne = (f: any) => ({
   id: f.id,
@@ -64,6 +67,8 @@ const fakturaStrucne = (f: any) => ({
   ico: f.customer_ico,
   vystavena: f.issue_date,
   dodanie: f.delivery_date,
+  // Dátum daňovej povinnosti; null = podľa DUZP (doterajšie pravidlo).
+  datum_dph: f.datum_dph ?? null,
   splatnost: f.due_date,
   uhradena: f.paid_at,
   zaklad: Number(f.subtotal),
@@ -158,6 +163,7 @@ const znackyStrucne = (r: any) => ({
   predkontacia: r.pohoda_predkontacia ?? undefined,
   clenenie_dph: r.pohoda_clenenie_dph ?? undefined,
   kv_clenenie: r.kv_clenenie ?? undefined,
+  datum_dph: r.datum_dph ?? undefined,
 });
 
 /** Zoznam firiem kľúča — pri kľúči účtu prvý krok, pri kľúči firmy jedna firma. */
@@ -270,6 +276,7 @@ export const NASTROJE: Nastroj[] = [
         },
         issue_date: { type: "string", description: "RRRR-MM-DD, predvolene dnes" },
         delivery_date: { type: "string", description: "RRRR-MM-DD" },
+        datum_dph: { type: "string", description: DATUM_DPH_POPIS },
         due_date: { type: "string", description: "RRRR-MM-DD" },
         currency: {
           type: "string",
@@ -531,6 +538,7 @@ export const NASTROJE: Nastroj[] = [
         },
         issue_date: { type: "string", description: "RRRR-MM-DD" },
         delivery_date: { type: "string" },
+        datum_dph: { type: "string", description: DATUM_DPH_POPIS },
         due_date: { type: "string" },
         currency: { type: "string" },
         variable_symbol: { type: "string" },
@@ -992,7 +1000,7 @@ export const NASTROJE: Nastroj[] = [
     name: "set_document_accounting",
     title: "Zaúčtovať doklad",
     description:
-      "Nastaví účtovné kódy (predkontácia, členenie DPH, KV, stredisko, činnosť) a účtovnú poznámku na vystavenej faktúre, prijatej faktúre alebo bločku. Odovzdaný doklad treba najprv vrátiť z účtovníctva.",
+      "Nastaví účtovné kódy (predkontácia, členenie DPH, KV, stredisko, činnosť) a účtovnú poznámku na vystavenej faktúre, prijatej faktúre alebo bločku; na faktúrach aj dátum daňovej povinnosti. Odovzdaný doklad treba najprv vrátiť z účtovníctva.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1006,6 +1014,10 @@ export const NASTROJE: Nastroj[] = [
           },
         },
         int_poznamka: { type: "string", description: "Účtovná poznámka" },
+        datum_dph: {
+          type: ["string", "null"],
+          description: `${DATUM_DPH_POPIS}. Len faktúry (invoice, purchase_invoice); null = podľa DUZP.`,
+        },
       },
       required: ["document_type", "id"],
     },
@@ -1016,12 +1028,15 @@ export const NASTROJE: Nastroj[] = [
       openWorldHint: false,
     },
     async vykonaj(a, volaj) {
-      const { document_type, id, accounting, int_poznamka } = a;
+      const { document_type, id, accounting, int_poznamka, datum_dph } = a;
+      if (datum_dph !== undefined && document_type === "receipt")
+        throw new Error("Dátum daňovej povinnosti sa nastavuje len na faktúrach.");
       return znackyStrucne(
         await nutne(
           await volaj("PUT", cestaDokladu(document_type, id), {
             ...(accounting ? { accounting } : {}),
             ...(int_poznamka !== undefined ? { int_poznamka } : {}),
+            ...(datum_dph !== undefined ? { datum_dph: datum_dph || null } : {}),
           }),
         ),
       );

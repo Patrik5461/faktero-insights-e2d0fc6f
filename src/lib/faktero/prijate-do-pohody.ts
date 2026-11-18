@@ -429,6 +429,8 @@ function prijataAkoDokladZaklad(p: any, spolu: number): Record<string, unknown> 
     */
     _odpocetZalohy: Number(p.advance_amount) > 0 ? Number(p.advance_amount) : null,
     _datumDph: p.delivery_date || p.issue_date,
+    // Výslovný dátum daňovej povinnosti (`datum_dph`) — dateTax/dateKVDPH, prednosť pred pravidlom.
+    _datumDphVyslovny: p.datum_dph || null,
     // Kedy faktúra do firmy prišla — pre voľbu dátumu zápisu a odpočtu.
     _datumDorucenia: p.received_date || String(p.created_at ?? "").slice(0, 10) || null,
     // Skutočný dátum prijatia — odpočet DPH nebude skôr (neskorší z DUZP a prijatia).

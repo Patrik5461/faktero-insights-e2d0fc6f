@@ -21,11 +21,22 @@ import { ZAMOK_DOKLADU, ZAMOK_PRIJATEJ } from "./pohoda-zamok";
 const adresar = new URL("../../../supabase/migrations/", import.meta.url);
 const subor = readdirSync(adresar).find((f) => /_zamok_obdobia_storno_duzp\.sql$/.test(f));
 const sql = subor ? readFileSync(new URL(subor, adresar), "utf8") : "";
+/*
+  Neskoršie migrácie môžu spúšťač či názvy polí nahradiť (18. 11. 2026
+  `*_datum_danovej_povinnosti.sql` pridal `datum_dph`) — platí posledná
+  migrácia, ktorá daný objekt definuje.
+*/
+const vsetky = readdirSync(adresar)
+  .filter((f) => f.endsWith(".sql"))
+  .sort()
+  .map((f) => readFileSync(new URL(f, adresar), "utf8"));
+const posledna = (obsahuje: string): string =>
+  [...vsetky].reverse().find((x) => x.includes(obsahuje)) ?? sql;
 
 function argumenty(spustac: string): string[] {
   const m = new RegExp(
     `create trigger ${spustac}\\s[\\s\\S]*?execute function [\\w.]+\\(([\\s\\S]*?)\\);`,
-  ).exec(sql);
+  ).exec(posledna(`create trigger ${spustac}`));
   if (!m) throw new Error(`spúšťač ${spustac} v migrácii chýba`);
   return [...m[1].matchAll(/'([a-z_0-9]+)'/g)].map((x) => x[1]);
 }
@@ -45,9 +56,10 @@ describe("zámok obdobia — migrácia a zoznamy polí", () => {
   });
 
   it("ľudské názvy polí v SQL a TS sú tie isté", () => {
-    const telo = sql.slice(
-      sql.indexOf("function public.nazov_pola_dokladu"),
-      sql.indexOf("else 'údaje dokladu'"),
+    const zdroj = posledna("function public.nazov_pola_dokladu");
+    const telo = zdroj.slice(
+      zdroj.indexOf("function public.nazov_pola_dokladu"),
+      zdroj.indexOf("else 'údaje dokladu'"),
     );
     const sqlNazvy = Object.fromEntries(
       [...telo.matchAll(/when '([a-z_0-9]+)' then '([^']+)'/g)].map(([, k, v]) => [k, v]),

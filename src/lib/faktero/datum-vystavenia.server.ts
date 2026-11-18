@@ -6,6 +6,7 @@
   aj cez verejné API volá `overDatumPredOdoslanim` — okno v prehliadači je len
   pohodlie, rozhoduje server.
 */
+import { datumDphPoZmeneDodania, normalizujDatumDph, predvolenyDatumDph } from "./datum-dph";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   dorucenieZlyhalo,
@@ -18,7 +19,7 @@ import {
 } from "./datum-vystavenia";
 
 const STLPCE =
-  "id, company_id, type, status, issue_date, delivery_date, due_date, povodna_splatnost, predlzene_at, predlzil, invoice_number, exported_at, sent_at";
+  "id, company_id, type, status, issue_date, delivery_date, due_date, povodna_splatnost, predlzene_at, predlzil, invoice_number, exported_at, sent_at, datum_dph, opravuje_fakturu_id, payment_date";
 
 /** Odmietnutie prvého odoslania so starým dátumom vystavenia. */
 export class StaryDatumVystavenia extends Error {
@@ -124,12 +125,28 @@ export async function zmenDatumNaDnes(
     .single();
   const dnes = dnesBratislava();
   const zmena = zmenaNaDnes(f as any, dnes);
+  /*
+    Dátum daňovej povinnosti, ktorý sa rovnal predvolenému dňu (dobropis:
+    dátum vystavenia), sa posunie s ním; ručne zadaný iný dátum ostane.
+  */
+  const ulozenyDph = normalizujDatumDph((f as any).datum_dph);
+  const novyDph = ulozenyDph
+    ? datumDphPoZmeneDodania(
+        ulozenyDph,
+        predvolenyDatumDph({ ...(f as any), datum_dph: null }, "vystavena"),
+        predvolenyDatumDph(
+          { ...(f as any), ...zmena, datum_dph: null },
+          "vystavena",
+        ),
+      )
+    : null;
 
   const { data: zapisane, error } = await (klient.from("invoices") as any)
     .update({
       issue_date: zmena.issue_date,
       due_date: zmena.due_date,
       delivery_date: zmena.delivery_date,
+      ...(novyDph && novyDph !== ulozenyDph ? { datum_dph: novyDph } : {}),
       // PDF a jeho odtlačok — nové sa vyrobí pri odoslaní.
       pdf_url: null,
       pdf_source_hash: null,

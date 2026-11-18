@@ -41,6 +41,7 @@ export const ZAMOK_FAKTURY = [
   // dátumy
   "issue_date",
   "delivery_date",
+  "datum_dph",
   "due_date",
   // odberateľ
   "customer_id",
@@ -135,6 +136,7 @@ export const ZAMOK_PRIJATEJ = [
   "opravuje_cislo",
   "issue_date",
   "delivery_date",
+  "datum_dph",
   "due_date",
   "supplier_name",
   "supplier_ico",

@@ -1,4 +1,5 @@
 import { DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
+import { DatumDphOtaznik, POPIS_DATUM_DPH } from "@/components/faktero/DatumDphInfo";
 import type { ReactNode } from "react";
 import { CheckCircle2, ClipboardList, Lock } from "lucide-react";
 import { RozpisDph } from "@/components/faktero/RozpisDph";
@@ -32,6 +33,11 @@ export type UdajeUctovnika = {
    * `undefined` = riadok sa neukáže (vystavené doklady).
    */
   prijatie?: string | null;
+  /**
+   * Dátum daňovej povinnosti (`datumDphDokladu`) — uložený, inak podľa
+   * pravidla. `undefined` = riadok sa neukáže (zálohová faktúra).
+   */
+  datumDph?: string | null;
   /** Popis splatnosti (popisSplatnosti), aj s predĺžením. */
   splatnost: string | null | undefined;
   vs: string | null | undefined;
@@ -118,6 +124,18 @@ export function UdajePreUctovnika({ u }: { u: UdajeUctovnika }) {
         <Udaj popis={t(popisky.icDph)}>{u.strana.icDph || "—"}</Udaj>
         <Udaj popis={t("Vystavenie")}>{datum(u.vystavenie)}</Udaj>
         <Udaj popis={t("Dodanie (DUZP)")}>{datum(u.dodanie || u.vystavenie)}</Udaj>
+        {u.datumDph !== undefined ? (
+          <Udaj
+            popis={
+              <>
+                {t(POPIS_DATUM_DPH)}
+                <DatumDphOtaznik druh={u.prijatie !== undefined ? "prijata" : "vystavena"} />
+              </>
+            }
+          >
+            {u.datumDph ? datum(u.datumDph) : "—"}
+          </Udaj>
+        ) : null}
         {u.prijatie !== undefined ? (
           <Udaj
             popis={

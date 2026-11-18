@@ -561,6 +561,15 @@ const UpravaFaktury = DoplnkyFaktury.extend({
   due_date: z.string().optional(),
   variable_symbol: z.string().max(40).nullable().optional(),
   payment_method: z.string().max(40).optional(),
+  /**
+   * Dátum daňovej povinnosti (RRRR-MM-DD); `null` = doterajšie pravidlo
+   * (DUZP, opravná faktúra dátum vyhotovenia). Stráži ho zámok obdobia aj odovzdania.
+   */
+  datum_dph: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Dátum v tvare RRRR-MM-DD")
+    .nullable()
+    .optional(),
 }).strict();
 
 /** PUT /invoices/{id} — poznámka, splatnosť, VS, úhrada, doplnky a značky; so zámkom odovzdania. */
@@ -568,7 +577,7 @@ export async function upravFakturu(ctx: ApiCtx, id: string): Promise<Odpoved> {
   if (!jeUuid(id)) return err("not_found", "Faktúra nenájdená.", 404);
   const v = UpravaFaktury.safeParse(ctx.requestBody);
   if (!v.success) return err("validation_error", "Neplatné dáta.", 400, v.error.flatten());
-  const { notes, due_date, variable_symbol, payment_method, ...doplnky } = v.data;
+  const { notes, due_date, variable_symbol, payment_method, datum_dph, ...doplnky } = v.data;
   const db = ctx.supabase as any;
   const { data: stary, error: e1 } = await db
     .from("invoices")
@@ -586,6 +595,7 @@ export async function upravFakturu(ctx: ApiCtx, id: string): Promise<Odpoved> {
   if (due_date !== undefined) patch.due_date = due_date;
   if (variable_symbol !== undefined) patch.variable_symbol = variable_symbol;
   if (payment_method !== undefined) patch.payment_method = normalizePaymentMethod(payment_method);
+  if (datum_dph !== undefined) patch.datum_dph = datum_dph;
   const zn = await riadokZnaciek(ctx, doplnky, stary.stitky ?? []);
   if (!zn.ok) return zn.odpoved;
   Object.assign(patch, zn.riadok);

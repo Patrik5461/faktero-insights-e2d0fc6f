@@ -408,7 +408,7 @@ export function buildOmegaUctovanie(opts: {
     set(
       14,
       datumSk(
-        (vystup ? null : d.datumOdpoctu) ?? d.datumZauctovania ?? d.datumDodania ?? d.datumVystavenia,
+        (vystup ? (d.datumDph ?? null) : d.datumOdpoctu) ?? d.datumZauctovania ?? d.datumDodania ?? d.datumVystavenia,
       ),
     );
     set(15, cudzia ? pole(d.mena, 5) : "EUR");

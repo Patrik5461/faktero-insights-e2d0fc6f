@@ -149,7 +149,7 @@ export async function nacitajVstup(
       supabase
         .from("invoices")
         .select(
-          "id, invoice_number, type, status, issue_date, delivery_date, paid_at, total, currency, customer_ic_dph, customer_dic, customer_ico, customer_country, customer_name, pohoda_clenenie_dph, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, vat_amount, quantity, unit_price, prenesenie, kv_clenenie)",
+          "id, invoice_number, type, status, issue_date, delivery_date, datum_dph, paid_at, total, currency, customer_ic_dph, customer_dic, customer_ico, customer_country, customer_name, pohoda_clenenie_dph, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, kv_clenenie, invoice_items(vat_rate, subtotal, vat_amount, quantity, unit_price, prenesenie, kv_clenenie)",
         )
         .eq("company_id", companyId)
         .is("deleted_at", null)
@@ -160,7 +160,7 @@ export async function nacitajVstup(
       supabase
         .from("purchase_invoices")
         .select(
-          "id, type, advance_invoice_id, advance_amount, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, supplier_ico, issue_date, delivery_date, received_date, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, kv_zdroj, pohoda_predkontacia, pohoda_clenenie_dph, clenenie_zdroj, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi, na_kontrolu_at, na_kontrolu_dovod",
+          "id, type, advance_invoice_id, advance_amount, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, supplier_ico, issue_date, delivery_date, received_date, datum_dph, currency, dph_rezim, reverse_charge, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, vat_breakdown, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, kv_zdroj, pohoda_predkontacia, pohoda_clenenie_dph, clenenie_zdroj, category, rozuctovanie, amount_total, vehicle_id, odberatel_nesedi, na_kontrolu_at, na_kontrolu_dovod",
         )
         .eq("company_id", companyId)
         /*
@@ -696,7 +696,7 @@ export async function nacitajVstup(
         dodavatelIcDph: p.supplier_ic_dph,
         dodavatelDic: p.supplier_dic,
         datumDodania: String(denPrenesenejCasti),
-        duzp: String(p.delivery_date || p.issue_date || denPrenesenejCasti),
+        duzp: String(p.datum_dph || p.delivery_date || p.issue_date || denPrenesenejCasti),
         rezim: "samozdanenie",
         // PBsluz / KV B1-0 = prenesenie bez nároku na odpočet; registrovaná osoba nárok nemá.
         odpocet: p.odpocet !== false && !prenesenieZUctovania.bezNaroku && !registrovanaOsoba,
@@ -790,7 +790,8 @@ export async function nacitajVstup(
       dodavatelIcDph: p.supplier_ic_dph,
       dodavatelDic: p.supplier_dic,
       datumDodania: String(den),
-      duzp: String(p.delivery_date || p.issue_date || den),
+      // Výslovný dátum daňovej povinnosti (`datum_dph`) má prednosť pred DUZP.
+      duzp: String(p.datum_dph || p.delivery_date || p.issue_date || den),
       rezim: rezimP,
       /*
         Členenie „nezahrnovať do priznania“ (PN) na tuzemskej faktúre: DPH

@@ -501,7 +501,7 @@ ${o}  <RoundingAmount>${f(m.naDomacu(s * d.zaokruhlenie), 2)}</RoundingAmount>
 ${o}  <ReducedTaxRateTax>${f(h.znizenaDph, 2)}</ReducedTaxRateTax>
 ${o}  <BaseTaxRateTax>${f(h.zakladnaDph, 2)}</BaseTaxRateTax>${
     m.cudzia ? `\n${o}  <TotalWithTaxCurr>${f(s * d.celkom, 2)}</TotalWithTaxCurr>` : ""
-  }${el("TaxPointDate", vydana ? (d.datumDodania ?? d.datumVystavenia) : odpocetDane, `${o}  `)}${el(
+  }${el("TaxPointDate", vydana ? (d.datumDph ?? d.datumDodania ?? d.datumVystavenia) : odpocetDane, `${o}  `)}${el(
     "DeliveryDate",
     d.datumDodania ?? d.datumVystavenia,
     `${o}  `,

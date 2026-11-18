@@ -25,6 +25,7 @@
 import { nacitajXml } from "./kontrola/xml-strom";
 import { cislo, icDph, prvy, suma, text, vsetky, zostavDoklad } from "./kontrola/doklad";
 import type { UdajeNespracovaneho } from "../nespracovane";
+import { predvolenyDatumDph } from "../datum-dph";
 
 export type DruhPrijatejEfaktury =
   "faktura" | "dobropis" | "zalohova" | "samofaktura" | "samofaktura_dobropis";
@@ -409,6 +410,22 @@ export function prijataZUbl(
     issue_date: r.vystavenie ?? v.dnes,
     delivery_date: r.dodanie ?? r.vystavenie ?? v.dnes,
     received_date: v.prijate,
+    /*
+      Dátum daňovej povinnosti predvyplnený ako pri novej prijatej: DUZP
+      (TaxPointDate / dodanie), dobropis prijatie. Zálohová nie je daňový doklad.
+    */
+    datum_dph:
+      r.druh === "zalohova"
+        ? null
+        : predvolenyDatumDph(
+            {
+              delivery_date: r.dodanie ?? r.vystavenie ?? v.dnes,
+              issue_date: r.vystavenie ?? v.dnes,
+              received_date: v.prijate,
+              amount_total: r.druh === "dobropis" ? -1 : 1,
+            },
+            "prijata",
+          ),
     due_date: r.splatnost ?? r.vystavenie ?? v.dnes,
     amount_without_vat: r2(zn * r.zaklad),
     vat_amount: r2(zn * r.dph),

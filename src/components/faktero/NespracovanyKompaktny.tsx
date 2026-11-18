@@ -32,8 +32,11 @@ import { oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
 import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
+  datumDphUdajov,
   jeDruhPrijatej,
   kontrolaSumy,
+  maDatumDph,
+  zmenaDatumovUdajov,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
   textVytvorenia,
@@ -42,6 +45,7 @@ import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
 import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "./DatumPrijatiaInfo";
+import { DatumDphOtaznik, DatumDphRozdiel } from "./DatumDphInfo";
 import { NastavitPredvolene } from "./NastavitPredvolene";
 import { KontrolaSumyBlocku, VstupZaokruhlenia } from "./KontrolaSumyBlocku";
 import { UpozornenieRozpisuDph } from "./UpozornenieRozpisuDph";
@@ -146,6 +150,23 @@ export function NespracovanyKompaktny({
   const set = (z: Partial<UdajeNespracovaneho>) => setU({ ...u, ...z });
   const setDod = (z: Partial<UdajeNespracovaneho["dodavatel"]>) =>
     setU({ ...u, dodavatel: { ...u.dodavatel, ...z } });
+  // Zmena dátumu dodania, vydania či prijatia — dátum daňovej povinnosti ide s DUZP, kým ho človek nezmení.
+  const setDatum = (z: Partial<Pick<UdajeNespracovaneho, "datumDodania" | "datumVystavenia" | "datumPrijatia">>) =>
+    set(zmenaDatumovUdajov(u, z, druh));
+  const datumDph = datumDphUdajov(u, druh);
+  const poleDatumDph = maDatumDph(druh) ? (
+    <Pole popis="Dátum daňovej povinnosti" napoveda={<DatumDphOtaznik druh="prijata" />}>
+      <input
+        type="date"
+        aria-label={t("Dátum daňovej povinnosti")}
+        value={datumDph}
+        onChange={(e) => set({ datumDph: e.target.value })}
+        className={ram("")}
+        data-testid="nespracovany-datum-dph"
+      />
+      <DatumDphRozdiel kompaktne datumDph={datumDph} dodanie={u.datumDodania || u.datumVystavenia} />
+    </Pole>
+  ) : null;
   // Zmena rozpisu ruší „Rozpis je správny“ — kontrola beží znova.
   const setRozpis = (i: number, z: Partial<UdajeNespracovaneho["rozpis"][number]>) =>
     set({
@@ -356,7 +377,7 @@ export function NespracovanyKompaktny({
                     type="date"
                     aria-label={t("Dátum vystavenia")}
                     value={u.datumVystavenia}
-                    onChange={(e) => set({ datumVystavenia: e.target.value })}
+                    onChange={(e) => setDatum({ datumVystavenia: e.target.value })}
                     className={ram("datumVystavenia")}
                   />
                 </Pole>
@@ -366,7 +387,7 @@ export function NespracovanyKompaktny({
                       type="date"
                       aria-label={t("Dátum prijatia platby (DUZP)")}
                       value={u.datumDodania}
-                      onChange={(e) => set({ datumDodania: e.target.value })}
+                      onChange={(e) => setDatum({ datumDodania: e.target.value })}
                       className={ram("datumPlatby")}
                     />
                   </Pole>
@@ -406,15 +427,21 @@ export function NespracovanyKompaktny({
                   vstup={ram("")}
                 />
               ) : faktura ? (
-                <Pole popis="Dátum dodania (DUZP)">
-                  <input
-                    type="date"
-                    value={u.datumDodania}
-                    onChange={(e) => set({ datumDodania: e.target.value })}
-                    className={ram("")}
-                  />
-                </Pole>
+                <div className={poleDatumDph ? "grid grid-cols-2 gap-3" : undefined}>
+                  <Pole popis="Dátum dodania (DUZP)">
+                    <input
+                      type="date"
+                      aria-label={t("Dátum dodania (DUZP)")}
+                      value={u.datumDodania}
+                      onChange={(e) => setDatum({ datumDodania: e.target.value })}
+                      className={ram("")}
+                    />
+                  </Pole>
+                  {poleDatumDph}
+                </div>
               ) : null}
+              {/* Daňový doklad k platbe: DUZP (deň platby) je hore pri dátume vydania. */}
+              {danovy ? poleDatumDph : null}
               {faktura ? (
                 // Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný.
                 <Pole popis="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
@@ -422,7 +449,7 @@ export function NespracovanyKompaktny({
                     type="date"
                     aria-label={t("Dátum prijatia")}
                     value={u.datumPrijatia ?? ""}
-                    onChange={(e) => set({ datumPrijatia: e.target.value })}
+                    onChange={(e) => setDatum({ datumPrijatia: e.target.value })}
                     className={ram("")}
                   />
                   <DatumPrijatiaInfo

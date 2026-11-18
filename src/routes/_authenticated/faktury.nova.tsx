@@ -82,6 +82,8 @@ import {
   bunka,
 } from "@/components/faktero/PoleDokladu";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
+import { POPIS_DATUM_DPH, DatumDphOtaznik, DatumDphRozdiel } from "@/components/faktero/DatumDphInfo";
+import { normalizujDatumDph, predvolenyDatumDph } from "@/lib/faktero/datum-dph";
 import {
   koeficientZlavy,
   maZlavu,
@@ -267,6 +269,11 @@ function NewInvoice() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  /*
+    Dátum daňovej povinnosti: kým ho používateľ nezmení (null), nasleduje
+    predvolený deň — DUZP, pri dobropise/ťarchopise dátum vystavenia.
+  */
+  const [datumDphRucne, setDatumDphRucne] = useState<string | null>(null);
   const [form, setForm] = useState({
     type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note" | "debit_note",
     customer_id: "",
@@ -319,6 +326,20 @@ function NewInvoice() {
     clenenie: "",
     kv: "",
   });
+  /* Zálohová faktúra nie je daňový doklad — dátum daňovej povinnosti nemá. */
+  const predvolenyDph =
+    form.type === "proforma"
+      ? null
+      : predvolenyDatumDph(
+          {
+            type: form.type,
+            issue_date: form.issue_date || null,
+            delivery_date: form.delivery_date || null,
+            opravuje_fakturu_id: form.opravuje_fakturu_id || null,
+          },
+          "vystavena",
+        );
+  const datumDph = form.type === "proforma" ? "" : (datumDphRucne ?? predvolenyDph ?? "");
   /* Čo sa má stať po vystavení — „Vystaviť a stiahnuť PDF“ / „… a odoslať e-mailom“. */
   const poVystaveniRef = useRef<"" | "pdf" | "email">("");
   /*
@@ -1432,6 +1453,8 @@ function NewInvoice() {
           // Prázdny reťazec Postgres odmietne s „invalid input syntax for
           // type date" a faktúra sa neuloží.
           delivery_date: form.delivery_date || null,
+          // Obdobie DPH; zálohová (nie daňový doklad) ho nemá.
+          datum_dph: form.type === "proforma" ? null : normalizujDatumDph(datumDph),
           due_date: form.due_date,
           currency: form.currency,
           payment_method: form.payment_method,
@@ -1863,7 +1886,11 @@ function NewInvoice() {
                   )}
                 </div>
               )}
-              <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datumDvojica}>
+              <PoleDokladu
+                label={t("Dátum vystavenia")}
+                htmlFor="datum-vystavenia"
+                className={form.type === "proforma" ? bunka.datumDvojica : bunka.datum}
+              >
                 <input
                   id="datum-vystavenia"
                   type="date"
@@ -1884,7 +1911,11 @@ function NewInvoice() {
                   className={VSTUP_DOKLADU}
                 />
               </PoleDokladu>
-              <PoleDokladu label={t("Dátum dodania")} htmlFor="datum-dodania" className={bunka.datumDvojica}>
+              <PoleDokladu
+                label={t("Dátum dodania")}
+                htmlFor="datum-dodania"
+                className={form.type === "proforma" ? bunka.datumDvojica : bunka.datum}
+              >
                 <input
                   id="datum-dodania"
                   type="date"
@@ -1893,6 +1924,31 @@ function NewInvoice() {
                   className={VSTUP_DOKLADU}
                 />
               </PoleDokladu>
+              {form.type !== "proforma" && (
+                <PoleDokladu
+                  label={
+                    <>
+                      {t(POPIS_DATUM_DPH)}
+                      <DatumDphOtaznik druh="vystavena" />
+                    </>
+                  }
+                  htmlFor="datum-dph"
+                  className={bunka.datumPosledny}
+                >
+                  <input
+                    id="datum-dph"
+                    type="date"
+                    value={datumDph}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      // Rovnaký ako predvolený (alebo prázdny) = znova nasleduje DUZP.
+                      setDatumDphRucne(!v || v === predvolenyDph ? null : v);
+                    }}
+                    className={VSTUP_DOKLADU}
+                  />
+                  <DatumDphRozdiel datumDph={datumDph} dodanie={form.delivery_date || form.issue_date} />
+                </PoleDokladu>
+              )}
               <SplatnostPole
                 required
                 className={bunka.splatnostRiadok}
@@ -3043,8 +3099,8 @@ function NewInvoice() {
             }}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
             onKody={(k) => setForm((f) => ({ ...f, ...k }))}
-            datumDane={form.delivery_date}
-            onDatumDane={(v) => setForm((f) => ({ ...f, delivery_date: v }))}
+            datumDane={datumDph}
+            onDatumDane={(v) => setDatumDphRucne(!v || v === predvolenyDph ? null : v)}
             sposobPlatby={form.payment_method}
             onSposobPlatby={(sposob) =>
               setForm((f) => ({

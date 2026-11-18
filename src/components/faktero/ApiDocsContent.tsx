@@ -580,6 +580,12 @@ curl https://faktero.sk/api/v1/invoices \\
                 <code className="font-mono">payment_method</code>,{" "}
                 <code className="font-mono">notes</code>.
               </li>
+              <li>
+                <code className="font-mono">datum_dph</code> —{" "}
+                {t(
+                  "dátum daňovej povinnosti (RRRR-MM-DD) — podľa neho faktúra patrí do obdobia DPH, kontrolného výkazu a do Pohody (dátum DPH). Bez neho sa vyplní DUZP (delivery_date), bez DUZP dátum vystavenia. Zmeníte ho aj cez PUT /invoices/{id} (null = podľa DUZP), nie však na odovzdanej faktúre ani v uzavretom období.",
+                )}
+              </li>
             </ul>
             <div className="mt-3">
               <CodeBlock
@@ -794,6 +800,7 @@ curl https://faktero.sk/api/v1/invoices \\
                 "ic_dph": "SK2020123456", "iban": "SK3112000000198742637541" },
   "issue_date": "2026-10-20",
   "delivery_date": "2026-10-20",
+  "datum_dph": "2026-10-20",
   "due_date": "2026-11-03",
   "variable_symbol": "2026118",
   "payment_method": "prevod",
@@ -804,6 +811,11 @@ curl https://faktero.sk/api/v1/invoices \\
 }`}
               />
             </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t(
+                "datum_dph je dátum daňovej povinnosti — podľa neho prijatá faktúra vstupuje do obdobia odpočtu DPH, kontrolného výkazu a do Pohody (dátum DPH a dátum KV DPH). Bez neho sa pri zápise vyplní DUZP (delivery_date), bez DUZP dátum vystavenia, pri dobropise dátum prijatia. Pri úprave (PUT) sa posunie s novým DUZP, ak sa doteraz zhodoval s pôvodným; null ho vyprázdni a platí neskorší z DUZP a dátumu prijatia. GET vracia datum_dph tak, ako je uložený (null = nevyplnený).",
+              )}
+            </p>
             <p className="mt-3 text-sm text-muted-foreground">
               {t(
                 "Voliteľné pole buyer { name, ico, dic, ic_dph } je odberateľ uvedený na doklade. Keď nesedí s firmou kľúča (iné IČO, IČ DPH alebo názov), faktúra sa zapíše s príznakom odberatel_nesedi a nezaúčtuje sa ani s accounting.booked. Kým vo Fakteri nepotvrdíte, že patrí tejto firme, zaúčtovanie cez PUT vráti 409 s kódom buyer_mismatch.",

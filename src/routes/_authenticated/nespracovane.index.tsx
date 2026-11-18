@@ -537,6 +537,8 @@ function Stranka() {
   );
   const sumaText = (r: any) => (r.suma != null ? formatujMenu(r.suma, r.mena) : "—");
   const datumText = (r: any) => (r.datum ? datumNaDoklade(r.datum) : "—");
+  // Dátum daňovej povinnosti — výslovný, inak z DUZP; bloček, zálohová a iný doklad ho nemajú.
+  const datumDphText = (r: any) => (r.datumDph ? datumNaDoklade(r.datumDph) : "—");
   const zdrojText = (r: any) => (
     <span className="inline-flex items-center gap-1">
       {t(ZDROJ[r.zdroj] ?? r.zdroj)}
@@ -752,6 +754,7 @@ function Stranka() {
                 <th className="p-3">{t("Dodávateľ")}</th>
                 <th className="p-3">{t("Číslo")}</th>
                 <th className="p-3">{t("Dátum")}</th>
+                <th className="p-3" title={t("Dátum daňovej povinnosti")}>{t("Dát. daň. povinnosti")}</th>
                 <th className="p-3 text-right">{t("Suma")}</th>
                 <th className="p-3">{t("Nahral")}</th>
                 <th className="p-3">{t("Stav")}</th>
@@ -760,21 +763,21 @@ function Stranka() {
             <tbody className="divide-y divide-border">
               {!data && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="p-8 text-center text-muted-foreground">
                     {t("Načítavam…")}
                   </td>
                 </tr>
               )}
               {data && riadky.length === 0 && (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <EmptyState title="Všetko je spracované." icon={FileText} />
                   </td>
                 </tr>
               )}
               {riadky.length > 0 && zobrazene.length === 0 && (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <EmptyState title="Nič nevyhovuje filtru." icon={SearchX} />
                   </td>
                 </tr>
@@ -810,6 +813,7 @@ function Stranka() {
                   </td>
                   <td className="whitespace-nowrap p-3"><span className="cislo-dokladu">{r.cislo ?? "—"}</span></td>
                   <td className="p-3 whitespace-nowrap">{datumText(r)}</td>
+                  <td className="p-3 whitespace-nowrap" data-testid="nespracovany-datum-dph">{datumDphText(r)}</td>
                   <td className="suma p-3 text-right">{sumaText(r)}</td>
                   <td className="min-w-[9rem] whitespace-normal p-3 text-xs text-muted-foreground">{zdrojText(r)}</td>
                   <td className="min-w-[9rem] whitespace-normal p-3 text-xs">{stavText(r)}</td>
@@ -883,6 +887,11 @@ function Stranka() {
                   {datumText(r)}
                 </span>
               </div>
+              {r.datumDph ? (
+                <div className="mt-1 text-xs text-muted-foreground" data-testid="nespracovany-datum-dph">
+                  {t("Dát. daň. povinnosti")}: <span className="whitespace-nowrap">{datumDphText(r)}</span>
+                </div>
+              ) : null}
               <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 {zdrojText(r)}
                 {stavText(r)}

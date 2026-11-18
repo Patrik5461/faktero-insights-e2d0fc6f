@@ -333,7 +333,7 @@ export function UctovneNastaveniaFaktury({
               label={t("Dátum daňovej povinnosti")}
               htmlFor="datum-danovej-povinnosti"
               napoveda={t(
-                "Pri faktúre je to dátum dodania — zmena sa prejaví aj v Základných údajoch.",
+                "Predvolene dátum dodania (DUZP) — podľa neho faktúra patrí do obdobia DPH, kontrolného výkazu aj do Pohody. Je to to isté pole ako v Základných údajoch.",
               )}
               className={bunka.polovica}
             >

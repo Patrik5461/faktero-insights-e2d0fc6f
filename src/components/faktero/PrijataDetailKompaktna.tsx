@@ -42,6 +42,8 @@ import { HromadnyPrikaz } from "./HromadnyPrikaz";
 import { PravidloZDokladu } from "./PravidloZDokladu";
 import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "./DatumPrijatiaInfo";
 import { jeSamozdanenie } from "@/lib/faktero/datum-prijatia";
+import { datumDphDokladu } from "@/lib/faktero/datum-dph";
+import { DatumDphOtaznik, DatumDphRozdiel, POPIS_DATUM_DPH } from "./DatumDphInfo";
 import { KtoKedyDokladu } from "./KtoKedyDokladu";
 
 /**
@@ -258,6 +260,24 @@ export function PrijataDetailKompaktna({
           <Hodnota popis={danovy ? "Dátum prijatia platby (DUZP)" : "Dátum dodania (DUZP)"}>
             {datumNaDoklade(row.delivery_date ?? row.issue_date)}
           </Hodnota>
+          {/* Dátum daňovej povinnosti — uložený, inak doterajšie pravidlo (sivá poznámka). */}
+          {row.type !== "proforma" && datumDphDokladu(row, "prijata") ? (
+            <div>
+              <Hodnota popis={POPIS_DATUM_DPH} napoveda={<DatumDphOtaznik druh="prijata" />}>
+                {datumNaDoklade(datumDphDokladu(row, "prijata"))}
+                {row.datum_dph ? null : (
+                  <span className="ml-1 text-muted-foreground">{t("(podľa DUZP a prijatia)")}</span>
+                )}
+              </Hodnota>
+              {row.datum_dph ? (
+                <DatumDphRozdiel
+                  kompaktne
+                  datumDph={row.datum_dph}
+                  dodanie={row.delivery_date ?? row.issue_date}
+                />
+              ) : null}
+            </div>
+          ) : null}
           {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
           <Hodnota popis="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
             {row.received_date ? datumNaDoklade(row.received_date) : null}
@@ -270,6 +290,7 @@ export function PrijataDetailKompaktna({
             dobropis={Boolean(row.opravuje_cislo) || Number(row.amount_total ?? 0) < 0}
             samozdanenie={jeSamozdanenie(row)}
             bezOdpoctu={row.type === "proforma"}
+            datumDph={row.datum_dph ?? null}
           />
           {/* Kto doklad nahral, uložil a zaúčtoval — viditeľne, s dátumom a časom. */}
           <div className="mt-2">

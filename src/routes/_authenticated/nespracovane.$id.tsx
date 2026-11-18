@@ -2,6 +2,7 @@ import { preloz } from "@/lib/i18n/jazyk";
 import { DesatinnePole } from "@/components/faktero/DesatinnePole";
 import { useT } from "@/lib/i18n/useT";
 import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
+import { DatumDphOtaznik, DatumDphRozdiel } from "@/components/faktero/DatumDphInfo";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu";
@@ -53,7 +54,10 @@ import {
   DRUHY_NESPRACOVANYCH,
   NAZVY_POLI,
   chybajuce,
+  datumDphUdajov,
   jeDruhPrijatej,
+  maDatumDph,
+  zmenaDatumovUdajov,
   rozdielPoloziek,
   kontrolaSumy,
   upravCelkomDokladu,
@@ -961,7 +965,7 @@ function Detail() {
                     </label>
                     <label className="block text-sm">
                       <span className="text-xs text-muted-foreground">{t("Dátum vystavenia")}</span>
-                      <input type="date" aria-label={t("Dátum vystavenia")} value={u.datumVystavenia} onChange={(e) => set({ datumVystavenia: e.target.value })} className={`${vstup} ${ram("datumVystavenia")}`} />
+                      <input type="date" aria-label={t("Dátum vystavenia")} value={u.datumVystavenia} onChange={(e) => set(zmenaDatumovUdajov(u, { datumVystavenia: e.target.value }, druh))} className={`${vstup} ${ram("datumVystavenia")}`} />
                     </label>
                     {faktura && (
                       <>
@@ -973,14 +977,32 @@ function Detail() {
                             type="date"
                             aria-label={danovy ? t("Dátum prijatia platby (DUZP)") : t("Dátum dodania (DUZP)")}
                             value={u.datumDodania}
-                            onChange={(e) => set({ datumDodania: e.target.value })}
+                            onChange={(e) => set(zmenaDatumovUdajov(u, { datumDodania: e.target.value }, druh))}
                             className={`${vstup} ${danovy ? ram("datumPlatby") : "border-input"}`}
                           />
                         </label>
+                        {/* Dátum daňovej povinnosti — predvyplnený z DUZP, ide s ním, kým ho človek nezmení. */}
+                        {maDatumDph(druh) ? (
+                          <label className="block text-sm">
+                            <span className="text-xs text-muted-foreground">
+                              {t("Dátum daňovej povinnosti")}
+                              <DatumDphOtaznik druh="prijata" />
+                            </span>
+                            <input
+                              type="date"
+                              aria-label={t("Dátum daňovej povinnosti")}
+                              value={datumDphUdajov(u, druh)}
+                              onChange={(e) => set({ datumDph: e.target.value })}
+                              className={`${vstup} border-input`}
+                              data-testid="nespracovany-datum-dph"
+                            />
+                            <DatumDphRozdiel datumDph={datumDphUdajov(u, druh)} dodanie={u.datumDodania || u.datumVystavenia} />
+                          </label>
+                        ) : null}
                         {/* Dátum prijatia rozhoduje o období odpočtu DPH — preto hneď viditeľný. */}
                         <label className="block text-sm">
                           <span className="text-xs text-muted-foreground">{t("Dátum prijatia")}<DatumPrijatiaOtaznik /></span>
-                          <input type="date" aria-label={t("Dátum prijatia")} value={u.datumPrijatia ?? ""} onChange={(e) => set({ datumPrijatia: e.target.value })} className={`${vstup} border-input`} />
+                          <input type="date" aria-label={t("Dátum prijatia")} value={u.datumPrijatia ?? ""} onChange={(e) => set(zmenaDatumovUdajov(u, { datumPrijatia: e.target.value }, druh))} className={`${vstup} border-input`} />
                           <DatumPrijatiaInfo
                             vystavenie={u.datumVystavenia}
                             dodanie={u.datumDodania}

@@ -294,7 +294,7 @@ function faktura(d: DokladUctovania, m: Mena, nast: NastaveniaMoney, o: string):
   const h = hladiny(d.riadky);
   return `
 ${o}<${tag}>${el("Doklad", doklad, `${o}  `)}${el("Rada", rada, `${o}  `)}
-${o}  <Popis>${esc(skrat(d.text, 50))}</Popis>${el("Vystaveno", d.datumVystavenia, `${o}  `)}${el("DatUcPr", datUcPr, `${o}  `)}${el("PlnenoDPH", d.datumDodania ?? d.datumVystavenia, `${o}  `)}${el("Splatno", d.datumSplatnosti, `${o}  `)}${
+${o}  <Popis>${esc(skrat(d.text, 50))}</Popis>${el("Vystaveno", d.datumVystavenia, `${o}  `)}${el("DatUcPr", datUcPr, `${o}  `)}${el("PlnenoDPH", d.datumDph ?? d.datumDodania ?? d.datumVystavenia, `${o}  `)}${el("Splatno", d.datumSplatnosti, `${o}  `)}${
     d.druh === "dobropis" ? el("Doruceno", d.datumPrijatia ?? d.datumVystavenia, `${o}  `) : ""
   }${el("KonstSym", skrat(d.ks, 4), `${o}  `)}${el("KodDPH", kod, `${o}  `)}${
     zjednodusena(d) ? `\n${o}  <ZjednD>1</ZjednD>` : ""

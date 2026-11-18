@@ -240,6 +240,8 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
         opravuje_fakturu_id: f.id,
         issue_date: den,
         delivery_date: den,
+        // Opravný doklad patrí do obdobia vyhotovenia.
+        datum_dph: den,
         due_date: pridajDni(den, 14),
         currency: f.currency ?? "EUR",
         language: f.language ?? null,

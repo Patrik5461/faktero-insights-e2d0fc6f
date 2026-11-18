@@ -1,5 +1,7 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { obdobieOdpoctu, prijatieSkorNezVystavenie } from "@/lib/faktero/datum-prijatia";
+import { datumDphDokladu } from "@/lib/faktero/datum-dph";
+import { DatumDphOtaznik, POPIS_DATUM_DPH } from "@/components/faktero/DatumDphInfo";
 import { DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
 import { useT } from "@/lib/i18n/useT";
@@ -1003,6 +1005,24 @@ function PurchaseInvoiceDetail() {
               : t("{datum} (ako vystavenie)", { datum: datumNaDoklade(row.issue_date) })
           }
         />
+        {/* Dátum daňovej povinnosti — uložený, inak doterajšie pravidlo (sivá poznámka). */}
+        {row.type !== "proforma" && datumDphDokladu(row, "prijata") ? (
+          <Row
+            label={
+              <>
+                {t(POPIS_DATUM_DPH)}
+                <DatumDphOtaznik druh="prijata" />
+              </>
+            }
+            value={
+              row.datum_dph
+                ? datumNaDoklade(row.datum_dph)
+                : t("{datum} (podľa DUZP a prijatia)", {
+                    datum: datumNaDoklade(datumDphDokladu(row, "prijata")),
+                  })
+            }
+          />
+        ) : null}
         <Row
           label={
             <>

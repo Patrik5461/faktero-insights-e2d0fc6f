@@ -42,6 +42,12 @@ const InvoiceInput = z.object({
   external_id: z.string().max(120).optional().nullable(),
   issue_date: z.string().optional(),
   delivery_date: z.string().optional().nullable(),
+  /** Dátum daňovej povinnosti (RRRR-MM-DD); bez neho DUZP, bez DUZP dátum vystavenia. */
+  datum_dph: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Dátum v tvare RRRR-MM-DD")
+    .optional()
+    .nullable(),
   due_date: z.string().optional(),
   variable_symbol: z.string().max(40).optional().nullable(),
   /** Číslo objednávky odberateľa (napr. z e-shopu) — tlačí sa na faktúru a ide do eFaktúry. */

@@ -86,6 +86,8 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     // Dátum dodania patrí na faktúru (§ 74 ods. 1 písm. f); bez neho PDF
     // ukazovalo „Dátum dodania —“.
     delivery_date: today,
+    // Dátum daňovej povinnosti = DUZP (bežná faktúra).
+    datum_dph: today,
     due_date: due,
     currency: rec.currency ?? "EUR",
     payment_method: rec.payment_method ?? "bank_transfer",

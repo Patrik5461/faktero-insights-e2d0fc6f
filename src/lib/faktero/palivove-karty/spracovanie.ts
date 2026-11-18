@@ -17,6 +17,7 @@
 import { poskytovatel as metaPoskytovatela } from "./register";
 import { popisChybDph, skontrolujDph, type RiadokDph } from "../dph-pravidlo";
 import { krajinaDane } from "../vat-rates";
+import { predvolenyDatumDph } from "../datum-dph";
 import type { KartaFaktura, KartaTransakcia } from "./typy";
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -454,6 +455,11 @@ export function prijataZFaktury(
     invoice_number: f.cislo,
     issue_date: f.datum,
     delivery_date: denDodania,
+    // Dátum daňovej povinnosti predvyplnený ako pri novej prijatej faktúre (DUZP, dobropis prijatie).
+    datum_dph: predvolenyDatumDph(
+      { delivery_date: denDodania, issue_date: f.datum, received_date: k.dnes, amount_total: sumaSpolu },
+      "prijata",
+    ),
     received_date: k.dnes,
     due_date: f.splatnost ?? f.datum,
     currency: f.mena,

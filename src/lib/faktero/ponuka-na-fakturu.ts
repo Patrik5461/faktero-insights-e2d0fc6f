@@ -45,6 +45,8 @@ export function hlavickaZPonuky(
     variable_symbol: vsZCislaDokladu(cislo.invoice_number) || null,
     issue_date: dnes,
     delivery_date: dnes,
+    // Dátum daňovej povinnosti = DUZP (datum-dph.ts).
+    datum_dph: dnes,
     due_date: plusDni(dnes, splatnostDni),
     currency: q.currency,
     payment_method: "bank_transfer",

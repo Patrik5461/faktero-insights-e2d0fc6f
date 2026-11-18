@@ -91,6 +91,8 @@ export const STLPCE_CSV_UCTOVANIA = [
   "mena_domaca",
   "zaklad_domaca",
   "dph_domaca",
+  // Výslovný dátum daňovej povinnosti z dokladu (prázdny = podľa DUZP / dátumu odpočtu).
+  "datum_dph",
 ];
 
 export function buildCsvUctovanie(opts: {
@@ -168,6 +170,7 @@ export function buildCsvUctovanie(opts: {
           domaca,
           vDomacej(r.zaklad),
           vDomacej(r.dph),
+          d.datumDph ?? "",
         ].join(";"),
       );
     }

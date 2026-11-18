@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { vsZCislaDokladu } from "@/lib/faktero/variabilny-symbol";
+import { predvolenyDatumDph } from "@/lib/faktero/datum-dph";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -305,6 +306,8 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
         number_series_id: seriesId,
         variable_symbol: prazdne(data.variable_symbol) ?? (vsZCislaDokladu(cislo) || null),
         samofakturacia: true,
+        // Dátum daňovej povinnosti nového dokladu — DUZP (dobropis: prijatie).
+        datum_dph: predvolenyDatumDph(spolocne, "prijata"),
       })
       .select("id")
       .single();

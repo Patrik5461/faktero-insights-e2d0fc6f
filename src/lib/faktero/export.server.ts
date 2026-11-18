@@ -1458,11 +1458,14 @@ export function polozkyFaktur(opts: {
         )}${el("inv:originalDocumentNumber", skrat(povodneCislo, 32), "        ")}
         <inv:date>${esc(invoice.issue_date)}</inv:date>${el(
           "inv:dateTax",
-          invoice.delivery_date ?? invoice.issue_date,
+          // Výslovný dátum daňovej povinnosti (`datum_dph`) má prednosť pred DUZP.
+          (invoice as any).datum_dph || (invoice.delivery_date ?? invoice.issue_date),
           "        ",
         )}${
           // CZ opravný daňový doklad: dátum pre kontrolné hlásenie (inak ostane prázdny).
-          cz && opravny ? el("inv:dateKHDPH", invoice.delivery_date ?? invoice.issue_date, "        ") : ""
+          cz && opravny
+            ? el("inv:dateKHDPH", (invoice as any).datum_dph || (invoice.delivery_date ?? invoice.issue_date), "        ")
+            : ""
         }${
           /*
             Dátum uplatnenia DPH dobropisu/vrubopisu (CZ opravného daňového
@@ -1472,7 +1475,9 @@ export function polozkyFaktur(opts: {
             ktorom bola vyhotovená (§ 25 ods. 1) — rovnako ako vo výkazoch Faktera.
             Bez neho by sa riadila dátumom dodania pôvodného plnenia.
           */
-          opravny ? el("inv:dateApplicationVAT", invoice.issue_date ?? invoice.delivery_date, "        ") : ""
+          opravny
+            ? el("inv:dateApplicationVAT", (invoice as any).datum_dph || (invoice.issue_date ?? invoice.delivery_date), "        ")
+            : ""
         }${el("inv:dateDue", invoice.due_date, "        ")}${el(
           "inv:dateAccounting",
           nastavenia?.datumZauctovaniaPevny || datumZauctovania(invoice.issue_date, nastavenia?.zamknuteDo),
@@ -2103,6 +2108,8 @@ function dokladKPlatbeAkoDoklad(
     _symVar: vsVystavenej(inv),
     // Dátum dodania = deň prijatia platby (§ 19 ods. 4) — `delivery_date`, inak zaplatenie, inak vystavenie.
     _datumDph: inv.delivery_date || String(inv.paid_at ?? "").slice(0, 10) || inv.issue_date,
+    // Výslovný dátum daňovej povinnosti (dateTax, dateKVDPH) — prázdny = deň platby.
+    _datumDphVyslovny: inv.datum_dph || null,
     _text: `${cz ? "Daňový doklad k přijaté platbě" : "Daňový doklad k prijatej platbe"} ${inv.invoice_number ?? ""}`.trim(),
   } as DokladRow;
 }
@@ -2433,8 +2440,20 @@ export function polozkyDokladov(opts: {
         30. 10., dateTax 11. 11. → r. 15/19 a KV B.1 v inom období ako vo
         výkazoch Faktera, `denOdpoctu`). Dátum zaúčtovania ostáva pevný.
       */
-      const datumOdpoctu =
-        pevny && pevny >= zakladOdpoctu && !(prijatyDoklad && d?._samozdanenie) ? pevny : zakladOdpoctu;
+      /*
+        Výslovný dátum daňovej povinnosti z dokladu (`datum_dph`, 18. 11. 2026)
+        má prednosť pred pravidlom aj pred pevným dátumom zaúčtovania —
+        účtovníčka ho na doklade vidí a zadala ho zámerne (výkazy Faktera
+        `datumDphDokladu` dávajú ten istý deň).
+      */
+      const vyslovnyDph = /^\d{4}-\d{2}-\d{2}$/.test(String(d?._datumDphVyslovny ?? "").slice(0, 10))
+        ? String(d?._datumDphVyslovny).slice(0, 10)
+        : "";
+      const datumOdpoctu = vyslovnyDph
+        ? vyslovnyDph
+        : pevny && pevny >= zakladOdpoctu && !(prijatyDoklad && d?._samozdanenie)
+          ? pevny
+          : zakladOdpoctu;
       const popis = skrat(
         [
           d?.supplier_name,
@@ -3093,7 +3112,7 @@ export function polozkyDokladov(opts: {
       const datumDodania = String(d?._datumDph || (blocek ? d?.issue_date : "") || "").trim();
       // Prijatý dobropis: deň uplatnenia DPH (aj interných dokladov samozdanenia).
       const datumUplatneniaDobropisu = String(
-        (pevny && datumOdpoctu === pevny ? pevny : "") || d?._datumUplatnenia || d?.issue_date || "",
+        vyslovnyDph || (pevny && datumOdpoctu === pevny ? pevny : "") || d?._datumUplatnenia || d?.issue_date || "",
       );
       const datumyVerzie =
         (!prijatyDoklad

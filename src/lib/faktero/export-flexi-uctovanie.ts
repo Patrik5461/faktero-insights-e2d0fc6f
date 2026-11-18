@@ -272,6 +272,8 @@ export function buildFlexiUctovanie(opts: {
         pole("varSym", d.vs || d.cislo.replace(/\D/g, ""), o, 20) +
         pole("datVyst", d.datumVystavenia, o) +
         pole("duzpPuv", d.datumDodania, o) +
+        // „Uplatnit zdaň. plnění" — len výslovný dátum daňovej povinnosti (`datum_dph`).
+        pole("duzpUcto", d.datumDph, o) +
         pole("datSplat", d.datumSplatnosti, o);
     } else if (d.forma === "pokladna") {
       if (!kod(n.pokladna) && !kod(d.pokladna)) {

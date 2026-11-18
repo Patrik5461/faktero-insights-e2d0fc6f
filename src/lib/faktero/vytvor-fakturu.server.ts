@@ -7,6 +7,7 @@ import { normalizePaymentMethod } from "./payment-method";
 import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 
 import { dnesBratislava, posunDni } from "@/lib/faktero/datum-vystavenia";
+import { normalizujDatumDph, predvolenyDatumDph } from "./datum-dph";
 type Klient = any;
 
 export type PolozkaFaktury = {
@@ -40,6 +41,8 @@ export type VstupFaktury = {
   external_id?: string | null;
   issue_date?: string;
   delivery_date?: string | null;
+  /** Dátum daňovej povinnosti; bez neho `predvolenyDatumDph` (DUZP, bez neho vystavenie). */
+  datum_dph?: string | null;
   due_date?: string;
   variable_symbol?: string | null;
   order_number?: string | null;
@@ -222,6 +225,9 @@ export async function vytvorFakturu(
         variable_symbol,
         issue_date,
         delivery_date: d.delivery_date ?? null,
+        datum_dph:
+          normalizujDatumDph(d.datum_dph) ??
+          predvolenyDatumDph({ issue_date, delivery_date: d.delivery_date ?? null }, "vystavena"),
         due_date,
         currency,
         payment_method: normalizePaymentMethod(d.payment_method),

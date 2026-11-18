@@ -27,6 +27,7 @@ describe("faktúra z cenovej ponuky", () => {
     );
     expect(h.issue_date).toBe("2026-10-30");
     expect(h.delivery_date).toBe("2026-10-30");
+    expect(h.datum_dph).toBe("2026-10-30");
     expect(h.due_date).toBe("2026-11-13");
     expect(h.number_series_id).toBe("rad");
     expect(h.variable_symbol).toBe("20260044");

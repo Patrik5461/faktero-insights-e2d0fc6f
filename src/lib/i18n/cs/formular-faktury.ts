@@ -1,7 +1,7 @@
 // Formulář faktury: účetní nastavení, dodací list, záloha, splatnost ve dnech, razítko.
 export default {
   "predvolené z nastavení firmy": "výchozí z nastavení firmy",
-  "Dátum daňovej povinnosti": "Datum zdanitelného plnění",
+  "Dátum daňovej povinnosti": "Datum povinnosti přiznat daň",
   "Pri faktúre je to dátum dodania — zmena sa prejaví aj v Základných údajoch.":
     "U faktury je to datum dodání — změna se projeví i v Základních údajích.",
   "Účtovná položka (predkontácia)": "Účetní položka (předkontace)",

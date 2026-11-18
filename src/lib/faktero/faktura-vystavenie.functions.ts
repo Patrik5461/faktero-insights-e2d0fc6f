@@ -333,6 +333,10 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
             variable_symbol: vsZCislaDokladu(invoice_number) || null,
             issue_date: data.issue_date,
             delivery_date: data.issue_date,
+            // Dátum daňovej povinnosti = DUZP; koncept a zálohová ho nemajú
+            // (dátumy konceptu sa pri vystavení ešte menia, zálohová nie je daňový doklad).
+            datum_dph:
+              data.status === "draft" || data.type === "proforma" ? null : data.issue_date,
             due_date: data.due_date,
             currency: data.currency,
             payment_method: data.payment_method,

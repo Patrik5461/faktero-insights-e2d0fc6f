@@ -69,7 +69,11 @@ export function denDaneVystavenej(f: {
   issue_date?: string | null;
   delivery_date?: string | null;
   opravuje_fakturu_id?: string | null;
+  /** Dátum daňovej povinnosti zadaný na faktúre — ak je, má prednosť. */
+  datum_dph?: string | null;
 }): string | null {
+  const vyslovny = String(f.datum_dph ?? "").slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(vyslovny)) return vyslovny;
   const opravna =
     f.type === "credit_note" || f.type === "debit_note" || Boolean(f.opravuje_fakturu_id);
   return (opravna ? f.issue_date || f.delivery_date : f.delivery_date || f.issue_date) || null;

@@ -108,6 +108,12 @@ export type DokladUctovania = {
    * Z uzamknutého obdobia ide na deň po uzávierke. Vystavená faktúra null.
    */
   datumOdpoctu?: string | null;
+  /**
+   * Výslovný dátum daňovej povinnosti z dokladu (`datum_dph`, prijatá aj
+   * vystavená). Ak je, programy ho dostanú ako dátum DPH namiesto DUZP;
+   * prázdny = doterajšie pravidlo.
+   */
+  datumDph?: string | null;
   /** Dátum zaúčtovania, keď doklad patrí do uzamknutého obdobia; inak null. */
   datumZauctovania: string | null;
   mena: string;
@@ -541,7 +547,9 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     datumDodania: dodanie,
     datumSplatnosti: t(p?.due_date),
     datumPrijatia: t(p?.received_date) ?? t(p?.issue_date),
-    datumOdpoctu: datumOdpoctuPrijateho(
+    datumDph: t(p?.datum_dph),
+    // Výslovný dátum daňovej povinnosti má prednosť pred voľbou „Dátum odpočtu“.
+    datumOdpoctu: t(p?.datum_dph) ?? datumOdpoctuPrijateho(
       {
         vystavenie: p?.issue_date,
         dodanie,
@@ -726,6 +734,7 @@ export function vystavenaNaUctovanie(
     datumDodania: dodanie,
     datumSplatnosti: t(inv?.due_date),
     datumPrijatia: null,
+    datumDph: t(inv?.datum_dph),
     datumZauctovania: datumPoUzavierke(dodanie, nast.zamknuteDo),
     mena: String(inv?.currency ?? "EUR").toUpperCase(),
     kurz: Number(inv?.exchange_rate) || null,

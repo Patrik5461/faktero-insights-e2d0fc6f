@@ -84,6 +84,7 @@ import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
+import { datumDphDokladu } from "@/lib/faktero/datum-dph";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
@@ -176,6 +177,7 @@ const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "vs", nazov: "VS" },
   { kluc: "vystavena", nazov: "Vystavená" },
   { kluc: "duzp", nazov: "Dátum dodania (DUZP)" },
+  { kluc: "datumDph", nazov: "Dátum daňovej povinnosti", predvoleny: false },
   { kluc: "splatnost", nazov: "Splatnosť" },
   { kluc: "zaklad", nazov: "Základ", predvoleny: false },
   { kluc: "dph", nazov: "DPH", predvoleny: false },
@@ -290,6 +292,7 @@ function PurchaseInvoicesPage() {
     vs: (r: any) => vsPrijatej(r),
     vystavena: (r: any) => r.issue_date,
     duzp: (r: any) => r.delivery_date,
+    datumDph: (r: any) => (r.type === "proforma" ? null : datumDphDokladu(r, "prijata")),
     splatnost: (r: any) => r.due_date,
     zaklad: (r: any) => Number(r.amount_without_vat ?? 0),
     dph: (r: any) => Number(r.vat_amount ?? 0),
@@ -1443,6 +1446,9 @@ function PurchaseInvoicesPage() {
                 {je("vs") && <th className="p-3">{rad.hlavicka("vs", t("VS"))}</th>}
                 {je("vystavena") && <th className="p-3">{rad.hlavicka("vystavena", t("Vystavená"))}</th>}
                 {je("duzp") && <th className="p-3">{rad.hlavicka("duzp", t("DUZP"))}</th>}
+                {je("datumDph") && (
+                  <th className="p-3">{rad.hlavicka("datumDph", t("Dát. daň. povinnosti"))}</th>
+                )}
                 {je("splatnost") && <th className="p-3">{rad.hlavicka("splatnost", t("Splatnosť"))}</th>}
                 {je("zaklad") && <th className="p-3 text-right">{rad.hlavicka("zaklad", t("Základ"))}</th>}
                 {je("dph") && <th className="p-3 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
@@ -1574,6 +1580,14 @@ function PurchaseInvoicesPage() {
                       className={`whitespace-nowrap p-3 ${r.delivery_date && r.delivery_date !== r.issue_date ? "font-medium" : "text-muted-foreground"}`}
                     >
                       {datumNaDoklade(datumDodania(r))}
+                    </td>
+                  )}
+                  {je("datumDph") && (
+                    <td
+                      className={`whitespace-nowrap p-3 ${r.datum_dph ? "" : "text-muted-foreground"}`}
+                      title={r.datum_dph ? undefined : t("(podľa DUZP a prijatia)")}
+                    >
+                      {r.type === "proforma" ? "" : datumNaDoklade(datumDphDokladu(r, "prijata"))}
                     </td>
                   )}
                   {je("splatnost") && (

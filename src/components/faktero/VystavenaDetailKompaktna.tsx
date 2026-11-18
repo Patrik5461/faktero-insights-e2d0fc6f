@@ -12,6 +12,7 @@ import { formatujCislo, formatujMenu } from "@/lib/faktero/mena";
 import { formatujIban, sUctomFaktury, upravIban } from "@/lib/faktero/platobny-ucet";
 import { dniPoSplatnosti } from "@/lib/faktero/uhrady-prijatej";
 import type { UdajeUctovnika } from "./UdajePreUctovnika";
+import { DatumDphOtaznik, POPIS_DATUM_DPH } from "./DatumDphInfo";
 import { potvrd } from "@/lib/potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
@@ -268,9 +269,25 @@ export function VystavenaDetailKompaktna({
               {u.splatnost}
             </Hodnota>
           </div>
-          <Hodnota popis="Dátum dodania (DUZP)" title={lenCitanie}>
-            {datumNaDoklade(inv.delivery_date ?? inv.issue_date)}
-          </Hodnota>
+          {u.datumDph !== undefined ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Hodnota popis="Dátum dodania (DUZP)" title={lenCitanie}>
+                {datumNaDoklade(inv.delivery_date ?? inv.issue_date)}
+              </Hodnota>
+              {/* Uložený dátum daňovej povinnosti, inak podľa pravidla (DUZP, dobropis vystavenie). */}
+              <Hodnota
+                popis={POPIS_DATUM_DPH}
+                napoveda={<DatumDphOtaznik druh="vystavena" />}
+                title={lenCitanie}
+              >
+                {u.datumDph ? datumNaDoklade(u.datumDph) : null}
+              </Hodnota>
+            </div>
+          ) : (
+            <Hodnota popis="Dátum dodania (DUZP)" title={lenCitanie}>
+              {datumNaDoklade(inv.delivery_date ?? inv.issue_date)}
+            </Hodnota>
+          )}
           {/* Kto doklad nahral, uložil a zaúčtoval — viditeľne, s dátumom a časom. */}
           <div className="mt-2">
             <KtoKedyDokladu companyId={inv.company_id} agenda="faktura" row={inv} bezRamu />

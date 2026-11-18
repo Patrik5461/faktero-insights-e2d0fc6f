@@ -139,7 +139,7 @@ describe("dátum odpočtu DPH vo Flexi a v súpiske CSV", () => {
     // Za nimi už len stĺpce domácej meny (pribudli 3. 11. — rozpis DPH v exportoch).
     const i = STLPCE_CSV_UCTOVANIA.indexOf("datum_prijatia");
     expect(STLPCE_CSV_UCTOVANIA.slice(i, i + 2)).toEqual(["datum_prijatia", "datum_odpoctu"]);
-    expect(STLPCE_CSV_UCTOVANIA.slice(i + 2)).toEqual(["mena_domaca", "zaklad_domaca", "dph_domaca"]);
+    expect(STLPCE_CSV_UCTOVANIA.slice(i + 2)).toEqual(["mena_domaca", "zaklad_domaca", "dph_domaca", "datum_dph"]);
     const riadok = csv[1].split(";");
     expect(riadok.slice(i, i + 2)).toEqual(["2026-10-03", "2026-10-03"]);
     expect(riadok.length).toBe(STLPCE_CSV_UCTOVANIA.length);

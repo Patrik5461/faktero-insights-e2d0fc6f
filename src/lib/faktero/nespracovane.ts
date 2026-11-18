@@ -32,6 +32,7 @@ import {
 import { datum as datumZAi } from "./mail-prijem";
 import { aiSOdpoctomZalohy, naUhraduSOdpoctom } from "./odpocet-zalohy-vytazenie";
 import { upravIban, upravVs } from "./ostatne-doklady";
+import { datumDphPoZmeneDodania, normalizujDatumDph, predvolenyDatumDph } from "./datum-dph";
 import {
   bezZaokruhlenia,
   jePolozkaZaokruhlenia,
@@ -124,6 +125,12 @@ export type UdajeNespracovaneho = {
   popis: string;
   datumVystavenia: string;
   datumDodania: string;
+  /**
+   * Dátum daňovej povinnosti (`purchase_invoices.datum_dph`) — len keď ho
+   * doklad výslovne uvádza alebo ho človek zmenil. Prázdny = predvolený
+   * (DUZP, bez neho vystavenie; dobropis prijatie), pozri `datumDphUdajov`.
+   */
+  datumDph?: string;
   splatnost: string;
   mena: string;
   rozpis: RiadokRozpisu[];
@@ -406,7 +413,7 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
   const u = { ...povodne, dodavatel: { ...povodne.dodavatel } };
   for (const k of [...new Set([...Object.keys(u.dodavatel), ...Object.keys(nove.dodavatel)])] as (keyof UdajeNespracovaneho["dodavatel"])[])
     if (!u.dodavatel[k] && nove.dodavatel[k]) u.dodavatel[k] = nove.dodavatel[k];
-  for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania", "ks", "ss", "objednavka", "dodaciList"] as const)
+  for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania", "datumDph", "ks", "ss", "objednavka", "dodaciList"] as const)
     if (!u[k] && nove[k]) u[k] = nove[k];
   if (!u.vs) u.vs = nove.vs || vsDokladu(null, u.cislo);
   if (!u.rozpis.length && nove.rozpis.length) {
@@ -500,6 +507,13 @@ export function udajeZAi(
   u.datumVystavenia = vystavenie || dnes;
   // Dátum dodania (vzniku daňovej povinnosti) — predtým sa brával vždy dátum vystavenia.
   u.datumDodania = datum(ai.delivery_date) || vystavenie || dnes;
+  /*
+    Dátum daňovej povinnosti len vtedy, keď ho doklad výslovne uvádza
+    (`tax_point_date`); inak ostane prázdny a platí predvolený z DUZP
+    (`datumDphUdajov`). Bloček ho nemá.
+  */
+  const datumDph = datum(ai.tax_point_date);
+  if (datumDph && ai.document_subtype !== "blocek" && ai.document_type !== "ostatny") u.datumDph = datumDph;
   u.splatnost = datum(ai.due_date) || datum(ai.other_due_date);
   u.mena = (t(ai.currency, 3) || "EUR").toUpperCase();
   const vytazeny = rozpisZVytazenia(ai, { krajina: kontext.krajina, datumDodania: u.datumDodania || null });
@@ -905,6 +919,8 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   u.popis = s(p.intro_note);
   u.datumVystavenia = s(p.issue_date);
   u.datumDodania = s(p.delivery_date || p.issue_date);
+  // Dátum daňovej povinnosti ide späť, len keď ho prijatá mala vyplnený.
+  if (normalizujDatumDph(p.datum_dph)) u.datumDph = normalizujDatumDph(p.datum_dph)!;
   u.splatnost = s(p.due_date);
   u.mena = s(p.currency) || "EUR";
   const zaklad = Math.abs(Number(p.amount_without_vat ?? 0));
@@ -967,6 +983,71 @@ export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovane
   return { druh, udaje: u };
 }
 
+/**
+ * Ukazuje a ukladá sa pri druhu dátum daňovej povinnosti? Áno pri faktúre,
+ * daňovom doklade k platbe a dobropise (aj pri doklade bez určeného druhu —
+ * väčšinou z neho vznikne faktúra). Zálohová nie je daňový doklad; bloček,
+ * iný doklad, vydaná a doklad o úhrade ho nemajú.
+ */
+export function maDatumDph(druh: string | null | undefined): boolean {
+  const d = druh || "faktura";
+  return d === "faktura" || d === "danovy" || d === "dobropis";
+}
+
+/**
+ * Predvolený dátum daňovej povinnosti z údajov formulára — ako
+ * `predvolenyDatumDph` pri prijatej: DUZP (bez neho vystavenie), dobropis
+ * prijatie (bez neho vystavenie). Bez dátumov prázdny reťazec.
+ */
+export function predvolenyDatumDphUdajov(
+  u: Pick<UdajeNespracovaneho, "datumDodania" | "datumVystavenia" | "datumPrijatia">,
+  druh: string | null | undefined,
+): string {
+  return (
+    predvolenyDatumDph(
+      {
+        delivery_date: u.datumDodania || null,
+        issue_date: u.datumVystavenia || null,
+        received_date: u.datumPrijatia || null,
+        amount_total: druh === "dobropis" ? -1 : 1,
+      },
+      "prijata",
+    ) ?? ""
+  );
+}
+
+/**
+ * Dátum daňovej povinnosti nespracovaného dokladu na zobrazenie aj zápis:
+ * výslovný `datumDph`, inak predvolený. Pri druhu bez neho (bloček,
+ * zálohová…) prázdny reťazec.
+ */
+export function datumDphUdajov(
+  u: Pick<UdajeNespracovaneho, "datumDph" | "datumDodania" | "datumVystavenia" | "datumPrijatia">,
+  druh: string | null | undefined,
+): string {
+  if (!maDatumDph(druh)) return "";
+  return normalizujDatumDph(u.datumDph) || predvolenyDatumDphUdajov(u, druh);
+}
+
+/**
+ * Zmena dátumu dodania, vystavenia či prijatia vo formulári: dátum daňovej
+ * povinnosti ide s predvoleným (DUZP), kým ho človek nezmenil. Prázdny
+ * `datumDph` nasleduje sám; výslovný, ktorý sa rovnal doterajšiemu
+ * predvolenému, sa vyprázdni (ďalej nasleduje), iný ostane.
+ */
+export function zmenaDatumovUdajov(
+  u: Pick<UdajeNespracovaneho, "datumDph" | "datumDodania" | "datumVystavenia" | "datumPrijatia">,
+  zmena: Partial<Pick<UdajeNespracovaneho, "datumDodania" | "datumVystavenia" | "datumPrijatia">>,
+  druh: string | null | undefined,
+): Partial<UdajeNespracovaneho> {
+  const aktualny = normalizujDatumDph(u.datumDph);
+  if (!aktualny) return zmena;
+  const stare = predvolenyDatumDphUdajov(u, druh);
+  const nove = predvolenyDatumDphUdajov({ ...u, ...zmena }, druh);
+  const dalsi = datumDphPoZmeneDodania(aktualny, stare, nove);
+  return { ...zmena, datumDph: dalsi === nove ? "" : dalsi };
+}
+
 /** Typ `purchase_invoices.type` podľa druhu nespracovaného dokladu. */
 export function typPrijatejZDruhu(druh: unknown): "regular" | "proforma" | typeof TYP_PRIJATEHO_DANOVEHO {
   return druh === "zalohova" ? "proforma" : druh === "danovy" ? TYP_PRIJATEHO_DANOVEHO : "regular";
@@ -1013,6 +1094,18 @@ export function prijataZUdajov(
     delivery_date: u.datumDodania || u.datumVystavenia || dnes,
     due_date: (druh === "danovy" ? "" : u.splatnost) || u.datumVystavenia || dnes,
     received_date: u.datumPrijatia || dnes,
+    /*
+      Dátum daňovej povinnosti: výslovný z údajov, inak predvolený (DUZP,
+      dobropis prijatie). Zálohová nie je daňový doklad — bez neho.
+    */
+    datum_dph: maDatumDph(druh)
+      ? normalizujDatumDph(u.datumDph) ||
+        predvolenyDatumDphUdajov(
+          { ...u, datumDodania: u.datumDodania || u.datumVystavenia || dnes, datumPrijatia: u.datumPrijatia || dnes },
+          druh,
+        ) ||
+        null
+      : null,
     amount_without_vat: r2(zn * s.zaklad),
     vat_amount: r2(zn * s.dph),
     amount_total: r2(zn * s.celkom),
@@ -1145,6 +1238,17 @@ export function zhrnutieNespracovaneho(r: Record<string, any>) {
     dodavatel: (u.dodavatel?.nazov as string) || null,
     cislo: (u.cislo as string) || null,
     datum: (u.datumVystavenia as string) || null,
+    /** Dátum daňovej povinnosti — výslovný, inak predvolený z DUZP; bloček, zálohová a iný doklad bez neho. */
+    datumDph:
+      datumDphUdajov(
+        {
+          datumDph: typeof u.datumDph === "string" ? u.datumDph : "",
+          datumDodania: typeof u.datumDodania === "string" ? u.datumDodania : "",
+          datumVystavenia: typeof u.datumVystavenia === "string" ? u.datumVystavenia : "",
+          datumPrijatia: typeof u.datumPrijatia === "string" ? u.datumPrijatia : "",
+        },
+        (r.druh ?? null) as string | null,
+      ) || null,
     suma:
       u.celkom != null
         ? Number(u.celkom)

@@ -49,6 +49,12 @@ import { upravIban } from "@/lib/faktero/platobny-ucet";
 import { PravidloZDokladu } from "@/components/faktero/PravidloZDokladu";
 import { PrijataUpravaKompaktna } from "@/components/faktero/PrijataUpravaKompaktna";
 import { DatumPrijatiaInfo, DatumPrijatiaOtaznik } from "@/components/faktero/DatumPrijatiaInfo";
+import { DatumDphOtaznik, DatumDphRozdiel, POPIS_DATUM_DPH } from "@/components/faktero/DatumDphInfo";
+import {
+  datumDphPoZmeneDodania,
+  normalizujDatumDph,
+  predvolenyDatumDph,
+} from "@/lib/faktero/datum-dph";
 import { VyberKvDph, usePredvyplnenieKv } from "@/components/faktero/VyberKvDph";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
@@ -129,6 +135,13 @@ export function PrijataFakturaForm({
     /* Výkazy k DPH: kto daň platí, či si ju odpočítavame a čo doklad opravuje. */
     dph_rezim: "" as "" | "tuzemsko" | "samozdanenie" | "nadobudnutie" | "dovoz" | "bez_dane",
     delivery_date: "",
+    /*
+      Dátum daňovej povinnosti (`datum_dph`): nová faktúra ho má predvyplnený
+      (DUZP, bez neho vystavenie; dobropis prijatie) a nasleduje tieto dátumy,
+      kým ho človek nezmení. Pri úprave sa ukáže uložený — prázdny ostane
+      prázdny (platí staré pravidlo), kým ho človek sám nevyplní.
+    */
+    datum_dph: today() as string,
     odpocet: true,
     opravuje_cislo: "",
     /*
@@ -342,6 +355,37 @@ export function PrijataFakturaForm({
     setForm((f) => ({ ...f, [k]: v }));
   }
 
+  /*
+    Predvolený dátum daňovej povinnosti z aktuálnych dátumov formulára.
+    Pole ho nasleduje, kým ho človek ručne nezmení (`datumDphRucneRef`).
+    Pri úprave prázdne pole prázdne aj ostane — nič sa nedopĺňa samo.
+  */
+  const predvolenyDph =
+    predvolenyDatumDph(
+      {
+        issue_date: form.issue_date,
+        delivery_date: form.delivery_date,
+        received_date: form.received_date,
+        opravuje_cislo: form.opravuje_cislo.trim() || null,
+        amount_total: sumaZPola(form.amount_total || "0") || 0,
+      },
+      "prijata",
+    ) ?? "";
+  const predvolenyDphRef = useRef(predvolenyDph);
+  const datumDphRucneRef = useRef(false);
+  useEffect(() => {
+    const stare = predvolenyDphRef.current;
+    predvolenyDphRef.current = predvolenyDph;
+    if (stare === predvolenyDph || datumDphRucneRef.current) return;
+    setForm((f) => {
+      // Uložená faktúra bez dátumu daňovej povinnosti: pole sa samo nevypĺňa.
+      if (upravujeme && !f.datum_dph) return f;
+      const nove = datumDphPoZmeneDodania(f.datum_dph, stare, predvolenyDph);
+      return nove === f.datum_dph ? f : { ...f, datum_dph: nove };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [predvolenyDph]);
+
   useEffect(() => {
     if (!id) return;
     let zrusene = false;
@@ -359,6 +403,18 @@ export function PrijataFakturaForm({
         return;
       }
       // Kľúč faktúry pri načítaní — otázka na duplicitu len keď sa zmení.
+      // Načítané dátumy nie sú „zmena dodania“ — pole sa podľa nich neposúva.
+      predvolenyDphRef.current =
+        predvolenyDatumDph(
+          {
+            issue_date: data.issue_date,
+            delivery_date: data.delivery_date,
+            received_date: data.received_date,
+            opravuje_cislo: data.opravuje_cislo,
+            amount_total: data.amount_total,
+          },
+          "prijata",
+        ) ?? "";
       setPovodnyKluc(
         klucDuplicity(
           data.invoice_number,
@@ -396,6 +452,7 @@ export function PrijataFakturaForm({
         status: (data.status ?? "received") as typeof form.status,
         dph_rezim: (data.dph_rezim ?? "") as typeof form.dph_rezim,
         delivery_date: data.delivery_date ?? "",
+        datum_dph: normalizujDatumDph((data as any).datum_dph) ?? "",
         odpocet: data.odpocet !== false,
         opravuje_cislo: data.opravuje_cislo ?? "",
         type: ((data as any).type ?? "regular") as TypPrijatejFormulara,
@@ -747,6 +804,8 @@ export function PrijataFakturaForm({
           ? { payment_date: form.delivery_date || form.issue_date }
           : {}),
         dph_rezim: form.dph_rezim || null,
+        // Zálohová faktúra nie je daňový doklad — dátum daňovej povinnosti nemá.
+        datum_dph: form.type === "proforma" ? null : normalizujDatumDph(form.datum_dph),
         delivery_date: form.type === "advance_payment" ? form.delivery_date || form.issue_date : form.delivery_date || null,
         // Zo zálohovej faktúry sa daň neodpočítava a výkazy ju nevidia.
         // Neplatiteľ si daň neodpočíta nikdy (databáza to stráži aj sama).
@@ -1100,6 +1159,31 @@ export function PrijataFakturaForm({
             : t("Rozhoduje o období DPH. Prázdne = dátum vystavenia.")}
         </span>
       </Field>
+      {form.type === "proforma" ? null : (
+        <Field label={POPIS_DATUM_DPH} napoveda={<DatumDphOtaznik druh="prijata" />}>
+          <input
+            type="date"
+            value={form.datum_dph}
+            onChange={(e) => {
+              datumDphRucneRef.current = true;
+              set("datum_dph", e.target.value);
+            }}
+            className="input"
+            data-testid="datum-dph"
+          />
+          {form.datum_dph ? (
+            <DatumDphRozdiel
+              datumDph={form.datum_dph}
+              dodanie={form.delivery_date || form.issue_date}
+              kompaktne={kompaktne}
+            />
+          ) : (
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t("Prázdne = neskorší z dátumu dodania a dátumu prijatia.")}
+            </span>
+          )}
+        </Field>
+      )}
       <Field label="Dátum prijatia" napoveda={<DatumPrijatiaOtaznik />}>
         <input
           type="date"
@@ -1115,6 +1199,7 @@ export function PrijataFakturaForm({
           dobropis={Boolean(form.opravuje_cislo.trim())}
           samozdanenie={form.dph_rezim === "samozdanenie" || form.dph_rezim === "nadobudnutie"}
           bezOdpoctu={form.type === "proforma"}
+          datumDph={form.type === "proforma" ? null : form.datum_dph || null}
         />
       </Field>
       {form.type === "advance_payment" ? null : (

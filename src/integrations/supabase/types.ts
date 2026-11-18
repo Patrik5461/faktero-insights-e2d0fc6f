@@ -5753,6 +5753,7 @@ export type Database = {
           deferred_stock_issue: boolean
           deleted_at: string | null
           delivery_date: string | null
+          datum_dph: string | null
           delivery_method: string | null
           due_date: string
           external_id: string | null
@@ -5881,6 +5882,7 @@ export type Database = {
           deferred_stock_issue?: boolean
           deleted_at?: string | null
           delivery_date?: string | null
+          datum_dph?: string | null
           delivery_method?: string | null
           due_date?: string
           external_id?: string | null
@@ -6009,6 +6011,7 @@ export type Database = {
           deferred_stock_issue?: boolean
           deleted_at?: string | null
           delivery_date?: string | null
+          datum_dph?: string | null
           delivery_method?: string | null
           due_date?: string
           external_id?: string | null
@@ -7172,6 +7175,7 @@ export type Database = {
           vat_amount: number
           dph_rezim: string | null
           delivery_date: string | null
+          datum_dph: string | null
           odpocet: boolean
           opravuje_cislo: string | null
           exchange_rate: number | null
@@ -7307,6 +7311,7 @@ export type Database = {
           vat_amount?: number
           dph_rezim?: string | null
           delivery_date?: string | null
+          datum_dph?: string | null
           odpocet?: boolean
           opravuje_cislo?: string | null
           exchange_rate?: number | null
@@ -7442,6 +7447,7 @@ export type Database = {
           vat_amount?: number
           dph_rezim?: string | null
           delivery_date?: string | null
+          datum_dph?: string | null
           odpocet?: boolean
           opravuje_cislo?: string | null
           exchange_rate?: number | null

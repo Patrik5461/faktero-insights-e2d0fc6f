@@ -93,7 +93,7 @@ Vráť VÝLUČNE JSON v tvare:
 {"supplier_name": string|null, "supplier_ico": string|null, "supplier_dic": string|null,
  "supplier_ic_dph": string|null, "supplier_iban": string|null, "invoice_number": string|null,
  "variable_symbol": string|null, "issue_date": "YYYY-MM-DD"|null, "due_date": "YYYY-MM-DD"|null,
- "delivery_date": "YYYY-MM-DD"|null,
+ "delivery_date": "YYYY-MM-DD"|null, "tax_point_date": "YYYY-MM-DD"|null,
  "amount_without_vat": number|null, "vat_amount": number|null, "amount_total": number|null,
  "currency": string|null,
  "vat_breakdown": [{"rate": number, "base": number, "vat": number}],
@@ -108,6 +108,10 @@ Vráť VÝLUČNE JSON v tvare:
 Dátum dodania ("delivery_date") hľadaj pod „Dátum dodania", „Dátum dodania tovaru/služby",
 „Dátum vzniku daňovej povinnosti", „Dátum uskutočnenia zdaniteľného plnenia", „DUZP",
 „Datum zdanitelného plnění" — keď na doklade nie je, null (nie dátum vystavenia).
+Dátum daňovej povinnosti ("tax_point_date") vyplň LEN keď ho doklad uvádza výslovne ako samostatný
+údaj „Dátum daňovej povinnosti", „Dátum vzniku daňovej povinnosti", „Datum povinnosti přiznat daň"
+alebo „Steuerdatum" — vtedy ho daj sem (a ak je to jediný dátum plnenia, aj do "delivery_date").
+Inak null — nedopĺňaj ho z dátumu dodania ani vystavenia. Pri bločku vždy null.
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
 Pridaj aj údaje ODBERATEĽA, ak sú na doklade: "buyer_name", "buyer_ico", "buyer_ic_dph", "buyer_dic"
 a "buyer_iban" (len účet odberateľa/platiteľa, nikdy účet dodávateľa na úhradu) — inak null.
