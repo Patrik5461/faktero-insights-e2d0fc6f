@@ -207,6 +207,9 @@ export function VozidloKarta({
   const [ukladam, setUkladam] = useState(false);
   const [doplnene, setDoplnene] = useState<Set<string>>(new Set());
   const subor = useRef<HTMLInputElement>(null);
+  // Rýchle nahratie technického preukazu na začiatku formulára (aj fotka z mobilu).
+  // Hook musí byť tu, nad každým skorým `return` — inak React padne (chyba #310).
+  const suborTp = useRef<HTMLInputElement>(null);
   const dnes = dnesBratislava();
   /*
     Z-12: dokument nového vozidla sa nahrá do úložiska hneď, riadok vznikne až
@@ -321,9 +324,6 @@ export function VozidloKarta({
       setCitam(null);
     }
   }
-
-  // Rýchle nahratie technického preukazu na začiatku formulára (aj fotka z mobilu).
-  const suborTp = useRef<HTMLInputElement>(null);
 
   async function nahraj(file: File, druhPrepis?: string) {
     const druh = druhPrepis ?? druhNahratia;
