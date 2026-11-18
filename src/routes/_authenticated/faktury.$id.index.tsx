@@ -149,6 +149,7 @@ import { OKNO_STORNO_DOKLADU_K_PLATBE, stornoLenRucne } from "@/lib/faktero/stor
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu, formatujCislo, formatujJednotkovuCenu, formatujMnozstvo } from "@/lib/faktero/mena";
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
 /** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
@@ -170,6 +171,7 @@ export const Route = createFileRoute("/_authenticated/faktury/$id/")({
 function InvoiceDetail() {
   const { t, jazyk } = useT();
   const { id } = Route.useParams();
+  useKontextHlasu({ stranka: "faktura-detail", otvoreny: { typ: "vystavena", id } });
   const navigate = useNavigate();
   const klik = useKlikNaRiadok();
   // Vlastné stavy dokladov firmy (číselník v Účtovníctvo → Predkontácie).

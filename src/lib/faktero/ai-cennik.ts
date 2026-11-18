@@ -156,6 +156,7 @@ export const NAZOV_UCELU: Record<string, string> = {
   ai_predkontacia: "Návrh zaúčtovania",
   "ciselnik-obrazok": "Číselník z obrázka (Pohoda)",
   podpora: "Podpora na webe",
+  hlas: "Hlasové ovládanie (test)",
   neznáme: "Neurčené",
 };
 

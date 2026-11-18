@@ -98,6 +98,7 @@ import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
 type BulkAction = null | "email" | "efaktura" | "clone" | "reminder" | "zip";
 
 /** Ponuka zoradenia. Prvá možnosť je predvolená — od najnovšej faktúry. */
@@ -385,6 +386,12 @@ function InvoicesPage() {
 
   // Všetky filtre sú v dotaze — zobrazené je presne to, čo prišlo z databázy.
   const visibleRows = list.rows;
+  // Hlasové ovládanie: faktúry na tejto strane a označené.
+  useKontextHlasu({
+    stranka: "faktury",
+    doklady: visibleRows.map((r: any) => ({ typ: "vystavena" as const, id: r.id, cislo: r.invoice_number ?? null, partner: r.customer_name ?? null, suma: r.total != null ? Number(r.total) : null, mena: r.currency ?? null })),
+    oznacene: list.selectedIds,
+  });
 
   useSipkyNahladu(
     bocny.zapnuty,

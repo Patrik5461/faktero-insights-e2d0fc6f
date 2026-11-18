@@ -3,8 +3,8 @@ import { escHtml, bezVzorca } from "@/lib/bezpecny-text";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { riadkyPreIds, vsetkoAkoData } from "@/lib/faktero/strankovanie";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { nacitajDokladyDph } from "@/lib/faktero/dph-prehlad-data";
 import {
   dokladyBezPrepoctu,
   kurzVystavenej,
@@ -15,8 +15,6 @@ import {
   type RiadokPrehladu,
   denDaneVystavenej,
   denOdpoctuPrijatej,
-  filterDatumovObdobia,
-  vObdobi,
 } from "@/lib/faktero/dph-prehlad";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +36,6 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
-import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { vatBucketLabel, vatBucketOrder } from "@/lib/faktero/vat-rates";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
@@ -164,77 +161,11 @@ function DphPage() {
     if (!cid) return;
     setLoading(true);
     try {
-      // Po stránkach — Supabase vráti najviac 1 000 riadkov a zvyšok by v prehľade ticho chýbal.
-      const [{ data: invs }, { data: purch }] = await Promise.all([
-        vsetkoAkoData((zac, kon) =>
-          supabase
-            .from("invoices")
-            .select(
-              "id, invoice_number, issue_date, delivery_date, datum_dph, opravuje_fakturu_id, customer_name, subtotal, vat_total, total, currency, exchange_rate, status, reverse_charge, type",
-            )
-            .eq("company_id", cid)
-            // Hrubý výber podľa oboch dátumov; do obdobia ho presne zaradí
-            // `denDaneVystavenej` — rovnako ako priznanie (dátum dodania).
-            .or(filterDatumovObdobia(["issue_date", "delivery_date", "datum_dph"], period.from, period.to))
-            .is("deleted_at", null)
-            .neq("status", "draft")
-            .neq("status", "cancelled")
-            // Zálohová faktúra je výzva na zaplatenie preddavku, nie zdaniteľné
-            // plnenie — do priznania nepatrí. Plnenie prizná až vyúčtovacia
-            // faktúra, inak by tá istá suma bola v prehľade dvakrát.
-            .neq("type", "proforma")
-            .order("issue_date", { ascending: true })
-            .order("id")
-            .range(zac, kon),
-        ),
-        vsetkoAkoData((zac, kon) =>
-          supabase
-            .from("purchase_invoices")
-            .select(
-              "id, invoice_number, issue_date, delivery_date, received_date, datum_dph, dph_rezim, reverse_charge, opravuje_cislo, supplier_name, amount_without_vat, vat_amount, amount_total, currency, amount_without_vat_eur, vat_amount_eur, vat_breakdown, samofakturacia, samofakturacia_stav",
-            )
-            .eq("company_id", cid)
-            .or(
-              filterDatumovObdobia(
-                ["issue_date", "delivery_date", "received_date", "datum_dph"],
-                period.from,
-                period.to,
-              ),
-            )
-            .is("deleted_at", null)
-            // Ako výkaz: prijatá zálohová nie je daňový doklad a faktúra iného
-            // odberateľa (nepotvrdená) do odpočtu nejde. Daňový doklad
-            // k prijatej platbe (DPH zo zaplatenej zálohy) áno.
-            .in("type", ["regular", "advance_payment"])
-            .is("odberatel_nesedi", null)
-            .order("issue_date", { ascending: true })
-            .order("id")
-            .range(zac, kon),
-        ),
-      ]);
-      const invIds = (invs ?? [])
-        .filter((i: any) => vObdobi(denDaneVystavenej(i), period.from, period.to))
-        .map((i: any) => i.id);
-      const itms = await riadkyPreIds<any>(invIds, (kus, zac, kon) =>
-        supabase
-          .from("invoice_items")
-          .select("id, invoice_id, subtotal, vat_amount, vat_rate")
-          .in("invoice_id", kus)
-          .order("id")
-          .range(zac, kon),
-      );
-      const vystaveneVObdobi = (invs ?? []).filter((i: any) =>
-        vObdobi(denDaneVystavenej(i), period.from, period.to),
-      );
-      const idVObdobi = new Set(vystaveneVObdobi.map((i: any) => i.id));
-      setInvoices(vystaveneVObdobi);
-      setItems(itms.filter((it: any) => idVObdobi.has(it.invoice_id)));
-      setPurchases(
-        (purch ?? []).filter(
-          // Samofaktúra sa odpočíta až po odsúhlasení dodávateľom (ako výkaz).
-          (p: any) => zapocitatelna(p) && vObdobi(denOdpoctuPrijatej(p), period.from, period.to),
-        ),
-      );
+      // Spoločné načítanie s hlasovým ovládaním (`dph-prehlad-data.ts`).
+      const d = await nacitajDokladyDph(supabase, cid, period.from, period.to);
+      setInvoices(d.invoices);
+      setItems(d.items);
+      setPurchases(d.purchases);
     } finally {
       setLoading(false);
     }

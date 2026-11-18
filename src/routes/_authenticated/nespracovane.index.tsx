@@ -59,6 +59,7 @@ import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { useStrankovanie } from "@/hooks/useStrankovanie";
+import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
@@ -205,6 +206,15 @@ function Stranka() {
 
   // Kreslí sa len jedna strana; výber všetkých a súčty berú všetky zobrazené.
   const strankovanie = useStrankovanie(zobrazene, lf, { potrebneId: posledny.id });
+  // Hlasové ovládanie: doklady na tejto strane a označené (bločky zo skenu sa hlasom neúčtujú).
+  useKontextHlasu({
+    stranka: "nespracovane",
+    doklady: strankovanie.viditelne
+      .filter((r: any) => String(r.kluc).startsWith("n-"))
+      .map((r: any) => ({ typ: "nespracovany" as const, id: r.id, cislo: r.cislo ?? null, partner: r.dodavatel ?? null, suma: r.suma ?? null, mena: r.mena ?? null })),
+    oznacene: [...vybrane].filter((k) => k.startsWith("n-")).map((k) => k.slice(2)),
+    akcie: { obnov: () => void obnov() },
+  });
 
   // Zmena hľadania či obdobia zruší výber, aby hromadná akcia nezasiahla skrytý doklad.
   useEffect(() => setVybrane(new Set()), [hladane, obdobieOd, obdobieDo]);

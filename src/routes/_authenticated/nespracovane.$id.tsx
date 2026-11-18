@@ -17,7 +17,8 @@ import { kontrolaNespracovaneho, sadzbyNaVyber } from "@/components/faktero/dph-
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { NauceneZDodavatela } from "@/components/faktero/NauceneZDodavatela";
 import { NavrhAiNespracovaneho, useNavrhZauctovania } from "@/components/faktero/NavrhAi";
-import { doplnNavrhDoUdajov, oznaceniaZUdajov } from "@/lib/faktero/ai-predkontacia";
+import { doplnNavrhDoUdajov, oznaceniaZUdajov, potvrdNavrhAi } from "@/lib/faktero/ai-predkontacia";
+import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
 import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { UpozornenieObjednavky } from "@/components/faktero/PovinnaObjednavka";
 import { PravidloNespracovaneho } from "@/components/faktero/PravidloNespracovaneho";
@@ -188,6 +189,24 @@ function Detail() {
   */
   const druhNavrhu = druh === "faktura" || druh === "zalohova" || druh === "dobropis" || druh === "blocek" ? druh : null;
   const navrhAi = useNavrhZauctovania("nespracovany", d?.id, Boolean(d && d.stav !== "cita" && druhNavrhu), druhNavrhu);
+  /*
+    Hlasové ovládanie: otvorený doklad. „Potvrď“ hlasom = „Potvrdiť návrh“
+    + uloženie formulára (ulozNespracovaneFn) — len keď formulár návrh má.
+  */
+  useKontextHlasu({
+    stranka: "nespracovany-detail",
+    otvoreny: { typ: "nespracovany", id },
+    akcie: {
+      obnov: () => void obnov(),
+      potvrdNavrh: async (dokladId) => {
+        if (dokladId !== id || !u || navrhAi?.stav !== "navrh") return false;
+        const n = potvrdNavrhAi(u);
+        setU(n);
+        await uloz({ data: { id, druh: druh || null, udaje: n as any } });
+        return true;
+      },
+    },
+  });
   /*
     Doklad o úhrade nie je daňový doklad — po zmene druhu sa rozpis DPH
     a položky vyprázdnia a doplnia sa údaje úhrady (číslo faktúry, suma, deň).

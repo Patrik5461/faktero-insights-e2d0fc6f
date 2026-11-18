@@ -1,0 +1,46 @@
+// Hlasové ovládání (HlasoveOvladanie.tsx) — test pro administrátory.
+export default {
+  "Členenie DPH": "Členění DPH",
+  "Ďalších {n} dokladov som nestihla — povedzte „navrhni zaúčtovanie“ znova pre ďalšie.":
+    "Dalších {n} dokladů jsem nestihla — řekněte „navrhni zaúčtování“ znovu pro další.",
+  Dodávateľ: "Dodavatel",
+  Doklad: "Doklad",
+  "Hlas:": "Hlas:",
+  "Hlas asistenta": "Hlas asistentky",
+  "Hlasové ovládanie": "Hlasové ovládání",
+  "Hlasové ovládanie (test)": "Hlasové ovládání (test)",
+  "Hotovo, zapísané: {n}.": "Hotovo, zapsáno: {n}.",
+  Hovoriť: "Mluvit",
+  KV: "KH",
+  "Napíšte príkaz…": "Napište příkaz…",
+  "Na uloženie povedzte „potvrď“ alebo kliknite Potvrdiť.":
+    "Pro uložení řekněte „potvrď“ nebo klikněte na Potvrdit.",
+  "Návrh som zrušila, nič sa neuložilo.": "Návrh jsem zrušila, nic se neuložilo.",
+  "Návrh zaúčtovania — nič nie je uložené": "Návrh zaúčtování — nic není uloženo",
+  "Odoslať príkaz": "Odeslat příkaz",
+  "Počúvam…": "Poslouchám…",
+  "Potvrdiť ({n})": "Potvrdit ({n})",
+  Predkontácia: "Předkontace",
+  "Prehliadač nedovolil mikrofón — povoľte ho pri adrese stránky.":
+    "Prohlížeč nepovolil mikrofon — povolte ho u adresy stránky.",
+  "Premýšľam…": "Přemýšlím…",
+  "Prestať počúvať": "Přestat poslouchat",
+  Príkaz: "Příkaz",
+  "Rozpoznávanie reči zlyhalo ({kod}).": "Rozpoznávání řeči selhalo ({kod}).",
+  "Skúste napríklad: „otvor nespracované doklady“, „navrhni zaúčtovanie“, „koľko máme pohľadávok po splatnosti“, „DPH za október“.":
+    "Zkuste například: „otevři nezpracované doklady“, „navrhni zaúčtování“, „kolik máme pohledávek po splatnosti“, „DPH za říjen“.",
+  "Stlmiť hlas": "Ztlumit hlas",
+  Suma: "Částka",
+  "Tento prehliadač nevie rozpoznávať reč (funguje v Chrome a Edge). Príkaz môžete napísať do poľa nižšie.":
+    "Tento prohlížeč neumí rozpoznávat řeč (funguje v Chrome a Edge). Příkaz můžete napsat do pole níže.",
+  test: "test",
+  "Zapísané: {n}. Preskočené: {m} — {dovod}": "Zapsáno: {n}. Přeskočeno: {m} — {dovod}",
+  "Zapisujem…": "Zapisuji…",
+  "Zapnúť hlas": "Zapnout hlas",
+  Zdroj: "Zdroj",
+  "(ženský hlas v prehliadači nie je)": "(ženský hlas v prohlížeči není)",
+  "žiadny slovenský ani český hlas": "žádný slovenský ani český hlas",
+  pravidlo: "pravidlo",
+  zvyk: "zvyk",
+  naučené: "naučené",
+};

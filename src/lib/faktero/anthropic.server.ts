@@ -26,7 +26,7 @@ export type ClaudeNastavenie = {
 let klient: Anthropic | null = null;
 let klientKluc = "";
 
-function dajKlienta(): Anthropic {
+export function dajKlienta(): Anthropic {
   const kluc = process.env.ANTHROPIC_API_KEY?.trim();
   if (!kluc) throw new Error("ANTHROPIC_API_KEY nie je nastavený");
   if (!klient || klientKluc !== kluc) {

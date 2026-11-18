@@ -145,41 +145,8 @@ export const potvrdNavrhyFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { overPristup } = await import("./over-pristup");
     await overPristup(context as any, data.company_id, { oblast: "doklady", zapis: true });
-    const sb = context.supabase as any;
-    const srv = await import("./auto-uctovanie.server");
-    const firma = await srv.nacitajFirmu(sb, data.company_id);
-    let zauctovanych = 0;
-    const preskocene: string[] = [];
-    for (const p of data.polozky) {
-      const m = srv.TABULKY[p.typ];
-      const { data: row } = await sb
-        .from(m.tabulka)
-        .select("*")
-        .eq("id", p.id)
-        .eq("company_id", data.company_id)
-        .maybeSingle();
-      const meno = row?.[m.cislo] ?? p.id.slice(0, 8);
-      if (!row || !(await srv.smieSaZauctovat(p.typ, row, sb))) {
-        preskocene.push(`${meno}: nedá sa zaúčtovať (stav dokladu)`);
-        continue;
-      }
-      const n =
-        row.auto_uctovanie_navrh ??
-        (await srv.navrhPreRiadok(sb, p.typ, row, { firma, ai: false }));
-      if (!n?.predkontacia && !row.pohoda_predkontacia) {
-        preskocene.push(`${meno}: chýba predkontácia`);
-        continue;
-      }
-      const duplicita = p.typ === "vystavena" ? null : await srv.duplicitaRiadku(sb, p.typ, row);
-      if (duplicita) {
-        preskocene.push(`${meno}: ${duplicita}`);
-        continue;
-      }
-      if (await srv.potvrdNavrh(sb, p.typ, row, n, { automat: false, userId: context.userId }))
-        zauctovanych++;
-      else preskocene.push(`${meno}: medzitým sa zmenil`);
-    }
-    return { zauctovanych, preskocene };
+    const { potvrdNavrhyDokladov } = await import("./auto-uctovanie.server");
+    return potvrdNavrhyDokladov(context.supabase as any, data.company_id, context.userId, data.polozky);
   });
 
 /** „Navrhnúť zaúčtovanie pre nezaúčtované“ — po dávkach, len návrhy. */

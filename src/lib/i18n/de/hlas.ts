@@ -1,0 +1,46 @@
+// Sprachsteuerung (HlasoveOvladanie.tsx) — Test für Plattform-Administratoren.
+export default {
+  "Členenie DPH": "USt-Gliederung",
+  "Ďalších {n} dokladov som nestihla — povedzte „navrhni zaúčtovanie“ znova pre ďalšie.":
+    "Weitere {n} Belege habe ich nicht geschafft — sagen Sie erneut „Kontierung vorschlagen“.",
+  Dodávateľ: "Lieferant",
+  Doklad: "Beleg",
+  "Hlas:": "Stimme:",
+  "Hlas asistenta": "Stimme der Assistentin",
+  "Hlasové ovládanie": "Sprachsteuerung",
+  "Hlasové ovládanie (test)": "Sprachsteuerung (Test)",
+  "Hotovo, zapísané: {n}.": "Fertig, gespeichert: {n}.",
+  Hovoriť: "Sprechen",
+  KV: "KV",
+  "Napíšte príkaz…": "Befehl eingeben…",
+  "Na uloženie povedzte „potvrď“ alebo kliknite Potvrdiť.":
+    "Zum Speichern sagen Sie „bestätigen“ oder klicken Sie auf Bestätigen.",
+  "Návrh som zrušila, nič sa neuložilo.": "Vorschlag verworfen, nichts wurde gespeichert.",
+  "Návrh zaúčtovania — nič nie je uložené": "Kontierungsvorschlag — noch nichts gespeichert",
+  "Odoslať príkaz": "Befehl senden",
+  "Počúvam…": "Ich höre zu…",
+  "Potvrdiť ({n})": "Bestätigen ({n})",
+  Predkontácia: "Kontierung",
+  "Prehliadač nedovolil mikrofón — povoľte ho pri adrese stránky.":
+    "Der Browser hat das Mikrofon blockiert — erlauben Sie es neben der Adresse.",
+  "Premýšľam…": "Ich denke nach…",
+  "Prestať počúvať": "Zuhören beenden",
+  Príkaz: "Befehl",
+  "Rozpoznávanie reči zlyhalo ({kod}).": "Spracherkennung fehlgeschlagen ({kod}).",
+  "Skúste napríklad: „otvor nespracované doklady“, „navrhni zaúčtovanie“, „koľko máme pohľadávok po splatnosti“, „DPH za október“.":
+    "Versuchen Sie z. B.: „öffne unverarbeitete Belege“, „Kontierung vorschlagen“, „wie viele Forderungen sind überfällig“, „Umsatzsteuer für Oktober“.",
+  "Stlmiť hlas": "Stimme stumm",
+  Suma: "Betrag",
+  "Tento prehliadač nevie rozpoznávať reč (funguje v Chrome a Edge). Príkaz môžete napísať do poľa nižšie.":
+    "Dieser Browser erkennt keine Sprache (funktioniert in Chrome und Edge). Sie können den Befehl unten eingeben.",
+  test: "Test",
+  "Zapísané: {n}. Preskočené: {m} — {dovod}": "Gespeichert: {n}. Übersprungen: {m} — {dovod}",
+  "Zapisujem…": "Speichere…",
+  "Zapnúť hlas": "Stimme einschalten",
+  Zdroj: "Quelle",
+  "(ženský hlas v prehliadači nie je)": "(keine weibliche Stimme im Browser)",
+  "žiadny slovenský ani český hlas": "keine slowakische oder tschechische Stimme",
+  pravidlo: "Regel",
+  zvyk: "Gewohnheit",
+  naučené: "gelernt",
+};

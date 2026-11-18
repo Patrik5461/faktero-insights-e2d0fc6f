@@ -107,6 +107,8 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
 import { CESTA_PRIJATYCH_EFAKTUR } from "@/lib/faktero/efaktura/upozornenie-prijatej";
 import { jeAdminRola } from "@/lib/faktero/opravnenia";
+import { smieHlas } from "@/lib/faktero/hlas";
+import { HlasoveTlacidlo } from "./HlasoveOvladanie";
 type Company = {
   id: string;
   name: string;
@@ -169,6 +171,7 @@ export function AppShell({
   }
   const [createOpen, setCreateOpen] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
+  const [mojeId, setMojeId] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -248,7 +251,10 @@ export function AppShell({
           .select("role")
           .eq("user_id", uid)
           .maybeSingle();
-        if (!cancelled) setAdminRole((data?.role as string | undefined) ?? null);
+        if (!cancelled) {
+          setAdminRole((data?.role as string | undefined) ?? null);
+          setMojeId(uid);
+        }
       } catch {
         if (!cancelled) setAdminRole(null);
       }
@@ -607,6 +613,10 @@ export function AppShell({
                 <Bug className="h-3.5 w-3.5" />
                 <span className="hidden lg:inline">{t("Nahlásiť chybu")}</span>
               </button>
+              {/* Hlasové ovládanie (test) — len administrátori platformy, len web (HLAS_PRE v hlas.ts). */}
+              {smieHlas({ adminRole, nativna, userId: mojeId }) && (
+                <HlasoveTlacidlo className="max-md:border-white/30 max-md:text-primary-foreground max-md:hover:bg-white/15" />
+              )}
               <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
 
               {/* Quick create — the only filled element */}

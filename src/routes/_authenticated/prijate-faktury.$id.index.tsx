@@ -105,6 +105,7 @@ import { VazbaZalohyPrijatej } from "@/components/faktero/VazbaZalohyPrijatej";
 import { FILTER_PRIJATYCH_DANOVYCH, jePrijatyDanovyDoklad, NAZOV_PRIJATEHO_DANOVEHO } from "@/lib/faktero/prijaty-danovy-doklad";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
+import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
   ACSP: "Banka spracováva",
@@ -158,6 +159,7 @@ function fmt(n: number, c = "EUR") {
 function PurchaseInvoiceDetail() {
   const { t } = useT();
   const { id } = Route.useParams();
+  useKontextHlasu({ stranka: "prijata-detail", otvoreny: { typ: "prijata", id } });
   const navigate = useNavigate();
   // Vlastné stavy dokladov firmy — kódy predkontácií si načíta panel zaúčtovania sám.
   const ciselnikyFirmy = useCiselnikyDokladov(getActiveCompanyId(), null, false);

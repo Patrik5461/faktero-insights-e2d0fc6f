@@ -20,6 +20,7 @@ import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useStrankovanie } from "@/hooks/useStrankovanie";
+import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
 import { useRadenie } from "@/hooks/useRadenie";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 import { stiahniExcel, stlpceRozpisuDph, tabulka } from "@/lib/faktero/excel-zoznamu";
@@ -306,6 +307,12 @@ function PurchaseInvoicesPage() {
     potrebneId: posledny.id,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Hlasové ovládanie: faktúry na tejto strane a označené.
+  useKontextHlasu({
+    stranka: "prijate-faktury",
+    doklady: postupne.viditelne.map((r: any) => ({ typ: "prijata" as const, id: r.id, cislo: r.invoice_number ?? null, partner: r.supplier_name ?? null, suma: r.amount_total != null ? Number(r.amount_total) : null, mena: r.currency ?? null })),
+    oznacene: [...selected],
+  });
   // Náhľad vedľa zoznamu — pri účtovaní netreba otvárať každú faktúru zvlášť.
   const bocny = useBocnyNahlad("prijate-faktury");
   useSipkyNahladu(

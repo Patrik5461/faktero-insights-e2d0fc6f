@@ -783,6 +783,54 @@ export async function potvrdNavrh(
 }
 
 /**
+ * Ručné potvrdenie návrhov (človek — zdroj „manual“): stránka Na kontrolu
+ * (`potvrdNavrhyFn`) aj hlasové ovládanie. `navrh` pri položke = presne ten
+ * návrh, ktorý človek videl; bez neho uložený návrh, inak motor bez AI.
+ * Volajúci overí prístup (`overPristup` s oblasťou doklady a zápisom).
+ */
+export async function potvrdNavrhyDokladov(
+  sb: Klient,
+  companyId: string,
+  userId: string,
+  polozky: { typ: TypDokladu; id: string; navrh?: NavrhZauctovania | null }[],
+): Promise<{ zauctovanych: number; preskocene: string[] }> {
+  const firma = await nacitajFirmu(sb, companyId);
+  let zauctovanych = 0;
+  const preskocene: string[] = [];
+  for (const p of polozky) {
+    const m = TABULKY[p.typ];
+    const { data: row } = await sb
+      .from(m.tabulka)
+      .select("*")
+      .eq("id", p.id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    const meno = row?.[m.cislo] ?? p.id.slice(0, 8);
+    if (!row || !(await smieSaZauctovat(p.typ, row, sb))) {
+      preskocene.push(`${meno}: nedá sa zaúčtovať (stav dokladu)`);
+      continue;
+    }
+    const n =
+      p.navrh ??
+      row.auto_uctovanie_navrh ??
+      (await navrhPreRiadok(sb, p.typ, row, { firma, ai: false }));
+    if (!n?.predkontacia && !row.pohoda_predkontacia) {
+      preskocene.push(`${meno}: chýba predkontácia`);
+      continue;
+    }
+    const duplicita = p.typ === "vystavena" ? null : await duplicitaRiadku(sb, p.typ, row);
+    if (duplicita) {
+      preskocene.push(`${meno}: ${duplicita}`);
+      continue;
+    }
+    if (await potvrdNavrh(sb, p.typ, row, n, { automat: false, userId }))
+      zauctovanych++;
+    else preskocene.push(`${meno}: medzitým sa zmenil`);
+  }
+  return { zauctovanych, preskocene };
+}
+
+/**
  * Text duplicity prijatej faktúry či bločku (null = nie je duplicitný).
  * Pravidlo v `duplicita-zauctovania.ts`.
  */
