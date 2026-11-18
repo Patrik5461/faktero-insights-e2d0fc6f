@@ -130,7 +130,7 @@ export function VystavenaDetailKompaktna({
   const loc = lokalJazyka(jazyk);
   const nacitajMena = useServerFn(menaClenovFirmy);
   const rozparuj = useServerFn(zrusParovanie);
-  const z = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
+  const z = useZauctovanieVystavenej({ inv, onZmena, onStiahnut, zamknuteObdobie });
   const [mena, setMena] = useState<Record<string, string>>({});
   const [platby, setPlatby] = useState<Platba[]>([]);
   const [pohyby, setPohyby] = useState<Pohyb[]>([]);

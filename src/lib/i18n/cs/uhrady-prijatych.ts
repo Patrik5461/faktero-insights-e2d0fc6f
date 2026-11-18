@@ -76,6 +76,24 @@ export default {
   "Účtovná poznámka": "Účetní poznámka",
   "Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.":
     "Faktura je předána do Pohody — změnit ji lze až po vrácení z Pohody.",
+  "Faktúra je odovzdaná do Pohody. Zmena predkontácie, členenia DPH či KV sa uloží hneď a faktúra v Pohode ostane — v Pohode ju potom prepíšte ručne. Ostatné údaje až po vrátení z Pohody.":
+    "Faktura je předána do Pohody. Změna předkontace, členění DPH či KH se uloží hned a faktura v Pohodě zůstane — v Pohodě ji pak přepište ručně. Ostatní údaje až po vrácení z Pohody.",
+  "Faktúra je odovzdaná do účtovníctva ({program}). Zmena predkontácie, členenia DPH či KV sa uloží hneď a faktúra tam ostane — v účtovníctve ju potom prepíšte ručne. Ostatné údaje až po vrátení.":
+    "Faktura je předána do účetnictví ({program}). Změna předkontace, členění DPH či KH se uloží hned a faktura tam zůstane — v účetnictví ji pak přepište ručně. Ostatní údaje až po vrácení.",
+  "Doklad je odovzdaný do Pohody. Zmena predkontácie, členenia DPH či KV sa uloží hneď a doklad v Pohode ostane — v Pohode ju potom prepíšte ručne. Ostatné údaje až po vrátení z Pohody.":
+    "Doklad je předán do Pohody. Změna předkontace, členění DPH či KH se uloží hned a doklad v Pohodě zůstane — v Pohodě ji pak přepište ručně. Ostatní údaje až po vrácení z Pohody.",
+  "Doklad je odovzdaný do účtovníctva ({program}). Zmena predkontácie, členenia DPH či KV sa uloží hneď a doklad tam ostane — v účtovníctve ju potom prepíšte ručne. Ostatné údaje až po vrátení.":
+    "Doklad je předán do účetnictví ({program}). Změna předkontace, členění DPH či KH se uloží hned a doklad tam zůstane — v účetnictví ji pak přepište ručně. Ostatní údaje až po vrácení.",
+  "Faktúra je odovzdaná a obdobie je uzavreté — zaúčtovanie sa už nemení.":
+    "Faktura je předaná a období je uzavřené — zaúčtování se už nemění.",
+  "Doklad je odovzdaný a obdobie je uzavreté — zaúčtovanie sa už nemení.":
+    "Doklad je předaný a období je uzavřené — zaúčtování se už nemění.",
+  "Obdobie je uzavreté — zaúčtovanie sa už nemení.":
+    "Období je uzavřené — zaúčtování se už nemění.",
+  "Zmenené vo Fakteri — v Pohode kód prepíšte ručne, Pohoda doklad z XML neprepíše.":
+    "Změněno ve Fakteru — v Pohodě kód přepište ručně, Pohoda doklad z XML nepřepíše.",
+  "Zmenené vo Fakteri — v účtovníctve ({program}) kód prepíšte ručne.":
+    "Změněno ve Fakteru — v účetnictví ({program}) kód přepište ručně.",
   "Faktúra je zamknutá proti úpravám — najprv ju odomknite.":
     "Faktura je zamčená proti úpravám — nejprve ji odemkněte.",
   "Stiahnuť všetky prílohy": "Stáhnout všechny přílohy",

@@ -40,7 +40,14 @@ import {
 } from "./KompaktnyDetail";
 import { KodPohody } from "./KodPohody";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
-import { HistoriaOdovzdania, OpravitZauctovanie, useProgramOdovzdania } from "./OdovzdanieDokladu";
+import {
+  HistoriaOdovzdania,
+  OpravitZauctovanie,
+  ZamokZauctovania,
+  useOpravaOdovzdaneho,
+  useProgramOdovzdania,
+} from "./OdovzdanieDokladu";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { ponukaPravidlaToast, toastPresunutyBlocek } from "./AutoZauctovanieOdznak";
 import { KomentarDokladu } from "./StavDokladu";
 import { PrilohyFaktury } from "./PrilohyFaktury";
@@ -156,6 +163,23 @@ export function BlocekDetailKompaktny({
   const zamknute = Boolean(row.exported_at || row.locked_at);
   // Iný program než Pohoda (Money, Omega…) — null = Pohoda.
   const program = useProgramOdovzdania(row.export_job_id, Boolean(row.exported_at));
+  /*
+    Odovzdaný bloček: predkontácia, členenie DPH a KV sa menia rovno v poli
+    a uložia sa opravou zaúčtovania — doklad ostane v Pohode (P 18. 11.).
+    Zamknutý a v uzavretom období nie.
+  */
+  const { zamknuteDo } = useCiselnikyDokladov(row.company_id, null, false);
+  const zamknuteObdobie = Boolean(
+    zamknuteDo && row.issue_date && String(row.issue_date) <= zamknuteDo,
+  );
+  const oprava = useOpravaOdovzdaneho({
+    row,
+    druh: "doklad",
+    program,
+    zamknuteObdobie,
+    onZmena,
+  });
+  const opravaOdovzdaneho = Boolean(row.exported_at) && oprava.moze;
   // Zvýraznenie uložených údajov v náhľade (ako v Nespracovaných).
   const udajeNahladu = useMemo(() => udajeZBlocku(row), [row]);
   const spracovanie = spracovanieDokladu(row, "doklad");
@@ -364,7 +388,14 @@ export function BlocekDetailKompaktny({
 
         <Sekcia nadpis="Základné údaje" id="zauctovanie" akcia={stavUkladania}>
           <Hodnota popis="Typ dokladu">{t("Bloček")}</Hodnota>
-          {zamknute ? (
+          {zamknute && row.exported_at && !row.locked_at ? (
+            <ZamokZauctovania
+              row={row}
+              druh="doklad"
+              program={program}
+              zamknuteObdobie={zamknuteObdobie}
+            />
+          ) : zamknute ? (
             <p className="text-xs text-muted-foreground">
               {row.exported_at
                 ? program
@@ -379,7 +410,7 @@ export function BlocekDetailKompaktny({
           <HistoriaOdovzdania row={row} druh="doklad" onZmena={onZmena} />
           {duplicitny ? <UpozornenieDuplicity druh="blocek" druhe={duplicity} /> : null}
           {/* Zaúčtovanie hneď za typom dokladu — ako pri nespracovanom doklade. */}
-          <fieldset disabled={zamknute} className="min-w-0 space-y-3.5">
+          <fieldset disabled={zamknute && !opravaOdovzdaneho} className="min-w-0 space-y-3.5">
             <PoliaZauctovania
               navrhy={kody}
               doklad={{ typ: "blocek", platba: row.payment_method }}
@@ -395,21 +426,32 @@ export function BlocekDetailKompaktny({
                 predkontacia: k.predkontacia,
                 clenenie: k.clenenie,
                 kv: k.kv,
-                kategoria: k.kategoria,
+                // Odovzdaný: kategória sa opravou nemení — nekreslí sa ako voľba.
+                kategoria: opravaOdovzdaneho ? undefined : k.kategoria,
               }}
-              setHodnoty={(h) =>
-                setK((x) => ({
-                  ...x,
+              setHodnoty={(h) => {
+                const nove = {
+                  ...k,
                   predkontacia: h.predkontacia ?? "",
                   clenenie: h.clenenie ?? "",
                   kv: h.kv ?? "",
-                  kategoria: h.kategoria ?? "",
-                }))
-              }
+                  kategoria: h.kategoria ?? k.kategoria,
+                };
+                if (!zamknute) return setK(nove);
+                if (!opravaOdovzdaneho) return;
+                // Odovzdaný bloček: výber sa uloží hneď opravou zaúčtovania.
+                const stare = k;
+                setK(nove);
+                void oprava.uloz(stare, nove).then((ok) => {
+                  if (!ok) setK(stare);
+                });
+              }}
             />
             {row.payment_method === "hotovost" && (kody?.pokladne?.length ?? 0) > 0 ? (
               // Pri viacerých pokladniach je nižšie aj výber pokladne (zostatok) — toto je len skratka v Pohode.
               <Pole popis={ukazatVyberPokladne(pokladne) ? "Pokladňa v Pohode" : "Pokladňa"}>
+                {/* Pokladňa sa opravou zaúčtovania nemení — odovzdanému ostáva len na čítanie. */}
+                <fieldset disabled={zamknute} className="min-w-0">
                 <KodPohody
                   ariaLabel={ukazatVyberPokladne(pokladne) ? "Pokladňa v Pohode" : "Pokladňa"}
                   value={k.pokladna}
@@ -419,6 +461,7 @@ export function BlocekDetailKompaktny({
                   className={ramik}
                   vyber
                 />
+                </fieldset>
               </Pole>
             ) : null}
           </fieldset>

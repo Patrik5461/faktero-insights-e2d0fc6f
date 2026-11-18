@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { zapisOpravy, zauctovanieZRiadku, zmenyOpravy } from "./stav-odovzdania";
+import { zapisOpravy, zauctovanieZRiadku, zdrojePoOprave, zmenyOpravy } from "./stav-odovzdania";
 
 /*
   „Opraviť zaúčtovanie“ pri doklade, ktorý už je v Pohode (P-1009).
@@ -69,6 +69,8 @@ export const opravZauctovanieFn = createServerFn({ method: "POST" })
       .from(tab)
       .update({
         ...zapis,
+        // Zmenený kód je ručná voľba — inak by ostal „auto“ (výkazy DPH, automatika po vrátení).
+        ...zdrojePoOprave(data.druh, r, zapis),
         oprava_zauctovania_at: r.oprava_zauctovania_at ?? new Date().toISOString(),
         oprava_zauctovania_povodne: povodne,
       })

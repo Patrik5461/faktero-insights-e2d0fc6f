@@ -76,6 +76,24 @@ export default {
   "Účtovná poznámka": "Buchungsnotiz",
   "Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.":
     "Die Rechnung wurde an Pohoda übergeben — ändern lässt sie sich erst nach der Rücknahme aus Pohoda.",
+  "Faktúra je odovzdaná do Pohody. Zmena predkontácie, členenia DPH či KV sa uloží hneď a faktúra v Pohode ostane — v Pohode ju potom prepíšte ručne. Ostatné údaje až po vrátení z Pohody.":
+    "Die Rechnung wurde an Pohoda übergeben. Eine Änderung der Kontierung, USt-Gliederung oder KV wird sofort gespeichert und die Rechnung bleibt in Pohoda — ändern Sie sie dort danach manuell. Andere Angaben erst nach der Rücknahme aus Pohoda.",
+  "Faktúra je odovzdaná do účtovníctva ({program}). Zmena predkontácie, členenia DPH či KV sa uloží hneď a faktúra tam ostane — v účtovníctve ju potom prepíšte ručne. Ostatné údaje až po vrátení.":
+    "Die Rechnung wurde an die Buchhaltung ({program}) übergeben. Eine Änderung der Kontierung, USt-Gliederung oder KV wird sofort gespeichert und die Rechnung bleibt dort — ändern Sie sie dort danach manuell. Andere Angaben erst nach der Rücknahme.",
+  "Doklad je odovzdaný do Pohody. Zmena predkontácie, členenia DPH či KV sa uloží hneď a doklad v Pohode ostane — v Pohode ju potom prepíšte ručne. Ostatné údaje až po vrátení z Pohody.":
+    "Der Beleg wurde an Pohoda übergeben. Eine Änderung der Kontierung, USt-Gliederung oder KV wird sofort gespeichert und der Beleg bleibt in Pohoda — ändern Sie sie dort danach manuell. Andere Angaben erst nach der Rücknahme aus Pohoda.",
+  "Doklad je odovzdaný do účtovníctva ({program}). Zmena predkontácie, členenia DPH či KV sa uloží hneď a doklad tam ostane — v účtovníctve ju potom prepíšte ručne. Ostatné údaje až po vrátení.":
+    "Der Beleg wurde an die Buchhaltung ({program}) übergeben. Eine Änderung der Kontierung, USt-Gliederung oder KV wird sofort gespeichert und der Beleg bleibt dort — ändern Sie sie dort danach manuell. Andere Angaben erst nach der Rücknahme.",
+  "Faktúra je odovzdaná a obdobie je uzavreté — zaúčtovanie sa už nemení.":
+    "Die Rechnung wurde übergeben und der Zeitraum ist abgeschlossen — die Kontierung ändert sich nicht mehr.",
+  "Doklad je odovzdaný a obdobie je uzavreté — zaúčtovanie sa už nemení.":
+    "Der Beleg wurde übergeben und der Zeitraum ist abgeschlossen — die Kontierung ändert sich nicht mehr.",
+  "Obdobie je uzavreté — zaúčtovanie sa už nemení.":
+    "Der Zeitraum ist abgeschlossen — die Kontierung ändert sich nicht mehr.",
+  "Zmenené vo Fakteri — v Pohode kód prepíšte ručne, Pohoda doklad z XML neprepíše.":
+    "In Faktero geändert — ändern Sie den Code in Pohoda manuell, Pohoda überschreibt den Beleg aus XML nicht.",
+  "Zmenené vo Fakteri — v účtovníctve ({program}) kód prepíšte ručne.":
+    "In Faktero geändert — ändern Sie den Code in der Buchhaltung ({program}) manuell.",
   "Faktúra je zamknutá proti úpravám — najprv ju odomknite.":
     "Die Rechnung ist gegen Änderungen gesperrt — entsperren Sie sie zuerst.",
   "Stiahnuť všetky prílohy": "Alle Anhänge herunterladen",

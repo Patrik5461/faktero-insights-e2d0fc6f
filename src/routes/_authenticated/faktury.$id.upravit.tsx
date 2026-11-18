@@ -24,6 +24,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Trash2, Plus, Loader2, Save, Send, FileDown, Mail, Truck } from "lucide-react";
 import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
+import {
+  useOpravaOdovzdaneho,
+  useProgramOdovzdaniaFaktury,
+} from "@/components/faktero/OdovzdanieDokladu";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { JAZYKY_DOKLADU, jazykDokladu, predvolenyJazykFirmy } from "@/lib/faktero/faktura-jazyk";
 import { datumPoDnoch, dniMedzi } from "@/lib/faktero/splatnost-dni";
 import { toast } from "sonner";
@@ -357,6 +362,44 @@ function EditInvoice() {
 
   const pokracujVRade = useServerFn(pokracujVRaduFn);
   const prepocitajClenenie = useServerFn(prepocitajClenenieFn);
+  /*
+    Odovzdaná faktúra (P 18. 11., UDpdp): účtovné kódy sa uložia hneď opravou
+    zaúčtovania — faktúra ostane v Pohode a uloženie formulára ich už neposiela
+    (spúšťač zámku by ho odmietol). Zamknutá či v uzavretom období nie.
+  */
+  const programOdovzdania = useProgramOdovzdaniaFaktury(inv?.id, Boolean(inv?.exported_at));
+  const { zamknuteDo } = useCiselnikyDokladov(inv?.company_id, null, false);
+  const zamknuteObdobie = Boolean(
+    zamknuteDo && inv?.issue_date && String(inv.issue_date) <= zamknuteDo,
+  );
+  const opravaKodov = useOpravaOdovzdaneho({
+    row: inv,
+    druh: "faktura",
+    program: programOdovzdania,
+    zamknuteObdobie,
+    onZmena: () => {},
+  });
+  const odovzdana = Boolean(inv?.exported_at);
+  function zmenKodyFaktury(k: { predkontacia: string; clenenie: string; kv: string }) {
+    if (!odovzdana) return setForm((f) => ({ ...f, ...k }));
+    if (!opravaKodov.moze) return;
+    const stare = { predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv };
+    setForm((f) => ({ ...f, ...k }));
+    void opravaKodov.uloz(stare, k).then((ok) => {
+      if (!ok) return setForm((f) => ({ ...f, ...stare }));
+      // Uložené — formulár ich pri uložení už nemení.
+      setInv((i: any) =>
+        i
+          ? {
+              ...i,
+              pohoda_predkontacia: k.predkontacia.trim() || null,
+              pohoda_clenenie_dph: k.clenenie.trim() || null,
+              kv_clenenie: k.kv || null,
+            }
+          : i,
+      );
+    });
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -1337,7 +1380,12 @@ function EditInvoice() {
               opravny: Boolean(inv.opravuje_fakturu_id),
             }}
             kody={{ predkontacia: form.predkontacia, clenenie: form.clenenie, kv: form.kv }}
-            onKody={(k) => setForm((f) => ({ ...f, ...k }))}
+            onKody={zmenKodyFaktury}
+            odovzdana={
+              odovzdana
+                ? { program: programOdovzdania, zamknuteObdobie, row: inv }
+                : undefined
+            }
             datumDane={datumDph}
             onDatumDane={(v) => setDatumDphRucne(!v || v === predvolenyDph ? null : v)}
             sposobPlatby={form.payment_method}

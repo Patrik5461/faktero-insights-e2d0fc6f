@@ -178,6 +178,90 @@ export function textOdovzdanyDoklad(program?: string | null): string {
     : "Doklad je odovzdaný do Pohody — zmeny sa tam už neprenesú.";
 }
 
+/**
+ * Veta pri poliach zaúčtovania odovzdaného dokladu. Patrik (18. 11., bager
+ * expres 20260012): pole Členenie DPH bolo sivé a UDpdp sa nedalo vybrať.
+ * Odovzdaný doklad teraz kódy (predkontácia, členenie DPH a KV, stredisko,
+ * činnosť) mení rovno v poli — uloží ich tá istá oprava ako „Opraviť
+ * zaúčtovanie“ a doklad ostane odovzdaný. Zamknutý doklad (`locked_at`) či
+ * uzavreté obdobie ostávajú len na čítanie.
+ */
+export function textZamkuZauctovania(o: {
+  program?: string | null;
+  mozeOpravit: boolean;
+  /** „Faktúra“ (vystavená, prijatá) alebo „Doklad“ (bloček). */
+  doklad?: "faktura" | "doklad";
+  /** Doklad patrí do uzavretého obdobia (`locked_until`). */
+  obdobie?: boolean;
+}): string {
+  const doklad = o.doklad === "doklad";
+  if (o.obdobie && !o.mozeOpravit)
+    return doklad
+      ? "Doklad je odovzdaný a obdobie je uzavreté — zaúčtovanie sa už nemení."
+      : "Faktúra je odovzdaná a obdobie je uzavreté — zaúčtovanie sa už nemení.";
+  if (o.mozeOpravit)
+    return o.program
+      ? doklad
+        ? "Doklad je odovzdaný do účtovníctva ({program}). Zmena predkontácie, členenia DPH či KV sa uloží hneď a doklad tam ostane — v účtovníctve ju potom prepíšte ručne. Ostatné údaje až po vrátení."
+        : "Faktúra je odovzdaná do účtovníctva ({program}). Zmena predkontácie, členenia DPH či KV sa uloží hneď a faktúra tam ostane — v účtovníctve ju potom prepíšte ručne. Ostatné údaje až po vrátení."
+      : doklad
+        ? "Doklad je odovzdaný do Pohody. Zmena predkontácie, členenia DPH či KV sa uloží hneď a doklad v Pohode ostane — v Pohode ju potom prepíšte ručne. Ostatné údaje až po vrátení z Pohody."
+        : "Faktúra je odovzdaná do Pohody. Zmena predkontácie, členenia DPH či KV sa uloží hneď a faktúra v Pohode ostane — v Pohode ju potom prepíšte ručne. Ostatné údaje až po vrátení z Pohody.";
+  if (doklad)
+    return o.program
+      ? "Doklad je odovzdaný do účtovníctva ({program}) — zmeniť sa dá až po vrátení."
+      : "Doklad je odovzdaný do Pohody — zmeniť sa dá až po vrátení z Pohody.";
+  return o.program
+    ? "Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení."
+    : "Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.";
+}
+
+/**
+ * Hláška po uložení kódu odovzdaného dokladu. Pohoda doklad z XML neprepíše
+ * (agenda faktúr nemá `actionType`) — kód treba prepísať v nej ručne;
+ * Faktero ho ukáže v histórii odovzdania („Zaúčtovanie opravené …“).
+ */
+export function textPoOprave(zmenene: boolean, program?: string | null): string {
+  if (!zmenene) return "Zaúčtovanie je rovnaké ako v Pohode";
+  return program
+    ? "Zmenené vo Fakteri — v účtovníctve ({program}) kód prepíšte ručne."
+    : "Zmenené vo Fakteri — v Pohode kód prepíšte ručne, Pohoda doklad z XML neprepíše.";
+}
+
+/** Polia zaúčtovania vo formulári (detail, panel) — názvy ako v `Hodnoty`. */
+export type PoliaKodov = {
+  predkontacia?: string | null;
+  clenenie?: string | null;
+  kv?: string | null;
+  stredisko?: string | null;
+  cinnost?: string | null;
+  intPoznamka?: string | null;
+};
+
+const POLE_FORMULARA: Record<keyof PoliaKodov, PoleOpravy> = {
+  predkontacia: "pohoda_predkontacia",
+  clenenie: "pohoda_clenenie_dph",
+  kv: "kv_clenenie",
+  stredisko: "stredisko",
+  cinnost: "cinnost",
+  intPoznamka: "int_poznamka",
+};
+
+/**
+ * Čo z formulára poslať opravou zaúčtovania: len zmenené zaúčtovacie polia
+ * (kategória, číselný rad, dátumy sa opravou nemenia a zahodia sa).
+ */
+export function opravaZPoli(stare: PoliaKodov, nove: PoliaKodov): HodnotyOpravy {
+  const out: HodnotyOpravy = {};
+  const n = (v: unknown) => String(v ?? "").trim();
+  for (const [k, pole] of Object.entries(POLE_FORMULARA) as [keyof PoliaKodov, PoleOpravy][]) {
+    if (!(k in (nove ?? {})) || nove[k] === undefined) continue;
+    if (n(nove[k]) === n(stare?.[k])) continue;
+    out[pole] = n(nove[k]) || null;
+  }
+  return out;
+}
+
 /** Polia, ktoré „Opraviť zaúčtovanie“ odomkne — rovnaké v migrácii (`_polia_opravy`). */
 export const POLIA_OPRAVY = [
   "pohoda_predkontacia",
@@ -241,6 +325,38 @@ export function zmenyOpravy(povodne: unknown, riadok: Record<string, unknown>): 
   for (const pole of POLIA_OPRAVY) {
     const a = p[pole] == null || String(p[pole]).trim() === "" ? null : String(p[pole]).trim();
     if (a !== teraz[pole]) out.push({ pole, v_pohode: a, teraz: teraz[pole] });
+  }
+  return out;
+}
+
+/** Stĺpce zdroja kódu (`rucne`/`auto`) pri poli opravy — podľa tabuľky dokladu. */
+const ZDROJ_POLA: Record<DruhDokladuOdovzdania, Partial<Record<PoleOpravy, string>>> = {
+  faktura: {
+    pohoda_predkontacia: "predkontacia_zdroj",
+    pohoda_clenenie_dph: "clenenie_zdroj",
+    kv_clenenie: "kv_zdroj",
+  },
+  prijata: { pohoda_clenenie_dph: "clenenie_zdroj", kv_clenenie: "kv_zdroj" },
+  doklad: { pohoda_clenenie_dph: "clenenie_zdroj", kv_clenenie: "kv_zdroj" },
+};
+
+/**
+ * Zdroj kódov po „Opraviť zaúčtovanie“: čo účtovník zmenil, je ručná voľba.
+ * Spúšťač, ktorý pri zmene kódu zdroj vynuluje, odovzdaný doklad preskočí —
+ * opravené UDpdp by inak ostalo so zdrojom „auto“: výkazy DPH by ho brali
+ * ako odhad a automatika by ho po vrátení z Pohody prepísala späť na UD.
+ */
+export function zdrojePoOprave(
+  druh: DruhDokladuOdovzdania,
+  riadok: Record<string, unknown>,
+  zapis: HodnotyOpravy,
+): Record<string, "rucne"> {
+  const teraz = zauctovanieZRiadku(riadok);
+  const out: Record<string, "rucne"> = {};
+  for (const [pole, stlpec] of Object.entries(ZDROJ_POLA[druh] ?? {}) as [PoleOpravy, string][]) {
+    if (!(pole in zapis)) continue;
+    const nova = zapis[pole] ?? null;
+    if (nova && nova !== teraz[pole]) out[stlpec] = "rucne";
   }
   return out;
 }

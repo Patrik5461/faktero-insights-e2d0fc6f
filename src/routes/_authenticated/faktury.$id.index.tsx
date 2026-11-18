@@ -1391,6 +1391,10 @@ function InvoiceDetail() {
       inv={inv}
       onZmena={() => void load()}
       onStiahnut={handlePohodaExport}
+      // Uzavreté obdobie: odovzdanej faktúre sa kódy nemenia (ako v kompaktnom detaile).
+      zamknuteObdobie={Boolean(
+        ciselnikyFirmy.zamknuteDo && inv.issue_date && inv.issue_date <= ciselnikyFirmy.zamknuteDo,
+      )}
     />
   );
   // Kto faktúru vytvoril a zaúčtoval a kedy — nenápadný riadok nad históriou.

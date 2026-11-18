@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MAX_UCTOVNEJ_POZNAMKY } from "@/lib/faktero/uctovna-poznamka";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { History, Loader2, PencilLine } from "lucide-react";
+import { History, Loader2, Lock, PencilLine } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { lokalJazyka } from "@/lib/i18n/jazyk";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -16,6 +16,10 @@ import {
   stavOdovzdania,
   textCesty,
   textVarovaniaVratenia,
+  textPoOprave,
+  textZamkuZauctovania,
+  opravaZPoli,
+  type PoliaKodov,
   zauctovanieZRiadku,
   zmenyOpravy,
   type DruhDokladuOdovzdania,
@@ -240,6 +244,92 @@ type Hodnoty = Record<PoleOpravy, string>;
  * „Opraviť zaúčtovanie“ — okno so zaúčtovacími poľami odovzdaného dokladu.
  * Sumy, dátumy ani strany v ňom nie sú a server ich ani neprijme.
  */
+/**
+ * Kódy odovzdaného dokladu priamo v poli (P 18. 11.: „chcel som, aby to
+ * pribudlo do zoznamu výberu“). Výber sa uloží hneď tou istou opravou ako
+ * „Opraviť zaúčtovanie“ (`opravZauctovanieFn`) — doklad ostane odovzdaný,
+ * zmena sa zapíše do histórie a hláška povie, že v Pohode ju treba prepísať.
+ * Zamknutý doklad (`locked_at`) a uzavreté obdobie sa nemenia.
+ */
+export function useOpravaOdovzdaneho({
+  row,
+  druh,
+  program,
+  zamknuteObdobie,
+  onZmena,
+}: {
+  row: any;
+  druh: DruhDokladuOdovzdania;
+  program?: string | null;
+  zamknuteObdobie?: boolean;
+  onZmena: () => void;
+}) {
+  const { t } = useT();
+  const opravFn = useServerFn(opravZauctovanieFn);
+  const [ukladam, setUkladam] = useState(false);
+  const moze = Boolean(row?.exported_at) && !row?.locked_at && !zamknuteObdobie;
+  /** Uloží zmenené kódy; `false` = neuložilo sa (volajúci vráti pole späť). */
+  async function uloz(stare: PoliaKodov, nove: PoliaKodov): Promise<boolean> {
+    if (!moze) return false;
+    const hodnoty = opravaZPoli(stare, nove);
+    if (!Object.keys(hodnoty).length) return true;
+    setUkladam(true);
+    try {
+      const r = await opravFn({
+        data: { druh, company_id: row.company_id, id: row.id, hodnoty: hodnoty as any },
+      });
+      toast.success(t(textPoOprave(r.zmeny.length > 0, program), { program: program ?? "" }));
+      onZmena();
+      return true;
+    } catch (e: any) {
+      toast.error(t(e?.message ?? "Nepodarilo sa"));
+      return false;
+    } finally {
+      setUkladam(false);
+    }
+  }
+  return { moze, ukladam, uloz };
+}
+
+/** Veta nad poliami zaúčtovania odovzdaného dokladu (kompaktný aj klasický detail). */
+export function ZamokZauctovania({
+  row,
+  druh,
+  program,
+  zamknuteObdobie,
+}: {
+  row: any;
+  druh: DruhDokladuOdovzdania;
+  program?: string | null;
+  zamknuteObdobie?: boolean;
+}) {
+  const { t } = useT();
+  const mozeOpravit = Boolean(row?.exported_at) && !row?.locked_at && !zamknuteObdobie;
+  return (
+    <p
+      className="flex items-start gap-1.5 text-xs text-muted-foreground"
+      data-zamok-zauctovania={mozeOpravit ? "oprava" : "zamknute"}
+    >
+      {mozeOpravit ? (
+        <PencilLine className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      ) : (
+        <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
+      )}
+      <span>
+        {t(
+          textZamkuZauctovania({
+            program,
+            mozeOpravit,
+            doklad: druh === "doklad" ? "doklad" : "faktura",
+            obdobie: zamknuteObdobie,
+          }),
+          { program: program ?? "" },
+        )}
+      </span>
+    </p>
+  );
+}
+
 export function OpravitZauctovanie({
   row,
   druh,

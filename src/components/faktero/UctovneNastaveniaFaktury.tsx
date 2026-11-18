@@ -15,6 +15,7 @@ import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { prvePravidlo, type Pravidlo } from "@/lib/faktero/pravidla-uctovania";
 import { useKrajinaFirmyKontext, useT } from "@/lib/i18n/useT";
 import { KodPohody } from "./KodPohody";
+import { ZamokZauctovania } from "./OdovzdanieDokladu";
 import { MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "./PoleDokladu";
 import type { Navrhy } from "./ZauctovaniePanel";
 
@@ -48,7 +49,14 @@ export function UctovneNastaveniaFaktury({
   kvDoklad,
   ulozena,
   predvyplnitClenenie,
+  odovzdana,
 }: {
+  /**
+   * Faktúra je odovzdaná do Pohody: kódy sa po výbere uložia hneď opravou
+   * zaúčtovania (volajúci v `onKody`); zamknutá či v uzavretom období ich
+   * nemení. Veta nad poľami to povie.
+   */
+  odovzdana?: { program?: string | null; zamknuteObdobie?: boolean; row: any };
   companyId: string | null;
   typ: string;
   odberatel: {
@@ -183,6 +191,10 @@ export function UctovneNastaveniaFaktury({
         ? ""
         : pravidlo?.kv_clenenie || "",
   };
+  // Odovzdaná faktúra, ktorú oprava zaúčtovania nesmie meniť (zamknutá, uzavreté obdobie).
+  const kodyZamknute = Boolean(
+    odovzdana && (odovzdana.row?.locked_at || odovzdana.zamknuteObdobie || !odovzdana.row?.exported_at),
+  );
   // Zálohová faktúra sa neúčtuje — členenie DPH nedostane (uctovny-doklad.ts).
   const uctuje = isAccountingDocument(typ);
 
@@ -267,6 +279,17 @@ export function UctovneNastaveniaFaktury({
       */}
       {bezKv && !uctuje ? null : (
         <div className="px-5 pb-5" data-kv-faktury="" data-clenenie-faktury="">
+          {odovzdana ? (
+            <div className="mb-3">
+              <ZamokZauctovania
+                row={odovzdana.row}
+                druh="faktura"
+                program={odovzdana.program}
+                zamknuteObdobie={odovzdana.zamknuteObdobie}
+              />
+            </div>
+          ) : null}
+          <fieldset disabled={kodyZamknute} className="min-w-0 disabled:opacity-70">
           <MriezkaDokladu>
             {uctuje ? (
               <PoleDokladu
@@ -324,6 +347,7 @@ export function UctovneNastaveniaFaktury({
             </PoleDokladu>
             )}
           </MriezkaDokladu>
+          </fieldset>
         </div>
       )}
       {otvorene && (
@@ -368,7 +392,7 @@ export function UctovneNastaveniaFaktury({
               htmlFor="predkontacia-faktury"
               className={bunka.cela}
             >
-              <div id="predkontacia-faktury" className="min-w-0">
+              <fieldset id="predkontacia-faktury" disabled={kodyZamknute} className="min-w-0 disabled:opacity-70">
                 <KodPohody
                   odkazNaCiselnik
                   ariaLabel="Predkontácia"
@@ -379,7 +403,7 @@ export function UctovneNastaveniaFaktury({
                   className={VSTUP_DOKLADU}
                   vyber
                 />
-              </div>
+              </fieldset>
             </PoleDokladu>
           </MriezkaDokladu>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

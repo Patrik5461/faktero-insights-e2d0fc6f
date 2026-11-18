@@ -38,7 +38,13 @@ import { uplatniPredlohu } from "@/lib/faktero/predlohy-uctovania";
 import { PoliaZauctovania, type Navrhy } from "./ZauctovaniePanel";
 import type { OznaceniaNavrhu } from "./NavrhAi";
 import { NapovedaPredkontacii, SekciaZauctovania } from "./DetailDokladu";
-import { HistoriaOdovzdania, OpravitZauctovanie, useVarovanieVratenia } from "./OdovzdanieDokladu";
+import {
+  HistoriaOdovzdania,
+  OpravitZauctovanie,
+  ZamokZauctovania,
+  useOpravaOdovzdaneho,
+  useVarovanieVratenia,
+} from "./OdovzdanieDokladu";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujCislo } from "@/lib/faktero/mena";
 import { isAccountingDocument } from "@/lib/faktero/uctovny-doklad";
@@ -86,8 +92,11 @@ export function useZauctovanieVystavenej({
   onZmena,
   onStiahnut,
   onVPohode,
+  zamknuteObdobie,
 }: {
   inv: any;
+  /** Faktúra je v uzavretom období — odovzdanej sa kódy nemenia. */
+  zamknuteObdobie?: boolean;
   onZmena: () => void;
   onStiahnut: () => Promise<void> | void;
   /** Odovzdanie do Pohody (aj s číslom). */
@@ -203,6 +212,32 @@ export function useZauctovanieVystavenej({
   ]);
 
   const vPohode = stav?.vPohode ?? null;
+  /*
+    Odovzdaná faktúra: kódy sa menia rovno v poli a uložia sa opravou
+    zaúčtovania (P 18. 11., UDpdp na bager expres 20260012) — faktúra ostane
+    v Pohode. Zamknutá či v uzavretom období ostáva len na čítanie.
+  */
+  const oprava = useOpravaOdovzdaneho({
+    row: inv,
+    druh: "faktura",
+    program: vPohode?.program,
+    zamknuteObdobie,
+    onZmena: () => {
+      onZmena();
+      void obnov().catch(() => {});
+    },
+  });
+  const opravaOdovzdanej = Boolean(vPohode) && oprava.moze;
+  /** Zmena kódov z polí: odovzdaná sa hneď uloží opravou, inak len do formulára. */
+  function zmenKody(x: typeof h) {
+    if (!vPohode) return setH(x);
+    if (!opravaOdovzdanej) return;
+    const stare = h;
+    setH(x);
+    void oprava.uloz(stare, x).then((ok) => {
+      if (!ok) setH(stare);
+    });
+  }
   // Zálohová faktúra sa neúčtuje: bez polí zaúčtovania, len export do Pohody.
   const neuctuje = !isAccountingDocument(inv.type);
   const zauctovana = !neuctuje && Boolean(inv.zauctovane_at);
@@ -633,12 +668,14 @@ export function useZauctovanieVystavenej({
     vPohode,
     neuctuje,
     zauctovana,
-    busy,
+    busy: busy || oprava.ukladam,
     uloz,
     stiahnut,
     vratitZPohody,
     zrusZauctovanie,
     obnov,
+    zmenKody,
+    opravaOdovzdanej,
     vyberPravidla,
     poPolozkachANapoveda,
     prehladRozuctovania,
@@ -667,10 +704,13 @@ export function ZauctovanieVystavenejPanel({
   inv,
   onZmena,
   onStiahnut,
+  zamknuteObdobie,
 }: {
   inv: any;
   onZmena: () => void;
   onStiahnut: () => Promise<void> | void;
+  /** Faktúra v uzavretom období — odovzdanej sa kódy nemenia. */
+  zamknuteObdobie?: boolean;
 }) {
   const { t } = useT();
   const {
@@ -695,7 +735,9 @@ export function ZauctovanieVystavenejPanel({
     vyriesene,
     oznacenia,
     chybaPredkontaciaZalohy,
-  } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut });
+    zmenKody,
+    opravaOdovzdanej,
+  } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut, zamknuteObdobie });
   // Koncept sa nezaúčtuje.
   if (inv.status === "draft") return null;
 
@@ -749,6 +791,41 @@ export function ZauctovanieVystavenejPanel({
         <>
           {neuctuje ? (
             <NeuctujeSaInfo className="mt-3" />
+          ) : opravaOdovzdanej ? (
+            /*
+              Odovzdaná faktúra: kódy sa vyberajú rovno v poliach a uložia sa
+              opravou zaúčtovania — faktúra ostane v Pohode (P 18. 11., UDpdp).
+            */
+            <div className="mt-3 space-y-3">
+              <ZamokZauctovania
+                row={inv}
+                druh="faktura"
+                program={vPohode.program}
+                zamknuteObdobie={zamknuteObdobie}
+              />
+              <PoliaZauctovania
+                navrhy={navrhy}
+                hodnoty={
+                  de
+                    ? { predkontacia: h.predkontacia, clenenie: h.clenenie, stredisko: h.stredisko, cinnost: h.cinnost }
+                    : { predkontacia: h.predkontacia, clenenie: h.clenenie, kv: h.kv, stredisko: h.stredisko, cinnost: h.cinnost }
+                }
+                setHodnoty={(x) =>
+                  zmenKody({
+                    ...h,
+                    predkontacia: x.predkontacia,
+                    clenenie: x.clenenie,
+                    kv: x.kv ?? h.kv,
+                    stredisko: x.stredisko ?? "",
+                    cinnost: x.cinnost ?? "",
+                  })
+                }
+                kvMoznosti={KV_VYDANE}
+                kvAuto={kvAuto}
+                popisPredkontacie={de ? "Predkontácia (účet DATEV)" : "Predkontácia (Pohoda)"}
+                priklady={{ predkontacia: t("napr. 3Fv"), clenenie: t("napr. UD") }}
+              />
+            </div>
           ) : (
             <p className="mt-3">
               {t("Predkontácia")}{" "}
@@ -767,6 +844,9 @@ export function ZauctovanieVystavenejPanel({
                     program: vPohode.program,
                   })
                 : t("Faktúra je v Pohode.")}
+              {zamknuteObdobie && !inv.locked_at
+                ? ` ${t("Obdobie je uzavreté — zaúčtovanie sa už nemení.")}`
+                : null}
             </p>
           )}
           {neuctuje ? null : prehladRozuctovania}
@@ -951,6 +1031,8 @@ export function PoliaZauctovaniaVystavenej({
     vyberPravidla,
     poPolozkachANapoveda,
     prehladRozuctovania,
+    zmenKody,
+    opravaOdovzdanej,
   } = z;
   if (inv.status === "draft")
     return (
@@ -961,14 +1043,24 @@ export function PoliaZauctovaniaVystavenej({
   return (
     <>
       {vPohode ? (
-        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-          <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
-          {vPohode.program
-            ? t("Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.", {
-                program: vPohode.program,
-              })
-            : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
-        </p>
+        neuctuje ? (
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
+            {vPohode.program
+              ? t("Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.", {
+                  program: vPohode.program,
+                })
+              : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")}
+          </p>
+        ) : (
+          // Kódy odovzdanej faktúry sa menia rovno v poliach (oprava zaúčtovania) — veta to povie.
+          <ZamokZauctovania
+            row={inv}
+            druh="faktura"
+            program={vPohode.program}
+            zamknuteObdobie={zamknuteObdobie}
+          />
+        )
       ) : null}
       <HistoriaOdovzdania
         row={inv}
@@ -995,7 +1087,10 @@ export function PoliaZauctovaniaVystavenej({
         />
       ) : null}
       {neuctuje ? null : (
-        <fieldset disabled={Boolean(vPohode)} className="min-w-0 space-y-3.5 disabled:opacity-70">
+        <fieldset
+          disabled={Boolean(vPohode) && !opravaOdovzdanej}
+          className="min-w-0 space-y-3.5 disabled:opacity-70"
+        >
           {z.chybaPredkontaciaZalohy && !vPohode ? <UpozorneniePredkontacieZalohy /> : null}
           <PoliaZauctovania
             navrhy={navrhy}
@@ -1007,7 +1102,7 @@ export function PoliaZauctovaniaVystavenej({
               cinnost: h.cinnost,
             }}
             setHodnoty={(x) =>
-              setH({
+              zmenKody({
                 ...h,
                 predkontacia: x.predkontacia,
                 clenenie: x.clenenie,

@@ -44,9 +44,12 @@ import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { moznostiKv } from "@/lib/faktero/ciselnik-obrazok";
 import { kvAutoPrijatej, textKv, textKvAuto } from "@/lib/faktero/kv-auto";
 import { KodPohody } from "./KodPohody";
+import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import {
   HistoriaOdovzdania,
   OpravitZauctovanie,
+  ZamokZauctovania,
+  useOpravaOdovzdaneho,
   useProgramOdovzdania,
   useVarovanieVratenia,
 } from "./OdovzdanieDokladu";
@@ -759,10 +762,35 @@ export function ZauctovaniePanel({
     };
   }, [row]);
   const zamknutaUprava = odovzdana || Boolean(row.locked_at);
+  /*
+    Odovzdaná faktúra: kódy (predkontácia, členenie DPH a KV, stredisko,
+    činnosť) sa menia rovno v poli a uložia sa opravou zaúčtovania — faktúra
+    ostane v Pohode (P 18. 11.). Zamknutá či v uzavretom období nie.
+  */
+  const { zamknuteDo } = useCiselnikyDokladov(row.company_id, null, false);
+  const datumObdobia = String(row.datum_dph || row.delivery_date || row.issue_date || "");
+  const zamknuteObdobie = Boolean(zamknuteDo && datumObdobia && datumObdobia <= zamknuteDo);
+  const oprava = useOpravaOdovzdaneho({
+    row,
+    druh: "prijata",
+    program,
+    zamknuteObdobie,
+    onZmena,
+  });
+  const opravaOdovzdanej = odovzdana && oprava.moze;
+  /** Klasický detail: odovzdanej faktúre sa zvolený kód uloží hneď (inak tlačidlom). */
+  function zmenKod(x: Hodnoty) {
+    if (!opravaOdovzdanej || kompaktne) return setH(x);
+    const stare = h;
+    setH(x);
+    void oprava.uloz(stare, x).then((ok) => {
+      if (!ok) setH(stare);
+    });
+  }
   const [ukladam, setUkladam] = useState(false);
   const [ulozeneOk, setUlozeneOk] = useState(false);
   useEffect(() => {
-    if (!kompaktne || zamknutaUprava) return;
+    if (!kompaktne || (zamknutaUprava && !opravaOdovzdanej)) return;
     const zmena: Record<string, string> = {};
     for (const k of Object.keys(h) as (keyof Hodnoty)[]) {
       const v = String(h[k] ?? "");
@@ -773,6 +801,13 @@ export function ZauctovaniePanel({
     }
     if (!Object.keys(zmena).length) return;
     const casovac = setTimeout(async () => {
+      if (opravaOdovzdanej) {
+        // Odovzdaná: len zaúčtovacie polia, opravou zaúčtovania (kategória a rad sa nemenia).
+        const ok = await oprava.uloz(ulozeneRef.current, h);
+        if (ok) ulozeneRef.current = { ...ulozeneRef.current, ...zmena };
+        else setH(ulozeneRef.current);
+        return;
+      }
       setUkladam(true);
       try {
         const r = await zauctuj({
@@ -792,7 +827,7 @@ export function ZauctovaniePanel({
     }, 700);
     return () => clearTimeout(casovac);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [h, kompaktne, zamknutaUprava]);
+  }, [h, kompaktne, zamknutaUprava, opravaOdovzdanej]);
 
   /*
     Dátum daňovej povinnosti (`datum_dph`, 18. 11. 2026 — predtým tu bol
@@ -935,21 +970,34 @@ export function ZauctovaniePanel({
             ) : null}
           </div>
           {zamknutaUprava ? (
-            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
-              {odovzdana
-                ? program
-                  ? t(
-                      "Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.",
-                      { program },
-                    )
-                  : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")
-                : t("Faktúra je zamknutá proti úpravám — najprv ju odomknite.")}
-            </p>
+            odovzdana && !row.locked_at ? (
+              // Kódy odovzdanej faktúry sa menia cez „Opraviť zaúčtovanie“ — tlačidlo hneď pri vete.
+              <ZamokZauctovania
+                row={row}
+                druh="prijata"
+                program={program}
+                zamknuteObdobie={zamknuteObdobie}
+              />
+            ) : (
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label={t("Len na čítanie")} />
+                {odovzdana
+                  ? program
+                    ? t(
+                        "Faktúra je odovzdaná do účtovníctva ({program}) — zmeniť sa dá až po vrátení.",
+                        { program },
+                      )
+                    : t("Faktúra je odovzdaná do Pohody — zmeniť sa dá až po vrátení z Pohody.")
+                  : t("Faktúra je zamknutá proti úpravám — najprv ju odomknite.")}
+              </p>
+            )
           ) : null}
           <HistoriaOdovzdania row={row} druh="prijata" onZmena={onZmena} />
           <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
-          <fieldset disabled={zamknutaUprava} className="min-w-0 space-y-3.5 disabled:opacity-70">
+          <fieldset
+            disabled={zamknutaUprava && !opravaOdovzdanej}
+            className="min-w-0 space-y-3.5 disabled:opacity-70"
+          >
             <PoliaZauctovania
               navrhy={navrhy}
               oznacenia={oznacenia}
@@ -958,22 +1006,23 @@ export function ZauctovaniePanel({
               hodnoty={{
                 predkontacia: h.predkontacia,
                 clenenie: h.clenenie,
-                kategoria: h.kategoria,
+                // Odovzdaná: kategória a rad sa opravou nemenia — nekreslia sa ako voľba.
+                kategoria: opravaOdovzdanej ? undefined : h.kategoria,
                 kv: h.kv ?? "",
                 stredisko: h.stredisko ?? "",
                 cinnost: h.cinnost ?? "",
-                rad: h.rad ?? "",
+                rad: opravaOdovzdanej ? undefined : (h.rad ?? ""),
               }}
               setHodnoty={(x) =>
                 setH({
                   ...h,
                   predkontacia: x.predkontacia,
                   clenenie: x.clenenie,
-                  kategoria: x.kategoria ?? "",
+                  kategoria: x.kategoria ?? h.kategoria,
                   kv: x.kv ?? "",
                   stredisko: x.stredisko ?? "",
                   cinnost: x.cinnost ?? "",
-                  rad: x.rad ?? "",
+                  rad: x.rad ?? h.rad,
                 })
               }
             />
@@ -982,6 +1031,7 @@ export function ZauctovaniePanel({
                 <input
                   type="date"
                   value={datumDphPanelu}
+                  disabled={zamknutaUprava}
                   onChange={(e) => void ulozStlpec({ datum_dph: e.target.value || null })}
                   className={`${ramik} border-input`}
                 />
@@ -989,6 +1039,7 @@ export function ZauctovaniePanel({
               <Pole popis="Typ platby">
                 <select
                   value={row.payment_method ?? "prevod"}
+                  disabled={zamknutaUprava}
                   onChange={(e) => void ulozStlpec({ payment_method: e.target.value })}
                   className={`${ramik} border-input`}
                 >
@@ -1113,7 +1164,16 @@ export function ZauctovaniePanel({
             </span>
           )}
         </div>
-        {zamknutaUprava ? (
+        {zamknutaUprava && odovzdana && !row.locked_at ? (
+          <div className="mt-1">
+            <ZamokZauctovania
+              row={row}
+              druh="prijata"
+              program={program}
+              zamknuteObdobie={zamknuteObdobie}
+            />
+          </div>
+        ) : zamknutaUprava ? (
           <p className="mt-1 text-xs text-muted-foreground">
             {odovzdana
               ? program
@@ -1148,7 +1208,7 @@ export function ZauctovaniePanel({
         </div>
 
         <fieldset
-          disabled={zamknutaUprava}
+          disabled={zamknutaUprava && !opravaOdovzdanej}
           className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0"
         >
           <label className="block">
@@ -1156,6 +1216,7 @@ export function ZauctovaniePanel({
             <input
               type="date"
               value={datumDphPanelu}
+              disabled={zamknutaUprava}
               onChange={(e) => void ulozStlpec({ datum_dph: e.target.value || null })}
               className={vstupK}
             />
@@ -1164,6 +1225,7 @@ export function ZauctovaniePanel({
             <span className={popisK}>{t("Typ platby")}</span>
             <select
               value={row.payment_method ?? "prevod"}
+              disabled={zamknutaUprava}
               onChange={(e) => void ulozStlpec({ payment_method: e.target.value })}
               className={vstupK}
             >
@@ -1190,7 +1252,7 @@ export function ZauctovaniePanel({
                 navrhy?.predvolenaPredkontacia ??
                 t("napr. 1Fp")
               }
-              onChange={(v) => setH({ ...h, predkontacia: v })}
+              onChange={(v) => zmenKod({ ...h, predkontacia: v })}
               moznosti={zoradPodlaDokladu(navrhy?.predkontacie ?? [], {
                 typ: "faktura",
                 platba: row.payment_method,
@@ -1212,7 +1274,7 @@ export function ZauctovaniePanel({
                 navrhy?.predvoleneClenenie ??
                 t("napr. PD")
               }
-              onChange={(v) => setH({ ...h, clenenie: v })}
+              onChange={(v) => zmenKod({ ...h, clenenie: v })}
               moznosti={navrhy?.clenenia ?? []}
               className={vstupK}
               vyber
@@ -1225,7 +1287,7 @@ export function ZauctovaniePanel({
             </span>
             <select
               value={h.kv ?? ""}
-              onChange={(e) => setH({ ...h, kv: e.target.value })}
+              onChange={(e) => zmenKod({ ...h, kv: e.target.value })}
               className={vstupK}
             >
               <option value="">{textKvAuto(t, kvAuto)}</option>
@@ -1468,8 +1530,48 @@ export function ZauctovaniePanel({
       <AutoZauctovanieOdznak typ="prijata" row={row} onZmena={onZmena} />
 
       <div className="mt-3">
+        {opravaOdovzdanej ? (
+          /*
+            Odovzdaná faktúra: kódy sa vyberajú rovno v poliach a uložia sa
+            opravou zaúčtovania — faktúra ostane v Pohode (P 18. 11.).
+          */
+          <div className="space-y-3">
+            <ZamokZauctovania
+              row={row}
+              druh="prijata"
+              program={program}
+              zamknuteObdobie={zamknuteObdobie}
+            />
+            <PoliaZauctovania
+              navrhy={navrhy}
+              hodnoty={{
+                predkontacia: h.predkontacia,
+                clenenie: h.clenenie,
+                kv: h.kv ?? "",
+                stredisko: h.stredisko ?? "",
+                cinnost: h.cinnost ?? "",
+              }}
+              setHodnoty={(x) =>
+                zmenKod({
+                  ...h,
+                  predkontacia: x.predkontacia,
+                  clenenie: x.clenenie,
+                  kv: x.kv ?? "",
+                  stredisko: x.stredisko ?? "",
+                  cinnost: x.cinnost ?? "",
+                })
+              }
+              doklad={{ typ: "faktura", platba: row.payment_method }}
+              kvAuto={kvAutoPrijatej(row, {
+                predvolene: navrhy?.predvoleneKv,
+                clenenie: h.clenenie || navrhy?.predvoleneClenenie,
+              })}
+            />
+          </div>
+        ) : null}
         {odovzdana ? (
           <>
+            {opravaOdovzdanej ? null : (
             <p>
               {t("Predkontácia")}{" "}
               <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,{" "}
@@ -1494,6 +1596,7 @@ export function ZauctovaniePanel({
                 ? t("Faktúra je odovzdaná do účtovníctva ({program}).", { program })
                 : t("Faktúra je odovzdaná do Pohody.")}
             </p>
+            )}
             <div className="mt-3 flex flex-wrap gap-2">
               {program ? null : (
                 <button

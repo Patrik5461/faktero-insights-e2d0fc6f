@@ -10,7 +10,11 @@ import {
   stavOdovzdania,
   textOdznaku,
   textVarovaniaVratenia,
+  opravaZPoli,
+  textPoOprave,
+  textZamkuZauctovania,
   zapisOpravy,
+  zdrojePoOprave,
   zmenyOpravy,
 } from "./stav-odovzdania";
 import {
@@ -274,5 +278,54 @@ describe("textVarovaniaVratenia pri inom programe (test 30. 10.)", () => {
   });
   it("bez programu ostáva text pre Pohodu", () => {
     expect(textVarovaniaVratenia("faktura", "konektor", null)).toMatch(/^Vrátiť faktúru z Pohody/);
+  });
+});
+
+/*
+  P (18. 11.): pri odovzdanej vystavenej faktúre (bager expres 20260012,
+  prenesenie § 69 ods. 12) sa nedalo vybrať UDpdp — pole Členenie DPH bolo
+  zamknuté. Teraz sa kód vyberie rovno v poli a uloží opravou zaúčtovania.
+*/
+describe("odovzdaná faktúra — zmena členenia DPH (UDpdp)", () => {
+  it("veta: výber sa uloží hneď, faktúra ostane v Pohode", () => {
+    const t = textZamkuZauctovania({ mozeOpravit: true });
+    expect(t).toContain("uloží hneď");
+    expect(t).toContain("členenia DPH");
+    expect(textZamkuZauctovania({ mozeOpravit: true, program: "Money S3" })).toContain("{program}");
+    expect(textZamkuZauctovania({ mozeOpravit: true, doklad: "doklad" })).toMatch(/^Doklad/);
+  });
+  it("zamknutý doklad či uzavreté obdobie — len na čítanie", () => {
+    expect(textZamkuZauctovania({ mozeOpravit: false })).toContain("po vrátení z Pohody");
+    expect(textZamkuZauctovania({ mozeOpravit: false, obdobie: true })).toContain("obdobie je uzavreté");
+  });
+  it("hláška po uložení: v Pohode prepísať ručne", () => {
+    expect(textPoOprave(true)).toContain("v Pohode kód prepíšte ručne");
+    expect(textPoOprave(true, "Money S3")).toContain("{program}");
+    expect(textPoOprave(false)).toBe("Zaúčtovanie je rovnaké ako v Pohode");
+  });
+  it("z formulára ide opravou len zmenené zaúčtovacie pole", () => {
+    const stare = { predkontacia: "3Fv", clenenie: "", kv: "A1", stredisko: "", cinnost: "" };
+    expect(opravaZPoli(stare, { ...stare, clenenie: "UDpdp" })).toEqual({ pohoda_clenenie_dph: "UDpdp" });
+    expect(opravaZPoli(stare, { ...stare, kv: "" })).toEqual({ kv_clenenie: null });
+    expect(opravaZPoli(stare, stare)).toEqual({});
+    // Kategória či rad sa opravou nemenia — zahodia sa.
+    expect(opravaZPoli(stare, { ...stare, kategoria: "x", rad: "y" } as any)).toEqual({});
+    // Pole, ktoré formulár nemá (undefined), sa neposiela.
+    expect(opravaZPoli(stare, { clenenie: "UDpdp" })).toEqual({ pohoda_clenenie_dph: "UDpdp" });
+  });
+  it("opravené UDpdp je ručná voľba, nie „auto“ (výkazy DPH, automatika po vrátení)", () => {
+    const riadok = { pohoda_clenenie_dph: "UD", clenenie_zdroj: "auto", kv_clenenie: "A1", kv_zdroj: "auto" };
+    const zapis = zapisOpravy(opravaZPoli({ clenenie: "UD", kv: "A1" }, { clenenie: "UDpdp", kv: "A1" }));
+    expect(zdrojePoOprave("faktura", riadok, zapis)).toEqual({ clenenie_zdroj: "rucne" });
+  });
+  it("prázdne pôvodné členenie (bager 20260012) → UDpdp je ručné", () => {
+    const zapis = zapisOpravy({ pohoda_clenenie_dph: "UDpdp" });
+    expect(zdrojePoOprave("faktura", { pohoda_clenenie_dph: null }, zapis)).toEqual({ clenenie_zdroj: "rucne" });
+  });
+  it("nezmenené či vymazané pole zdroj nemení; predkontácia má zdroj len na vystavenej", () => {
+    expect(zdrojePoOprave("faktura", { pohoda_clenenie_dph: "UDpdp" }, zapisOpravy({ pohoda_clenenie_dph: "UDpdp" }))).toEqual({});
+    expect(zdrojePoOprave("faktura", { pohoda_clenenie_dph: "UD" }, zapisOpravy({ pohoda_clenenie_dph: "" }))).toEqual({});
+    expect(zdrojePoOprave("faktura", {}, zapisOpravy({ pohoda_predkontacia: "3Fv" }))).toEqual({ predkontacia_zdroj: "rucne" });
+    expect(zdrojePoOprave("prijata", {}, zapisOpravy({ pohoda_predkontacia: "1Fp", pohoda_clenenie_dph: "PDpdp" }))).toEqual({ clenenie_zdroj: "rucne" });
   });
 });
