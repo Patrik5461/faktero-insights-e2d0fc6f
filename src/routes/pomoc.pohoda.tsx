@@ -355,6 +355,34 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
+          <strong>Text vydanej faktúry.</strong> Do textu v hlavičke faktúry v Pohode ide text
+          predkontácie z vášho číselníka (napríklad „Tržby za služby“); keď predkontácia text nemá,
+          ide tam to, čo fakturujete (text nad položkami). Samotný text faktúry z Faktera nájdete v
+          Pohode ako prvé <strong>textové položky</strong> faktúry — nič sa neodreže, dlhý text sa
+          rozdelí na viac riadkov.
+        </p>
+        <p>
+          <strong>Bločky</strong> idú do Pohody predvolene po položkách. Bloček bez položiek dostane položky
+          podľa rozpisu DPH (jedna na každú sadzbu). Zaokrúhlenie hotovosti na 5 centov ide ako
+          samostatná položka <strong>Centové zaokrúhlenie</strong> — bez DPH (nepodlieha DPH) a s KV
+          „nezahŕňať“, tak ako ho píše účtovníčka. Keď máte nastavenú predkontáciu pre zaokrúhlenie
+          (pozri nižšie), položka sa volá Zaokrúhlenie a dostane túto predkontáciu.
+        </p>
+        <p>
+          <strong>Prijatý daňový doklad k prijatej platbe</strong> (dodávateľ vám ho pošle po
+          zaplatení zálohy) ide ako <strong>interný doklad</strong> s členením DPH pre prijaté
+          plnenia (PD) a KV B.2, s dátumom odpočtu podľa dňa platby. Potrebuje vlastnú predkontáciu
+          (napríklad 343/314) — viac v manuáli{" "}
+          <Link to="/pomoc/prijate-faktury" hash="prijate-danove">
+            Prijaté faktúry
+          </Link>
+          .
+        </p>
+        <p>
+          Firma, ktorá <strong>nie je platiteľ DPH</strong>, posiela prijaté doklady bez rozpisu DPH
+          — s cenou „bez DPH“, členením PN a bez kontrolného výkazu. Celá suma je náklad.
+        </p>
+        <p>
           Pri priamom prepojení sa navyše k faktúre pripne <strong>odkaz na jej PDF</strong> — v
           Pohode ho účtovníčka nájde v záložke Dokumenty a otvorí jedným kliknutím. Dá sa vypnúť.
         </p>

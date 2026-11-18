@@ -122,6 +122,11 @@ const sections: HelpSection[] = [
           namiesto „XML pre Pohodu“.
         </p>
         <p>
+          Firma, ktorá <strong>nie je platiteľ DPH</strong>, posiela prijaté doklady bez rozpisu DPH
+          — celá suma ide so sadzbou 0 % ako náklad (Omega, Money S3, ABRA Flexi, MRP, DATEV aj
+          súpiska CSV). Do Pohody idú s cenou „bez DPH“ a členením PN.
+        </p>
+        <p>
           Nemecká firma vyváža zaúčtované doklady do <strong>DATEV</strong> (Buchungsstapel) —
           nastavenie a import u poradcu popisuje manuál{" "}
           <Link to="/pomoc/nemecko">Firmy v Nemecku → Export do DATEV</Link>.

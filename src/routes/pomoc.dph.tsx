@@ -102,6 +102,21 @@ const sections: HelpSection[] = [
           Samotné IČ DPH o platiteľstve nerozhoduje — registrácia podľa § 7 alebo § 7a ho má tiež.
           Prehľad DPH v tomto prípade nepotrebujete, súhrnný výkaz pri § 7a áno.
         </p>
+        <p>
+          <strong>Prijaté doklady neplatiteľa.</strong> Neplatiteľ si DPH neodpočítava — celá suma
+          bločku či prijatej faktúry je náklad. Faktero preto pri prijatých dokladoch odpočet DPH
+          nikdy nezapne, rozpis DPH od vás nepýta a kontrola sadzieb doklad nezastaví; namiesto
+          rozpisu uvidíte vetu „Neplatiteľ DPH — DPH sa neodpočítava, celá suma ide do nákladov.“
+          Prečítaná DPH sa nezahodí, len sa neodpočítava. Výnimkou je prenesenie daňovej
+          povinnosti (napríklad služba od zahraničného dodávateľa) — tú odvádza aj osoba
+          registrovaná podľa § 7 alebo § 7a, takže tam sa rozpis vypĺňa ďalej.
+        </p>
+        <p>
+          Do účtovníctva idú prijaté doklady neplatiteľa <strong>bez rozpisu DPH</strong>: do Pohody
+          s cenou „bez DPH“ a členením DPH PN, bez kontrolného výkazu; do Omegy, Money S3, ABRA Flexi,
+          MRP, DATEV a súpisky CSV so sadzbou 0 %. Pri eFaktúre neplatiteľ IČ DPH mať nemusí — skóre
+          pripravenosti mu ho nepočíta ako nedostatok.
+        </p>
       </>
     ),
   },

@@ -63,8 +63,9 @@ const sections: HelpSection[] = [
         <ol>
           <li>Kliknite na doklad — vľavo uvidíte samotný doklad, vpravo vyťažené údaje.</li>
           <li>
-            Vyberte <strong>druh dokladu</strong>: prijatá faktúra, zálohová faktúra, dobropis,
-            bloček alebo iný doklad (zmluva, list, predpis).
+            Skontrolujte <strong>druh dokladu</strong>: prijatá faktúra, zálohová faktúra, daňový
+            doklad k prijatej platbe, dobropis, bloček, iný doklad (zmluva, list, predpis), vydaná
+            faktúra alebo doklad o úhrade. Faktero ho predvyplní samo, zmeniť ho môžete kedykoľvek.
           </li>
           <li>
             Skontrolujte údaje. Povinné polia, ktoré chýbajú, sú <strong>červené</strong> — pri
@@ -96,9 +97,59 @@ const sections: HelpSection[] = [
           <strong>Faktúra je už uhradená</strong>.
         </p>
         <p>
+          <strong>Ako Faktero určí druh dokladu.</strong> Neriadi sa len tým, čo odhadne AI, ale aj
+          znakmi, ktoré sa nedajú pomýliť: kód eKasy na bločku, číslo faktúry so splatnosťou a
+          IBAN-om či VS, nadpis „Dobropis“ alebo „Daňový doklad k prijatej platbe“. Keď je
+          dodávateľom na doklade vaša firma alebo je na ňom ako príjemca platby váš účet, ide o vašu
+          vydanú faktúru. Bloček s nápisom „Úhrada faktúry“ je doklad o úhrade. Keď sa druh zdá iný,
+          než aký je vybraný, nad údajmi sa ukáže upozornenie s tlačidlom na zmenu (napríklad{" "}
+          <strong>Zmeniť na Doklad o úhrade</strong> alebo <strong>Zmeniť na Vydaná faktúra</strong>
+          ).
+        </p>
+        <ul>
+          <li>
+            <strong>Daňový doklad k prijatej platbe</strong> vám dodávateľ pošle, keď ste mu
+            zaplatili zálohu. Neplatí sa (záloha je už zaplatená), ale odpočítate si z neho DPH.
+            Pri ňom vyberiete aj <strong>Prijatú zálohovú faktúru</strong>, ku ktorej patrí. Po
+            vytvorení je v <strong>Fakturácia → Prijaté daňové doklady</strong> — viac v manuáli{" "}
+            <Link to="/pomoc/prijate-faktury" hash="prijate-danove">
+              Prijaté faktúry
+            </Link>
+            .
+          </li>
+          <li>
+            <strong>Vydaná faktúra</strong> je vaša vlastná faktúra (kópia, preposlaný e-mail,
+            prechod z iného programu). Nič sa z nej nezaúčtuje. Faktero nájde vystavenú faktúru s
+            rovnakým číslom a tlačidlom <strong>Priradiť k vystavenej faktúre</strong> jej súbor
+            priložíte. Keď vo Fakturácii takú faktúru nemáte (vystavili ste ju inde), vytvoríte ju
+            tlačidlom <strong>Vytvoriť vystavenú faktúru z dokladu</strong>.
+          </li>
+          <li>
+            <strong>Doklad o úhrade</strong> len potvrdzuje, že ste faktúru zaplatili — napríklad
+            bloček „Úhrada faktúry“ z Metra alebo potvrdenie platby kartou. Nie je to nákup a DPH sa
+            z neho neúčtuje. Vyberte prijatú faktúru (Faktero ponúkne tú s rovnakým číslom) a
+            kliknite na <strong>Priradiť k faktúre ako doklad o úhrade</strong>: súbor sa priloží k
+            faktúre a nezaplatená faktúra sa označí ako uhradená. Keď faktúra vo Fakteri ešte nie je,
+            použite <strong>Vytvoriť faktúru z dokladu a pripojiť úhradu</strong>. Keď suma nesedí,
+            Faktero sa pred priradením opýta.
+          </li>
+        </ul>
+        <p>
           <strong>Hromadná úprava:</strong> v zozname nespracovaných dokladov označte viac dokladov
           a nastavte im naraz druh, zákazku, predkontáciu, členenie DPH, stredisko alebo činnosť,
           prípadne ich presuňte do koša. Prázdne pole sa nemení.
+        </p>
+        <p>
+          <strong>Hromadné akcie:</strong> zaškrtnúť sa dajú aj bločky čakajúce v zozname. Pre
+          označené doklady sú tlačidlá <strong>Vytvoriť doklady</strong> (pri bločkoch{" "}
+          <strong>Spracovať bločky</strong>, pri oboch <strong>Vytvoriť a spracovať</strong>) — doklady
+          vzniknú z prečítaných údajov rovnako ako tlačidlom Vytvoriť v detaile;{" "}
+          <strong>Priradiť k vystaveným faktúram</strong> — vaše vlastné faktúry priloží k
+          vystaveným faktúram s rovnakým číslom; <strong>Priradiť doklady o úhrade</strong> — priloží
+          ich k prijatým faktúram s rovnakým číslom a sumou a nezaplatené označí ako uhradené; a{" "}
+          <strong>Do koša</strong>. Doklad, pri ktorom treba niečo doplniť alebo rozhodnúť (alebo
+          nemá presnú zhodu), sa preskočí a ostane v Nespracovaných — Faktero na konci vypíše
+          ktoré a prečo.
         </p>
         <p>
           <strong>Naposledy otvorený doklad</strong> je po návrate z detailu v zozname zvýraznený a
@@ -115,6 +166,60 @@ const sections: HelpSection[] = [
           na spracované a odovzdané účtovníkovi. Menu Doklady má sekcie Nespracované doklady,
           Bločky, Prijaté faktúry, Vystavené faktúry, Iné doklady a <Link to="/kos">Kôš</Link>, kde
           sa dajú zmazané doklady obnoviť. Zmazaný nespracovaný doklad ide do koša a dá sa obnoviť.
+        </p>
+        <p>
+          <strong>Zaúčtovaný bloček sa presunie sám.</strong> Keď bloček v Nespracovaných
+          zaúčtujete (v detaile alebo hromadne), presunie sa medzi spracované —{" "}
+          <Link to="/doklady" search={{ stav: "spracovane" }}>
+            Fakturácia → Prijaté bločky
+          </Link>{" "}
+          (to isté ako Doklady → Bločky, záložka Spracované). Bloček bez sumy alebo dátumu ostane
+          zaúčtovaný v Nespracovaných a Faktero povie, čo chýba.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "citanie",
+    title: "Ako Faktero doklad prečíta a čo stráži",
+    body: (
+      <>
+        <p>
+          Nahratý doklad prečíta AI — z PDF aj z fotky vytiahne dodávateľa, čísla, dátumy, sumy,
+          rozpis DPH a položky. V zozname Nespracovaných vidíte stav: <strong>Číta sa…</strong>{" "}
+          (chvíľu počkajte), <strong>Vyťažené</strong> (údaje sú pripravené na kontrolu) alebo{" "}
+          <strong>Doplniť ručne</strong> (doklad sa prečítať nepodarilo — údaje zadajte sami).
+          Pri eFaktúre sa nič nečíta zo skenu — údaje sa prenesú presne.
+        </p>
+        <p>
+          Tlačidlo <strong>Dočítať z dokladu</strong> v detaile prečíta doklad znova a doplní len
+          to, čo chýba (VS, IBAN, splatnosť, adresu). Čo ste už vyplnili alebo opravili, neprepíše.
+        </p>
+        <p>
+          <strong>Sadzby DPH sú len zákonné.</strong> AI si sadzbu nesmie vymyslieť: každý
+          prečítaný rozpis DPH sa porovná so sadzbami, ktoré v krajine dodávateľa platili k dátumu
+          dodania (na Slovensku od roku 2025 23, 19, 5 a 0 %). Keď sadzba na doklade nesedí a z
+          prečítaných súm sa nedá jednoznačne určiť správna, Faktero rozpis DPH nevyplní a doklad
+          označí na kontrolu s vetou „Sadzbu DPH … na doklade nevieme prečítať“ — rozpis vtedy
+          prepíšte z dokladu. Vo formulári sa ponúkajú len sadzby platné k dátumu dodania; keď
+          doklad uvádza inú, skontrolujte najprv dátum dodania.
+        </p>
+        <p>
+          <strong>Kontroly údajov.</strong> Nad údajmi Faktero upozorní, keď IČO dodávateľa nemá
+          platnú kontrolnú číslicu, keď DIČ a IČ DPH k sebe nesedia, keď je dátum vystavenia alebo
+          dodania v budúcnosti či o viac ako rok starší ako prijatie dokladu, a keď doklad prečítal
+          náhradný model (hlavná AI nebola práve dostupná). Upozornenia nič neprepisujú — sú to
+          miesta, ktoré si treba porovnať s dokladom.
+        </p>
+        <p>
+          <strong>Firma, ktorá nie je platiteľ DPH:</strong> namiesto rozpisu DPH je pri doklade
+          veta „Neplatiteľ DPH — DPH sa neodpočítava, celá suma ide do nákladov.“ Rozpis netreba
+          vypĺňať ani opravovať a kontrola sadzieb doklad nezastaví. Výnimkou je prenesenie daňovej
+          povinnosti, kde daň odvádza aj neplatiteľ. Viac v{" "}
+          <Link to="/pomoc/dph" hash="neplatca">
+            manuáli k DPH
+          </Link>
+          .
         </p>
       </>
     ),
@@ -325,6 +430,43 @@ const sections: HelpSection[] = [
           Keď sa ukáže, že nahratý doklad je v skutočnosti faktúra so splatnosťou, presuniete ho
           jedným tlačidlom na riadku v zozname dokladov. Prenesie sa aj s prílohou a{" "}
           <strong>z Dokladov zmizne</strong> — aby sa ten istý náklad nepočítal dvakrát.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "uhrada-blocek",
+    title: "Bloček, ktorý je úhradou faktúry",
+    body: (
+      <>
+        <p>
+          Niektoré bločky nie sú nákup, ale len potvrdenie, že ste zaplatili faktúru — napríklad
+          bloček „Úhrada faktúry“ z Metra. Ako bloček by sa ten istý náklad započítal druhýkrát
+          (raz z faktúry, raz z bločku). Faktero také bločky spozná: v zozname Bločkov majú štítok{" "}
+          <strong>úhrada faktúry?</strong> a v detaile je pás{" "}
+          <strong>Vyzerá to ako úhrada faktúry, nie bloček</strong> s dvoma tlačidlami.
+        </p>
+        <ul>
+          <li>
+            <strong>Priradiť k prijatej faktúre</strong> — vyberiete faktúru (s rovnakým číslom je
+            označená „zhoda čísla“) a kliknete na{" "}
+            <strong>Priradiť k faktúre ako doklad o úhrade</strong>. Bloček sa priloží k faktúre,
+            nezaplatená faktúra sa označí ako uhradená a bloček ide do koša — z DPH aj nákladov
+            zmizne.
+          </li>
+          <li>
+            <strong>Presunúť do Iných dokladov</strong> — z bločku vznikne Iný doklad s tým istým
+            súborom, dodávateľom, dátumom a sumou; do DPH ani nákladov sa nepočíta. Bloček ide do
+            koša.
+          </li>
+        </ul>
+        <p>
+          To isté okno otvoríte pri ktoromkoľvek bločku tlačidlom <strong>Presunúť / priradiť</strong>{" "}
+          v detaile (v kompaktnom rozložení v ponuke akcií). Viac bločkov naraz vybavíte v zozname
+          Bločkov: označte ich a kliknite na <strong>Priradiť úhrady k faktúram</strong> (priradia sa
+          len tie, pri ktorých sedí číslo aj suma faktúry) alebo{" "}
+          <strong>Presunúť do Iných dokladov</strong>. Odovzdaný alebo zamknutý bloček sa presunúť
+          nedá.
         </p>
       </>
     ),
@@ -663,6 +805,12 @@ const sections: HelpSection[] = [
           ktoré doklady sa schvaľujú (bločky, prijaté, vystavené faktúry), sumu, pod ktorou sa
           schvália samy, a či sa vystavená faktúra smie odoslať až po schválení. Platí to pre
           doklady pridané od zapnutia.
+        </p>
+        <p>
+          <strong>Kde to nájdete:</strong> kliknite vpravo hore na avatar (krúžok s písmenom)
+          a v časti <strong>Nastavenia</strong> vyberte <strong>Schvaľovanie dokladov</strong>.
+          Schvaľovanie zapnete aj vypnete voľbou <strong>Schvaľovať doklady</strong> a zmenu potvrdíte
+          tlačidlom <strong>Uložiť</strong>. Meniť to smie majiteľ alebo správca firmy.
         </p>
         <p>
           <strong>Schvaľovacia cesta</strong> má úrovne od najnižšej po najvyššiu, v každej jedného

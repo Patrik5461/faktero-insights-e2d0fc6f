@@ -57,6 +57,15 @@ const sections: HelpSection[] = [
         <p>
           Účet sa dá viesť aj <strong>bez pripojenia</strong>, len ako číslo účtu na faktúrach.
         </p>
+        <p>
+          Pripojený účet sa sám pridá aj medzi{" "}
+          <Link to="/pomoc/nastavenia" hash="bankove-ucty">
+            bankové účty firmy
+          </Link>{" "}
+          (Firma → Bankové účty), kde má štítok <strong>pripojený v Banke</strong>. Môžete ho tak
+          hneď vybrať na faktúre a Faktero podľa neho spozná vaše vlastné faktúry medzi prijatými
+          dokladmi. Odpojením banky sa z účtov firmy neodstráni.
+        </p>
       </>
     ),
   },

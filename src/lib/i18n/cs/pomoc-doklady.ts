@@ -18,8 +18,6 @@ export default {
     "Po kliknutí na <0>Vytvořit</0> se doklad přesune do Účtenek, Přijatých faktur nebo Jiných dokladů podle druhu.",
   "Kliknite na doklad — vľavo uvidíte samotný doklad, vpravo vyťažené údaje.":
     "Klikněte na doklad — vlevo uvidíte samotný doklad, vpravo vytěžené údaje.",
-  "Vyberte <0>druh dokladu</0>: prijatá faktúra, zálohová faktúra, dobropis, bloček alebo iný doklad (zmluva, list, predpis).":
-    "Vyberte <0>druh dokladu</0>: přijatá faktura, zálohová faktura, dobropis, účtenka nebo jiný doklad (smlouva, dopis, předpis).",
   "Skontrolujte údaje. Povinné polia, ktoré chýbajú, sú <0>červené</0> — pri faktúre číslo a splatnosť, pri bločku spôsob úhrady, pri dobropise opravovaná faktúra.":
     "Zkontrolujte údaje. Povinná pole, která chybějí, jsou <0>červená</0> — u faktury číslo a splatnost, u účtenky způsob úhrady, u dobropisu opravovaná faktura.",
   "Kontroly, položky, zamknutie a história": "Kontroly, položky, zamčení a historie",

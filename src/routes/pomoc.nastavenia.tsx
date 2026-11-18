@@ -344,6 +344,57 @@ const SEKCIE: HelpSection[] = [
           Faktúra si vybraný účet zapamätá, takže neskoršia zmena predvoleného účtu staré doklady
           neprepíše.
         </p>
+        <p>
+          Účty, ktoré máte pripojené v <Link to="/bankove-ucty">Banke</Link>, sa medzi bankové účty
+          firmy pridajú <strong>samy</strong> — netreba ich prepisovať. V zozname majú štítok{" "}
+          <strong>pripojený v Banke</strong>. Keď banku odpojíte, účet ostane medzi účtami firmy, kým
+          ho nezmažete.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "testovacia-firma",
+    title: "Testovacia firma",
+    body: (
+      <>
+        <p>
+          Každá firma má vo Fakteri aj svoju <strong>testovaciu kópiu</strong> s názvom{" "}
+          <strong>Test – názov vašej firmy</strong>. Vznikne automaticky, nič nezakladáte. Slúži na
+          skúšanie: faktúru, doklad, nastavenie alebo novú funkciu si v nej vyskúšate naostro a na
+          skutočnú firmu to nemá žiadny vplyv. Predplatné testovacej firmy je zadarmo.
+        </p>
+        <ul>
+          <li>
+            <strong>Kto ju vidí:</strong> všetci členovia skutočnej firmy, s rovnakými rolami.
+            Prepnete sa na ňu v prepínači firiem — je hneď pod skutočnou firmou so štítkom{" "}
+            <strong>Testovacia</strong>. Členov testovacej firmy nespravujete zvlášť; pridáte či
+            odoberiete ich v skutočnej firme.
+          </li>
+          <li>
+            <strong>Nič sa neodosiela.</strong> Z testovacej firmy neodídu e-maily (odoslanie
+            ukáže len náhľad), eFaktúry, webhooky ani platby, nesťahujú sa pohyby z bánk a Pohoda si
+            z nej doklady nevezme. Akcia, ktorá by išla mimo Faktera, sa nevykoná a Faktero to
+            oznámi.
+          </li>
+          <li>
+            <strong>Údaje:</strong> firma má rovnaké nastavenia ako skutočná, ale bez IČO, loga a
+            pečiatky a s <strong>vymysleným IBAN-om</strong> SK31 1200 0000 1987 4263 7541. Platobný
+            QR kód aj PAYME na faktúre si tak vyskúšate, no nikto nezaplatí na skutočný účet firmy.
+          </li>
+          <li>
+            Každé PDF z testovacej firmy má cez stranu veľký vodoznak <strong>TEST</strong>, aby si
+            ho nikto nepomýlil so skutočným dokladom. Na každej stránke je navyše výrazný pás
+            „Testovacia firma — nič sa neodosiela“ s tlačidlom na prepnutie späť do skutočnej firmy.
+          </li>
+        </ul>
+        <p>
+          Keď chcete začať odznova, otvorte v testovacej firme <Link to="/firma">Firma</Link> a
+          kliknite na <strong>Vymazať údaje testovacej firmy</strong>. Zmažú sa doklady, kontakty,
+          súbory aj nastavenia a firma sa založí znova podľa skutočnej firmy, s jej členmi. Skutočnej
+          firmy sa to nedotkne. Tlačidlo vidí majiteľ, administrátor a účtovník. Samostatne sa
+          testovacia firma zmazať nedá — zmaže sa spolu so skutočnou.
+        </p>
       </>
     ),
   },

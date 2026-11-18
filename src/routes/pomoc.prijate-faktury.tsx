@@ -324,6 +324,55 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "prijate-danove",
+    title: "Prijaté daňové doklady k prijatej platbe",
+    body: (
+      <>
+        <p>
+          Keď zaplatíte zálohu a dodávateľ je platiteľ DPH, pošle vám{" "}
+          <strong>daňový doklad k prijatej platbe</strong>. Na rozdiel od zálohovej faktúry je to
+          daňový doklad — DPH si z neho odpočítate už teraz, nie až z ostrej faktúry. Tieto doklady
+          majú vlastný zoznam{" "}
+          <Link to="/prijate-faktury" search={{ type: "danove" }}>
+            Fakturácia → Prijaté daňové doklady
+          </Link>
+          .
+        </p>
+        <ul>
+          <li>
+            Doklad z e-mailu alebo nahratý doklad Faktero spozná podľa nadpisu a v Nespracovaných
+            dokladoch predvyplní druh <strong>Daňový doklad k prijatej platbe</strong>. Pri ňom
+            vyberiete <strong>Prijatú zálohovú faktúru</strong>, ku ktorej patrí (ponúknu sa
+            zálohy toho istého dodávateľa).
+          </li>
+          <li>
+            Doklad sa <strong>neplatí</strong> — záloha je už zaplatená. Preto nemá splatnosť,
+            nepáruje sa s bankou a nejde do príkazu na úhradu.
+          </li>
+          <li>
+            DPH sa odpočíta v období <strong>dňa platby</strong> (dátum dodania = deň, keď ste
+            zálohu zaplatili), alebo v období prijatia dokladu, ak prišiel neskôr. V kontrolnom
+            výkaze ide do časti <strong>B.2</strong> ako prijatá faktúra.
+          </li>
+          <li>
+            Do Pohody ide ako <strong>interný doklad</strong> s členením DPH pre prijaté plnenia
+            (PD) a KV B.2. Predkontáciu (napríklad 343/314) mu zadajte priamo alebo pravidlom{" "}
+            <Link to="/uctovnictvo/zauctovanie" search={{ tab: "pravidla" }}>
+              automatického účtovania
+            </Link>{" "}
+            s typom dokladu „Daňový doklad k platbe“ — nákladová predkontácia prijatých faktúr sa
+            naň nepoužije. Kým predkontáciu nemá, kontrola pred odovzdaním upozorní.
+          </li>
+          <li>
+            Na ostrej (vyúčtovacej) faktúre je zdanená záloha v rozpise DPH ako záporný riadok, takže
+            DPH zo zálohy sa vo výkaze neráta dvakrát. Keď by faktúra zálohu odpočítala len zo sumy
+            na úhradu, Faktero na dvojitú DPH upozorní.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "udaje-pre-dph",
     title: "Údaje pre výkazy k DPH",
     body: (

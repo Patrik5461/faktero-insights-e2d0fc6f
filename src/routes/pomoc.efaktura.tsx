@@ -494,6 +494,14 @@ const sections: HelpSection[] = [
           údaje firmy, IČ DPH pri platiteľovi DPH alebo Peppol ID. Čím vyššie skóre, tým menej
           prekvapení pri prvej eFaktúre.
         </p>
+        <p>
+          Firma, ktorá nie je platiteľ DPH, IČ DPH nemá a mať nemusí — skóre jej ho za nedostatok
+          nepočíta. Stačí, aby mala v{" "}
+          <Link to="/pomoc/nastavenia" hash="dph-nastavenie">
+            Postavení k DPH
+          </Link>{" "}
+          správne vybraného neplatiteľa.
+        </p>
       </>
     ),
   },

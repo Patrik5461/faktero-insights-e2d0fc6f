@@ -56,6 +56,12 @@ const sections: HelpSection[] = [
           polia sú zvýraznené; skontrolujte ich a uložte. Pri každom poli je v zátvorke kód z
           technického preukazu (napríklad E pre VIN), aby sa dalo ľahko porovnať.
         </p>
+        <p>
+          Najrýchlejšie je to rovno na začiatku formulára vozidla: v rámčeku{" "}
+          <strong>Načítať z technického preukazu</strong> kliknite na{" "}
+          <strong>Nahrať technický preukaz</strong> a vyberte fotku alebo PDF časti I. V telefóne
+          môžete preukaz rovno odfotiť. Údaje sa doplnia rovnako — prepíšu sa len prázdne polia.
+        </p>
       </>
     ),
   },
