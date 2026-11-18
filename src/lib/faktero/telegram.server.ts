@@ -193,13 +193,15 @@ export async function posliOdpovedZakaznikovi(args: {
 
 /* ------------------------------------------------------- párovacie kódy */
 
+export type UcelKodu = "admin" | "zakaznik" | "skupina";
+
 export const hashKodu = (kod: string) =>
   createHash("sha256").update(`telegram:${kod}`).digest("hex");
 
 /** Nový jednorazový kód pre účet — starší kód toho istého účelu prestane platiť. */
 export async function vytvorKodTelegram(
   userId: string,
-  ucel: "admin" | "zakaznik",
+  ucel: UcelKodu,
 ): Promise<{ kod: string; platiDo: string }> {
   const kod = novyKod();
   const platiDo = new Date(Date.now() + PLATNOST_KODU_MIN * 60_000).toISOString();
@@ -214,7 +216,7 @@ export async function vytvorKodTelegram(
 /** Overí a spotrebuje kód. Vráti účet, alebo `null` (neplatný, cudzí účel, po lehote). */
 export async function pouziKodTelegram(
   surovyKod: string | null,
-  ucel: "admin" | "zakaznik",
+  ucel: UcelKodu,
 ): Promise<string | null> {
   const kod = normalizujKod(surovyKod);
   if (!kod) return null;

@@ -173,6 +173,7 @@ export const TRASY_ADMINA = [
   "/admin/platform-invoices",
   "/admin/podpora",
   "/admin/podpora/$id",
+  "/admin/podpora/telegram-skupina",
   "/admin/seo",
   "/admin/subscriptions",
   "/admin/ucty-zdarma",

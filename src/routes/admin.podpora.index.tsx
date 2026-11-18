@@ -7,6 +7,7 @@ import { ListPagination, useStoredPageSize } from "@/components/faktero/ListCont
 import { PodporaStav } from "@/components/faktero/PodporaStav";
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { TelegramAdminKarta } from "@/components/faktero/TelegramAdminKarta";
+import { TelegramSkupinaKarta } from "@/components/faktero/TelegramSkupinaKarta";
 import { WhatsAppAdminKarta } from "@/components/faktero/WhatsAppAdminKarta";
 import { WhatsAppIkona } from "@/components/faktero/WhatsAppIkona";
 import { adminPoziadavkyFn } from "@/lib/faktero/podpora-admin.functions";
@@ -77,6 +78,7 @@ function AdminPodporaPage() {
       />
       <AdminPageBody>
         <TelegramAdminKarta />
+        <TelegramSkupinaKarta />
         <WhatsAppAdminKarta />
         <div className="flex flex-wrap items-center gap-2">
           {FILTRE.map((f) => (

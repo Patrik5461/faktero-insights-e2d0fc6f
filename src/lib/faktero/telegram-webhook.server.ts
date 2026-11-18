@@ -5,7 +5,10 @@
   - **Spárovaný admin chat** (`telegram_admin_chaty`, párovanie `/admin <kód>`
     z Admin → Podpora): Reply na upozornenie bota je odpoveď podpory v tej
     požiadavke, tlačidlá pri návrhu opravy ho schvália / zamietnu.
-  - **Ktokoľvek iný** je zákazník: prvá správa založí požiadavku P-xxxx
+  - **Skupina / supergroup** (`telegram-skupina.server.ts`): bot len ticho
+    ukladá správy zo skupiny spárovanej adminom (`/skupina <kód>`), nikdy
+    nezakladá požiadavky a neodpovedá.
+  - **Ktokoľvek iný** v súkromnom chate je zákazník: prvá správa založí požiadavku P-xxxx
     (zdroj `telegram`), ďalšie idú do toho istého vlákna — rovnako ako
     odpovede e-mailom (`prijmiOdpovedEmailom`). Fotky a súbory sú prílohy
     požiadavky v koši `podpora-prilohy`.
@@ -31,6 +34,7 @@ import {
   MAX_SUBOR_TELEGRAMU,
   StropNaChat,
   cistyTextTelegramu,
+  jeSkupinovyChat,
   menoZTelegramu,
   najvacsiaFotka,
   rozoberDataTlacidla,
@@ -43,6 +47,7 @@ import {
   stiahniSuborTelegram,
   volajTelegram,
 } from "./telegram.server";
+import { spracujSkupinu } from "./telegram-skupina.server";
 
 /* Typy z Bot API — len to, čo naozaj čítame. */
 type TgUser = {
@@ -53,12 +58,24 @@ type TgUser = {
   username?: string;
   language_code?: string;
 };
-type TgMessage = {
+export type TgMessage = {
   message_id: number;
-  chat: { id: number; type: string };
+  /** Unix čas odoslania (sekundy). */
+  date?: number;
+  /** Pri edited_message čas úpravy. */
+  edit_date?: number;
+  chat: { id: number; type: string; title?: string };
   from?: TgUser;
   text?: string;
   caption?: string;
+  /** Skupina prešla na supergroup s novým id. */
+  migrate_to_chat_id?: number;
+  new_chat_title?: string;
+  voice?: unknown;
+  video?: unknown;
+  video_note?: unknown;
+  audio?: unknown;
+  sticker?: unknown;
   photo?: { file_id: string; file_size?: number; width?: number; height?: number }[];
   document?: { file_id: string; file_name?: string; mime_type?: string; file_size?: number };
   reply_to_message?: { message_id: number };
@@ -69,7 +86,12 @@ type TgCallback = {
   data?: string;
   message?: { message_id: number; chat: { id: number } };
 };
-export type TgUpdate = { update_id: number; message?: TgMessage; callback_query?: TgCallback };
+export type TgUpdate = {
+  update_id: number;
+  message?: TgMessage;
+  edited_message?: TgMessage;
+  callback_query?: TgCallback;
+};
 
 /*
   Stropy držia v databáze (`pustiTelegram`); objekty v pamäti sú len záloha,
@@ -145,7 +167,8 @@ export async function prijmiWebhookTelegramu(
       .then(({ error: e }) => e && console.warn("[telegram] upratanie update_id:", e.message));
   }
 
-  const chatId = u.message?.chat?.id ?? u.callback_query?.message?.chat?.id ?? 0;
+  const chatId =
+    u.message?.chat?.id ?? u.edited_message?.chat?.id ?? u.callback_query?.message?.chat?.id ?? 0;
   const praca = doFronty(chatId, () => spracujUpdate(u)).catch((e) =>
     console.error("[telegram] spracovanie zlyhalo:", e?.message ?? e),
   );
@@ -164,20 +187,32 @@ export type Vysledok =
   | "odpoved_podpory"
   | "info"
   | "odmietnute"
-  | "rozhodnute";
+  | "rozhodnute"
+  | "ulozene"
+  | "upravene";
 
 export async function spracujUpdate(u: TgUpdate): Promise<Vysledok> {
   // Slovníky sa načítavajú na požiadanie (`jazyk.ts`); jazyk chatu sa zistí až nižšie.
   await nacitajVsetkySlovniky();
   if (u.callback_query) return spracujTlacidlo(u.callback_query);
+  /*
+    Skupina: bot len ticho zapisuje (a len v spárovanej skupine) — nikdy
+    nezaloží požiadavku a neodpovedá. Musí to byť pred všetkým ostatným.
+  */
+  const vSkupine = u.message ?? u.edited_message;
+  if (jeSkupinovyChat(vSkupine?.chat?.type))
+    return spracujSkupinu(vSkupine!, !u.message && !!u.edited_message);
+  // Úpravy správ v súkromných chatoch nespracúvame (požiadavka má pôvodný text).
   const msg = u.message;
-  // Len súkromné chaty s človekom — skupiny a kanály ignorujeme.
+  // Len súkromné chaty s človekom — kanály ignorujeme.
   if (!msg || msg.chat?.type !== "private" || !msg.from || msg.from.is_bot) return "ignorovane";
   const chatId = msg.chat.id;
   const prikaz = rozoberPrikaz(msg.text ?? msg.caption);
 
   if (prikaz.druh === "admin") {
-    if (!(await pustiTelegram(chatId, "parovanie", PAROVANIE.max, PAROVANIE.oknoMs, stropParovania)))
+    if (
+      !(await pustiTelegram(chatId, "parovanie", PAROVANIE.max, PAROVANIE.oknoMs, stropParovania))
+    )
       return "strop";
     return parujAdmina(msg, prikaz.kod);
   }
@@ -327,7 +362,10 @@ async function spracujTlacidlo(cq: TgCallback): Promise<Vysledok> {
   // Schválenie (nasadenie kódu) len v administrácii s 2FA a rozdielom v kóde.
   if (data.akcia === "schvalit") {
     await odpoved(
-      preloz(j, "Schváliť a nasadiť sa dá len v administrácii (Admin → Podpora), kde vidíte zmeny v kóde."),
+      preloz(
+        j,
+        "Schváliť a nasadiť sa dá len v administrácii (Admin → Podpora), kde vidíte zmeny v kóde.",
+      ),
     );
     return "odmietnute";
   }
@@ -520,7 +558,13 @@ async function spracujZakaznika(
       return "strop";
     }
     if (
-      !(await pustiTelegram(0, "nove_spolu", MAX_NOVYCH_ZA_HODINU_SPOLU, 3_600_000, stropNovychSpolu))
+      !(await pustiTelegram(
+        0,
+        "nove_spolu",
+        MAX_NOVYCH_ZA_HODINU_SPOLU,
+        3_600_000,
+        stropNovychSpolu,
+      ))
     ) {
       console.warn("[telegram] prekročený spoločný strop nových požiadaviek za hodinu");
       await odpovedz(

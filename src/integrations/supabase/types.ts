@@ -11990,6 +11990,92 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_skupiny: {
+        Row: {
+          chat_id: number
+          nazov: string | null
+          aktivna: boolean
+          sparoval: string | null
+          created_at: string
+        }
+        Insert: {
+          chat_id: number
+          nazov?: string | null
+          aktivna?: boolean
+          sparoval?: string | null
+          created_at?: string
+        }
+        Update: {
+          chat_id?: number
+          nazov?: string | null
+          aktivna?: boolean
+          sparoval?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      telegram_skupiny_spravy: {
+        Row: {
+          id: string
+          chat_id: number
+          message_id: number
+          od_id: number | null
+          od_meno: string | null
+          od_username: string | null
+          text: string | null
+          prilohy: Json
+          odpoved_na: number | null
+          vybavene: boolean
+          poznamka: string | null
+          vybavene_at: string | null
+          vybavil: string | null
+          created_at: string
+          upravene_at: string | null
+        }
+        Insert: {
+          id?: string
+          chat_id: number
+          message_id: number
+          od_id?: number | null
+          od_meno?: string | null
+          od_username?: string | null
+          text?: string | null
+          prilohy?: Json
+          odpoved_na?: number | null
+          vybavene?: boolean
+          poznamka?: string | null
+          vybavene_at?: string | null
+          vybavil?: string | null
+          created_at?: string
+          upravene_at?: string | null
+        }
+        Update: {
+          id?: string
+          chat_id?: number
+          message_id?: number
+          od_id?: number | null
+          od_meno?: string | null
+          od_username?: string | null
+          text?: string | null
+          prilohy?: Json
+          odpoved_na?: number | null
+          vybavene?: boolean
+          poznamka?: string | null
+          vybavene_at?: string | null
+          vybavil?: string | null
+          created_at?: string
+          upravene_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_skupiny_spravy_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_skupiny"
+            referencedColumns: ["chat_id"]
+          }
+        ]
+      }
       telegram_spravy_bota: {
         Row: {
           chat_id: number

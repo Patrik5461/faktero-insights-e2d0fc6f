@@ -25,11 +25,19 @@ function sDefaultmi(t: string, r: Riadok): Riadok {
     x.stav ??= "nova";
     x.odpoved_token ??= "a".repeat(18);
   } else if (
-    !["telegram_updaty", "telegram_chaty", "telegram_admin_chaty", "telegram_spravy_bota"].includes(
-      t,
-    )
+    ![
+      "telegram_updaty",
+      "telegram_chaty",
+      "telegram_admin_chaty",
+      "telegram_spravy_bota",
+      "telegram_skupiny",
+    ].includes(t)
   ) {
     x.id ??= crypto.randomUUID();
+  }
+  if (t === "telegram_skupiny_spravy") {
+    x.prilohy ??= [];
+    x.vybavene ??= false;
   }
   return x;
 }
@@ -41,6 +49,8 @@ const KLUC: Record<string, string[]> = {
   telegram_admin_chaty: ["chat_id"],
   telegram_spravy_bota: ["chat_id", "message_id"],
   telegram_kody: ["kod_hash"],
+  telegram_skupiny: ["chat_id"],
+  telegram_skupiny_spravy: ["chat_id", "message_id"],
 };
 
 class Dotaz implements PromiseLike<any> {
@@ -492,6 +502,225 @@ describe("webhook bota podpory", () => {
     const { kod: druhy } = await vytvorKodTelegram("user-1", "zakaznik");
     expect(await pouziKodTelegram(druhy, "zakaznik")).toBe("user-1");
     expect(tab("telegram_kody")).toHaveLength(0);
+  });
+
+  describe("režim skupiny", () => {
+    const SKUPINA = -100_123_456;
+    const UCTOVNICKA = 333_444;
+    let msgId = 1;
+    const vSkupine = (
+      od: number,
+      text: string | null,
+      navyse: Record<string, unknown> = {},
+      typ = "supergroup",
+    ) => ({
+      message: {
+        message_id: msgId++,
+        date: 1_790_000_000,
+        chat: { id: SKUPINA, type: typ, title: "Účtovníci Faktero" },
+        from: { id: od, first_name: "Eva", last_name: "Účtovná", username: "eva_u" },
+        ...(text != null ? { text } : {}),
+        ...navyse,
+      },
+    });
+    const sparuj = () =>
+      tab("telegram_skupiny").push({ chat_id: SKUPINA, nazov: "Účtovníci", aktivna: true });
+    const spravySkupiny = () => tab("telegram_skupiny_spravy");
+
+    it("správa v nespárovanej skupine nezaloží požiadavku, nič neuloží a bot mlčí", async () => {
+      for (const typ of ["group", "supergroup"]) {
+        await posli(vSkupine(UCTOVNICKA, "Nejde mi export do Pohody", {}, typ));
+        await posli(vSkupine(UCTOVNICKA, "/chyba export padá", {}, typ));
+      }
+      expect(tab("podpora_poziadavky")).toHaveLength(0);
+      expect(tab("telegram_chaty")).toHaveLength(0);
+      expect(spravySkupiny()).toHaveLength(0);
+      expect(tab("telegram_skupiny")).toHaveLength(0);
+      expect(volania).toHaveLength(0);
+    });
+
+    it("spárovaná skupina: text sa uloží, požiadavka nevznikne a bot neodpovie", async () => {
+      sparuj();
+      tab("platform_admins").push({ user_id: "admin-1", role: "superadmin" });
+      tab("telegram_admin_chaty").push({ chat_id: ADMIN, user_id: "admin-1" });
+      await posli(
+        vSkupine(UCTOVNICKA, "Faktúra 2026001 má zlú DPH", {
+          reply_to_message: { message_id: 7 },
+        }),
+      );
+      expect(spravySkupiny()).toEqual([
+        expect.objectContaining({
+          chat_id: SKUPINA,
+          od_id: UCTOVNICKA,
+          od_meno: "Eva Účtovná (@eva_u)",
+          od_username: "eva_u",
+          text: "Faktúra 2026001 má zlú DPH",
+          odpoved_na: 7,
+          created_at: new Date(1_790_000_000 * 1000).toISOString(),
+        }),
+      ]);
+      expect(tab("podpora_poziadavky")).toHaveLength(0);
+      expect(tab("telegram_spravy_bota")).toHaveLength(0);
+      // Ani upozornenie adminom, ani odpoveď do skupiny.
+      expect(volania.filter((v) => v.metoda === "sendMessage")).toHaveLength(0);
+    });
+
+    it("úprava správy prepíše text a zapíše čas úpravy", async () => {
+      sparuj();
+      const u = vSkupine(UCTOVNICKA, "Pôvodný text");
+      await posli(u);
+      await posli({
+        edited_message: { ...u.message, text: "Opravený text", edit_date: 1_790_000_100 },
+      });
+      expect(spravySkupiny()).toHaveLength(1);
+      expect(spravySkupiny()[0]).toMatchObject({
+        text: "Opravený text",
+        upravene_at: new Date(1_790_000_100 * 1000).toISOString(),
+      });
+      // Úprava neznámej správy nič nezaloží.
+      await posli({ edited_message: { ...vSkupine(UCTOVNICKA, "x").message, edit_date: 1 } });
+      expect(spravySkupiny()).toHaveLength(1);
+      expect(volania.filter((v) => v.metoda === "sendMessage")).toHaveLength(0);
+    });
+
+    it("fotka sa uloží do súkromného koša pod telegram-skupina/", async () => {
+      sparuj();
+      await posli(
+        vSkupine(UCTOVNICKA, null, {
+          caption: "Takto to vyzerá",
+          photo: [
+            { file_id: "maly", file_size: 100, width: 90, height: 90 },
+            { file_id: "velky", file_size: 1234, width: 1280, height: 720 },
+          ],
+        }),
+      );
+      const [r] = spravySkupiny();
+      expect(r!.text).toBe("Takto to vyzerá");
+      expect(r!.prilohy).toHaveLength(1);
+      expect(r!.prilohy[0]).toMatchObject({ mime: "image/jpeg", velkost: 6 });
+      expect(r!.prilohy[0].path.startsWith(`telegram-skupina/${SKUPINA}/`)).toBe(true);
+      expect(ulozisko).toEqual([r!.prilohy[0].path]);
+      expect(tab("podpora_prilohy")).toHaveLength(0);
+      expect(volania.filter((v) => v.metoda === "sendMessage")).toHaveLength(0);
+    });
+
+    it("súbor iného typu sa zapíše len menom, bez stiahnutia", async () => {
+      sparuj();
+      await posli(
+        vSkupine(UCTOVNICKA, null, {
+          document: { file_id: "x", file_name: "export.xml", mime_type: "text/xml", file_size: 50 },
+        }),
+      );
+      expect(spravySkupiny()[0]!.prilohy).toEqual([
+        { nazov: "export.xml", mime: "text/xml", velkost: 50, chyba: "typ" },
+      ]);
+      expect(ulozisko).toHaveLength(0);
+    });
+
+    it("vypnutá skupina neukladá nič", async () => {
+      tab("telegram_skupiny").push({ chat_id: SKUPINA, aktivna: false });
+      await posli(vSkupine(UCTOVNICKA, "Halo"));
+      expect(spravySkupiny()).toHaveLength(0);
+    });
+
+    it("opakované doručenie toho istého update_id sa v skupine nezdvojí", async () => {
+      sparuj();
+      const u = { update_id: 88_888, ...vSkupine(UCTOVNICKA, "Raz") };
+      const req = () =>
+        new Request("https://www.faktero.sk/api/public/telegram/webhook", {
+          method: "POST",
+          headers: { "x-telegram-bot-api-secret-token": TAJOMSTVO },
+          body: JSON.stringify(u),
+        });
+      await prijmiWebhookTelegramu(req(), { cakat: true });
+      await prijmiWebhookTelegramu(req(), { cakat: true });
+      expect(spravySkupiny()).toHaveLength(1);
+    });
+
+    it("/skupina <kód> od spárovaného admina skupinu spáruje", async () => {
+      const { vytvorKodTelegram } = await import("./telegram.server");
+      tab("platform_admins").push({ user_id: "admin-1", role: "superadmin" });
+      tab("telegram_admin_chaty").push({ chat_id: ADMIN, user_id: "admin-1" });
+      const { kod } = await vytvorKodTelegram("admin-1", "skupina");
+      await posli(vSkupine(ADMIN, `/skupina@FakteroBot ${kod}`));
+      expect(tab("telegram_skupiny")).toEqual([
+        expect.objectContaining({
+          chat_id: SKUPINA,
+          nazov: "Účtovníci Faktero",
+          aktivna: true,
+          sparoval: "admin-1",
+        }),
+      ]);
+      expect(tab("telegram_kody")).toHaveLength(0);
+      // Príkaz s kódom sa neuloží ako správa; jediná správa bota je potvrdenie.
+      expect(spravySkupiny()).toHaveLength(0);
+      expect(odoslane(SKUPINA)).toHaveLength(1);
+      expect(tab("podpora_poziadavky")).toHaveLength(0);
+      // Ďalšie správy sa už ukladajú.
+      await posli(vSkupine(UCTOVNICKA, "Dobrý deň"));
+      expect(spravySkupiny()).toHaveLength(1);
+    });
+
+    it("/skupina od ne-admina sa ignoruje a kód ostane platný", async () => {
+      const { vytvorKodTelegram } = await import("./telegram.server");
+      tab("platform_admins").push({ user_id: "admin-1", role: "superadmin" });
+      tab("telegram_admin_chaty").push({ chat_id: ADMIN, user_id: "admin-1" });
+      const { kod } = await vytvorKodTelegram("admin-1", "skupina");
+      await posli(vSkupine(UCTOVNICKA, `/skupina ${kod}`));
+      expect(tab("telegram_skupiny")).toHaveLength(0);
+      expect(tab("telegram_kody")).toHaveLength(1);
+      expect(volania).toHaveLength(0);
+    });
+
+    it("/skupina od chatu, ktorý už nie je admin, sa ignoruje", async () => {
+      const { vytvorKodTelegram } = await import("./telegram.server");
+      // Spárovaný chat ostal, ale účet už nie je v platform_admins.
+      tab("telegram_admin_chaty").push({ chat_id: ADMIN, user_id: "admin-1" });
+      const { kod } = await vytvorKodTelegram("admin-1", "skupina");
+      await posli(vSkupine(ADMIN, `/skupina ${kod}`));
+      expect(tab("telegram_skupiny")).toHaveLength(0);
+      expect(volania).toHaveLength(0);
+    });
+
+    it("cudzí alebo zlý kód: skupina sa nespáruje, admin dostane správu súkromne", async () => {
+      const { vytvorKodTelegram } = await import("./telegram.server");
+      tab("platform_admins").push(
+        { user_id: "admin-1", role: "superadmin" },
+        { user_id: "admin-2", role: "admin" },
+      );
+      tab("telegram_admin_chaty").push({ chat_id: ADMIN, user_id: "admin-1" });
+      const { kod } = await vytvorKodTelegram("admin-2", "skupina");
+      await posli(vSkupine(ADMIN, `/skupina ${kod}`));
+      // Kód na prepojenie admin chatu nie je kód pre skupinu.
+      const { kod: adminKod } = await vytvorKodTelegram("admin-1", "admin");
+      await posli(vSkupine(ADMIN, `/skupina ${adminKod}`));
+      expect(tab("telegram_skupiny")).toHaveLength(0);
+      expect(odoslane(SKUPINA)).toHaveLength(0);
+      expect(odoslane(ADMIN)).toHaveLength(2);
+    });
+
+    it("/admin <kód> v skupine nespáruje admin chat a neuloží sa", async () => {
+      const { vytvorKodTelegram } = await import("./telegram.server");
+      sparuj();
+      tab("platform_admins").push({ user_id: "admin-1", role: "superadmin" });
+      const { kod } = await vytvorKodTelegram("admin-1", "admin");
+      await posli(vSkupine(UCTOVNICKA, `/admin ${kod}`));
+      expect(tab("telegram_admin_chaty")).toHaveLength(0);
+      expect(spravySkupiny()).toHaveLength(0);
+      expect(volania).toHaveLength(0);
+    });
+
+    it("prechod na supergroup prenesie id skupiny", async () => {
+      sparuj();
+      await posli(vSkupine(UCTOVNICKA, null, { migrate_to_chat_id: -100_999 }, "group"));
+      expect(tab("telegram_skupiny")[0]!.chat_id).toBe(-100_999);
+    });
+
+    it("úprava správy v súkromnom chate požiadavku nemení ani nezakladá", async () => {
+      await posli({ edited_message: sprava(ZAKAZNIK, "Upravené").message });
+      expect(tab("podpora_poziadavky")).toHaveLength(0);
+      expect(volania).toHaveLength(0);
+    });
   });
 
   it("bez tokenu bota sa upozornenia ani odpovede neposielajú a nič nespadne", async () => {

@@ -11,7 +11,10 @@
   1. getMe — overí token a povie meno bota.
   2. setWebhook — https://www.faktero.sk/api/public/telegram/webhook so
      secret_token (Telegram ho posiela v hlavičke X-Telegram-Bot-Api-Secret-Token)
-     a len udalosťami message + callback_query.
+     a len udalosťami message + edited_message + callback_query (úpravy
+     správ v spárovanej skupine). Aby bot v skupine videl všetky správy,
+     musí mať v BotFather → Bot Settings → Group Privacy vypnuté (Turn off),
+     alebo byť v skupine administrátor.
   3. setMyCommands — ponuka príkazov v chate.
   4. getWebhookInfo — stav (posledná chyba doručenia, čakajúce správy).
 */
@@ -69,7 +72,7 @@ if (!menoVEnv) {
 await volaj("setWebhook", {
   url,
   secret_token: tajomstvo,
-  allowed_updates: ["message", "callback_query"],
+  allowed_updates: ["message", "edited_message", "callback_query"],
   max_connections: 10,
 });
 console.log(`Webhook: ${url}`);
@@ -93,3 +96,10 @@ console.log(
 console.log(
   "Hotovo. Ďalší krok: Admin → Podpora → Telegram → „Prepojiť Telegram“ a poslať botovi /admin <kód>.",
 );
+if (ja.can_read_all_group_messages === false) {
+  console.warn(
+    "Pozor: bot má zapnuté Group Privacy — v skupine uvidí len príkazy a odpovede naň.\n" +
+      "Vypnite v @BotFather → /mybots → bot → Bot Settings → Group Privacy → Turn off\n" +
+      "a bota potom zo skupiny odoberte a pridajte znova (inak zmena neplatí).",
+  );
+}

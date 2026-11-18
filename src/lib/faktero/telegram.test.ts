@@ -3,6 +3,7 @@ import {
   StropNaChat,
   cistyTextTelegramu,
   dataTlacidla,
+  jeSkupinovyChat,
   kodDoOdkazu,
   menoZTelegramu,
   najvacsiaFotka,
@@ -107,5 +108,24 @@ describe("prílohy a strop", () => {
     expect(s.pusti(1, 2)).toBe(false);
     expect(s.pusti(2, 2)).toBe(true);
     expect(s.pusti(1, 1500)).toBe(true);
+  });
+});
+
+describe("režim skupiny — čisté funkcie", () => {
+  it("/skupina <kód> aj s menom bota", () => {
+    expect(rozoberPrikaz("/skupina abcd-2345")).toEqual({ druh: "skupina", kod: "ABCD-2345" });
+    expect(rozoberPrikaz("/skupina@FakteroBot ABCD2345")).toEqual({
+      druh: "skupina",
+      kod: "ABCD-2345",
+    });
+    expect(rozoberPrikaz("/skupina")).toEqual({ druh: "skupina", kod: null });
+  });
+
+  it("skupina a supergroup sú skupinové chaty, súkromný a kanál nie", () => {
+    expect(jeSkupinovyChat("group")).toBe(true);
+    expect(jeSkupinovyChat("supergroup")).toBe(true);
+    expect(jeSkupinovyChat("private")).toBe(false);
+    expect(jeSkupinovyChat("channel")).toBe(false);
+    expect(jeSkupinovyChat(undefined)).toBe(false);
   });
 });

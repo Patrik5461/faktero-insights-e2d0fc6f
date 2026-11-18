@@ -70,6 +70,7 @@ export function textPreTelegram(v: string): string {
 export type Prikaz =
   | { druh: "start"; kod: string | null }
   | { druh: "admin"; kod: string | null }
+  | { druh: "skupina"; kod: string | null }
   | { druh: "nova" }
   | { druh: "chyba"; text: string }
   | { druh: "pomoc" }
@@ -93,6 +94,8 @@ export function rozoberPrikaz(text: string | null | undefined): Prikaz {
     }
     case "admin":
       return { druh: "admin", kod: arg ? normalizujKod(arg) : null };
+    case "skupina":
+      return { druh: "skupina", kod: arg ? normalizujKod(arg) : null };
     case "nova":
       return { druh: "nova" };
     case "chyba":
@@ -105,6 +108,14 @@ export function rozoberPrikaz(text: string | null | undefined): Prikaz {
       return { druh: "text", text: t };
   }
 }
+
+/** Skupina alebo supergroup — tam je bot len tichý zapisovateľ, nikdy help desk. */
+export function jeSkupinovyChat(typ: string | null | undefined): boolean {
+  return typ === "group" || typ === "supergroup";
+}
+
+/** Predpona v koši `podpora-prilohy` — prílohy zo skupiny nepatria žiadnej požiadavke. */
+export const PREDPONA_SKUPINY = "telegram-skupina/";
 
 /* ---------------------------------------------------------- párovacie kódy */
 
