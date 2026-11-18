@@ -120,6 +120,11 @@ Pridaj ADRESU DODÁVATEĽA: "supplier_street" (ulica a číslo), "supplier_city"
 (napr. „Stavebné práce za október"), bez názvu dodávateľa.
 Dátumy vždy v tvare YYYY-MM-DD; splatnosť ("due_date") hľadaj aj pod „Dátum splatnosti",
 „Splatné do", „Splatnosť".
+Číslo faktúry ("invoice_number") hľadaj pod „Číslo faktúry", „Faktúra č.", „Číslo dokladu", „Doklad č.",
+„Faktura číslo", „Invoice No." — a aj pod skratkami, ktoré používajú operátori a energetici:
+„Číslo PFA" / „PFA" (Orange), „Číslo vyúčtovania", „Číslo zúčtovacej faktúry". Vráť ho presne,
+ako je na doklade. Keď doklad číslo naozaj nemá, null — nevymýšľaj ho a nedávaj sem číslo zmluvy,
+zákazníka ani objednávky.
 Variabilný symbol ("variable_symbol") hľadaj pod „Variabilný symbol", „Var. symbol", „VS",
 „Variabilní symbol" aj v platobných údajoch či pri QR kóde; vráť len číslice.
 Pridaj aj "constant_symbol" (KS), "specific_symbol" (ŠS), "order_number" (číslo objednávky)
