@@ -1,4 +1,5 @@
 import { PoznamkaPolozky } from "@/components/faktero/PoznamkaPolozky";
+import { VyberZoZoznamu } from "@/components/faktero/VyberZoZoznamu";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { vsNaUlozenie } from "@/lib/faktero/variabilny-symbol";
 import { UctovneNastaveniaFaktury } from "@/components/faktero/UctovneNastaveniaFaktury";
@@ -2494,20 +2495,19 @@ function NewInvoice() {
                 {form.oss && (
                   <label className="block">
                     <span className="text-[13px] font-semibold text-foreground">{t("Štát spotreby")}</span>
-                    <select
+                    <VyberZoZoznamu
+                      ariaLabel={t("Štát spotreby")}
                       value={form.oss_country}
-                      onChange={(e) =>
+                      onChange={(v) =>
                         // Sadzby riadkov dorovná efekt vyššie podľa štátu spotreby.
-                        setForm((f) => ({ ...f, oss_country: e.target.value }))
+                        setForm((f) => ({ ...f, oss_country: v }))
                       }
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      {SADZBY_EU.filter((x) => x.kod !== krajina).map((x) => (
-                        <option key={x.kod} value={x.kod}>
-                          {x.nazov} — {t("základná {n} %", { n: x.zakladna })}
-                        </option>
-                      ))}
-                    </select>
+                      moznosti={SADZBY_EU.filter((x) => x.kod !== krajina).map((x) => ({
+                        value: x.kod,
+                        label: `${x.nazov} — ${t("základná {n} %", { n: x.zakladna })}`,
+                      }))}
+                    />
                   </label>
                 )}
                 {rezim.platitel && (

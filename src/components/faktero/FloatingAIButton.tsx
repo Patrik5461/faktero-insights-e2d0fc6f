@@ -7,8 +7,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
-import { BEZPECNY_MARKDOWN } from "@/lib/faktero/markdown-ai";
+import { MarkdownAi } from "@/components/faktero/MarkdownAi";
 import { Sparkles, X, Minus, Send, Loader2, Plus, RotateCcw } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
@@ -172,6 +171,10 @@ function CompactChat({
   const okno = usePresuvanie({ kluc: KLUC_OKNO, povolene: presuvatelne, ignorujTlacidla: true });
   // Ručne kreslené okno — Esc ho zatvára ako ostatné okná (Radix to robí sám, toto nie je Radix).
   useZatvorNaEscape(onClose);
+  // Odkaz z odpovede otvorí stránku pod oknom — na telefóne okno zakrýva celú obrazovku, tak sa zavrie.
+  const zavrietNaTelefone = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) onClose();
+  };
   // Pôvodné miesto okna, keď je tlačidlo odtiahnuté inam: pri tlačidle, nie vpravo dole.
   const [priTlacidle, setPriTlacidle] = useState<Poloha | null>(null);
 
@@ -242,7 +245,7 @@ function CompactChat({
         }
       />
       {companyId ? (
-        <ChatBody companyId={companyId} />
+        <ChatBody companyId={companyId} onNavigate={zavrietNaTelefone} />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
           <Sparkles className="h-8 w-8 text-muted-foreground" />
@@ -324,7 +327,14 @@ function Header({
   );
 }
 
-function ChatBody({ companyId }: { companyId: string }) {
+function ChatBody({
+  companyId,
+  onNavigate,
+}: {
+  companyId: string;
+  /** Klik na odkaz aplikácie v odpovedi. */
+  onNavigate?: () => void;
+}) {
   const { t } = useT();
   const qc = useQueryClient();
   const listFn = useServerFn(listConversationsFn);
@@ -425,7 +435,7 @@ function ChatBody({ companyId }: { companyId: string }) {
             >
               {m.role === "assistant" ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:my-1 [&_ul]:my-1 [&_a]:text-primary">
-                  <ReactMarkdown {...BEZPECNY_MARKDOWN}>{m.content}</ReactMarkdown>
+                  <MarkdownAi onNavigate={onNavigate}>{m.content}</MarkdownAi>
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap">{m.content}</p>

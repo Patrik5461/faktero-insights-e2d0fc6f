@@ -66,6 +66,7 @@ import { kvAutoPrijatej } from "@/lib/faktero/kv-auto";
 import { typPrijatej } from "@/lib/faktero/pravidla-uctovania";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { KodPohody } from "@/components/faktero/KodPohody";
+import { VyberZoZoznamu } from "@/components/faktero/VyberZoZoznamu";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
 import type { PolozkaK } from "@/components/faktero/DetailDokladuKompaktny";
 
@@ -948,23 +949,31 @@ export function PrijataFakturaForm({
     Polia formulára sú raz — klasické rozloženie ich skladá do štyroch kariet,
     kompaktné do úzkeho panelu vedľa náhľadu dokladu (ako Nespracované).
   */
+  const moznostiZaloh = [
+    { value: "", label: t("— žiadnu —") },
+    ...zalohy.map((z) => ({
+      value: z.id,
+      label: `${z.invoice_number} · ${formatujMenu(z.amount_total, z.currency)}`,
+    })),
+  ];
   const poliaDodavatela = (
     <>
       {dodavatelia.length > 0 && (
         <Field label="Z adresára dodávateľov">
-          <select
+          <VyberZoZoznamu
+            ariaLabel={t("Z adresára dodávateľov")}
             value={znamyDodavatel?.id ?? ""}
-            onChange={(e) => vyberDodavatela(e.target.value)}
+            onChange={vyberDodavatela}
             className="input"
-          >
-            <option value="">{t("— vybrať dodávateľa —")}</option>
-            {dodavatelia.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-                {d.ico ? ` · ${t("IČO {ico}", { ico: d.ico })}` : ""}
-              </option>
-            ))}
-          </select>
+            moznosti={[
+              { value: "", label: t("— vybrať dodávateľa —") },
+              ...dodavatelia.map((d) => ({
+                value: d.id,
+                label: d.name,
+                popis: d.ico ? t("IČO {ico}", { ico: d.ico }) : null,
+              })),
+            ]}
+          />
         </Field>
       )}
       <Field label="Názov *">
@@ -1107,40 +1116,29 @@ export function PrijataFakturaForm({
       </Field>
       {form.type === "advance_payment" && (
         <Field label="K prijatej zálohovej faktúre">
-          <select
+          <VyberZoZoznamu
+            ariaLabel={t("K prijatej zálohovej faktúre")}
             value={form.advance_invoice_id}
-            onChange={(e) => set("advance_invoice_id", e.target.value)}
+            onChange={(v) => set("advance_invoice_id", v)}
             className="input"
-          >
-            <option value="">{t("— žiadnu —")}</option>
-            {zalohy.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
-              </option>
-            ))}
-          </select>
+            moznosti={moznostiZaloh}
+          />
         </Field>
       )}
       {form.type === "regular" && zalohy.length > 0 && (
         <Field label="Zúčtováva prijatú zálohu">
-          <select
+          <VyberZoZoznamu
+            ariaLabel={t("Zúčtováva prijatú zálohu")}
             value={form.advance_invoice_id}
-            onChange={(e) => {
-              const v = e.target.value;
+            onChange={(v) => {
               set("advance_invoice_id", v);
               // Odpočet zálohy sa predvyplní sumou zálohy (dá sa prepísať, napr. pri čiastočnom zúčtovaní).
               const z = zalohy.find((x) => x.id === v);
               if (z && !form.advance_amount.trim()) set("advance_amount", formatujCislo(z.amount_total, 2, 2));
             }}
             className="input"
-          >
-            <option value="">{t("— žiadnu —")}</option>
-            {zalohy.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.invoice_number} · {formatujMenu(z.amount_total, z.currency)}
-              </option>
-            ))}
-          </select>
+            moznosti={moznostiZaloh}
+          />
         </Field>
       )}
       <Field label="Číslo faktúry dodávateľa">

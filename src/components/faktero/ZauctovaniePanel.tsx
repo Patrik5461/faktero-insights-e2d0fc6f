@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { VyberZoZoznamu } from "./VyberZoZoznamu";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { datumDphDokladu } from "@/lib/faktero/datum-dph";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
@@ -244,18 +245,16 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
                 {t("Kategória nákladu")}
                 {stitok("kategoria")}
               </span>
-              <select
+              <VyberZoZoznamu
+                ariaLabel={t("Kategória nákladu")}
                 value={hodnoty.kategoria}
-                onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
+                onChange={(v) => setHodnoty({ ...hodnoty, kategoria: v })}
                 className={vstup}
-              >
-                <option value="">{hromadne ? t("nemeniť") : "—"}</option>
-                {KATEGORIE_VYDAVKOV.map((k) => (
-                  <option key={k.kod} value={k.kod}>
-                    {t(k.nazov)}
-                  </option>
-                ))}
-              </select>
+                moznosti={[
+                  { value: "", label: hromadne ? t("nemeniť") : "—" },
+                  ...KATEGORIE_VYDAVKOV.map((k) => ({ value: k.kod, label: t(k.nazov) })),
+                ]}
+              />
             </label>
           )}
           {hodnoty.stredisko !== undefined && (
@@ -366,18 +365,16 @@ export function PoliaZauctovania<H extends HodnotyPoli>({
             {t("Kategória nákladu")}
             {stitok("kategoria")}
           </span>
-          <select
+          <VyberZoZoznamu
+            ariaLabel={t("Kategória nákladu")}
             value={hodnoty.kategoria}
-            onChange={(e) => setHodnoty({ ...hodnoty, kategoria: e.target.value })}
+            onChange={(v) => setHodnoty({ ...hodnoty, kategoria: v })}
             className={vstup}
-          >
-            <option value="">{hromadne ? t("nemeniť") : "—"}</option>
-            {KATEGORIE_VYDAVKOV.map((k) => (
-              <option key={k.kod} value={k.kod}>
-                {t(k.nazov)}
-              </option>
-            ))}
-          </select>
+            moznosti={[
+              { value: "", label: hromadne ? t("nemeniť") : "—" },
+              ...KATEGORIE_VYDAVKOV.map((k) => ({ value: k.kod, label: t(k.nazov) })),
+            ]}
+          />
         </label>
       )}
       {hodnoty.kv !== undefined && (
@@ -1106,6 +1103,7 @@ export function ZauctovaniePanel({
                 kody={{
                   predkontacia: h.predkontacia || navrhy?.predvolenaPredkontacia || null,
                   clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
+                  kv: h.kv || null,
                 }}
                 onZmena={onZmena}
               />
@@ -1384,18 +1382,16 @@ export function ZauctovaniePanel({
                   {t("Kategória nákladu")}
                   {stitok("kategoria")}
                 </span>
-                <select
+                <VyberZoZoznamu
+                  ariaLabel={t("Kategória nákladu")}
                   value={h.kategoria}
-                  onChange={(e) => setH({ ...h, kategoria: e.target.value })}
+                  onChange={(v) => setH({ ...h, kategoria: v })}
                   className={vstupK}
-                >
-                  <option value="">—</option>
-                  {KATEGORIE_VYDAVKOV.map((k) => (
-                    <option key={k.kod} value={k.kod}>
-                      {t(k.nazov)}
-                    </option>
-                  ))}
-                </select>
+                  moznosti={[
+                    { value: "", label: "—" },
+                    ...KATEGORIE_VYDAVKOV.map((k) => ({ value: k.kod, label: t(k.nazov) })),
+                  ]}
+                />
               </label>
               <label className="block">
                 <span className={popisK}>{t("Stredisko")}</span>
@@ -1481,6 +1477,7 @@ export function ZauctovaniePanel({
               kody={{
                 predkontacia: h.predkontacia || navrhy?.predvolenaPredkontacia || null,
                 clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
+                kv: h.kv || null,
               }}
               onZmena={onZmena}
             />
@@ -1702,6 +1699,7 @@ export function ZauctovaniePanel({
               kody={{
                 predkontacia: h.predkontacia || navrhy?.predvolenaPredkontacia || null,
                 clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
+                kv: h.kv || null,
               }}
               onZmena={onZmena}
             />

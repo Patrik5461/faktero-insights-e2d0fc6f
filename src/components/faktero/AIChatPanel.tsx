@@ -4,8 +4,7 @@ import { potvrd } from "@/lib/potvrdenie";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
-import { BEZPECNY_MARKDOWN } from "@/lib/faktero/markdown-ai";
+import { MarkdownAi } from "@/components/faktero/MarkdownAi";
 import { toast } from "sonner";
 import { Sparkles, Send, Plus, Trash2, Copy, Check, Loader2, X } from "lucide-react";
 import {
@@ -282,7 +281,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
           <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-headings:mt-2 prose-headings:mb-1">
-            <ReactMarkdown {...BEZPECNY_MARKDOWN}>{content}</ReactMarkdown>
+            <MarkdownAi>{content}</MarkdownAi>
           </div>
         )}
         {!isUser && (

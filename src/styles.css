@@ -244,6 +244,11 @@ html[data-dizajn="kompaktny"] :is(input:not([type="checkbox"]):not([type="radio"
 html[data-dizajn="kompaktny"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select) {
   min-height: 2.5rem;
 }
+/* Dlhý výber s hľadaním (VyberZoZoznamu) je tlačidlo — rovnaký tvar ako <select>, ktorý nahradil. */
+html[data-dizajn="kompaktny"] button.vyber-zo-zoznamu {
+  border-radius: 0.6rem;
+  min-height: 2.5rem;
+}
 /*
   Kompaktné polia: popis poľa sedí v jeho rámčeku. Platí pre
   tri vzory formulárov bez úprav každého formulára:

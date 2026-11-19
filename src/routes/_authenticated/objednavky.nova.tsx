@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { VyberZoZoznamu } from "@/components/faktero/VyberZoZoznamu";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -322,19 +323,17 @@ function NewOrder() {
           <section className="min-w-0 rounded-xl border border-border bg-card p-4">
             <MriezkaDokladu>
               <PoleDokladu label={t("Odberateľ")} htmlFor="odberatel-objednavky" className={bunka.polovica}>
-                <select
+                <VyberZoZoznamu
                   id="odberatel-objednavky"
+                  ariaLabel={t("Odberateľ")}
                   className={VSTUP_DOKLADU}
                   value={form.customer_id}
-                  onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
-                >
-                  <option value="">{t("— bez odberateľa —")}</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, customer_id: v })}
+                  moznosti={[
+                    { value: "", label: t("— bez odberateľa —") },
+                    ...customers.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                />
               </PoleDokladu>
               <PoleDokladu
                 label={t("Číslo objednávky u odberateľa")}
@@ -414,20 +413,21 @@ function NewOrder() {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="text-sm font-semibold">{t("Položky")}</div>
               {products.length > 0 && (
-                <select
+                <VyberZoZoznamu
+                  ariaLabel={t("+ pridať z katalógu")}
                   className="min-w-0 max-w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                   value=""
-                  onChange={(e) => {
-                    if (e.target.value) pridajProdukt(e.target.value);
+                  onChange={(v) => {
+                    if (v) pridajProdukt(v);
                   }}
-                >
-                  <option value="">{t("+ pridať z katalógu")}</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {suma(p.unit_price)}
-                    </option>
-                  ))}
-                </select>
+                  moznosti={[
+                    { value: "", label: t("+ pridať z katalógu") },
+                    ...products.map((p) => ({
+                      value: p.id,
+                      label: `${p.name} — ${suma(p.unit_price)}`,
+                    })),
+                  ]}
+                />
               )}
             </div>
 

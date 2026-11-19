@@ -175,6 +175,7 @@ export function PolozkyNespracovaneho({
                       vyber
                       bezPopisu
                       placeholder="ako doklad"
+                      zdedeny={zdedena.predkontacia}
                       className={vstupKodu}
                     />
                   </BunkaPolozky>
@@ -187,6 +188,7 @@ export function PolozkyNespracovaneho({
                       vyber
                       bezPopisu
                       placeholder="ako doklad"
+                      zdedeny={zdedena.clenenie}
                       className={vstupKodu}
                     />
                   </BunkaPolozky>

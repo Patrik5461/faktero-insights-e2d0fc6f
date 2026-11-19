@@ -43,6 +43,7 @@ export function ZoznamKodov({
   vlastny,
   onZavri,
   nazov,
+  placeholderHladania,
 }: {
   moznosti: MoznostVyberu[];
   hodnota?: string | null;
@@ -55,6 +56,8 @@ export function ZoznamKodov({
   onZavri?: () => void;
   /** Čo sa vyberá (preložené, napr. „Predkontácia“) — rozlíši hľadanie a zoznam pre čítačku. */
   nazov?: string;
+  /** Text v prázdnom hľadaní (preložený); predvolene hľadanie kódu. */
+  placeholderHladania?: string;
 }) {
   const { t } = useT();
   const popisy = popisyVyberu(nazov, t);
@@ -136,7 +139,7 @@ export function ZoznamKodov({
           value={hladane}
           onChange={(e) => setHladane(e.target.value)}
           onKeyDown={klavesa}
-          placeholder={t("Hľadať kód, názov alebo účet…")}
+          placeholder={placeholderHladania ?? t("Hľadať kód, názov alebo účet…")}
           className="h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
@@ -205,6 +208,8 @@ export function VyberKodu({
   disabled,
   vzhlad = "pole",
   className,
+  id,
+  placeholderHladania,
 }: {
   hodnota: string | null | undefined;
   moznosti: MoznostVyberu[];
@@ -220,6 +225,9 @@ export function VyberKodu({
   disabled?: boolean;
   vzhlad?: "pole" | "riadok";
   className?: string;
+  /** id tlačidla — nech naň ukazuje `<label htmlFor>`. */
+  id?: string;
+  placeholderHladania?: string;
 }) {
   const { t } = useT();
   const [otvorene, setOtvorene] = useState(false);
@@ -246,6 +254,7 @@ export function VyberKodu({
     <Popover open={otvorene} onOpenChange={setOtvorene}>
       <PopoverTrigger asChild>
         <button
+          id={id}
           type="button"
           role="combobox"
           aria-expanded={otvorene}
@@ -254,6 +263,13 @@ export function VyberKodu({
           disabled={disabled || ukladam}
           title={vybrana?.popis ? `${vybrana.text} · ${vybrana.popis}` : undefined}
           onClick={(e) => e.stopPropagation()}
+          // Ako natívny <select>: šípka otvorí zoznam (Enter a medzera ho otvoria tiež).
+          onKeyDown={(e) => {
+            if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !e.altKey) {
+              e.preventDefault();
+              setOtvorene(true);
+            }
+          }}
           className={
             riadok
               ? `inline-flex max-w-[14rem] items-center gap-1 rounded-md border border-input bg-background px-1.5 py-1 text-left text-xs hover:bg-secondary disabled:opacity-50 ${
@@ -282,6 +298,7 @@ export function VyberKodu({
           prazdne={prazdne}
           vlastny={vlastny}
           nazov={ariaLabel}
+          placeholderHladania={placeholderHladania}
           onZavri={() => setOtvorene(false)}
           onVyber={async (v) => {
             setOtvorene(false);

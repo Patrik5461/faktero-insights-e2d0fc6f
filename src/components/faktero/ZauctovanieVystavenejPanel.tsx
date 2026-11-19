@@ -545,6 +545,7 @@ export function useZauctovanieVystavenej({
             clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
             stredisko: h.stredisko || navrhy?.predvoleneStredisko || null,
             cinnost: h.cinnost || null,
+            kv: h.kv || null,
           }}
           kvMoznosti={moznostiKv(navrhy?.kv, KV_VYDANE)}
           sStrediskom

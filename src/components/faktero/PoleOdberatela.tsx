@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useT } from "@/lib/i18n/useT";
+import { VyberZoZoznamu } from "./VyberZoZoznamu";
 
 export type Odberatel = {
   id: string;
@@ -62,21 +63,20 @@ export function PoleOdberatela({
   return (
     <label className={`block ${className ?? ""}`}>
       <span className="text-sm font-medium">{t(label)}</span>
-      <select
+      <VyberZoZoznamu
+        ariaLabel={t(label)}
         value={value}
-        onChange={(e) => {
-          const id = e.target.value;
-          onChange(id, zoznam?.find((o) => o.id === id) ?? null);
-        }}
+        onChange={(id) => onChange(id, zoznam?.find((o) => o.id === id) ?? null)}
         className="input mt-1"
-      >
-        <option value="">{t("— nevybraný —")}</option>
-        {(zoznam ?? []).map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
-      </select>
+        moznosti={[
+          { value: "", label: t("— nevybraný —") },
+          ...(zoznam ?? []).map((o) => ({
+            value: o.id,
+            label: o.name,
+            popis: [o.street, o.city].filter(Boolean).join(", ") || null,
+          })),
+        ]}
+      />
       {zoznam !== null && zoznam.length === 0 && (
         <span className="mt-1 block text-xs text-muted-foreground">
           {t("Firma zatiaľ nemá odberateľov —")}{" "}

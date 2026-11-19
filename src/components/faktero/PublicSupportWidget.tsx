@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import ReactMarkdown from "react-markdown";
-import { BEZPECNY_MARKDOWN } from "@/lib/faktero/markdown-ai";
+import { MarkdownAi } from "@/components/faktero/MarkdownAi";
 import { MessageCircle, X, Send, Loader2, Minus, Mail, Phone } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
@@ -163,7 +162,7 @@ export function PublicSupportWidget() {
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_a]:text-primary">
                       {/* Uvítanie a záložné hlášky sú pevné slovenské texty — preložia sa; odpoveď AI prejde bez zmeny. */}
-                      <ReactMarkdown {...BEZPECNY_MARKDOWN}>{t(m.content)}</ReactMarkdown>
+                      <MarkdownAi>{t(m.content)}</MarkdownAi>
                     </div>
                   ) : (
                     m.content

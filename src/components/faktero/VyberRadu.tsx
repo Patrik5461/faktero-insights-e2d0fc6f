@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { VyberZoZoznamu } from "./VyberZoZoznamu";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -118,6 +119,11 @@ export function VyberRadu({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nahlad]);
 
+  const moznostiRadov = rady.map((r) => ({
+    value: r.is_default ? "" : r.id,
+    label: `${r.name}${r.is_default ? ` ${t("(predvolený)")}` : ""}`,
+  }));
+
   if (vzhlad === "pole") {
     if (rady.length === 0) return null;
     return (
@@ -136,19 +142,14 @@ export function VyberRadu({
           </Link>
         }
       >
-        <select
+        <VyberZoZoznamu
           id="ciselny-rad-dokladu"
+          ariaLabel={t(label)}
           value={hodnota}
-          onChange={(e) => onZmena(e.target.value)}
+          onChange={onZmena}
           className={`${VSTUP_DOKLADU} truncate`}
-        >
-          {rady.map((r) => (
-            <option key={r.id} value={r.is_default ? "" : r.id}>
-              {r.name}
-              {r.is_default ? ` ${t("(predvolený)")}` : ""}
-            </option>
-          ))}
-        </select>
+          moznosti={moznostiRadov}
+        />
       </PoleDokladu>
     );
   }
@@ -165,20 +166,15 @@ export function VyberRadu({
   return (
     <div className={className}>
       <label className="text-[13px] font-semibold text-foreground">{t(label)}</label>
-      <select
+      {/* Surovú masku („Q{YYYY}{NNNN}“) neukazujeme — číslo, ktoré doklad dostane, je pod výberom.
+          Predvolený rad má prázdnu hodnotu — doklad sa tak neviaže na konkrétny rad zbytočne. */}
+      <VyberZoZoznamu
+        ariaLabel={t(label)}
         value={hodnota}
-        onChange={(e) => onZmena(e.target.value)}
+        onChange={onZmena}
         className="mt-1 w-full min-w-0 truncate rounded-md border border-input bg-background px-3 py-2 text-sm"
-      >
-        {rady.map((r) => (
-          /* Surovú masku („Q{YYYY}{NNNN}“) neukazujeme — číslo, ktoré doklad dostane, je pod výberom.
-             Predvolený rad má prázdnu hodnotu — doklad sa tak neviaže na konkrétny rad zbytočne. */
-          <option key={r.id} value={r.is_default ? "" : r.id}>
-            {r.name}
-            {r.is_default ? ` ${t("(predvolený)")}` : ""}
-          </option>
-        ))}
-      </select>
+        moznosti={moznostiRadov}
+      />
       {cisloRiadok}
       <span className="mt-1 block text-xs text-muted-foreground">
         {t("Spravujú sa v")}{" "}

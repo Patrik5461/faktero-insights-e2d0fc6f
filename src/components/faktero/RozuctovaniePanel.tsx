@@ -65,6 +65,8 @@ export function RozuctovaniePanel({
     clenenie: string | null;
     stredisko?: string | null;
     cinnost?: string | null;
+    /** Členenie KV dokladu — prázdna voľba riadku ho ukáže („z dokladu (B2)“). */
+    kv?: string | null;
   };
   zamknute?: boolean;
   onZmena?: () => void;
@@ -221,6 +223,7 @@ export function RozuctovaniePanel({
                 onChange={(v) => zmen(i, { predkontacia: v })}
                 moznosti={navrhy?.predkontacie ?? []}
                 placeholder={kody.predkontacia ?? ""}
+                zdedeny={kody.predkontacia}
                 className={POLE_POLOZKY}
                 vyber
               />
@@ -233,6 +236,7 @@ export function RozuctovaniePanel({
                 moznosti={navrhy?.clenenia ?? []}
                 vyber
                 placeholder={kody.clenenie ?? ""}
+                zdedeny={kody.clenenie}
                 className={POLE_POLOZKY}
               />
             </BunkaPolozky>
@@ -283,7 +287,11 @@ export function RozuctovaniePanel({
                   className={VYBER_POLOZKY}
                   aria-label={t("Členenie KV riadku {n}", { n: i + 1 })}
                 >
-                  <option value="">{t("z dokladu")}</option>
+                  <option value="">
+                    {kody.kv?.trim()
+                      ? t("ako doklad ({kod})", { kod: kody.kv.trim() })
+                      : t("z dokladu")}
+                  </option>
                   {kvMoznosti.map((k) => (
                     <option key={k.kod} value={k.kod} title={t(k.nazov)}>
                       {k.kod === "X" ? t("nezahŕňať") : k.kod}

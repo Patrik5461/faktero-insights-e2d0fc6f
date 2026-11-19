@@ -4,6 +4,7 @@
   archivovať, zmazať prázdnu). Logika je v `lib/faktero/pokladne.ts`.
 */
 import { useCallback, useEffect, useState } from "react";
+import { VyberZoZoznamu } from "./VyberZoZoznamu";
 import { useServerFn } from "@tanstack/react-start";
 import { Archive, ArchiveRestore, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -73,22 +74,21 @@ export function VyberPokladne({
   const archivovana =
     value && !akt.some((p) => p.id === value) ? pokladne.find((p) => p.id === value) : null;
   const vyber = (
-    <select
-      aria-label={label ?? t("Pokladňa")}
+    <VyberZoZoznamu
+      ariaLabel={label ?? t("Pokladňa")}
       className={
         selectClassName ?? "w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       }
       value={value}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {[...akt, ...(archivovana ? [archivovana] : [])].map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.nazov} ({p.mena}){p.predvolena ? ` · ${t("predvolená")}` : ""}
-          {!p.aktivna ? ` · ${t("archivovaná")}` : ""}
-        </option>
-      ))}
-    </select>
+      onChange={onChange}
+      moznosti={[...akt, ...(archivovana ? [archivovana] : [])].map((p) => ({
+        value: p.id,
+        label: `${p.nazov} (${p.mena})${p.predvolena ? ` · ${t("predvolená")}` : ""}${
+          !p.aktivna ? ` · ${t("archivovaná")}` : ""
+        }`,
+      }))}
+    />
   );
   if (bezPopisu) return vyber;
   return (

@@ -1,4 +1,5 @@
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { VyberZoZoznamu } from "@/components/faktero/VyberZoZoznamu";
 import { AutoZauctovanieOdznak } from "@/components/faktero/AutoZauctovanieOdznak";
 import { useT } from "@/lib/i18n/useT";
 import { zdrojVydavku } from "@/lib/faktero/zdroj-vydavku";
@@ -1653,30 +1654,31 @@ function NovyDokladPage() {
               {/* Zahraničný bloček nesie sadzby štátu dodávateľa — keď ju IČ DPH neprezradí, vyberie sa tu. */}
               <label className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Krajina dodávateľa")}</span>
-                <select
+                <VyberZoZoznamu
+                  ariaLabel={t("Krajina dodávateľa")}
                   value={form.supplier_country}
-                  onChange={(e) => updateForm("supplier_country", e.target.value)}
+                  onChange={(v) => updateForm("supplier_country", v)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">
-                    {krajinaZIcDph(form.supplier_ic_dph)
-                      ? t("Podľa IČ DPH ({krajina})", { krajina: krajinaZIcDph(form.supplier_ic_dph)! })
-                      : t("Tuzemský dodávateľ")}
-                  </option>
-                  <optgroup label={t("Zahraničný dodávateľ")}>
-                    {SADZBY_EU.filter((s) => s.kod !== krajina).map((s) => (
-                      <option key={s.kod} value={s.kod}>
-                        {s.kod} — {nazovStatu(s.kod, jazyk, s.nazov)}
-                      </option>
-                    ))}
-                    {form.supplier_country &&
-                      form.supplier_country !== krajina &&
-                      !SADZBY_EU.some((s) => s.kod === form.supplier_country) && (
-                        <option value={form.supplier_country}>{form.supplier_country}</option>
-                      )}
-                  </optgroup>
-                  {form.supplier_country === krajina && <option value={krajina}>{krajina}</option>}
-                </select>
+                  moznosti={[
+                    {
+                      value: "",
+                      label: krajinaZIcDph(form.supplier_ic_dph)
+                        ? t("Podľa IČ DPH ({krajina})", { krajina: krajinaZIcDph(form.supplier_ic_dph)! })
+                        : t("Tuzemský dodávateľ"),
+                    },
+                    ...SADZBY_EU.filter((s) => s.kod !== krajina).map((s) => ({
+                      value: s.kod,
+                      label: `${s.kod} — ${nazovStatu(s.kod, jazyk, s.nazov)}`,
+                      popis: t("Zahraničný dodávateľ"),
+                    })),
+                    ...(form.supplier_country &&
+                    form.supplier_country !== krajina &&
+                    !SADZBY_EU.some((s) => s.kod === form.supplier_country)
+                      ? [{ value: form.supplier_country, label: form.supplier_country }]
+                      : []),
+                    ...(form.supplier_country === krajina ? [{ value: krajina, label: krajina }] : []),
+                  ]}
+                />
               </label>
               <Field
                 label={t("Číslo dokladu")}
@@ -1693,21 +1695,19 @@ function NovyDokladPage() {
                   spárovať s predkontáciou ani s pravidlom. */}
               <label className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">{t("Kategória")}</span>
-                <select
+                <VyberZoZoznamu
+                  ariaLabel={t("Kategória")}
                   value={form.category}
-                  onChange={(e) => updateForm("category", e.target.value)}
+                  onChange={(v) => updateForm("category", v)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">{t("— vyberte —")}</option>
-                  {form.category && !KATEGORIE_VYDAVKOV.some((k) => k.kod === form.category) && (
-                    <option value={form.category}>{form.category}</option>
-                  )}
-                  {KATEGORIE_VYDAVKOV.map((k) => (
-                    <option key={k.kod} value={k.kod}>
-                      {t(k.nazov)}
-                    </option>
-                  ))}
-                </select>
+                  moznosti={[
+                    { value: "", label: t("— vyberte —") },
+                    ...(form.category && !KATEGORIE_VYDAVKOV.some((k) => k.kod === form.category)
+                      ? [{ value: form.category, label: form.category }]
+                      : []),
+                    ...KATEGORIE_VYDAVKOV.map((k) => ({ value: k.kod, label: t(k.nazov) })),
+                  ]}
+                />
               </label>
               {neplatitel ? (
                 <PoznamkaNeplatitelaDph className="sm:col-span-2" />

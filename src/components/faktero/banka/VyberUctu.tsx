@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { VyberZoZoznamu } from "@/components/faktero/VyberZoZoznamu";
 import { supabase } from "@/integrations/supabase/client";
 import { formatujIban } from "@/lib/faktero/platobny-ucet";
 import { useT } from "@/lib/i18n/useT";
@@ -76,20 +77,19 @@ export function VyberUctu({
   return (
     <label className={`block text-sm ${className}`}>
       <span className="mb-1 block text-xs text-muted-foreground">{t("Účet na úhradu")}</span>
-      <select
+      <VyberZoZoznamu
         value={value ?? ""}
-        aria-label={t("Účet na úhradu")}
-        onChange={(e) => onChange(e.target.value)}
+        ariaLabel={t("Účet na úhradu")}
+        onChange={onChange}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-      >
-        {!value && <option value="">{t("— účet firmy —")}</option>}
-        {ucty.map((u) => (
-          <option key={u.id} value={u.id}>
-            {popisUctu(u)}
-            {u.is_default ? ` ${t("(predvolený)")}` : ""}
-          </option>
-        ))}
-      </select>
+        moznosti={[
+          ...(!value ? [{ value: "", label: t("— účet firmy —") }] : []),
+          ...ucty.map((u) => ({
+            value: u.id,
+            label: `${popisUctu(u)}${u.is_default ? ` ${t("(predvolený)")}` : ""}`,
+          })),
+        ]}
+      />
     </label>
   );
 }

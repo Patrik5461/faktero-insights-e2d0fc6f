@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { VyberZoZoznamu } from "@/components/faktero/VyberZoZoznamu";
 import { cn } from "@/lib/utils";
 import { vsetkyRiadky } from "@/lib/faktero/strankovanie";
 import { CisloDokladuOdznak, MriezkaDokladu, PoleDokladu, VSTUP_DOKLADU, bunka } from "@/components/faktero/PoleDokladu";
@@ -348,20 +349,17 @@ function NewQuote() {
                   </button>
                 }
               >
-                <select
+                <VyberZoZoznamu
                   id="odberatel-ponuky"
-                  required
+                  ariaLabel={t("Odberateľ")}
                   value={form.customer_id}
-                  onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
+                  onChange={(v) => setForm({ ...form, customer_id: v })}
                   className={VSTUP_DOKLADU}
-                >
-                  <option value="">{t("Vyberte odberateľa…")}</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  moznosti={[
+                    { value: "", label: t("Vyberte odberateľa…") },
+                    ...customers.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                />
               </PoleDokladu>
               <PoleDokladu label={t("Dátum vystavenia")} htmlFor="datum-vystavenia" className={bunka.datum}>
                 <input
@@ -423,20 +421,21 @@ function NewQuote() {
               <h2 className="font-semibold">{t("Položky")}</h2>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {produkty.length > 0 && (
-                  <select aria-label={t("Pridať z katalógu")}
+                  <VyberZoZoznamu
+                    ariaLabel={t("Pridať z katalógu")}
                     value=""
-                    onChange={(e) => {
-                      if (e.target.value) zKatalogu(e.target.value);
+                    onChange={(v) => {
+                      if (v) zKatalogu(v);
                     }}
                     className="min-w-0 max-w-full flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm sm:max-w-xs"
-                  >
-                    <option value="">{t("Z katalógu…")}</option>
-                    {produkty.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — {formatujMenu(p.unit_price, form.currency)}
-                      </option>
-                    ))}
-                  </select>
+                    moznosti={[
+                      { value: "", label: t("Z katalógu…") },
+                      ...produkty.map((p) => ({
+                        value: p.id,
+                        label: `${p.name} — ${formatujMenu(p.unit_price, form.currency)}`,
+                      })),
+                    ]}
+                  />
                 )}
                 <button
                   type="button"

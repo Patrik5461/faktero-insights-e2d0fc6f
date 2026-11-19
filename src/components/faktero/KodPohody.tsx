@@ -21,6 +21,7 @@ export function KodPohody({
   ariaLabel,
   vyber,
   odkazNaCiselnik,
+  zdedeny,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -36,6 +37,11 @@ export function KodPohody({
   vyber?: boolean;
   /** Pri prázdnom číselníku ukáže odkaz na jeho načítanie (len pri hlavnej predkontácii). */
   odkazNaCiselnik?: boolean;
+  /**
+   * Kód, ktorý sa použije, keď políčko ostane prázdne (zdedený z dokladu) —
+   * prázdna voľba ukáže „ako doklad (PD)“ namiesto samotného „ako doklad“.
+   */
+  zdedeny?: string | null;
 }) {
   const { t } = useT();
   const id = useId();
@@ -47,8 +53,9 @@ export function KodPohody({
     nič neponúklo.
   */
   if (vyber && moznosti.length > 0) {
-    const prazdne =
-      placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
+    const prazdne = zdedeny?.trim()
+      ? t("ako doklad ({kod})", { kod: zdedeny.trim() })
+      : placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
         ? t("predvolené: {kod}", { kod: placeholder })
         : placeholder === "nemeniť" || placeholder?.startsWith("ako ")
           ? t(placeholder)
@@ -90,7 +97,13 @@ export function KodPohody({
       <input
         list={id}
         value={value}
-        placeholder={placeholder ? t(placeholder) : placeholder}
+        placeholder={
+          zdedeny?.trim()
+            ? t("ako doklad ({kod})", { kod: zdedeny.trim() })
+            : placeholder
+              ? t(placeholder)
+              : placeholder
+        }
         aria-label={ariaLabel ? t(ariaLabel) : ariaLabel}
         onChange={(e) => onChange(e.target.value)}
         className={

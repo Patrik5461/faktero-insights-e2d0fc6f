@@ -5,7 +5,13 @@
   diakritiku a veľkosť písmen a pohyb po zozname šípkami.
 */
 
-export type MoznostVyberu = { hodnota: string; text: string; popis?: string | null };
+export type MoznostVyberu = {
+  hodnota: string;
+  text: string;
+  popis?: string | null;
+  /** Hľadať len v texte a popise — hodnota je interná (id), nie kód, ktorý človek píše. */
+  bezHodnotyVHladani?: boolean;
+};
 
 /** Malé písmená bez diakritiky — „Nákup PHM“ aj „nakup phm“ sa nájdu rovnako. */
 export function bezDiakritiky(s: string): string {
@@ -14,7 +20,7 @@ export function bezDiakritiky(s: string): string {
 
 /** Text, v ktorom sa hľadá: kód, názov aj účty MD/D. */
 function hladanyText(m: MoznostVyberu): string {
-  return bezDiakritiky(`${m.hodnota} ${m.text} ${m.popis ?? ""}`);
+  return bezDiakritiky(`${m.bezHodnotyVHladani ? "" : m.hodnota} ${m.text} ${m.popis ?? ""}`);
 }
 
 /**
