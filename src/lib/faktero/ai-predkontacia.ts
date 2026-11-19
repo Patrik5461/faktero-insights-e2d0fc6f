@@ -594,6 +594,21 @@ export function bezNepotvrdenehoAi(u: UdajeNespracovaneho): UdajeNespracovaneho 
   return zahodNavrhAi(u);
 }
 
+/**
+ * Údaje na zápis dokladu z Nespracovaných. „Zaúčtovať“ (detail, kompaktný
+ * detail aj hromadné spracovanie) je potvrdenie návrhu — ako „Potvrdiť
+ * návrh“ v zaúčtovaní prijatej faktúry: hodnoty AI ostanú a sú voľbou
+ * človeka. Bez potvrdenia (iné cesty, napr. faktúra z dokladu o úhrade) sa
+ * nepotvrdený návrh vyprázdni a prenesie k dokladu (`nepotvrdene`).
+ */
+export function udajeNaZapisDokladu(
+  u: UdajeNespracovaneho,
+  potvrdit: boolean,
+): { udaje: UdajeNespracovaneho; nepotvrdene: PoleNavrhu[] } {
+  if (potvrdit) return { udaje: potvrdNavrhAi(u), nepotvrdene: [] };
+  return { udaje: bezNepotvrdenehoAi(u), nepotvrdene: nepotvrdeneAi(u) };
+}
+
 /** Štítky pri poliach formulára: nepotvrdený návrh AI a nezmenené naučené hodnoty. */
 export function oznaceniaZUdajov(
   u: UdajeNespracovaneho,

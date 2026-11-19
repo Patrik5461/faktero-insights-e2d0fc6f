@@ -35,6 +35,9 @@ import {
   koniecMesiaca,
   skratkaUctuVPohode,
   vyberPohybovBanky,
+  zarovnaneCislaVypisu,
+  cisloVypisuZDatumu,
+  pohybZTransakcie,
   type TransakciaBanky,
 } from "./banka-pohoda";
 import { bankaPreDavku, xmlVypisuPrePohodu } from "./banka-pohoda.server";
@@ -453,5 +456,148 @@ describe("poradiePokracovanim", () => {
     expect(m.get("b")).toBe(2);
     expect(m.get("c")).toBe(3);
     expect(m.get("0")).toBe(4);
+  });
+});
+
+/* ------------------------------------------------------------------ zarovnané čísla, likvidácia v ručnom XML, údaje z faktúry */
+
+describe("nový formát výpisu (010/0001) od novembra 2026", () => {
+  it("staré obdobie a mesiac odovzdaný po starom ostávajú; nové obdobie zarovnané", () => {
+    expect(zarovnaneCislaVypisu("2026-10")).toBe(false);
+    expect(zarovnaneCislaVypisu("2026-11")).toBe(true);
+    expect(zarovnaneCislaVypisu("2026-12", [null, "2026-12-03T02:00:00+00:00"])).toBe(true);
+    // Pohyb, ktorý odišiel starým kódom, drží celý mesiac po starom.
+    expect(zarovnaneCislaVypisu("2026-11", [null, "2026-11-16T02:45:09.902+00:00"])).toBe(false);
+    expect(zarovnaneCislaVypisu("2026-11", ["2026-11-16 02:45:09+00"])).toBe(false);
+    expect(cisloVypisuZDatumu("2026-10-31")).toBe("10");
+    expect(cisloVypisuZDatumu("2026-11-30", true)).toBe("011");
+    expect(cisloVypisuZDatumu("2026-10-31", true)).toBe("010");
+  });
+
+  const NOV = [
+    tx(31, UCET_TB.id, "2026-11-03", 123, { variable_symbol: "20260001", counterparty: "Odberateľ s.r.o.", counterparty_iban: "SK6807200002891987426353" }),
+    tx(32, UCET_TB.id, "2026-11-05", -2.5, { description: "Poplatok za vedenie účtu" }),
+  ];
+
+  it("ručné XML za november: 011/0001 a automatická likvidácia ako v konektore — prejde schémou", async () => {
+    const x = await xmlVypisuPrePohodu({ company: firma, ucet: UCET_TB, txs: NOV, pravidla, banka: "TB", periodEnd: "2026-11-30", dnes: "2026-12-02" });
+    expect(x).toContain("<bnk:statementNumber>011</bnk:statementNumber>");
+    expect(x).toContain("<bnk:numberMovement>0001</bnk:numberMovement>");
+    expect(x).toContain("<bnk:numberMovement>0002</bnk:numberMovement>");
+    expect(x).toContain("<lqd:automaticLiquidation");
+    expect(x).toContain("<ftr:dateFrom>2026-11-01</ftr:dateFrom>");
+    expect(x).toContain("<ftr:dateTill>2026-12-02</ftr:dateTill>");
+    expect(x).toContain(`<lqd:ruleOfPairing><typ:id>${PRAVIDLO_PAROVANIA_ID}</typ:id></lqd:ruleOfPairing>`);
+    expect(x).toMatch(/xmlns:lqd=.*automaticLiquidation\.xsd/);
+    expect(x).toMatch(/xmlns:ftr=.*filter\.xsd/);
+    expect(await chybaXsd(x)).toBeNull();
+  });
+
+  it("overovačka schémy chybu naozaj nájde (nezmysel v likvidácii)", async () => {
+    const x = await xmlVypisuPrePohodu({ company: firma, ucet: UCET_TB, txs: NOV, pravidla, banka: "TB", periodEnd: "2026-11-30", dnes: "2026-12-02" });
+    const zle = x.replace("<lqd:ruleOfPairing>", "<lqd:nezmysel>1</lqd:nezmysel><lqd:ruleOfPairing>");
+    expect(await chybaXsd(zle)).not.toBeNull();
+    // Aj sedemnásťmiestne poradie (viac než 10 znakov s číslom výpisu) schéma odmietne.
+    const dlhe = x.replace("<bnk:numberMovement>0001</bnk:numberMovement>", "<bnk:numberMovement>00000000001</bnk:numberMovement>");
+    expect(await chybaXsd(dlhe)).not.toBeNull();
+  });
+
+  it("ručné XML za október ostáva bez likvidácie a so starými číslami", async () => {
+    const x = await xmlVypisuPrePohodu({ company: firma, ucet: UCET_TB, txs: TXS, pravidla, banka: "TB", periodEnd: "2026-10-31", dnes: "2026-12-02" });
+    expect(x).not.toContain("automaticLiquidation");
+    expect(x).toContain("<bnk:statementNumber>10</bnk:statementNumber>");
+    expect(x).toContain("<bnk:numberMovement>1</bnk:numberMovement>");
+  });
+
+  it("ručné XML za mesiac, ktorý konektor už poslal po starom, čísla nemení", async () => {
+    const txs = NOV.map((t, i) => (i === 0 ? { ...t, exported_at: "2026-11-16T02:45:09Z" } : t));
+    const x = await xmlVypisuPrePohodu({ company: firma, ucet: UCET_TB, txs, pravidla, banka: "TB", periodEnd: "2026-11-30", dnes: "2026-12-02" });
+    expect(x).toContain("<bnk:statementNumber>11</bnk:statementNumber>");
+    expect(x).toContain("<bnk:numberMovement>1</bnk:numberMovement>");
+  });
+
+  it("konektor: nový mesiac 011/000N, pokračovanie za pohybom odovzdaným po novom", async () => {
+    const r = await bankaPreDavku(db(NOV) as any, { company: firma, od: "2026-11-01", dnes: new Date("2026-11-20T08:00:00Z") });
+    expect(r.entries).toContain("<bnk:statementNumber>011</bnk:statementNumber>");
+    expect(r.entries).toContain("<bnk:numberMovement>0001</bnk:numberMovement>");
+    expect(r.entries).toContain("<bnk:numberMovement>0002</bnk:numberMovement>");
+    const poNovom = NOV.map((t, i) => (i === 0 ? { ...t, exported_at: "2026-11-20T03:00:00Z" } : t));
+    const r2 = await bankaPreDavku(db(poNovom) as any, { company: firma, od: "2026-11-01", dnes: new Date("2026-11-21T08:00:00Z") });
+    expect(r2.entries).toContain("<bnk:statementNumber>011</bnk:statementNumber>");
+    expect(r2.entries).toContain("<bnk:numberMovement>0002</bnk:numberMovement>");
+    expect(r2.entries).not.toContain("<bnk:numberMovement>0001</bnk:numberMovement>");
+    const x = buildPohodaDavkaXml({
+      company: firma,
+      invoices: [],
+      doklady: [],
+      pohyby: [],
+      nastavenia: {} as any,
+      banka: r.entries,
+      likvidacia: polozkyAutomatickejLikvidacie(likvidaciePreSkupiny(r.skupiny, "2026-11-20"), PRAVIDLO_PAROVANIA_ID),
+    } as any);
+    expect(await chybaXsd(x)).toBeNull();
+  });
+
+  it("konektor: mesiac odovzdaný po starom pokračuje po starom (odovzdaný pohyb sa neprečísluje)", async () => {
+    const poStarom = NOV.map((t, i) => (i === 0 ? { ...t, exported_at: "2026-11-16T02:45:09Z" } : t));
+    const r = await bankaPreDavku(db(poStarom) as any, { company: firma, od: "2026-11-01", dnes: new Date("2026-11-21T08:00:00Z") });
+    expect(r.entries).toContain("<bnk:statementNumber>11</bnk:statementNumber>");
+    expect(r.entries).toContain("<bnk:numberMovement>2</bnk:numberMovement>");
+  });
+});
+
+describe("pohyb spárovaný s faktúrou", () => {
+  it("doplní partnera, VS a text z faktúry, keď ich pohyb nemá", () => {
+    const p = pohybZTransakcie(tx(41, UCET_TB.id, "2026-11-04", 123), {
+      pravidla: [],
+      iban: UCET_TB.iban,
+      kurz: null,
+      doklad: { typ: "FV", cislo: "20260001", vs: null, partner: "Odberateľ s.r.o." },
+    });
+    expect(p).toMatchObject({ protistrana: "Odberateľ s.r.o.", vs: "20260001", popis: "Úhrada FV č. 20260001" });
+    const q = pohybZTransakcie(tx(42, UCET_TB.id, "2026-11-04", -245.6), {
+      pravidla: [],
+      iban: UCET_TB.iban,
+      kurz: null,
+      doklad: { typ: "FP", cislo: "FA-2026/15", vs: "202615", partner: "AUTOGLAS, s.r.o." },
+    });
+    expect(q).toMatchObject({ protistrana: "AUTOGLAS, s.r.o.", vs: "202615", popis: "Úhrada FP č. FA-2026/15" });
+  });
+
+  it("vlastné údaje pohybu sa neprepisujú; nečíselné číslo faktúry nie je VS", () => {
+    const p = pohybZTransakcie(
+      tx(43, UCET_TB.id, "2026-11-04", 50, { counterparty: "Banka", variable_symbol: "111", description: "Platba" }),
+      { pravidla: [], iban: UCET_TB.iban, kurz: null, doklad: { typ: "FV", cislo: "20260009", vs: "20260009", partner: "Iný" } },
+    );
+    expect(p).toMatchObject({ protistrana: "Banka", vs: "111", popis: "Platba" });
+    const q = pohybZTransakcie(tx(44, UCET_TB.id, "2026-11-04", 50), {
+      pravidla: [],
+      iban: UCET_TB.iban,
+      kurz: null,
+      doklad: { typ: "FV", cislo: "FA-7", vs: null, partner: null },
+    });
+    expect(q.vs).toBeNull();
+    expect(q.popis).toBe("Úhrada FV č. FA-7");
+  });
+
+  it("konektor si spárovanú faktúru načíta sám (matched_invoice_id / matched_purchase_invoice_id)", async () => {
+    const txs = [
+      tx(51, UCET_TB.id, "2026-11-03", 123, { matched_invoice_id: "inv-1" } as any),
+      tx(52, UCET_TB.id, "2026-11-04", -99, { matched_purchase_invoice_id: "pi-1" } as any),
+    ];
+    const d = databaza({
+      bank_accounts: [UCET_TB].map((u) => ({ ...u, company_id: FIRMA })),
+      company_bank_accounts: SKRATKY.map((s) => ({ ...s, company_id: FIRMA })),
+      bank_transactions: txs.map((t) => ({ ...t, company_id: FIRMA })),
+      pravidla_uctovania: [],
+      invoices: [{ id: "inv-1", invoice_number: "20260077", variable_symbol: "20260077", customer_name: "Odberateľ s.r.o." }],
+      purchase_invoices: [{ id: "pi-1", invoice_number: "260101873", variable_symbol: null, supplier_name: "AUTOGLAS, s.r.o." }],
+    });
+    const r = await bankaPreDavku(d as any, { company: firma, od: "2026-11-01", dnes: new Date("2026-11-20T08:00:00Z") });
+    expect(r.entries).toContain("<bnk:text>Úhrada FV č. 20260077</bnk:text>");
+    expect(r.entries).toContain("<bnk:symVar>20260077</bnk:symVar>");
+    expect(r.entries).toContain("<bnk:text>Úhrada FP č. 260101873</bnk:text>");
+    expect(r.entries).toContain("<typ:company>AUTOGLAS, s.r.o.</typ:company>");
+    expect(r.entries).toContain("<bnk:symVar>260101873</bnk:symVar>");
   });
 });

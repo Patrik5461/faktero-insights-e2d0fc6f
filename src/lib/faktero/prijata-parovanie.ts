@@ -239,3 +239,25 @@ export function sparujPrijate(pohyby: Pohyb[], faktury: PrijataFaktura[]): Zhoda
 
   return vybrane;
 }
+
+/**
+ * Istá prijatá faktúra pre odchádzajúci pohyb z bankovej notifikácie (avízo
+ * VÚB a pod.) — tie isté pravidlá ako {@link ohodnotPrijatu} (suma na cent,
+ * mena, okno od vystavenia, nie hotovosť ani zrušená), navyše **musí sedieť
+ * variabilný symbol** a keď IBAN protistrany aj účet dodávateľa poznáme,
+ * musia sa zhodovať. Zapíše sa len jediná takáto faktúra; dve a viac = nech
+ * rozhodne človek v párovaní (`null`).
+ */
+export function istaPrijataPrePohyb(p: Pohyb, faktury: PrijataFaktura[]): string | null {
+  const vs = normVs(p.variable_symbol);
+  if (vs.length < 3) return null;
+  const ibanPohybu = normIban(p.counterparty_iban);
+  const kandidati = faktury.filter((f) => {
+    if (!ohodnotPrijatu(p, f)) return false;
+    if (symbolFaktury(f) !== vs) return false;
+    const ibanFaktury = normIban(f.supplier_iban);
+    if (ibanPohybu.length >= 15 && ibanFaktury.length >= 15 && ibanPohybu !== ibanFaktury) return false;
+    return true;
+  });
+  return kandidati.length === 1 ? kandidati[0]!.id : null;
+}

@@ -454,6 +454,11 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
         ajDuplicitu: z.boolean().optional(),
         /** Človek videl, že faktúra nepatrí firme (iný odberateľ), a ukladá ju aj tak. */
         ajCudziu: z.boolean().optional(),
+        /**
+         * Hromadné „Spracovať“ — údaje sú uložené (bez otvorenia detailu), návrh
+         * zaúčtovania sa doplní do prázdnych polí ako v detaile a potvrdí sa.
+         */
+        doplnitNavrhAi: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -509,7 +514,12 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
       if (n) throw new Error(chybaCudzej(n));
     }
     const { vytvorDoklad } = await import("./nespracovane.server");
-    return vytvorDoklad(supabase, context.userId, r, data.druh, u, { ajDuplicitu: data.ajDuplicitu });
+    // „Zaúčtovať“ = potvrdenie návrhu AI, ako „Potvrdiť návrh“ v zaúčtovaní prijatej faktúry.
+    return vytvorDoklad(supabase, context.userId, r, data.druh, u, {
+      ajDuplicitu: data.ajDuplicitu,
+      potvrditNavrhAi: true,
+      doplnitNavrhAi: data.doplnitNavrhAi,
+    });
   });
 
 /** Do koša — dá sa obnoviť, kým sa kôš nevysype (súbor ostáva v úložisku). */

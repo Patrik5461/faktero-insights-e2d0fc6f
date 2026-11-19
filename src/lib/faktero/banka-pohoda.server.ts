@@ -15,6 +15,11 @@ import {
   poradieVMesiaci,
   poradiePokracovanim,
   vyberPohybovBanky,
+  zarovnaneCislaVypisu,
+  likvidaciePreSkupiny,
+  NOVY_FORMAT_VYPISU_OD,
+  PRAVIDLO_PAROVANIA_ID,
+  type DokladPohybu,
   type SkupinaBanky,
   type TransakciaBanky,
   type UcetBanky,
@@ -24,7 +29,36 @@ type Klient = any;
 
 /** Stĺpce pohybu, ktoré idú do POHODY. */
 export const STLPCE_POHYBU =
-  "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, created_at, exported_at";
+  "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, created_at, exported_at, matched_invoice_id, matched_purchase_invoice_id";
+
+/**
+ * Faktúry spárované s pohybmi (vydané FV, prijaté FP) — pohyb bez partnera,
+ * VS či textu si ich vezme z faktúry (`pohybZTransakcie`). Kľúč je id pohybu.
+ */
+export async function dokladyPohybov(supabase: Klient, txs: TransakciaBanky[]): Promise<Map<string, DokladPohybu>> {
+  const out = new Map<string, DokladPohybu>();
+  const idsFv = [...new Set(txs.map((t) => t.matched_invoice_id).filter(Boolean).map(String))];
+  const idsFp = [...new Set(txs.map((t) => t.matched_purchase_invoice_id).filter(Boolean).map(String))];
+  if (!idsFv.length && !idsFp.length) return out;
+  const [fv, fp] = await Promise.all([
+    idsFv.length
+      ? supabase.from("invoices").select("id, invoice_number, variable_symbol, customer_name").in("id", idsFv)
+      : { data: [] },
+    idsFp.length
+      ? supabase.from("purchase_invoices").select("id, invoice_number, variable_symbol, supplier_name").in("id", idsFp)
+      : { data: [] },
+  ]);
+  const vydane = new Map(((fv?.data ?? []) as any[]).map((f) => [String(f.id), f]));
+  const prijate = new Map(((fp?.data ?? []) as any[]).map((f) => [String(f.id), f]));
+  for (const t of txs) {
+    const v = t.matched_invoice_id ? vydane.get(String(t.matched_invoice_id)) : null;
+    const pr = !v && t.matched_purchase_invoice_id ? prijate.get(String(t.matched_purchase_invoice_id)) : null;
+    if (v) out.set(String(t.id), { typ: "FV", cislo: v.invoice_number ?? null, vs: v.variable_symbol ?? null, partner: v.customer_name ?? null });
+    else if (pr)
+      out.set(String(t.id), { typ: "FP", cislo: pr.invoice_number ?? null, vs: pr.variable_symbol ?? null, partner: pr.supplier_name ?? null });
+  }
+  return out;
+}
 
 /** Aktívne pravidlá automatického účtovania pre banku. */
 export async function pravidlaBanky(supabase: Klient, companyId: string): Promise<any[]> {
@@ -69,6 +103,7 @@ export async function pohybyPrePohodu(
   txs: TransakciaBanky[],
   pravidla: any[],
   poradie?: Map<string, number>,
+  doklady?: Map<string, DokladPohybu>,
 ): Promise<{ pohyby: VypisPohyb[]; menaUctu: string }> {
   const { menaUctu, kurzy } = await menaAKurzy(
     company,
@@ -81,6 +116,7 @@ export async function pohybyPrePohodu(
       iban: ucet.iban,
       kurz: kurzy.get(String(t.booking_date)) ?? null,
       poradie: poradie?.get(String(t.id)) ?? null,
+      doklad: doklady?.get(String(t.id)) ?? null,
     }),
   );
   return { pohyby, menaUctu };
@@ -89,6 +125,10 @@ export async function pohybyPrePohodu(
 /**
  * Ručné „XML pre POHODU“ jedného výpisu — presne to, čo robila funkcia vo
  * `vypis-pohoda-xml.functions.ts` (overené v POHODE).
+ *
+ * Od obdobia `NOVY_FORMAT_VYPISU_OD`: čísla zarovnané (`010/0001`, okrem
+ * mesiaca, ktorý konektor už odovzdal po starom) a za pohybmi automatická
+ * likvidácia ako v dávke konektora. Staršie obdobia ostávajú, ako boli.
  */
 export async function xmlVypisuPrePohodu(vstup: {
   company: any;
@@ -97,9 +137,35 @@ export async function xmlVypisuPrePohodu(vstup: {
   pravidla: any[];
   banka: string;
   periodEnd: string;
+  /** Spárované faktúry (`dokladyPohybov`). */
+  doklady?: Map<string, DokladPohybu>;
+  /** Dnešok `YYYY-MM-DD` (test); inak dnes v Bratislave. */
+  dnes?: string;
 }): Promise<string> {
-  const { pohyby, menaUctu } = await pohybyPrePohodu(vstup.company, vstup.ucet, vstup.txs, vstup.pravidla);
-  const { buildPohodaBankXml } = await import("./export.server");
+  const { pohyby, menaUctu } = await pohybyPrePohodu(
+    vstup.company,
+    vstup.ucet,
+    vstup.txs,
+    vstup.pravidla,
+    undefined,
+    vstup.doklady,
+  );
+  const { buildPohodaBankXml, polozkyAutomatickejLikvidacie } = await import("./export.server");
+  const mesiac = String(vstup.periodEnd).slice(0, 7);
+  const zarovnane = zarovnaneCislaVypisu(
+    mesiac,
+    vstup.txs.map((t) => t.exported_at),
+  );
+  let likvidacia = "";
+  if (mesiac >= NOVY_FORMAT_VYPISU_OD && vstup.txs.length) {
+    const dnes = vstup.dnes ?? (await import("./datum-vystavenia")).dnesBratislava();
+    // Filter likvidácie ide na dátum výpisu (koniec obdobia) — musí byť v rozsahu.
+    const doDna = dnes >= vstup.periodEnd ? dnes : String(vstup.periodEnd);
+    likvidacia = polozkyAutomatickejLikvidacie(
+      likvidaciePreSkupiny([{ skratka: vstup.banka, mesiac, transakcie: vstup.txs }], doDna),
+      PRAVIDLO_PAROVANIA_ID,
+    );
+  }
   return buildPohodaBankXml({
     company: vstup.company as never,
     pohyby,
@@ -108,10 +174,12 @@ export async function xmlVypisuPrePohodu(vstup: {
       Číslo výpisu = mesiac (výpisy zostavené Fakterom sú mesačné), poradie
       pohybu ide do `numberMovement`. Predtým sa neposielalo vôbec.
     */
-    cisloVypisu: cisloVypisuZDatumu(vstup.periodEnd),
+    cisloVypisu: cisloVypisuZDatumu(vstup.periodEnd, zarovnane),
+    zarovnatPoradie: zarovnane,
     ucet: vstup.ucet.iban,
     mena: menaUctu,
     nastavenia: nastaveniaBankyPohody(vstup.company, vstup.banka),
+    likvidacia,
   });
 }
 
@@ -146,12 +214,22 @@ export async function polozkySkupinBanky(
         .range(zac, kon),
     );
     const poradie = poradiePokracovanim(mesiac);
-    const { pohyby, menaUctu } = await pohybyPrePohodu(company, s.ucet, s.transakcie, pravidla, poradie);
+    /*
+      Zarovnané čísla (010/0001) len pre mesiac, z ktorého po starom ešte nič
+      neodišlo — odovzdaný pohyb sa nikdy neprečísluje (banka-pohoda.ts).
+    */
+    const zarovnane = zarovnaneCislaVypisu(
+      s.mesiac,
+      mesiac.map((t) => t.exported_at),
+    );
+    const doklady = await dokladyPohybov(supabase, s.transakcie);
+    const { pohyby, menaUctu } = await pohybyPrePohodu(company, s.ucet, s.transakcie, pravidla, poradie, doklady);
     out += polozkyBankovehoVypisu({
       company: company as never,
       pohyby,
       datumVypisu: datumVypisuSkupiny(s.mesiac, dnes),
-      cisloVypisu: cisloVypisuZDatumu(odMes),
+      cisloVypisu: cisloVypisuZDatumu(odMes, zarovnane),
+      zarovnatPoradie: zarovnane,
       ucet: s.ucet.iban,
       mena: menaUctu,
       nastavenia: nastaveniaBankyPohody(company, s.skratka),

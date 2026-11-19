@@ -346,7 +346,8 @@ function Stranka() {
           if (dovod) preskocene.push({ popis, dovod });
           else {
             const v = await vytvor({
-              data: { id: r.id, druh: d.druh as any, udaje: upravCelkomDokladu(null, d.udaje) as any },
+              // Návrh zaúčtovania (AI/návyk) sa doplní a potvrdí ako tlačidlo Zaúčtovať v detaile.
+              data: { id: r.id, druh: d.druh as any, udaje: upravCelkomDokladu(null, d.udaje) as any, doplnitNavrhAi: true },
             });
             vytvorene++;
             if (v.agenda === "prijata" && v.duplicita)

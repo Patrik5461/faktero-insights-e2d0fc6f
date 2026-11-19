@@ -24,6 +24,7 @@ function dotaz(tabulka: string) {
     select: () => q,
     eq: (k: string, v: any) => (filtre.push((r) => r[k] === v), q),
     neq: (k: string, v: any) => (filtre.push((r) => r[k] !== v), q),
+    is: (k: string, v: any) => (filtre.push((r) => (r[k] ?? null) === v), q),
     in: (k: string, v: any[]) => (filtre.push((r) => v.includes(r[k])), q),
     gte: (k: string, v: any) => (filtre.push((r) => r[k] >= v), q),
     lte: (k: string, v: any) => (filtre.push((r) => r[k] <= v), q),
@@ -110,7 +111,7 @@ vi.mock("./ai.server", () => ({
   },
 }));
 
-const { prijmiBankovuNotifikaciu } = await import("./banka-notifikacie.server");
+const { prijmiBankovuNotifikaciu, sparujPrijatuZNotifikacie } = await import("./banka-notifikacie.server");
 
 const CSOB = readFileSync(
   path.resolve(import.meta.dirname, "__fixtures__/banka-notifikacie/csob-sk_sepa-platba.txt"),
@@ -389,5 +390,73 @@ describe("príjem notifikácie", () => {
     expect(await prijmi("e1", "AdminTBS@csob.sk", { text: CSOB, headers: podpis("csob.sk") })).toBe(
       "neznama_adresa",
     );
+  });
+});
+
+describe("odchádzajúci pohyb z notifikácie a prijatá faktúra", () => {
+  const faktura = (id: string, extra: Record<string, any> = {}) => ({
+    id,
+    company_id: FIRMA,
+    supplier_name: "AUTOGLAS, s.r.o.",
+    supplier_iban: "SK3112000000198742637541",
+    invoice_number: "260101873",
+    variable_symbol: "260101873",
+    issue_date: "2026-11-01",
+    due_date: "2026-11-15",
+    amount_total: 245.6,
+    currency: "EUR",
+    payment_method: "prevod",
+    status: "booked",
+    type: "regular",
+    deleted_at: null,
+    ...extra,
+  });
+  const pohyb = (extra: Record<string, any> = {}) => ({
+    booking_date: "2026-11-14",
+    amount: -245.6,
+    currency: "EUR",
+    variable_symbol: "260101873",
+    counterparty: "AUTOGLAS",
+    description: null,
+    ...extra,
+  });
+  const zaloz = (id: string) => {
+    pohyby().push({ id, company_id: FIRMA, bank_account_id: UCET });
+    return id;
+  };
+
+  it("jediná zhoda VS + suma (a sediaci IBAN) sa zapíše", async () => {
+    db.tabulky.purchase_invoices = [faktura("pf-1"), faktura("pf-2", { variable_symbol: "999", invoice_number: "999" })];
+    const id = await sparujPrijatuZNotifikacie(
+      { from: (t: string) => dotaz(t) },
+      { company_id: FIRMA },
+      zaloz("p1"),
+      pohyb(),
+      "SK31 1200 0000 1987 4263 7541",
+    );
+    expect(id).toBe("pf-1");
+    expect(pohyby()[0]!.matched_purchase_invoice_id).toBe("pf-1");
+  });
+
+  it("iný IBAN dodávateľa, iná suma, uhradená či dve rovnaké faktúry → nič", async () => {
+    const sb = { from: (t: string) => dotaz(t) };
+    db.tabulky.purchase_invoices = [faktura("pf-1")];
+    expect(await sparujPrijatuZNotifikacie(sb, { company_id: FIRMA }, zaloz("a"), pohyb(), "SK6807200002891987426353")).toBeNull();
+    expect(await sparujPrijatuZNotifikacie(sb, { company_id: FIRMA }, zaloz("b"), pohyb({ amount: -245.61 }), null)).toBeNull();
+    db.tabulky.purchase_invoices = [faktura("pf-1", { status: "paid" })];
+    expect(await sparujPrijatuZNotifikacie(sb, { company_id: FIRMA }, zaloz("c"), pohyb(), null)).toBeNull();
+    db.tabulky.purchase_invoices = [faktura("pf-1"), faktura("pf-2")];
+    expect(await sparujPrijatuZNotifikacie(sb, { company_id: FIRMA }, zaloz("d"), pohyb(), null)).toBeNull();
+    // Prichádzajúca platba prijatú faktúru neuhrádza.
+    expect(await sparujPrijatuZNotifikacie(sb, { company_id: FIRMA }, zaloz("e"), pohyb({ amount: 245.6 }), null)).toBeNull();
+    expect(pohyby().every((p) => !p.matched_purchase_invoice_id)).toBe(true);
+  });
+
+  it("faktúru, ktorú už uhrádza iný pohyb, znova nepáruje", async () => {
+    db.tabulky.purchase_invoices = [faktura("pf-1")];
+    pohyby().push({ id: "stary", company_id: FIRMA, bank_account_id: UCET, matched_purchase_invoice_id: "pf-1" });
+    expect(
+      await sparujPrijatuZNotifikacie({ from: (t: string) => dotaz(t) }, { company_id: FIRMA }, zaloz("p2"), pohyb(), null),
+    ).toBeNull();
   });
 });

@@ -451,8 +451,13 @@ export async function vytvorDoklad(
   r: Record<string, any>,
   druh: DruhNespracovaneho,
   u: UdajeNespracovaneho,
-  /** `ajDuplicitu` — človek potvrdil, že možná duplicita (iná suma či rok) nie je duplicita. */
-  volby: { ajDuplicitu?: boolean } = {},
+  /**
+   * `ajDuplicitu` — človek potvrdil, že možná duplicita (iná suma či rok) nie je duplicita.
+   * `potvrditNavrhAi` — človek klikol „Zaúčtovať“: návrh AI vo formulári je potvrdený.
+   * `doplnitNavrhAi` — hromadné spracovanie: návrh (pamäť / AI) sa najprv doplní do
+   *   prázdnych polí, ako by ho ukázal detail, a potom sa potvrdí.
+   */
+  volby: { ajDuplicitu?: boolean; potvrditNavrhAi?: boolean; doplnitNavrhAi?: boolean } = {},
 ): Promise<{
   agenda: "prijata" | "doklad" | "ostatny";
   id: string;
@@ -491,12 +496,29 @@ export async function vytvorDoklad(
   const ucenie = await import("./ucenie-z-oprav.server");
   const { jeDruhUcenia, volbyZUdajov, hodnotaPola } = await import("./ucenie-z-oprav");
   /*
-    Nepotvrdený návrh AI do dokladu nejde — doklad by sa ním zaúčtoval bez
-    človeka. Prenesie sa k vytvorenému dokladu, kde ho človek potvrdí.
+    „Zaúčtovať“ = potvrdenie návrhu AI (Patrik 18. 11.: AUTOGLAS 260101873
+    vznikla bez predkontácie, hoci formulár návrh ukazoval). Bez potvrdenia
+    (iné cesty) nepotvrdený návrh do dokladu nejde — prenesie sa
+    k vytvorenému dokladu, kde ho človek potvrdí.
   */
-  const { nepotvrdeneAi, bezNepotvrdenehoAi } = await import("./ai-predkontacia");
-  const nepotvrdeneNavrhy = nepotvrdeneAi(u);
-  u = bezNepotvrdenehoAi(u);
+  const { udajeNaZapisDokladu, doplnNavrhDoUdajov } = await import("./ai-predkontacia");
+  if (volby.potvrditNavrhAi && volby.doplnitNavrhAi && !u.navrhAi && ["faktura", "zalohova", "dobropis", "blocek"].includes(druh)) {
+    try {
+      const ai = await import("./ai-predkontacia.server");
+      const v = await ai.navrhNespracovaneho(
+        supabase,
+        { ...r, druh, udaje: u },
+        await ai.nacitajKontext(supabase, r.company_id),
+        userId,
+      );
+      if (v.stav === "navrh") u = doplnNavrhDoUdajov(u, v.polia, v.dovod);
+    } catch {
+      /* Návrh je doplnok — doklad sa vytvorí aj bez neho. */
+    }
+  }
+  const naZapis = udajeNaZapisDokladu(u, Boolean(volby.potvrditNavrhAi));
+  const nepotvrdeneNavrhy = naZapis.nepotvrdene;
+  u = naZapis.udaje;
   if (jeDruhUcenia(druh))
     u = await ucenie.pripravNaZapis(supabase, { companyId: r.company_id, druh, udaje: u, createdBy: autor, predmetMailu });
 
@@ -625,9 +647,19 @@ export async function vytvorDoklad(
         { ...zakl, id: "novy-doklad", status: "received" },
       ])
     ).has("novy-doklad");
-    // Zaúčtovaná je aj faktúra, ktorej každá položka má vlastnú predkontáciu (hlavička môže ostať prázdna).
+    /*
+      Zaúčtovaná je faktúra s predkontáciou — v hlavičke alebo na každej
+      položke. Samé členenie DPH (napr. naučené) faktúru nezaúčtuje: bez
+      predkontácie by do Pohody odišla nezaúčtovaná. Predvolená predkontácia
+      firmy či kategórie sa overí po zápise (`kodyPrijatejUrcene`).
+    */
+    const { predkontaciaUrcenaClovekom } = await import("./nespracovane-nastavenia");
     const zauctovat =
-      !cudzia && !duplicitna && Boolean(zakl.pohoda_predkontacia || zakl.pohoda_clenenie_dph || polozkyZauctovane(u));
+      !cudzia && !duplicitna && predkontaciaUrcenaClovekom(
+        zakl.pohoda_predkontacia,
+        // Rozúčtovanie pomerom z pravidla nesie predkontácie častí.
+        polozkyZauctovane(u) || Boolean(pravidlo?.rozuctovanie && zakl.pohoda_clenenie_dph),
+      );
     // Zaplatená ostáva zaplatená aj zaúčtovaná (ako po zaúčtovaní v paneli).
     // Daňový doklad k platbe je vždy zaplatený — záloha už odišla, nič sa neplatí ani nepáruje.
     const stav = (zauct: boolean) => (u.uhradene || danovy ? "paid" : zauct ? "booked" : "received");
@@ -680,7 +712,19 @@ export async function vytvorDoklad(
       Daňový doklad k platbe sa predvolenými kódmi prijatých faktúr (náklad)
       nezaúčtuje — DPH zo zálohy sa účtuje inak; zaúčtuje ho človek.
     */
-    if (!cudzia && !duplicitna && !zauctovat && !danovy && nastavenia.zauctovat && !nepotvrdeneNavrhy.length) {
+    /*
+      Členenie DPH vybral človek, predkontácia chýba — zaúčtuje sa (ako
+      doteraz), len keď ju určí kategória alebo predvolená predkontácia firmy.
+    */
+    const clenenieOdCloveka = Boolean(String(zakl.pohoda_clenenie_dph ?? "").trim());
+    if (
+      !cudzia &&
+      !duplicitna &&
+      !zauctovat &&
+      !danovy &&
+      (nastavenia.zauctovat || clenenieOdCloveka) &&
+      !nepotvrdeneNavrhy.length
+    ) {
       const { kodyPrijatejUrcene } = await import("./nespracovane-nastavenia");
       const { kodyPodlaKategorie } = await import("./predkontacie.server");
       const { data: firma } = await supabase

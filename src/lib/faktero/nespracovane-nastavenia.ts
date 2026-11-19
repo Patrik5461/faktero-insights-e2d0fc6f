@@ -265,6 +265,18 @@ export function textyPreObjednavku(ai: Record<string, unknown> | null | undefine
 }
 
 /**
+ * Zaúčtoval človek prijatú faktúru už vo formulári Nespracovaných? Len
+ * predkontáciou v hlavičke alebo na každej položke — samé členenie DPH nie
+ * (faktúra by bola „zaúčtovaná“ s prázdnou predkontáciou).
+ */
+export function predkontaciaUrcenaClovekom(
+  predkontaciaHlavicky: string | null | undefined,
+  polozkyMajuPredkontaciu: boolean,
+): boolean {
+  return Boolean(String(predkontaciaHlavicky ?? "").trim()) || polozkyMajuPredkontaciu;
+}
+
+/**
  * Zdroj zaúčtovania dokladu vytvoreného z Nespracovaných. Kódy (vlastné,
  * z pravidla aj z potvrdeného návrhu AI) človek videl a potvrdil tlačidlom
  * Vytvoriť — je to ručné zaúčtovanie (`manual`), rovnako ako keď doklad

@@ -17,6 +17,7 @@ import {
   vstupZPrijatej,
   zahodNavrhAi,
   zlucNavrhy,
+  udajeNaZapisDokladu,
   type PovoleneKody,
 } from "./ai-predkontacia";
 import { blocekZUdajov, prazdneUdaje, prijataZUdajov } from "./nespracovane";
@@ -327,6 +328,31 @@ describe("návrh v nespracovanom doklade", () => {
     // Potvrdený už ide.
     const potvrdeny = prijataZUdajov("faktura", bezNepotvrdenehoAi(potvrdNavrhAi(u)), "2026-10-19");
     expect(potvrdeny.pohoda_predkontacia).toBe("1Fp");
+  });
+
+  it("„Zaúčtovať“ v Nespracovaných = potvrdenie návrhu (AUTOGLAS 260101873)", () => {
+    const u = doplnNavrhDoUdajov(prazdneUdaje(), navrh, "x");
+    const z = udajeNaZapisDokladu(u, true);
+    expect(z.nepotvrdene).toEqual([]);
+    expect(z.udaje.navrhAi).toBeUndefined();
+    const riadok = prijataZUdajov("faktura", z.udaje, "2026-10-19");
+    expect(riadok.pohoda_predkontacia).toBe("1Fp");
+    expect(riadok.pohoda_clenenie_dph).not.toBeNull();
+  });
+
+  it("bez potvrdenia (iná cesta) návrh do dokladu nejde a prenesie sa", () => {
+    const u = doplnNavrhDoUdajov(prazdneUdaje(), navrh, "x");
+    const z = udajeNaZapisDokladu(u, false);
+    expect(z.nepotvrdene.sort()).toEqual(["clenenie", "predkontacia"]);
+    expect(prijataZUdajov("faktura", z.udaje, "2026-10-19").pohoda_predkontacia).toBeNull();
+  });
+
+  it("zahodený alebo zmenený návrh potvrdenie nevráti", () => {
+    const u = doplnNavrhDoUdajov(prazdneUdaje(), navrh, "x");
+    const zahodene = udajeNaZapisDokladu(zahodNavrhAi(u), true).udaje;
+    expect(zahodene.kody.predkontacia).toBe("");
+    const zmenene = udajeNaZapisDokladu({ ...u, kody: { ...u.kody, predkontacia: "2Fm" } }, true).udaje;
+    expect(zmenene.kody.predkontacia).toBe("2Fm");
   });
 });
 

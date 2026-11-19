@@ -172,7 +172,97 @@ export async function zalozPohyb(
       console.error("[banka-notifikacie] párovanie zlyhalo:", e?.message ?? e);
     }
   }
+  if (riadok.amount < 0) {
+    try {
+      await sparujPrijatuZNotifikacie(supabaseAdmin, ucet, data.id, riadok, n.protistranaIban ?? null);
+    } catch (e: any) {
+      console.error("[banka-notifikacie] párovanie prijatej faktúry zlyhalo:", e?.message ?? e);
+    }
+  }
   return { stav: "spracovane", id: data.id };
+}
+
+/**
+ * Odchádzajúci pohyb z notifikácie a prijatá faktúra: zapíše sa len jediná
+ * zhoda VS + suma na cent (+ účet dodávateľa, keď ho poznáme) —
+ * `istaPrijataPrePohyb`. Väzbu `matched_purchase_invoice_id` spracuje
+ * spúšťač v DB (úhrada a stav faktúry) rovnako ako ručné potvrdenie
+ * v párovaní. Rešpektuje „Automaticky párovať od“ z nastavení banky.
+ */
+export async function sparujPrijatuZNotifikacie(
+  supabaseAdmin: any,
+  ucet: { company_id: string },
+  pohybId: string,
+  riadok: { booking_date: string; amount: number; currency: string; variable_symbol: string | null; counterparty: string | null; description: string | null },
+  protistranaIban: string | null,
+): Promise<string | null> {
+  const { normVs } = await import("./parovanie");
+  if (riadok.amount >= 0 || normVs(riadok.variable_symbol).length < 3) return null;
+  const { data: firma } = await supabaseAdmin
+    .from("companies")
+    .select("uctovanie_nastavenia")
+    .eq("id", ucet.company_id)
+    .maybeSingle();
+  const { nastaveniaBanky } = await import("./export-nastavenia");
+  const od = nastaveniaBanky(firma?.uctovanie_nastavenia).autoParovanieOd;
+  if (od && String(riadok.booking_date).slice(0, 10) < od) return null;
+
+  const suma = Math.round(Math.abs(riadok.amount) * 100) / 100;
+  const { data: faktury } = await supabaseAdmin
+    .from("purchase_invoices")
+    .select(
+      "id, supplier_name, supplier_iban, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status, type, deleted_at",
+    )
+    .eq("company_id", ucet.company_id)
+    .eq("amount_total", suma)
+    .is("deleted_at", null)
+    .limit(200);
+  const otvorene = ((faktury ?? []) as any[]).filter(
+    (f) =>
+      !f.deleted_at &&
+      !["paid", "cancelled", "draft"].includes(String(f.status ?? "")) &&
+      // Daňový doklad k prijatej platbe sa neplatí.
+      f.type !== "advance_payment",
+  );
+  if (!otvorene.length) return null;
+  // Faktúra, ktorú už uhrádza iný pohyb, sa znova nepáruje.
+  const { data: obsadene } = await supabaseAdmin
+    .from("bank_transactions")
+    .select("matched_purchase_invoice_id")
+    .in(
+      "matched_purchase_invoice_id",
+      otvorene.map((f) => f.id),
+    );
+  const uz = new Set(((obsadene ?? []) as any[]).map((r) => String(r.matched_purchase_invoice_id)));
+  const { istaPrijataPrePohyb } = await import("./prijata-parovanie");
+  const id = istaPrijataPrePohyb(
+    {
+      id: pohybId,
+      booking_date: riadok.booking_date,
+      amount: Number(riadok.amount),
+      currency: riadok.currency,
+      variable_symbol: riadok.variable_symbol,
+      counterparty: riadok.counterparty,
+      description: riadok.description,
+      counterparty_iban: protistranaIban,
+    },
+    otvorene
+      .filter((f) => !uz.has(String(f.id)))
+      .map((f) => ({ ...f, amount_total: f.amount_total == null ? null : Number(f.amount_total) })),
+  );
+  if (!id) return null;
+  const { data: zmenene, error } = await supabaseAdmin
+    .from("bank_transactions")
+    .update({ matched_purchase_invoice_id: id })
+    .eq("id", pohybId)
+    .is("matched_purchase_invoice_id", null)
+    .is("matched_invoice_id", null)
+    .is("matched_expense_id", null)
+    .is("matched_installment_id", null)
+    .is("matched_other_document_id", null)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return zmenene?.length ? id : null;
 }
 
 /**

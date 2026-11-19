@@ -108,7 +108,9 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
     const txs = await vsetkyRiadky<any>((zac, kon) =>
       supabaseAdmin
         .from("bank_transactions")
-        .select("id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description")
+        .select(
+          "id, booking_date, amount, currency, variable_symbol, counterparty, counterparty_iban, description, exported_at, matched_invoice_id, matched_purchase_invoice_id",
+        )
         .eq("bank_account_id", ucet.id)
         .gte("booking_date", vypis.period_start)
         .lte("booking_date", vypis.period_end)
@@ -122,7 +124,7 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       Mapovanie pohybov a XML sú spoločné s konektorom a mesačným balíkom
       (`banka-pohoda.server.ts`) — ten istý pohyb má všade to isté id aj obsah.
     */
-    const { pravidlaBanky, xmlVypisuPrePohodu } = await import("./banka-pohoda.server");
+    const { pravidlaBanky, xmlVypisuPrePohodu, dokladyPohybov } = await import("./banka-pohoda.server");
     const content = await xmlVypisuPrePohodu({
       company,
       ucet,
@@ -130,6 +132,8 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
       pravidla: await pravidlaBanky(supabaseAdmin, data.company_id),
       banka,
       periodEnd: vypis.period_end,
+      // Spárované faktúry doplnia partnera, VS a text pohybu, ktorý ich nemá.
+      doklady: await dokladyPohybov(supabaseAdmin, txs),
     });
 
     /*

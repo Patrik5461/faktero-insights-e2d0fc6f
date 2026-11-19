@@ -20,6 +20,14 @@ import { symbolyZTextu } from "./banka-pohoda-id";
 /** IBAN bez medzier a veľkými písmenami — na porovnanie účtov. */
 export const normIban = (v: unknown) => String(v ?? "").replace(/\s+/g, "").toUpperCase();
 
+/** Faktúra spárovaná s pohybom (vydaná FV, prijatá FP) — zdroj chýbajúcich údajov pohybu. */
+export type DokladPohybu = {
+  typ: "FV" | "FP";
+  cislo: string | null;
+  vs: string | null;
+  partner: string | null;
+};
+
 /** Riadok `bank_transactions`, ktorý treba na pohyb do POHODY. */
 export type TransakciaBanky = {
   id: string;
@@ -33,6 +41,8 @@ export type TransakciaBanky = {
   bank_account_id?: string | null;
   created_at?: string | null;
   exported_at?: string | null;
+  matched_invoice_id?: string | null;
+  matched_purchase_invoice_id?: string | null;
 };
 
 /**
@@ -47,7 +57,14 @@ export type TransakciaBanky = {
  */
 export function pohybZTransakcie(
   t: TransakciaBanky,
-  o: { pravidla: any[]; iban: string | null | undefined; kurz: number | null; poradie?: number | null },
+  o: {
+    pravidla: any[];
+    iban: string | null | undefined;
+    kurz: number | null;
+    poradie?: number | null;
+    /** Spárovaná faktúra — doplní partnera, VS a text, keď ich pohyb nemá. */
+    doklad?: DokladPohybu | null;
+  },
 ): VypisPohyb {
   const popis = String(t.description ?? "");
   // Pohyby z bankových notifikácií majú IBAN protistrany len v texte („… · IBAN SK…“).
@@ -68,6 +85,15 @@ export function pohybZTransakcie(
     vs: t.variable_symbol ?? null,
   };
   if (o.poradie != null) p.poradie = o.poradie;
+  if (o.doklad) {
+    const d = o.doklad;
+    if (!String(p.protistrana ?? "").trim() && String(d.partner ?? "").trim()) p.protistrana = String(d.partner).trim();
+    // VS faktúry, inak číslo faktúry, keď je to číslo (VS je najviac 10 číslic).
+    const cisloAkoVs = /^\d{1,10}$/.test(String(d.cislo ?? "").trim()) ? String(d.cislo).trim() : "";
+    const vs = String(d.vs ?? "").trim() || cisloAkoVs;
+    if (!String(p.vs ?? "").trim() && vs) p.vs = vs;
+    if (!p.popis && String(d.cislo ?? "").trim()) p.popis = `Úhrada ${d.typ} č. ${String(d.cislo).trim()}`;
+  }
   // Označenie (poplatok, úrok, splátka…) ako pri prevodníku z PDF — ide do poznámky
   // a vyberie predkontáciu podľa označenia (N7).
   p.oznacenie = odhadniOznacenie({ popis: p.popis, protistrana: p.protistrana, smer: p.smer, vs: p.vs });
@@ -93,9 +119,45 @@ export function nastaveniaBankyPohody(company: any, banka: string): PohodaNastav
   } as PohodaNastavenia;
 }
 
-/** Číslo výpisu = mesiac (výpisy zostavené Fakterom sú mesačné). */
-export function cisloVypisuZDatumu(datum: unknown): string {
-  return String(Number(String(datum ?? "").slice(5, 7)) || "");
+/*
+  Zarovnané čísla výpisu (Patrik 18. 11., požiadavka účtovníčky): POHODA
+  v stĺpci Výpis ukazuje „číslo výpisu/poradie pohybu“ — doteraz „10/1“,
+  účtovníčka zvyknutá z Doklada chce „010/0001“. Výpisy, ktoré už odišli,
+  sa prečíslovať nesmú (POHODA ich má pod starými číslami a pohyb toho
+  istého mesiaca by dostal iné číslo výpisu), preto:
+   - obdobia pred `NOVY_FORMAT_VYPISU_OD` ostávajú po starom (aj ručné XML),
+   - mesiac účtu, z ktorého konektor už niečo odovzdal pred
+     `NOVY_FORMAT_VYPISU_ODOVZDANE_PRED`, ostáva po starom celý.
+  K 19. 11. 2026 nebol v produkcii odovzdaný ani jeden pohyb
+  (`bank_transactions.exported_at`), takže nový formát platí od novembra.
+*/
+/** Prvé obdobie (`YYYY-MM`) so zarovnanými číslami a automatickou likvidáciou v ručnom XML. */
+export const NOVY_FORMAT_VYPISU_OD = "2026-11";
+/** Pohyb odovzdaný pred týmto okamihom bol očíslovaný po starom — jeho mesiac ostáva po starom. */
+export const NOVY_FORMAT_VYPISU_ODOVZDANE_PRED = "2026-11-19T00:00:00Z";
+
+/**
+ * Má výpis účtu za mesiac zarovnané čísla (`010/0001`)? `odovzdane` sú
+ * `exported_at` pohybov toho istého účtu a mesiaca.
+ */
+export function zarovnaneCislaVypisu(mesiac: string, odovzdane: (string | null | undefined)[] = []): boolean {
+  if (String(mesiac).slice(0, 7) < NOVY_FORMAT_VYPISU_OD) return false;
+  const hranica = Date.parse(NOVY_FORMAT_VYPISU_ODOVZDANE_PRED);
+  return !odovzdane.some((t) => {
+    if (!t) return false;
+    const kedy = Date.parse(String(t).trim().replace(" ", "T").replace(/([+-]\d{2})$/, "$1:00"));
+    // Nečitateľný čas = radšej po starom (prečíslovanie je horšie než starý tvar).
+    return !Number.isFinite(kedy) || kedy < hranica;
+  });
+}
+
+/**
+ * Číslo výpisu = mesiac (výpisy zostavené Fakterom sú mesačné); zarovnané
+ * na tri číslice (`010`) v novom formáte.
+ */
+export function cisloVypisuZDatumu(datum: unknown, zarovnane = false): string {
+  const m = String(Number(String(datum ?? "").slice(5, 7)) || "");
+  return zarovnane && m ? m.padStart(3, "0") : m;
 }
 
 /** Posledný deň mesiaca dátumu `YYYY-MM-DD`. */

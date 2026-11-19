@@ -1815,13 +1815,20 @@ export function buildPohodaBankXml(opts: {
   ucet?: string | null;
   /** Mena účtu; iná než domáca ide ako `foreignCurrency` (V10). */
   mena?: string | null;
+  /** Poradie pohybu na štyri číslice (`0001`) — nový formát výpisu (banka-pohoda.ts). */
+  zarovnatPoradie?: boolean;
+  /**
+   * Hotové položky automatickej likvidácie ({@link polozkyAutomatickejLikvidacie})
+   * za pohybmi — ako v dávke konektora; XML import pohyby s faktúrami sám nespáruje.
+   */
+  likvidacia?: string;
 }): string {
   return obalka({
     nastavenia: opts.nastavenia,
     ico: opts.company?.ico,
     note: "Bankový výpis z Faktero",
-    prefixy: ["bnk"],
-    entries: polozkyBankovehoVypisu(opts),
+    prefixy: ["bnk", ...(opts.likvidacia ? ["lqd", "ftr"] : [])],
+    entries: polozkyBankovehoVypisu(opts) + (opts.likvidacia ?? ""),
   });
 }
 
@@ -1878,6 +1885,8 @@ export function polozkyBankovehoVypisu(opts: {
   nastavenia?: PohodaNastavenia;
   ucet?: string | null;
   mena?: string | null;
+  /** Poradie pohybu na štyri číslice (`0001`) — nový formát výpisu. */
+  zarovnatPoradie?: boolean;
 }): string {
   const { pohyby, nastavenia } = opts;
   const cislo = skrat(opts.cisloVypisu, 10);
@@ -1901,7 +1910,8 @@ export function polozkyBankovehoVypisu(opts: {
     .map((p, idx) => {
       const druh = p.smer === "prijem" ? "receipt" : "expense";
       const suma = Math.abs(Number(p.suma ?? 0));
-      const poradie = String(p.poradie ?? idx + 1);
+      const poradieCislo = String(p.poradie ?? idx + 1);
+      const poradie = opts.zarovnatPoradie ? poradieCislo.padStart(4, "0") : poradieCislo;
       const ucet = rozdelUcet(p.protiucet);
 
       // Číslo výpisu a poradie pohybu sa spolu musia zmestiť do desiatich

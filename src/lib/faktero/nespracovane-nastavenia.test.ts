@@ -4,6 +4,7 @@ import {
   kodyPrijatejUrcene,
   blocekZauctovanyPriVytvoreni,
   zdrojZauctovaniaPriVytvoreni,
+  predkontaciaUrcenaClovekom,
   maPredponu,
   textyPreObjednavku,
   nastaveniaNespracovanych,
@@ -187,5 +188,20 @@ describe("zdrojZauctovaniaPriVytvoreni", () => {
   });
   it("nezaúčtovaný doklad zdroj nedostane", () => {
     expect(zdrojZauctovaniaPriVytvoreni(false)).toEqual({});
+  });
+});
+
+describe("predkontaciaUrcenaClovekom", () => {
+  it("samé členenie DPH prijatú faktúru nezaúčtuje", () => {
+    expect(predkontaciaUrcenaClovekom(null, false)).toBe(false);
+    expect(predkontaciaUrcenaClovekom("  ", false)).toBe(false);
+  });
+  it("predkontácia v hlavičke alebo na každej položke áno", () => {
+    expect(predkontaciaUrcenaClovekom("1Fp", false)).toBe(true);
+    expect(predkontaciaUrcenaClovekom("", true)).toBe(true);
+  });
+  it("členenie bez predkontácie zaúčtuje len predvolená predkontácia firmy", () => {
+    expect(kodyPrijatejUrcene({ pohoda_clenenie_dph: "PD" }, {})).toBe(false);
+    expect(kodyPrijatejUrcene({ pohoda_clenenie_dph: "PD" }, { pohoda_predkontacia_prijata: "1Fp" })).toBe(true);
   });
 });
