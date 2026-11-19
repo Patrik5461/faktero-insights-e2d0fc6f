@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nahrajPrijatuFakturuFn } from "@/lib/faktero/prijata-nahratie.functions";
 import { useT } from "@/lib/i18n/useT";
+import { useOznamDuplicitySuboru } from "./DuplicitaSuboruOznam";
 
 /**
  * Nahratie prijatého dokladu súborom.
@@ -29,6 +30,7 @@ export function NahratDoklad({
   const [busy, setBusy] = useState(false);
   const nahraj = useServerFn(nahrajPrijatuFakturuFn);
   const navigate = useNavigate();
+  const oznam = useOznamDuplicitySuboru();
 
   async function vyber(subor: File | null) {
     if (!subor) return;
@@ -50,6 +52,8 @@ export function NahratDoklad({
         },
       });
       toast.dismiss(cakanie);
+      if (v.duplicita) return oznam.duplicita(v.duplicita, subor.name);
+      if (v.vKosi) oznam.vKosi(subor.name);
       // Ako v Doklado: doklad čaká v Nespracovaných — rovno sa otvorí na zaradenie.
       if (v.prazdny)
         toast.warning(

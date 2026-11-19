@@ -97,6 +97,7 @@ export type Database = {
       }
       other_documents: {
         Row: {
+          subor_hash: string | null
           nahrane_at: string | null
           odosielatel_mailu: string | null
           id: string
@@ -126,6 +127,7 @@ export type Database = {
           paid_at: string | null
         }
         Insert: {
+          subor_hash?: string | null
           nahrane_at?: string | null
           odosielatel_mailu?: string | null
           id?: string
@@ -155,6 +157,7 @@ export type Database = {
           paid_at?: string | null
         }
         Update: {
+          subor_hash?: string | null
           nahrane_at?: string | null
           odosielatel_mailu?: string | null
           id?: string
@@ -3597,6 +3600,7 @@ export type Database = {
       }
       expense_documents: {
         Row: {
+          subor_hash: string | null
           pokladna_id: string | null
           nahrane_at: string | null
           naposledy_zauctoval: string | null
@@ -3691,6 +3695,7 @@ export type Database = {
           rozpis_dph_potvrdeny: Json | null
         }
         Insert: {
+          subor_hash?: string | null
           pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
@@ -3785,6 +3790,7 @@ export type Database = {
           rozpis_dph_potvrdeny?: Json | null
         }
         Update: {
+          subor_hash?: string | null
           pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
@@ -4949,6 +4955,7 @@ export type Database = {
       }
       nespracovane_doklady: {
         Row: {
+          subor_hash: string | null
           ai: Json | null
           chyba: string | null
           company_id: string
@@ -4969,6 +4976,7 @@ export type Database = {
           cez_rozdelovac: boolean
         }
         Insert: {
+          subor_hash?: string | null
           ai?: Json | null
           chyba?: string | null
           company_id: string
@@ -4989,6 +4997,7 @@ export type Database = {
           cez_rozdelovac?: boolean
         }
         Update: {
+          subor_hash?: string | null
           ai?: Json | null
           chyba?: string | null
           company_id?: string
@@ -7134,6 +7143,7 @@ export type Database = {
       }
       purchase_invoices: {
         Row: {
+          subor_hash: string | null
           pokladna_id: string | null
           nahrane_at: string | null
           naposledy_zauctoval: string | null
@@ -7270,6 +7280,7 @@ export type Database = {
           rozpis_dph_potvrdeny: Json | null
         }
         Insert: {
+          subor_hash?: string | null
           pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null
@@ -7406,6 +7417,7 @@ export type Database = {
           rozpis_dph_potvrdeny?: Json | null
         }
         Update: {
+          subor_hash?: string | null
           pokladna_id?: string | null
           nahrane_at?: string | null
           naposledy_zauctoval?: string | null

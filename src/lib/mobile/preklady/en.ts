@@ -1425,4 +1425,11 @@ export const en: Partial<Record<Kluc, string>> = {
   "efr.zPamate": "Offline — last known state from {kedy}.",
   "efr.bezPripojenia": "Offline — showing the last known state.",
   "efr.zoznamZPamate": "Offline — showing the last loaded received invoices.",
+  "app.dokladUzVoFakteri": "You have already uploaded this document",
+  "app.dokladUzVoFakteriKde.nespracovany": "In Unprocessed documents",
+  "app.dokladUzVoFakteriKde.prijata": "In Received invoices",
+  "app.dokladUzVoFakteriKde.blocek": "In Receipts",
+  "app.dokladUzVoFakteriKde.ostatny": "In Other documents",
+  "app.dokladVKosi": "The same file was in the bin — it was uploaded again as a new document.",
+  "davka.natrvalo.uzJe": "You have already uploaded this document",
 };

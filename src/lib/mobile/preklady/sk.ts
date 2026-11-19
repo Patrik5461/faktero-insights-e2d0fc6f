@@ -1431,6 +1431,13 @@ export const sk = {
   "efr.zPamate": "Bez pripojenia — posledný známy stav z {kedy}.",
   "efr.bezPripojenia": "Bez pripojenia — zobrazený posledný známy stav.",
   "efr.zoznamZPamate": "Bez pripojenia — zobrazené naposledy načítané prijaté faktúry.",
+  "app.dokladUzVoFakteri": "Tento doklad už máte nahratý",
+  "app.dokladUzVoFakteriKde.nespracovany": "V Nespracovaných dokladoch",
+  "app.dokladUzVoFakteriKde.prijata": "V Prijatých faktúrach",
+  "app.dokladUzVoFakteriKde.blocek": "V Bločkoch",
+  "app.dokladUzVoFakteriKde.ostatny": "V Ostatných dokladoch",
+  "app.dokladVKosi": "Rovnaký súbor bol v koši — nahral sa znova ako nový doklad.",
+  "davka.natrvalo.uzJe": "Tento doklad už máte nahratý",
 } as const;
 
 export type Kluc = keyof typeof sk;

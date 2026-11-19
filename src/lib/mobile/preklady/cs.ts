@@ -1413,4 +1413,11 @@ export const cs: Partial<Record<Kluc, string>> = {
   "efr.zPamate": "Bez připojení — poslední známý stav z {kedy}.",
   "efr.bezPripojenia": "Bez připojení — zobrazen poslední známý stav.",
   "efr.zoznamZPamate": "Bez připojení — zobrazeny naposledy načtené přijaté faktury.",
+  "app.dokladUzVoFakteri": "Tento doklad už máte nahraný",
+  "app.dokladUzVoFakteriKde.nespracovany": "V Nezpracovaných dokladech",
+  "app.dokladUzVoFakteriKde.prijata": "V Přijatých fakturách",
+  "app.dokladUzVoFakteriKde.blocek": "V Účtenkách",
+  "app.dokladUzVoFakteriKde.ostatny": "V Ostatních dokladech",
+  "app.dokladVKosi": "Stejný soubor byl v koši — nahrál se znovu jako nový doklad.",
+  "davka.natrvalo.uzJe": "Tento doklad už máte nahraný",
 };

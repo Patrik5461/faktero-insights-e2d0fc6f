@@ -8,6 +8,7 @@ import {
   popisZdroja,
   rezimDph,
   smieAutopilot,
+  rezimAutopilota,
   zvykZDokladov,
   type NavrhZauctovania,
   type VstupClenenia,
@@ -355,5 +356,17 @@ describe("KV podľa členenia prenesenia (audit 6. 11. 2026, BÝVAJLEPŠIE 20260
     const c = odvodClenenia(prijata({ dph: 0 }));
     expect(c.kvClenenie).not.toBe("B1");
     expect(kvPreneseniaPrijatej("PDsluz") ?? c.kvClenenie).toBe("B1");
+  });
+});
+
+describe("rezimAutopilota — predvolene vypnutý", () => {
+  it("chýbajúci či neznámy režim je vypnutý, známe ostanú", () => {
+    expect(rezimAutopilota(null)).toBe("vypnuty");
+    expect(rezimAutopilota(undefined)).toBe("vypnuty");
+    expect(rezimAutopilota("")).toBe("vypnuty");
+    expect(rezimAutopilota("zapnuty")).toBe("vypnuty");
+    expect(rezimAutopilota("bezpecny")).toBe("bezpecny");
+    expect(rezimAutopilota("plny")).toBe("plny");
+    expect(rezimAutopilota("vypnuty")).toBe("vypnuty");
   });
 });

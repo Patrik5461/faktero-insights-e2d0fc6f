@@ -1,4 +1,5 @@
 import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
+import { useOznamDuplicitySuboru } from "@/components/faktero/DuplicitaSuboruOznam";
 import { DuplicitaZnak } from "@/components/faktero/DuplicitaDokladu";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -100,6 +101,7 @@ function Stranka() {
   const navigate = useNavigate();
   const nacitaj = useServerFn(nespracovaneFn);
   const nahraj = useServerFn(nahrajNespracovaneFn);
+  const oznamDuplicity = useOznamDuplicitySuboru();
   const doNespracovanych = useServerFn(blocekDoNespracovanychFn);
   const [data, setData] = useState<Awaited<ReturnType<typeof nacitaj>> | null>(null);
   const [nahravam, setNahravam] = useState(0);
@@ -173,9 +175,12 @@ function Stranka() {
       }
       setNahravam((n) => n + 1);
       try {
-        await nahraj({
+        const r = await nahraj({
           data: { company_id: cid, nazov: f.name, mime: f.type || "application/octet-stream", subor: await naBase64(f) },
         });
+        // Ten istý súbor už vo Fakteri je — nezaložil sa, odkaz vedie na existujúci.
+        if (r.duplicita) oznamDuplicity.duplicita(r.duplicita, f.name);
+        else if (r.vKosi) oznamDuplicity.vKosi(f.name);
       } catch (e: any) {
         toast.error(`${f.name}: ${e?.message ?? t("nepodarilo sa nahrať")}`);
       } finally {

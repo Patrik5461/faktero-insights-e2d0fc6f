@@ -22,7 +22,7 @@ export const REZIMY_AUTOPILOTA: { kod: RezimAutopilota; nazov: string; popis: st
     kod: "vypnuty",
     nazov: "Vypnutý",
     popis:
-      "Faktero nič nenavrhuje samo — návrh si vyžiadate na doklade alebo na stránke Na kontrolu.",
+      "Faktero nič nezaúčtuje samo — návrh zaúčtovania pripraví, potvrdíte ho na doklade alebo na stránke Na kontrolu.",
   },
   {
     kod: "bezpecny",
@@ -629,6 +629,14 @@ export function smieAutopilot(rezim: RezimAutopilota, n: NavrhZauctovania): bool
 
 export function jeRezimAutopilota(v: unknown): v is RezimAutopilota {
   return v === "vypnuty" || v === "bezpecny" || v === "plny";
+}
+
+/**
+ * Režim firmy z databázy. Neznámy či chýbajúci = vypnutý (od 19. 11. 2026
+ * je autopilot predvolene vypnutý — zapína ho až správca v Predkontáciách).
+ */
+export function rezimAutopilota(v: unknown): RezimAutopilota {
+  return jeRezimAutopilota(v) ? v : "vypnuty";
 }
 
 /** Krátky popis zdroja na štítok: „pravidlo Telekom“, „zvyk 98 %“, „AI 91 %“. */

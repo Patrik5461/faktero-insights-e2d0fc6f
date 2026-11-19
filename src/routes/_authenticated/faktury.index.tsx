@@ -8,6 +8,8 @@ import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
+import { smerDobropisov } from "@/lib/faktero/prijate-dobropisy";
+import { KartyDobropisov, PrijateDobropisy } from "@/components/faktero/PrijateDobropisy";
 import {
   filtrujNeuhradenePoSplatnosti,
   jeFakturaPoSplatnosti,
@@ -135,6 +137,8 @@ type InvoiceSearch = {
    */
   neuhradene?: true;
   q?: string;
+  /** Pri `type=credit`: karta Prijaté (prijaté dobropisy z `purchase_invoices`). */
+  smer?: "prijate";
 };
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
@@ -147,10 +151,33 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
     // napísaný ručne otvoril nefiltrovaný zoznam — presne to, čo tu opravujeme.
     poSplatnosti: jeZapnute(s.poSplatnosti) ? true : undefined,
     neuhradene: jeZapnute(s.neuhradene) ? true : undefined,
+    smer: smerDobropisov(s.smer),
     ...zoznamSearch(s),
   }),
-  component: InvoicesPage,
+  component: FakturyStranka,
 });
+
+/** Dobropisy → karta Prijaté je samostatný pohľad; inak zoznam vystavených faktúr. */
+function FakturyStranka() {
+  const { type, smer } = Route.useSearch();
+  return type === "credit" && smer === "prijate" ? <PrijateDobropisyStranka /> : <InvoicesPage />;
+}
+
+function PrijateDobropisyStranka() {
+  const { t } = useT();
+  return (
+    <>
+      <PageHeader
+        title={t("Dobropisy a ťarchopisy")}
+        description={t("Prijaté dobropisy od dodávateľov — opravy prijatých faktúr.")}
+      />
+      <PageBody>
+        <KartyDobropisov smer="prijate" />
+        <PrijateDobropisy />
+      </PageBody>
+    </>
+  );
+}
 
 function InvoicesPage() {
   const { t } = useT();
@@ -1069,6 +1096,7 @@ function InvoicesPage() {
         }
       />
       <PageBody>
+        {type === "credit" ? <KartyDobropisov smer={undefined} /> : null}
         <DocumentListToolbar
           lf={lf}
           searchPlaceholder="Hľadať číslo, odberateľa, IČO…"

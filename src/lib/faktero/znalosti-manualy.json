@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-11-18",
+ "vytvorene": "2026-11-19",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -125,7 +125,7 @@
     },
     {
      "nadpis": "Režimy autopilota",
-     "text": "<>\n-\nVypnutý — Faktero samo nič nenavrhuje; návrh si vyžiadate na doklade.\n-\nBezpečný (predvolený) — samo zaúčtuje doklady, ktoré sedia na pravidlo\nalebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.\n-\nPlný — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.\nRežim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky\nÚčtovníctvo → Automatické účtovanie\n(/uctovnictvo/zauctovanie)\n, nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov —\nstaré sa samé nezaúčtujú."
+     "text": "<>\n-\nVypnutý (predvolený) — Faktero samo nič nezaúčtuje; návrh zaúčtovania\npripraví a vy ho potvrdíte na doklade alebo v Na kontrolu.\n-\nBezpečný — samo zaúčtuje doklady, ktoré sedia na pravidlo\nalebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.\n-\nPlný — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.\nRežim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky\nÚčtovníctvo → Automatické účtovanie\n(/uctovnictvo/zauctovanie)\n, nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov —\nstaré sa samé nezaúčtujú."
     },
     {
      "nadpis": "Kedy doklad čaká na vás",

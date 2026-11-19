@@ -3,6 +3,7 @@ import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nahrajNespracovaneFn } from "@/lib/faktero/nespracovane.functions";
+import { useOznamDuplicitySuboru } from "@/components/faktero/DuplicitaSuboruOznam";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
@@ -96,6 +97,7 @@ function ScannerPage() {
    * kde ju prečíta čítanie faktúr (splatnosť, IBAN, VS) a človek ju zaradí.
    */
   const nahrajNespracovane = useServerFn(nahrajNespracovaneFn);
+  const oznamDuplicity = useOznamDuplicitySuboru();
   async function doNespracovanych() {
     const cid = getActiveCompanyId();
     if (!cid || !preview) return;
@@ -105,6 +107,11 @@ function ScannerPage() {
       const r = await nahrajNespracovane({
         data: { company_id: cid, nazov: `sken.${mime.includes("png") ? "png" : "jpg"}`, mime, subor: b64 ?? "" },
       });
+      if (r.duplicita || !r.id) {
+        if (r.duplicita) oznamDuplicity.duplicita(r.duplicita);
+        return;
+      }
+      if (r.vKosi) oznamDuplicity.vKosi();
       toast.success(t("Doklad je v Nespracovaných — číta sa"));
       navigate({ to: "/nespracovane/$id", params: { id: r.id } });
     } catch (e: any) {

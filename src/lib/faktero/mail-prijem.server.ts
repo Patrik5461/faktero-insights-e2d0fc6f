@@ -358,7 +358,7 @@ export type PrijatyMail = {
 };
 
 export type VysledokPrijmu = {
-  stav: "hotovo" | "bez_prilohy" | "neznama_adresa" | "potvrdenie" | "chyba" | "odmietnute";
+  stav: "hotovo" | "bez_prilohy" | "neznama_adresa" | "potvrdenie" | "chyba" | "odmietnute" | "duplicita";
   vytvorenych: number;
   detail?: string;
 };
@@ -802,6 +802,10 @@ export async function spracujPrijatyMail(
     const dnes = dnesBratislava();
     const vytvorene: string[] = [];
     const poznamky: string[] = [];
+    /** Prílohy preskočené preto, že ten istý súbor už vo firme je. */
+    let duplicitnych = 0;
+    const dupl = await import("./duplicita-suboru");
+    const { odtlacokSuboru, najdiRovnakySubor } = await import("./duplicita-suboru.server");
 
     /*
       Česká faktúra často príde ako PDF a vedľa neho ISDOC (alebo XML) s tým
@@ -852,6 +856,21 @@ export async function spracujPrijatyMail(
       const mime = (priloha.content_type ?? "application/pdf").split(";")[0]!.trim();
       const pripona = (priloha.filename?.split(".").pop() ?? "pdf").toLowerCase().slice(0, 5);
 
+      /*
+        Ten istý súbor (SHA-256) už vo firme je — v Nespracovaných alebo
+        vytvorený z nich. Nový nespracovaný nevznikne; dôvod ide do denníka
+        mailov. Kontrola je pred čítaním, aby AI nečítala doklad zbytočne.
+      */
+      const hash = odtlacokSuboru(bajty);
+      {
+        const { duplicita } = await najdiRovnakySubor(supabaseAdmin, adresaFirmy.company_id, hash);
+        if (duplicita) {
+          poznamky.push(`${priloha.filename ?? "príloha"}: ${dupl.textDuplicity(duplicita)}, preskočené`);
+          duplicitnych++;
+          continue;
+        }
+      }
+
       // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
       const ai = uz
         ? uz.ai
@@ -900,10 +919,14 @@ export async function spracujPrijatyMail(
           poznamka: [odkial + ".", smer?.rozdelovac?.poznamka, cudzi].filter(Boolean).join(" "),
           inboxMessageId: zaznam?.id ?? null,
           cezRozdelovac: !!smer?.rozdelovac,
+          hash,
         });
         vytvorene.push(n.id);
       } catch (e: any) {
-        poznamky.push(`${meno}: zápis zlyhal (${String(e?.message ?? e).slice(0, 120)})`);
+        if (dupl.jeDuplicitnySubor(e)) {
+          poznamky.push(`${meno}: ${dupl.textDuplicity(e.duplicita)}, preskočené`);
+          duplicitnych++;
+        } else poznamky.push(`${meno}: zápis zlyhal (${String(e?.message ?? e).slice(0, 120)})`);
       }
     }
 
@@ -929,8 +952,10 @@ export async function spracujPrijatyMail(
       );
     }
     const spolu = vytvorene.length;
+    // Nič nové, lebo všetko už vo Fakteri je — nie je to chyba.
+    const stavMailu = spolu ? "hotovo" : duplicitnych ? "duplicita" : "chyba";
     await doprav(
-      spolu ? "hotovo" : "chyba",
+      stavMailu,
       poznamky.join("; ") || null,
       doklady.length,
       [],
@@ -938,7 +963,7 @@ export async function spracujPrijatyMail(
       vytvorene,
     );
     return {
-      stav: spolu ? "hotovo" : "chyba",
+      stav: stavMailu,
       vytvorenych: spolu,
       detail: poznamky.join("; ") || undefined,
     };

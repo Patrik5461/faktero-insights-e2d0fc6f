@@ -13,10 +13,10 @@ export default {
   "<0>Členenie DPH a kontrolný výkaz sa AI nepýta nikdy.</0> Odvodia sa z režimu dane na doklade: tuzemsko s odpočtom (PD, B.2), bloček (B.3), bez nároku na odpočet (PN), prenesenie daňovej povinnosti, nadobudnutie tovaru a služby z EÚ (B.1), opravný doklad (C.2), osobitná úprava či firma, ktorá nie je platiteľ DPH.":
     "<0>Die USt-Gliederung und den Kontrollbericht fragt die KI nie.</0> Sie werden aus dem Steuerregime des Belegs abgeleitet: Inland mit Vorsteuerabzug (PD, B.2), Kassenbon (B.3), ohne Vorsteuerabzug (PN), Reverse Charge, innergemeinschaftlicher Erwerb und Leistungen aus der EU (B.1), Korrekturbeleg (C.2), Sonderregelung oder ein Unternehmen, das nicht umsatzsteuerpflichtig ist.",
   "Režimy autopilota": "Autopilot-Modi",
-  "<0>Vypnutý</0> — Faktero samo nič nenavrhuje; návrh si vyžiadate na doklade.":
-    "<0>Aus</0> — Faktero schlägt selbst nichts vor; den Vorschlag fordern Sie am Beleg an.",
-  "<0>Bezpečný</0> (predvolený) — samo zaúčtuje doklady, ktoré sedia na pravidlo alebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.":
-    "<0>Sicher</0> (Standard) — kontiert selbst Belege, die zu einer Regel oder einer festen Gewohnheit mit einer Sicherheit von mindestens 95 % passen. KI-Vorschläge warten auf Sie.",
+  "<0>Vypnutý</0> (predvolený) — Faktero samo nič nezaúčtuje; návrh zaúčtovania pripraví a vy ho potvrdíte na doklade alebo v Na kontrolu.":
+    "<0>Aus</0> (Standard) — Faktero kontiert selbst nichts; es bereitet einen Kontierungsvorschlag vor, den Sie am Beleg oder unter Zur Prüfung bestätigen.",
+  "<0>Bezpečný</0> — samo zaúčtuje doklady, ktoré sedia na pravidlo alebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.":
+    "<0>Sicher</0> — kontiert selbst Belege, die zu einer Regel oder einer festen Gewohnheit mit einer Sicherheit von mindestens 95 % passen. KI-Vorschläge warten auf Sie.",
   "<0>Plný</0> — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":
     "<0>Voll</0> — kontiert zusätzlich KI-Vorschläge mit einer Sicherheit von mindestens 90 %.",
   "Režim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky <0>Účtovníctvo → Automatické účtovanie</0>, nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":

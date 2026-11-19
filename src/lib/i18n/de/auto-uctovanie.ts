@@ -62,8 +62,8 @@ export default {
   Vypnutý: "Aus",
   Bezpečný: "Sicher",
   Plný: "Voll",
-  "Faktero nič nenavrhuje samo — návrh si vyžiadate na doklade alebo na stránke Na kontrolu.":
-    "Faktero schlägt nichts selbst vor — den Vorschlag fordern Sie am Beleg oder auf der Seite Zur Prüfung an.",
+  "Faktero nič nezaúčtuje samo — návrh zaúčtovania pripraví, potvrdíte ho na doklade alebo na stránke Na kontrolu.":
+    "Faktero kontiert nichts selbst — es bereitet einen Kontierungsvorschlag vor, den Sie am Beleg oder auf der Seite Zur Prüfung bestätigen.",
   "Samo zaúčtuje doklady, ktoré sedia na pravidlo alebo na ustálený zvyk dodávateľa (istota aspoň 95 %). Návrhy od AI čakajú na kontrolu.":
     "Kontiert Belege selbst, die zu einer Regel oder einer festen Gewohnheit beim Lieferanten passen (Sicherheit mindestens 95 %). KI-Vorschläge warten auf Prüfung.",
   "Ako bezpečný, a navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":

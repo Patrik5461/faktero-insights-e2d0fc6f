@@ -102,10 +102,11 @@ const sections: HelpSection[] = [
       <>
         <ul>
           <li>
-            <strong>Vypnutý</strong> — Faktero samo nič nenavrhuje; návrh si vyžiadate na doklade.
+            <strong>Vypnutý</strong> (predvolený) — Faktero samo nič nezaúčtuje; návrh zaúčtovania
+            pripraví a vy ho potvrdíte na doklade alebo v Na kontrolu.
           </li>
           <li>
-            <strong>Bezpečný</strong> (predvolený) — samo zaúčtuje doklady, ktoré sedia na pravidlo
+            <strong>Bezpečný</strong> — samo zaúčtuje doklady, ktoré sedia na pravidlo
             alebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.
           </li>
           <li>

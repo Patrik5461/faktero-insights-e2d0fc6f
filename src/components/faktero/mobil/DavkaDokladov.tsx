@@ -14,6 +14,7 @@ import { useOperacia } from "@/lib/mobile/server-most";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { popisDuplicity, type DuplicitaSuboru } from "@/lib/faktero/duplicita-suboru";
 import { sucty, type DruhNespracovaneho } from "@/lib/faktero/nespracovane";
 import { zachytStrany } from "@/lib/mobile/skener-dokumentov";
 import { vyberSubory } from "@/lib/mobile/vyber-suborov";
@@ -81,7 +82,9 @@ export function DavkaDokladov({
   onSpat: () => void;
 }) {
   const { t, locale: loc } = usePreklad();
-  const nahraj = useOperacia<{ id: string }>("sken-nahraj");
+  const nahraj = useOperacia<{ id: string | null; duplicita?: DuplicitaSuboru | null }>(
+    "sken-nahraj",
+  );
   const stavDokladu = useOperacia<DetailSkenu>("sken-stav");
   const vytvor = useOperacia<{ agenda: string; id: string }>("sken-vytvor");
 
@@ -123,6 +126,22 @@ export function DavkaDokladov({
               predvolby: nastavenie ?? null,
             },
           });
+          // Ten istý súbor už vo Fakteri je — nič sa nezaložilo, znova nahrávať nemá zmysel.
+          if (r.duplicita || !r.id) {
+            const dup = r.duplicita;
+            setDavka((p) =>
+              zmen(p, kluc, {
+                stav: "chyba",
+                natrvalo: "uzJe",
+                chyba: dup
+                  ? [t(`app.dokladUzVoFakteriKde.${dup.agenda}` as any), popisDuplicity(dup)]
+                      .filter(Boolean)
+                      .join(": ")
+                  : null,
+              }),
+            );
+            return;
+          }
           setDavka((p) => zmen(p, kluc, { stav: "citam", id: r.id, zaciatokCitania: Date.now() }));
         } catch (e) {
           rozbehnute.current.delete(kluc);

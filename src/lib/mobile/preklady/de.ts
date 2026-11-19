@@ -1437,4 +1437,11 @@ export const de: Partial<Record<Kluc, string>> = {
   "efr.zPamate": "Offline — letzter bekannter Stand vom {kedy}.",
   "efr.bezPripojenia": "Offline — letzter bekannter Stand.",
   "efr.zoznamZPamate": "Offline — zuletzt geladene Eingangsrechnungen.",
+  "app.dokladUzVoFakteri": "Diesen Beleg haben Sie bereits hochgeladen",
+  "app.dokladUzVoFakteriKde.nespracovany": "Unter Unbearbeitete Belege",
+  "app.dokladUzVoFakteriKde.prijata": "Unter Eingangsrechnungen",
+  "app.dokladUzVoFakteriKde.blocek": "Unter Kassenbelege",
+  "app.dokladUzVoFakteriKde.ostatny": "Unter Sonstige Belege",
+  "app.dokladVKosi": "Dieselbe Datei lag im Papierkorb — sie wurde erneut als neuer Beleg hochgeladen.",
+  "davka.natrvalo.uzJe": "Diesen Beleg haben Sie bereits hochgeladen",
 };

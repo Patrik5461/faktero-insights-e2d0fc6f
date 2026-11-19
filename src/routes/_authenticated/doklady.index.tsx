@@ -105,6 +105,8 @@ import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
+import { SkontrolovaneHromadne } from "@/components/faktero/SkontrolovaneHromadne";
+import { vybraneNaKontrolu } from "@/lib/faktero/hromadne-skontrolovane";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
@@ -387,6 +389,8 @@ function DokladyPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Súčty do pätičky — vybrané a tie, čo čakajú na odovzdanie.
   const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
+  // Označené, ktoré čakajú na kontrolu (štítok „Na kontrolu“) — hromadné Skontrolované.
+  const vybraneNaKontroluIds = vybraneNaKontrolu(rad.zoradene, selected);
   const naExport = rad.zoradene.filter((r: any) => r.status === "processed" && !r.exported_at);
   async function zmenPlatbuRiadku(id: string, platbaRiadku: string) {
     const { error } = await supabase
@@ -1082,6 +1086,15 @@ function DokladyPage() {
             />
           )}
           {selected.size > 0 && cid && (
+            <SkontrolovaneHromadne
+              companyId={cid}
+              agenda="doklad"
+              ids={vybraneNaKontroluIds}
+              onHotovo={() => void refresh(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            />
+          )}
+          {selected.size > 0 && cid && (
             <VyuctovanieZVyberu companyId={cid} druh="blocek" ids={Array.from(selected)} onHotovo={refresh} />
           )}
           {/* Úhrada faktúry nahratá ako bloček (METRO „ÚHRADA FAKTÚRY“) → k prijatej faktúre alebo do Iných dokladov. */}
@@ -1285,6 +1298,11 @@ function DokladyPage() {
                       {r.locked_at ? (
                         <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label={t("Zamknutý doklad")} />
                       ) : null}
+                      {r.na_kontrolu_at ? (
+                        <StavOdznak ton="pozor" maly title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : undefined}>
+                          {t("Na kontrolu")}
+                        </StavOdznak>
+                      ) : null}
                     </span>
                   }
                   subtitle={
@@ -1470,6 +1488,11 @@ function DokladyPage() {
                     {je("cislo") && (
                       <td className="px-3 py-2">
                         <span className="cislo-dokladu">{r.document_number ?? "—"}</span>
+                        {r.na_kontrolu_at ? (
+                          <StavOdznak ton="pozor" maly className="ml-1.5 align-middle" title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : undefined}>
+                            {t("Na kontrolu")}
+                          </StavOdznak>
+                        ) : null}
                         {r.pohoda_predkontacia || r.pohoda_clenenie_dph || r.kv_clenenie ? (
                           <div
                             className="text-xs text-muted-foreground"

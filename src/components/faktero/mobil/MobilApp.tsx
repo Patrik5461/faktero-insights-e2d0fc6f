@@ -1656,7 +1656,11 @@ function ZachytDokladu({
   const uloz = useOperacia("vydavok-uloz");
   const hladajDuplikat = useOperacia<NajdenyDoklad | null>("vydavok-duplikat");
   /* Zálohová faktúra od dodávateľa nie je bloček — ide rovno medzi prijaté zálohy. */
-  const ulozZalohu = useOperacia<{ id: string; invoice_number: string }>("prijata-zaloha-uloz");
+  const ulozZalohu = useOperacia<{
+    id: string;
+    invoice_number: string;
+    duplicita?: { agenda: string } | null;
+  }>("prijata-zaloha-uloz");
 
   const [stav, setStav] = useState<"start" | "citam" | "potvrdenie">("start");
   const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);
@@ -2036,6 +2040,13 @@ function ZachytDokladu({
           druh: "proforma",
         },
       });
+      // Ten istý súbor už vo Fakteri je — nič sa nezaložilo ani sa neuloží bloček.
+      if (v.duplicita) {
+        toast.error(t("app.dokladUzVoFakteri"), {
+          description: t(`app.dokladUzVoFakteriKde.${v.duplicita.agenda}` as Kluc),
+        });
+        return true;
+      }
       toast.success(t("app.zalohaUlozena", { cislo: v.invoice_number }));
       onUlozene();
       return true;

@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n/useT";
+import { ZMENA_SKONTROLOVANE } from "@/lib/faktero/hromadne-skontrolovane";
 
 export function AutomatickyZaradena({
   id,
@@ -45,7 +46,7 @@ export function AutomatickyZaradena({
   async function skontrolovane() {
     const { error } = await supabase
       .from(tabulka)
-      .update({ na_kontrolu_at: null, na_kontrolu_dovod: null } as any)
+      .update({ ...ZMENA_SKONTROLOVANE } as any)
       .eq("id", id);
     if (error) console.warn("[doklad] kontrola sa nezapísala:", error.message);
     else setDovod(null);

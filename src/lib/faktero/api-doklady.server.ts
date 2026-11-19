@@ -257,15 +257,26 @@ export async function nahrajNespracovany(ctx: ApiCtx) {
   // 14 MB: v base64 je to ~19 MB a nginx púšťa požiadavky do 20 MB.
   if (bajty.length > 14 * 1024 * 1024) return err("too_large", "Súbor je väčší ako 14 MB.", 413);
   const { zalozNespracovany, vytazNespracovany } = await import("./nespracovane.server");
-  const n = await zalozNespracovany(ctx.supabase, {
-    companyId: ctx.company_id,
-    userId: null,
-    zdroj: "api",
-    bajty,
-    nazov,
-    mime,
-    poznamka: typeof b.note === "string" ? b.note.slice(0, 500) : null,
-  });
+  const { jeDuplicitnySubor } = await import("./duplicita-suboru");
+  let n: { id: string };
+  try {
+    n = await zalozNespracovany(ctx.supabase, {
+      companyId: ctx.company_id,
+      userId: null,
+      zdroj: "api",
+      bajty,
+      nazov,
+      mime,
+      poznamka: typeof b.note === "string" ? b.note.slice(0, 500) : null,
+    });
+  } catch (e) {
+    // Ten istý súbor (SHA-256) už vo firme je — nič sa nezaložilo.
+    if (jeDuplicitnySubor(e))
+      return err("duplicate_document", e.message, 409, {
+        existing: { type: e.duplicita.agenda, id: e.duplicita.id },
+      });
+    throw e;
+  }
   // Čítanie trvá desiatky sekúnd — beží na pozadí, stav je v GET /unprocessed-documents.
   void vytazNespracovany(n.id);
   return ok({ objekt: "unprocessed_document", id: n.id, stav: "cita" }, 201);

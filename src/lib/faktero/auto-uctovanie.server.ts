@@ -3,9 +3,9 @@
 
   `navrhniZauctovanie` zloží návrh pre jeden doklad (pravidlo → zvyk → AI,
   členenie DPH a KV z `odvodClenenia`) a vyhodnotí blokátory. Fronta
-  (`spracujAutoUctovanie`, cron každú minútu) prejde nové doklady firiem so
-  zapnutým autopilotom: istý návrh bez blokátora zaúčtuje, ostatné uloží do
-  `auto_uctovanie_navrh` na kontrolu.
+  (`spracujAutoUctovanie`, cron každú minútu) prejde nové doklady všetkých
+  firiem: pri zapnutom autopilote istý návrh bez blokátora zaúčtuje, ostatné
+  (a pri vypnutom všetky) len uloží do `auto_uctovanie_navrh` na kontrolu.
 
   Doklady sa do fronty dostávajú samy: nový riadok má `auto_uctovanie_at`
   prázdne a spúšťač `faktero_auto_uctovanie_strazca` ho vynuluje, keď človek
@@ -23,7 +23,7 @@ import {
   dodavatelJeFirma,
   kvPreneseniaPrijatej,
   znakyPreneseniaPrijatej,
-  jeRezimAutopilota,
+  rezimAutopilota,
   odvodClenenia,
   polozkyNesedia,
   popisZdroja,
@@ -152,7 +152,7 @@ export async function nacitajFirmu(sb: Klient, companyId: string): Promise<Firma
     platitel: !jeNeplatitel(c as any),
     icDph: c?.ic_dph ?? null,
     ico: c?.ico ?? null,
-    rezim: jeRezimAutopilota(c?.auto_uctovanie_rezim) ? c.auto_uctovanie_rezim : "bezpecny",
+    rezim: rezimAutopilota(c?.auto_uctovanie_rezim),
     limit: c?.auto_uctovanie_limit != null ? Number(c.auto_uctovanie_limit) : PREDVOLENY_LIMIT,
     od: c?.auto_uctovanie_od ?? null,
     zamknuteDo: c?.locked_until ?? null,
@@ -886,7 +886,8 @@ const STLPCE_FRONTY: Record<TypDokladu, string> = {
 let bezi = false;
 
 /**
- * Fronta: nové doklady firiem so zapnutým autopilotom. Beží v rozpočte času
+ * Fronta: nové doklady firiem. Vypnutý autopilot = len návrhy (ukážu sa na
+ * detaile a v Na kontrolu), zaúčtuje sa nič. Beží v rozpočte času
  * (nginx strihá po 30 s) — čo nestihne, vezme o minútu.
  */
 export async function spracujAutoUctovanie(
@@ -902,7 +903,7 @@ export async function spracujAutoUctovanie(
     const { data: firmy } = await admin
       .from("companies")
       .select("id, auto_uctovanie_od")
-      .neq("auto_uctovanie_rezim", "vypnuty")
+      // Aj vypnutý autopilot: návrhy sa pripravujú, len sa samé nepotvrdia (smieAutopilot).
       .in("country", ["SK", "CZ"]);
     const odFirmy = new Map<string, string>(
       ((firmy ?? []) as Riadok[]).map((f) => [f.id, f.auto_uctovanie_od]),
@@ -948,7 +949,7 @@ export async function spracujAutoUctovanie(
           firmyCache.set(row.company_id, firma);
         }
         // Firma bez účtovania (nič neexportuje) — návrhy by nikto nečítal.
-        if (!firma.pouzivaUctovanie || firma.rezim === "vypnuty") {
+        if (!firma.pouzivaUctovanie) {
           await ulozNavrh(admin, typ, row.id, null);
           vysledok.preskocenych++;
           continue;

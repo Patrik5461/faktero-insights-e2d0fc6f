@@ -122,7 +122,7 @@ export function novyDoklad(
 }
 
 /** Prečo sa súbor nedá nahrať ani na ďalší pokus. */
-export type TrvalaChyba = "predplatne" | "prazdny" | "velky" | "neplatny";
+export type TrvalaChyba = "predplatne" | "prazdny" | "velky" | "neplatny" | "uzJe";
 
 /**
  * Chyba nahratia: dá sa to skúsiť znova (sieť, výpadok servera), alebo nie?

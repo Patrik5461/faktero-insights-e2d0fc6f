@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { jeAdminRola } from "./opravnenia";
+import { rezimAutopilota } from "./auto-uctovanie";
 
 /*
   Automatické zaúčtovanie — serverové funkcie pre prehliadač. Čítanie aj
@@ -23,7 +24,7 @@ export const nastavenieAutoUctovaniaFn = createServerFn({ method: "POST" })
       .eq("id", data.company_id)
       .maybeSingle();
     return {
-      rezim: (c?.auto_uctovanie_rezim ?? "bezpecny") as "vypnuty" | "bezpecny" | "plny",
+      rezim: rezimAutopilota(c?.auto_uctovanie_rezim),
       limit: c?.auto_uctovanie_limit != null ? Number(c.auto_uctovanie_limit) : 5000,
       mena: String(c?.country ?? "SK").toUpperCase() === "CZ" ? "CZK" : "EUR",
       mozemMenit: jeAdminRola(rola),

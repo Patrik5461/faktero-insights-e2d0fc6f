@@ -61,8 +61,8 @@ export default {
   Vypnutý: "Vypnutý",
   Bezpečný: "Bezpečný",
   Plný: "Plný",
-  "Faktero nič nenavrhuje samo — návrh si vyžiadate na doklade alebo na stránke Na kontrolu.":
-    "Faktero nic nenavrhuje samo — návrh si vyžádáte na dokladu nebo na stránce Ke kontrole.",
+  "Faktero nič nezaúčtuje samo — návrh zaúčtovania pripraví, potvrdíte ho na doklade alebo na stránke Na kontrolu.":
+    "Faktero nic nezaúčtuje samo — návrh zaúčtování připraví, potvrdíte ho na dokladu nebo na stránce Ke kontrole.",
   "Samo zaúčtuje doklady, ktoré sedia na pravidlo alebo na ustálený zvyk dodávateľa (istota aspoň 95 %). Návrhy od AI čakajú na kontrolu.":
     "Samo zaúčtuje doklady, které sedí na pravidlo nebo na ustálený zvyk dodavatele (jistota alespoň 95 %). Návrhy od AI čekají na kontrolu.",
   "Ako bezpečný, a navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":

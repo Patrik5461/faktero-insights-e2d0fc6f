@@ -168,6 +168,14 @@ export const nespracovaneNaUhraduFn = createServerFn({ method: "POST" })
     });
   });
 
+/**
+ * Výsledok nahratia do Nespracovaných: `id` nového záznamu, alebo `duplicita`
+ * — rovnaký súbor už vo firme je (vtedy sa nič nezaložilo).
+ */
+type VysledokNahratia =
+  | { id: string; duplicita: null; vKosi: boolean }
+  | { id: null; duplicita: import("./duplicita-suboru").DuplicitaSuboru; vKosi: false };
+
 export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
@@ -201,18 +209,25 @@ export const nahrajNespracovaneFn = createServerFn({ method: "POST" })
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(data.company_id);
     const { zalozNespracovany, vytazNespracovany } = await import("./nespracovane.server");
-    const { id } = await zalozNespracovany(context.supabase as any, {
-      companyId: data.company_id,
-      userId: context.userId,
-      zdroj: data.zdroj ?? "nahratie",
-      bajty,
-      nazov: data.nazov,
-      mime: data.mime,
-      predvolby: data.predvolby ?? null,
-    });
-    // Vyťaženie trvá aj desiatky sekúnd — beží na pozadí, zoznam sa doptáva.
-    void vytazNespracovany(id);
-    return { id };
+    const { jeDuplicitnySubor } = await import("./duplicita-suboru");
+    try {
+      const { id, vKosi } = await zalozNespracovany(context.supabase as any, {
+        companyId: data.company_id,
+        userId: context.userId,
+        zdroj: data.zdroj ?? "nahratie",
+        bajty,
+        nazov: data.nazov,
+        mime: data.mime,
+        predvolby: data.predvolby ?? null,
+      });
+      // Vyťaženie trvá aj desiatky sekúnd — beží na pozadí, zoznam sa doptáva.
+      void vytazNespracovany(id);
+      return { id, duplicita: null, vKosi: Boolean(vKosi) } as VysledokNahratia;
+    } catch (e) {
+      // Ten istý súbor už vo firme je — nie chyba, odpoveď s odkazom na existujúci doklad.
+      if (jeDuplicitnySubor(e)) return { id: null, duplicita: e.duplicita, vKosi: false } as VysledokNahratia;
+      throw e;
+    }
   });
 
 export const detailNespracovanehoFn = createServerFn({ method: "POST" })
@@ -633,6 +648,11 @@ export const prijataDoNespracovanychFn = createServerFn({ method: "POST" })
     if (error) {
       if (cesta) await supabase.storage.from("nespracovane").remove([cesta]);
       throw new Error(error.message);
+    }
+    // Odtlačok súboru ide späť s ním — rovnaký súbor nahratý znova ukáže na tento záznam.
+    {
+      const { prenesOdtlacok } = await import("./nespracovane.server");
+      await prenesOdtlacok(supabase, "nespracovane_doklady", id, p.subor_hash);
     }
     // Faktúra zmizne; keď na ňu niečo ešte odkazuje, ostane aspoň zmazaná.
     const { error: eDel } = await supabase.from("purchase_invoices").delete().eq("id", p.id);

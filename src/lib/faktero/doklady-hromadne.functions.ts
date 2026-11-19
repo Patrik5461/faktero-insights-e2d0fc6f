@@ -37,6 +37,7 @@ const akcia = z.discriminatedUnion("typ", [
       .optional(),
   }),
   z.object({ typ: z.literal("zrusitZauctovanie") }),
+  z.object({ typ: z.literal("skontrolovane") }),
 ]);
 
 const TABULKA = {
@@ -88,6 +89,55 @@ export const hromadneDokladyFn = createServerFn({ method: "POST" })
         ids: data.ids,
       });
       return { zmenenych: v.zrusenych, preskocene: v.preskocene };
+    }
+
+    /*
+      „Skontrolované“ — tá istá zmena ako tlačidlo na detaile
+      (AutomatickyZaradena.tsx), len pre viac dokladov naraz. Mení sa len
+      doklad, ktorý na kontrolu naozaj čaká; odovzdaný, zamknutý a v
+      uzavretom období sa preskočí.
+    */
+    if (a.typ === "skontrolovane") {
+      if (ag !== "prijata" && ag !== "doklad")
+        throw new Error("Skontrolované sa dá hromadne označiť len na prijatých faktúrach a bločkoch.");
+      const { overPristup } = await import("./over-pristup");
+      await overPristup(context as any, data.company_id, { oblast: "doklady", zapis: true });
+      const { ZMENA_SKONTROLOVANE, cakaNaKontrolu } = await import("./hromadne-skontrolovane");
+      const cols =
+        ag === "prijata"
+          ? "id, invoice_number, supplier_name, exported_at, locked_at, issue_date, deleted_at, na_kontrolu_at"
+          : "id, document_number, supplier_name, exported_at, locked_at, issue_date, na_kontrolu_at";
+      const [{ data: riadky, error }, { data: firma }] = await Promise.all([
+        supabase.from(tabulka).select(cols).eq("company_id", data.company_id).in("id", data.ids),
+        supabase.from("companies").select("locked_until").eq("id", data.company_id).maybeSingle(),
+      ]);
+      if (error) throw new Error(error.message);
+      const preskocene: string[] = [];
+      const ids: string[] = [];
+      for (const r of (riadky ?? []) as any[]) {
+        if (!cakaNaKontrolu(r)) continue;
+        const z = dovodZamku(r, firma?.locked_until ?? null);
+        if (z) {
+          preskocene.push(
+            `${r.invoice_number || r.document_number || r.supplier_name || "doklad"}: ${NAZOV_ZAMKU[z]}`,
+          );
+          continue;
+        }
+        ids.push(r.id);
+      }
+      let zmenenych = 0;
+      if (ids.length) {
+        const { data: hotove, error: e2 } = await supabase
+          .from(tabulka)
+          .update({ ...ZMENA_SKONTROLOVANE })
+          .eq("company_id", data.company_id)
+          .in("id", ids)
+          .not("na_kontrolu_at", "is", null)
+          .select("id");
+        if (e2) throw new Error(e2.message);
+        zmenenych = (hotove ?? []).length;
+      }
+      return { zmenenych, preskocene };
     }
 
     const stlpce = {

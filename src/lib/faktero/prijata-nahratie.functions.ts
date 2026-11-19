@@ -43,6 +43,13 @@ export type NahratyDoklad = {
   type: "regular" | "proforma";
   /** `true`, keď AI z dokladu nič nevytiahla a údaje treba doplniť ručne. */
   prazdny: boolean;
+  /**
+   * Rovnaký súbor už vo firme je — nič sa nezaložilo, `id` je prázdne
+   * a odkaz na existujúci doklad je tu.
+   */
+  duplicita?: import("./duplicita-suboru").DuplicitaSuboru | null;
+  /** Rovnaký súbor bol len v koši — doklad sa založil. */
+  vKosi?: boolean;
 };
 
 export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
@@ -57,6 +64,24 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
 
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(data.company_id);
+
+    // Ten istý súbor už vo firme je — skôr než ho začne čítať AI.
+    const { odtlacokSuboru, najdiRovnakySubor } = await import("./duplicita-suboru.server");
+    const hash = odtlacokSuboru(bajty);
+    {
+      const { duplicita } = await najdiRovnakySubor(supabase as any, data.company_id, hash);
+      if (duplicita)
+        return {
+          id: "",
+          invoice_number: duplicita.cislo ?? "",
+          supplier_name: duplicita.partner ?? "",
+          amount_total: 0,
+          currency: "EUR",
+          type: data.druh === "proforma" ? "proforma" : "regular",
+          prazdny: false,
+          duplicita,
+        };
+    }
 
     const { precitajDoklad } = await import("./mail-prijem.server");
     const ai = await precitajDoklad(bajty.toString("base64"), data.mime, null, {
@@ -89,7 +114,7 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
       napevno — ten sa predvyplní.
     */
     const { zalozNespracovany } = await import("./nespracovane.server");
-    const { id } = await zalozNespracovany(supabase as any, {
+    const { id, vKosi } = await zalozNespracovany(supabase as any, {
       companyId: data.company_id,
       userId,
       zdroj: "nahratie",
@@ -98,9 +123,11 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
       mime: data.mime,
       ai,
       druh: typ === "proforma" ? "zalohova" : undefined,
+      hash,
     });
     return {
       id,
+      ...(vKosi ? { vKosi: true } : {}),
       invoice_number: faktura.invoice_number,
       supplier_name: faktura.supplier_name,
       amount_total: Number(faktura.amount_total ?? 0),

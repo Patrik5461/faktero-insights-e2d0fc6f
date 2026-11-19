@@ -13,10 +13,10 @@ export default {
   "<0>Členenie DPH a kontrolný výkaz sa AI nepýta nikdy.</0> Odvodia sa z režimu dane na doklade: tuzemsko s odpočtom (PD, B.2), bloček (B.3), bez nároku na odpočet (PN), prenesenie daňovej povinnosti, nadobudnutie tovaru a služby z EÚ (B.1), opravný doklad (C.2), osobitná úprava či firma, ktorá nie je platiteľ DPH.":
     "<0>Členění DPH a kontrolní výkaz se AI neptá nikdy.</0> Odvodí se z režimu daně na dokladu: tuzemsko s odpočtem (PD, B.2), účtenka (B.3), bez nároku na odpočet (PN), přenesení daňové povinnosti, pořízení zboží a služby z EU (B.1), opravný doklad (C.2), zvláštní režim či firma, která není plátce DPH.",
   "Režimy autopilota": "Režimy autopilota",
-  "<0>Vypnutý</0> — Faktero samo nič nenavrhuje; návrh si vyžiadate na doklade.":
-    "<0>Vypnutý</0> — Faktero samo nic nenavrhuje; návrh si vyžádáte na dokladu.",
-  "<0>Bezpečný</0> (predvolený) — samo zaúčtuje doklady, ktoré sedia na pravidlo alebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.":
-    "<0>Bezpečný</0> (výchozí) — samo zaúčtuje doklady, které sedí na pravidlo nebo na ustálený zvyk s jistotou alespoň 95 %. Návrhy od AI čekají na vás.",
+  "<0>Vypnutý</0> (predvolený) — Faktero samo nič nezaúčtuje; návrh zaúčtovania pripraví a vy ho potvrdíte na doklade alebo v Na kontrolu.":
+    "<0>Vypnutý</0> (výchozí) — Faktero samo nic nezaúčtuje; návrh zaúčtování připraví a vy ho potvrdíte na dokladu nebo v Ke kontrole.",
+  "<0>Bezpečný</0> — samo zaúčtuje doklady, ktoré sedia na pravidlo alebo na ustálený zvyk s istotou aspoň 95 %. Návrhy od AI čakajú na vás.":
+    "<0>Bezpečný</0> — samo zaúčtuje doklady, které sedí na pravidlo nebo na ustálený zvyk s jistotou alespoň 95 %. Návrhy od AI čekají na vás.",
   "<0>Plný</0> — navyše zaúčtuje aj návrhy od AI s istotou aspoň 90 %.":
     "<0>Plný</0> — navíc zaúčtuje i návrhy od AI s jistotou alespoň 90 %.",
   "Režim a limit sumy nastaví majiteľ alebo admin firmy navrchu stránky <0>Účtovníctvo → Automatické účtovanie</0>, nad záložkami Na kontrolu, Pravidlá a Predlohy. Po zapnutí sa týka len nových dokladov — staré sa samé nezaúčtujú.":

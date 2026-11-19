@@ -6,6 +6,7 @@ import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
 import { potvrd } from "@/lib/potvrdenie";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { popisDuplicity, type DuplicitaSuboru } from "@/lib/faktero/duplicita-suboru";
 import { kontrolaNespracovaneho } from "@/components/faktero/dph-formular";
 import { bezKontrolyRozpisuDph } from "@/lib/faktero/neplatitel-dph";
 import {
@@ -150,11 +151,17 @@ export function RozpoznanyDoklad({
 }) {
   const { t, locale: loc } = usePreklad();
   const nadpis = davka ? t("rd.dokladZ", { n: davka.poradie, spolu: davka.spolu }) : t("rd.nadpis");
-  const nahraj = useOperacia<{ id: string }>("sken-nahraj");
+  const nahraj = useOperacia<{
+    id: string | null;
+    duplicita?: DuplicitaSuboru | null;
+    vKosi?: boolean;
+  }>("sken-nahraj");
   const stavDokladu = useOperacia<Detail>("sken-stav");
   const vytvor = useOperacia<{ agenda: string; id: string }>("sken-vytvor");
 
-  const [faza, setFaza] = useState<"nahravam" | "chybaNahratia" | "citam" | "dlho" | "hotovo">(
+  const [faza, setFaza] = useState<
+    "nahravam" | "chybaNahratia" | "uzJe" | "citam" | "dlho" | "hotovo"
+  >(
     uzNahrane ? "citam" : "nahravam",
   );
   const [chybaNahratia, setChybaNahratia] = useState<string | null>(null);
@@ -192,6 +199,20 @@ export function RozpoznanyDoklad({
           predvolby: nastavenie ?? null,
         },
       });
+      // Ten istý súbor už vo Fakteri je — nič sa nezaložilo.
+      if (r.duplicita || !r.id) {
+        const dup = r.duplicita;
+        setChybaNahratia(
+          dup
+            ? [t(`app.dokladUzVoFakteriKde.${dup.agenda}` as Kluc), popisDuplicity(dup)]
+                .filter(Boolean)
+                .join(": ")
+            : null,
+        );
+        setFaza("uzJe");
+        return;
+      }
+      if (r.vKosi) toast(t("app.dokladVKosi"));
       setId(r.id);
       setFaza("citam");
     } catch (e) {
@@ -346,6 +367,22 @@ export function RozpoznanyDoklad({
   }
 
   if (faza === "nahravam") return <Pracujem text={t("rd.nahravam")} />;
+
+  if (faza === "uzJe")
+    return (
+      <MobilObrazovka title={nadpis} subtitle={firma.name} onBack={onSpat}>
+        <div
+          role="alert"
+          className="rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-4 text-[14px]"
+        >
+          <div className="font-semibold text-app-pozor">{t("app.dokladUzVoFakteri")}</div>
+          {chybaNahratia && <div className="mt-1 text-app-text-2">{chybaNahratia}</div>}
+        </div>
+        <div className="mt-4">
+          <HlavneTlacidlo onClick={onSpat}>{t("rd.spat")}</HlavneTlacidlo>
+        </div>
+      </MobilObrazovka>
+    );
 
   if (faza === "chybaNahratia")
     return (

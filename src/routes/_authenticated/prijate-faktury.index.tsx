@@ -105,6 +105,8 @@ import { stavPlatby, type StavPlatby } from "@/lib/faktero/stav-platby";
 import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
 import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
 import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
+import { SkontrolovaneHromadne } from "@/components/faktero/SkontrolovaneHromadne";
+import { vybraneNaKontrolu } from "@/lib/faktero/hromadne-skontrolovane";
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: ({ match }) => ({
     meta: [
@@ -333,6 +335,8 @@ function PurchaseInvoicesPage() {
   };
   // Súčty do pätičky zoznamu — vybrané a tie, čo čakajú na odovzdanie.
   const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
+  // Označené, ktoré čakajú na kontrolu (štítok „Na kontrolu“) — hromadné Skontrolované.
+  const vybraneNaKontroluIds = vybraneNaKontrolu(rad.zoradene, selected);
   const naExport = rad.zoradene.filter(
     (r: any) => !r.exported_at && r.status !== "cancelled" && r.status !== "draft",
   );
@@ -1265,6 +1269,14 @@ function PurchaseInvoicesPage() {
                 onHotovo={() => void load()}
                 pdfZip={() => void runBulkZip()}
                 zmazat={() => void hromadneVymazat()}
+              />
+            ) : null}
+            {getActiveCompanyId() ? (
+              <SkontrolovaneHromadne
+                companyId={getActiveCompanyId()!}
+                agenda="prijata"
+                ids={vybraneNaKontroluIds}
+                onHotovo={() => void load()}
               />
             ) : null}
             {getActiveCompanyId() ? (

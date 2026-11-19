@@ -210,8 +210,22 @@ export async function zalozNespracovany(
     cezRozdelovac?: boolean;
     /** Kedy doklad naozaj prišiel (napr. do rozdeľovača) — inak mail alebo teraz. */
     prijate?: string | null;
+    /** Odtlačok súboru, ak ho volajúci už spočítal (`odtlacokSuboru`). */
+    hash?: string | null;
   },
-): Promise<{ id: string; udaje: UdajeNespracovaneho | null }> {
+): Promise<{ id: string; udaje: UdajeNespracovaneho | null; vKosi?: boolean }> {
+  /*
+    Ten istý súbor (bajt po bajte) už vo firme je — v Nespracovaných alebo
+    vytvorený z nich — druhýkrát sa nezaloží (duplicita-suboru.ts). Doklad
+    v koši nahratie nezastaví, len sa to vráti volajúcemu.
+  */
+  const { odtlacokSuboru, najdiRovnakySubor } = await import("./duplicita-suboru.server");
+  const hash = args.hash || odtlacokSuboru(args.bajty);
+  const rovnaky = await najdiRovnakySubor(supabase, args.companyId, hash);
+  if (rovnaky.duplicita) {
+    const { DuplicitnySuborChyba } = await import("./duplicita-suboru");
+    throw new DuplicitnySuborChyba(rovnaky.duplicita);
+  }
   const id = crypto.randomUUID();
   const cesta = `${args.companyId}/${id}.${priponaSuboru(args.nazov, args.mime)}`;
   const up = await supabase.storage
@@ -271,7 +285,9 @@ export async function zalozNespracovany(
     await supabase.storage.from(KOS_NESPRACOVANYCH).remove([cesta]);
     throw new Error(error.message);
   }
-  return { id, udaje };
+  // Zvlášť, aby chýbajúci stĺpec (pred migráciou) nezablokoval nahratie.
+  await prenesOdtlacok(supabase, "nespracovane_doklady", id, hash);
+  return { id, udaje, ...(rovnaky.vKosi ? { vKosi: true } : {}) };
 }
 
 /** Vyťaží nespracovaný doklad cez AI (beží na pozadí, po odpovedi klientovi). */
@@ -700,6 +716,7 @@ export async function vytvorDoklad(
       doklad nahral. Zvlášť, aby chýbajúci stĺpec nezablokoval vytvorenie.
     */
     await supabase.from("purchase_invoices").update({ spracoval: userId, spracovane_at: teraz }).eq("id", data.id);
+    await prenesOdtlacok(supabase, "purchase_invoices", data.id, r.subor_hash);
     await oznacNaKontroluDph(supabase, "purchase_invoices", data.id, r.company_id, u);
     /*
       Vytvorením je faktúra skontrolovaná — keď sa dá určiť predkontácia aj
@@ -858,6 +875,7 @@ export async function vytvorDoklad(
         .eq("id", data.id)
         .is("zauctovane_at", null);
     await oznacNaKontroluDph(supabase, "expense_documents", data.id, r.company_id, u);
+    await prenesOdtlacok(supabase, "expense_documents", data.id, r.subor_hash);
     vysledok = { agenda: "doklad", id: data.id, zauctovana: zauctovanyBlocek };
   } else {
     const idDokladu = crypto.randomUUID();
@@ -887,6 +905,7 @@ export async function vytvorDoklad(
           position: 0,
         });
     }
+    await prenesOdtlacok(supabase, "other_documents", idDokladu, r.subor_hash);
     vysledok = { agenda: "ostatny", id: idDokladu };
   }
 
@@ -936,6 +955,25 @@ export async function vytvorDoklad(
   await supabase.from("nespracovane_doklady").delete().eq("id", r.id);
   if (r.file_path) await supabase.storage.from(KOS_NESPRACOVANYCH).remove([r.file_path]);
   return vysledok;
+}
+
+/**
+ * Odtlačok súboru ide s dokladom ďalej (Vytvoriť, Vrátiť do Nespracovaných),
+ * aby rovnaký súbor nahratý neskôr ukázal na doklad, ktorý z neho vznikol.
+ * Zvlášť a bez chyby — chýbajúci stĺpec nesmie zablokovať vytvorenie.
+ */
+export async function prenesOdtlacok(
+  supabase: Klient,
+  tabulka: "purchase_invoices" | "expense_documents" | "other_documents" | "nespracovane_doklady",
+  id: string,
+  hash: unknown,
+): Promise<void> {
+  if (typeof hash !== "string" || !hash) return;
+  try {
+    await supabase.from(tabulka).update({ subor_hash: hash }).eq("id", id);
+  } catch {
+    /* odtlačok je doplnok */
+  }
 }
 
 /** Prijatá faktúra v evidencii, ktorú nespracovaný doklad opakuje. */
@@ -1223,6 +1261,7 @@ export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string
     if (cesta) await supabase.storage.from("nespracovane").remove([cesta]);
     throw new Error(error.message);
   }
+  await prenesOdtlacok(supabase, "nespracovane_doklady", id, e.subor_hash);
   await supabase.from("expense_documents").delete().eq("id", e.id);
   if (e.file_path) await supabase.storage.from("expense-receipts").remove([e.file_path]);
   /*

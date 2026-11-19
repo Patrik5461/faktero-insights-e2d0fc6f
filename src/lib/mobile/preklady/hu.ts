@@ -1422,4 +1422,11 @@ export const hu: Partial<Record<Kluc, string>> = {
   "efr.zPamate": "Nincs kapcsolat — utolsó ismert állapot: {kedy}.",
   "efr.bezPripojenia": "Nincs kapcsolat — az utolsó ismert állapot látható.",
   "efr.zoznamZPamate": "Nincs kapcsolat — a legutóbb betöltött bejövő számlák láthatók.",
+  "app.dokladUzVoFakteri": "Ezt a bizonylatot már feltöltötte",
+  "app.dokladUzVoFakteriKde.nespracovany": "A Feldolgozatlan bizonylatok között",
+  "app.dokladUzVoFakteriKde.prijata": "A Bejövő számlák között",
+  "app.dokladUzVoFakteriKde.blocek": "A Nyugták között",
+  "app.dokladUzVoFakteriKde.ostatny": "Az Egyéb bizonylatok között",
+  "app.dokladVKosi": "Ugyanez a fájl a kukában volt — újra feltöltöttük új bizonylatként.",
+  "davka.natrvalo.uzJe": "Ezt a bizonylatot már feltöltötte",
 };

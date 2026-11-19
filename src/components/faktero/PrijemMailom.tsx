@@ -28,6 +28,7 @@ const STAVY: Record<string, { text: string; ton: TonStavu }> = {
   hotovo: { text: "Založené", ton: "uspech" },
   prijate: { text: "Spracúva sa", ton: "priebeh" },
   bez_prilohy: { text: "Bez prílohy", ton: "pozor" },
+  duplicita: { text: "Už vo Fakteri je", ton: "pozor" },
   potvrdenie: { text: "Potvrdenie preposielania", ton: "pozor" },
   chyba: { text: "Nepodarilo sa", ton: "chyba" },
   odmietnute: { text: "Odmietnuté — nepovolený odosielateľ", ton: "chyba" },
