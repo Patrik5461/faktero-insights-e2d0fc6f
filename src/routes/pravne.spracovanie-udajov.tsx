@@ -54,14 +54,24 @@ const SUBDODAVATELIA = [
     kde: "USA — štandardné zmluvné doložky",
   },
   {
+    nazov: "Anthropic PBC (Claude)",
+    ucel: "Rozpoznávanie údajov z nahratých dokladov, návrh zaúčtovania a hlasové ovládanie",
+    kde: "USA — štandardné zmluvné doložky",
+  },
+  {
     nazov: "Google Ireland Ltd. (Gemini API)",
-    ucel: "Rozpoznávanie údajov z nahratých dokladov",
+    ucel: "Rozpoznávanie údajov z nahratých dokladov, keď prvý poskytovateľ nie je dostupný",
     kde: "Európska únia / USA — štandardné zmluvné doložky",
   },
   {
     nazov: "OpenAI Ireland Ltd.",
-    ucel: "Rozpoznávanie dokladov a asistent, keď prvý poskytovateľ nie je dostupný",
+    ucel: "Rozpoznávanie dokladov a asistent, keď ostatní poskytovatelia nie sú dostupní; prepis hlasových príkazov",
     kde: "Európska únia / USA — štandardné zmluvné doložky",
+  },
+  {
+    nazov: "HeiGIT gGmbH (OpenRouteService)",
+    ucel: "Určenie adresy začiatku a cieľa jazdy v knihe jázd zo súradníc",
+    kde: "Nemecko",
   },
   {
     nazov: "GOPAY s.r.o.",
@@ -242,14 +252,24 @@ const SUBDODAVATELIA_DE = [
     kde: "USA — Standardvertragsklauseln",
   },
   {
+    nazov: "Anthropic PBC (Claude)",
+    ucel: "Erkennung von Daten aus hochgeladenen Belegen, Kontierungsvorschlag und Sprachsteuerung",
+    kde: "USA — Standardvertragsklauseln",
+  },
+  {
     nazov: "Google Ireland Ltd. (Gemini API)",
-    ucel: "Erkennung von Daten aus hochgeladenen Belegen",
+    ucel: "Erkennung von Daten aus hochgeladenen Belegen, wenn der erste Anbieter nicht verfügbar ist",
     kde: "Europäische Union / USA — Standardvertragsklauseln",
   },
   {
     nazov: "OpenAI Ireland Ltd.",
-    ucel: "Belegerkennung und Assistent, wenn der erste Anbieter nicht verfügbar ist",
+    ucel: "Belegerkennung und Assistent, wenn die anderen Anbieter nicht verfügbar sind; Transkription von Sprachbefehlen",
     kde: "Europäische Union / USA — Standardvertragsklauseln",
+  },
+  {
+    nazov: "HeiGIT gGmbH (OpenRouteService)",
+    ucel: "Ermittlung der Start- und Zieladresse von Fahrten im Fahrtenbuch aus Koordinaten",
+    kde: "Deutschland",
   },
   {
     nazov: "GOPAY s.r.o.",

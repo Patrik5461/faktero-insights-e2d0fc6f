@@ -86,6 +86,54 @@ function Sk() {
           Platobné údaje: informácie o platbách za predplatné (samotné údaje o platobnej karte
           spracúva poskytovateľ platobnej brány).
         </li>
+        <li>
+          Polohové údaje: presná poloha zariadenia (GPS) počas jazdy, ak v mobilnej aplikácii
+          Faktero alebo Kniha jázd zapnete automatické zaznamenávanie jázd — pozri časť 3a.
+        </li>
+      </ul>
+
+      <h2 id="poloha">3a. Polohové údaje v mobilných aplikáciách Faktero a Kniha jázd</h2>
+      <p>
+        Mobilné aplikácie <strong>Faktero</strong> a <strong>Kniha jázd</strong> používajú presnú
+        polohu zariadenia (GPS) <strong>výhradne na vedenie knihy jázd</strong>: rozpoznajú začiatok
+        a koniec jazdy, zmerajú prejdené kilometre a zaznamenajú trasu jazdy.
+      </p>
+      <ul>
+        <li>
+          <strong>Kedy sa poloha zisťuje:</strong> len ak v aplikácii zapnete automatické
+          zaznamenávanie jázd a v systéme povolíte prístup k polohe. Aby sa jazda zmerala aj pri
+          zhasnutom displeji alebo zatvorenej aplikácii, aplikácia polohu číta aj na pozadí — počas
+          merania je to vždy zobrazené v trvalej notifikácii. Mimo jazdy sa trasa neukladá.
+        </li>
+        <li>
+          <strong>Čo ukladáme:</strong> súradnice trasy jazdy, čas začiatku a konca, prejdenú
+          vzdialenosť a z nich odvodenú adresu začiatku a cieľa jazdy. Údaje sa ukladajú k vášmu
+          používateľskému účtu vo firme, pre ktorú knihu jázd vediete.
+        </li>
+        <li>
+          <strong>Komu ich poskytujeme:</strong> súradnice začiatku a cieľa jazdy posielame službe
+          OpenRouteService (HeiGIT gGmbH, Heidelberg, Nemecko), ktorá z nich určí adresu. Údaje sa
+          ukladajú v databáze Supabase (servery v EÚ). Polohu nepredávame, nepoužívame na reklamu ani
+          na sledovanie mimo jázd a neposkytujeme ju iným tretím stranám.
+        </li>
+        <li>
+          <strong>Kto ich vidí:</strong> vy a používatelia vašej firmy s prístupom ku knihe jázd
+          (napr. konateľ či účtovník), keďže kniha jázd je účtovný záznam firmy.
+        </li>
+        <li>
+          <strong>Ako dlho:</strong> ako ostatné účtovné záznamy — počas trvania účtu a po dobu
+          vyžadovanú zákonom o účtovníctve a o dani z príjmov. Jednotlivú jazdu môžete kedykoľvek
+          upraviť alebo zmazať.
+        </li>
+        <li>
+          <strong>Ako to vypnúť:</strong> automatické zaznamenávanie jázd vypnete v nastaveniach
+          aplikácie, prístup k polohe kedykoľvek odoberiete v nastaveniach telefónu. Bez povolenia
+          polohy fungujú všetky ostatné časti aplikácií; jazdy môžete zapisovať ručne.
+        </li>
+        <li>
+          <strong>Právny základ:</strong> váš súhlas udelený povolením prístupu k polohe (čl. 6 ods.
+          1 písm. a GDPR) a plnenie zmluvy (vedenie knihy jázd, čl. 6 ods. 1 písm. b GDPR).
+        </li>
       </ul>
 
       <h2>4. Účel spracúvania</h2>
@@ -133,9 +181,14 @@ function Sk() {
           Resend Inc., USA, štandardné zmluvné doložky.
         </li>
         <li>
-          <strong>Google (Gemini API)</strong> a <strong>OpenAI</strong> (rozpoznávanie údajov z
-          nahratých dokladov a asistent) — Google Ireland Ltd. a OpenAI Ireland Ltd., štandardné
-          zmluvné doložky. Doklady sa neposkytujú na trénovanie modelov.
+          <strong>Anthropic (Claude)</strong>, <strong>Google (Gemini API)</strong> a{" "}
+          <strong>OpenAI</strong> (rozpoznávanie údajov z nahratých dokladov, asistent a hlasové
+          ovládanie) — Anthropic PBC, Google Ireland Ltd. a OpenAI Ireland Ltd., štandardné zmluvné
+          doložky. Doklady sa neposkytujú na trénovanie modelov.
+        </li>
+        <li>
+          <strong>OpenRouteService</strong> (určenie adresy začiatku a cieľa jazdy v knihe jázd) —
+          HeiGIT gGmbH, Nemecko.
         </li>
         <li>
           <strong>GoPay</strong> (platobná brána pre predplatné Faktero) — GOPAY s.r.o., ČR. Platby
@@ -248,6 +301,60 @@ function De() {
           Zahlungsdaten: Informationen über Zahlungen für das Abonnement (die Daten der
           Zahlungskarte selbst verarbeitet der Anbieter des Zahlungsgateways).
         </li>
+        <li>
+          Standortdaten: genauer Standort des Geräts (GPS) während einer Fahrt, wenn Sie in der
+          mobilen App Faktero oder Kniha jázd (Fahrtenbuch) die automatische Fahrtenerfassung
+          einschalten — siehe Abschnitt 3a.
+        </li>
+      </ul>
+
+      <h2 id="standort">3a. Standortdaten in den mobilen Apps Faktero und Kniha jázd</h2>
+      <p>
+        Die mobilen Apps <strong>Faktero</strong> und <strong>Kniha jázd</strong> (Fahrtenbuch)
+        verwenden den genauen Standort des Geräts (GPS) <strong>ausschließlich zur Führung des
+        Fahrtenbuchs</strong>: Sie erkennen Beginn und Ende einer Fahrt, messen die gefahrenen
+        Kilometer und zeichnen die Fahrtstrecke auf.
+      </p>
+      <ul>
+        <li>
+          <strong>Wann der Standort erfasst wird:</strong> nur wenn Sie in der App die automatische
+          Fahrtenerfassung einschalten und im System den Standortzugriff erlauben. Damit eine Fahrt
+          auch bei ausgeschaltetem Display oder geschlossener App gemessen wird, liest die App den
+          Standort auch im Hintergrund — während der Messung wird dies stets in einer dauerhaften
+          Benachrichtigung angezeigt. Außerhalb von Fahrten wird keine Strecke gespeichert.
+        </li>
+        <li>
+          <strong>Was wir speichern:</strong> Koordinaten der Fahrtstrecke, Beginn- und Endzeit,
+          gefahrene Strecke sowie daraus abgeleitete Start- und Zieladresse, gespeichert bei Ihrem
+          Benutzerkonto in der Firma, für die Sie das Fahrtenbuch führen.
+        </li>
+        <li>
+          <strong>An wen wir sie übermitteln:</strong> Die Koordinaten von Start und Ziel senden wir
+          an den Dienst OpenRouteService (HeiGIT gGmbH, Heidelberg, Deutschland), der daraus die
+          Adresse ermittelt. Gespeichert werden die Daten in der Datenbank Supabase (Server in der
+          EU). Wir verkaufen Standortdaten nicht, nutzen sie nicht für Werbung oder zur Verfolgung
+          außerhalb von Fahrten und geben sie nicht an weitere Dritte weiter.
+        </li>
+        <li>
+          <strong>Wer sie sieht:</strong> Sie und Benutzer Ihrer Firma mit Zugriff auf das
+          Fahrtenbuch (z. B. Geschäftsführer oder Buchhalter), da das Fahrtenbuch ein
+          Buchhaltungsdatensatz der Firma ist.
+        </li>
+        <li>
+          <strong>Wie lange:</strong> wie andere Buchhaltungsdaten — für die Dauer des Kontos und
+          die gesetzlich vorgeschriebene Frist. Einzelne Fahrten können Sie jederzeit bearbeiten oder
+          löschen.
+        </li>
+        <li>
+          <strong>Wie Sie es abschalten:</strong> Die automatische Fahrtenerfassung schalten Sie in
+          den App-Einstellungen aus, den Standortzugriff entziehen Sie jederzeit in den
+          Telefoneinstellungen. Ohne Standortfreigabe funktionieren alle anderen Teile der Apps;
+          Fahrten können manuell erfasst werden.
+        </li>
+        <li>
+          <strong>Rechtsgrundlage:</strong> Ihre durch die Standortfreigabe erteilte Einwilligung
+          (Art. 6 Abs. 1 lit. a DSGVO) und Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO).
+        </li>
       </ul>
 
       <h2>4. Zweck der Verarbeitung</h2>
@@ -296,10 +403,15 @@ function De() {
           — Resend Inc., USA, Standardvertragsklauseln.
         </li>
         <li>
-          <strong>Google (Gemini API)</strong> und <strong>OpenAI</strong> (Erkennung von Daten aus
-          hochgeladenen Belegen und Assistent) — Google Ireland Ltd. und OpenAI Ireland Ltd.,
+          <strong>Anthropic (Claude)</strong>, <strong>Google (Gemini API)</strong> und{" "}
+          <strong>OpenAI</strong> (Erkennung von Daten aus hochgeladenen Belegen, Assistent und
+          Sprachsteuerung) — Anthropic PBC, Google Ireland Ltd. und OpenAI Ireland Ltd.,
           Standardvertragsklauseln. Die Belege werden nicht zum Training von Modellen
           bereitgestellt.
+        </li>
+        <li>
+          <strong>OpenRouteService</strong> (Ermittlung der Start- und Zieladresse im Fahrtenbuch) —
+          HeiGIT gGmbH, Deutschland.
         </li>
         <li>
           <strong>GoPay</strong> (Zahlungsgateway für das Faktero-Abonnement) — GOPAY s.r.o.,
