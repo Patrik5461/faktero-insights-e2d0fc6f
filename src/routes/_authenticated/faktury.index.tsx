@@ -232,12 +232,13 @@ function InvoicesPage() {
       if (!m) {
         m = moznostiKodov(
           zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], { typ: "faktura", platba }),
+          t,
         );
         pamat.set(k, m);
       }
       return m;
     };
-  }, [cis.navrhy]);
+  }, [cis.navrhy, t]);
   /** Predkontácia v riadku — tá istá funkcia ako panel zaúčtovania v detaile (len uloží, nezaúčtuje). */
   async function zmenPredkontaciuRiadku(i: any, kodPk: string) {
     const c = getActiveCompanyId();

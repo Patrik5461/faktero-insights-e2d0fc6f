@@ -279,12 +279,13 @@ function PurchaseInvoicesPage() {
       if (!m) {
         m = moznostiKodov(
           zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], { typ: "faktura", platba }),
+          t,
         );
         pamat.set(k, m);
       }
       return m;
     };
-  }, [cis.navrhy]);
+  }, [cis.navrhy, t]);
   const pocetStlpcov = zobrazenie.viditelne.length + 2; // výber + ikonka platby
   const rad = useRadenie(rows, {
     cislo: (r: any) => r.invoice_number,

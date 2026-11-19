@@ -673,7 +673,26 @@ export type MoznostKodu = {
   typDokladu?: TypDokladuPolozky | null;
   /** Účtovná položka len pre tento typ platby (prázdne = všetky). */
   typPlatby?: TypPlatbyPolozky | null;
+  /** Kód použitý na dokladoch, ktorý v číselníku firmy nie je — ponúka sa až na konci. */
+  mimoCiselnika?: boolean;
 };
+
+/** Druhý riadok voľby pre kód mimo číselníka (preložiť cez t()). */
+export const TEXT_MIMO_CISELNIKA = "použité na dokladoch – nie je v číselníku";
+
+/**
+ * Voľba pre kód, ktorý firma použila na dokladoch, no v číselníku ho nemá.
+ * Účty sa odvodia z kódu v tvare „MD D“ (napr. „211000 331000“ → 211000/331000).
+ */
+export function moznostMimoCiselnika(kod: string): MoznostKodu {
+  const m = /^(\d{3,6})\s+(\d{3,6})$/.exec(String(kod ?? "").trim());
+  return { kod, popis: null, agenda: "", ucty: m ? `${m[1]}/${m[2]}` : null, mimoCiselnika: true };
+}
+
+/** Kódy mimo číselníka na koniec ponuky — poradie ostatných sa nemení. */
+export function mimoCiselnikaNaKoniec<T extends { mimoCiselnika?: boolean }>(m: T[]): T[] {
+  return [...m.filter((x) => !x.mimoCiselnika), ...m.filter((x) => x.mimoCiselnika)];
+}
 
 export type TypDokladuPolozky = "faktura" | "blocek";
 export type TypPlatbyPolozky = "hotovost" | "karta" | "prevod";
@@ -698,6 +717,7 @@ export function zoradPodlaDokladu(
   doklad: { typ?: TypDokladuPolozky | null; platba?: string | null },
 ): MoznostKodu[] {
   const skore = (m: MoznostKodu) => {
+    if (m.mimoCiselnika) return 4;
     const ineTyp = Boolean(m.typDokladu && doklad.typ && m.typDokladu !== doklad.typ);
     const inaPlatba = Boolean(m.typPlatby && doklad.platba && m.typPlatby !== doklad.platba);
     if (ineTyp || inaPlatba) return 3;

@@ -1,16 +1,21 @@
-import { textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
+import { TEXT_MIMO_CISELNIKA, textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
 import type { MoznostVyberu } from "@/lib/faktero/vyber-kodu";
 import { VyberKodu, ZoznamKodov } from "./VyberKodu";
 
 export type { MoznostVyberu };
 
 /** Predkontácie z číselníka ako voľby (názov ako hlavný text, kód a účty pod ním). */
-export function moznostiKodov(m: MoznostKodu[]): MoznostVyberu[] {
-  return m.map((k) => ({
-    hodnota: k.kod,
-    text: k.popis?.trim() || k.kod,
-    popis: k.popis?.trim() ? [k.kod, k.ucty].filter(Boolean).join(" · ") : k.ucty,
-  }));
+export function moznostiKodov(m: MoznostKodu[], t: (s: string) => string = (s) => s): MoznostVyberu[] {
+  return [...m.filter((k) => !k.mimoCiselnika), ...m.filter((k) => k.mimoCiselnika)].map((k) =>
+    k.mimoCiselnika && !k.popis?.trim()
+      ? // Kód z dokladov mimo číselníka: druhý riadok povie, odkiaľ sa vzal (a účty z „MD D“).
+        { hodnota: k.kod, text: k.kod, popis: [k.ucty, t(TEXT_MIMO_CISELNIKA)].filter(Boolean).join(" · ") }
+      : {
+          hodnota: k.kod,
+          text: k.popis?.trim() || k.kod,
+          popis: k.popis?.trim() ? [k.kod, k.ucty].filter(Boolean).join(" · ") : k.ucty,
+        },
+  );
 }
 
 /** Zoznam volieb s hľadaním — v okne hromadnej akcie (bez tlačidla, rovno otvorený). */

@@ -350,6 +350,7 @@ export function HromadnaAkciaDokladov({
                     : zoradPodlaDokladu(navrhy.predkontacie, {
                         typ: agenda === "doklad" ? "blocek" : "faktura",
                       }),
+                  t,
                 )}
                 prazdne={t("Nedefinované (vymazať)")}
                 onVyber={(v) => {

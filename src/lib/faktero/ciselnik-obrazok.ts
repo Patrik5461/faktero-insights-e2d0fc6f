@@ -240,6 +240,19 @@ export function rozoberOdpovedAi(
   return { druh, riadky: normalizujRiadky(surove, druh), vynechanych };
 }
 
+/**
+ * Kód predkontácie v tvare „MD D“ (napr. „211000 331000“) — v Pohode bežný,
+ * medzera v ňom nie je chyba čítania. Platí, keď sa zhoduje s účtami riadku,
+ * alebo má tvar dvoch čísel účtov oddelených jednou medzerou.
+ */
+export function jeKodMdD(kod: string, ucetMd?: string | null, ucetD?: string | null): boolean {
+  const k = String(kod ?? "").trim();
+  if (/^\d{3,6} \d{3,6}$/.test(k)) return true;
+  const md = String(ucetMd ?? "").trim();
+  const d = String(ucetD ?? "").trim();
+  return Boolean(md && d && k === `${md} ${d}`);
+}
+
 /** Riadky (z AI alebo upravené v náhľade) → riadky na uloženie s príznakom podozrivých. */
 export function normalizujRiadky(
   riadky: {
@@ -263,7 +276,7 @@ export function normalizujRiadky(
     if (!kod || videne.has(kod)) continue;
     videne.add(kod);
     const kv = druh === "kv_clenenie";
-    const podozrivy = kv ? !jeKodKv(kod) : /\s/.test(kod);
+    const podozrivy = kv ? !jeKodKv(kod) : /\s/.test(kod) && !jeKodMdD(kod, r.ucet_md, r.ucet_d);
     out.push({
       kod,
       popis: t(r.popis, 200),

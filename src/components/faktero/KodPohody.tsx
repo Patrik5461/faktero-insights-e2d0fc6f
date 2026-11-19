@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { Link } from "@tanstack/react-router";
-import { textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
+import { TEXT_MIMO_CISELNIKA, textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
 import { useT } from "@/lib/i18n/useT";
 import { VyberKodu } from "./VyberKodu";
 import { moznostiKodov } from "./VyberVRiadku";
@@ -59,7 +59,7 @@ export function KodPohody({
         <VyberKodu
           ariaLabel={(ariaLabel ? t(ariaLabel) : ariaLabel) ?? t("Kód")}
           hodnota={value.trim()}
-          moznosti={moznostiKodov(moznosti)}
+          moznosti={moznostiKodov(moznosti, t)}
           textHodnoty={
             vybrany
               ? // Názov ako hlavný text (ako účtovné položky): „Nákup PHM – karta · 1Fk · 501/325".
@@ -100,7 +100,7 @@ export function KodPohody({
       <datalist id={id}>
         {moznosti.map((m) => (
           <option key={m.kod} value={m.kod}>
-            {[m.popis, m.ucty].filter(Boolean).join(" · ")}
+            {[m.popis, m.ucty, m.mimoCiselnika ? t(TEXT_MIMO_CISELNIKA) : null].filter(Boolean).join(" · ")}
           </option>
         ))}
       </datalist>

@@ -183,18 +183,52 @@ export function ImportZObrazkaOkno({
     }
   }
 
-  /** Úprava riadku v náhľade — stav sa prepočíta, zaškrtnutie sa vráti na predvolené pri zmene stavu. */
+  /**
+   * Úprava riadku v náhľade. V políčkach ostáva presne to, čo človek píše
+   * (aj medzera na konci — inak by sa „211000 331000“ nedalo napísať); stav
+   * a „podozrivé“ sa počítajú z orezanej kópie. Orezáva sa až pri opustení
+   * políčka (`dokonciRiadok`) a pri uložení. Zaškrtnutie sa vráti na
+   * predvolené len pri zmene stavu.
+   */
   function upravRiadok(i: number, zmena: Partial<RiadokNahladu>) {
     if (!riadky || !druh) return;
     setRiadky(
       riadky.map((r, j) => {
         if (j !== i) return r;
-        const [n] = normalizujRiadky([{ ...r, ...zmena }], druh);
-        if (!n) return { ...r, ...zmena };
+        const surovy = { ...r, ...zmena };
+        const [n] = normalizujRiadky([surovy], druh);
+        if (!n) return { ...surovy, podozrivy: true, dovod: "Riadok nemá kód." };
         const [novy] = nahlad([n], druh, existujuce);
-        return novy.stav === r.stav && novy.podozrivy === r.podozrivy ? { ...novy, vybrany: r.vybrany } : novy;
+        const vybrany = novy.stav === r.stav && novy.podozrivy === r.podozrivy ? r.vybrany : novy.vybrany;
+        return {
+          ...novy,
+          kod: surovy.kod,
+          popis: surovy.popis,
+          kategoria: surovy.kategoria,
+          ucet_md: surovy.ucet_md,
+          ucet_d: surovy.ucet_d,
+          vybrany,
+        };
       }),
     );
+  }
+
+  /** Po opustení políčka sa riadok oreže na tvar, v akom sa uloží. */
+  function dokonciRiadok(i: number) {
+    if (!riadky || !druh) return;
+    const r = riadky[i];
+    const [n] = normalizujRiadky([r], druh);
+    if (!n) return;
+    const hotovy = { ...r, kod: n.kod, popis: n.popis, kategoria: n.kategoria, ucet_md: n.ucet_md, ucet_d: n.ucet_d };
+    if (
+      hotovy.kod === r.kod &&
+      hotovy.popis === r.popis &&
+      hotovy.kategoria === r.kategoria &&
+      hotovy.ucet_md === r.ucet_md &&
+      hotovy.ucet_d === r.ucet_d
+    )
+      return;
+    setRiadky(riadky.map((x, j) => (j === i ? hotovy : x)));
   }
 
   function zmenDruh(d: DruhZObrazka) {
@@ -210,7 +244,18 @@ export function ImportZObrazkaOkno({
     return m;
   }, [riadky]);
   const chranene = (s: StavRiadku) => s === "existuje_pohoda" || s === "existuje_rucne";
+  const predkontacie = druh === "predkontacia";
+  const kv = druh === "kv_clenenie";
   const podozrive = (riadky ?? []).filter((r) => r.podozrivy).length;
+  /*
+    „Označiť všetko“ v hlavičke berie všetky nové a zmenené, aj podozrivé —
+    predvolene neodškrtnuté sú len kvôli kontrole. KV kód mimo oficiálnych
+    sekcií by server aj tak odmietol, ten sa hromadne neoznačí.
+  */
+  const naHromadnyVyber = (r: RiadokNahladu) =>
+    (r.stav === "novy" || r.stav === "zmena") && !(kv && r.podozrivy);
+  const hromadne = (riadky ?? []).filter(naHromadnyVyber);
+  const podozriveNevybrane = hromadne.filter((r) => r.podozrivy && !r.vybrany).length;
 
   async function ulozit() {
     if (!druh || !vybrane.length) return;
@@ -221,7 +266,7 @@ export function ImportZObrazkaOkno({
           company_id: companyId,
           druh,
           riadky: vybrane.map((x) => ({
-            kod: x.kod,
+            kod: x.kod.trim(),
             popis: x.popis,
             kategoria: x.kategoria,
             ucet_md: x.ucet_md,
@@ -244,8 +289,6 @@ export function ImportZObrazkaOkno({
     }
   }
 
-  const predkontacie = druh === "predkontacia";
-  const kv = druh === "kv_clenenie";
 
   return (
     <div
@@ -389,6 +432,18 @@ export function ImportZObrazkaOkno({
                       {t("Podozrivé: {n}", { n: podozrive })}
                     </span>
                   )}
+                  {podozriveNevybrane > 0 && (
+                    <button
+                      type="button"
+                      data-oznacit-podozrive=""
+                      onClick={() =>
+                        setRiadky(riadky.map((r) => (naHromadnyVyber(r) && r.podozrivy ? { ...r, vybrany: true } : r)))
+                      }
+                      className="font-semibold text-primary underline"
+                    >
+                      {t("Označiť aj podozrivé ({n})", { n: podozriveNevybrane })}
+                    </button>
+                  )}
                 </div>
               </div>
               {vynechanych > 0 && (
@@ -412,19 +467,11 @@ export function ImportZObrazkaOkno({
                         <input
                           type="checkbox"
                           aria-label={t("Vybrať všetky nové a zmenené")}
-                          checked={
-                            riadky.some((r) => (r.stav === "novy" || r.stav === "zmena") && !r.podozrivy) &&
-                            riadky.every((r) => r.vybrany || !(r.stav === "novy" || r.stav === "zmena") || r.podozrivy)
-                          }
-                          onChange={(e) =>
-                            setRiadky(
-                              riadky.map((r) =>
-                                (r.stav === "novy" || r.stav === "zmena") && !r.podozrivy
-                                  ? { ...r, vybrany: e.target.checked }
-                                  : r,
-                              ),
-                            )
-                          }
+                          checked={hromadne.length > 0 && hromadne.every((r) => r.vybrany)}
+                          onChange={(e) => {
+                            const zapnut = e.target.checked;
+                            setRiadky(riadky.map((r) => (naHromadnyVyber(r) ? { ...r, vybrany: zapnut } : r)));
+                          }}
                         />
                       </th>
                       <th className="px-2 py-2 font-semibold">{t("Stav")}</th>
@@ -464,6 +511,7 @@ export function ImportZObrazkaOkno({
                           <input
                             value={r.kod}
                             aria-label={t("Kód riadku {n}", { n: i + 1 })}
+                            onBlur={() => dokonciRiadok(i)}
                             onChange={(e) => upravRiadok(i, { kod: e.target.value })}
                             className={`${vstup} w-28 font-mono ${r.podozrivy ? "border-destructive" : ""}`}
                           />
@@ -475,6 +523,7 @@ export function ImportZObrazkaOkno({
                           <input
                             value={r.popis ?? ""}
                             aria-label={t("Popis riadku {n}", { n: i + 1 })}
+                            onBlur={() => dokonciRiadok(i)}
                             onChange={(e) => upravRiadok(i, { popis: e.target.value || null })}
                             className={vstup}
                           />
@@ -483,6 +532,7 @@ export function ImportZObrazkaOkno({
                           <input
                             value={r.kategoria ?? ""}
                             aria-label={t("Typ riadku {n}", { n: i + 1 })}
+                            onBlur={() => dokonciRiadok(i)}
                             onChange={(e) => upravRiadok(i, { kategoria: e.target.value || null })}
                             className={vstup}
                           />
@@ -492,6 +542,7 @@ export function ImportZObrazkaOkno({
                             <input
                               value={r.ucet_md ?? ""}
                               aria-label={t("MD riadku {n}", { n: i + 1 })}
+                            onBlur={() => dokonciRiadok(i)}
                               onChange={(e) => upravRiadok(i, { ucet_md: e.target.value || null })}
                               className={`${vstup} w-20`}
                             />
@@ -502,6 +553,7 @@ export function ImportZObrazkaOkno({
                             <input
                               value={r.ucet_d ?? ""}
                               aria-label={t("D riadku {n}", { n: i + 1 })}
+                            onBlur={() => dokonciRiadok(i)}
                               onChange={(e) => upravRiadok(i, { ucet_d: e.target.value || null })}
                               className={`${vstup} w-20`}
                             />

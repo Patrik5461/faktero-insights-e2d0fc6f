@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   jeKodKv,
+  jeKodMdD,
+  predvoleneVybrany,
   kvKodFirmy,
   kvPodkodPrenesenia,
   pismenoPreneseniaKv,
@@ -63,6 +65,41 @@ describe("validácia odpovede AI", () => {
   it("zachová veľkosť písmen a pomlčky, duplicitu vynechá", () => {
     const r = normalizujRiadky([{ kod: "UDpdp" }, { kod: "C2B1-0" }, { kod: "UDpdp" }], "clenenie_dph");
     expect(r.map((x) => x.kod)).toEqual(["UDpdp", "C2B1-0"]);
+  });
+
+  it("kód „MD D“ (211000 331000) nie je podozrivý; iná medzera áno", () => {
+    expect(jeKodMdD("211000 331000")).toBe(true);
+    expect(jeKodMdD("518 321")).toBe(true);
+    expect(jeKodMdD("1 Fp", "518", "321")).toBe(false);
+    expect(jeKodMdD("A 1")).toBe(false);
+    const r = normalizujRiadky(
+      [
+        { kod: "211000 331000" },
+        { kod: "  022100 042000  ", ucet_md: "022100", ucet_d: "042000" },
+        { kod: "1V x", ucet_md: "321000", ucet_d: "211000" },
+        { kod: "ab cd", ucet_md: "ab", ucet_d: "cd" },
+      ],
+      "predkontacia",
+    );
+    expect(r.map((x) => [x.kod, x.podozrivy])).toEqual([
+      ["211000 331000", false],
+      ["022100 042000", false],
+      ["1V x", true],
+      ["ab cd", false],
+    ]);
+    // Predvolene zaškrtnutý je teda aj nový kód „MD D“.
+    const [n] = nahlad(normalizujRiadky([{ kod: "211000 331000" }], "predkontacia"), "predkontacia", []);
+    expect(n.vybrany).toBe(true);
+    expect(predvoleneVybrany("novy", true)).toBe(false);
+  });
+
+  it("normalizácia oreže kód a popis, ale vnútornú medzeru kódu nechá (písanie v náhľade)", () => {
+    // Náhľad drží surovú hodnotu; stav sa počíta z orezanej kópie.
+    const [r] = normalizujRiadky([{ kod: "211000 ", popis: "Úhrada  " }], "predkontacia");
+    expect(r.kod).toBe("211000");
+    expect(r.popis).toBe("Úhrada");
+    const [r2] = normalizujRiadky([{ kod: "211000 331000" }], "predkontacia");
+    expect(r2.kod).toBe("211000 331000");
   });
 
   it("rozpozná druh automaticky", () => {

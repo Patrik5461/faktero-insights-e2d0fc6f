@@ -10,9 +10,10 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useServerFn } from "@tanstack/react-start";
 import { navrhPredvolenychVystavenychFn } from "@/lib/faktero/clenenie-vystavenej.functions";
 import { toast } from "sonner";
-import { BookOpen, Download, Eye, EyeOff, ImageUp, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
+import { BookOpen, Download, Eye, EyeOff, FileCode2, ImageUp, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Upload } from "lucide-react";
 import { bezZdvojenychSystemovych, jeSystemovy } from "@/lib/faktero/predkontacie-systemove";
 import { ImportZObrazkaOkno } from "@/components/faktero/ImportZObrazkaOkno";
+import { ImportZXmlOkno } from "@/components/faktero/ImportZXmlOkno";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KodPohody } from "@/components/faktero/KodPohody";
@@ -134,6 +135,8 @@ function Stranka() {
   const { pridat: pridatZOdkazu, nastavenia: programZAdresy } = Route.useSearch();
   // Každé stlačenie „Pridať predkontáciu“ zvýši číslo — číselník otvorí formulár.
   const [pridat, setPridat] = useState(pridatZOdkazu ? 1 : 0);
+  // Okno „Nahrať XML z Pohody“ — s prípadne už vybraným súborom (karta Nahrať súbor).
+  const [xmlOkno, setXmlOkno] = useState<{ subor: File | null } | null>(null);
   const cid = companyId;
 
   const obnov = useCallback(async () => {
@@ -210,7 +213,13 @@ function Stranka() {
       <PageBody>
         <div className="space-y-4">
           {/* Číselník (pridávanie predkontácií, členení DPH, KV…) navrchu, pod ním predvolené. */}
-          <Ciselnik companyId={companyId} zaznamy={zaznamy} onZmena={obnov} pridat={pridat} />
+          <Ciselnik
+            companyId={companyId}
+            zaznamy={zaznamy}
+            onZmena={obnov}
+            pridat={pridat}
+            onXml={() => setXmlOkno({ subor: null })}
+          />
           <Predvolene
             companyId={companyId}
             firma={firma}
@@ -225,9 +234,24 @@ function Stranka() {
             onUlozene={obnov}
             programZAdresy={programZAdresy}
           />
-          <Import companyId={companyId} firma={firma} onZmena={obnov} />
+          <Import
+            companyId={companyId}
+            firma={firma}
+            onZmena={obnov}
+            onXml={(subor) => setXmlOkno({ subor })}
+          />
           <StavyAStitkyNastavenia companyId={companyId} />
         </div>
+        {xmlOkno && (
+          <ImportZXmlOkno
+            companyId={companyId}
+            ico={firma.ico}
+            existujuce={zaznamy}
+            subor={xmlOkno.subor}
+            onClose={() => setXmlOkno(null)}
+            onUlozene={obnov}
+          />
+        )}
       </PageBody>
     </>
   );
@@ -911,10 +935,13 @@ function Import({
   companyId,
   firma,
   onZmena,
+  onXml,
 }: {
   companyId: string;
   firma: Record<string, any>;
   onZmena: () => void;
+  /** Otvorí náhľad XML z Pohody (s už vybraným súborom alebo bez neho). */
+  onXml: (subor: File | null) => void;
 }) {
   const { t } = useT();
   const prepni = useServerFn(nacitatZPohodyFn);
@@ -952,6 +979,11 @@ function Import({
   }
 
   async function nahraj(f: File) {
+    // XML z Pohody ide cez náhľad — rovnako ako tlačidlo „Nahrať XML z Pohody“.
+    if (/\.xml$/i.test(f.name) || /xml/.test(f.type)) {
+      if (subor.current) subor.current.value = "";
+      return onXml(f);
+    }
     if (f.size > 5 * 1024 * 1024) return toast.error(t("Súbor je väčší ako 5 MB."));
     setBusy("subor");
     try {
@@ -1033,15 +1065,24 @@ function Import({
           <div className="text-sm font-semibold">{t("2. XML súborom")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(
-              "Žiadosť načítajte v Pohode cez Súbor → Dátová komunikácia → XML import a odpoveď, ktorú Pohoda uloží, nahrajte sem.",
+              "Žiadosť načítajte v Pohode cez Súbor → Dátová komunikácia → XML import/export a odpoveď, ktorú Pohoda uloží do priečinka Response, nahrajte sem.",
             )}
           </p>
-          <button
-            onClick={stiahniZiadost}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
-          >
-            <Download className="h-4 w-4" /> {t("Stiahnuť žiadosť")}
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              onClick={stiahniZiadost}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
+            >
+              <Download className="h-4 w-4" /> {t("Stiahnuť žiadosť")}
+            </button>
+            <button
+              onClick={() => onXml(null)}
+              data-nahrat-xml-tlacidlo=""
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
+            >
+              <FileCode2 className="h-4 w-4" /> {t("Nahrať XML z Pohody")}
+            </button>
+          </div>
         </div>
 
         <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3 sm:p-4">
@@ -1115,10 +1156,13 @@ function Ciselnik({
   zaznamy: zaznamyVsetky,
   onZmena,
   pridat = 0,
+  onXml,
 }: {
   companyId: string;
   zaznamy: Zaznam[];
   onZmena: () => void;
+  /** Otvorí okno „Nahrať XML z Pohody“. */
+  onXml: () => void;
   /** Zvýšené číslo = otvoriť formulár novej predkontácie a posunúť sa k nemu. */
   pridat?: number;
 }) {
@@ -1323,6 +1367,14 @@ function Ciselnik({
             className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
           >
             <ImageUp className="h-4 w-4" /> {t("Importovať z obrázka")}
+          </button>
+          <button
+            type="button"
+            onClick={onXml}
+            data-nahrat-xml-ciselnik=""
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
+          >
+            <FileCode2 className="h-4 w-4" /> {t("Nahrať XML z Pohody")}
           </button>
           <button
             onClick={() => setForm({ ...PRAZDNY })}

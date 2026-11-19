@@ -16,7 +16,7 @@
 
 import { poliaZPravidla } from "./nespracovane-pravidlo";
 import { odpovedNaJson } from "./json-odpoved";
-import type { MoznostKodu } from "./predkontacie";
+import { moznostMimoCiselnika, type MoznostKodu } from "./predkontacie";
 import { staleNaucene, type DruhUcenia, type PoleUcenia } from "./ucenie-z-oprav";
 import type { UdajeNespracovaneho } from "./nespracovane";
 
@@ -337,7 +337,7 @@ export function povoleneKody(args: {
       const kod = txt(k, 30);
       if (!kod || zname.has(kod)) continue;
       zname.add(kod);
-      out.push({ kod, popis: null, agenda: "", ucty: null });
+      out.push(moznostMimoCiselnika(kod));
     }
     return out.slice(0, max);
   };

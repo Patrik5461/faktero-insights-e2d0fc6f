@@ -298,12 +298,13 @@ function DokladyPage() {
       if (!m) {
         m = moznostiKodov(
           zoradPodlaDokladu(cis.navrhy?.predkontacie ?? [], { typ: "blocek", platba }),
+          t,
         );
         pamat.set(k, m);
       }
       return m;
     };
-  }, [cis.navrhy]);
+  }, [cis.navrhy, t]);
   const program = useExportDoProgramu();
   const rad = useRadenie(rows, {
     datum: (r: any) => r.issue_date,

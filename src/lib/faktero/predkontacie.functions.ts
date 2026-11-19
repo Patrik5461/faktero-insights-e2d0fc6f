@@ -278,10 +278,8 @@ export const nacitatZPohodyFn = createServerFn({ method: "POST" })
   });
 
 /**
- * Import zo súboru: odpoveď Pohody (XML), CSV alebo Excel.
- *
- * XML z Pohody je úplný zoznam — čo v ňom chýba, sa vypne. Tabuľka je len
- * doplnenie, nič sa podľa nej nevypína.
+ * Import zo súboru: CSV alebo Excel (XML z Pohody má vlastné okno s náhľadom).
+ * Tabuľka je len doplnenie, nič sa podľa nej nevypína.
  */
 export const importCiselnikaFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -312,21 +310,13 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
     const bajty = Uint8Array.from(Buffer.from(data.base64, "base64"));
     const meno = data.nazov.toLowerCase();
     const { rozoberTabulku, rozdelCsv } = await import("./predkontacie");
-    const { ulozCiselnik, ulozCiselnikyZPohody } = await import("./predkontacie.server");
+    const { ulozCiselnik } = await import("./predkontacie.server");
 
     const zaciatok = new TextDecoder("utf-8").decode(bajty.slice(0, 400)).replace(/^﻿/, "").trimStart();
-    if (meno.endsWith(".xml") || zaciatok.startsWith("<")) {
-      const { dekodujOdpoved } = await import("./pohoda-konektor.server");
-      const xml = dekodujOdpoved(bajty.buffer as ArrayBuffer);
-      if (/listAccounting(Double|Single)EntryRequest|listClassificationVATRequest/.test(xml) && !/responsePack/.test(xml))
-        throw new Error(
-          "Toto je žiadosť pre Pohodu, nie jej odpoveď. Načítajte ju v Pohode (Súbor → Dátová komunikácia → XML import) a sem nahrajte súbor, ktorý Pohoda vráti.",
-        );
-      const r = await ulozCiselnikyZPohody(supabase, { companyId: data.company_id, xml });
-      if (!r || r.predkontacii + r.cleneni + r.ostatnych === 0)
-        throw new Error("V súbore nie sú predkontácie ani členenia DPH z Pohody.");
-      return { predkontacii: r.predkontacii, cleneni: r.cleneni, ostatnych: r.ostatnych, vypnutych: r.vypnutych };
-    }
+    // XML z Pohody ide len cez okno s náhľadom („Nahrať XML z Pohody“, ulozCiselnikZXmlFn) —
+    // starý priamy import bez náhľadu vypínal kódy, ktoré v súbore chýbali (zrušený 19. 11. 2026).
+    if (meno.endsWith(".xml") || zaciatok.startsWith("<"))
+      throw new Error("XML z Pohody nahrajte cez „Nahrať XML z Pohody“ — ukáže náhľad a nič nevypne.");
 
     let riadky: unknown[][];
     if (meno.endsWith(".xlsx") || meno.endsWith(".xls") || meno.endsWith(".ods")) {
@@ -354,6 +344,115 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
       cleneni: zaznamy.filter((z) => z.druh === "clenenie_dph").length,
       ostatnych: zaznamy.filter((z) => !["predkontacia", "clenenie_dph"].includes(z.druh)).length,
       vypnutych: 0,
+    };
+  });
+
+const DRUH_XML = z.enum([
+  "predkontacia",
+  "clenenie_dph",
+  "stredisko",
+  "cinnost",
+  "ciselny_rad",
+  "pokladna",
+  "zakazka",
+  "bankovy_ucet",
+]);
+const textXml = (n: number) => z.string().trim().max(n).nullable();
+
+/**
+ * Uloženie vybraných záznamov z náhľadu „Nahrať XML z Pohody“
+ * (`ImportZXmlOkno`). Súbor rozoberie prehliadač; tu sa záznamy overia
+ * a plán zápisu (`planXml`) sa počíta znova z aktuálneho číselníka firmy:
+ * nové sa založia so zdrojom 'pohoda', existujúce sa len doplnia, nič sa
+ * nemaže ani nevypína.
+ */
+export const ulozCiselnikZXmlFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        neaktivne_ako_aktivne: z.boolean(),
+        zaznamy: z
+          .array(
+            z.object({
+              druh: DRUH_XML,
+              kod: z.string().trim().min(1).max(30),
+              popis: textXml(200),
+              agenda: z.string().trim().max(40),
+              ucet_md: textXml(20),
+              ucet_d: textXml(20),
+              pohoda_id: textXml(20),
+              aktivne: z.boolean(),
+            }),
+          )
+          .min(1)
+          .max(10_000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { planXml } = await import("./ciselnik-xml");
+    const { vsetkyRiadky } = await import("./strankovanie");
+    const { zakazkyZCiselnika } = await import("./predkontacie.server");
+    const existujuce = await vsetkyRiadky<any>((od, po) =>
+      supabase
+        .from("predkontacie")
+        .select("id, druh, kod, agenda, popis, ucet_md, ucet_d, aktivne, zdroj, pohoda_id")
+        .eq("company_id", data.company_id)
+        .order("id")
+        .range(od, po),
+    );
+    const zaznamy = data.zaznamy.map((r) => ({
+      ...r,
+      popis: r.popis || null,
+      ucet_md: r.ucet_md || null,
+      ucet_d: r.ucet_d || null,
+      pohoda_id: r.pohoda_id || null,
+    }));
+    const plan = planXml(
+      data.company_id,
+      zaznamy,
+      existujuce.map((e: any) => ({ ...e, kod: String(e.kod), agenda: e.agenda ?? "" })),
+      { neaktivneAkoAktivne: data.neaktivne_ako_aktivne },
+    );
+    const teraz = new Date().toISOString();
+    for (let i = 0; i < plan.vlozit.length; i += 500) {
+      const { error } = await supabase.from("predkontacie").upsert(
+        plan.vlozit.slice(i, i + 500).map((r) => ({ ...r, updated_at: teraz })),
+        // Kód, ktorý medzitým pribudol (konektor), sa neprepíše.
+        { onConflict: "company_id,druh,kod,agenda", ignoreDuplicates: true },
+      );
+      if (error) throw new Error(error.message);
+    }
+    for (let i = 0; i < plan.upravit.length; i += 20) {
+      const vysledky = await Promise.all(
+        plan.upravit.slice(i, i + 20).map((u) =>
+          supabase
+            .from("predkontacie")
+            .update({ ...u.zmeny, updated_at: teraz })
+            .eq("id", u.id)
+            .eq("company_id", data.company_id),
+        ),
+      );
+      const chyba = vysledky.find((v: any) => v.error);
+      if (chyba) throw new Error(chyba.error.message);
+    }
+    const zakaziek = await zakazkyZCiselnika(
+      supabase,
+      data.company_id,
+      plan.vlozit.filter((z) => z.druh === "zakazka"),
+    );
+    await supabase
+      .from("companies")
+      .update({ pohoda_ciselniky_nacitane_at: teraz })
+      .eq("id", data.company_id);
+    return {
+      novych: plan.vlozit.length,
+      zmenenych: plan.upravit.length,
+      bezZmeny: plan.bezZmeny,
+      zakaziek,
     };
   });
 

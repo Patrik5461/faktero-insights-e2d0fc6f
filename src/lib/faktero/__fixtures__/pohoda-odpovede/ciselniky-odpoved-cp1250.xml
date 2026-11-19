@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="Windows-1250"?>
+<rsp:responsePack version="2.0" id="FAKTERO-CISELNIKY-R1" state="ok" programVersion="14404.8 SQL (27.10.2026)" ico="12345678" key="00000000-0000-0000-0000-000000000000" note="Predkontácie a členenia DPH pre Faktero" xmlns:rsp="http://www.stormware.cz/schema/version_2/response.xsd" xmlns:rdc="http://www.stormware.cz/schema/version_2/documentresponse.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd" xmlns:ftr="http://www.stormware.cz/schema/version_2/filter.xsd" xmlns:lst="http://www.stormware.cz/schema/version_2/list.xsd" xmlns:vat="http://www.stormware.cz/schema/version_2/classificationVAT.xsd" xmlns:nms="http://www.stormware.cz/schema/version_2/numericalSeries.xsd" xmlns:bka="http://www.stormware.cz/schema/version_2/bankAccount.xsd" xmlns:lCon="http://www.stormware.cz/schema/version_2/list_contract.xsd" xmlns:con="http://www.stormware.cz/schema/version_2/contract.xsd">
+	<rsp:responsePackItem version="2.0" id="CIS-PREDKONTACIE" state="ok">
+		<lst:listAccountingDoubleEntry version="1.1" dateTimeStamp="2026-11-15T20:17:42" dateValidFrom="2026-11-15" state="ok">
+			<lst:itemAccounting id="383" code="022100 042000" accounting="Zaradenie Renault trafic" debit="022100" credit="042000" agenda="fixedAssets"></lst:itemAccounting>
+			<lst:itemAccounting id="131" code="10V" accounting="Úhrada zrážok zo mzdy" debit="379000" credit="221000" agenda="bankIssued"></lst:itemAccounting>
+			<lst:itemAccounting id="136" code="10V" accounting="Úhrada mzdy spoločníka" debit="366000" credit="211000" agenda="cashPaid"></lst:itemAccounting>
+			<lst:itemAccounting id="9" code="1V" accounting="Úhrada faktúry" debit="321000" credit="221000" agenda="bankIssued"></lst:itemAccounting>
+			<lst:itemAccounting id="37" code="1V" accounting="Úhrada faktúry" debit="321000" credit="211000" agenda="cashPaid"></lst:itemAccounting>
+			<lst:itemAccounting id="537" code="211000 311000" accounting="Úhrada faktúry" debit="211000" credit="311000" agenda="cashReceived"></lst:itemAccounting>
+		</lst:listAccountingDoubleEntry>
+	</rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-PREDKONTACIE-JU" state="error" note="Element 'lst:listAccountingSingleEntryRequest' sa nepoužíva pri zvolenom type účtovníctva."></rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-CLENENIE" state="ok">
+		<lst:listClassificationVAT version="2.0" dateTimeStamp="2026-11-15T20:17:43" dateValidFrom="2026-11-15" state="ok">
+			<lst:classificationVAT version="2.0">
+				<vat:classificationVATHeader>
+					<vat:id>5</vat:id>
+					<vat:code>UN</vat:code>
+					<vat:name>Nezahrňovať do priznania DPH</vat:name>
+					<vat:VATType>
+						<typ:id>5</typ:id>
+						<typ:ids>U</typ:ids>
+					</vat:VATType>
+					<vat:validFrom>1993-01-01</vat:validFrom>
+					<vat:textOnDocument></vat:textOnDocument>
+					<vat:textForVATAssessment></vat:textForVATAssessment>
+					<vat:offer>true</vat:offer>
+					<vat:lineInVATReturn>---</vat:lineInVATReturn>
+					<vat:taxCategory>
+						<typ:id>6</typ:id>
+						<typ:ids>O</typ:ids>
+					</vat:taxCategory>
+				</vat:classificationVATHeader>
+			</lst:classificationVAT>
+			<lst:classificationVAT version="2.0">
+				<vat:classificationVATHeader>
+					<vat:id>335</vat:id>
+					<vat:code>UD</vat:code>
+					<vat:name>Tuzemské plnenia</vat:name>
+					<vat:VATType>
+						<typ:id>1200</typ:id>
+						<typ:ids>U01</typ:ids>
+					</vat:VATType>
+					<vat:validFrom>2021-01-01</vat:validFrom>
+					<vat:textOnDocument></vat:textOnDocument>
+					<vat:textForVATAssessment></vat:textForVATAssessment>
+					<vat:offer>true</vat:offer>
+					<vat:lineInVATReturn>01, 01a, 02, 02a, 03, 04</vat:lineInVATReturn>
+					<vat:taxCategory>
+						<typ:id>1</typ:id>
+						<typ:ids>S, Z</typ:ids>
+					</vat:taxCategory>
+				</vat:classificationVATHeader>
+			</lst:classificationVAT>
+			<lst:classificationVAT version="2.0">
+				<vat:classificationVATHeader>
+					<vat:id>368</vat:id>
+					<vat:code>UDpdp</vat:code>
+					<vat:name>Prenesenie daňovej povinnosti §69 ods. 12 (s uvedením sadzby dane)</vat:name>
+					<vat:VATType>
+						<typ:id>1235</typ:id>
+						<typ:ids>U36</typ:ids>
+					</vat:VATType>
+					<vat:validFrom>2021-01-01</vat:validFrom>
+					<vat:textOnDocument>Prenesenie daňovej povinnosti.</vat:textOnDocument>
+					<vat:textForVATAssessment></vat:textForVATAssessment>
+					<vat:offer>false</vat:offer>
+					<vat:lineInVATReturn>---</vat:lineInVATReturn>
+					<vat:taxCategory>
+						<typ:id>3</typ:id>
+						<typ:ids>AE</typ:ids>
+					</vat:taxCategory>
+				</vat:classificationVATHeader>
+			</lst:classificationVAT>
+			<lst:classificationVAT version="2.0">
+				<vat:classificationVATHeader>
+					<vat:id>387</vat:id>
+					<vat:code>PD</vat:code>
+					<vat:name>Tuzemské plnenia</vat:name>
+					<vat:VATType>
+						<typ:id>1300</typ:id>
+						<typ:ids>P01</typ:ids>
+					</vat:VATType>
+					<vat:validFrom>2021-01-01</vat:validFrom>
+					<vat:textOnDocument></vat:textOnDocument>
+					<vat:textForVATAssessment></vat:textForVATAssessment>
+					<vat:offer>true</vat:offer>
+					<vat:lineInVATReturn>18, 18a, 19, 20, 20a, 21</vat:lineInVATReturn>
+				</vat:classificationVATHeader>
+			</lst:classificationVAT>
+		</lst:listClassificationVAT>
+	</rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-STREDISKA" state="ok">
+		<lst:listCentre version="1.1" dateTimeStamp="2026-11-15T20:17:43" dateValidFrom="2026-11-15" state="ok"></lst:listCentre>
+	</rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-RADY" state="ok">
+		<lst:listNumericalSeries version="2.0" dateTimeStamp="2026-11-15T20:17:43" dateValidFrom="2026-11-15" state="ok">
+			<lst:numericalSeries version="2.0">
+				<nms:numericalSeriesHeader>
+					<nms:id>63</nms:id>
+					<nms:prefix>Z</nms:prefix>
+					<nms:number>0005</nms:number>
+					<nms:topNumber>Z0004</nms:topNumber>
+					<nms:name>Zamestnanci</nms:name>
+					<nms:agenda>personalistika</nms:agenda>
+					<nms:period>permanent</nms:period>
+					<nms:markRecord>false</nms:markRecord>
+				</nms:numericalSeriesHeader>
+			</lst:numericalSeries>
+			<lst:numericalSeries version="2.0">
+				<nms:numericalSeriesHeader>
+					<nms:id>330</nms:id>
+					<nms:prefix>26HP</nms:prefix>
+					<nms:number>00003</nms:number>
+					<nms:topNumber>26HPD00009</nms:topNumber>
+					<nms:name>Hotovostný príjem</nms:name>
+					<nms:agenda>pokladna</nms:agenda>
+					<nms:typeOfDocument>pokladna_prijem</nms:typeOfDocument>
+					<nms:cashAccount>
+						<typ:id>1</typ:id>
+						<typ:ids>HP</typ:ids>
+					</nms:cashAccount>
+					<nms:period>yearlong</nms:period>
+					<nms:periodAccountUnit>
+						<nms:dateFrom>2026-01-01</nms:dateFrom>
+						<nms:dateTill>2026-12-31</nms:dateTill>
+					</nms:periodAccountUnit>
+					<nms:year>2026</nms:year>
+					<nms:markRecord>false</nms:markRecord>
+				</nms:numericalSeriesHeader>
+			</lst:numericalSeries>
+		</lst:listNumericalSeries>
+	</rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-BANKOVE-UCTY" state="ok">
+		<lst:listBankAccount version="2.0" dateTimeStamp="2026-11-15T20:17:43" dateValidFrom="2026-11-15" state="ok">
+			<lst:bankAccount version="2.0">
+				<bka:bankAccountHeader>
+					<bka:id>2</bka:id>
+					<bka:ids>TABe</bka:ids>
+					<bka:numberAccount>1234567890</bka:numberAccount>
+					<bka:codeBank>1100</bka:codeBank>
+					<bka:nameBank>Tatra banka, a.s.</bka:nameBank>
+					<bka:IBAN>SK00 1100 0000 0012 3456 7890</bka:IBAN>
+					<bka:SWIFT>TATRSKBX</bka:SWIFT>
+					<bka:analyticAccount>
+						<typ:id>596</typ:id>
+						<typ:ids>221100</typ:ids>
+					</bka:analyticAccount>
+					<bka:homebanking>TB vypisy</bka:homebanking>
+				</bka:bankAccountHeader>
+			</lst:bankAccount>
+		</lst:listBankAccount>
+	</rsp:responsePackItem>
+	<rsp:responsePackItem version="2.0" id="CIS-ZAKAZKY" state="ok">
+		<lCon:listContract version="2.0" dateTimeStamp="2026-11-15T20:17:43" dateValidFrom="2026-11-15" state="ok">
+			<lCon:contract version="2.0">
+				<con:contractDesc>
+					<con:id>3</con:id>
+					<con:number>
+						<typ:id>284</typ:id>
+						<typ:ids>25Zak</typ:ids>
+						<typ:numberRequested>25Zak00001</typ:numberRequested>
+					</con:number>
+					<con:datePlanStart>2025-08-01</con:datePlanStart>
+					<con:datePlanDelivery>2027-05-18</con:datePlanDelivery>
+					<con:text>Stavba</con:text>
+					<con:status unused="false" executed="false">
+						<typ:id>2</typ:id>
+						<typ:ids>Zahájené</typ:ids>
+					</con:status>
+					<con:markRecord>false</con:markRecord>
+				</con:contractDesc>
+			</lCon:contract>
+		</lCon:listContract>
+	</rsp:responsePackItem>
+</rsp:responsePack>

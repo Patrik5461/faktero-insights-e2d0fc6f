@@ -34,7 +34,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const { ponuka, ponukaClenenia } = await import("./predkontacie");
+    const { ponuka, ponukaClenenia, moznostMimoCiselnika, mimoCiselnikaNaKoniec } = await import("./predkontacie");
     /*
       Ponuka je číselník z Pohody (s popisom, vhodná agenda prvá) a za ním
       kódy, ktoré firma už použila, hoci v číselníku nie sú — žiadne vymyslené
@@ -98,10 +98,11 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
     const vsetky = [...(pravidla ?? []), ...(faktury ?? []), ...(doklady ?? [])];
     const doplnene = (zoCiselnika: MoznostKodu[], pouzite: string[]): MoznostKodu[] => {
       const zname = new Set(zoCiselnika.map((m) => m.kod));
-      return [
+      // Kódy z dokladov mimo číselníka idú na koniec s poznámkou a účtami z kódu „MD D“.
+      return mimoCiselnikaNaKoniec([
         ...zoCiselnika,
-        ...pouzite.filter((k) => !zname.has(k)).map((kod) => ({ kod, popis: null, agenda: "", ucty: null })),
-      ];
+        ...pouzite.filter((k) => !zname.has(k)).map((kod) => moznostMimoCiselnika(kod)),
+      ]);
     };
     const agendy = vystavena
       ? data.typ === "proforma"
