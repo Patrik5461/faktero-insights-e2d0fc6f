@@ -12,7 +12,6 @@ import {
   Settings,
   ChevronDown,
   Plus,
-  Search,
   HelpCircle,
   LogOut,
   Building2,
@@ -109,6 +108,7 @@ import { CESTA_PRIJATYCH_EFAKTUR } from "@/lib/faktero/efaktura/upozornenie-prij
 import { jeAdminRola } from "@/lib/faktero/opravnenia";
 import { smieHlas } from "@/lib/faktero/hlas";
 import { HlasoveTlacidlo } from "./HlasoveOvladanie";
+import { GlobalneHladanie } from "./GlobalneHladanie";
 type Company = {
   id: string;
   name: string;
@@ -154,7 +154,6 @@ export function AppShell({
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const active = companies.find((c) => c.id === activeId) ?? companies[0];
-  const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   /* Zbalenie panela si pamätá prehliadač. Čítanie je v efekte, nie v
      počiatočnom stave — na serveri `localStorage` neexistuje a vykreslenie by
@@ -396,13 +395,6 @@ export function AppShell({
     window.location.href = "/prihlasenie";
   }
 
-  function submitSearch(e: React.FormEvent) {
-    e.preventDefault();
-    const q = search.trim();
-    if (!q) return;
-    navigate({ to: "/faktury", search: { q } as any });
-  }
-
   /*
     Skutočná výška lepivej hlavičky do `--vyska-hlavicky`: pás podmenu
     kompaktného dizajnu sa zalamuje (jeden aj dva riadky) a náhľad dokladu
@@ -577,24 +569,9 @@ export function AppShell({
               />
             )}
 
-            {/* Search — pill, max 400px */}
+            {/* Hľadanie naprieč agendami firmy (⌘K) — GlobalneHladanie.tsx; na telefóne lupa. */}
             {view !== "logbook" ? (
-              <form onSubmit={submitSearch} className="hidden min-w-0 flex-1 md:block">
-                <div className="relative max-w-[400px]">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    ref={searchRef}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={t("Hľadať")}
-                    aria-label={t("Hľadať")}
-                    className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                  <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
-                    ⌘K
-                  </kbd>
-                </div>
-              </form>
+              <GlobalneHladanie companyId={active?.id ?? null} inputRef={searchRef} />
             ) : (
               <div className="flex-1" />
             )}

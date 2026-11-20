@@ -6,52 +6,9 @@
   právnej formy, po slovách, časť slova stačí a pár preklepov sa odpustí.
 */
 
-export function normalizuj(s: string | null | undefined): string {
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-/** Slová, ktoré v názve firmy nič nehovoria (právna forma, spojky). */
-const PRAZDNE_SLOVA = new Set([
-  "s",
-  "r",
-  "o",
-  "sro",
-  "a",
-  "as",
-  "spol",
-  "sp",
-  "z",
-  "oo",
-  "zoo",
-  "ltd",
-  "gmbh",
-  "inc",
-  "kft",
-  "ag",
-  "se",
-  "v",
-  "k",
-  "ks",
-  "vos",
-  "druzstvo",
-  "od",
-  "pre",
-  "firma",
-  "firmu",
-  "firmy",
-  "spolocnost",
-]);
-
-export function slovaNazvu(s: string | null | undefined): string[] {
-  return normalizuj(s)
-    .split(" ")
-    .filter((x) => x && !PRAZDNE_SLOVA.has(x));
-}
+/* Spoločné s hlavným hľadaním v hlavičke (`hladanie-text.ts`). */
+import { normalizuj, slovaNazvu } from "./hladanie-text";
+export { normalizuj, slovaNazvu };
 
 export function levenshtein(a: string, b: string): number {
   if (a === b) return 0;

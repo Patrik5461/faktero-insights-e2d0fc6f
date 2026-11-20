@@ -126,7 +126,16 @@ const EMPTY: Customer = { name: "", country: "SK", typ: "firma" };
  * Spoločný adresár: ten istý zoznam kontaktov raz ako Odberatelia, raz ako
  * Dodávatelia (ako v Pohode). Firma, ktorá je oboje, je v ňom raz.
  */
-export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy?: boolean }) {
+export function KontaktyStranka({
+  rola,
+  otvoritNovy,
+  hladat,
+}: {
+  rola: Rola;
+  otvoritNovy?: boolean;
+  /** Text z hľadania v hlavičke (`?q=`) — zoznam sa otvorí vyhľadaný. */
+  hladat?: string;
+}) {
   const T = TEXTY[rola];
   const { t } = useT();
   const PRAZDNY: Customer = {
@@ -158,6 +167,12 @@ export function KontaktyStranka({ rola, otvoritNovy }: { rola: Rola; otvoritNovy
     }
   }
   const triggerEvt = useServerFn(triggerEventFn);
+
+  // Príchod z hľadania v hlavičke (`?q=`) — text sa prenesie do poľa hľadania.
+  const { setSearch: nastavHladanie } = list;
+  useEffect(() => {
+    if (hladat) nastavHladanie(hladat);
+  }, [hladat, nastavHladanie]);
 
   // Príchod z menu cez `?new=1`. Parameter hneď odstránime, aby sa formulár
   // po zavretí neotvoril znova pri obnovení stránky alebo návrate späť.
