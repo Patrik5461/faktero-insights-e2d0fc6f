@@ -6,6 +6,7 @@
  * naraz a bez prihláseného používateľa — preto ide cez supabaseAdmin.
  */
 import { lenOdDatumu, nastaveniaBanky } from "./export-nastavenia";
+import { rozdelPodlaOdtlacku, type Povysenie, type UlozenyPohyb } from "./bank-sync-zhoda";
 
 type SyncResult = {
   connection_id: string;
@@ -114,19 +115,57 @@ export async function znameReferencie(
   odDna: string,
 ): Promise<Set<string>> {
   const seen = new Set<string>();
+  for (const r of await ulozenePohybyUctu(supabaseAdmin, accountId, odDna)) {
+    if (r.transaction_reference) seen.add(r.transaction_reference);
+  }
+  return seen;
+}
+
+/**
+ * Uložené pohyby účtu od zadaného dňa — referencie aj odtlačok (deň, suma,
+ * VS, IBAN protistrany), podľa ktorého sa spozná ten istý pohyb pod inou
+ * referenciou (pozri `bank-sync-zhoda.ts`). Po tisíckach a podľa `id`, z
+ * dôvodov opísaných pri `znameReferencie`.
+ */
+export async function ulozenePohybyUctu(
+  supabaseAdmin: any,
+  accountId: string,
+  odDna: string,
+): Promise<UlozenyPohyb[]> {
+  const vsetky: UlozenyPohyb[] = [];
   const KROK = 1000;
   for (let od = 0; ; od += KROK) {
     const { data, error } = await supabaseAdmin
       .from("bank_transactions")
-      .select("transaction_reference")
+      .select(
+        "id, transaction_reference, booking_date, amount, variable_symbol, counterparty_iban, description, created_at",
+      )
       .eq("bank_account_id", accountId)
       .gte("booking_date", odDna)
-      .not("transaction_reference", "is", null)
       .order("id", { ascending: true })
       .range(od, od + KROK - 1);
     if (error) throw new Error(`known_failed: ${error.message}`);
-    for (const r of data ?? []) seen.add(r.transaction_reference);
-    if (!data || data.length < KROK) return seen;
+    vsetky.push(...(data ?? []));
+    if (!data || data.length < KROK) return vsetky;
+  }
+}
+
+/**
+ * Pohyby, ktoré sme už mali pod inou referenciou, dostanú tú novú (a čo im
+ * chýbalo — IBAN protistrany, popis). Riadok ostáva ten istý, takže párovanie
+ * s dokladmi, vybavenie aj export ostávajú na ňom. Zlyhanie jedného zápisu nič
+ * nezhodí — pohyb sa len pri ďalšom sťahovaní spozná znova podľa odtlačku.
+ */
+async function povysReferencie(supabaseAdmin: any, povysenia: Povysenie[]): Promise<void> {
+  for (const p of povysenia) {
+    const { error } = await supabaseAdmin
+      .from("bank_transactions")
+      .update({ transaction_reference: p.transaction_reference, ...p.doplnit })
+      .eq("id", p.id);
+    if (error)
+      console.warn(
+        `[bank-sync] referenciu pohybu ${p.id} sa nepodarilo prepísať: ${error.message}`,
+      );
   }
 }
 
@@ -177,7 +216,9 @@ export async function stiahniTransakcieUctu(
     .eq("id", account.id);
 
   const odDna = new Date(Date.now() - okno * 86400_000).toISOString().slice(0, 10);
-  const seen = await znameReferencie(supabaseAdmin, account.id, odDna);
+  const ulozene = await ulozenePohybyUctu(supabaseAdmin, account.id, odDna);
+  const seen = new Set<string>();
+  for (const r of ulozene) if (r.transaction_reference) seen.add(r.transaction_reference);
 
   // Sem sa dostaneme len keď banka účet vydala — prípadná stará značka
   // o nedostupnosti tým prestáva platiť.
@@ -188,7 +229,24 @@ export async function stiahniTransakcieUctu(
       .eq("id", account.id);
   }
 
-  const fresh = txs.filter((t) => !t.transaction_reference || !seen.has(t.transaction_reference));
+  const neznameRef = txs.filter(
+    (t) => !t.transaction_reference || !seen.has(t.transaction_reference),
+  );
+  if (neznameRef.length === 0) return { inserted: 0, total: txs.length };
+
+  /*
+    Referencia nestačí: po obnove súhlasu môže banka vrátiť tie isté pohyby pod
+    novým id (Tobify 19. 11. 2026 — 82 platieb dvakrát). Čo už na účte leží pod
+    inou referenciou, sa nevloží, len si starý riadok prevezme novú referenciu.
+  */
+  const refZBanky = new Set(txs.map((t) => t.transaction_reference).filter(Boolean) as string[]);
+  const { nove: fresh, povysenia } = rozdelPodlaOdtlacku(neznameRef, ulozene, refZBanky);
+  if (povysenia.length) {
+    console.log(
+      `[bank-sync] účet ${account.id}: ${povysenia.length} pohybov už bolo pod inou referenciou — nevkladám`,
+    );
+    await povysReferencie(supabaseAdmin, povysenia);
+  }
   if (fresh.length === 0) return { inserted: 0, total: txs.length };
 
   const riadky = fresh.map((t) => ({
