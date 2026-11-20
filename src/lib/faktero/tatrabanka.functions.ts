@@ -327,7 +327,50 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
       .from("bank_accounts")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", acc.id);
+    if (inserted > 0) {
+      // Nové pohyby menia vlastné výpisy účtu — dogenerujú sa na pozadí.
+      void import("./vypisy-dogenerovanie.server")
+        .then((m) =>
+          m.spustiDogenerovanie({
+            companyId: data.company_id,
+            bankAccountIds: [acc.id],
+            dovod: "rucne-pohyby",
+          }),
+        )
+        .catch((e) => console.error("[tatrabanka] dogenerovanie výpisov:", e?.message ?? e));
+    }
     return { ok: true, inserted, total };
+  });
+
+/**
+ * Tlačidlo „Dogenerovať" na stránke výpisov — to isté, čo beží samo po
+ * obnovení pripojenia banky a každú noc. Počká najviac 20 s (nginx preruší po
+ * 30 s); dlhší beh dobehne na pozadí a stránka si stav načíta znova.
+ */
+export const dogenerujVypisyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => CompanyInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const role = await assertMember(context.supabase, context.userId, data.company_id);
+    if (!["owner", "admin", "accountant"].includes(role))
+      throw new Error("Výpisy dogeneruje len majiteľ, administrátor alebo účtovník firmy.");
+    await (await import("./testovacia-firma-banka.server")).zastavBankuTestovacej(data.company_id);
+    const { spustiDogenerovanie } = await import("./vypisy-dogenerovanie.server");
+    const beh = spustiDogenerovanie({ companyId: data.company_id, dovod: "rucne" });
+    const vysledok = await Promise.race([
+      beh,
+      new Promise<"bezi">((r) => setTimeout(() => r("bezi"), 20_000)),
+    ]);
+    if (vysledok === "bezi" || !vysledok) {
+      return { hotovo: vysledok !== "bezi", zBanky: 0, vlastnych: 0, chyb: vysledok === "bezi" ? 0 : 1, cakaNaSuhlas: 0 };
+    }
+    return {
+      hotovo: true,
+      zBanky: vysledok.zBanky,
+      vlastnych: vysledok.vlastnych,
+      chyb: vysledok.chyby.length,
+      cakaNaSuhlas: vysledok.cakaNaSuhlas,
+    };
   });
 
 /** Zoznam mesačných výpisov firmy (bez súborov — tie sa sťahujú cez podpísaný odkaz). */

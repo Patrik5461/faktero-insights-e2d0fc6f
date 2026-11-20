@@ -99,6 +99,8 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           } catch (e) {
             console.error("[tatrabanka] initial accounts sync failed", e);
           }
+          // Po pripojení / obnove súhlasu dobehnú pohyby aj výpisy, ktoré medzitým zlyhali.
+          dobehniPoPripojeni(conn.id, conn.company_id);
           return redirect(`${back}?connected=1`);
         } catch (e: any) {
           console.error("[tatrabanka callback]", e);
@@ -108,6 +110,37 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
     },
   },
 });
+
+/**
+ * Na pozadí (návrat z banky nečaká — nginx po 30 s preruší): stiahne pohyby
+ * pripojenia vrátane účtov, ktorým predtým vypršal súhlas, a potom dogeneruje
+ * mesačné výpisy firmy — tie, ktoré pri vypršanom súhlase zlyhali
+ * (`SCA_EXPIRED`), aj vlastné, ku ktorým práve pribudli pohyby.
+ */
+function dobehniPoPripojeni(connectionId: string, companyId: string) {
+  void (async () => {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: conn } = await supabaseAdmin
+        .from("bank_connections")
+        .select("*")
+        .eq("id", connectionId)
+        .eq("company_id", companyId)
+        .maybeSingle();
+      if (conn?.status === "connected") {
+        const { syncPripojenie } = await import("@/lib/faktero/bank-sync.server");
+        await syncPripojenie(supabaseAdmin, conn, undefined, {
+          skusitVyprsane: true,
+          dogenerovat: false,
+        });
+      }
+    } catch (e: any) {
+      console.error("[tatrabanka] pohyby po pripojení zlyhali:", e?.message ?? e);
+    }
+    const { spustiDogenerovanie } = await import("@/lib/faktero/vypisy-dogenerovanie.server");
+    await spustiDogenerovanie({ companyId, dovod: "pripojenie-tb" });
+  })().catch((e) => console.error("[tatrabanka] dogenerovanie po pripojení:", e?.message ?? e));
+}
 
 function redirect(to: string): Response {
   return new Response(null, { status: 302, headers: { Location: to } });

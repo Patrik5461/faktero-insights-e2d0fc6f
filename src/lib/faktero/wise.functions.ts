@@ -91,6 +91,10 @@ export const pripojWise = createServerFn({ method: "POST" })
       : await supabaseAdmin.from("bank_connections").insert(zaznam);
     if (error) throw new Error(error.message);
 
+    // Výpisy, ktoré medzitým nevznikli, sa po pripojení dogenerujú na pozadí.
+    void import("./vypisy-dogenerovanie.server")
+      .then((m) => m.spustiDogenerovanie({ companyId: data.company_id, dovod: "pripojenie-wise" }))
+      .catch((e) => console.error("[wise] dogenerovanie výpisov:", e?.message ?? e));
     return { ok: true, profil: profil.id, typ: profil.typ, verejnyKluc: kluce.verejny };
   });
 

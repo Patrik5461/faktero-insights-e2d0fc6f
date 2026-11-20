@@ -7,6 +7,7 @@ import {
   listBankData,
   listBankStatements,
   getBankStatementUrl,
+  dogenerujVypisyFn,
 } from "@/lib/faktero/tatrabanka.functions";
 import { zostavVypisZTransakciiFn } from "@/lib/faktero/vypis-z-transakcii.functions";
 import { skratkaUctuPohodyFn, vypisPreXmlImportPohodyFn } from "@/lib/faktero/vypis-pohoda-xml.functions";
@@ -28,6 +29,7 @@ import {
   AlertCircle,
   Sparkles,
   Wand2,
+  RefreshCw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/vypisy")({
@@ -88,6 +90,7 @@ function BankStatementsPage() {
   const zostavVypis = useServerFn(zostavVypisZTransakciiFn);
   const pohodaXml = useServerFn(vypisPreXmlImportPohodyFn);
   const skratkaPohody = useServerFn(skratkaUctuPohodyFn);
+  const dogeneruj = useServerFn(dogenerujVypisyFn);
   const mesiace = poslednychMesiacov();
 
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -97,6 +100,7 @@ function BankStatementsPage() {
   const [vyberUcet, setVyberUcet] = useState("");
   const [vyberMesiac, setVyberMesiac] = useState(mesiace[1] ?? mesiace[0]);
   const [zostavujem, setZostavujem] = useState(false);
+  const [dogenerujem, setDogenerujem] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -200,6 +204,39 @@ function BankStatementsPage() {
     }
   }
 
+  async function nacitajVypisy() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const s = await loadStatements({ data: { company_id: cid } });
+    setStatements(s.statements ?? []);
+  }
+
+  /** To isté, čo beží samo po obnovení pripojenia banky a každú noc. */
+  async function onDogeneruj() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setDogenerujem(true);
+    try {
+      const r = await dogeneruj({ data: { company_id: cid } });
+      await nacitajVypisy();
+      if (!r.hotovo) {
+        toast.info(t("Výpisy sa dogenerovávajú na pozadí. Stránku obnovte o pár minút."));
+        // Ešte jedno načítanie, keď beh medzitým dobehne.
+        setTimeout(() => void nacitajVypisy().catch(() => {}), 60_000);
+      } else if (r.cakaNaSuhlas > 0) {
+        toast.warning(t("Banka výpisy nevydá, kým neobnovíte súhlas s prístupom k účtu (Bankové účty → Obnoviť súhlas)."));
+      } else if (r.chyb > 0) {
+        toast.error(t("Niektoré výpisy sa ani teraz nepodarilo pripraviť ({n}).", { n: r.chyb }));
+      } else {
+        toast.success(t("Hotovo — pripravených výpisov: {n}.", { n: r.zBanky + r.vlastnych }));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ? t(e.message) : t("Dogenerovanie zlyhalo"));
+    } finally {
+      setDogenerujem(false);
+    }
+  }
+
   async function onZostav() {
     const cid = getActiveCompanyId();
     if (!cid || !vyberUcet || !vyberMesiac) return;
@@ -263,6 +300,9 @@ function BankStatementsPage() {
     }));
 
   const maVlastne = statements.some((s) => s.source === "faktero" && s.status === "ready");
+  const zlyhaneMesiace = new Set(
+    statements.filter((s) => s.status === "failed").map((s) => s.period_start),
+  ).size;
 
   return (
     <>
@@ -330,6 +370,29 @@ function BankStatementsPage() {
                 {zostavujem ? t("Zostavujem…") : t("Zostaviť PDF a XML")}
               </button>
             </div>
+          </div>
+        )}
+
+        {!loading && zlyhaneMesiace > 0 && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 sm:px-5">
+            <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+            <div className="min-w-0 flex-1 basis-64 text-sm">
+              <p className="font-semibold">
+                {t("Niektoré výpisy sa nepodarilo pripraviť (mesiacov: {n}).", { n: zlyhaneMesiace })}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t("Po obnovení pripojenia banky sa dogenerujú samy — rovnako ako po nových pohyboch a každú noc. Môžete to spustiť aj hneď.")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onDogeneruj}
+              disabled={dogenerujem}
+              className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md border border-input bg-background px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${dogenerujem ? "animate-spin" : ""}`} />
+              {dogenerujem ? t("Dogenerovávam…") : t("Dogenerovať")}
+            </button>
           </div>
         )}
 

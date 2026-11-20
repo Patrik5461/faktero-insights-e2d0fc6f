@@ -297,6 +297,7 @@ export async function stiahniPohybyPripojenia(
   const odFirmy = await synchronizovatOd(supabaseAdmin, companyId);
   let vlozenych = 0;
   const problemy: string[] = [];
+  const uctySNovymi: string[] = [];
 
   for (const u of (ucty as any[]) ?? []) {
     if (!u.external_account_id) continue;
@@ -305,7 +306,7 @@ export async function stiahniPohybyPripojenia(
       const zname = await znameReferencie(supabaseAdmin, u.id, odDna);
       const nove = pohyby.filter((p) => !zname.has(p.external_id));
       if (!nove.length) continue;
-      vlozenych += await vlozPohyby(
+      const pribudlo = await vlozPohyby(
         supabaseAdmin,
         lenOdDatumu(
           nove.map((p) => ({
@@ -323,6 +324,8 @@ export async function stiahniPohybyPripojenia(
           odFirmy,
         ),
       );
+      vlozenych += pribudlo;
+      if (pribudlo > 0) uctySNovymi.push(u.id);
     } catch (e: any) {
       problemy.push(`${u.currency}: ${e?.message ?? "nepodarilo sa"}`);
     }
@@ -333,7 +336,20 @@ export async function stiahniPohybyPripojenia(
     .update({ last_synced_at: new Date().toISOString() })
     .eq("id", connectionId);
 
+  if (uctySNovymi.length) spustitDogenerovanie(companyId, uctySNovymi, "nove-pohyby");
+
   return { vlozenych, problemy };
+}
+
+/**
+ * Mesačné výpisy dotknutých účtov sa po nových pohyboch dogenerujú na pozadí
+ * (`vypisy-dogenerovanie.server`) — sťahovanie na ne nečaká a ich chyba ho
+ * nezhodí.
+ */
+function spustitDogenerovanie(companyId: string, bankAccountIds: string[], dovod: string) {
+  void import("./vypisy-dogenerovanie.server")
+    .then((m) => m.spustiDogenerovanie({ companyId, bankAccountIds, dovod }))
+    .catch((e) => console.error("[bank-sync] dogenerovanie výpisov:", e?.message ?? e));
 }
 
 /**
@@ -373,8 +389,14 @@ export async function syncPripojenie(
   {
     skusitVyprsane = false,
     lenUcty = [],
+    dogenerovat = true,
   }: {
     skusitVyprsane?: boolean;
+    /**
+     * Po nových pohyboch dogenerovať mesačné výpisy dotknutých účtov (na
+     * pozadí). Návrat z banky ho vypína, lebo spúšťa dogenerovanie celej firmy sám.
+     */
+    dogenerovat?: boolean;
     /**
      * Stiahnuť pohyby len týchto účtov (`external_account_id`). Keď žiaden
      * nesedí (napr. účet, ktorý sme ešte nepoznali), ťahajú sa všetky.
@@ -398,6 +420,7 @@ export async function syncPripojenie(
      * sťahovanie padlo, o zvyšné účty by firma prišla celkom.
      */
     let inserted = 0;
+    const uctySNovymi: string[] = [];
     const chybneUcty: string[] = [];
     // Účty s vypršaným súhlasom pri tom istom consent_id — banka vráti tú istú chybu.
     const { data: stavy } = await supabaseAdmin
@@ -424,6 +447,7 @@ export async function syncPripojenie(
       try {
         const r = await stiahniTransakcieUctu(supabaseAdmin, conn, accessToken, acc, daysBack);
         inserted += r.inserted;
+        if (r.inserted > 0) uctySNovymi.push(acc.id);
       } catch (e: any) {
         chybneUcty.push(acc.iban ?? acc.id);
         if (bankaUcetNepozna(e)) {
@@ -466,6 +490,9 @@ export async function syncPripojenie(
     if (inserted > 0 && conn.company_id) {
       const { sparujNovePohybyFirmy } = await import("./parovanie-po-pohyboch.server");
       await sparujNovePohybyFirmy(conn.company_id, "bank-sync");
+    }
+    if (dogenerovat && uctySNovymi.length && conn.company_id) {
+      spustitDogenerovanie(conn.company_id, uctySNovymi, "nove-pohyby-tb");
     }
 
     return {

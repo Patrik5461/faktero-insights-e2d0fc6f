@@ -59,9 +59,21 @@ export const Route = createFileRoute("/api/public/hooks/bank-statements")({
               const { generateOwnStatements } =
                 await import("@/lib/faktero/bank-statements-own.server");
               const own = await generateOwnStatements(r.period);
+              /*
+                Poistka: staršie mesiace, ktoré zlyhali (napr. vypršaný súhlas),
+                a vlastné výpisy, ku ktorým dobehli pohyby. Bez zmien je to beh naprázdno.
+              */
+              let dogenerovane: unknown = null;
+              try {
+                const { dogenerujVsetkyFirmy } =
+                  await import("@/lib/faktero/vypisy-dogenerovanie.server");
+                dogenerovane = await dogenerujVsetkyFirmy();
+              } catch (e: any) {
+                console.error("[bank-statements] dogenerovanie zlyhalo:", e?.message ?? e);
+              }
               console.log(
                 `[bank-statements] hotovo za ${r.period.start}–${r.period.end}:`,
-                JSON.stringify({ ...r, own }),
+                JSON.stringify({ ...r, own, dogenerovane }),
               );
             } catch (e: any) {
               console.error("[bank-statements] beh zlyhal:", e?.message ?? e);

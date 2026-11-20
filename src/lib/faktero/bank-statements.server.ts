@@ -200,6 +200,107 @@ export function jeTrvalaChyba(sprava: string): "mimo-tb" | "nepozna" | "pred-otv
   return null;
 }
 
+export type VysledokZBanky =
+  | { stav: "ready"; vytvoreny: boolean }
+  | { stav: "pending"; vytvoreny: boolean }
+  | {
+      stav: "unsupported";
+      vytvoreny: boolean;
+      dovod: "mimo-tb" | "nepozna" | "pred-otvorenim";
+      chyba: string;
+    }
+  | { stav: "failed"; vytvoreny: boolean; chyba: string; bezRiadku?: boolean };
+
+/**
+ * Vypýta od Tatra banky jeden výpis (účet × obdobie × formát): založí riadok,
+ * keď chýba, a vybaví ho cez `processRow`. Chybu zapíše do riadku — trvalú
+ * (`PRODUCT_UNKNOWN`, `NO_ACCOUNT`, `DATE_F_ACC_NOT_OPEN`) ako `unsupported`,
+ * dočasnú ako `failed`, aby sa na ňu ďalší beh vrátil.
+ *
+ * Volá ho mesačný beh aj dogenerovanie po obnove pripojenia
+ * (`vypisy-dogenerovanie.server`). Riadok, ktorý je už `ready`, sem nepatrí —
+ * o tom rozhoduje volajúci.
+ */
+export async function vybavVypisZBanky(
+  supabaseAdmin: any,
+  conn: { company_id: string; access_token: string | null },
+  acc: { id: string; external_account_id: string | null; iban: string | null },
+  start: string,
+  end: string,
+  exportType: ExportType,
+  existing: any | null,
+): Promise<VysledokZBanky> {
+  let row = existing;
+  let vytvoreny = false;
+  if (!row) {
+    const { data: inserted, error } = await supabaseAdmin
+      .from("bank_statements")
+      .insert({
+        company_id: conn.company_id,
+        bank_account_id: acc.id,
+        period_start: start,
+        period_end: end,
+        export_type: exportType,
+      })
+      .select("*")
+      .single();
+    if (error || !inserted) {
+      return {
+        stav: "failed",
+        vytvoreny: false,
+        chyba: error?.message ?? "insert_failed",
+        bezRiadku: true,
+      };
+    }
+    row = inserted;
+    vytvoreny = true;
+  }
+
+  try {
+    const r = await processRow(supabaseAdmin, bankToken(conn.access_token)!, row, acc);
+    return { stav: r.done ? "ready" : "pending", vytvoreny };
+  } catch (e: any) {
+    const msg = e?.message ?? "statement_failed";
+    /*
+      PRODUCT_UNKNOWN = účet nie je vedený v TB (Premium API ho len agreguje).
+      Trvalý stav, nie zlyhanie behu — nezaraďuj medzi chyby.
+
+      NO_ACCOUNT = banka účet pod týmto súhlasom nepozná. Pre dané obdobie
+      je to rovnako trvalé ako PRODUCT_UNKNOWN, takže sa zapíše natrvalo a
+      nočný beh ho už neskúša — dovtedy padalo to isté volanie každý deň a
+      plnilo chybový log.
+
+      Účet sa pritom **nesmie** označiť za nedostupný. Tá značka zastavuje
+      sťahovanie transakcií a patrí dennému behu pohybov, ktorý jediný vie,
+      či banka účet vydáva. Výpis môže padnúť aj vtedy, keď pohyby chodia
+      (banka ich vydáva zvlášť), a kvôli chýbajúcemu výpisu by sme tak
+      prišli aj o pohyby. Preto sa tu značka len číta.
+
+      Nasledujúci mesiac vznikne nový riadok a skúsi sa znova — keby banka
+      účet sprístupnila, výpisy sa rozbehnú samy.
+    */
+    const trvala = jeTrvalaChyba(msg);
+    await supabaseAdmin
+      .from("bank_statements")
+      .update({
+        status: trvala ? "unsupported" : "failed",
+        error: msg,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+    if (trvala) {
+      if (trvala !== "mimo-tb") {
+        console.log(
+          `[bank-statements] ${acc.iban ?? acc.id} ${exportType}: banka výpis za toto obdobie nevydá (${trvala}), ďalej ho neskúšam`,
+        );
+      }
+      return { stav: "unsupported", vytvoreny, dovod: trvala, chyba: msg };
+    }
+    console.error(`[bank-statements] ${acc.id} ${exportType}: ${msg}`);
+    return { stav: "failed", vytvoreny, chyba: msg };
+  }
+}
+
 export async function runMonthlyStatements(period?: { start: string; end: string }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { start, end } = period ?? previousMonth();
@@ -284,76 +385,23 @@ export async function runMonthlyStatements(period?: { start: string; end: string
           continue;
         }
 
-        let row = existing;
-        if (!row) {
-          const { data: inserted, error } = await supabaseAdmin
-            .from("bank_statements")
-            .insert({
-              company_id: conn.company_id,
-              bank_account_id: acc.id,
-              period_start: start,
-              period_end: end,
-              export_type: exportType,
-            })
-            .select("*")
-            .single();
-          if (error || !inserted) {
-            errors.push({
-              account_id: acc.id,
-              export_type: exportType,
-              error: error?.message ?? "insert_failed",
-            });
-            continue;
-          }
-          row = inserted;
-          created++;
-        }
-
-        try {
-          const r = await processRow(supabaseAdmin, bankToken(conn.access_token)!, row, acc);
-          if (r.done) ready++;
-          else pending++;
-        } catch (e: any) {
-          const msg = e?.message ?? "statement_failed";
-          // PRODUCT_UNKNOWN = účet nie je vedený v TB (Premium API ho len agreguje).
-          // Trvalý stav, nie zlyhanie behu — nezaraďuj medzi chyby.
-          const isForeignBank = jeTrvalaChyba(msg) === "mimo-tb";
-          /*
-            NO_ACCOUNT = banka účet pod týmto súhlasom nepozná. Pre dané obdobie
-            je to rovnako trvalé ako PRODUCT_UNKNOWN, takže sa zapíše natrvalo a
-            nočný beh ho už neskúša — dovtedy padalo to isté volanie každý deň a
-            plnilo chybový log.
-
-            Účet sa pritom **nesmie** označiť za nedostupný. Tá značka zastavuje
-            sťahovanie transakcií a patrí dennému behu pohybov, ktorý jediný vie,
-            či banka účet vydáva. Výpis môže padnúť aj vtedy, keď pohyby chodia
-            (banka ich vydáva zvlášť), a kvôli chýbajúcemu výpisu by sme tak
-            prišli aj o pohyby. Preto sa tu značka len číta.
-
-            Nasledujúci mesiac vznikne nový riadok a skúsi sa znova — keby banka
-            účet sprístupnila, výpisy sa rozbehnú samy.
-          */
-          const bankaUcetNepozna = ["nepozna", "pred-otvorenim"].includes(jeTrvalaChyba(msg) ?? "");
-          const trvale = isForeignBank || bankaUcetNepozna;
-          await supabaseAdmin
-            .from("bank_statements")
-            .update({
-              status: trvale ? "unsupported" : "failed",
-              error: msg,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", row.id);
-          if (isForeignBank) {
-            unsupported++;
-          } else if (bankaUcetNepozna) {
-            nedostupne++;
-            console.log(
-              `[bank-statements] ${acc.iban ?? acc.id} ${exportType}: banka výpis za toto obdobie nevydá (${jeTrvalaChyba(msg)}), ďalej ho neskúšam`,
-            );
-          } else {
-            console.error(`[bank-statements] ${acc.id} ${exportType}: ${msg}`);
-            errors.push({ account_id: acc.id, export_type: exportType, error: msg });
-          }
+        const r = await vybavVypisZBanky(
+          supabaseAdmin,
+          conn,
+          acc,
+          start,
+          end,
+          exportType,
+          existing ?? null,
+        );
+        if (r.vytvoreny) created++;
+        if (r.stav === "ready") ready++;
+        else if (r.stav === "pending") pending++;
+        else if (r.stav === "unsupported") {
+          if (r.dovod === "mimo-tb") unsupported++;
+          else nedostupne++;
+        } else {
+          errors.push({ account_id: acc.id, export_type: exportType, error: r.chyba });
         }
       }
     }

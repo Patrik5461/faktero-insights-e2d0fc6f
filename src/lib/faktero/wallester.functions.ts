@@ -124,6 +124,10 @@ export const dokonciWallester = createServerFn({ method: "POST" })
       })
       .eq("id", conn.id);
     if (error) throw new Error(error.message);
+    // Výpisy, ktoré medzitým nevznikli, sa po pripojení dogenerujú na pozadí.
+    void import("./vypisy-dogenerovanie.server")
+      .then((m) => m.spustiDogenerovanie({ companyId: data.company_id, dovod: "pripojenie-wallester" }))
+      .catch((e) => console.error("[wallester] dogenerovanie výpisov:", e?.message ?? e));
     return { ok: true };
   });
 
