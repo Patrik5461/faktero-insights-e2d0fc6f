@@ -156,9 +156,6 @@
       </inv:invoiceHeader>
       <inv:invoiceDetail>
         <inv:invoiceItem>
-          <inv:text>Fakturujeme vám služby za október</inv:text>
-        </inv:invoiceItem>
-        <inv:invoiceItem>
           <inv:text>Konzultácia</inv:text>
           <inv:quantity>2</inv:quantity>
           <inv:unit>hod</inv:unit>

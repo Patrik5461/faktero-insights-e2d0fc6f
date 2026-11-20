@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { sFirmouAktivnej } from "@/lib/faktero/nazov-suboru-aktivnej-firmy";
 import { poDavkach } from "@/lib/faktero/po-davkach";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { vsPrijatej } from "@/lib/faktero/variabilny-symbol";
@@ -556,7 +557,7 @@ function PurchaseInvoicesPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `prijate-faktury-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = await sFirmouAktivnej(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.zip`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -993,7 +994,7 @@ function PurchaseInvoicesPage() {
                       toast.error(e?.message ?? t("Nepodarilo sa"));
                       return;
                     }
-                    void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+                    void stiahniExcel(await sFirmouAktivnej(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`), [
                       {
                         nazov: t("Prijaté faktúry"),
                         data: tabulka(r, [

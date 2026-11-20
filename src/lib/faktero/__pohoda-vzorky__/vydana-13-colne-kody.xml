@@ -41,9 +41,6 @@
       </inv:invoiceHeader>
       <inv:invoiceDetail>
         <inv:invoiceItem>
-          <inv:text>Fakturujeme vám služby za október</inv:text>
-        </inv:invoiceItem>
-        <inv:invoiceItem>
           <inv:text>Mobilný telefón</inv:text>
           <inv:quantity>2</inv:quantity>
           <inv:unit>ks</inv:unit>
@@ -117,9 +114,6 @@
         <inv:account><typ:ids>TB</typ:ids></inv:account>
       </inv:invoiceHeader>
       <inv:invoiceDetail>
-        <inv:invoiceItem>
-          <inv:text>Fakturujeme vám služby za október</inv:text>
-        </inv:invoiceItem>
         <inv:invoiceItem>
           <inv:text>Mobilný telefón</inv:text>
           <inv:quantity>2</inv:quantity>

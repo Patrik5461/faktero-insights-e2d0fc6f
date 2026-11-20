@@ -177,6 +177,11 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       zalohy,
       nastavenia: { ...nastavenia, ...(pohoda && data.potvrdene_varovania ? { ajSPrekazkami: true } : {}) },
     });
+    // Názov s firmou, aby sa súbor dal nájsť v Stiahnutých; obsah sa nemení.
+    {
+      const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+      built.fileName = nazovSuboruSFirmou(built.fileName, company);
+    }
 
     // Doklad, ktorý do súboru neprešiel, sa nesmie tváriť ako odovzdaný —
     // inak by pri ďalšom exporte vypadol ako „už poslané" a nikde by nebol.
@@ -258,10 +263,20 @@ export const getExportContentFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("export_jobs")
-      .select("id, file_name, file_content, format")
+      .select("id, company_id, file_name, file_content, format")
       .eq("id", data.jobId)
       .single();
     if (error) throw new Error(error.message);
+    /*
+      Firma na konci názvu aj pri staršom súbore z histórie (riadok v DB sa
+      nemení); nový export ju v názve už má a druhýkrát sa nepridá.
+    */
+    const { data: firmaJobu } = await context.supabase
+      .from("companies")
+      .select("name")
+      .eq("id", job.company_id)
+      .maybeSingle();
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
     // Starší súbor z histórie sa musí stiahnuť v tom kódovaní, v akom vznikol.
     const { EXPORT_STRATEGIES: STRATEGIE } = await import("./export.server");
     const strategia = STRATEGIE[job.format as ExportFormat];
@@ -269,7 +284,7 @@ export const getExportContentFn = createServerFn({ method: "POST" })
     const { PROGRAMY_UCTOVANIA } = await import("./uctovanie-programy");
     const program = PROGRAMY_UCTOVANIA.find((p) => p.format === job.format);
     return {
-      fileName: job.file_name,
+      fileName: job.file_name ? nazovSuboruSFirmou(job.file_name, firmaJobu?.name ?? null) : job.file_name,
       content: job.file_content,
       mime: strategia?.mime ?? program?.mime ?? "application/xml",
       encoding: (strategia?.encoding ?? program?.encoding ?? "utf-8") as

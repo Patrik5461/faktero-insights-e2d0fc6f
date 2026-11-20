@@ -125,9 +125,14 @@ export const konvertorDoPohodyFn = createServerFn({ method: "POST" })
       throw new Error(preskocene.slice(0, 10).join(" · ") || "Žiadny doklad sa nedal previesť.");
 
     const dnes = dnesBratislava();
+    // Firma na konci názvu (Stiahnuté); obsah sa nemení.
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
     return {
       xml,
-      fileName: `pohoda-${data.druh === "vydane" ? "vydane-faktury" : data.druh === "prijate" ? "prijate-faktury" : "blocky"}-${dnes}.xml`,
+      fileName: nazovSuboruSFirmou(
+        `pohoda-${data.druh === "vydane" ? "vydane-faktury" : data.druh === "prijate" ? "prijate-faktury" : "blocky"}-${dnes}.xml`,
+        company,
+      ),
       pocet,
       preskocene,
       zavazne: [] as string[],

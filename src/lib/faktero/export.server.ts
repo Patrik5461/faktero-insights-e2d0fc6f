@@ -756,39 +756,6 @@ export function popisPredkontacieVydanej(
 }
 
 /**
- * Text rozdelený na riadky textových položiek Pohody (invoice.xsd:
- * `invoiceItem/text` je string90). Zalomenie riadkov z textu ostáva, dlhý
- * riadok sa láme po slovách — nič sa neodreže.
- */
-export function textNaRiadky(text: unknown, max = 90): string[] {
-  const out: string[] = [];
-  for (const odsek of String(text ?? "").split(/\r?\n/)) {
-    let riadok = "";
-    for (const slovo of odsek.split(/\s+/).filter(Boolean)) {
-      // Slovo dlhšie než riadok sa rozseká.
-      let zvysok = slovo;
-      while (zvysok.length > max) {
-        if (riadok) {
-          out.push(riadok);
-          riadok = "";
-        }
-        out.push(zvysok.slice(0, max));
-        zvysok = zvysok.slice(max);
-      }
-      if (!zvysok) continue;
-      if (!riadok) riadok = zvysok;
-      else if (riadok.length + 1 + zvysok.length <= max) riadok += ` ${zvysok}`;
-      else {
-        out.push(riadok);
-        riadok = zvysok;
-      }
-    }
-    if (riadok) out.push(riadok);
-  }
-  return out;
-}
-
-/**
  * Položky vydanej zálohovej faktúry bez DPH: suma na úhradu (s daňou) ako
  * základ v nulovej sadzbe. Jednotková cena je cena za jednotku s daňou; keď
  * sa ňou množstvo nedá vyjadriť na cent, ide riadok ako 1 × celá suma
@@ -1258,26 +1225,14 @@ export function polozkyFaktur(opts: {
       /*
         Text hlavičky = text predkontácie hlavičky z číselníka firmy (napr.
         „Tržby za služby“), ako ho dáva POHODA pri ručnom zápise. Vlastný text
-        faktúry („Fakturujeme vám…“) potom ide ako prvá textová položka
-        (bez množstva a cien — POHODA SK 14404.8 ju 17. 11. 2026 prijala ako
-        textový riadok, súčty sa nezmenili). Bez popisu predkontácie alebo
-        bez položiek ostáva text faktúry v hlavičke ako doteraz.
+        faktúry („Fakturujeme vám…“) do položiek nejde — ani ako textový
+        riadok (Patrik 20. 11. 2026). Bez popisu predkontácie alebo bez
+        položiek ostáva text faktúry v hlavičke ako doteraz.
       */
       const textFaktury = textVystavenej(invoice, ex, cz);
       const maDetail = rozRiadky.length > 0 || items.length > 0;
       const popisHlavicky = maDetail ? popisPredkontacieVydanej(nastavenia, predkontacia) : "";
       const textHlavicky = popisHlavicky || skrat(textFaktury, 240);
-      // Samé „Faktúra 2026001“ do položiek nepatrí — číslo nesie doklad.
-      const textovePolozky =
-        popisHlavicky && skrat(textFaktury, 240) !== skrat(textCislaVystavenej(invoice, cz), 240)
-          ? textNaRiadky(textFaktury)
-              .map(
-                (r) => `
-        <inv:invoiceItem>${el("inv:text", r, "          ")}
-        </inv:invoiceItem>`,
-              )
-              .join("")
-          : "";
       const itemRows = rozRiadky.length
         ? rozRiadky
             .map((r, i) => {
@@ -1535,7 +1490,7 @@ export function polozkyFaktur(opts: {
             : ""
         }
       </inv:invoiceHeader>
-      <inv:invoiceDetail>${textovePolozky}${itemRows}${zalohaRiadok}
+      <inv:invoiceDetail>${itemRows}${zalohaRiadok}
       </inv:invoiceDetail>
       <inv:invoiceSummary>${
         /*

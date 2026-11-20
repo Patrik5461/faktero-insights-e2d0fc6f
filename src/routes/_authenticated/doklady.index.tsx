@@ -1,4 +1,5 @@
 import { preloz, lokalJazyka } from "@/lib/i18n/jazyk";
+import { sFirmouAktivnej } from "@/lib/faktero/nazov-suboru-aktivnej-firmy";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
@@ -787,7 +788,7 @@ function DokladyPage() {
       toast.error(e?.message ?? t("Nepodarilo sa"));
       return;
     }
-    void stiahniExcel(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+    void stiahniExcel(await sFirmouAktivnej(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`), [
       {
         nazov: t("Doklady"),
         data: tabulka(r, [

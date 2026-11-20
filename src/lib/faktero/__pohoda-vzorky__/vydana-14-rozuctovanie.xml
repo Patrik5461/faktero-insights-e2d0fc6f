@@ -41,9 +41,6 @@
       </inv:invoiceHeader>
       <inv:invoiceDetail>
         <inv:invoiceItem>
-          <inv:text>Fakturujeme vám služby za október</inv:text>
-        </inv:invoiceItem>
-        <inv:invoiceItem>
           <inv:text>Služby</inv:text>
           <inv:quantity>1</inv:quantity>
           <inv:payVAT>false</inv:payVAT>

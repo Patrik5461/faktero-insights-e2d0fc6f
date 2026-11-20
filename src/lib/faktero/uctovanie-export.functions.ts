@@ -149,10 +149,14 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
     const def = PROGRAMY_UCTOVANIA.find((p) => p.program === data.program)!;
     const den = dnesBratislava();
     // DATEV ponúkne na import len súbor, ktorého názov začína „EXTF_“.
-    const fileName =
+    // Firma na konci názvu (Stiahnuté); DATEV stále začína „EXTF_“.
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+    const fileName = nazovSuboruSFirmou(
       data.program === "datev"
         ? `EXTF_Buchungsstapel_${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`
-        : `${data.program}-${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`;
+        : `${data.program}-${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`,
+      firma,
+    );
     const datumy = vyvezene
       .map((d) => d.datumVystavenia)
       .filter(Boolean)

@@ -419,7 +419,17 @@ export const getBankStatementUrl = createServerFn({ method: "POST" })
     const pripona = String((row as any).export_type ?? "").toUpperCase() === "PDF" ? "pdf" : "xml";
     const iban = String((row as any).bank_accounts?.iban ?? "").replace(/\s/g, "");
     const mesiac = String((row as any).period_start ?? "").slice(0, 7);
-    const nazov = ["vypis", iban, mesiac].filter(Boolean).join("-") + "." + pripona;
+    // Firma na konci názvu, aby sa výpis v Stiahnutých dal nájsť.
+    const { data: firma } = await supabaseAdmin
+      .from("companies")
+      .select("name")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+    const nazov = nazovSuboruSFirmou(
+      ["vypis", iban, mesiac].filter(Boolean).join("-") + "." + pripona,
+      firma?.name ?? null,
+    );
     const { data: signed, error } = await supabaseAdmin.storage
       .from("bank-statements")
       .createSignedUrl(row.storage_path, 300, { download: nazov });

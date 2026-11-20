@@ -165,7 +165,7 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase
         .from("companies")
-        .select("id, ico, country, uctovanie_nastavenia, pohoda_predkontacia_rozuctovat")
+        .select("id, name, ico, country, uctovanie_nastavenia, pohoda_predkontacia_rozuctovat")
         .eq("id", data.company_id)
         .maybeSingle(),
     ]);
@@ -286,7 +286,11 @@ export const exportSplatokDoPohodyFn = createServerFn({ method: "POST" })
       .map((s) => s.number);
     return {
       xml: vysledok.xml,
-      nazov: nazovSuboruSplatok(zmluva, cisla),
+      // Firma na konci názvu (Stiahnuté); obsah sa nemení.
+      nazov: (await import("./nazov-suboru-firmy")).nazovSuboruSFirmou(
+        nazovSuboruSplatok(zmluva, cisla),
+        (firma as { name?: string | null } | null)?.name ?? null,
+      ),
       pocet: vysledok.pocet,
       vyhrady: vysledok.vyhrady,
       oznacene,

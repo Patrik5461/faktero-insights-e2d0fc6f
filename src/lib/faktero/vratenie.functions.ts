@@ -277,14 +277,18 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
     const roky = data.datum_zauctovania ? [{ rok: "", doklady: ok }] : podlaRoka(ok, (p: any) => p.delivery_date || p.issue_date);
     const den0 = dnesBratislava();
+    // Firma na konci názvu, aby sa súbor dal nájsť v Stiahnutých.
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
     const subory = roky.map((r) => ({
       xml: buildPohodaExpensesXml({ company: firma, doklady: r.doklady.map(prijataAkoDoklad), nastavenia }),
-      fileName:
+      fileName: nazovSuboruSFirmou(
         roky.length > 1
           ? `pohoda-prijate-${r.rok}-${den0}.xml`
           : ok.length === 1
             ? `pohoda-${String(ok[0].invoice_number).replace(/[^\w.-]+/g, "_")}.xml`
             : `pohoda-prijate-${den0}.xml`,
+        firma,
+      ),
       pocet: r.doklady.length,
     }));
     const xml = subory[0].xml;

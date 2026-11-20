@@ -1006,6 +1006,9 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     }
 
     const blob = data.format === "xml" ? "" : await zip.generateAsync({ type: "base64" });
+    // Firma na konci názvu stiahnutého súboru (Stiahnuté); názvy v ZIP-e ostávajú.
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+    const sFirmou = (n: string) => nazovSuboruSFirmou(n, firma);
 
     if (data.mark_exported) {
       // Čo Pohoda dostala, sa uloží do histórie exportov (porovnanie neskôr).
@@ -1015,7 +1018,9 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
         const jobId = await ulozOdoslaneXml(supabase as any, {
           companyId: data.company_id,
           userId: context.userId as string,
-          fileName: `pohoda-prijate-doklady-${mesiac}${x.nazov === "pohoda.xml" ? "" : "-" + x.nazov.slice(7, 11)}.xml`,
+          fileName: sFirmou(
+            `pohoda-prijate-doklady-${mesiac}${x.nazov === "pohoda.xml" ? "" : "-" + x.nazov.slice(7, 11)}.xml`,
+          ),
           xml: x.xml,
           pocet: x.doklady.length,
         });
@@ -1034,9 +1039,9 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const vXml = xmlPodlaRoka.reduce((s, x) => s + x.doklady.length, 0);
     return {
       base64: blob,
-      filename: `doklady-${obdobie}.zip`,
+      filename: sFirmou(`doklady-${obdobie}.zip`),
       // Samotné XML pre Pohodu (pri prelome rokov viac súborov).
-      subory: data.format === "xml" ? xmlPodlaRoka.map((x) => ({ fileName: x.fileName, xml: x.xml })) : [],
+      subory: data.format === "xml" ? xmlPodlaRoka.map((x) => ({ fileName: sFirmou(x.fileName), xml: x.xml })) : [],
       count: data.format === "xml" ? vXml : rows.length,
       /** Koľko dokladov je v XML pre Pohodu (zvyšok je v `preskocene`). */
       v_xml: vXml,

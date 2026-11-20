@@ -1058,6 +1058,14 @@ export async function oznacOdovzdane(
   const preskoceneFaktur = balik.preskoceneFaktur ?? balik.preskocene;
   const cislaPreskocenych = new Set(preskoceneFaktur.map((d) => String(d).split(" — ")[0]));
   const { od } = rozsahMesiaca(vstup.mesiac);
+  // Názvy v histórii exportov s firmou na konci — pri opätovnom stiahnutí.
+  const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+  const { data: firmaJobu } = await supabase
+    .from("companies")
+    .select("name")
+    .eq("id", vstup.companyId)
+    .maybeSingle();
+  const sFirmou = (n: string) => nazovSuboruSFirmou(n, firmaJobu?.name ?? null);
 
   const { data: job, error } = await supabase
     .from("export_jobs")
@@ -1070,7 +1078,7 @@ export async function oznacOdovzdane(
       invoice_count: balik.pocetFaktur,
       date_from: od,
       date_to: balik.poslednyDatum,
-      file_name: `pohoda-faktury-${vstup.mesiac}.xml`,
+      file_name: sFirmou(`pohoda-faktury-${vstup.mesiac}.xml`),
       // V histórii sa drží XML, nie celý balík — ZIP s PDF by tabuľku nafúkol
       // a dôležitý je práve importovateľný súbor.
       file_content: balik.xmlFaktur,
@@ -1101,7 +1109,7 @@ export async function oznacOdovzdane(
       (await ulozOdoslaneXml(supabase, {
         companyId: vstup.companyId,
         userId: vstup.userId,
-        fileName: `pohoda-prijate-doklady-${vstup.mesiac}.xml`,
+        fileName: sFirmou(`pohoda-prijate-doklady-${vstup.mesiac}.xml`),
         xml: balik.xmlDokladov ?? "",
         pocet: balik.dokladyIds.length,
         od,
@@ -1120,7 +1128,7 @@ export async function oznacOdovzdane(
       (await ulozOdoslaneXml(supabase, {
         companyId: vstup.companyId,
         userId: vstup.userId,
-        fileName: `pohoda-prijate-faktury-${vstup.mesiac}.xml`,
+        fileName: sFirmou(`pohoda-prijate-faktury-${vstup.mesiac}.xml`),
         xml: balik.xmlPrijatych ?? "",
         pocet: balik.prijateIds.length,
         od,

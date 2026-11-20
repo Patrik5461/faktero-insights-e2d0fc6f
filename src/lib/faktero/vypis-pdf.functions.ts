@@ -503,7 +503,9 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
 
       const znackaSepa =
         (data.cisloVypisu ?? data.datumVypisu ?? "").replace(/[^\w-]/g, "") || "vypis";
-      return { fileName: `sepa-vypis-${znackaSepa}.xml`, content: obsah };
+      // Firma na konci názvu (Stiahnuté); obsah sa nemení.
+      const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+      return { fileName: nazovSuboruSFirmou(`sepa-vypis-${znackaSepa}.xml`, company.name), content: obsah };
     }
 
     /*
@@ -568,5 +570,6 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
     });
 
     const znacka = (data.cisloVypisu ?? data.datumVypisu ?? "").replace(/[^\w-]/g, "") || "vypis";
-    return { fileName: `pohoda-vypis-${znacka}.xml`, content };
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+    return { fileName: nazovSuboruSFirmou(`pohoda-vypis-${znacka}.xml`, company.name), content };
   });

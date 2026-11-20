@@ -513,9 +513,15 @@ export const exportOstatnychZipFn = createServerFn({ method: "POST" })
           doklady.map((d) => d.id),
         );
     }
+    // Firma na konci názvu (Stiahnuté); súbory v ZIP-e ostávajú.
+    const { data: firma } = await supabase.from("companies").select("name").eq("id", data.company_id).maybeSingle();
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
     return {
       base64,
-      filename: `ostatne-doklady-${new Date().toISOString().slice(0, 10)}.zip`,
+      filename: nazovSuboruSFirmou(
+        `ostatne-doklady-${new Date().toISOString().slice(0, 10)}.zip`,
+        (firma as { name?: string | null } | null)?.name ?? null,
+      ),
       count: doklady.length,
     };
   });

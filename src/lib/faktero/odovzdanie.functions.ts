@@ -50,9 +50,12 @@ export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
       );
     }
 
+    // Firma na konci názvu stiahnutého balíka (Stiahnuté); mail účtovníkovi
+    // a súbory vnútri balíka ostávajú bez zmeny.
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
     return {
       base64: balik.base64,
-      fileName: balik.fileName,
+      fileName: nazovSuboruSFirmou(balik.fileName, zostavene.company),
       pocetFaktur: balik.pocetFaktur,
       pocetDokladov: balik.pocetDokladov,
       pocetPrijatych: balik.pocetPrijatych ?? 0,

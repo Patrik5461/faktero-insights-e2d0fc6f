@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { sFirmouAktivnej } from "@/lib/faktero/nazov-suboru-aktivnej-firmy";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
@@ -888,7 +889,7 @@ function InvoicesPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `faktury-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = await sFirmouAktivnej(`faktury-${new Date().toISOString().slice(0, 10)}.zip`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

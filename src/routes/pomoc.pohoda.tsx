@@ -357,9 +357,8 @@ const sections: HelpSection[] = [
         <p>
           <strong>Text vydanej faktúry.</strong> Do textu v hlavičke faktúry v Pohode ide text
           predkontácie z vášho číselníka (napríklad „Tržby za služby“); keď predkontácia text nemá,
-          ide tam to, čo fakturujete (text nad položkami). Samotný text faktúry z Faktera nájdete v
-          Pohode ako prvé <strong>textové položky</strong> faktúry — nič sa neodreže, dlhý text sa
-          rozdelí na viac riadkov.
+          ide tam to, čo fakturujete (text nad položkami). Do položiek faktúry v Pohode idú len
+          skutočné položky — text faktúry sa medzi ne <strong>nepridáva</strong>.
         </p>
         <p>
           <strong>Bločky</strong> idú do Pohody predvolene po položkách. Bloček bez položiek dostane položky

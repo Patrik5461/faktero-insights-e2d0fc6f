@@ -714,8 +714,14 @@ export const stiahniPrijateBisFn = createServerFn({ method: "POST" })
       zip.file(`${meno}.xml`, String(r.xml_payload));
     }
     const content = await zip.generateAsync({ type: "base64", compression: "DEFLATE" });
+    // Firma na konci názvu (Stiahnuté); súbory v ZIP-e ostávajú.
+    const { data: firma } = await supabase.from("companies").select("name").eq("id", data.company_id).maybeSingle();
+    const { nazovSuboruSFirmou } = await import("../nazov-suboru-firmy");
     return {
-      fileName: `prijate-efaktury-bis-${new Date().toISOString().slice(0, 10)}.zip`,
+      fileName: nazovSuboruSFirmou(
+        `prijate-efaktury-bis-${new Date().toISOString().slice(0, 10)}.zip`,
+        (firma as { name?: string | null } | null)?.name ?? null,
+      ),
       content,
       pocet: riadky.length,
     };

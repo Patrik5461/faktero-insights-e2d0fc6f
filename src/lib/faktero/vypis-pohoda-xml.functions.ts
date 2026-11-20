@@ -155,5 +155,17 @@ export const vypisPreXmlImportPohodyFn = createServerFn({ method: "POST" })
 
     const obdobie = String(vypis.period_start).slice(0, 7);
     const koniec = String(ucet.iban ?? "").replace(/\s+/g, "").slice(-4);
-    return { fileName: `pohoda-vypis-${obdobie}-${koniec}.xml`, content, pocet: txs.length, uzOdoslanych };
+    // Firma na konci názvu (Stiahnuté); obsah sa nemení.
+    const { data: firma } = await supabaseAdmin
+      .from("companies")
+      .select("name")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
+    return {
+      fileName: nazovSuboruSFirmou(`pohoda-vypis-${obdobie}-${koniec}.xml`, firma?.name ?? null),
+      content,
+      pocet: txs.length,
+      uzOdoslanych,
+    };
   });
