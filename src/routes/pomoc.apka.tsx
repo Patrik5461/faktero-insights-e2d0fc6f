@@ -212,13 +212,13 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Na iPhone appka posiela upozornenia — napríklad na faktúry po splatnosti. Či registrácia
-          naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá
-          zopakovať.
+          Appka posiela upozornenia na iPhone aj na Androide — napríklad na faktúry po splatnosti.
+          Či registrácia naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým
+          sa dá zopakovať.
         </p>
         <p>
-          <strong>Na Androide oznámenia zatiaľ nechodia.</strong> Appka je hotová, ale chýba jej
-          napojenie na doručovaciu službu Googlu. Všetko ostatné na Androide funguje.
+          <strong>Keď upozornenia nechodia</strong>, skontrolujte, či ich má appka povolené v
+          nastaveniach telefónu, a v stave oznámení registráciu zopakujte.
         </p>
       </>
     ),

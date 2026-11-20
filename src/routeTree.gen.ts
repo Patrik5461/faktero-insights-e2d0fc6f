@@ -268,6 +268,7 @@ import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companie
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
 import { Route as AdminPodporaIndexRouteImport } from './routes/admin.podpora.index'
 import { Route as AdminPodporaIdRouteImport } from './routes/admin.podpora.$id'
+import { Route as AdminPodporaManualyRouteImport } from './routes/admin.podpora.manualy'
 import { Route as AdminPodporaTelegramSkupinaRouteImport } from './routes/admin.podpora.telegram-skupina'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
@@ -1812,6 +1813,11 @@ const AdminPodporaIdRoute = AdminPodporaIdRouteImport.update({
   path: '/podpora/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPodporaManualyRoute = AdminPodporaManualyRouteImport.update({
+  id: '/podpora/manualy',
+  path: '/podpora/manualy',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPodporaTelegramSkupinaRoute =
   AdminPodporaTelegramSkupinaRouteImport.update({
     id: '/podpora/telegram-skupina',
@@ -2780,6 +2786,7 @@ export interface FileRoutesByFullPath {
   '/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/podpora/$id': typeof AdminPodporaIdRoute
+  '/admin/podpora/manualy': typeof AdminPodporaManualyRoute
   '/admin/podpora/telegram-skupina': typeof AdminPodporaTelegramSkupinaRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
@@ -3164,6 +3171,7 @@ export interface FileRoutesByTo {
   '/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/podpora/$id': typeof AdminPodporaIdRoute
+  '/admin/podpora/manualy': typeof AdminPodporaManualyRoute
   '/admin/podpora/telegram-skupina': typeof AdminPodporaTelegramSkupinaRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
@@ -3559,6 +3567,7 @@ export interface FileRoutesById {
   '/_authenticated/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/podpora/$id': typeof AdminPodporaIdRoute
+  '/admin/podpora/manualy': typeof AdminPodporaManualyRoute
   '/admin/podpora/telegram-skupina': typeof AdminPodporaTelegramSkupinaRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
@@ -3954,6 +3963,7 @@ export interface FileRouteTypes {
     | '/zamestnanci/sablony'
     | '/admin/companies/$id'
     | '/admin/podpora/$id'
+    | '/admin/podpora/manualy'
     | '/admin/podpora/telegram-skupina'
     | '/admin/users/$id'
     | '/api/mobil/$operacia'
@@ -4338,6 +4348,7 @@ export interface FileRouteTypes {
     | '/zamestnanci/sablony'
     | '/admin/companies/$id'
     | '/admin/podpora/$id'
+    | '/admin/podpora/manualy'
     | '/admin/podpora/telegram-skupina'
     | '/admin/users/$id'
     | '/api/mobil/$operacia'
@@ -4732,6 +4743,7 @@ export interface FileRouteTypes {
     | '/_authenticated/zamestnanci/sablony'
     | '/admin/companies/$id'
     | '/admin/podpora/$id'
+    | '/admin/podpora/manualy'
     | '/admin/podpora/telegram-skupina'
     | '/admin/users/$id'
     | '/api/mobil/$operacia'
@@ -6885,6 +6897,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPodporaIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/podpora/manualy': {
+      id: '/admin/podpora/manualy'
+      path: '/podpora/manualy'
+      fullPath: '/admin/podpora/manualy'
+      preLoaderRoute: typeof AdminPodporaManualyRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/podpora/telegram-skupina': {
       id: '/admin/podpora/telegram-skupina'
       path: '/podpora/telegram-skupina'
@@ -8221,6 +8240,7 @@ interface AdminRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCompaniesIdRoute: typeof AdminCompaniesIdRoute
   AdminPodporaIdRoute: typeof AdminPodporaIdRoute
+  AdminPodporaManualyRoute: typeof AdminPodporaManualyRoute
   AdminPodporaTelegramSkupinaRoute: typeof AdminPodporaTelegramSkupinaRoute
   AdminUsersIdRoute: typeof AdminUsersIdRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
@@ -8250,6 +8270,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AdminCompaniesIdRoute: AdminCompaniesIdRoute,
   AdminPodporaIdRoute: AdminPodporaIdRoute,
+  AdminPodporaManualyRoute: AdminPodporaManualyRoute,
   AdminPodporaTelegramSkupinaRoute: AdminPodporaTelegramSkupinaRoute,
   AdminUsersIdRoute: AdminUsersIdRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,

@@ -13,35 +13,39 @@ export default {
     "Po registraci dostává každá firma <0>30 dní zdarma na plánu Premium</0>. Během zkušebního období můžete využívat všechny funkce bez omezení.",
   "Skúšobné obdobie sa <0>nepredlžuje automaticky</0> a nepýtame si platobné údaje vopred.":
     "Zkušební období se <0>neprodlužuje automaticky</0> a platební údaje předem nepožadujeme.",
-  "Automatické obnovovanie": "Automatické obnovování",
-  "Po aktivácii plateného plánu sa predplatné obnovuje <0>každý mesiac</0> v deň aktivácie. Karta sa strhne automaticky cez GoPay.":
-    "Po aktivaci placeného plánu se předplatné obnovuje <0>každý měsíc</0> v den aktivace. Platba se z karty strhne automaticky přes GoPay.",
-  "3 dni pred obnovou vám pošleme pripomienku e-mailom.":
-    "3 dny před obnovou vám pošleme připomínku e-mailem.",
-  "GoPay platba predplatného": "Platba předplatného přes GoPay",
-  "Predplatné Faktera platíte cez <0>GoPay opakovanú platbu</0>. Po prvej úspešnej platbe sa kartové údaje uložia priamo u GoPay (Faktero ich nikdy nevidí).":
-    "Předplatné Faktera platíte přes <0>opakovanou platbu GoPay</0>. Po první úspěšné platbě se údaje o kartě uloží přímo u GoPay (Faktero je nikdy nevidí).",
-  "Daňový doklad za predplatné nájdete v sekcii <0>Predplatné</0>.":
-    "Daňový doklad za předplatné najdete v sekci <0>Předplatné</0>.",
+  "Obnovovanie predplatného": "Obnovování předplatného",
+  "Platený plán platí <0>mesiac odo dňa platby</0>. Automatické strhávanie z karty platobná brána GoPay zatiaľ nemá zapnuté, takže sa nič nestrhne samo.":
+    "Placený plán platí <0>měsíc ode dne platby</0>. Automatické strhávání z karty platební brána GoPay zatím nemá zapnuté, takže se nic nestrhne samo.",
+  "<0>7 dní pred koncom obdobia</0> vám pošleme e-mail. Ďalší mesiac zaplatíte v sekcii <1>Predplatné</1> tlačidlom <2>Aktivovať plán</2>.":
+    "<0>7 dní před koncem období</0> vám pošleme e-mail. Další měsíc zaplatíte v sekci <1>Předplatné</1> tlačítkem <2>Aktivovat tarif</2>.",
+  "Keď platba nepríde ani 3 dni po konci obdobia, predplatné sa označí ako <0>Po splatnosti</0>. Faktero funguje ďalej a doklady aj údaje vám ostanú prístupné.":
+    "Když platba nepřijde ani 3 dny po konci období, předplatné se označí jako <0>Po splatnosti</0>. Faktero funguje dál a doklady i údaje vám zůstanou přístupné.",
+  "Ak je pri pláne uvedená najbližšia platba z uloženej karty, strhne sa sama — aj vtedy vás 7 dní vopred upozorníme e-mailom.":
+    "Pokud je u plánu uvedena nejbližší platba z uložené karty, strhne se sama — i tehdy vás 7 dní předem upozorníme e-mailem.",
+  "Platba cez GoPay": "Platba přes GoPay",
+  "Predplatné platíte kartou (Visa, Mastercard) cez platobnú bránu <0>GoPay</0>. Údaje o karte zadávate len na stránke GoPay — Faktero ich nikdy nevidí.":
+    "Předplatné platíte kartou (Visa, Mastercard) přes platební bránu <0>GoPay</0>. Údaje o kartě zadáváte jen na stránce GoPay — Faktero je nikdy nevidí.",
+  "Daňový doklad za predplatné vám príde e-mailom hneď po zaplatení. Prehľad platieb je v sekcii <0>Predplatné</0> v časti <1>História platieb</1>.":
+    "Daňový doklad za předplatné vám přijde e-mailem hned po zaplacení. Přehled plateb je v sekci <0>Předplatné</0> v části <1>Historie plateb</1>.",
   "Zmena plánu": "Změna plánu",
-  "Plán môžete kedykoľvek zmeniť v sekcii <0>Predplatné</0>.":
-    "Plán můžete kdykoli změnit v sekci <0>Předplatné</0>.",
-  "<0>Prechod na vyšší plán</0> sa aktivuje okamžite, rozdiel sa pripočíta pomerne.":
-    "<0>Přechod na vyšší plán</0> se aktivuje okamžitě, rozdíl se připočte poměrně.",
-  "<0>Prechod na nižší plán</0> sa aktivuje od ďalšieho fakturačného obdobia.":
-    "<0>Přechod na nižší plán</0> se aktivuje od dalšího fakturačního období.",
+  "Plán zmeníte v sekcii <0>Predplatné</0> — pri zvolenom pláne kliknite na <1>Aktivovať plán</1> a zaplaťte ho cez GoPay. Plán môže meniť majiteľ alebo administrátor firmy.":
+    "Plán změníte v sekci <0>Předplatné</0> — u zvoleného plánu klikněte na <1>Aktivovat tarif</1> a zaplaťte ho přes GoPay. Plán může měnit vlastník nebo administrátor firmy.",
+  "Nový plán sa zapne <0>hneď po potvrdení platby</0> a mesačné obdobie začne plynúť odo dňa platby.":
+    "Nový plán se zapne <0>hned po potvrzení platby</0> a měsíční období začne běžet ode dne platby.",
+  "Platí sa mesačná cena zvoleného plánu; zvyšok predchádzajúceho obdobia sa pomerne neprepočítava.":
+    "Platí se měsíční cena zvoleného plánu; zbytek předchozího období se poměrně nepřepočítává.",
   "Zrušenie predplatného": "Zrušení předplatného",
-  "V Nastaveniach predplatného kliknite na <0>Zrušiť predplatné</0>. Zostáva vám aktívne do konca už zaplateného obdobia, potom prejde do režimu <1>len na čítanie</1>.":
-    "V Nastavení předplatného klikněte na <0>Zrušit předplatné</0>. Zůstane vám aktivní do konce již zaplaceného období, poté přejde do režimu <1>jen pro čtení</1>.",
+  "V sekcii <0>Predplatné</0> kliknite na <1>Zrušiť predplatné</1> (môže majiteľ alebo administrátor firmy). Do konca zaplateného obdobia funguje všetko ako doteraz a nič ďalšie sa už nestrhne.":
+    "V sekci <0>Předplatné</0> klikněte na <1>Zrušit předplatné</1> (může vlastník nebo administrátor firmy). Do konce zaplaceného období funguje vše jako dosud a nic dalšího se už nestrhne.",
   "Vaše dáta sa <0>neodstránia</0> — kedykoľvek sa môžete vrátiť a obnoviť plán.":
     "Vaše data se <0>neodstraní</0> — kdykoli se můžete vrátit a obnovit plán.",
   "Čo sa stane po skončení skúšobného obdobia": "Co se stane po skončení zkušebního období",
   "Ak si nevyberiete platený plán do uplynutia 30 dní:":
     "Pokud si nevyberete placený plán do uplynutí 30 dní:",
-  "Účet <0>automaticky prejde na plán Starter</0> — aplikácia zostáva plne funkčná.":
-    "Účet <0>automaticky přejde na plán Starter</0> — aplikace zůstává plně funkční.",
-  "Prémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si nezvolíte Premium.":
-    "Prémiové funkce (API, webhooky, import ze SuperFaktúry, audit log) se vypnou, dokud si nezvolíte Premium.",
+  "Účet <0>automaticky prejde na bezplatný plán Starter</0> — nič sa neplatí a aplikácia zostáva funkčná.":
+    "Účet <0>automaticky přejde na bezplatný plán Starter</0> — nic se neplatí a aplikace zůstává funkční.",
+  "Platia limity plánu Starter podľa <0>cenníka</0> — napríklad bez API a webhookov a najviac 2 používatelia.":
+    "Platí limity plánu Starter podle <0>ceníku</0> — například bez API a webhooků a nejvýše 2 uživatelé.",
   "3 dni pred koncom skúšobného obdobia vám pošleme pripomienku e-mailom.":
     "3 dny před koncem zkušebního období vám pošleme připomínku e-mailem.",
   "Kedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili.":

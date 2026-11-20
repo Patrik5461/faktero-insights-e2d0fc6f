@@ -524,8 +524,10 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/importy/doklady">Účtovníctvo → Import prijatých dokladov</Link> nahráte
-          export z Doklado, Pohody alebo tabuľku. Najpresnejšie je nahrať naraz{" "}
+          V <Link to="/importy/doklady">Účtovníctvo → Účtovné importy</Link> zvoľte zdroj{" "}
+          <em>Prijaté doklady (Doklado, skeny)</em> (tú istú stránku otvorí aj tlačidlo{" "}
+          <em>Import z Doklado</em> v Doklady → Bločky) a nahrajte export z Doklado, Pohody alebo
+          tabuľku. Najpresnejšie je nahrať naraz{" "}
           <strong>XML (Pohoda)</strong> a <strong>ZIP s PDF</strong>: údaje sa vezmú z XML a skeny
           sa priradia k dokladom podľa čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj{" "}
           <strong>CSV/XLSX</strong> a samotný ZIP so skenmi — ten prečíta AI.

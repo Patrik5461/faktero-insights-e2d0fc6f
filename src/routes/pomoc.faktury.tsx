@@ -305,13 +305,14 @@ const sections: HelpSection[] = [
         <p>
           Na detaile vystavenej faktúry kliknite na <strong>Vystaviť dobropis</strong>. Otvorí sa
           nový doklad typu Dobropis s rovnakým odberateľom, menou a režimom DPH, s väzbou na pôvodnú
-          faktúru a s jej položkami <strong>so záporným množstvom</strong>.
+          faktúru a s jej položkami.
         </p>
         <p>
           Nechajte len to, čo sa vracia alebo zľavuje — ostatné riadky zmažte, prípadne upravte
-          množstvo či cenu. Suma dobropisu musí byť <strong>záporná</strong>; kladný doklad by
-          eFaktúra poslala ako ťarchopis (zvýšenie). Na PDF je číslo opravovanej faktúry a v Pohode
-          aj vo výkazoch k DPH sa oba doklady spárujú.
+          množstvo či cenu. Množstvá a ceny zadávajte <strong>kladne</strong> — že ide o zníženie,
+          hovorí typ dokladu a mínus doplní Faktero samo pri uložení. Aj na PDF a v zozname
+          dobropisov sú sumy kladné. Na PDF je číslo opravovanej faktúry a v Pohode aj vo výkazoch
+          k DPH sa oba doklady spárujú.
         </p>
         <p>
           Alebo v zozname{" "}
@@ -320,7 +321,7 @@ const sections: HelpSection[] = [
           </Link>{" "}
           tlačidlom <strong>Vystaviť dobropis</strong>. V rámčeku <em>Opravovaná faktúra</em>{" "}
           zadajte jej <strong>číslo alebo variabilný symbol</strong> a kliknite na Priradiť (prázdny
-          dobropis si rovno vezme jej položky so mínusom), alebo ju vyberte zo zoznamu. Keď väzbu
+          dobropis si rovno vezme jej položky), alebo ju vyberte zo zoznamu. Keď väzbu
           nevyplníte, vznikne <strong>samostatný dobropis</strong> — napríklad zľava za celé
           obdobie.
         </p>
@@ -628,11 +629,11 @@ const sections: HelpSection[] = [
         <ul>
           <li>Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.</li>
           <li>
-            Vygenerovaná faktúra môže byť automaticky odoslaná e-mailom, ak je zapnuté{" "}
-            <em>Auto-send</em>.
+            Vygenerovaná faktúra sa odberateľovi <strong>sama neodošle</strong> — nájdete ju medzi
+            vystavenými a odošlete ju e-mailom alebo eFaktúrou ako každú inú.
           </li>
           <li>
-            História generovania je v záložke <em>Logy</em> pri danom opakovaní.
+            História vystavovania je v časti <em>História behov</em> na detaile šablóny.
           </li>
         </ul>
       </>

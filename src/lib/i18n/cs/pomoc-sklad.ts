@@ -8,8 +8,8 @@ export default {
   "Čo sklad vie, ako sa v ňom pracuje a kde sa najčastejšie robia chyby. Sklad je prepojený s faktúrami, zákazkami aj objednávkami — tovar sa odpisuje sám.":
     "Co sklad umí, jak se v něm pracuje a kde se nejčastěji dělají chyby. Sklad je propojený s fakturami, zakázkami i objednávkami — zboží se odepisuje samo.",
   "Čo sklad robí": "Co sklad dělá",
-  "Sklad vo Faktere odpovedá na tri otázky: <0>čo mám</0>, <1>koľko to stálo</1> a <2>kam sa to podelo</2>. Nie je to samostatná evidencia vedľa fakturácie — je to tá istá evidencia. Keď vystavíte faktúru na skladovú položku, tovar sa odpíše sám.":
-    "Sklad ve Fakteru odpovídá na tři otázky: <0>co mám</0>, <1>kolik to stálo</1> a <2>kam se to podělo</2>. Není to samostatná evidence vedle fakturace — je to tatáž evidence. Když vystavíte fakturu na skladovou položku, zboží se odepíše samo.",
+  "Sklad vo Faktere odpovedá na tri otázky: <0>čo mám</0>, <1>koľko to stálo</1> a <2>kam sa to podelo</2>. Nie je to samostatná evidencia vedľa fakturácie — je to tá istá evidencia. Keď faktúru so skladovou položkou odošlete alebo označíte ako uhradenú, tovar sa odpíše sám.":
+    "Sklad ve Fakteru odpovídá na tři otázky: <0>co mám</0>, <1>kolik to stálo</1> a <2>kam se to podělo</2>. Není to samostatná evidence vedle fakturace — je to tatáž evidence. Když fakturu se skladovou položkou odešlete nebo označíte jako uhrazenou, zboží se odepíše samo.",
   "Konkrétne sklad vie:": "Konkrétně sklad umí:",
   "viesť skladové karty so stavom, nákupnou a predajnou cenou,":
     "vést skladové karty se stavem, nákupní a prodejní cenou,",

@@ -60,3 +60,6 @@ packages/drive-detector/android/build/
 
 # Kľúč servisného účtu Google Play (leží mimo repa v ~/play-api)
 play-api/
+
+# Interné manuály podpory — len na serveri (~/faktero-podpora-manualy), repozitár je verejný
+docs/podpora/

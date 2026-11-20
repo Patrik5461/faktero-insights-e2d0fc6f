@@ -99,7 +99,7 @@
     },
     {
      "nadpis": "Oznámenia",
-     "text": "<>\nNa iPhone appka posiela upozornenia — napríklad na faktúry po splatnosti. Či registrácia\nnaozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá\nzopakovať.\nNa Androide oznámenia zatiaľ nechodia. Appka je hotová, ale chýba jej\nnapojenie na doručovaciu službu Googlu. Všetko ostatné na Androide funguje."
+     "text": "<>\nAppka posiela upozornenia na iPhone aj na Androide — napríklad na faktúry po splatnosti.\nČi registrácia naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým\nsa dá zopakovať.\nKeď upozornenia nechodia , skontrolujte, či ich má appka povolené v\nnastaveniach telefónu, a v stave oznámení registráciu zopakujte."
     },
     {
      "nadpis": "Jazyky",
@@ -279,7 +279,7 @@
     },
     {
      "nadpis": "Prechod z Doklado — import prijatých dokladov",
-     "text": "<>\nV Účtovníctvo → Import prijatých dokladov (/importy/doklady) nahráte\nexport z Doklado, Pohody alebo tabuľku. Najpresnejšie je nahrať naraz\nXML (Pohoda) a ZIP s PDF : údaje sa vezmú z XML a skeny\nsa priradia k dokladom podľa čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj\nCSV/XLSX a samotný ZIP so skenmi — ten prečíta AI.\nPrijaté faktúry pôjdu medzi prijaté faktúry, bločky do Dokladov a listy, predpisy či\nexekúcie do Iných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav\n(napríklad „Odovzdané účtovníkovi“ pre doklady, ktoré sú už zaúčtované). Doklady, ktoré vo\nFakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky sa\ndo pokladne započítajú len vtedy, keď to zaškrtnete."
+     "text": "<>\nV Účtovníctvo → Účtovné importy (/importy/doklady) zvoľte zdroj\nPrijaté doklady (Doklado, skeny) (tú istú stránku otvorí aj tlačidlo\nImport z Doklado v Doklady → Bločky) a nahrajte export z Doklado, Pohody alebo\ntabuľku. Najpresnejšie je nahrať naraz\nXML (Pohoda) a ZIP s PDF : údaje sa vezmú z XML a skeny\nsa priradia k dokladom podľa čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj\nCSV/XLSX a samotný ZIP so skenmi — ten prečíta AI.\nPrijaté faktúry pôjdu medzi prijaté faktúry, bločky do Dokladov a listy, predpisy či\nexekúcie do Iných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav\n(napríklad „Odovzdané účtovníkovi“ pre doklady, ktoré sú už zaúčtované). Doklady, ktoré vo\nFakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky sa\ndo pokladne započítajú len vtedy, keď to zaškrtnete."
     },
     {
      "nadpis": "Zoznam, filtre a odovzdanie účtovníčke",
@@ -503,7 +503,7 @@
     },
     {
      "nadpis": "Dobropis",
-     "text": "<>\nNa detaile vystavenej faktúry kliknite na Vystaviť dobropis . Otvorí sa\nnový doklad typu Dobropis s rovnakým odberateľom, menou a režimom DPH, s väzbou na pôvodnú\nfaktúru a s jej položkami so záporným množstvom .\nNechajte len to, čo sa vracia alebo zľavuje — ostatné riadky zmažte, prípadne upravte\nmnožstvo či cenu. Suma dobropisu musí byť záporná ; kladný doklad by\neFaktúra poslala ako ťarchopis (zvýšenie). Na PDF je číslo opravovanej faktúry a v Pohode\naj vo výkazoch k DPH sa oba doklady spárujú.\nAlebo v zozname\nDobropisy\n(/faktury)\ntlačidlom Vystaviť dobropis . V rámčeku Opravovaná faktúra\nzadajte jej číslo alebo variabilný symbol a kliknite na Priradiť (prázdny\ndobropis si rovno vezme jej položky so mínusom), alebo ju vyberte zo zoznamu. Keď väzbu\nnevyplníte, vznikne samostatný dobropis — napríklad zľava za celé\nobdobie."
+     "text": "<>\nNa detaile vystavenej faktúry kliknite na Vystaviť dobropis . Otvorí sa\nnový doklad typu Dobropis s rovnakým odberateľom, menou a režimom DPH, s väzbou na pôvodnú\nfaktúru a s jej položkami.\nNechajte len to, čo sa vracia alebo zľavuje — ostatné riadky zmažte, prípadne upravte\nmnožstvo či cenu. Množstvá a ceny zadávajte kladne — že ide o zníženie,\nhovorí typ dokladu a mínus doplní Faktero samo pri uložení. Aj na PDF a v zozname\ndobropisov sú sumy kladné. Na PDF je číslo opravovanej faktúry a v Pohode aj vo výkazoch\nk DPH sa oba doklady spárujú.\nAlebo v zozname\nDobropisy\n(/faktury)\ntlačidlom Vystaviť dobropis . V rámčeku Opravovaná faktúra\nzadajte jej číslo alebo variabilný symbol a kliknite na Priradiť (prázdny\ndobropis si rovno vezme jej položky), alebo ju vyberte zo zoznamu. Keď väzbu\nnevyplníte, vznikne samostatný dobropis — napríklad zľava za celé\nobdobie."
     },
     {
      "nadpis": "Ťarchopis — dodatočné zvýšenie ceny",
@@ -547,7 +547,7 @@
     },
     {
      "nadpis": "Ako fungujú opakované faktúry",
-     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako\nbežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec\nSpolu s DPH , do ktorého sa dá napísať dohodnutá suma a cena bez dane sa dopočíta.\nNázov šablóny vidíte len vy v zozname — na faktúre nie je. Čo sa\nfakturuje, povie text nad položkami : je povinný a dostane ho každá\nfaktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na otvorenej\nšablóne.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra môže byť automaticky odoslaná e-mailom, ak je zapnuté\nAuto-send .\n-\nHistória generovania je v záložke Logy pri danom opakovaní."
+     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako\nbežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec\nSpolu s DPH , do ktorého sa dá napísať dohodnutá suma a cena bez dane sa dopočíta.\nNázov šablóny vidíte len vy v zozname — na faktúre nie je. Čo sa\nfakturuje, povie text nad položkami : je povinný a dostane ho každá\nfaktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na otvorenej\nšablóne.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra sa odberateľovi sama neodošle — nájdete ju medzi\nvystavenými a odošlete ju e-mailom alebo eFaktúrou ako každú inú.\n-\nHistória vystavovania je v časti História behov na detaile šablóny."
     },
     {
      "nadpis": "Fakturovanie v mobile bez signálu",
@@ -1112,24 +1112,24 @@
      "text": "<>\nPo registrácii dostáva každá firma 30 dní zadarmo na pláne Premium . Počas\nskúšobného obdobia môžete využívať všetky funkcie bez obmedzenia.\nSkúšobné obdobie sa nepredlžuje automaticky a nepýtame si platobné údaje\nvopred."
     },
     {
-     "nadpis": "Automatické obnovovanie",
-     "text": "<>\nPo aktivácii plateného plánu sa predplatné obnovuje každý mesiac v deň\naktivácie. Karta sa strhne automaticky cez GoPay.\n3 dni pred obnovou vám pošleme pripomienku e-mailom."
+     "nadpis": "Obnovovanie predplatného",
+     "text": "<>\nPlatený plán platí mesiac odo dňa platby . Automatické strhávanie z karty\nplatobná brána GoPay zatiaľ nemá zapnuté, takže sa nič nestrhne samo.\n7 dní pred koncom obdobia vám pošleme e-mail. Ďalší mesiac zaplatíte v\nsekcii Predplatné (/predplatne) tlačidlom Aktivovať plán .\nKeď platba nepríde ani 3 dni po konci obdobia, predplatné sa označí ako\nPo splatnosti . Faktero funguje ďalej a doklady aj údaje vám ostanú prístupné.\nAk je pri pláne uvedená najbližšia platba z uloženej karty, strhne sa sama — aj vtedy vás\n7 dní vopred upozorníme e-mailom."
     },
     {
-     "nadpis": "GoPay platba predplatného",
-     "text": "<>\nPredplatné Faktera platíte cez GoPay opakovanú platbu . Po prvej úspešnej\nplatbe sa kartové údaje uložia priamo u GoPay (Faktero ich nikdy nevidí).\nDaňový doklad za predplatné nájdete v sekcii Predplatné (/predplatne)."
+     "nadpis": "Platba cez GoPay",
+     "text": "<>\nPredplatné platíte kartou (Visa, Mastercard) cez platobnú bránu GoPay .\nÚdaje o karte zadávate len na stránke GoPay — Faktero ich nikdy nevidí.\nDaňový doklad za predplatné vám príde e-mailom hneď po zaplatení. Prehľad platieb je v\nsekcii Predplatné (/predplatne) v časti História platieb ."
     },
     {
      "nadpis": "Zmena plánu",
-     "text": "<>\nPlán môžete kedykoľvek zmeniť v sekcii Predplatné (/predplatne).\n-\nPrechod na vyšší plán sa aktivuje okamžite, rozdiel sa pripočíta\npomerne.\n-\nPrechod na nižší plán sa aktivuje od ďalšieho fakturačného obdobia."
+     "text": "<>\nPlán zmeníte v sekcii Predplatné (/predplatne) — pri zvolenom pláne\nkliknite na Aktivovať plán a zaplaťte ho cez GoPay. Plán môže meniť\nmajiteľ alebo administrátor firmy.\n-\nNový plán sa zapne hneď po potvrdení platby a mesačné obdobie začne\nplynúť odo dňa platby.\n-\nPlatí sa mesačná cena zvoleného plánu; zvyšok predchádzajúceho obdobia sa pomerne\nneprepočítava."
     },
     {
      "nadpis": "Zrušenie predplatného",
-     "text": "<>\nV Nastaveniach predplatného kliknite na Zrušiť predplatné . Zostáva vám\naktívne do konca už zaplateného obdobia, potom prejde do režimu len na čítanie .\nVaše dáta sa neodstránia — kedykoľvek sa môžete vrátiť a obnoviť plán."
+     "text": "<>\nV sekcii Predplatné (/predplatne) kliknite na\nZrušiť predplatné (môže majiteľ alebo administrátor firmy). Do konca\nzaplateného obdobia funguje všetko ako doteraz a nič ďalšie sa už nestrhne.\nVaše dáta sa neodstránia — kedykoľvek sa môžete vrátiť a obnoviť plán."
     },
     {
      "nadpis": "Čo sa stane po skončení skúšobného obdobia",
-     "text": "<>\nAk si nevyberiete platený plán do uplynutia 30 dní:\n-\nÚčet automaticky prejde na plán Starter — aplikácia zostáva plne\nfunkčná.\n-\nPrémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si\nnezvolíte Premium.\n- 3 dni pred koncom skúšobného obdobia vám pošleme pripomienku e-mailom.\n-\nKedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili."
+     "text": "<>\nAk si nevyberiete platený plán do uplynutia 30 dní:\n-\nÚčet automaticky prejde na bezplatný plán Starter — nič sa neplatí a\naplikácia zostáva funkčná.\n-\nPlatia limity plánu Starter podľa cenníka (/cennik) — napríklad bez API\na webhookov a najviac 2 používatelia.\n- 3 dni pred koncom skúšobného obdobia vám pošleme pripomienku e-mailom.\n-\nKedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili."
     }
    ]
   },
@@ -1297,7 +1297,7 @@
    "sekcie": [
     {
      "nadpis": "Čo sklad robí",
-     "text": "<>\nSklad vo Faktere odpovedá na tri otázky: čo mám ,\nkoľko to stálo a kam sa to podelo . Nie je to samostatná\nevidencia vedľa fakturácie — je to tá istá evidencia. Keď vystavíte faktúru na skladovú\npoložku, tovar sa odpíše sám.\nKonkrétne sklad vie:\n- viesť skladové karty so stavom, nákupnou a predajnou cenou,\n-\nevidovať príjem, výdaj, opravu a inventúrny rozdiel — každý pohyb s dátumom, cenou a\npoznámkou,\n-\npočítať váženú nákupnú cenu , takže viete, akú maržu ste na predaji\nnaozaj dosiahli,\n- odpisovať tovar automaticky pri odoslaní faktúry a vracať ho pri dobropise,\n- rezervovať tovar na ponuku alebo prijatú objednávku,\n- presúvať tovar medzi viacerými skladmi,\n- vystavovať dodacie listy,\n- strážiť minimálne zásoby a pripraviť objednávku u dodávateľa,\n- robiť inventúru a rozdiel zaúčtovať,\n- priradiť výdaj na zákazku, aby bolo vidieť skutočný náklad práce."
+     "text": "<>\nSklad vo Faktere odpovedá na tri otázky: čo mám ,\nkoľko to stálo a kam sa to podelo . Nie je to samostatná\nevidencia vedľa fakturácie — je to tá istá evidencia. Keď faktúru so skladovou položkou\nodošlete alebo označíte ako uhradenú, tovar sa odpíše sám.\nKonkrétne sklad vie:\n- viesť skladové karty so stavom, nákupnou a predajnou cenou,\n-\nevidovať príjem, výdaj, opravu a inventúrny rozdiel — každý pohyb s dátumom, cenou a\npoznámkou,\n-\npočítať váženú nákupnú cenu , takže viete, akú maržu ste na predaji\nnaozaj dosiahli,\n- odpisovať tovar automaticky pri odoslaní faktúry a vracať ho pri dobropise,\n- rezervovať tovar na ponuku alebo prijatú objednávku,\n- presúvať tovar medzi viacerými skladmi,\n- vystavovať dodacie listy,\n- strážiť minimálne zásoby a pripraviť objednávku u dodávateľa,\n- robiť inventúru a rozdiel zaúčtovať,\n- priradiť výdaj na zákazku, aby bolo vidieť skutočný náklad práce."
     },
     {
      "nadpis": "Skladové karty a sledovanie stavu",

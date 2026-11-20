@@ -26,11 +26,13 @@ import {
   Send,
   MailWarning,
   Megaphone,
+  BookOpen,
 } from "lucide-react";
 
 const NAV = [
   { to: "/admin", label: "Prehľad", icon: LayoutDashboard, exact: true },
   { to: "/admin/podpora", label: "Podpora", icon: LifeBuoy },
+  { to: "/admin/podpora/manualy", label: "Manuály podpory", icon: BookOpen },
   { to: "/admin/efaktura", label: "eFaktúra", icon: Send },
   { to: "/admin/odosielanie", label: "Odosielanie e-mailov", icon: MailWarning },
   { to: "/admin/oznamy", label: "Oznamy o aktualizácii", icon: Megaphone },
@@ -51,9 +53,15 @@ const NAV = [
   { to: "/admin/partneri", label: "Partneri", icon: Handshake },
 ];
 
-function isActive(pathname: string, to: string, exact?: boolean) {
+function zodpoveda(pathname: string, to: string, exact?: boolean) {
   if (exact) return pathname === to;
   return pathname === to || pathname.startsWith(to + "/");
+}
+
+/** Aktívna je najdlhšia zodpovedajúca položka — Manuály podpory nerozsvietia aj Podporu. */
+function isActive(pathname: string, to: string, exact?: boolean) {
+  if (!zodpoveda(pathname, to, exact)) return false;
+  return !NAV.some((n) => n.to.length > to.length && zodpoveda(pathname, n.to, n.exact));
 }
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -64,7 +72,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       {/* Sidebar — desktop */}
       <aside
         aria-label="Menu administrácie"
-        className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex"
+        className="sticky top-0 hidden h-screen print:hidden! w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex"
       >
         <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
           <Logo variant="icon" />
@@ -111,7 +119,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur lg:hidden print:hidden">
           <Link to="/admin" className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground">
               F
@@ -123,7 +131,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </Link>
         </header>
         {/* Mobile nav strip */}
-        <nav className="sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border bg-card/80 px-3 py-2 backdrop-blur lg:hidden">
+        <nav className="sticky top-14 z-20 flex gap-1 overflow-x-auto border-b border-border bg-card/80 px-3 py-2 backdrop-blur lg:hidden print:hidden">
           {NAV.map((n) => {
             const active = isActive(pathname, n.to, n.exact);
             return (

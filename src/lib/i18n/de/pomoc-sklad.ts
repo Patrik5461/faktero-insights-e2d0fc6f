@@ -8,8 +8,8 @@ export default {
   "Čo sklad vie, ako sa v ňom pracuje a kde sa najčastejšie robia chyby. Sklad je prepojený s faktúrami, zákazkami aj objednávkami — tovar sa odpisuje sám.":
     "Was das Lager kann, wie man damit arbeitet und wo am häufigsten Fehler passieren. Das Lager ist mit Rechnungen, Projekten und Bestellungen verknüpft — Ware wird automatisch abgebucht.",
   "Čo sklad robí": "Was das Lager macht",
-  "Sklad vo Faktere odpovedá na tri otázky: <0>čo mám</0>, <1>koľko to stálo</1> a <2>kam sa to podelo</2>. Nie je to samostatná evidencia vedľa fakturácie — je to tá istá evidencia. Keď vystavíte faktúru na skladovú položku, tovar sa odpíše sám.":
-    "Das Lager in Faktero beantwortet drei Fragen: <0>Was habe ich</0>, <1>was hat es gekostet</1> und <2>wo ist es geblieben</2>. Es ist keine separate Erfassung neben der Fakturierung — es ist dieselbe Erfassung. Wenn Sie eine Rechnung über einen Lagerartikel ausstellen, wird die Ware automatisch abgebucht.",
+  "Sklad vo Faktere odpovedá na tri otázky: <0>čo mám</0>, <1>koľko to stálo</1> a <2>kam sa to podelo</2>. Nie je to samostatná evidencia vedľa fakturácie — je to tá istá evidencia. Keď faktúru so skladovou položkou odošlete alebo označíte ako uhradenú, tovar sa odpíše sám.":
+    "Das Lager in Faktero beantwortet drei Fragen: <0>Was habe ich</0>, <1>was hat es gekostet</1> und <2>wo ist es geblieben</2>. Es ist keine separate Erfassung neben der Fakturierung — es ist dieselbe Erfassung. Wenn Sie eine Rechnung mit einem Lagerartikel versenden oder als bezahlt markieren, wird die Ware automatisch abgebucht.",
   "Konkrétne sklad vie:": "Konkret kann das Lager:",
   "viesť skladové karty so stavom, nákupnou a predajnou cenou,":
     "Artikel mit Bestand, Einkaufs- und Verkaufspreis führen,",

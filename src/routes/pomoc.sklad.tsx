@@ -35,8 +35,8 @@ const sections: HelpSection[] = [
         <p>
           Sklad vo Faktere odpovedá na tri otázky: <strong>čo mám</strong>,{" "}
           <strong>koľko to stálo</strong> a <strong>kam sa to podelo</strong>. Nie je to samostatná
-          evidencia vedľa fakturácie — je to tá istá evidencia. Keď vystavíte faktúru na skladovú
-          položku, tovar sa odpíše sám.
+          evidencia vedľa fakturácie — je to tá istá evidencia. Keď faktúru so skladovou položkou
+          odošlete alebo označíte ako uhradenú, tovar sa odpíše sám.
         </p>
         <p>Konkrétne sklad vie:</p>
         <ul>

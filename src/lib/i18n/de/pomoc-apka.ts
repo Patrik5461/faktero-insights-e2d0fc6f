@@ -64,10 +64,10 @@ export default {
   "Odhlásenie v appke odhlási <0>len ten telefón</0>. Na počítači ostanete prihlásený — to je dôležité, ak appku len požičiavate alebo skúšate.":
     "Das Abmelden in der App meldet <0>nur dieses Smartphone</0> ab. Am Computer bleiben Sie angemeldet — wichtig, wenn Sie die App nur verleihen oder ausprobieren.",
   Oznámenia: "Benachrichtigungen",
-  "Na iPhone appka posiela upozornenia — napríklad na faktúry po splatnosti. Či registrácia naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá zopakovať.":
-    "Auf dem iPhone sendet die App Benachrichtigungen — zum Beispiel zu überfälligen Rechnungen. Ob die Registrierung tatsächlich geklappt hat, sehen Sie in der App im Benachrichtigungsstatus; dort gibt es auch eine Schaltfläche, um sie zu wiederholen.",
-  "<0>Na Androide oznámenia zatiaľ nechodia.</0> Appka je hotová, ale chýba jej napojenie na doručovaciu službu Googlu. Všetko ostatné na Androide funguje.":
-    "<0>Unter Android kommen noch keine Benachrichtigungen an.</0> Die App ist fertig, es fehlt aber die Anbindung an den Zustelldienst von Google. Alles andere funktioniert unter Android.",
+  "Appka posiela upozornenia na iPhone aj na Androide — napríklad na faktúry po splatnosti. Či registrácia naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá zopakovať.":
+    "Die App sendet Benachrichtigungen auf dem iPhone und unter Android — zum Beispiel zu überfälligen Rechnungen. Ob die Registrierung tatsächlich geklappt hat, sehen Sie in der App im Benachrichtigungsstatus; dort gibt es auch eine Schaltfläche, um sie zu wiederholen.",
+  "<0>Keď upozornenia nechodia</0>, skontrolujte, či ich má appka povolené v nastaveniach telefónu, a v stave oznámení registráciu zopakujte.":
+    "<0>Wenn keine Benachrichtigungen ankommen</0>, prüfen Sie, ob sie für die App in den Telefoneinstellungen erlaubt sind, und wiederholen Sie die Registrierung im Benachrichtigungsstatus.",
   Jazyky: "Sprachen",
   "Appka hovorí po <0>slovensky, česky, anglicky, nemecky a maďarsky</0> a jazyk si berie z telefónu. Ak je telefón v inom jazyku, zostane slovenčina. Jedinou výnimkou je obrazovka Diagnostika — tá je vždy po slovensky, pretože jej výstup čítame my.":
     "Die App spricht <0>Slowakisch, Tschechisch, Englisch, Deutsch und Ungarisch</0> und übernimmt die Sprache vom Smartphone. Ist das Smartphone auf eine andere Sprache eingestellt, bleibt Slowakisch. Die einzige Ausnahme ist der Bildschirm Diagnose — er ist immer auf Slowakisch, weil wir seine Ausgabe lesen.",

@@ -71,12 +71,12 @@ export default {
     "<0>Nemusíte si pamatovat, že záloha existuje.</0> Když na faktuře vyberete odběratele, který má zaplacenou a ještě nezúčtovanou zálohu, Faktero to napíše nad položkami a jedním tlačítkem ji odečte. Bez odpočtu by zákazník totéž plnění zaplatil podruhé.",
   "Na jednej faktúre môže byť <0>aj viac záloh</0> — pri etapovej dodávke sa pripoja postupne a doklad ukáže každú zvlášť aj ich súčet. Každá záloha sa dá minúť len raz; keď z nej odpočítate len časť, zvyšok sa ponúkne pri ďalšej faktúre.":
     "Na jedné faktuře může být <0>i více záloh</0> — u etapové dodávky se připojí postupně a doklad ukáže každou zvlášť i jejich součet. Každou zálohu lze použít jen jednou; když z ní odečtete jen část, zbytek se nabídne u další faktury.",
-  "Na detaile vystavenej faktúry kliknite na <0>Vystaviť dobropis</0>. Otvorí sa nový doklad typu Dobropis s rovnakým odberateľom, menou a režimom DPH, s väzbou na pôvodnú faktúru a s jej položkami <1>so záporným množstvom</1>.":
-    "Na detailu vystavené faktury klikněte na <0>Vystavit dobropis</0>. Otevře se nový doklad typu Dobropis se stejným odběratelem, měnou a režimem DPH, s vazbou na původní fakturu a s jejími položkami <1>se záporným množstvím</1>.",
-  "Nechajte len to, čo sa vracia alebo zľavuje — ostatné riadky zmažte, prípadne upravte množstvo či cenu. Suma dobropisu musí byť <0>záporná</0>; kladný doklad by eFaktúra poslala ako ťarchopis (zvýšenie). Na PDF je číslo opravovanej faktúry a v Pohode aj vo výkazoch k DPH sa oba doklady spárujú.":
-    "Nechte jen to, co se vrací nebo zlevňuje — ostatní řádky smažte, případně upravte množství či cenu. Částka dobropisu musí být <0>záporná</0>; kladný doklad by eFaktura poslala jako vrubopis (zvýšení). Na PDF je číslo opravované faktury a v Pohodě i ve výkazech k DPH se oba doklady spárují.",
-  "Alebo v zozname <0>Dobropisy</0> tlačidlom <1>Vystaviť dobropis</1>. V rámčeku <2>Opravovaná faktúra</2> zadajte jej <3>číslo alebo variabilný symbol</3> a kliknite na Priradiť (prázdny dobropis si rovno vezme jej položky so mínusom), alebo ju vyberte zo zoznamu. Keď väzbu nevyplníte, vznikne <4>samostatný dobropis</4> — napríklad zľava za celé obdobie.":
-    "Nebo v seznamu <0>Dobropisy</0> tlačítkem <1>Vystavit dobropis</1>. V rámečku <2>Opravovaná faktura</2> zadejte její <3>číslo nebo variabilní symbol</3> a klikněte na Přiřadit (prázdný dobropis si rovnou vezme její položky s mínusem), nebo ji vyberte ze seznamu. Když vazbu nevyplníte, vznikne <4>samostatný dobropis</4> — například sleva za celé období.",
+  "Na detaile vystavenej faktúry kliknite na <0>Vystaviť dobropis</0>. Otvorí sa nový doklad typu Dobropis s rovnakým odberateľom, menou a režimom DPH, s väzbou na pôvodnú faktúru a s jej položkami.":
+    "Na detailu vystavené faktury klikněte na <0>Vystavit dobropis</0>. Otevře se nový doklad typu Dobropis se stejným odběratelem, měnou a režimem DPH, s vazbou na původní fakturu a s jejími položkami.",
+  "Nechajte len to, čo sa vracia alebo zľavuje — ostatné riadky zmažte, prípadne upravte množstvo či cenu. Množstvá a ceny zadávajte <0>kladne</0> — že ide o zníženie, hovorí typ dokladu a mínus doplní Faktero samo pri uložení. Aj na PDF a v zozname dobropisov sú sumy kladné. Na PDF je číslo opravovanej faktúry a v Pohode aj vo výkazoch k DPH sa oba doklady spárujú.":
+    "Nechte jen to, co se vrací nebo zlevňuje — ostatní řádky smažte, případně upravte množství či cenu. Množství a ceny zadávejte <0>kladně</0> — že jde o snížení, říká typ dokladu a mínus doplní Faktero samo při uložení. I na PDF a v seznamu dobropisů jsou částky kladné. Na PDF je číslo opravované faktury a v Pohodě i ve výkazech k DPH se oba doklady spárují.",
+  "Alebo v zozname <0>Dobropisy</0> tlačidlom <1>Vystaviť dobropis</1>. V rámčeku <2>Opravovaná faktúra</2> zadajte jej <3>číslo alebo variabilný symbol</3> a kliknite na Priradiť (prázdny dobropis si rovno vezme jej položky), alebo ju vyberte zo zoznamu. Keď väzbu nevyplníte, vznikne <4>samostatný dobropis</4> — napríklad zľava za celé obdobie.":
+    "Nebo v seznamu <0>Dobropisy</0> tlačítkem <1>Vystavit dobropis</1>. V rámečku <2>Opravovaná faktura</2> zadejte její <3>číslo nebo variabilní symbol</3> a klikněte na Přiřadit (prázdný dobropis si rovnou vezme její položky), nebo ji vyberte ze seznamu. Když vazbu nevyplníte, vznikne <4>samostatný dobropis</4> — například sleva za celé období.",
   "Ťarchopis — dodatočné zvýšenie ceny": "Vrubopis — dodatečné zvýšení ceny",
   "Keď sa po vystavení faktúry cena <0>zvýši</0> (doúčtovanie, chyba v cene, dohodnutý príplatok), vystavte ťarchopis: na detaile faktúry tlačidlo <1>Vystaviť ťarchopis</1>. Otvorí sa doklad s rovnakým odberateľom, menou a režimom DPH a s väzbou na pôvodnú faktúru.":
     "Když se po vystavení faktury cena <0>zvýší</0> (doúčtování, chyba v ceně, dohodnutý příplatek), vystavte vrubopis: na detailu faktury tlačítko <1>Vystavit vrubopis</1>. Otevře se doklad se stejným odběratelem, měnou a režimem DPH a s vazbou na původní fakturu.",
@@ -159,10 +159,10 @@ export default {
     "<0>Název šablony</0> vidíte jen vy v seznamu — na faktuře není. Co se fakturuje, řekne <1>text nad položkami</1>: je povinný a dostane ho každá faktura z této šablony, takže paušál řekne, za co je. Lze ho změnit i později na otevřené šabloně.",
   "Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.":
     "Faktero každý den ráno generuje faktury, které mají připadnout na daný den.",
-  "Vygenerovaná faktúra môže byť automaticky odoslaná e-mailom, ak je zapnuté <0>Auto-send</0>.":
-    "Vygenerovaná faktura může být automaticky odeslána e-mailem, pokud je zapnuté <0>Auto-send</0>.",
-  "História generovania je v záložke <0>Logy</0> pri danom opakovaní.":
-    "Historie generování je v záložce <0>Logy</0> u daného opakování.",
+  "Vygenerovaná faktúra sa odberateľovi <0>sama neodošle</0> — nájdete ju medzi vystavenými a odošlete ju e-mailom alebo eFaktúrou ako každú inú.":
+    "Vygenerovaná faktura se odběrateli <0>sama neodešle</0> — najdete ji mezi vystavenými a odešlete ji e-mailem nebo eFakturou jako kteroukoli jinou.",
+  "História vystavovania je v časti <0>História behov</0> na detaile šablóny.":
+    "Historie vystavování je v části <0>Historie běhů</0> na detailu šablony.",
   "Fakturovanie v mobile bez signálu": "Fakturace v mobilu bez signálu",
   "V mobilnej aplikácii sa faktúra dá vystaviť aj bez internetu. Sú na to dve cesty a líšia sa v tom, čo zákazník dostane priamo na mieste.":
     "V mobilní aplikaci lze fakturu vystavit i bez internetu. Jsou na to dvě cesty a liší se v tom, co zákazník dostane přímo na místě.",

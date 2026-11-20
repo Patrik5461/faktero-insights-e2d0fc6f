@@ -63,10 +63,10 @@ export default {
   "Odhlásenie v appke odhlási <0>len ten telefón</0>. Na počítači ostanete prihlásený — to je dôležité, ak appku len požičiavate alebo skúšate.":
     "Odhlášení v appce odhlásí <0>jen ten telefon</0>. Na počítači zůstanete přihlášeni — to je důležité, pokud appku jen půjčujete nebo zkoušíte.",
   Oznámenia: "Oznámení",
-  "Na iPhone appka posiela upozornenia — napríklad na faktúry po splatnosti. Či registrácia naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá zopakovať.":
-    "Na iPhonu appka posílá upozornění — například na faktury po splatnosti. Zda registrace opravdu proběhla, uvidíte v appce ve stavu oznámení; je tam i tlačítko, kterým ji lze zopakovat.",
-  "<0>Na Androide oznámenia zatiaľ nechodia.</0> Appka je hotová, ale chýba jej napojenie na doručovaciu službu Googlu. Všetko ostatné na Androide funguje.":
-    "<0>Na Androidu oznámení zatím nechodí.</0> Appka je hotová, ale chybí jí napojení na doručovací službu Googlu. Vše ostatní na Androidu funguje.",
+  "Appka posiela upozornenia na iPhone aj na Androide — napríklad na faktúry po splatnosti. Či registrácia naozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá zopakovať.":
+    "Appka posílá upozornění na iPhonu i na Androidu — například na faktury po splatnosti. Zda registrace opravdu proběhla, uvidíte v appce ve stavu oznámení; je tam i tlačítko, kterým ji lze zopakovat.",
+  "<0>Keď upozornenia nechodia</0>, skontrolujte, či ich má appka povolené v nastaveniach telefónu, a v stave oznámení registráciu zopakujte.":
+    "<0>Když upozornění nechodí</0>, zkontrolujte, zda je má appka povolená v nastavení telefonu, a ve stavu oznámení registraci zopakujte.",
   Jazyky: "Jazyky",
   "Appka hovorí po <0>slovensky, česky, anglicky, nemecky a maďarsky</0> a jazyk si berie z telefónu. Ak je telefón v inom jazyku, zostane slovenčina. Jedinou výnimkou je obrazovka Diagnostika — tá je vždy po slovensky, pretože jej výstup čítame my.":
     "Appka mluví <0>slovensky, česky, anglicky, německy a maďarsky</0> a jazyk si bere z telefonu. Pokud je telefon v jiném jazyce, zůstane slovenština. Jedinou výjimkou je obrazovka Diagnostika — ta je vždy slovensky, protože její výstup čteme my.",

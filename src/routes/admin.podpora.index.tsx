@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Search, Send } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Search, Send } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ListPagination, useStoredPageSize } from "@/components/faktero/ListControls";
 import { PodporaStav } from "@/components/faktero/PodporaStav";
@@ -77,6 +77,19 @@ function AdminPodporaPage() {
         description="Požiadavky zákazníkov z aplikácie, z mobilnej appky aj z kontaktného formulára na webe."
       />
       <AdminPageBody>
+        <Link
+          to="/admin/podpora/manualy"
+          className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:bg-secondary/40"
+        >
+          <BookOpen className="h-5 w-5 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-medium">Manuály podpory</span>
+            <span className="block text-sm text-muted-foreground">
+              Interné návody pre hovory so zákazníkmi, s vyhľadávaním. Nezdieľať so zákazníkmi.
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
         <TelegramAdminKarta />
         <TelegramSkupinaKarta />
         <WhatsAppAdminKarta />
