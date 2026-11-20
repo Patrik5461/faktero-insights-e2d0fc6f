@@ -46,7 +46,7 @@ export default {
           .first();
       await pole("Názov *").fill(dodavatel);
       await pole("IČO").fill("50000001");
-      await pole("Číslo faktúry dodávateľa *").fill(cislo);
+      await pole("Číslo faktúry dodávateľa").fill(cislo);
       await pole("Variabilný symbol").fill("20261030");
       await pole("Dátum vystavenia").fill(t.dnes);
       await pole("Dátum dodania (daňového plnenia)").fill(t.dnes);

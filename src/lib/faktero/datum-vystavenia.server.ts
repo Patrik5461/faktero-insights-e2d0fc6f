@@ -18,8 +18,14 @@ import {
   type KontrolaDatumu,
 } from "./datum-vystavenia";
 
-const STLPCE =
-  "id, company_id, type, status, issue_date, delivery_date, due_date, povodna_splatnost, predlzene_at, predlzil, invoice_number, exported_at, sent_at, datum_dph, opravuje_fakturu_id, payment_date";
+/*
+  Stĺpce faktúry pre kontrolu pred odoslaním. Vystavená faktúra nemá
+  `payment_date` (to je na prijatých) — deň úhrady je `paid_at`; alias ho
+  podá `predvolenyDatumDph` pod menom, ktoré čaká. Neexistujúci stĺpec
+  zhodil každé odoslanie e-mailom aj eFaktúrou (18.–20. 11. 2026).
+*/
+export const STLPCE =
+  "id, company_id, type, status, issue_date, delivery_date, due_date, povodna_splatnost, predlzene_at, predlzil, invoice_number, exported_at, sent_at, datum_dph, opravuje_fakturu_id, payment_date:paid_at";
 
 /** Odmietnutie prvého odoslania so starým dátumom vystavenia. */
 export class StaryDatumVystavenia extends Error {

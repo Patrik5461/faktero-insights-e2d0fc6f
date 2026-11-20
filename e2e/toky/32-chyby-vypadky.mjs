@@ -154,7 +154,7 @@ export default {
           .locator("input, select, textarea")
           .first();
       await pole("Názov *").fill(`${t.znacka} Výpadok s.r.o.`);
-      await pole("Číslo faktúry dodávateľa *").fill(cislo);
+      await pole("Číslo faktúry dodávateľa").fill(cislo);
       await pole("Dátum vystavenia").fill(t.dnes);
       await pole("Dátum dodania (daňového plnenia)").fill(t.dnes);
       await pole("Dátum splatnosti").fill(t.dnes);

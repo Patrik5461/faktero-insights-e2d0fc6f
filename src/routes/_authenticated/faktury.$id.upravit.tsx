@@ -182,7 +182,8 @@ function EditInvoice() {
           issue_date: form.issue_date || null,
           delivery_date: form.delivery_date || null,
           opravuje_fakturu_id: inv?.opravuje_fakturu_id ?? null,
-          payment_date: inv?.payment_date ?? null,
+          // Vystavená faktúra má deň úhrady v `paid_at` (`payment_date` je len na prijatých).
+          payment_date: inv?.paid_at ?? null,
         },
         "vystavena",
       );
