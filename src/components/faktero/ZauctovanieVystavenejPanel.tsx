@@ -7,6 +7,7 @@ import {
 } from "@/components/faktero/PolozkyResponzivne";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { NASTAVTE_PREDKONTACIU_ZALOHY } from "@/lib/faktero/pohoda-kontrola";
+import { agendyKoduMimo, textAgendyMimo } from "@/lib/faktero/pohoda-predkontacia";
 import { MAX_UCTOVNEJ_POZNAMKY } from "@/lib/faktero/uctovna-poznamka";
 import { AutoZauctovanieOdznak, ponukaPravidlaToast } from "./AutoZauctovanieOdznak";
 import { useEffect, useRef, useState } from "react";
@@ -311,6 +312,18 @@ export function useZauctovanieVystavenej({
   */
   const chybaPredkontaciaZalohy =
     inv.type === "advance_payment" && !de && !neuctuje && !h.predkontacia.trim() && !navrhPredkontacie;
+  /*
+    Predkontácia, ktorú číselník Pohody má len v inej agende, než kam doklad
+    ide (daňový doklad k platbe = interný doklad s predkontáciou vydaných
+    faktúr) — Pohoda by doklad zaúčtovala ako „Neviem“.
+  */
+  const kodNaKontrolu = h.predkontacia.trim() || navrhPredkontacie || navrhy?.predvolenaPredkontacia || "";
+  const agendyMimo =
+    de || neuctuje || !navrhy?.agendaExportu
+      ? null
+      : agendyKoduMimo(kodNaKontrolu, navrhy.agendaExportu, navrhy.agendyPredkontacii);
+  const predkontaciaZInejAgendy =
+    agendyMimo && navrhy?.agendaExportu ? textAgendyMimo(kodNaKontrolu, navrhy.agendaExportu, agendyMimo) : null;
   /* Štítok „automaticky“ pri poli, ktoré drží hodnotu automatiky. */
   const oznacenia: OznaceniaNavrhu = {
     ...(navrhClenenia && h.clenenie.trim() === navrhClenenia ? { clenenie: "auto" as const } : {}),
@@ -681,7 +694,18 @@ export function useZauctovanieVystavenej({
     poPolozkachANapoveda,
     prehladRozuctovania,
     chybaPredkontaciaZalohy,
+    predkontaciaZInejAgendy,
   };
+}
+
+/** Upozornenie na predkontáciu z inej agendy Pohody (text z `textAgendyMimo`). */
+function UpozorneniePredkontacieAgendy({ text }: { text: string }) {
+  const { t } = useT();
+  return (
+    <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+      {t(text)}
+    </p>
+  );
 }
 
 /** Upozornenie pri daňovom doklade k platbe bez predkontácie (odkaz na predvolené). */
@@ -736,6 +760,7 @@ export function ZauctovanieVystavenejPanel({
     vyriesene,
     oznacenia,
     chybaPredkontaciaZalohy,
+    predkontaciaZInejAgendy,
     zmenKody,
     opravaOdovzdanej,
   } = useZauctovanieVystavenej({ inv, onZmena, onStiahnut, zamknuteObdobie });
@@ -900,6 +925,7 @@ export function ZauctovanieVystavenejPanel({
       ) : (
         <>
           {chybaPredkontaciaZalohy && !vPohode ? <UpozorneniePredkontacieZalohy /> : null}
+          {predkontaciaZInejAgendy && !vPohode ? <UpozorneniePredkontacieAgendy text={predkontaciaZInejAgendy} /> : null}
           <PoliaZauctovania
             navrhy={navrhy}
             hodnoty={de ? { ...h, kv: undefined } : h}
@@ -1093,6 +1119,9 @@ export function PoliaZauctovaniaVystavenej({
           className="min-w-0 space-y-3.5 disabled:opacity-70"
         >
           {z.chybaPredkontaciaZalohy && !vPohode ? <UpozorneniePredkontacieZalohy /> : null}
+          {z.predkontaciaZInejAgendy && !vPohode ? (
+            <UpozorneniePredkontacieAgendy text={z.predkontaciaZInejAgendy} />
+          ) : null}
           <PoliaZauctovania
             navrhy={navrhy}
             hodnoty={{

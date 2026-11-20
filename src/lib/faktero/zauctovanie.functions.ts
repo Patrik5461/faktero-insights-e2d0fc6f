@@ -20,6 +20,18 @@ import type { VynechanaDuplicita } from "./duplicita-zauctovania.server";
 
 const kod = z.string().trim().max(30).optional().nullable();
 
+/** Kód predkontácie → agendy, v ktorých ho má číselník Pohody (zdroj `pohoda`, aktívne). */
+function agendyKodovPohody(ciselnik: any[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const r of ciselnik) {
+    if (r?.druh !== "predkontacia" || r?.zdroj !== "pohoda" || r?.aktivne === false) continue;
+    const k = String(r.kod ?? "").trim();
+    const a = String(r.agenda ?? "").trim();
+    if (k && a && !(out[k] ??= []).includes(a)) out[k].push(a);
+  }
+  return out;
+}
+
 export const navrhyKodovFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
@@ -34,7 +46,8 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const { ponuka, ponukaClenenia, moznostMimoCiselnika, mimoCiselnikaNaKoniec } = await import("./predkontacie");
+    const { ponuka, ponukaClenenia, moznostMimoCiselnika, mimoCiselnikaNaKoniec, podlaPoradiaAgend } =
+      await import("./predkontacie");
     /*
       Ponuka je číselník z Pohody (s popisom, vhodná agenda prvá) a za ním
       kódy, ktoré firma už použila, hoci v číselníku nie sú — žiadne vymyslené
@@ -45,7 +58,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("companies")
           .select(
-            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, country, ic_dph, vat_payer, vat_scheme",
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, kv_clenenie_faktura, kv_clenenie_prijata, kv_clenenie_doklady, country, ic_dph, vat_payer, vat_scheme, uctovanie_nastavenia",
           )
           .eq("id", data.company_id)
           .maybeSingle(),
@@ -104,12 +117,21 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         ...pouzite.filter((k) => !zname.has(k)).map((kod) => moznostMimoCiselnika(kod)),
       ]);
     };
+    /*
+      Daňový doklad k platbe ide do Pohody ako interný doklad — alebo ako
+      vydaná faktúra, keď to firma v nastaveniach exportu zvolila
+      (`dokladKPlatbe`). Agenda, kam doklad naozaj ide, je v ponuke prvá.
+    */
+    const kPlatbeInterne =
+      (await import("./export-nastavenia")).nastaveniaExportu((firma as any)?.uctovanie_nastavenia)
+        .dokladKPlatbe === "interne";
     const agendy = vystavena
       ? data.typ === "proforma"
         ? ["issuedAdvanceInvoice", "issuedInvoice"]
         : data.typ === "advance_payment"
-          ? // Daňový doklad k platbe ide do Pohody ako interný doklad.
-            ["internalDocument", "issuedInvoice"]
+          ? kPlatbeInterne
+            ? ["internalDocument", "issuedInvoice"]
+            : ["issuedInvoice", "internalDocument"]
           : ["issuedInvoice"]
       : doklad
         ? ["receivedInvoice", "cashPaid", "commitment", "internalDocument"]
@@ -132,7 +154,10 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         .filter((r) => r.druh === "predkontacia" && r.pomer && r.aktivne !== false)
         .map((r) => String(r.kod)),
       predkontacie: doplnene(
-        ponuka(ciselnik ?? [], "predkontacia", agendy, kluc),
+        // Daňový doklad k platbe: kódy agendy, kam doklad ide, pred kódmi druhej agendy.
+        data.typ === "advance_payment"
+          ? podlaPoradiaAgend(ponuka(ciselnik ?? [], "predkontacia", agendy, kluc), agendy)
+          : ponuka(ciselnik ?? [], "predkontacia", agendy, kluc),
         pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),
       ),
       /*
@@ -160,6 +185,18 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       ),
       predvolenaPredkontacia,
       predvoleneClenenie,
+      /**
+       * Agenda Pohody, do ktorej vystavený doklad ide (pre upozornenie na
+       * predkontáciu z inej agendy), a agendy kódov z číselníka Pohody.
+       */
+      agendaExportu: vystavena
+        ? data.typ === "proforma"
+          ? null
+          : data.typ === "advance_payment" && kPlatbeInterne
+            ? "internalDocument"
+            : "issuedInvoice"
+        : null,
+      agendyPredkontacii: agendyKodovPohody(ciselnik ?? []),
       /** Predvolené členenie KV DPH bežného dokladu tohto druhu (prázdne = automaticky). */
       predvoleneKv: ((vystavena
         ? firma?.kv_clenenie_faktura

@@ -16,7 +16,13 @@ import { varovaniaPrijatejPredExportom } from "./export-varovania";
 import { poliaDokladovXml, rozdielyPoli, type RozdielPola } from "./pohoda-rozdiely";
 import { prijataAkoDoklad } from "./prijate-do-pohody";
 import { vsetkoAkoData } from "./strankovanie";
-import { chybajuceSkratky, predkontacieVXml, varovanieSkratky } from "./pohoda-predkontacia";
+import {
+  chybajuceSkratky,
+  predkontacieMimoAgendy,
+  predkontacieVXml,
+  varovanieAgendyPredkontacie,
+  varovanieSkratky,
+} from "./pohoda-predkontacia";
 import type { PohodaNastavenia } from "./export.server";
 import { TYPY_PRIJATYCH_DO_EXPORTU } from "./prijaty-danovy-doklad";
 
@@ -48,9 +54,11 @@ async function firma(supabase: Klient, companyId: string): Promise<Riadok> {
 }
 
 /**
- * Predkontácie dokladu, ktoré sú dvojicou účtov bez skratky v Pohode. Zloží
- * XML bez prekladu (tak, ako by išlo predtým) a pozrie, ktoré kódy mapa
- * nepreloží — rovnaké miesta, z ktorých export predkontáciu naozaj berie.
+ * Predkontácie dokladu, ktoré sú dvojicou účtov bez skratky v Pohode, alebo
+ * ktoré číselník Pohody pozná len v inej agende, než do ktorej doklad ide
+ * (daňový doklad k platbe ako interný doklad s predkontáciou vydaných
+ * faktúr → „Neviem“). Zloží XML bez prekladu (tak, ako by išlo predtým)
+ * a pozrie kódy — rovnaké miesta, z ktorých export predkontáciu naozaj berie.
  */
 function varovanieChybajucejSkratky(
   cislo: unknown,
@@ -59,8 +67,11 @@ function varovanieChybajucejSkratky(
 ): string | null {
   const mapa = nast.mapaPredkontacii;
   if (!mapa) return null;
-  const kody = predkontacieVXml(xml({ ...nast, mapaPredkontacii: null }));
-  return varovanieSkratky(cislo, chybajuceSkratky(kody, mapa));
+  const surove = xml({ ...nast, mapaPredkontacii: null });
+  return (
+    varovanieSkratky(cislo, chybajuceSkratky(predkontacieVXml(surove), mapa)) ??
+    varovanieAgendyPredkontacie(cislo, predkontacieMimoAgendy(surove, mapa))
+  );
 }
 
 /** Ešte neodovzdané doklady so závažnou chybou — konektor ich zastaví, ručný export ich pustí až po potvrdení. */

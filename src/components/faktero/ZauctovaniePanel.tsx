@@ -97,6 +97,10 @@ export type Navrhy = {
   predvolenyRad?: string | null;
   /** Kódy predkontácií, ktoré sa účtujú pomerom. */
   pomerove?: string[];
+  /** Agenda Pohody, do ktorej vystavený doklad ide (`internalDocument`, `issuedInvoice`). */
+  agendaExportu?: string | null;
+  /** Kód predkontácie → agendy, v ktorých ho má číselník Pohody. */
+  agendyPredkontacii?: Record<string, string[]>;
 };
 
 type Hodnoty = {

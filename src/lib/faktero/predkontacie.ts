@@ -689,6 +689,28 @@ export function moznostMimoCiselnika(kod: string): MoznostKodu {
   return { kod, popis: null, agenda: "", ucty: m ? `${m[1]}/${m[2]}` : null, mimoCiselnika: true };
 }
 
+/**
+ * Ponuka zoradená podľa poradia agend (prvá agenda prvá, kódy pre všetky
+ * agendy a z iných agend za nimi); inak sa poradie nemení. Daňový doklad
+ * k platbe má vo výbere interné doklady pred vydanými faktúrami.
+ */
+export function podlaPoradiaAgend<T extends { agenda: string }>(m: T[], agendy: string[]): T[] {
+  const skore = (x: T) => {
+    const i = agendy.indexOf(x.agenda);
+    return i >= 0 ? i : agendy.length;
+  };
+  return m
+    .map((x, i) => ({ x, i }))
+    .sort((a, b) => skore(a.x) - skore(b.x) || a.i - b.i)
+    .map((y) => y.x);
+}
+
+/** Agenda Pohody kódu na zobrazenie vo výbere („Interné doklady“), alebo null. */
+export function agendaVoVybere(agenda: string | null | undefined): string | null {
+  const k = String(agenda ?? "").trim();
+  return AGENDY.find((a) => a.kod === k)?.nazov ?? null;
+}
+
 /** Kódy mimo číselníka na koniec ponuky — poradie ostatných sa nemení. */
 export function mimoCiselnikaNaKoniec<T extends { mimoCiselnika?: boolean }>(m: T[]): T[] {
   return [...m.filter((x) => !x.mimoCiselnika), ...m.filter((x) => x.mimoCiselnika)];

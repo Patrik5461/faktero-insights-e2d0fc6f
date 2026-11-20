@@ -117,6 +117,7 @@ export const NAZVY_MIMO_MENU: Record<string, string> = {
   "/admin/kniha-jazd": "Administrácia — kniha jázd",
   "/admin/errors": "Administrácia — chyby",
   "/admin/audit-log": "Administrácia — audit log",
+  "/admin/banky": "Administrácia — bankové pripojenia",
   "/admin/legal": "Administrácia — právne dokumenty",
   "/admin/seo": "Administrácia — SEO",
   "/admin/ucty-zdarma": "Administrácia — účty zadarmo",

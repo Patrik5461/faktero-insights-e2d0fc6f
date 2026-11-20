@@ -1,4 +1,4 @@
-import { TEXT_MIMO_CISELNIKA, textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
+import { TEXT_MIMO_CISELNIKA, agendaVoVybere, textMoznosti, type MoznostKodu } from "@/lib/faktero/predkontacie";
 import type { MoznostVyberu } from "@/lib/faktero/vyber-kodu";
 import { VyberKodu, ZoznamKodov } from "./VyberKodu";
 
@@ -13,7 +13,11 @@ export function moznostiKodov(m: MoznostKodu[], t: (s: string) => string = (s) =
       : {
           hodnota: k.kod,
           text: k.popis?.trim() || k.kod,
-          popis: k.popis?.trim() ? [k.kod, k.ucty].filter(Boolean).join(" · ") : k.ucty,
+          // Agenda Pohody kódu (Vydané faktúry, Interné doklady…) — predkontácia z inej agendy dá „Neviem“.
+          popis:
+            [k.popis?.trim() ? k.kod : null, k.ucty, agendaVoVybere(k.agenda) ? t(agendaVoVybere(k.agenda)!) : null]
+              .filter(Boolean)
+              .join(" · ") || null,
         },
   );
 }

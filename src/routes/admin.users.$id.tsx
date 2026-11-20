@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { zadaj } from "@/lib/potvrdenie";
+import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Ban, Building2, ShieldCheck, Trash2, Undo2 } from "lucide-react";
+import { ArrowLeft, Ban, Building2, KeyRound, Mail, ShieldCheck, Trash2, Undo2 } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveDialog } from "@/components/faktero/ResponsiveDialog";
 import {
@@ -12,6 +12,11 @@ import {
   adminZmazUcet,
   adminZrusPlanovaneZrusenie,
 } from "@/lib/faktero/admin-ucty.functions";
+import {
+  adminStavDvojfaktora,
+  adminZrusDvojfaktor,
+  adminZmenEmailUctu,
+} from "@/lib/faktero/admin-podpora.functions";
 import {
   adminSetCompanyPlan,
   adminExtendTrial,
@@ -61,6 +66,16 @@ function AdminUcetPage() {
   const obnovPredplatneFn = useServerFn(adminReactivateSubscription);
   const pozastavFn = useServerFn(suspendCompany);
   const obnovFirmuFn = useServerFn(reactivateCompany);
+  const stav2faFn = useServerFn(adminStavDvojfaktora);
+  const zrus2faFn = useServerFn(adminZrusDvojfaktor);
+  const zmenEmailFn = useServerFn(adminZmenEmailUctu);
+  const [stav2fa, setStav2fa] = useState<{ faktorov: number | null; overenych: number | null } | null>(
+    null,
+  );
+  const [zmenaEmailu, setZmenaEmailu] = useState(false);
+  const [novyEmail, setNovyEmail] = useState("");
+  const [dovodEmailu, setDovodEmailu] = useState("");
+  const [totoznost, setTotoznost] = useState(false);
 
   const [data, setData] = useState<Detail | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
@@ -72,10 +87,13 @@ function AdminUcetPage() {
     try {
       setData(await nacitaj({ data: { userId: id } }));
       setChyba(null);
+      stav2faFn({ data: { userId: id } })
+        .then(setStav2fa)
+        .catch(() => setStav2fa({ faktorov: null, overenych: null }));
     } catch (e: any) {
       setChyba(e?.message ?? "Chyba");
     }
-  }, [nacitaj, id]);
+  }, [nacitaj, stav2faFn, id]);
 
   useEffect(() => {
     void obnov();
@@ -90,6 +108,46 @@ function AdminUcetPage() {
       await obnov();
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function zrus2fa() {
+    const dovod = await zadaj(
+      "Zrušiť dvojfaktorové overenie? Používateľ sa potom prihlási len heslom a všetky jeho relácie sa ukončia. Uveďte dôvod (napr. číslo požiadavky P-xxxx a ako ste overili totožnosť).",
+      { placeholder: "P-0123 — stratený telefón, totožnosť overená …" },
+      { potvrdit: "Pokračovať", nebezpecne: true },
+    );
+    if (dovod == null) return;
+    if (dovod.trim().length < 5) {
+      toast.error("Dôvod je povinný (aspoň 5 znakov).");
+      return;
+    }
+    const upozornit = await potvrd(
+      `Poslať na ${data?.profil.email ?? "adresu účtu"} oznámenie, že podpora zrušila dvojfaktorové overenie?`,
+      { potvrdit: "Poslať oznámenie", zrusit: "Neposielať", nebezpecne: false },
+    );
+    await zasah(
+      () => zrus2faFn({ data: { userId: id, dovod: dovod.trim(), upozornit } }),
+      upozornit ? "Dvojfaktorové overenie zrušené, oznámenie odoslané." : "Dvojfaktorové overenie zrušené.",
+    );
+  }
+
+  async function zmenEmail() {
+    setBusy(true);
+    try {
+      const v: any = await zmenEmailFn({
+        data: { userId: id, novyEmail: novyEmail.trim(), dovod: dovodEmailu.trim(), totoznostOverena: true },
+      });
+      toast.success(
+        `E-mail zmenený na ${v.novy}.` +
+          (v.oznamy?.stary && v.oznamy?.novy ? " Oznámenie odišlo na obe adresy." : " Oznámenie sa nepodarilo odoslať všade."),
+      );
+      setZmenaEmailu(false);
+      await obnov();
+    } catch (e: any) {
+      toast.error(e?.message ?? "E-mail sa nepodarilo zmeniť.");
     } finally {
       setBusy(false);
     }
@@ -155,8 +213,8 @@ function AdminUcetPage() {
           <div className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span>
-              Toto je účet administrátora platformy. Deaktivovať ani zmazať sa nedá — aby sa nedal
-              omylom odstrániť prístup do administrácie.
+              Toto je účet administrátora platformy. Deaktivovať, zmazať, zrušiť mu dvojfaktorové
+              overenie ani zmeniť e-mail sa cez administráciu nedá — z bezpečnostných dôvodov.
             </span>
           </div>
         )}
@@ -370,6 +428,52 @@ function AdminUcetPage() {
             </button>
           </div>
 
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-5">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Dvojfaktorové overenie</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {stav2fa == null
+                  ? "Zisťujem stav…"
+                  : stav2fa.faktorov == null
+                    ? "Stav sa nepodarilo zistiť."
+                    : stav2fa.faktorov === 0
+                      ? "Nie je zapnuté."
+                      : `Zapnuté (${stav2fa.overenych} overený faktor${stav2fa.faktorov !== stav2fa.overenych ? `, ${stav2fa.faktorov} spolu` : ""}).`}{" "}
+                Pri stratenom telefóne ho podpora zruší po overení totožnosti; používateľ sa
+                prihlási heslom a všetky jeho relácie sa ukončia.
+              </p>
+            </div>
+            <button
+              disabled={busy || data.jeAdmin || !data.mozeMazat || !stav2fa?.faktorov}
+              onClick={() => void zrus2fa()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <KeyRound className="h-4 w-4" /> Zrušiť dvojfaktorové overenie
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-5">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Zmeniť e-mail účtu</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Nová adresa platí hneď (bez potvrdzovacieho odkazu), heslo ostáva. Oznámenie
+                odíde na starú aj novú adresu. Len po overení totožnosti.
+              </p>
+            </div>
+            <button
+              disabled={busy || data.jeAdmin || !data.mozeMazat}
+              onClick={() => {
+                setNovyEmail("");
+                setDovodEmailu("");
+                setTotoznost(false);
+                setZmenaEmailu(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Mail className="h-4 w-4" /> Zmeniť e-mail
+            </button>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-5">
             <div>
               <p className="text-sm font-medium text-destructive">Zmazať účet natrvalo</p>
@@ -395,10 +499,69 @@ function AdminUcetPage() {
           </div>
           {!data.mozeMazat && (
             <p className="text-xs text-muted-foreground">
-              Zakázať prihlásenie a mazať účty smie len superadmin.
+              Zakázať prihlásenie, zrušiť 2FA, zmeniť e-mail a mazať účty smie len superadmin.
             </p>
           )}
         </div>
+
+        <ResponsiveDialog
+          open={zmenaEmailu}
+          onOpenChange={(o: boolean) => !busy && setZmenaEmailu(o)}
+          title="Zmeniť e-mail účtu"
+          description={`Súčasný e-mail: ${data.profil.email ?? "—"}`}
+        >
+          <div className="space-y-3">
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">Nový e-mail</span>
+              <input
+                type="email"
+                value={novyEmail}
+                onChange={(e) => setNovyEmail(e.target.value)}
+                autoComplete="off"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs text-muted-foreground">Dôvod (požiadavka, ako bola overená totožnosť)</span>
+              <textarea
+                value={dovodEmailu}
+                onChange={(e) => setDovodEmailu(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={totoznost}
+                onChange={(e) => setTotoznost(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>Totožnosť žiadateľa som overil(a) (napr. IČO, údaje z faktúry, posledná platba).</span>
+            </label>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setZmenaEmailu(false)}
+                disabled={busy}
+                className="rounded-md border border-border px-3 py-1.5 text-sm"
+              >
+                Späť
+              </button>
+              <button
+                onClick={() => void zmenEmail()}
+                disabled={
+                  busy ||
+                  !totoznost ||
+                  dovodEmailu.trim().length < 5 ||
+                  !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(novyEmail.trim())
+                }
+                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {busy ? "Mením…" : "Zmeniť e-mail"}
+              </button>
+            </div>
+          </div>
+        </ResponsiveDialog>
 
         <ResponsiveDialog
           open={mazanie}

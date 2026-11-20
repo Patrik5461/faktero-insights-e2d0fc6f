@@ -37,6 +37,12 @@ export type MapaPredkontaciiPohody = {
   rucne: Record<string, string>;
   /** Kódy z číselníka firmy z iného zdroja než Pohoda (súbor/Doklado, ručne). Voliteľné kvôli starším mapám. */
   ostatne?: string[];
+  /**
+   * Skratka z číselníka Pohody → agendy, v ktorých ju Pohoda má
+   * (`predkontacie.agenda`, len zdroj `pohoda`). Slúži len kontrole pred
+   * exportom (`predkontacieMimoAgendy`); XML nemení.
+   */
+  agendy?: Record<string, string[]>;
 };
 
 const t = (v: unknown) => String(v ?? "").trim();
@@ -54,10 +60,19 @@ export function normParUctov(kod: unknown): string | null {
 
 /** Mapa z číselníka firmy (tabuľka `predkontacie`) a ručnej tabuľky z nastavení exportu. */
 export function mapaPredkontacii(
-  ciselnik: { druh?: unknown; kod: unknown; zdroj?: unknown; ucet_md?: unknown; ucet_d?: unknown; aktivne?: unknown }[],
+  ciselnik: {
+    druh?: unknown;
+    kod: unknown;
+    zdroj?: unknown;
+    ucet_md?: unknown;
+    ucet_d?: unknown;
+    aktivne?: unknown;
+    agenda?: unknown;
+  }[],
   rucne?: Record<string, unknown> | null,
 ): MapaPredkontaciiPohody {
   const pohoda = new Set<string>();
+  const agendy: Record<string, string[]> = {};
   const ostatne = new Set<string>();
   const podlaUctov: Record<string, string[]> = {};
   for (const r of ciselnik ?? []) {
@@ -71,13 +86,15 @@ export function mapaPredkontacii(
     const kod = t(r.kod);
     if (!kod) continue;
     pohoda.add(kod);
+    const agenda = t(r.agenda);
+    if (agenda && !(agendy[kod] ??= []).includes(agenda)) agendy[kod].push(agenda);
     const md = t(r.ucet_md);
     const d = t(r.ucet_d);
     if (!md || !d) continue;
     const k = `${md} ${d}`;
     if (!(podlaUctov[k] ??= []).includes(kod)) podlaUctov[k].push(kod);
   }
-  return { pohoda: [...pohoda], podlaUctov, rucne: ocistiRucne(rucne), ostatne: [...ostatne] };
+  return { pohoda: [...pohoda], podlaUctov, rucne: ocistiRucne(rucne), ostatne: [...ostatne], agendy };
 }
 
 /** Ručná tabuľka bez prázdnych riadkov, kľúče v tvare „MD D“. */
@@ -156,4 +173,130 @@ export function varovanieSkratky(cislo: unknown, chybajuce: string[]): string | 
   return `${t(cislo) || "?"} — predkontácia ${chybajuce
     .map((k) => `„${k}“`)
     .join(", ")} je dvojica účtov, ktorá nie je v číselníku predkontácií firmy ani Pohody — doklad pôjde bez predkontácie (v Pohode „Neviem“); doplňte skratku v Predkontácie → Export → Skratky predkontácií v Pohode`;
+}
+
+/* ------------------------------------------ predkontácia z inej agendy */
+
+/*
+  Predkontácia v Pohode patrí jednej agende (vydané faktúry, interné
+  doklady…). Doklad, ktorý dostane skratku z inej agendy, Pohoda pri importe
+  nezaúčtuje — dá mu „Neviem“. Skúška importu 20. 11. 2026: daňové doklady
+  k prijatej platbe (interný doklad) s predkontáciou „311000 602000“, ktorú
+  má číselník Pohody len pre vydané faktúry; doklad s „324000 324000“
+  (interné doklady) prešiel. Kontrola sa robí nad hotovým XML — o agende
+  rozhoduje export (typ faktúry, nastavenie „daňový doklad k platbe ako
+  interný doklad“, bloček do pokladne či záväzkov), nie odhad.
+*/
+
+/** Agenda číselníka predkontácií pre `invoiceType` Pohody. */
+const AGENDA_TYPU_FAKTURY: Record<string, string> = {
+  issuedInvoice: "issuedInvoice",
+  issuedCreditNotice: "issuedInvoice",
+  issuedDebitNote: "issuedInvoice",
+  issuedCorrectiveTax: "issuedInvoice",
+  issuedAdvanceInvoice: "issuedAdvanceInvoice",
+  receivedInvoice: "receivedInvoice",
+  receivedCreditNotice: "receivedInvoice",
+  receivedDebitNote: "receivedInvoice",
+  receivedCorrectiveTax: "receivedInvoice",
+  receivedAdvanceInvoice: "receivedAdvanceInvoice",
+  commitment: "commitment",
+  claim: "claim",
+};
+
+/** Agenda Pohody jednej položky dávky (`dataPackItem`), alebo null (adresár, banka…). */
+function agendaPolozkyXml(polozka: string): string | null {
+  const fa = /<inv:invoiceType>([^<]*)<\/inv:invoiceType>/.exec(polozka);
+  if (fa) return AGENDA_TYPU_FAKTURY[fa[1]!.trim()] ?? null;
+  if (/<int:intDoc[\s>]/.test(polozka)) return "internalDocument";
+  const pokl = /<vch:voucherType>([^<]*)<\/vch:voucherType>/.exec(polozka);
+  if (pokl) return pokl[1]!.trim() === "receipt" ? "cashReceived" : pokl[1]!.trim() === "expense" ? "cashPaid" : null;
+  return null;
+}
+
+/** Názvy agend do upozornenia: [doklad v agende, „pre …“]. */
+const NAZVY_AGEND: Record<string, [string, string]> = {
+  issuedInvoice: ["vydaná faktúra", "vydané faktúry"],
+  issuedAdvanceInvoice: ["vydaná zálohová faktúra", "vydané zálohové faktúry"],
+  receivedInvoice: ["prijatá faktúra", "prijaté faktúry"],
+  receivedAdvanceInvoice: ["prijatá zálohová faktúra", "prijaté zálohové faktúry"],
+  internalDocument: ["interný doklad", "interné doklady"],
+  commitment: ["ostatný záväzok", "ostatné záväzky"],
+  claim: ["ostatná pohľadávka", "ostatné pohľadávky"],
+  cashPaid: ["výdavkový pokladničný doklad", "pokladňu – výdaj"],
+  cashReceived: ["príjmový pokladničný doklad", "pokladňu – príjem"],
+  bankIssued: ["bankový výdaj", "banku – výdaj"],
+  bankReceived: ["bankový príjem", "banku – príjem"],
+};
+const dokladAgendy = (a: string) => NAZVY_AGEND[a]?.[0] ?? `doklad v agende ${a}`;
+const preAgendu = (a: string) => NAZVY_AGEND[a]?.[1] ?? a;
+
+export type PredkontaciaMimoAgendy = {
+  /** Kód, ako ho má doklad (pred prekladom na skratku). */
+  kod: string;
+  /** Skratka, ktorá pôjde do Pohody. */
+  skratka: string;
+  /** Agenda, do ktorej doklad v Pohode ide. */
+  agenda: string;
+  /** Agendy, v ktorých číselník Pohody skratku má. */
+  agendyKodu: string[];
+};
+
+/**
+ * Predkontácie v XML (pred prekladom na skratky), ktoré číselník Pohody
+ * pozná len v iných agendách, než do ktorej doklad ide. Skratka bez agendy
+ * v číselníku (súbor z Doklada, obrázok, ručne) sa nehlási — nevieme.
+ */
+export function predkontacieMimoAgendy(
+  xml: string,
+  mapa: MapaPredkontaciiPohody | null | undefined,
+): PredkontaciaMimoAgendy[] {
+  if (!mapa?.agendy || !xml) return [];
+  const out: PredkontaciaMimoAgendy[] = [];
+  const videne = new Set<string>();
+  for (const m of xml.matchAll(/<dat:dataPackItem[\s\S]*?<\/dat:dataPackItem>/g)) {
+    const agenda = agendaPolozkyXml(m[0]);
+    if (!agenda) continue;
+    for (const k of m[0].matchAll(RE_PREDKONTACIA)) {
+      const kod = odEsc(k[3]!).trim();
+      const { skratka } = skratkaPredkontacie(kod, mapa);
+      const agendyKodu = mapa.agendy[skratka] ?? [];
+      if (!skratka || !agendyKodu.length || agendyKodu.includes(agenda)) continue;
+      const kluc = `${agenda}|${kod}`;
+      if (videne.has(kluc)) continue;
+      videne.add(kluc);
+      out.push({ kod, skratka, agenda, agendyKodu });
+    }
+  }
+  return out;
+}
+
+/** Text upozornenia („číslo — dôvod“) pre prvú predkontáciu z inej agendy, alebo null. */
+export function varovanieAgendyPredkontacie(cislo: unknown, zle: PredkontaciaMimoAgendy[]): string | null {
+  const z = zle[0];
+  if (!z) return null;
+  const kod = z.skratka === z.kod ? z.kod : `${z.kod} (v Pohode ${z.skratka})`;
+  const doklad = dokladAgendy(z.agenda);
+  return `${t(cislo) || "?"} — Predkontácia ${kod} je v Pohode pre ${z.agendyKodu.map(preAgendu).join(", ")} — ${doklad} ju nepoužije a zaúčtuje sa ako „Neviem“. Vyberte predkontáciu pre ${preAgendu(z.agenda)}.`;
+}
+
+/**
+ * Predkontácia zvolená na doklade, ktorú číselník firmy (riadky z Pohody)
+ * pozná len v iných agendách, než do ktorej doklad ide — pre panel
+ * zaúčtovania. Vráti agendy kódu, alebo null (sedí, alebo nevieme).
+ */
+export function agendyKoduMimo(
+  kod: unknown,
+  agenda: string | null | undefined,
+  agendyKodov: Record<string, string[]> | null | undefined,
+): string[] | null {
+  const k = t(kod);
+  if (!k || !agenda || !agendyKodov) return null;
+  const a = agendyKodov[k] ?? [];
+  return a.length && !a.includes(agenda) ? a : null;
+}
+
+/** Veta do panela zaúčtovania (bez čísla dokladu). */
+export function textAgendyMimo(kod: string, agenda: string, agendyKodu: string[]): string {
+  return `Predkontácia ${kod} je v Pohode pre ${agendyKodu.map(preAgendu).join(", ")} — ${dokladAgendy(agenda)} ju nepoužije a zaúčtuje sa ako „Neviem“. Vyberte predkontáciu pre ${preAgendu(agenda)}.`;
 }

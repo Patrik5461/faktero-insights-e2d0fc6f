@@ -157,6 +157,7 @@ export const TRASY_ADMINA = [
   "/admin",
   "/admin/ai",
   "/admin/audit-log",
+  "/admin/banky",
   "/admin/companies",
   "/admin/companies/$id",
   "/admin/efaktura",
