@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
@@ -13,6 +13,13 @@ import { Logo } from "@/components/faktero/Logo";
 import { MailCheck } from "lucide-react";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { normalizujKodPartnera } from "@/lib/faktero/partner-program";
+import {
+  normalizujTypUctu,
+  odlozKodPartnera,
+  odlozTypUctu,
+  type TypUctu,
+} from "@/lib/faktero/partner-odkaz";
 
 export const Route = createFileRoute("/registracia")({
   head: ({ match }) => ({
@@ -24,9 +31,17 @@ export const Route = createFileRoute("/registracia")({
       },
     ],
   }),
-  /** `?plan=` prichádza z objednávky — voľbu si prenesieme až za nastavenie firmy. */
-  validateSearch: (s: Record<string, unknown>): { plan?: string } => ({
+  /**
+   * `?plan=` prichádza z objednávky — voľbu si prenesieme až za nastavenie firmy.
+   * `?partner=` je odkaz na odporúčanie účtovnej kancelárie (partnerský program).
+   * `?typ=uctovnik` predvolí voľbu „Som účtovník“ (odkaz zo stránky programu).
+   */
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { plan?: string; partner?: string; typ?: TypUctu } => ({
     plan: typeof s.plan === "string" && s.plan ? s.plan : undefined,
+    partner: normalizujKodPartnera(s.partner) ?? undefined,
+    typ: normalizujTypUctu(s.typ) ?? undefined,
   }),
   /* Verejný kľúč captchy je v env servera (ecosystem), nie v builde. */
   loader: () => nastavenieRegistracieFn(),
@@ -40,8 +55,28 @@ function RegisterPage() {
   // Vzhľad webu (redizajn) aj mimo AppShell — len web, appka túto stránku nemá.
   useWebRedizajn();
   const { t, jazyk } = useT();
-  const { plan } = Route.useSearch();
+  const { plan, partner, typ: typZOdkazu } = Route.useSearch();
   const { siteKey } = Route.useLoaderData();
+  /*
+    Firma alebo účtovník. Klient, ktorý prišiel cez odkaz kancelárie, je firma
+    a voľbu nevidí. Účtovníka onboarding po založení firmy zavedie na
+    prihlášku do partnerského programu; schvaľuje ju admin.
+  */
+  const [typUctu, setTypUctu] = useState<TypUctu>(
+    !partner && typZOdkazu === "uctovnik" ? "uctovnik" : "firma",
+  );
+  useEffect(() => {
+    odlozTypUctu(partner ? "firma" : typUctu);
+  }, [typUctu, partner]);
+
+  /*
+    Kód partnera si odložíme hneď (localStorage) — uplatní sa po založení
+    firmy, aj keď sa človek vráti cez potvrdenie e-mailu v inom okne alebo
+    sa prihlási Googlom.
+  */
+  useEffect(() => {
+    if (partner) odlozKodPartnera(partner);
+  }, [partner]);
 
   /** Voľbu plánu si odložíme rovnako ako súhlasy — prežije presmerovanie z Googlu. */
   function stashPlan() {
@@ -181,6 +216,51 @@ function RegisterPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {t("30 dní zadarmo na pláne Premium. Bez platobnej karty.")}
         </p>
+        {partner && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("Registrujete sa cez odporúčanie vašej účtovnej kancelárie.")}
+          </p>
+        )}
+
+        {!partner && (
+          <fieldset className="mt-5">
+            <legend className="text-sm font-semibold">{t("Kto ste?")}</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {(
+                [
+                  ["firma", t("Firma alebo živnostník"), t("Fakturujem a vediem doklady svojej firmy.")],
+                  [
+                    "uctovnik",
+                    t("Účtovník alebo kancelária"),
+                    t("Vediem účtovníctvo klientom. Ponúkneme vám partnerský program."),
+                  ],
+                ] as const
+              ).map(([hodnota, nazov, popis]) => (
+                <label
+                  key={hodnota}
+                  className={`flex min-w-0 cursor-pointer gap-2 rounded-lg border p-3 text-sm transition-colors ${
+                    typUctu === hodnota
+                      ? "border-primary bg-primary/10 ring-1 ring-primary"
+                      : "border-input bg-background hover:bg-muted/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="typ-uctu"
+                    value={hodnota}
+                    checked={typUctu === hodnota}
+                    onChange={() => setTypUctu(hodnota)}
+                    className="mt-0.5 shrink-0 accent-primary"
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{nazov}</span>
+                    <span className="block text-xs text-muted-foreground">{popis}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
           {/*

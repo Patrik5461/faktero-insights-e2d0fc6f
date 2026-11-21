@@ -39,6 +39,7 @@ import {
   UserCog,
   CalendarCheck,
   Flag,
+  Handshake,
 } from "lucide-react";
 import { VIDEO_NAVODY } from "@/lib/faktero/video-navody";
 
@@ -319,6 +320,14 @@ const CATS: Cat[] = [
     label: "Role a prístupy",
     desc: "Kto vo firme čo smie — majiteľ, administrátor, účtovník, zamestnanec.",
     icon: UserCog,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
+    to: "/pomoc/partnersky-program",
+    label: "Partnerský program",
+    desc: "Pre účtovníkov: odkaz na odporúčanie, priradenie klientov a provízia.",
+    icon: Handshake,
     available: true,
     skupina: "Účet a vývoj",
   },

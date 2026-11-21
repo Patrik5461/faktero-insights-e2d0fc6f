@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-11-20",
+ "vytvorene": "2026-11-21",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -912,6 +912,28 @@
     {
      "nadpis": "Vzťah k priznaniu k DPH",
      "text": "<>\nFaktúry v režime OSS nevstupujú do slovenského priznania k DPH ani do\nkontrolného výkazu — daň sa odvádza osobitným priznaním. Faktero ich preto z\nvýkazov k DPH (/pomoc/vykazy-dph) vynecháva samo.\nPredaj firme s platným IČ DPH v inom členskom štáte nie je OSS — to je dodanie s\nprenesením daňovej povinnosti a patrí do súhrnného výkazu."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/partnersky-program",
+   "titulok": "Partnerský program",
+   "sekcie": [
+    {
+     "nadpis": "Ako sa prihlásiť",
+     "text": "<>\nPrihlásite sa do Faktera (účet si môžete založiť\nregistráciou (/registracia)) a otvoríte\nPartnerský program (/partner). Vyplníte názov kancelárie, kontakt a\nIBAN na výplatu provízie — IBAN môžete doplniť aj neskôr.\nAk si účet len zakladáte, pri registrácii zvoľte „Účtovník alebo kancelária“. Po založení\nvašej firmy vás Faktero na prihlášku zavedie samo a názov aj IČO doplní z firmy.\nPrihlášku posúdime a schválime. Kým nie je schválená, môžete ju ešte upraviť."
+    },
+    {
+     "nadpis": "Kde je váš odkaz",
+     "text": "<>\nPo schválení dostanete vlastný kód a odkaz na odporúčanie v tvare\nwww.faktero.sk/registracia?partner=KÓD . Nájdete ho v\nPartnerskom programe (/partner) a môžete ho poslať klientom e-mailom\nalebo dať na svoj web."
+    },
+    {
+     "nadpis": "Ako sa k vám priradia klienti",
+     "text": "<>\nFirma klienta sa k vám priradí dvoma spôsobmi:\n-\nCez odkaz — klient sa zaregistruje cez váš odkaz a založí si firmu.\nOdkaz si prehliadač zapamätá, takže platí aj vtedy, keď si klient potvrdí e-mail\nv inom okne alebo sa prihlási cez Google.\n-\nAko člen firmy — klient vás pozve do svojej firmy (napríklad ako\núčtovníka). Firmy, v ktorých ste už členom, sa vám priradia pri schválení prihlášky.\nFirma môže mať len jedného partnera — platí ten, ku ktorému sa priradila prvá. Vlastná\nfirma sa vám cez váš odkaz nepriradí."
+    },
+    {
+     "nadpis": "Kedy sa vypláca provízia",
+     "text": "<>\nZ každej zaplatenej platby predplatného priradenej firmy vám vznikne provízia —\npredvolene 20 % zo sumy bez DPH , po celý čas, kým klient platí.\nProvízia najprv 30 dní čaká — to je lehota, v ktorej sa platba môže\nvrátiť. Potom je na výplatu a pošleme ju na váš IBAN. Ak sa platba klientovi vráti\nskôr, provízia sa zruší.\nPrehľad klientov, provízií a výplat nájdete v\nPartnerskom programe (/partner)."
     }
    ]
   },

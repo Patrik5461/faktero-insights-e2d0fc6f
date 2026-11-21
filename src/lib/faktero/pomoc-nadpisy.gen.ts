@@ -919,6 +919,28 @@ export const NADPISY_POMOCI: ClanokPomoci[] = [
     ]
   },
   {
+    "cesta": "/pomoc/partnersky-program",
+    "titulok": "Partnerský program",
+    "sekcie": [
+      {
+        "id": "prihlaska",
+        "nadpis": "Ako sa prihlásiť"
+      },
+      {
+        "id": "odkaz",
+        "nadpis": "Kde je váš odkaz"
+      },
+      {
+        "id": "klienti",
+        "nadpis": "Ako sa k vám priradia klienti"
+      },
+      {
+        "id": "provizia",
+        "nadpis": "Kedy sa vypláca provízia"
+      }
+    ]
+  },
+  {
     "cesta": "/pomoc/podpora",
     "titulok": "Pomoc a podpora",
     "sekcie": [

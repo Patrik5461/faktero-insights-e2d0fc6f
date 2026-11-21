@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
@@ -21,6 +22,8 @@ import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { jeUstIdNr, popiskyIdentifikatorov } from "@/lib/faktero/firma-de";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { useT } from "@/lib/i18n/useT";
+import { uplatniKodPartnera } from "@/lib/faktero/partner-odkaz";
+import { priradPartneraFirmeFn } from "@/lib/faktero/partner-program.functions";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,6 +47,7 @@ const EMPTY = {
 
 export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
   const { t } = useT();
+  const priradPartnera = useServerFn(priradPartneraFirmeFn);
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -100,6 +104,8 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
       }
       const id = companyId as string;
       setActiveCompanyId(id);
+      // Odkaz na odporúčanie účtovníka (?partner=) — chyba onboarding nezastaví.
+      await uplatniKodPartnera(id, priradPartnera);
       toast.success(t("Firma bola vytvorená."));
       onCreated?.(id);
       reset();

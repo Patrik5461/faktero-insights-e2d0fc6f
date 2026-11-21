@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   CreditCard,
   Truck,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 
@@ -1534,6 +1535,46 @@ export const uctovnici: HubContent = {
             "Stripe, PayPal, GoPay, Comgate, Barion, Mollie, Packeta — výpisy z platobných brán",
             "Vlastné integrácie cez REST API",
           ],
+        },
+      ],
+    },
+    {
+      slug: "partnersky-program",
+      label: "Partnerský program",
+      summary:
+        "Pre účtovné kancelárie: 20 % z predplatného každého klienta, kým Faktero používa, a všetci klienti na jednej obrazovke.",
+      icon: Handshake,
+      manual: "/pomoc/partnersky-program",
+      blocks: [
+        {
+          type: "lead",
+          text: "Odporúčate Faktero svojim klientom? Ako partner dostanete províziu z každého ich predplatného a prehľad, v ktorom vidíte všetkých klientov naraz.",
+        },
+        {
+          type: "bullets",
+          title: "Čo partner získa",
+          items: [
+            "Províziu 20 % z predplatného klientov bez DPH — po celý čas, kým klient platí",
+            "Výplatu provízie po 30 dňoch na váš IBAN",
+            "Vlastný účet vo Fakteri zdarma podľa dohody",
+            "Prehľad všetkých klientov na jednej obrazovke — eFaktúra, nespracované doklady, banka",
+            "Hromadný prenos klientov z Doklada a SuperFaktúry",
+          ],
+        },
+        {
+          type: "bullets",
+          title: "Ako to funguje",
+          items: [
+            "1. Prihlášku podáte v aplikácii v časti Partnerský program",
+            "2. Po schválení dostanete vlastný odkaz na odporúčanie",
+            "3. Klienti sa registrujú cez váš odkaz, alebo ich pridáte do svojich firiem ako účtovník",
+            "4. Z každej zaplatenej platby predplatného klienta vám každý mesiac pribudne provízia",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Ako začať",
+          body: "Pri registrácii zvoľte „Účtovník alebo kancelária“ — po založení vašej firmy vás Faktero rovno zavedie na krátku prihlášku. Ak už účet máte, prihlášku nájdete v menu účtu (vpravo hore) pod Partnerský program. Po schválení dostanete vlastný odkaz.",
         },
       ],
     },

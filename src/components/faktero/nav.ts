@@ -557,6 +557,7 @@ export function filterNav(
  * (`/faktury/parovanie` → banka) bez toho, aby rozbila rodiča.
  */
 export const MANUALY: { prefix: string; to: string }[] = [
+  { prefix: "/partner", to: "/pomoc/partnersky-program" },
   { prefix: "/nastavenia", to: "/pomoc/nastavenia" },
   { prefix: "/firma", to: "/pomoc/nastavenia" },
   // Párovanie platieb je bližšie k banke než k vystavovaniu faktúr.

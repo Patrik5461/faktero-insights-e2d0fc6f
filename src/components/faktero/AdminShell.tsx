@@ -28,6 +28,7 @@ import {
   Megaphone,
   BookOpen,
   Landmark,
+  BadgePercent,
 } from "lucide-react";
 
 const NAV = [
@@ -52,7 +53,8 @@ const NAV = [
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },
   { to: "/admin/seo", label: "SEO", icon: Search },
   { to: "/admin/ucty-zdarma", label: "Účty zadarmo", icon: Gift },
-  { to: "/admin/partneri", label: "Partneri", icon: Handshake },
+  { to: "/admin/partnersky-program", label: "Partnerský program", icon: BadgePercent },
+  { to: "/admin/partneri", label: "Partneri (logá na webe)", icon: Handshake },
 ];
 
 function zodpoveda(pathname: string, to: string, exact?: boolean) {

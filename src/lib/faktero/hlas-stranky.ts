@@ -43,6 +43,7 @@ export type StrankaHlasu = {
 export const NAZVY_MIMO_MENU: Record<string, string> = {
   "/dashboard": "Prehľad (úvodná stránka)",
   "/moje-ulohy": "Moje úlohy",
+  "/partner": "Partnerský program",
   "/onboarding": "Prvé nastavenie firmy",
   "/faktury": "Vystavené faktúry",
   "/faktury/$id": "Detail vystavenej faktúry",
@@ -121,7 +122,8 @@ export const NAZVY_MIMO_MENU: Record<string, string> = {
   "/admin/legal": "Administrácia — právne dokumenty",
   "/admin/seo": "Administrácia — SEO",
   "/admin/ucty-zdarma": "Administrácia — účty zadarmo",
-  "/admin/partneri": "Administrácia — partneri",
+  "/admin/partnersky-program": "Administrácia — partnerský program",
+  "/admin/partneri": "Administrácia — partneri (logá na webe)",
   "/admin/integrations": "Administrácia — integrácie",
   "/admin/payment-providers": "Administrácia — platobné brány",
 };

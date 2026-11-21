@@ -11,6 +11,7 @@ import { bezpecnyNavrat } from "@/lib/faktero/navrat-po-prihlaseni";
 import { Logo } from "@/components/faktero/Logo";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
+import { odlozKodPartnera } from "@/lib/faktero/partner-odkaz";
 import {
   getActiveProduct,
   setActiveProduct,
@@ -43,6 +44,10 @@ function LoginPage() {
   useWebRedizajn();
   const { t } = useT();
   const navigate = useNavigate();
+  /* `?partner=` z odkazu na odporúčanie — uplatní sa po založení firmy. */
+  useEffect(() => {
+    odlozKodPartnera(new URLSearchParams(window.location.search).get("partner"));
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

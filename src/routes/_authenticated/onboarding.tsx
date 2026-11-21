@@ -20,6 +20,8 @@ import { MENY } from "@/lib/faktero/mena";
 import { domacaMena } from "@/lib/faktero/kurzy";
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { uplatniKodPartnera, vezmiTypUctu } from "@/lib/faktero/partner-odkaz";
+import { priradPartneraFirmeFn } from "@/lib/faktero/partner-program.functions";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import {
   firmaZPrenosu,
@@ -68,6 +70,7 @@ function Onboarding() {
   const [prenosPouzity, setPrenosPouzity] = useState(false);
   const [vytvoritKoncept, setVytvoritKoncept] = useState(true);
   const vystav = useServerFn(vystavFakturuFn);
+  const priradPartnera = useServerFn(priradPartneraFirmeFn);
   useEffect(() => {
     setPrenos(nacitajPrenos());
   }, []);
@@ -141,6 +144,8 @@ function Onboarding() {
       }
       setActiveCompanyId(companyId as string);
       toast.success(t("Firma vytvorená"));
+      // Odkaz na odporúčanie účtovníka (?partner=) — chyba onboarding nezastaví.
+      await uplatniKodPartnera(companyId as string, priradPartnera);
       let konceptId: string | null = null;
       if (prenos && prenosPouzity) {
         if (vytvoritKoncept) {
@@ -166,9 +171,13 @@ function Onboarding() {
       } catch {
         // sessionStorage môže byť zakázané — pokračujeme na nástenku
       }
+      // Účtovník (voľba pri registrácii) ide rovno na prihlášku do partnerského programu.
+      const jeUctovnik = vezmiTypUctu() === "uctovnik";
       // Hard reload so the authed layout re-reads memberships fresh.
       window.location.assign(
-        pendingPlan
+        jeUctovnik && !pendingPlan
+          ? "/partner?zRegistracie=1"
+          : pendingPlan
           ? `/predplatne?plan=${encodeURIComponent(pendingPlan)}`
           : konceptId
             ? `/faktury/${konceptId}`

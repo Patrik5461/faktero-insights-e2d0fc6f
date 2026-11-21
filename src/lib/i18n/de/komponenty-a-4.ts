@@ -198,6 +198,8 @@ export default {
   SEO: "SEO",
   "Účty zadarmo": "Kostenlose Konten",
   Partneri: "Partner",
+  "Partnerský program": "Partnerprogramm",
+  "Partneri (logá na webe)": "Partner (Logos auf der Website)",
   "Späť do aplikácie": "Zurück zur Anwendung",
   "Späť do app": "Zurück zur App",
   // IcoLookupButton / CompanyNameAutocomplete

@@ -16,6 +16,7 @@ import {
   LogOut,
   Building2,
   CreditCard,
+  Handshake,
   User,
   Menu,
   X,
@@ -650,6 +651,12 @@ export function AppShell({
                   <DropdownMenuItem asChild>
                     <Link to="/predplatne">
                       <CreditCard className="mr-2 h-3.5 w-3.5" /> {t("Predplatné")}
+                    </Link>
+                  </DropdownMenuItem>
+                  {/* Program pre účtovné kancelárie — prihláška, odkaz, klienti a provízie. */}
+                  <DropdownMenuItem asChild>
+                    <Link to={"/partner" as any}>
+                      <Handshake className="mr-2 h-3.5 w-3.5" /> {t("Partnerský program")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

@@ -23,6 +23,7 @@ import {
   FileSpreadsheet,
   FileText,
   Flag,
+  Handshake,
   HardHat,
   KeyRound,
   Landmark,
@@ -1308,9 +1309,19 @@ function AccountingSection() {
             </p>
             <Link
               to="/registracia"
+              search={{ typ: "uctovnik" }}
               className="mt-8 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] hover:translate-y-[-1px] transition-transform"
             >
               {t("Vyskúšať pre účtovnícku firmu")} <ArrowRight className="h-4 w-4" />
+            </Link>
+            {/* Partnerský program — provízia pre kancelárie, ktoré privedú klientov. */}
+            <Link
+              to="/uctovnici/$slug"
+              params={{ slug: "partnersky-program" }}
+              className="mt-4 flex w-fit items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <Handshake className="h-4 w-4" />
+              {t("Partnerský program: 20 % z predplatného vašich klientov")}
             </Link>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -1768,6 +1779,7 @@ function SiteFooter() {
               ["Pohoda export", "/uctovnici/pohoda-export"],
               ["Mesačné podklady", "/uctovnici/mesacne-podklady"],
               ["Integrácie", "/uctovnici/integracie"],
+              ["Partnerský program", "/uctovnici/partnersky-program"],
             ],
           },
           {

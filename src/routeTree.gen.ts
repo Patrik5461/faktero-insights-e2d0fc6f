@@ -51,6 +51,7 @@ import { Route as AuthenticatedKosRouteImport } from './routes/_authenticated/ko
 import { Route as AuthenticatedMojeUlohyRouteImport } from './routes/_authenticated/moje-ulohy'
 import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedPartnerRouteImport } from './routes/_authenticated/partner'
 import { Route as AuthenticatedPokladnaRouteImport } from './routes/_authenticated/pokladna'
 import { Route as AuthenticatedPredplatneRouteImport } from './routes/_authenticated/predplatne'
 import { Route as AuthenticatedProduktyRouteImport } from './routes/_authenticated/produkty'
@@ -72,6 +73,7 @@ import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminOdosielanieRouteImport } from './routes/admin.odosielanie'
 import { Route as AdminOznamyRouteImport } from './routes/admin.oznamy'
 import { Route as AdminPartneriRouteImport } from './routes/admin.partneri'
+import { Route as AdminPartnerskyProgramRouteImport } from './routes/admin.partnersky-program'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
@@ -118,6 +120,7 @@ import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.obj
 import { Route as PomocOdberateliaRouteImport } from './routes/pomoc.odberatelia'
 import { Route as PomocOpakovaneRouteImport } from './routes/pomoc.opakovane'
 import { Route as PomocOssRouteImport } from './routes/pomoc.oss'
+import { Route as PomocPartnerskyProgramRouteImport } from './routes/pomoc.partnersky-program'
 import { Route as PomocPodporaRouteImport } from './routes/pomoc.podpora'
 import { Route as PomocPohodaRouteImport } from './routes/pomoc.pohoda'
 import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
@@ -621,6 +624,11 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPartnerRoute = AuthenticatedPartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPokladnaRoute = AuthenticatedPokladnaRouteImport.update({
   id: '/pokladna',
   path: '/pokladna',
@@ -726,6 +734,11 @@ const AdminOznamyRoute = AdminOznamyRouteImport.update({
 const AdminPartneriRoute = AdminPartneriRouteImport.update({
   id: '/partneri',
   path: '/partneri',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPartnerskyProgramRoute = AdminPartnerskyProgramRouteImport.update({
+  id: '/partnersky-program',
+  path: '/partnersky-program',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
@@ -959,6 +972,11 @@ const PomocOpakovaneRoute = PomocOpakovaneRouteImport.update({
 const PomocOssRoute = PomocOssRouteImport.update({
   id: '/pomoc/oss',
   path: '/pomoc/oss',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocPartnerskyProgramRoute = PomocPartnerskyProgramRouteImport.update({
+  id: '/pomoc/partnersky-program',
+  path: '/pomoc/partnersky-program',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocPodporaRoute = PomocPodporaRouteImport.update({
@@ -2600,6 +2618,7 @@ export interface FileRoutesByFullPath {
   '/moje-ulohy': typeof AuthenticatedMojeUlohyRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/partner': typeof AuthenticatedPartnerRoute
   '/pokladna': typeof AuthenticatedPokladnaRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
   '/produkty': typeof AuthenticatedProduktyRoute
@@ -2620,6 +2639,7 @@ export interface FileRoutesByFullPath {
   '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
+  '/admin/partnersky-program': typeof AdminPartnerskyProgramRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
@@ -2662,6 +2682,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
   '/pomoc/oss': typeof PomocOssRoute
+  '/pomoc/partnersky-program': typeof PomocPartnerskyProgramRoute
   '/pomoc/podpora': typeof PomocPodporaRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
@@ -2988,6 +3009,7 @@ export interface FileRoutesByTo {
   '/moje-ulohy': typeof AuthenticatedMojeUlohyRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/partner': typeof AuthenticatedPartnerRoute
   '/pokladna': typeof AuthenticatedPokladnaRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
   '/produkty': typeof AuthenticatedProduktyRoute
@@ -3007,6 +3029,7 @@ export interface FileRoutesByTo {
   '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
+  '/admin/partnersky-program': typeof AdminPartnerskyProgramRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
@@ -3049,6 +3072,7 @@ export interface FileRoutesByTo {
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
   '/pomoc/oss': typeof PomocOssRoute
+  '/pomoc/partnersky-program': typeof PomocPartnerskyProgramRoute
   '/pomoc/podpora': typeof PomocPodporaRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
@@ -3383,6 +3407,7 @@ export interface FileRoutesById {
   '/_authenticated/moje-ulohy': typeof AuthenticatedMojeUlohyRoute
   '/_authenticated/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/partner': typeof AuthenticatedPartnerRoute
   '/_authenticated/pokladna': typeof AuthenticatedPokladnaRoute
   '/_authenticated/predplatne': typeof AuthenticatedPredplatneRoute
   '/_authenticated/produkty': typeof AuthenticatedProduktyRoute
@@ -3403,6 +3428,7 @@ export interface FileRoutesById {
   '/admin/odosielanie': typeof AdminOdosielanieRoute
   '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
+  '/admin/partnersky-program': typeof AdminPartnerskyProgramRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
@@ -3445,6 +3471,7 @@ export interface FileRoutesById {
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
   '/pomoc/oss': typeof PomocOssRoute
+  '/pomoc/partnersky-program': typeof PomocPartnerskyProgramRoute
   '/pomoc/podpora': typeof PomocPodporaRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
@@ -3780,6 +3807,7 @@ export interface FileRouteTypes {
     | '/moje-ulohy'
     | '/odberatelia'
     | '/onboarding'
+    | '/partner'
     | '/pokladna'
     | '/predplatne'
     | '/produkty'
@@ -3800,6 +3828,7 @@ export interface FileRouteTypes {
     | '/admin/odosielanie'
     | '/admin/oznamy'
     | '/admin/partneri'
+    | '/admin/partnersky-program'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
     | '/admin/seo'
@@ -3842,6 +3871,7 @@ export interface FileRouteTypes {
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
     | '/pomoc/oss'
+    | '/pomoc/partnersky-program'
     | '/pomoc/podpora'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
@@ -4168,6 +4198,7 @@ export interface FileRouteTypes {
     | '/moje-ulohy'
     | '/odberatelia'
     | '/onboarding'
+    | '/partner'
     | '/pokladna'
     | '/predplatne'
     | '/produkty'
@@ -4187,6 +4218,7 @@ export interface FileRouteTypes {
     | '/admin/odosielanie'
     | '/admin/oznamy'
     | '/admin/partneri'
+    | '/admin/partnersky-program'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
     | '/admin/seo'
@@ -4229,6 +4261,7 @@ export interface FileRouteTypes {
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
     | '/pomoc/oss'
+    | '/pomoc/partnersky-program'
     | '/pomoc/podpora'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
@@ -4562,6 +4595,7 @@ export interface FileRouteTypes {
     | '/_authenticated/moje-ulohy'
     | '/_authenticated/odberatelia'
     | '/_authenticated/onboarding'
+    | '/_authenticated/partner'
     | '/_authenticated/pokladna'
     | '/_authenticated/predplatne'
     | '/_authenticated/produkty'
@@ -4582,6 +4616,7 @@ export interface FileRouteTypes {
     | '/admin/odosielanie'
     | '/admin/oznamy'
     | '/admin/partneri'
+    | '/admin/partnersky-program'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
     | '/admin/seo'
@@ -4624,6 +4659,7 @@ export interface FileRouteTypes {
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
     | '/pomoc/oss'
+    | '/pomoc/partnersky-program'
     | '/pomoc/podpora'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
@@ -4977,6 +5013,7 @@ export interface RootRouteChildren {
   PomocOdberateliaRoute: typeof PomocOdberateliaRoute
   PomocOpakovaneRoute: typeof PomocOpakovaneRoute
   PomocOssRoute: typeof PomocOssRoute
+  PomocPartnerskyProgramRoute: typeof PomocPartnerskyProgramRoute
   PomocPodporaRoute: typeof PomocPodporaRoute
   PomocPohodaRoute: typeof PomocPohodaRoute
   PomocPokladnaRoute: typeof PomocPokladnaRoute
@@ -5390,6 +5427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/partner': {
+      id: '/_authenticated/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof AuthenticatedPartnerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pokladna': {
       id: '/_authenticated/pokladna'
       path: '/pokladna'
@@ -5535,6 +5579,13 @@ declare module '@tanstack/react-router' {
       path: '/partneri'
       fullPath: '/admin/partneri'
       preLoaderRoute: typeof AdminPartneriRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/partnersky-program': {
+      id: '/admin/partnersky-program'
+      path: '/partnersky-program'
+      fullPath: '/admin/partnersky-program'
+      preLoaderRoute: typeof AdminPartnerskyProgramRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payment-providers': {
@@ -5857,6 +5908,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/oss'
       fullPath: '/pomoc/oss'
       preLoaderRoute: typeof PomocOssRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/partnersky-program': {
+      id: '/pomoc/partnersky-program'
+      path: '/pomoc/partnersky-program'
+      fullPath: '/pomoc/partnersky-program'
+      preLoaderRoute: typeof PomocPartnerskyProgramRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/podpora': {
@@ -7974,6 +8032,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMojeUlohyRoute: typeof AuthenticatedMojeUlohyRoute
   AuthenticatedOdberateliaRoute: typeof AuthenticatedOdberateliaRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedPartnerRoute: typeof AuthenticatedPartnerRoute
   AuthenticatedPokladnaRoute: typeof AuthenticatedPokladnaRoute
   AuthenticatedPredplatneRoute: typeof AuthenticatedPredplatneRoute
   AuthenticatedProduktyRoute: typeof AuthenticatedProduktyRoute
@@ -8100,6 +8159,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMojeUlohyRoute: AuthenticatedMojeUlohyRoute,
   AuthenticatedOdberateliaRoute: AuthenticatedOdberateliaRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedPartnerRoute: AuthenticatedPartnerRoute,
   AuthenticatedPokladnaRoute: AuthenticatedPokladnaRoute,
   AuthenticatedPredplatneRoute: AuthenticatedPredplatneRoute,
   AuthenticatedProduktyRoute: AuthenticatedProduktyRoute,
@@ -8251,6 +8311,7 @@ interface AdminRouteChildren {
   AdminOdosielanieRoute: typeof AdminOdosielanieRoute
   AdminOznamyRoute: typeof AdminOznamyRoute
   AdminPartneriRoute: typeof AdminPartneriRoute
+  AdminPartnerskyProgramRoute: typeof AdminPartnerskyProgramRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
   AdminPlatformInvoicesRoute: typeof AdminPlatformInvoicesRoute
   AdminSeoRoute: typeof AdminSeoRoute
@@ -8282,6 +8343,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOdosielanieRoute: AdminOdosielanieRoute,
   AdminOznamyRoute: AdminOznamyRoute,
   AdminPartneriRoute: AdminPartneriRoute,
+  AdminPartnerskyProgramRoute: AdminPartnerskyProgramRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
   AdminPlatformInvoicesRoute: AdminPlatformInvoicesRoute,
   AdminSeoRoute: AdminSeoRoute,
@@ -8712,6 +8774,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOdberateliaRoute: PomocOdberateliaRoute,
   PomocOpakovaneRoute: PomocOpakovaneRoute,
   PomocOssRoute: PomocOssRoute,
+  PomocPartnerskyProgramRoute: PomocPartnerskyProgramRoute,
   PomocPodporaRoute: PomocPodporaRoute,
   PomocPohodaRoute: PomocPohodaRoute,
   PomocPokladnaRoute: PomocPokladnaRoute,

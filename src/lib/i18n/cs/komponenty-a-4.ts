@@ -182,6 +182,8 @@ export default {
   SEO: "SEO",
   "Účty zadarmo": "Účty zdarma",
   Partneri: "Partneři",
+  "Partnerský program": "Partnerský program",
+  "Partneri (logá na webe)": "Partneři (loga na webu)",
   "Späť do aplikácie": "Zpět do aplikace",
   "Späť do app": "Zpět do aplikace",
   "Zadajte IČO": "Zadejte IČO",
