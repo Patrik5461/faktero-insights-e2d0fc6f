@@ -34,7 +34,7 @@ describe("prijaté zálohové (AB-09 … AB-13)", () => {
   it("mobilná karta má akciu (Vymazať/Obnoviť)", () =>
     expect(s).toMatch(/actions=\{akciaRiadku\(r, true\)\}/));
   it("filter Zobraziť vymazané a obnovenie", () => {
-    expect(s).toContain('key: "vymazane"');
+    expect(s).toMatch(/key: "vymazane"|filterVymazanych\(/);
     expect(s).toContain("deleted_at: null");
   });
 });

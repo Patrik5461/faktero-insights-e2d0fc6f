@@ -9,7 +9,7 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertTriangle, FileText, Landmark, SearchX, CheckCircle2 } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, FileText, Landmark, SearchX, CheckCircle2, CopyX } from "lucide-react";
 import { EmptyState } from "@/components/faktero/ListControls";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
@@ -49,6 +49,13 @@ import type { FakturaNaUhradu, Preskocena } from "@/lib/faktero/hromadny-prikaz"
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { potvrd } from "@/lib/potvrdenie";
 import { DRUHY_NESPRACOVANYCH, upravCelkomDokladu } from "@/lib/faktero/nespracovane";
+import {
+  duplicityNespracovanychFn,
+  odstranDuplicityNespracovanychFn,
+} from "@/lib/faktero/nespracovane-duplicity.functions";
+import { NAZVY_AGEND_DUPLICITY } from "@/lib/faktero/duplicita-suboru";
+import { moznostiNahral, vyhovujeFiltrom } from "@/lib/faktero/nespracovane-filtre-zoznamu";
+import { filterObdobia, filterUhrady, filterZauctovania } from "@/lib/faktero/filtre-dokladov";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { usePoslednyOtvoreny } from "@/hooks/usePoslednyOtvoreny";
@@ -134,6 +141,52 @@ function Stranka() {
   const nacitajMena = useServerFn(menaClenovFirmy);
   const [mena, setMena] = useState<Record<string, string>>({});
   const lf = useListFilters({ pageSizeKey: "nespracovane" });
+  // „Odstrániť duplicity“ — najprv zoznam v okne, po potvrdení do koša.
+  const najdiDuplicity = useServerFn(duplicityNespracovanychFn);
+  const odstranDuplicity = useServerFn(odstranDuplicityNespracovanychFn);
+  const [duplicity, setDuplicity] = useState<Awaited<ReturnType<typeof najdiDuplicity>>["duplicity"] | null>(null);
+  const [duplicityBusy, setDuplicityBusy] = useState(false);
+
+  async function hladajDuplicity() {
+    const cid = getActiveCompanyId();
+    if (!cid) return toast.error(t("Vyberte firmu."));
+    setDuplicityBusy(true);
+    try {
+      const r = await najdiDuplicity({ data: { company_id: cid } });
+      if (!r.duplicity.length) toast.success(t("Duplicity sa nenašli."));
+      else setDuplicity(r.duplicity);
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setDuplicityBusy(false);
+    }
+  }
+
+  async function potvrdOdstranenieDuplicit() {
+    const cid = getActiveCompanyId();
+    if (!cid || !duplicity?.length) return;
+    if (
+      !(await potvrd(
+        t("Presunúť duplicitné doklady ({n}) do koša? Z koša sa dajú obnoviť.", { n: duplicity.length }),
+        { potvrdit: t("Presunúť do koša") },
+      ))
+    )
+      return;
+    setDuplicityBusy(true);
+    try {
+      const r = await odstranDuplicity({ data: { company_id: cid, ids: duplicity.map((d) => d.id) } });
+      toast.success(t("Do koša presunuté: {n}", { n: r.presunute }));
+      if (r.chyby.length) toast.error(r.chyby.join("\n"));
+      setDuplicity(null);
+      setVybrane(new Set());
+      obnovPoctyMenu();
+      await obnov();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setDuplicityBusy(false);
+    }
+  }
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
 
   async function obnov() {
@@ -197,17 +250,27 @@ function Stranka() {
     ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: t("zo skenu") })),
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
 
-  // Hľadanie a obdobie len prechádzajú načítané doklady.
+  // Hľadanie a filtre len prechádzajú načítané doklady (zoznam je celý).
   const hladane = lf.q.trim().toLowerCase();
+  const filtre = {
+    druh: lf.filter("druh"),
+    platba: lf.filter("uhrada"),
+    zauct: lf.filter("zauct"),
+    podla: lf.filter("podla"),
+    od: obdobieOd,
+    do: obdobieDo,
+    citanie: lf.filter("citanie"),
+    nahral: lf.filter("nahral"),
+  };
   const zobrazene = riadky.filter((r) => {
-    const den = r.datum ? String(r.datum).slice(0, 10) : "";
-    if (obdobieOd && (!den || den < obdobieOd)) return false;
-    if (obdobieDo && (!den || den > obdobieDo)) return false;
+    if (!vyhovujeFiltrom(r, filtre)) return false;
     if (!hladane) return true;
     return [r.dodavatel, r.cislo, r.subor]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(hladane));
   });
+
+  const nahraliMoznosti = moznostiNahral(riadky, mena);
 
   // Kreslí sa len jedna strana; výber všetkých a súčty berú všetky zobrazené.
   const strankovanie = useStrankovanie(zobrazene, lf, { potrebneId: posledny.id });
@@ -221,8 +284,11 @@ function Stranka() {
     akcie: { obnov: () => void obnov() },
   });
 
-  // Zmena hľadania či obdobia zruší výber, aby hromadná akcia nezasiahla skrytý doklad.
-  useEffect(() => setVybrane(new Set()), [hladane, obdobieOd, obdobieDo]);
+  // Zmena hľadania či filtrov zruší výber, aby hromadná akcia nezasiahla skrytý doklad.
+  useEffect(
+    () => setVybrane(new Set()),
+    [hladane, filtre.druh, filtre.platba, filtre.zauct, filtre.podla, obdobieOd, obdobieDo, filtre.citanie, filtre.nahral],
+  );
 
   // „Vybrať všetky“ berie len zobrazené — skrytý doklad sa nesmie hromadne zmeniť ani zmazať.
   const vyberatelne = zobrazene.filter(jeVyberatelny);
@@ -589,14 +655,25 @@ function Stranka() {
         title={t("Nespracované doklady")}
         description={t("Všetko, čo príde e-mailom alebo nahráte, čaká tu. Otvorte doklad, určte druh, skontrolujte údaje, zaúčtujte a vytvorte.")}
         action={
-          <button
-            type="button"
-            onClick={() => input.current?.click()}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
-          >
-            {nahravam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {t("Nahrať doklady")}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void hladajDuplicity()}
+              disabled={duplicityBusy}
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-60"
+            >
+              {duplicityBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CopyX className="h-4 w-4" />}
+              {t("Odstrániť duplicity")}
+            </button>
+            <button
+              type="button"
+              onClick={() => input.current?.click()}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+            >
+              {nahravam ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {t("Nahrať doklady")}
+            </button>
+          </div>
         }
       />
       <PageBody>
@@ -631,7 +708,35 @@ function Stranka() {
         <DocumentListToolbar
           lf={lf}
           searchPlaceholder="Hľadať dodávateľa alebo číslo"
-          filters={[{ key: "obdobie", label: "Obdobie", type: "dateRange" }]}
+          filters={[
+            // Jednotné poradie: Obdobie · Zaúčtovanie · Úhrada · vlastné (Druh, Stav čítania, Nahral).
+            filterObdobia(["vystavenie", "nahratie"]),
+            // Pri nespracovaných „zaúčtované“ = nesie návrh zaúčtovania (predkontáciu).
+            filterZauctovania(),
+            filterUhrady(),
+            {
+              key: "druh",
+              label: "Druh dokladu",
+              type: "select",
+              options: [
+                ...DRUHY_NESPRACOVANYCH.map((d) => ({ value: d.kluc, label: d.nazov })),
+                { value: "neurceny", label: "Neurčený druh" },
+              ],
+            },
+            {
+              key: "citanie",
+              label: "Stav čítania",
+              type: "select",
+              options: [
+                { value: "vytazene", label: "Vyťažené" },
+                { value: "cita", label: "Číta sa…" },
+                { value: "chyba", label: "Doplniť ručne" },
+              ],
+            },
+            ...(nahraliMoznosti.length
+              ? [{ key: "nahral", label: "Nahral", type: "select" as const, options: nahraliMoznosti }]
+              : []),
+          ]}
         />
 
         {pocetVybranych > 0 ? (
@@ -936,6 +1041,46 @@ function Stranka() {
           }
         />
         {/* Súhrn hromadnej akcie — čo sa preskočilo a prečo. */}
+        <Dialog open={duplicity !== null} onOpenChange={(o) => !o && !duplicityBusy && setDuplicity(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogTitle>{t("Duplicitné doklady ({n})", { n: duplicity?.length ?? 0 })}</DialogTitle>
+            <DialogDescription>
+              {t("Tieto nespracované doklady už vo Fakteri sú — rovnaký súbor, alebo rovnaký dodávateľ (IČO), číslo a suma. Pri zhode medzi nespracovanými ostáva najstarší.")}
+            </DialogDescription>
+            <ul className="max-h-[50vh] space-y-2 overflow-y-auto text-sm">
+              {duplicity?.map((d) => (
+                <li key={d.id} className="rounded-md border border-border p-2">
+                  <div className="font-medium">{d.popis}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("duplicita: {agenda}", { agenda: t(NAZVY_AGEND_DUPLICITY[d.povod.agenda]) })}
+                    {d.povod.popis ? ` — ${d.povod.popis}` : ""}
+                    {" · "}
+                    {d.podla === "subor" ? t("rovnaký súbor") : t("rovnaké IČO, číslo a suma")}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDuplicity(null)}
+                disabled={duplicityBusy}
+                className="rounded-md border border-input px-3 py-2 text-sm hover:bg-muted"
+              >
+                {t("Zrušiť")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void potvrdOdstranenieDuplicit()}
+                disabled={duplicityBusy}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+              >
+                {duplicityBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t("Presunúť do koša")}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
         <Dialog open={vysledok !== null} onOpenChange={(o) => !o && setVysledok(null)}>
           <DialogContent className="max-w-lg">
             <DialogTitle>{vysledok?.nadpis}</DialogTitle>

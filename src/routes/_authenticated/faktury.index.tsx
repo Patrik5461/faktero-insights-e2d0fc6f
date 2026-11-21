@@ -90,6 +90,14 @@ import {
 } from "@/lib/faktero/efaktura/stav-efaktury";
 import { efakturaUzOdisla } from "@/lib/faktero/efaktura/stav-efaktury-texty";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
+import {
+  filterStavu,
+  filterObdobia,
+  filterZauctovania,
+  filterExportu,
+  filterUhrady,
+  filterVymazanych,
+} from "@/lib/faktero/filtre-dokladov";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
 import { PasVyberuFiltra, potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
@@ -102,6 +110,24 @@ import { zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
+
+/** Stav faktúry vo filtri „Stav“ (`?f[stav]=`); „Po splatnosti“ sa počíta z dátumu. */
+const STAVY_FAKTUR = [
+  { value: "draft", label: "Koncept" },
+  { value: "issued", label: "Vystavená" },
+  { value: "sent", label: "Odoslaná" },
+  { value: "paid", label: "Uhradená" },
+  { value: "overdue", label: "Po splatnosti" },
+  { value: "cancelled", label: "Stornovaná" },
+];
+const JE_STAV_FAKTURY = new Set(STAVY_FAKTUR.map((s) => s.value));
+
+/** Filter „Úhrada“ → kódy `payment_method` (aj staršie zápisy); prázdny spôsob = prevod. */
+const KODY_UHRADY: Record<string, string[]> = {
+  hotovost: ["cash", "hotovost"],
+  karta: ["card", "karta", "credit_card"],
+  prevod: ["bank_transfer", "transfer", "prevod"],
+};
 type BulkAction = null | "email" | "efaktura" | "clone" | "reminder" | "zip";
 
 /** Ponuka zoradenia. Prvá možnosť je predvolená — od najnovšej faktúry. */
@@ -190,6 +216,9 @@ function InvoicesPage() {
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const exportovane = lf.filter("export") as "" | "ano" | "nie";
   const overdueNoReminder = lf.zapnute("bezUpomienky");
+  const stavFaktury = JE_STAV_FAKTURY.has(lf.filter("stav")) ? lf.filter("stav") : "";
+  const zauctovane = lf.filter("zauct") as "" | "ano" | "nie";
+  const uhrada = KODY_UHRADY[lf.filter("uhrada")] ? lf.filter("uhrada") : "";
   // Opravné faktúry: dobropis `credit_note` a ťarchopis `debit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
@@ -219,6 +248,13 @@ function InvoicesPage() {
       // Koncept ani stornovaná sa do účtovníctva neexportujú, tak tu nepatria.
       if (exportovane === "ano") d = d.not("exported_at", "is", null);
       if (exportovane === "nie") d = d.is("exported_at", null).not("status", "in", "(draft,cancelled)");
+      if (stavFaktury && stavFaktury !== "overdue") d = d.eq("status", stavFaktury);
+      // Nezaúčtované = čakajú na zaúčtovanie; koncept a storno sa neúčtujú.
+      if (zauctovane === "ano") d = d.not("zauctovane_at", "is", null);
+      if (zauctovane === "nie") d = d.is("zauctovane_at", null).not("status", "in", "(draft,cancelled)");
+      if (uhrada === "prevod")
+        d = d.or(`payment_method.is.null,payment_method.in.(${KODY_UHRADY.prevod.join(",")})`);
+      else if (uhrada) d = d.in("payment_method", KODY_UHRADY[uhrada]);
       /*
         Neuhradené, po splatnosti a bez upomienky filtrovali kedysi len
         načítanú stránku — stránkovanie, počet aj „Vybrať všetko“ pracovali
@@ -226,12 +262,12 @@ function InvoicesPage() {
       */
       return filtrujNeuhradenePoSplatnosti(d, {
         neuhradene: !!neuhradene,
-        poSplatnosti: !!poSplatnosti,
+        poSplatnosti: !!poSplatnosti || stavFaktury === "overdue",
         bezUpomienky: overdueNoReminder,
         dnes: today,
       });
     },
-    [podla, obdobieOd, obdobieDo, exportovane, stavFiltra, stitokFiltra, neuhradene, poSplatnosti, overdueNoReminder, today],
+    [podla, obdobieOd, obdobieDo, exportovane, stavFaktury, zauctovane, uhrada, stavFiltra, stitokFiltra, neuhradene, poSplatnosti, overdueNoReminder, today],
   );
   const list = usePagedList({
     resource: "invoices",
@@ -245,7 +281,7 @@ function InvoicesPage() {
     orderBy: { column: "issue_date", ascending: false },
     upravDotaz,
     riadenie: lf,
-    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}|${stavFiltra}|${stitokFiltra}|${neuhradene ? 1 : 0}|${poSplatnosti ? 1 : 0}|${overdueNoReminder ? 1 : 0}|${today}`,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${exportovane}|${stavFaktury}|${zauctovane}|${uhrada}|${stavFiltra}|${stitokFiltra}|${neuhradene ? 1 : 0}|${poSplatnosti ? 1 : 0}|${overdueNoReminder ? 1 : 0}|${today}`,
   });
   // Predkontácie, vlastné stavy, štítky a uzávierka — raz za firmu, nie za riadok.
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "vystavena");
@@ -574,7 +610,7 @@ function InvoicesPage() {
     {
       companyId: getActiveCompanyId(),
       typy: kontextSuctu.typy,
-      status: status ?? null,
+      status: status ?? (stavFaktury && stavFaktury !== "overdue" ? stavFaktury : null),
       hladanie: list.search,
       podla,
       od: obdobieOd || null,
@@ -583,10 +619,20 @@ function InvoicesPage() {
       stitok: stitokFiltra || null,
       export: exportovane || null,
       neuhradene: !!neuhradene,
-      poSplatnosti: !!poSplatnosti,
+      poSplatnosti: !!poSplatnosti || stavFaktury === "overdue",
       bezUpomienky: overdueNoReminder,
     },
-    { vypnute: list.showDeleted, nonce: list.rows },
+    /* Zaúčtovanie a úhradu súčet v databáze (`suhrn_vystavenych_faktur`)
+       nepozná — radšej žiadny súčet než súčet za iné faktúry. Takisto keď
+       stav z menu (`?status=`) a z filtra nesedia. */
+    {
+      vypnute:
+        list.showDeleted ||
+        !!zauctovane ||
+        !!uhrada ||
+        (!!status && !!stavFaktury && stavFaktury !== status),
+      nonce: list.rows,
+    },
   );
   const emailableCount = selectedRows.filter(
     (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
@@ -1103,28 +1149,14 @@ function InvoicesPage() {
           searchPlaceholder="Hľadať číslo, odberateľa, IČO…"
           sortOptions={ZORADENIE_FAKTUR}
           filters={[
-            {
-              key: "obdobie",
-              label: "Obdobie",
-              type: "dateRange",
-              dateFieldOptions: [
-                { value: "vystavenie", label: "dátumu vystavenia" },
-                { value: "dodanie", label: "dátumu dodania" },
-                { value: "splatnost", label: "dátumu splatnosti" },
-              ],
-            },
-            {
-              key: "export",
-              label: "Export do účtovníctva",
-              type: "select",
-              options: [
-                { value: "ano", label: "Exportované" },
-                { value: "nie", label: "Neexportované" },
-              ],
-            },
+            filterStavu(STAVY_FAKTUR),
+            filterObdobia(["vystavenie", "dodanie", "splatnost"]),
+            filterZauctovania(),
+            filterExportu(),
+            filterUhrady(),
             { key: "bezUpomienky", label: "Po splatnosti bez upomienky", type: "checkbox" },
-            { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
             ...filtreStavuAStitkov(cis.stavy, cis.stitky),
+            filterVymazanych(),
           ]}
           previewToggle={bocny}
         />

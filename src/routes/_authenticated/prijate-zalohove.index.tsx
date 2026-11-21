@@ -38,8 +38,16 @@ import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { usePlatbyZaloh } from "@/hooks/usePlatbyZaloh";
 import { IkonaPlatbyZalohy, stavRiadkuZalohy } from "@/components/faktero/PlatbaZalohy";
 import {
+  filterExportu,
+  filterObdobia,
+  filterPlatby,
+  filterStavu,
+  filterUhrady,
+  filterVymazanych,
+} from "@/lib/faktero/filtre-dokladov";
+import { pouziFiltrePrijatych } from "@/lib/faktero/prijate-filtre-zoznamu";
+import {
   jeFilterPlatby,
-  MOZNOSTI_FILTRA_PLATBY,
   sediFiltruPlatby,
   zalohaUhradena,
 } from "@/lib/faktero/zalohove-platby";
@@ -85,6 +93,12 @@ function PrijateZalohovePage() {
   const lf = useListFilters({ pageSizeKey: "prijate-zalohove" });
   // Vymazané zálohy (deleted_at) — len na požiadanie, s tlačidlom Obnoviť.
   const ajVymazane = lf.zapnute("vymazane");
+  // Obdobie, export a úhrada idú do dotazu (strop 1 000 riadkov na požiadavku);
+  // stav a platba sa počítajú zo zúčtovania a banky, preto v pamäti.
+  const podla = lf.filter("podla") === "splatnost" ? "due_date" : "issue_date";
+  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
+  const exportFiltra = lf.filter("export");
+  const uhradaFiltra = lf.filter("uhrada");
   const { domaca } = useFormatMenyFirmy();
 
   async function load() {
@@ -103,6 +117,11 @@ function PrijateZalohovePage() {
           .eq("company_id", cid)
           .eq("type", "proforma");
         q = ajVymazane ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+        if (obdobieOd) q = q.gte(podla, obdobieOd);
+        if (obdobieDo) q = q.lte(podla, obdobieDo);
+        if (exportFiltra === "ano") q = q.not("exported_at", "is", null);
+        if (exportFiltra === "nie") q = q.is("exported_at", null);
+        q = pouziFiltrePrijatych(q, { uhrada: uhradaFiltra });
         return q
           .order("issue_date", { ascending: false })
           .order("id")
@@ -137,7 +156,7 @@ function PrijateZalohovePage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ajVymazane]);
+  }, [ajVymazane, podla, obdobieOd, obdobieDo, exportFiltra, uhradaFiltra]);
 
   /*
     Platby z banky: odchádzajúca platba podľa VS / účtu dodávateľa a sumy —
@@ -146,13 +165,14 @@ function PrijateZalohovePage() {
   */
   const idsRiadkov = useMemo(() => rows.map((r) => r.id), [rows]);
   const platby = usePlatbyZaloh("prijata", getActiveCompanyId(), idsRiadkov, () => load());
-  const lfPlatba = lf.filter("platba");
+  // Jednotné voľby (sparovana/navrh/nenajdena); staré odkazy majú uhradene/bez.
+  const lfPlatbaRaw = lf.filter("platba");
+  const lfPlatba =
+    lfPlatbaRaw === "sparovana" ? "uhradene" : lfPlatbaRaw === "nenajdena" ? "bez" : lfPlatbaRaw;
   const platbaFilter = jeFilterPlatby(lfPlatba) ? lfPlatba : "";
 
   const hladane = lf.q.trim().toLowerCase();
   const stav = lf.filter("stav");
-  const podla = lf.filter("podla") === "splatnost" ? "due_date" : "issue_date";
-  const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const zobrazene = useMemo(
     () =>
       rows.filter((r) => {
@@ -164,9 +184,6 @@ function PrijateZalohovePage() {
         // Stav rovnako ako odznak StavZalohy: zúčtovaná > zaplatená > čaká.
         const s = zuctovane[r.id] ? "zuctovana" : r.payment_date ? "zaplatena" : "caka";
         if (stav && s !== stav) return false;
-        const d = r[podla];
-        if (obdobieOd && (!d || d < obdobieOd)) return false;
-        if (obdobieDo && (!d || d > obdobieDo)) return false;
         if (
           platbaFilter &&
           !sediFiltruPlatby(platbaFilter, zalohaUhradena(r, "prijata"), stavRiadkuZalohy(platby, "prijata", r))
@@ -175,7 +192,7 @@ function PrijateZalohovePage() {
         return true;
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, zuctovane, hladane, stav, podla, obdobieOd, obdobieDo, platbaFilter, platby.uhrady, platby.podlaDokladu],
+    [rows, zuctovane, hladane, stav, platbaFilter, platby.uhrady, platby.podlaDokladu],
   );
 
   // Kreslí sa len jedna strana; súčty, výber a export pracujú so všetkými zobrazenými.
@@ -455,27 +472,17 @@ function PrijateZalohovePage() {
             lf={lf}
             searchPlaceholder="Hľadať dodávateľa alebo číslo"
             filters={[
-              {
-                key: "stav",
-                label: "Stav",
-                type: "select",
-                options: [
-                  { value: "caka", label: "Čaká na úhradu" },
-                  { value: "zaplatena", label: "Zaplatená" },
-                  { value: "zuctovana", label: "Zúčtovaná" },
-                ],
-              },
-              {
-                key: "obdobie",
-                label: "Obdobie",
-                type: "dateRange",
-                dateFieldOptions: [
-                  { value: "vystavenie", label: "dátumu vystavenia" },
-                  { value: "splatnost", label: "dátumu splatnosti" },
-                ],
-              },
-              { key: "platba", label: "Platba", type: "select", options: MOZNOSTI_FILTRA_PLATBY },
-              { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+              filterStavu([
+                { value: "caka", label: "Čaká na úhradu" },
+                { value: "zaplatena", label: "Zaplatená" },
+                { value: "zuctovana", label: "Zúčtovaná" },
+              ]),
+              filterObdobia(["vystavenie", "splatnost"]),
+              // Zálohy sa neúčtujú (Pohoda ich eviduje len kvôli úhrade) — bez Zaúčtovania.
+              filterExportu(),
+              filterPlatby("platba"),
+              filterUhrady(),
+              filterVymazanych(),
             ]}
           />
           {vybraneRiadky.length > 0 && !ajVymazane && getActiveCompanyId() ? (

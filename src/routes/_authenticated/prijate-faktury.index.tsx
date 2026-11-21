@@ -97,6 +97,15 @@ import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
 import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
 import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyDokladov";
+import {
+  filterExportu,
+  filterObdobia,
+  filterPlatby,
+  filterStavu,
+  filterUhrady,
+  filterZauctovania,
+} from "@/lib/faktero/filtre-dokladov";
+import { pouziFiltrePrijatych } from "@/lib/faktero/prijate-filtre-zoznamu";
 import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/doklady-hromadne";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 
@@ -259,6 +268,8 @@ function PurchaseInvoicesPage() {
   const podla = (lf.filter("podla") || "prijatie") as DatumObdobia;
   const { od: obdobieOd, do: obdobieDo } = lf.rozsah("obdobie");
   const exportovane = lf.filter("export") as "" | "ano" | "nie";
+  const zauctFiltra = lf.filter("zauct");
+  const uhradaFiltra = lf.filter("uhrada");
   const stavFiltra = lf.filter("stavDokladu");
   const stitokFiltra = lf.filter("stitok");
   const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
@@ -307,7 +318,7 @@ function PurchaseInvoicesPage() {
   });
   // Stránkovanie po 10/20/50/100 — súčty, výber a export pracujú so všetkými riadkami.
   const postupne = useStrankovanie(rad.zoradene, lf, {
-    reset: [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra, lfPlatba],
+    reset: [status, obdobieOd, obdobieDo, supplier, podla, exportovane, zauctFiltra, uhradaFiltra, stavFiltra, stitokFiltra, lfPlatba],
     potrebneId: posledny.id,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -864,6 +875,7 @@ function PurchaseInvoicesPage() {
       if (stavFiltra === "_bez") q = q.is("stav_id", null);
       else if (stavFiltra) q = q.eq("stav_id", stavFiltra);
       if (stitokFiltra) q = q.contains("stitky", [stitokFiltra]);
+      q = pouziFiltrePrijatych(q, { zauct: zauctFiltra, uhrada: uhradaFiltra });
       return q;
     };
     let nacitane: any[] | null = null;
@@ -957,7 +969,7 @@ function PurchaseInvoicesPage() {
   }
   useEffect(() => {
     load();
-  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane, stavFiltra, stitokFiltra, typFiltra]);
+  }, [status, obdobieOd, obdobieDo, supplier, podla, exportovane, zauctFiltra, uhradaFiltra, stavFiltra, stitokFiltra, typFiltra]);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -1157,50 +1169,16 @@ function PurchaseInvoicesPage() {
             lf={lf}
             searchPlaceholder="Dodávateľ…"
             filters={[
-              {
-                key: "stav",
-                label: "Stav",
-                type: "select",
-                options: [
-                  ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
-                  ...(danove ? [] : [{ value: CIASTOCNE, label: "Čiastočne uhradená" }]),
-                ],
-              },
-              {
-                key: "obdobie",
-                label: "Obdobie",
-                type: "dateRange",
-                dateFieldOptions: [
-                  { value: "prijatie", label: "dátumu prijatia" },
-                  { value: "vystavenie", label: "dátumu vystavenia" },
-                  { value: "dodanie", label: "dátumu dodania" },
-                  { value: "splatnost", label: "dátumu splatnosti" },
-                ],
-              },
-              {
-                key: "export",
-                label: "Export do účtovníctva",
-                type: "select",
-                options: [
-                  { value: "ano", label: "Exportované" },
-                  { value: "nie", label: "Neexportované" },
-                ],
-              },
+              filterStavu([
+                ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
+                ...(danove ? [] : [{ value: CIASTOCNE, label: "Čiastočne uhradená" }]),
+              ]),
+              filterObdobia(["prijatie", "vystavenie", "dodanie", "splatnost"]),
+              filterZauctovania(),
+              filterExportu(),
               // Daňový doklad k platbe sa neplatí — filter platby nemá zmysel.
-              ...(danove
-                ? []
-                : [
-                    {
-                      key: "platba",
-                      label: "Platba",
-                      type: "select" as const,
-                      options: [
-                        { value: "sparovana", label: "Spárovaná" },
-                        { value: "navrh", label: "Nájdená" },
-                        { value: "nenajdena", label: "Nenájdená" },
-                      ],
-                    },
-                  ]),
+              // Párovanie je v adrese historicky pod kľúčom `platba`.
+              ...(danove ? [] : [filterPlatby("platba"), filterUhrady()]),
               ...filtreStavuAStitkov(cis.stavy, cis.stitky),
             ]}
             previewToggle={bocny}
@@ -1216,6 +1194,9 @@ function PurchaseInvoicesPage() {
                     obdobie_od: obdobieOd,
                     obdobie_do: obdobieDo,
                     export: exportovane,
+                    zauct: zauctFiltra,
+                    uhrada: uhradaFiltra,
+                    platba: lfPlatba,
                   }}
                   pouzi={(h) => {
                     // Staršie uložené filtre majú mesiac — vtedy sa vyberalo podľa vystavenia.
@@ -1229,6 +1210,9 @@ function PurchaseInvoicesPage() {
                     nastav("obdobie_od", h.obdobie_od ?? mesiac?.od);
                     nastav("obdobie_do", h.obdobie_do ?? mesiac?.do);
                     nastav("export", h.export);
+                    nastav("zauct", h.zauct);
+                    nastav("uhrada", h.uhrada);
+                    nastav("platba", h.platba);
                     // Hľadanie aj filtre jedným zápisom do adresy — dva za sebou by sa prepísali.
                     void navigate({
                       to: ".",

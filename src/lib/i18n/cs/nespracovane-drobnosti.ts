@@ -10,4 +10,18 @@ export default {
     "<0>Naposledy otevřený doklad</0> je po návratu z detailu v seznamu zvýrazněný a seznam k němu doroluje — i když jste ho mezitím vytvořili a pokračovali dalším. Stejně to funguje v Účtenkách a Přijatých fakturách. Sloupec <1>Nahrál</1> ukazuje, odkud doklad přišel a kdo ho nahrál. V seznamu účtenek a přijatých faktur je sloupec <2>Zpracoval</2> — kdo doklad vytvořil z Nezpracovaných a kdy; totéž je i v detailu dokladu.",
   "Voľba <0>Uprednostniť domácu menu pri vyťažovaní</0> je predvolene zapnutá. Keď sú na doklade sumy vo viacerých menách — napríklad faktúra v cudzej mene s prepočtom alebo rekapituláciou DPH v domácej mene — Faktero vyťaží sumy v domácej mene firmy (slovenská firma EUR, česká CZK). Doklad len v jednej mene sa číta ako doteraz. Keď sú ceny položiek len v cudzej mene, položky čakajú vypnuté a doklad ide podľa súčtov.":
     "Volba <0>Upřednostnit domácí měnu při vytěžování</0> je ve výchozím stavu zapnutá. Když jsou na dokladu částky ve více měnách — například faktura v cizí měně s přepočtem nebo rekapitulací DPH v domácí měně — Faktero vytěží částky v domácí měně firmy (slovenská firma EUR, česká CZK). Doklad jen v jedné měně se čte jako dosud. Když jsou ceny položek jen v cizí měně, položky čekají vypnuté a doklad jde podle součtů.",
+  // Filtre zoznamu Nespracovaných (21. 11.).
+  "Neurčený druh": "Neurčený druh",
+  "Stav čítania": "Stav čtení",
+  // Odstrániť duplicity v Nespracovaných (21. 11.).
+  "Odstrániť duplicity": "Odstranit duplicity",
+  "Duplicity sa nenašli.": "Duplicity se nenašly.",
+  "Presunúť duplicitné doklady ({n}) do koša? Z koša sa dajú obnoviť.": "Přesunout duplicitní doklady ({n}) do koše? Z koše je lze obnovit.",
+  "Presunúť do koša": "Přesunout do koše",
+  "Do koša presunuté: {n}": "Přesunuto do koše: {n}",
+  "Duplicitné doklady ({n})": "Duplicitní doklady ({n})",
+  "Tieto nespracované doklady už vo Fakteri sú — rovnaký súbor, alebo rovnaký dodávateľ (IČO), číslo a suma. Pri zhode medzi nespracovanými ostáva najstarší.": "Tyto nezpracované doklady už ve Fakteru jsou — stejný soubor, nebo stejný dodavatel (IČO), číslo a částka. Při shodě mezi nezpracovanými zůstává nejstarší.",
+  "duplicita: {agenda}": "duplicita: {agenda}",
+  "rovnaký súbor": "stejný soubor",
+  "rovnaké IČO, číslo a suma": "stejné IČO, číslo a částka",
 };

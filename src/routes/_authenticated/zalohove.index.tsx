@@ -37,7 +37,44 @@ import { PasVyberuFiltra, potvrdHromadneMazanie } from "@/components/faktero/Hro
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { usePlatbyZaloh } from "@/hooks/usePlatbyZaloh";
 import { IkonaPlatbyZalohy } from "@/components/faktero/PlatbaZalohy";
-import { jeFilterPlatby, MOZNOSTI_FILTRA_PLATBY } from "@/lib/faktero/zalohove-platby";
+import {
+  filterStavu,
+  filterObdobia,
+  filterExportu,
+  filterPlatby,
+  filterUhrady,
+  filterVymazanych,
+} from "@/lib/faktero/filtre-dokladov";
+
+/** Stav zálohovej vo filtri „Stav“ (`?f[stav]=`). */
+const STAVY_ZALOHOVYCH = [
+  { value: "draft", label: "Koncept" },
+  { value: "issued", label: "Vystavená" },
+  { value: "sent", label: "Odoslaná" },
+  { value: "paid", label: "Uhradená" },
+  { value: "cancelled", label: "Stornovaná" },
+];
+const JE_STAV_ZALOHOVEJ = new Set(STAVY_ZALOHOVYCH.map((s) => s.value));
+
+/** Filter „Úhrada“ → kódy `payment_method` (aj staršie zápisy); prázdny spôsob = prevod. */
+const KODY_UHRADY: Record<string, string[]> = {
+  hotovost: ["cash", "hotovost"],
+  karta: ["card", "karta", "credit_card"],
+  prevod: ["bank_transfer", "transfer", "prevod"],
+};
+
+/*
+  Filter „Platba“ (`?f[platba]=`) má voľby ako všade (spárovaná / nájdená /
+  nenájdená). Staré hodnoty z uložených filtrov a odkazov platia ďalej:
+  `uhradene` = spárovaná, `bez` = nenájdená.
+*/
+type PlatbaZalohovej = "sparovana" | "navrh" | "nenajdena" | "";
+function platbaZalohovej(v: string): PlatbaZalohovej {
+  if (v === "sparovana" || v === "uhradene") return "sparovana";
+  if (v === "navrh") return "navrh";
+  if (v === "nenajdena" || v === "bez") return "nenajdena";
+  return "";
+}
 
 /** Žiadny doklad — `in` s prázdnym zoznamom PostgREST neprijme. */
 const ZIADNE_ID = "00000000-0000-0000-0000-000000000000";
@@ -62,8 +99,16 @@ function ProformaListPage() {
     faktúr (prichádzajúca platba podľa VS a sumy). Zoznam sa stránkuje na
     serveri, preto filter „Platba“ ide do dotazu — návrhy dodajú zoznam id.
   */
-  const lfPlatba = lf.filter("platba");
-  const platbaFilter = jeFilterPlatby(lfPlatba) ? lfPlatba : "";
+  const platbaFilter = platbaZalohovej(lf.filter("platba"));
+  // Stará hodnota v adrese (`uhradene`, `bez`) sa prepíše na novú, nech ju lišta ukáže.
+  const platbaVAdrese = lf.filter("platba");
+  const setFilter = lf.setFilter;
+  useEffect(() => {
+    if (platbaVAdrese && platbaVAdrese !== platbaFilter) setFilter("platba", platbaFilter);
+  }, [platbaVAdrese, platbaFilter, setFilter]);
+  const stavZalohovej = JE_STAV_ZALOHOVEJ.has(lf.filter("stav")) ? lf.filter("stav") : "";
+  const exportovane = lf.filter("export") as "" | "ano" | "nie";
+  const uhrada = KODY_UHRADY[lf.filter("uhrada")] ? lf.filter("uhrada") : "";
   const [idsStrany, setIdsStrany] = useState<string[]>([]);
   const obnovZoznam = useRef<() => void>(() => {});
   const platby = usePlatbyZaloh("vydana", getActiveCompanyId(), idsStrany, () => obnovZoznam.current());
@@ -71,17 +116,24 @@ function ProformaListPage() {
   const upravDotaz = useCallback(
     (dotaz: any) => {
       let q = filtrujObdobie(dotaz, podla, obdobieOd || null, obdobieDo || null);
-      if (platbaFilter === "uhradene") q = q.eq("status", "paid");
+      if (stavZalohovej) q = q.eq("status", stavZalohovej);
+      // Koncept ani stornovaná sa do účtovníctva neexportujú.
+      if (exportovane === "ano") q = q.not("exported_at", "is", null);
+      if (exportovane === "nie") q = q.is("exported_at", null).not("status", "in", "(draft,cancelled)");
+      if (uhrada === "prevod")
+        q = q.or(`payment_method.is.null,payment_method.in.(${KODY_UHRADY.prevod.join(",")})`);
+      else if (uhrada) q = q.in("payment_method", KODY_UHRADY[uhrada]);
+      if (platbaFilter === "sparovana") q = q.eq("status", "paid");
       else if (platbaFilter === "navrh")
         q = q.in("id", navrhIds.length ? navrhIds : [ZIADNE_ID]).not("status", "in", "(paid,draft,cancelled)");
-      else if (platbaFilter === "bez") {
+      else if (platbaFilter === "nenajdena") {
         // Hotovosť a karta sa na účte nehľadajú (rovnako ako ikonka v riadku).
         q = q.not("status", "in", "(paid,draft,cancelled)").not("payment_method", "in", "(cash,card)");
         if (navrhIds.length) q = q.not("id", "in", `(${navrhIds.join(",")})`);
       }
       return q;
     },
-    [podla, obdobieOd, obdobieDo, platbaFilter, navrhIds],
+    [podla, obdobieOd, obdobieDo, stavZalohovej, exportovane, uhrada, platbaFilter, navrhIds],
   );
   const list = usePagedList({
     resource: "invoices",
@@ -91,7 +143,7 @@ function ProformaListPage() {
     orderBy: { column: "issue_date", ascending: false },
     upravDotaz,
     riadenie: lf,
-    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${platbaFilter}|${platbaFilter ? navrhIds.join(",") : ""}`,
+    filterKey: `${podla}|${obdobieOd}|${obdobieDo}|${stavZalohovej}|${exportovane}|${uhrada}|${platbaFilter}|${platbaFilter ? navrhIds.join(",") : ""}`,
   });
   obnovZoznam.current = () => list.reload();
   useEffect(() => {
@@ -102,12 +154,15 @@ function ProformaListPage() {
     {
       companyId: getActiveCompanyId(),
       typy: ["proforma"],
+      status: stavZalohovej || null,
       hladanie: list.search,
       podla,
       od: obdobieOd || null,
       do: obdobieDo || null,
+      export: exportovane || null,
     },
-    { vypnute: list.showDeleted, nonce: list.rows },
+    // Platbu a úhradu súčet v databáze nepozná — radšej žiadny súčet než nesprávny.
+    { vypnute: list.showDeleted || !!platbaFilter || !!uhrada, nonce: list.rows },
   );
   // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
   const ajVymazane = lf.zapnute("vymazane");
@@ -376,18 +431,12 @@ function ProformaListPage() {
           lf={lf}
           searchPlaceholder="Hľadať číslo, odberateľa, IČO…"
           filters={[
-            {
-              key: "obdobie",
-              label: "Obdobie",
-              type: "dateRange",
-              dateFieldOptions: [
-                { value: "vystavenie", label: "dátumu vystavenia" },
-                { value: "dodanie", label: "dátumu dodania" },
-                { value: "splatnost", label: "dátumu splatnosti" },
-              ],
-            },
-            { key: "platba", label: "Platba", type: "select", options: MOZNOSTI_FILTRA_PLATBY },
-            { key: "vymazane", label: "Zobraziť vymazané", type: "checkbox" },
+            filterStavu(STAVY_ZALOHOVYCH),
+            filterObdobia(["vystavenie", "dodanie", "splatnost"]),
+            filterExportu(),
+            filterPlatby("platba"),
+            filterUhrady(),
+            filterVymazanych(),
           ]}
         />
         {list.selectedIds.length > 0 && !list.showDeleted && getActiveCompanyId() ? (

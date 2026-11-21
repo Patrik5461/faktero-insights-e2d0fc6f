@@ -20,7 +20,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       supabase
         .from("nespracovane_doklady")
         .select(
-          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph, supplier_iban:ai->>supplier_iban, invoice_number:ai->>invoice_number, amount_total:ai->>amount_total, document_type:ai->>document_type, document_subtype:ai->>document_subtype, document_title:ai->>document_title, ekasa_uid:ai->>ekasa_uid, cash_register_code:ai->>cash_register_code, document_number:ai->>document_number, paid_invoice_number:ai->>paid_invoice_number, vat_amount:ai->>vat_amount, ai_items:ai->items, ai_vat_breakdown:ai->vat_breakdown",
+          "id, zdroj, stav, druh, file_name, udaje, chyba, created_at, created_by, inbox_message_id, buyer_name:ai->>buyer_name, buyer_ico:ai->>buyer_ico, buyer_dic:ai->>buyer_dic, buyer_ic_dph:ai->>buyer_ic_dph, supplier_name:ai->>supplier_name, supplier_ico:ai->>supplier_ico, supplier_dic:ai->>supplier_dic, supplier_ic_dph:ai->>supplier_ic_dph, supplier_iban:ai->>supplier_iban, invoice_number:ai->>invoice_number, amount_total:ai->>amount_total, document_type:ai->>document_type, document_subtype:ai->>document_subtype, document_title:ai->>document_title, ekasa_uid:ai->>ekasa_uid, cash_register_code:ai->>cash_register_code, document_number:ai->>document_number, paid_invoice_number:ai->>paid_invoice_number, vat_amount:ai->>vat_amount, ai_items:ai->items, ai_vat_breakdown:ai->vat_breakdown, ai_platba:ai->>payment_method",
         )
         .eq("company_id", data.company_id)
         .order("created_at", { ascending: false })
@@ -29,7 +29,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       supabase
         .from("expense_documents")
         .select(
-          "id, supplier_name, document_number, total_amount, currency, issue_date, created_at, created_by, source, qr_raw, ai_type:ai_raw->>document_type, ai_subtype:ai_raw->>document_subtype, ai_druh:ai_raw->>druh",
+          "id, supplier_name, document_number, total_amount, currency, issue_date, created_at, created_by, source, qr_raw, payment_method, pohoda_predkontacia, zauctovane_at, ai_type:ai_raw->>document_type, ai_subtype:ai_raw->>document_subtype, ai_druh:ai_raw->>druh",
         )
         .eq("company_id", data.company_id)
         .eq("status", "new")
@@ -113,9 +113,13 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         },
         r.file_name,
       );
+    // Filtre zoznamu (Úhrada, Zaúčtovanie) — rovnaké ako v Prijatých bločkoch.
+    const { sposobUhrady } = await import("./nespracovane-filtre-zoznamu");
     return {
       doklady: (rows ?? []).map((r: any) => ({
         ...zhrnutieNespracovaneho(r),
+        uhradaFiltra: sposobUhrady(r.udaje?.platba, r.ai_platba),
+        navrhZauctovania: !!String(r.udaje?.kody?.predkontacia ?? "").trim(),
         odberatelNesedi: nesedi(r),
         duplicita: duplicity.get(r.id) ?? null,
         vydanaNavrh: r.druh !== "vydana" && vydane?.get(r.id)?.navrh ? true : false,
@@ -128,6 +132,8 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       */
       blocky: (blocky ?? []).map((b: any) => ({
         ...zhrnutieBlocku(b),
+        uhradaFiltra: sposobUhrady(b.payment_method),
+        navrhZauctovania: !!String(b.pohoda_predkontacia ?? "").trim() || !!b.zauctovane_at,
         skutocnyBlocek: jeSkutocnyBlocek({
           source: b.source,
           qr_raw: b.qr_raw,

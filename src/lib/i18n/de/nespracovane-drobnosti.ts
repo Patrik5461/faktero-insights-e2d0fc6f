@@ -10,4 +10,18 @@ export default {
     "Der <0>zuletzt geöffnete Beleg</0> ist nach der Rückkehr aus dem Detail in der Liste hervorgehoben, und die Liste scrollt zu ihm — auch wenn Sie ihn inzwischen angelegt und mit dem nächsten weitergemacht haben. Genauso funktioniert es bei Kassenbons und Eingangsrechnungen. Die Spalte <1>Hochgeladen von</1> zeigt, woher der Beleg kam und wer ihn hochgeladen hat. In der Liste der Kassenbons und Eingangsrechnungen gibt es die Spalte <2>Verarbeitet von</2> — wer den Beleg aus den unverarbeiteten Belegen angelegt hat und wann; dasselbe steht auch im Detail des Belegs.",
   "Voľba <0>Uprednostniť domácu menu pri vyťažovaní</0> je predvolene zapnutá. Keď sú na doklade sumy vo viacerých menách — napríklad faktúra v cudzej mene s prepočtom alebo rekapituláciou DPH v domácej mene — Faktero vyťaží sumy v domácej mene firmy (slovenská firma EUR, česká CZK). Doklad len v jednej mene sa číta ako doteraz. Keď sú ceny položiek len v cudzej mene, položky čakajú vypnuté a doklad ide podľa súčtov.":
     "Die Option <0>Inlandswährung beim Auslesen bevorzugen</0> ist standardmäßig eingeschaltet. Enthält ein Beleg Beträge in mehreren Währungen — etwa eine Rechnung in Fremdwährung mit Umrechnung oder einer USt-Zusammenfassung in der Inlandswährung —, liest Faktero die Beträge in der Inlandswährung des Unternehmens aus (slowakisches Unternehmen EUR, tschechisches CZK). Ein Beleg in nur einer Währung wird wie bisher gelesen. Sind die Positionspreise nur in der Fremdwährung angegeben, bleiben die Positionen ausgeschaltet und der Beleg wird nach den Summen verbucht.",
+  // Filtre zoznamu Nespracovaných (21. 11.).
+  "Neurčený druh": "Belegart nicht bestimmt",
+  "Stav čítania": "Lesestatus",
+  // Odstrániť duplicity v Nespracovaných (21. 11.).
+  "Odstrániť duplicity": "Duplikate entfernen",
+  "Duplicity sa nenašli.": "Keine Duplikate gefunden.",
+  "Presunúť duplicitné doklady ({n}) do koša? Z koša sa dajú obnoviť.": "Doppelte Belege ({n}) in den Papierkorb verschieben? Aus dem Papierkorb lassen sie sich wiederherstellen.",
+  "Presunúť do koša": "In den Papierkorb verschieben",
+  "Do koša presunuté: {n}": "In den Papierkorb verschoben: {n}",
+  "Duplicitné doklady ({n})": "Doppelte Belege ({n})",
+  "Tieto nespracované doklady už vo Fakteri sú — rovnaký súbor, alebo rovnaký dodávateľ (IČO), číslo a suma. Pri zhode medzi nespracovanými ostáva najstarší.": "Diese unverarbeiteten Belege sind bereits in Faktero — gleiche Datei oder gleicher Lieferant (IČO), gleiche Nummer und gleicher Betrag. Bei Übereinstimmung unter unverarbeiteten Belegen bleibt der älteste.",
+  "duplicita: {agenda}": "Duplikat: {agenda}",
+  "rovnaký súbor": "gleiche Datei",
+  "rovnaké IČO, číslo a suma": "gleiche IČO, Nummer und Betrag",
 };

@@ -41,7 +41,13 @@ import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
 import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
 import { BodkaPlatby } from "@/components/faktero/IkonaPlatby";
 import {
-  FILTER_STAVU_PLATBY,
+  filterExportu,
+  filterObdobia,
+  filterPlatby,
+  filterUhrady,
+  filterZauctovania,
+} from "@/lib/faktero/filtre-dokladov";
+import {
   odkazNaPohyb,
   pohybZNavrhu,
   pohybZUhrady,
@@ -1114,54 +1120,14 @@ function DokladyPage() {
           previewToggle={bocny}
           searchPlaceholder="Dodávateľ, IČO, číslo…"
           filters={[
-            {
-              key: "platba",
-              label: "Úhrada",
-              type: "select",
-              options: [
-                { value: "hotovost", label: "Hotovosť" },
-                { value: "karta", label: "Karta" },
-                { value: "prevod", label: "Prevod" },
-              ],
-            },
-            {
-              key: "stavPlatby",
-              label: "Platba",
-              type: "select",
-              options: FILTER_STAVU_PLATBY,
-            },
-            {
-              key: "zauct",
-              label: "Zaúčtovanie",
-              type: "select",
-              options: [
-                { value: "ano", label: "Zaúčtované" },
-                { value: "nie", label: "Nezaúčtované" },
-              ],
-            },
-            {
-              key: "export",
-              label: "Export do účtovníctva",
-              type: "select",
-              options: [
-                { value: "ano", label: "Exportované" },
-                { value: "nie", label: "Neexportované" },
-              ],
-            },
+            // Jednotné poradie (filtre-dokladov.ts). Stav riešia záložky.
             // Nespracované ukazujú všetky dátumy — obdobie tam nemá zmysel.
-            ...(bezMesiaca
-              ? []
-              : [
-                  {
-                    key: "obdobie",
-                    label: "Obdobie",
-                    type: "dateRange" as const,
-                    dateFieldOptions: [
-                      { value: "vystavenie", label: "dátumu vystavenia" },
-                      { value: "nahratie", label: "dátumu nahratia" },
-                    ],
-                  },
-                ]),
+            ...(bezMesiaca ? [] : [filterObdobia(["vystavenie", "nahratie"])]),
+            filterZauctovania(),
+            filterExportu(),
+            // Historické kľúče: `stavPlatby` = párovanie, `platba` = spôsob úhrady.
+            filterPlatby("stavPlatby"),
+            filterUhrady("platba"),
             ...filtreStavuAStitkov(cis.stavy, cis.stitky),
           ]}
           extra={

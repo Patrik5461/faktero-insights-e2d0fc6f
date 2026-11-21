@@ -44,7 +44,15 @@ import { toast } from "sonner";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
-import { DocumentListToolbar, PRVOK } from "@/components/faktero/DocumentListToolbar";
+import { DocumentListToolbar } from "@/components/faktero/DocumentListToolbar";
+import { filterExportu, filterObdobia, filterPlatby } from "@/lib/faktero/filtre-dokladov";
+import { hraniceMesiacaBlockov } from "@/lib/faktero/doklad-filtre-zoznamu";
+
+/** Deň `RRRR-MM-DD` → okamih začiatku dňa v miestnom čase (ISO) — nahratie je časová pečiatka. */
+function zaciatokDna(den: string, posun = 0): string {
+  const [y, m, d] = den.split("-").map(Number);
+  return new Date(y!, m! - 1, d! + posun).toISOString();
+}
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
@@ -94,11 +102,35 @@ function OstatneDokladyPage() {
   const bezMesiaca = zalozka === "nespracovane";
 
   const lf = useListFilters({ pageSizeKey: "ostatne-doklady" });
-  // Mesiac doručenia je v adrese; bez neho platí aktuálny mesiac, „vsetky“ = všetky mesiace.
-  const mesiacZAdresy = lf.filter("mesiac");
-  const month =
-    mesiacZAdresy === "vsetky" ? "" : mesiacZAdresy || new Date().toISOString().slice(0, 7);
-  const setMonth = (m: string) => lf.setFilter("mesiac", m || "vsetky");
+  /*
+    Filter Obdobie (jednotný s ostatnými zoznamami) — ide priamo do dotazu,
+    podľa dátumu doručenia alebo nahratia. Starý výber mesiaca (`f.mesiac`)
+    sa preloží na obdobie toho mesiaca; adresu potom prepíše efekt nižšie.
+  */
+  const mesiacStary = hraniceMesiacaBlockov(lf.filter("mesiac"));
+  const rozsahObdobia = lf.rozsah("obdobie");
+  const maObdobie = !!(rozsahObdobia.od || rozsahObdobia.do);
+  const obdobieOd = maObdobie ? rozsahObdobia.od : (mesiacStary?.od ?? "");
+  const obdobieDo = maObdobie ? rozsahObdobia.do : (mesiacStary?.do ?? "");
+  const podla = lf.filter("podla") === "nahratie" ? "nahratie" : "prijatie";
+  const exportFiltra = lf.filter("export");
+  useEffect(() => {
+    if (!lf.filter("mesiac")) return;
+    navigate({
+      to: ".",
+      replace: true,
+      search: (prev: Record<string, unknown>) => {
+        const f: Record<string, string> = { ...((prev.f as Record<string, string>) ?? {}) };
+        delete f.mesiac;
+        if (!maObdobie && mesiacStary) {
+          f.obdobie_od = mesiacStary.od;
+          f.obdobie_do = mesiacStary.do;
+        }
+        return { ...prev, f: Object.keys(f).length ? f : undefined };
+      },
+    } as any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lf.filter("mesiac")]);
   const druh = lf.filter("druh") as DruhOstatneho | "";
   const [rows, setRows] = useState<any[]>([]);
   // Priečinky (zmluvy, objednávky…) — filtrujú sa na obrazovke z načítaných dokladov.
@@ -185,8 +217,17 @@ function OstatneDokladyPage() {
         data: {
           company_id: cid,
           stav,
-          month: bezMesiaca ? null : month || null,
           kind: druh || null,
+          // Nespracované ukazujú všetky dátumy — obdobie tam neplatí.
+          ...(bezMesiaca
+            ? {}
+            : podla === "nahratie"
+              ? {
+                  nahrate_od: obdobieOd ? zaciatokDna(obdobieOd) : null,
+                  nahrate_do: obdobieDo ? zaciatokDna(obdobieDo, 1) : null,
+                }
+              : { prijate_od: obdobieOd || null, prijate_do: obdobieDo || null }),
+          export: exportFiltra === "ano" || exportFiltra === "nie" ? exportFiltra : null,
         },
       });
       setRows(data);
@@ -206,7 +247,7 @@ function OstatneDokladyPage() {
 
   useEffect(() => {
     refresh(); /* eslint-disable-next-line */
-  }, [stav, month, druh]);
+  }, [stav, obdobieOd, obdobieDo, podla, exportFiltra, druh]);
 
   const navrhyFn = useServerFn(navrhniParovanieOstatnych);
   const sparujFn = useServerFn(potvrdParovanieOstatneho);
@@ -487,6 +528,13 @@ function OstatneDokladyPage() {
           lf={lf}
           searchPlaceholder="Hľadať odosielateľa alebo predmet…"
           filters={[
+            // Jednotné poradie (filtre-dokladov.ts). Stav riešia záložky;
+            // zaúčtovanie ani spôsob úhrady iné doklady nemajú.
+            // Nespracované ukazujú všetky dátumy — obdobie tam nemá zmysel.
+            ...(bezMesiaca ? [] : [filterObdobia(["prijatie", "nahratie"])]),
+            filterExportu(),
+            // Historický kľúč `platba` = párovanie s pohybom na účte.
+            filterPlatby("platba"),
             {
               key: "druh",
               label: "Druh",
@@ -504,17 +552,6 @@ function OstatneDokladyPage() {
                 { value: "__bez", label: "Bez priečinka" },
               ],
             },
-            {
-              key: "platba",
-              label: "Platba",
-              type: "select",
-              allLabel: "Všetky stavy platby",
-              options: [
-                { value: "sparovana", label: "Spárovaná" },
-                { value: "navrh", label: "Nájdená" },
-                { value: "nenajdena", label: "Nenájdená" },
-              ],
-            },
             ...(stitkyNaVyber.length
               ? [
                   {
@@ -526,28 +563,6 @@ function OstatneDokladyPage() {
                 ]
               : []),
           ]}
-          extra={
-            !bezMesiaca && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="month"
-                  aria-label={t("Mesiac doručenia")}
-                  title={t("Mesiac doručenia")}
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                  className={`${PRVOK} px-2`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setMonth("")}
-                  disabled={!month}
-                  className={`${PRVOK} px-3 hover:bg-secondary disabled:opacity-40`}
-                >
-                  {t("Všetky")}
-                </button>
-              </div>
-            )
-          }
         />
 
         {vybrane.length > 0 && (

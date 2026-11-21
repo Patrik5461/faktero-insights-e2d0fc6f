@@ -60,6 +60,14 @@ export const zoznamOstatnychFn = createServerFn({ method: "POST" })
         kind: z.enum(DRUHY_KLUCE).nullable().optional(),
         employee_id: z.string().uuid().nullable().optional(),
         financing_contract_id: z.string().uuid().nullable().optional(),
+        /** Filter Obdobie podľa dátumu doručenia (`received_date`), dni RRRR-MM-DD vrátane. */
+        prijate_od: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        prijate_do: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        /** Filter Obdobie podľa nahratia — okamihy (ISO) spočítané v prehliadači, `do` výlučne. */
+        nahrate_od: z.string().datetime({ offset: true }).nullable().optional(),
+        nahrate_do: z.string().datetime({ offset: true }).nullable().optional(),
+        /** Filter Export do účtovníctva (`exported_at`). */
+        export: z.enum(["ano", "nie"]).nullable().optional(),
       })
       .parse(d),
   )
@@ -72,8 +80,23 @@ export const zoznamOstatnychFn = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id)
       .order("received_date", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(1000);
     if (data.stav !== "all") q = q.eq("status", data.stav);
+    if (data.prijate_od) q = q.gte("received_date", data.prijate_od);
+    if (data.prijate_do) q = q.lte("received_date", data.prijate_do);
+    if (data.nahrate_od || data.nahrate_do) {
+      // Staré doklady nemajú `nahrane_at` — berie sa `created_at`.
+      const casy = (stlpec: string) =>
+        [
+          data.nahrate_od ? `${stlpec}.gte.${data.nahrate_od}` : null,
+          data.nahrate_do ? `${stlpec}.lt.${data.nahrate_do}` : null,
+        ]
+          .filter(Boolean)
+          .join(",");
+      q = q.or(`and(${casy("nahrane_at")}),and(nahrane_at.is.null,${casy("created_at")})`);
+    }
+    if (data.export === "ano") q = q.not("exported_at", "is", null);
+    if (data.export === "nie") q = q.is("exported_at", null);
     if (data.kind) q = q.eq("kind", data.kind);
     if (data.employee_id) q = q.eq("employee_id", data.employee_id);
     if (data.financing_contract_id) q = q.eq("financing_contract_id", data.financing_contract_id);
