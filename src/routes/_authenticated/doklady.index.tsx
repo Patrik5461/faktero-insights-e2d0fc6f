@@ -10,7 +10,7 @@ import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyE
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
 import { VyuctovanieZVyberu } from "@/components/faktero/VyuctovanieZVyberu";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useRadenie } from "@/hooks/useRadenie";
@@ -18,6 +18,7 @@ import { stiahniExcel, stlpceRozpisuDph, tabulka } from "@/lib/faktero/excel-zoz
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { uhradaSlovom } from "@/lib/faktero/payment-method";
 import { sPolozkami, SELECT_DOKLADOV } from "@/lib/faktero/stlpce-zoznamov";
+import { pouziFiltreBlockov } from "@/lib/faktero/doklad-filtre-zoznamu";
 import { vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
 import { vMesiaci } from "@/lib/faktero/doklady-mesiac";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
@@ -36,6 +37,7 @@ import {
 } from "@/lib/faktero/doklad-parovanie.functions";
 import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
 import { PasNavrhovPlatieb } from "@/components/faktero/PasNavrhovPlatieb";
+import { BodkaPlatby } from "@/components/faktero/IkonaPlatby";
 import {
   FILTER_STAVU_PLATBY,
   odkazNaPohyb,
@@ -61,6 +63,7 @@ import {
 import {
   Camera,
   CheckCircle2,
+  ChevronDown,
   Undo2,
   Download,
   FileInput,
@@ -205,6 +208,8 @@ function DokladyPage() {
   /** Ktorý doklad je uhradený z účtu, kedy a ktorým pohybom. */
   const [uhrady, setUhrady] = useState<Record<string, UhradaDokladu>>({});
   const [navrhy, setNavrhy] = useState<any[]>([]);
+  /** Zoznam nájdených platieb kartou je predvolene zbalený (len pás s počtom). */
+  const [kartyRozbalene, setKartyRozbalene] = useState(false);
   /** Odkedy sa platby hľadajú a či má firma účet — bez toho sa „nenájdená“ nehlási. */
   const [hladanie, setHladanie] = useState<{ maUcet: boolean; od: string | null }>({
     maUcet: false,
@@ -232,6 +237,9 @@ function DokladyPage() {
       hladaneOd: hladanie.od,
     });
   const stavPlatbyFiltra = lf.filter("stavPlatby");
+  /** Export do účtovníctva a zaúčtovanie idú do dotazu (doklad-filtre-zoznamu.ts). */
+  const exportFiltra = lf.filter("export");
+  const zauctFiltra = lf.filter("zauct");
   const rows = useMemo(() => {
     const h = hladaj.trim().toLowerCase();
     return vsetkyRiadky.filter(
@@ -327,6 +335,7 @@ function DokladyPage() {
     rows.map((r: any) => r.id),
   );
   const [loading, setLoading] = useState(true);
+  const poslednyDotaz = useRef(0);
   /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
   const [presuvam, setPresuvam] = useState<string | null>(null);
   const { mesiac: mesiacZAdresy, stav: zalozkaZAdresy } = Route.useSearch();
@@ -521,6 +530,8 @@ function DokladyPage() {
    */
   async function refresh(ponechatVyber = false) {
     if (!cid) return;
+    // Rýchle prepínanie filtrov — starší dotaz nesmie prepísať novší.
+    const cislo = ++poslednyDotaz.current;
     setLoading(true);
     try {
       /*
@@ -538,10 +549,11 @@ function DokladyPage() {
           .order("created_at", { ascending: false })
           .order("id")
           .range(od, po);
-        if (status && status !== "all") q = q.eq("status", status);
+        q = pouziFiltreBlockov(q, { stav: status, export: exportFiltra, zauct: zauctFiltra });
         if (mesiacFiltra) q = vMesiaci(q, mesiacFiltra);
         return q;
       });
+      if (cislo !== poslednyDotaz.current) return;
       setRows(data ?? []);
       if (ponechatVyber) {
         const v = new Set((data ?? []).map((r: any) => r.id as string));
@@ -585,7 +597,7 @@ function DokladyPage() {
     } catch (e: any) {
       toast.error(e?.message ?? t("Chyba pri načítaní"));
     } finally {
-      setLoading(false);
+      if (cislo === poslednyDotaz.current) setLoading(false);
     }
   }
   async function doPrijatych(r: any) {
@@ -617,7 +629,7 @@ function DokladyPage() {
 
   useEffect(() => {
     refresh(); /* eslint-disable-next-line */
-  }, [status, month]);
+  }, [status, month, exportFiltra, zauctFiltra]);
 
   // Záložka mení len `stav` — hľadanie, mesiac a filtre z adresy ostávajú.
   function prepniZalozku(kluc: ZalozkaDokladov) {
@@ -988,6 +1000,24 @@ function DokladyPage() {
               type: "select",
               options: FILTER_STAVU_PLATBY,
             },
+            {
+              key: "zauct",
+              label: "Zaúčtovanie",
+              type: "select",
+              options: [
+                { value: "ano", label: "Zaúčtované" },
+                { value: "nie", label: "Nezaúčtované" },
+              ],
+            },
+            {
+              key: "export",
+              label: "Export do účtovníctva",
+              type: "select",
+              options: [
+                { value: "ano", label: "Exportované" },
+                { value: "nie", label: "Neexportované" },
+              ],
+            },
             ...filtreStavuAStitkov(cis.stavy, cis.stitky),
           ]}
           extra={
@@ -1016,7 +1046,15 @@ function DokladyPage() {
               <NastaveniaZoznamu
                 nastavenia={zobrazenie}
                 stlpce={STLPCE_DOKLADOV}
-                aktualne={{ stav: zalozka, mesiac: month, hladaj, platba }}
+                aktualne={{
+                  stav: zalozka,
+                  mesiac: month,
+                  hladaj,
+                  platba,
+                  stavPlatby: stavPlatbyFiltra,
+                  export: exportFiltra,
+                  zauct: zauctFiltra,
+                }}
                 pouzi={(h) => {
                   // Jedným zápisom do adresy — viac navigate po sebe by sa prepisovalo.
                   navigate({
@@ -1033,8 +1071,11 @@ function DokladyPage() {
                         ...((prev.f as Record<string, string>) ?? {}),
                         mesiac: h.mesiac || "vsetky",
                       };
-                      if (h.platba) f.platba = h.platba;
-                      else delete f.platba;
+                      // Staršie uložené filtre tieto kľúče nemajú — vtedy sa zrušia.
+                      for (const k of ["platba", "stavPlatby", "export", "zauct"] as const) {
+                        if (h[k]) f[k] = h[k];
+                        else delete f[k];
+                      }
                       n.f = f;
                       return n;
                     },
@@ -1154,12 +1195,33 @@ function DokladyPage() {
           nazovDokladov={t("dokladov")}
         />
         {/* Platby kartou a doklady bez uvedenej úhrady — bez ikonky v riadku, preto tu. */}
+        {/*
+          Pri desiatkach návrhov zaberal zoznam pol obrazovky — predvolene len
+          tenký pás s počtom, zoznam sa rozbalí na požiadanie (ako pri faktúrach).
+        */}
         {ostatneNavrhy.length > 0 && (
-          <div className="mb-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/5">
-            <div className="px-4 py-3 text-sm font-medium">
-              {t("Našli sme platby kartou k bločkom")} ({ostatneNavrhy.length})
-            </div>
-            {ostatneNavrhy.map((z) => (
+          <div className="mb-4 overflow-hidden rounded-lg border border-primary/40 bg-primary/5">
+            <button
+              type="button"
+              onClick={() => setKartyRozbalene((v) => !v)}
+              aria-expanded={kartyRozbalene}
+              className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-left text-sm hover:bg-primary/10"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <BodkaPlatby stav="navrh" className="h-2.5 w-2.5 shrink-0" />
+                <span className="min-w-0">
+                  {t("Našli sme platby kartou k bločkom")} ({ostatneNavrhy.length})
+                </span>
+              </span>
+              <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary">
+                {kartyRozbalene ? t("Skryť") : t("Zobraziť")}
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${kartyRozbalene ? "rotate-180" : ""}`}
+                  aria-hidden="true"
+                />
+              </span>
+            </button>
+            {kartyRozbalene && ostatneNavrhy.map((z) => (
               <div
                 key={z.transactionId}
                 className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"

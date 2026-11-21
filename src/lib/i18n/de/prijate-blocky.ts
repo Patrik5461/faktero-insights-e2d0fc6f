@@ -6,4 +6,6 @@ export default {
   "chýba suma — ostáva v Nespracovaných": "Betrag fehlt — bleibt unter Unverarbeitete Belege",
   "chýba dátum — ostáva v Nespracovaných": "Datum fehlt — bleibt unter Unverarbeitete Belege",
   "chýba suma a dátum — ostáva v Nespracovaných": "Betrag und Datum fehlen — bleibt unter Unverarbeitete Belege",
+  // Filter „Zaúčtovanie“ v zozname bločkov.
+  Nezaúčtované: "Nicht verbucht",
 };

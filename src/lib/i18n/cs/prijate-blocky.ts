@@ -6,4 +6,6 @@ export default {
   "chýba suma — ostáva v Nespracovaných": "chybí částka — zůstává v Nezpracovaných",
   "chýba dátum — ostáva v Nespracovaných": "chybí datum — zůstává v Nezpracovaných",
   "chýba suma a dátum — ostáva v Nespracovaných": "chybí částka a datum — zůstává v Nezpracovaných",
+  // Filter „Zaúčtovanie“ v zozname bločkov.
+  Nezaúčtované: "Nezaúčtováno",
 };
