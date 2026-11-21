@@ -46,6 +46,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/", priority: 1.0 },
           { path: "/cennik", priority: 0.9 },
           { path: "/kontakt", priority: 0.7 },
+          { path: "/bezpecnost", priority: 0.5 },
           { path: "/android", priority: 0.6 },
           { path: "/funkcie", priority: 0.7 },
           // Verejný nástroj bez registrácie — vstupná stránka pre „faktúra zadarmo / vzor“.

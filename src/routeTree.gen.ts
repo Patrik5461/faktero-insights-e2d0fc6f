@@ -16,6 +16,7 @@ import { Route as AktivovatRouteImport } from './routes/aktivovat'
 import { Route as AndroidRouteImport } from './routes/android'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AppJazdyRouteImport } from './routes/app-jazdy'
+import { Route as BezpecnostRouteImport } from './routes/bezpecnost'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as CennikRouteImport } from './routes/cennik'
 import { Route as EfakturaciaRouteImport } from './routes/efakturacia'
@@ -439,6 +440,11 @@ const AppRoute = AppRouteImport.update({
 const AppJazdyRoute = AppJazdyRouteImport.update({
   id: '/app-jazdy',
   path: '/app-jazdy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BezpecnostRoute = BezpecnostRouteImport.update({
+  id: '/bezpecnost',
+  path: '/bezpecnost',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogRoute = BlogRouteImport.update({
@@ -2583,6 +2589,7 @@ export interface FileRoutesByFullPath {
   '/android': typeof AndroidRoute
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
+  '/bezpecnost': typeof BezpecnostRoute
   '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
@@ -2980,6 +2987,7 @@ export interface FileRoutesByTo {
   '/android': typeof AndroidRoute
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
+  '/bezpecnost': typeof BezpecnostRoute
   '/cennik': typeof CennikRoute
   '/faktura-zadarmo': typeof FakturaZadarmoRoute
   '/kontakt': typeof KontaktRoute
@@ -3372,6 +3380,7 @@ export interface FileRoutesById {
   '/android': typeof AndroidRoute
   '/app': typeof AppRoute
   '/app-jazdy': typeof AppJazdyRoute
+  '/bezpecnost': typeof BezpecnostRoute
   '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
@@ -3772,6 +3781,7 @@ export interface FileRouteTypes {
     | '/android'
     | '/app'
     | '/app-jazdy'
+    | '/bezpecnost'
     | '/blog'
     | '/cennik'
     | '/efakturacia'
@@ -4169,6 +4179,7 @@ export interface FileRouteTypes {
     | '/android'
     | '/app'
     | '/app-jazdy'
+    | '/bezpecnost'
     | '/cennik'
     | '/faktura-zadarmo'
     | '/kontakt'
@@ -4560,6 +4571,7 @@ export interface FileRouteTypes {
     | '/android'
     | '/app'
     | '/app-jazdy'
+    | '/bezpecnost'
     | '/blog'
     | '/cennik'
     | '/efakturacia'
@@ -4960,6 +4972,7 @@ export interface RootRouteChildren {
   AndroidRoute: typeof AndroidRoute
   AppRoute: typeof AppRoute
   AppJazdyRoute: typeof AppJazdyRoute
+  BezpecnostRoute: typeof BezpecnostRoute
   BlogRoute: typeof BlogRouteWithChildren
   CennikRoute: typeof CennikRoute
   EfakturaciaRoute: typeof EfakturaciaRouteWithChildren
@@ -5180,6 +5193,13 @@ declare module '@tanstack/react-router' {
       path: '/app-jazdy'
       fullPath: '/app-jazdy'
       preLoaderRoute: typeof AppJazdyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bezpecnost': {
+      id: '/bezpecnost'
+      path: '/bezpecnost'
+      fullPath: '/bezpecnost'
+      preLoaderRoute: typeof BezpecnostRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog': {
@@ -8719,6 +8739,7 @@ const rootRouteChildren: RootRouteChildren = {
   AndroidRoute: AndroidRoute,
   AppRoute: AppRoute,
   AppJazdyRoute: AppJazdyRoute,
+  BezpecnostRoute: BezpecnostRoute,
   BlogRoute: BlogRouteWithChildren,
   CennikRoute: CennikRoute,
   EfakturaciaRoute: EfakturaciaRouteWithChildren,

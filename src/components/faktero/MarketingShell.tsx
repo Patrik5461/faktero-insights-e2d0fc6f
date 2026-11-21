@@ -124,6 +124,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               <Link to="/kontakt" className="hover:text-foreground">
                 {t("Kontakt")}
               </Link>
+              <Link to="/bezpecnost" className="hover:text-foreground">
+                {t("Bezpečnosť")}
+              </Link>
             </div>
           </div>
           <div className="border-t border-border/60 pt-4 flex flex-wrap gap-x-5 gap-y-2">

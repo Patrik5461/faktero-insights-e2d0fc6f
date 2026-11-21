@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PasBezpecnosti } from "@/components/faktero/PasBezpecnosti";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -547,6 +548,7 @@ function Landing() {
         <FinalCta />
       </main>
 
+      <PasBezpecnosti />
       <SiteFooter />
       <PublicSupportWidget />
       <FloatingCta />
@@ -1791,6 +1793,7 @@ function SiteFooter() {
               ["Prihlásenie", "/prihlasenie"],
               ["Registrácia", "/registracia"],
               ["Kontakt", "/kontakt"],
+              ["Bezpečnosť", "/bezpecnost"],
             ],
           },
         ].map((col) => (
