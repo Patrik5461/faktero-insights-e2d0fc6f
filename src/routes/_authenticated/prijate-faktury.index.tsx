@@ -31,10 +31,8 @@ import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import {
   Plus,
   FileText,
-  Archive,
   Loader2,
   Check,
-  Trash2,
   Mail,
   ScanLine,
   FileCode,
@@ -45,6 +43,7 @@ import {
   BookCheck,
   Download,
   Sparkles,
+  Undo2,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
@@ -79,7 +78,8 @@ import { duplicityVZozname } from "@/lib/faktero/prijate-duplicity";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
-import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
+import { exportPrijatychPohodaFn, vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
+import { potvrd } from "@/lib/potvrdenie";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
@@ -109,7 +109,7 @@ import { pouziFiltrePrijatych } from "@/lib/faktero/prijate-filtre-zoznamu";
 import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/doklady-hromadne";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 
-import { bezVzorca } from "@/lib/bezpecny-text";
+import { stiahniZipPrijatych } from "@/lib/faktero/zip-prijatych-lista";
 import { StavOdznak, type TonStavu } from "@/components/faktero/web/Stav";
 import { stavPlatby, type StavPlatby } from "@/lib/faktero/stav-platby";
 import { IkonaPlatby } from "@/components/faktero/IkonaPlatby";
@@ -494,85 +494,12 @@ function PurchaseInvoicesPage() {
     else setSelected(new Set(rows.map((r) => r.id)));
   }
 
-  async function csvSummary(items: any[]) {
-    const header = [
-      t("Číslo"),
-      t("Dodávateľ"),
-      t("IČO"),
-      t("Vystavená"),
-      t("Dodanie (DUZP)"),
-      t("Splatnosť"),
-      t("Suma"),
-      t("Mena"),
-      t("Stav"),
-      t("VS"),
-    ];
-    const rowsCsv = items.map((r) =>
-      [
-        r.invoice_number,
-        r.supplier_name,
-        r.supplier_ico ?? "",
-        r.issue_date,
-        r.delivery_date || r.issue_date,
-        r.due_date,
-        Number(r.amount_total ?? 0).toFixed(2),
-        r.currency ?? "EUR",
-        r.status,
-        vsPrijatej(r),
-      ]
-        // Meno dodávateľa píše cudzí človek (e-mail, eFaktúra) — `=HYPERLINK(…)` nesmie ožiť v Exceli.
-        .map((v) => `"${bezVzorca(v ?? "").replace(/"/g, '""')}"`)
-        .join(";"),
-    );
-    return "\uFEFF" + [header.join(";"), ...rowsCsv].join("\n");
-  }
-
   async function runBulkZip() {
     const items = rows.filter((r) => selected.has(r.id));
-    if (!items.length) return;
+    if (!items.length || zipBusy) return;
     setZipBusy(true);
     try {
-      const JSZip = (await import("jszip")).default;
-      const zip = new JSZip();
-      let ok = 0,
-        fail = 0;
-      for (const r of items) {
-        if (!r.file_path) {
-          fail++;
-          continue;
-        }
-        try {
-          const { data } = await supabase.storage
-            .from("purchase-invoices")
-            .createSignedUrl(r.file_path, 300);
-          if (!data?.signedUrl) {
-            fail++;
-            continue;
-          }
-          const resp = await fetch(data.signedUrl);
-          if (!resp.ok) {
-            fail++;
-            continue;
-          }
-          const bytes = new Uint8Array(await resp.arrayBuffer());
-          const ext = r.file_path.split(".").pop() || "pdf";
-          const safe = String(r.invoice_number || r.id).replace(/[^\w.-]+/g, "_");
-          zip.file(`${safe}.${ext}`, bytes);
-          ok++;
-        } catch {
-          fail++;
-        }
-      }
-      zip.file("_suhrn.csv", await csvSummary(items));
-      const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = await sFirmouAktivnej(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.zip`);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const { ok, fail } = await stiahniZipPrijatych(items, t, "prijate-faktury");
       if (fail === 0) toast.success(t("ZIP stiahnutý — faktúr: {n}", { n: ok }));
       else
         toast.warning(t("ZIP: {ok} v poriadku, {chyba} bez prílohy alebo chyba", { ok, chyba: fail }));
@@ -666,6 +593,36 @@ function PurchaseInvoicesPage() {
   const exportujXml = useServerFn(exportPrijatychPohodaFn);
   const program = useExportDoProgramu();
   const [volbyExportu, setVolbyExportu] = useState(false);
+  /*
+    Vrátenie z Pohody (ako pri prijatých zálohových): odovzdaná faktúra je
+    zamknutá; po vrátení sa dá opraviť a poslať znova. V Pohode ostane, kým
+    ju tam niekto nezmaže — preto to okno povie pred kliknutím.
+  */
+  const vratZPohody = useServerFn(vratZPohodyFn);
+  const vybraneOdovzdane = rows.filter((r: any) => selected.has(r.id) && r.exported_at);
+  async function vratitVybrane() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneOdovzdane.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Vrátiť {n} faktúr z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.",
+          { n: vybraneOdovzdane.length },
+        ),
+      ))
+    )
+      return;
+    try {
+      const r = await vratZPohody({
+        data: { company_id: cid, druh: "prijata", ids: vybraneOdovzdane.map((x: any) => x.id) },
+      });
+      toast.success(t("Vrátené z Pohody: {n}", { n: r.vratenych }));
+      setSelected(new Set());
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    }
+  }
   async function hromadneXml() {
     const cid = getActiveCompanyId();
     if (!cid || !selected.size) return;
@@ -1234,7 +1191,25 @@ function PurchaseInvoicesPage() {
         {selected.size > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
             <span className="font-medium">{t("Vybrané: {n}", { n: selected.size })}</span>
-            {/* XML pre Pohodu je po označení prvá voľba — vykreslí ho HromadnaAkciaDokladov (xmlPohoda). */}
+            {/*
+              Poradie lišty (Patrik 21. 11., rovnaké vo všetkých zoznamoch):
+              1. XML pre Pohodu (vykreslí HromadnaAkciaDokladov cez xmlPohoda),
+              2. Hromadná akcia ▾ (aj ZIP a zmazanie), 3. akcie prijatých faktúr,
+              4. Vrátiť z Pohody, 5. Zrušiť výber.
+            */}
+            {/* Iný program než Pohoda: jeho export na mieste XML pre Pohodu. */}
+            {program.inyProgram ? (
+              <button
+                onClick={hromadneXml}
+                disabled={hromadneBusy}
+                title={t("Zaúčtované faktúry pre {program}; označia sa ako odovzdané", {
+                  program: program.nazov,
+                })}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" /> {t("Export pre {program}", { program: program.nazov })}
+              </button>
+            ) : null}
             {getActiveCompanyId() ? (
               <HromadnaAkciaDokladov
                 companyId={getActiveCompanyId()!}
@@ -1242,55 +1217,19 @@ function PurchaseInvoicesPage() {
                 ids={Array.from(selected)}
                 onHotovo={() => void load()}
                 pdfZip={() => void runBulkZip()}
+                pdfZipNazov={t("Stiahnuť ZIP (PDF + CSV)")}
                 xmlPohoda={program.inyProgram ? undefined : () => void hromadneXml()}
                 zmazat={() => void hromadneVymazat()}
               />
             ) : null}
-            <button
-              onClick={runBulkZip}
-              disabled={zipBusy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
-            >
-              {zipBusy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Archive className="h-3.5 w-3.5" />
-              )}
-              {t("Stiahnuť ZIP (PDF + CSV)")}
-            </button>
-            {getActiveCompanyId() ? (
-              <SkontrolovaneHromadne
-                companyId={getActiveCompanyId()!}
-                agenda="prijata"
-                ids={vybraneNaKontroluIds}
-                onHotovo={() => void load()}
-              />
-            ) : null}
-            {getActiveCompanyId() ? (
-              <VyuctovanieZVyberu
-                companyId={getActiveCompanyId()!}
-                druh="prijata"
-                ids={Array.from(selected)}
-                onHotovo={() => void load()}
-              />
-            ) : null}
             {/* Daňový doklad k platbe je zaplatený zálohou — príkaz ani „prijaté“ (zmenilo by stav zaplatenej) nie. */}
             {danove ? null : (
-              <>
-            <button
-              onClick={() => setPrikaz(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
-            >
-              <Landmark className="h-3.5 w-3.5" /> {t("Hromadný príkaz na úhradu")}
-            </button>
-            <button
-              onClick={hromadnePrijat}
-              disabled={hromadneBusy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
-            >
-              <Check className="h-3.5 w-3.5" /> {t("Označiť ako prijaté")}
-            </button>
-              </>
+              <button
+                onClick={() => setPrikaz(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+              >
+                <Landmark className="h-3.5 w-3.5" /> {t("Hromadný príkaz na úhradu")}
+              </button>
             )}
             <button
               onClick={otvorZauctovanie}
@@ -1307,29 +1246,45 @@ function PurchaseInvoicesPage() {
             >
               <Sparkles className="h-3.5 w-3.5" /> {t("Navrhnúť AI pre vybrané")}
             </button>
-            {/* Iný program než Pohoda: pôvodný export na tomto mieste. */}
-            {program.inyProgram ? (
+            {danove ? null : (
               <button
-                onClick={hromadneXml}
+                onClick={hromadnePrijat}
                 disabled={hromadneBusy}
-                title={t("Zaúčtované faktúry pre {program}; označia sa ako odovzdané", {
-                  program: program.nazov,
-                })}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
               >
-                <Download className="h-3.5 w-3.5" /> {t("Export pre {program}", { program: program.nazov })}
+                <Check className="h-3.5 w-3.5" /> {t("Označiť ako prijaté")}
+              </button>
+            )}
+            {getActiveCompanyId() ? (
+              <SkontrolovaneHromadne
+                companyId={getActiveCompanyId()!}
+                agenda="prijata"
+                ids={vybraneNaKontroluIds}
+                onHotovo={() => void load()}
+              />
+            ) : null}
+            {getActiveCompanyId() ? (
+              <VyuctovanieZVyberu
+                companyId={getActiveCompanyId()!}
+                druh="prijata"
+                ids={Array.from(selected)}
+                onHotovo={() => void load()}
+              />
+            ) : null}
+            {vybraneOdovzdane.length ? (
+              <button
+                type="button"
+                onClick={() => void vratitVybrane()}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+              >
+                <Undo2 className="h-3.5 w-3.5" />{" "}
+                {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
               </button>
             ) : null}
             <button
-              onClick={() => void hromadneVymazat()}
-              disabled={hromadneBusy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> {t("Vymazať")}
-            </button>
-            <button
+              type="button"
               onClick={() => setSelected(new Set())}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               {t("Zrušiť výber")}
             </button>

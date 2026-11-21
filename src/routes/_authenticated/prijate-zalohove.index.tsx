@@ -9,7 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
-import { Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
+import { Landmark, Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
+import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { stiahniZipPrijatych } from "@/lib/faktero/zip-prijatych-lista";
 import { useServerFn } from "@tanstack/react-start";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
@@ -74,6 +76,13 @@ type Riadok = {
   exported_at: string | null;
   locked_at?: string | null;
   file_path: string | null;
+  supplier_ico?: string | null;
+  supplier_iban: string | null;
+  variable_symbol?: string | null;
+  specific_symbol?: string | null;
+  constant_symbol?: string | null;
+  note?: string | null;
+  delivery_date?: string | null;
 };
 
 /**
@@ -113,7 +122,8 @@ function PrijateZalohovePage() {
         let q = supabase
           .from("purchase_invoices")
           .select(
-            "id, invoice_number, supplier_name, issue_date, due_date, amount_total, currency, payment_date, payment_method, status, deleted_at, exported_at, locked_at, file_path",
+            // IBAN a symboly kvôli hromadnému príkazu na úhradu, IČO a DUZP do súhrnu v ZIP.
+            "id, invoice_number, supplier_name, supplier_ico, supplier_iban, variable_symbol, specific_symbol, constant_symbol, note, delivery_date, issue_date, due_date, amount_total, currency, payment_date, payment_method, status, deleted_at, exported_at, locked_at, file_path",
           )
           .eq("company_id", cid)
           .eq("type", "proforma");
@@ -307,6 +317,23 @@ function PrijateZalohovePage() {
   }
 
   /* Hromadné akcie — tá istá lišta ako pri prijatých faktúrach. */
+  const [prikaz, setPrikaz] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
+  async function stiahniZip() {
+    if (!vybraneRiadky.length || zipBusy) return;
+    setZipBusy(true);
+    try {
+      const { ok, fail } = await stiahniZipPrijatych(vybraneRiadky, t, "prijate-zalohove");
+      if (fail === 0) toast.success(t("ZIP stiahnutý — faktúr: {n}", { n: ok }));
+      else
+        toast.warning(t("ZIP: {ok} v poriadku, {chyba} bez prílohy alebo chyba", { ok, chyba: fail }));
+      setVybrane(new Set());
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setZipBusy(false);
+    }
+  }
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "prijata", false);
   async function zmazatOznacene() {
     const cid = getActiveCompanyId();
@@ -475,16 +502,30 @@ function PrijateZalohovePage() {
               className="sticky top-16 z-20 mb-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur"
             >
               <span className="mr-1 font-semibold">
-                {t("Označené:")} <span className="tabular-nums">{vybraneRiadky.length}</span>
+                {t("Vybrané: {n}", { n: vybraneRiadky.length })}
               </span>
               <HromadnaAkciaDokladov
                 companyId={getActiveCompanyId()!}
                 agenda="prijata"
                 ids={vybraneRiadky.map((r) => r.id)}
                 onHotovo={() => void load()}
+                pdfZip={() => void stiahniZip()}
+                pdfZipNazov={t("Stiahnuť ZIP (PDF + CSV)")}
                 xmlPohoda={!program.inyProgram && vybraneExport.length ? () => setVolbyExportu(true) : undefined}
                 zmazat={() => void zmazatOznacene()}
               />
+              {/*
+                Akcie zálohových: len príkaz na úhradu. Zaúčtovať ani Navrhnúť AI
+                tu nie sú — záloha nie je daňový doklad a do Pohody ide bez
+                zaúčtovania (účtuje sa až ostrá faktúra).
+              */}
+              <button
+                type="button"
+                onClick={() => setPrikaz(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+              >
+                <Landmark className="h-3.5 w-3.5" /> {t("Hromadný príkaz na úhradu")}
+              </button>
               {vybraneOdovzdane.length ? (
                 <button
                   type="button"
@@ -642,6 +683,13 @@ function PrijateZalohovePage() {
           {!loading && zobrazene.length > 0 ? strankovanie.stranky() : null}
         </div>
 
+        {prikaz && getActiveCompanyId() ? (
+          <HromadnyPrikaz
+            companyId={getActiveCompanyId()!}
+            faktury={vybraneRiadky}
+            onClose={() => setPrikaz(false)}
+          />
+        ) : null}
         <ConfirmDialog
           open={!!mazane}
           title={t("Vymazať zálohovú faktúru?")}

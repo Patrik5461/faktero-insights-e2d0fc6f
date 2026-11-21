@@ -70,6 +70,7 @@ import {
   type ZalozkaDokladov,
 } from "@/lib/faktero/doklad-stav";
 import {
+  BookCheck,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -120,6 +121,7 @@ import { dovodZamku, NAZOV_ZAMKU } from "@/lib/faktero/doklady-hromadne";
 import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
+import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
 import {
   NahladDokladuOkno,
@@ -529,6 +531,40 @@ function DokladyPage() {
     refresh();
   }
   const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
+  /*
+    Vrátenie z Pohody — odovzdané vybrané bločky sa odomknú a pri ďalšom
+    exporte pôjdu znova (vratZPohodyFn, druh „doklad“). V Pohode ich treba zmazať ručne.
+  */
+  const vratZPohody = useServerFn(vratZPohodyFn);
+  const [vraciam, setVraciam] = useState(false);
+  const vybraneOdovzdane = rows.filter((r: any) => selected.has(r.id) && r.exported_at);
+  async function vratitVybraneZPohody() {
+    const c = getActiveCompanyId();
+    if (!c || !vybraneOdovzdane.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Vrátiť {n} dokladov z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.",
+          { n: vybraneOdovzdane.length },
+        ),
+      ))
+    )
+      return;
+    setVraciam(true);
+    try {
+      const r = await vratZPohody({
+        data: { company_id: c, druh: "doklad", ids: vybraneOdovzdane.map((x: any) => x.id) },
+      });
+      toast.success(t("Vrátené z Pohody: {n}", { n: r.vratenych }));
+      setSelected(new Set());
+      obnovPoctyMenu();
+      void refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("Nepodarilo sa"));
+    } finally {
+      setVraciam(false);
+    }
+  }
   const [kos, setKos] = useState(false);
   const [exporting, setExporting] = useState(false);
   const cid = getActiveCompanyId();
@@ -1195,7 +1231,15 @@ function DokladyPage() {
         />
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {/* Prvá v lište: HromadnaAkciaDokladov kreslí pred menu tlačidlo XML pre Pohodu. */}
+          {/*
+            Jednotná lišta po označení (ako vo všetkých zoznamoch dokladov):
+            Vybrané: n · XML pre Pohodu · Hromadná akcia ▾ · akcie bločkov
+            (Zaúčtovať, spracované/nespracované, …) · Vrátiť z Pohody · Zrušiť výber.
+          */}
+          {selected.size > 0 && (
+            <span className="text-sm font-medium">{t("Vybrané: {n}", { n: selected.size })}</span>
+          )}
+          {/* HromadnaAkciaDokladov kreslí pred menu tlačidlo XML pre Pohodu (prvé). */}
           {selected.size > 0 && cid && (
             <HromadnaAkciaDokladov
               companyId={cid}
@@ -1207,6 +1251,15 @@ function DokladyPage() {
               xmlPohoda={() => void handleExport(false, undefined, "xml")}
               zmazat={() => void zmazVybrane()}
             />
+          )}
+          {/* Zaúčtovať = predkontácia, členenie DPH a kategória (zauctujDokladyFn), ako v prijatých. */}
+          {selected.size > 0 && (
+            <button
+              onClick={() => setPredkontaciaOkno(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <BookCheck className="h-4 w-4" /> {t("Zaúčtovať")} ({selected.size})
+            </button>
           )}
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
             <button
@@ -1226,14 +1279,6 @@ function DokladyPage() {
                   <Undo2 className="h-4 w-4" /> {t("Vrátiť medzi nespracované")} ({selected.size})
                 </>
               )}
-            </button>
-          )}
-          {selected.size > 0 && (
-            <button
-              onClick={() => setPredkontaciaOkno(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
-            >
-              {t("Predkontácia")} ({selected.size})
             </button>
           )}
           {selected.size > 0 && cid && (
@@ -1276,6 +1321,26 @@ function DokladyPage() {
             >
               <Download className="h-4 w-4" />{" "}
               {t("Export pre {program}", { program: program.nazov })} ({selected.size})
+            </button>
+          )}
+          {/* Vrátiť z Pohody — len keď sú medzi označenými odovzdané bločky. */}
+          {vybraneOdovzdane.length > 0 && (
+            <button
+              onClick={() => void vratitVybraneZPohody()}
+              disabled={vraciam}
+              title={t("Odomkne odovzdané bločky na opravu; v Pohode ich treba zmazať ručne")}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Undo2 className="h-4 w-4" />{" "}
+              {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
+            </button>
+          )}
+          {selected.size > 0 && (
+            <button
+              onClick={() => setSelected(new Set())}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              {t("Zrušiť výber")}
             </button>
           )}
           {volbyExportu ? (

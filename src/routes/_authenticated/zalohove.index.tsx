@@ -10,7 +10,16 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { Plus, Trash2, RotateCcw, Hash, Undo2, X } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash, Undo2, X, Mail, Bell, Loader2 } from "lucide-react";
+import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
+import { sendReminderFn } from "@/lib/faktero/reminders.functions";
+import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
+import {
+  kontrolaDatumuVystaveniaFn,
+  zmenDatumVystaveniaNaDnesFn,
+} from "@/lib/faktero/datum-vystavenia.functions";
+import { dalsiaUpomienka, jeFakturaPoSplatnosti } from "@/lib/faktero/akcie-faktury";
+import { sFirmouAktivnej } from "@/lib/faktero/nazov-suboru-aktivnej-firmy";
 import { TlacidloXmlPohody } from "@/components/faktero/TlacidloXmlPohody";
 import { vratVystavenuZPohodyFn } from "@/lib/faktero/zauctovanie.functions";
 import { potvrd } from "@/lib/potvrdenie";
@@ -349,6 +358,189 @@ function ProformaListPage() {
     }
   }
 
+  /*
+    Odoslanie e-mailom, upomienka a PDF ZIP — tie isté serverové funkcie a
+    pravidlá ako hromadné akcie vystavených faktúr (faktury.index.tsx).
+  */
+  const emailFn = useServerFn(sendInvoiceEmailFn);
+  const kontrolaDatumuFn = useServerFn(kontrolaDatumuVystaveniaFn);
+  const zmenDatumFn = useServerFn(zmenDatumVystaveniaNaDnesFn);
+  const reminderFn = useServerFn(sendReminderFn);
+  const pdfFn = useServerFn(generateInvoicePdf);
+  const [odosielam, setOdosielam] = useState(false);
+  const [priebeh, setPriebeh] = useState<{ current: number; total: number } | null>(null);
+  const zaneprazdnene = odosielam || exportujem;
+  const dnes = new Date().toISOString().slice(0, 10);
+  const zive = list.selectedRows.filter((r: any) => !r.deleted_at);
+  const naEmail = zive.filter((r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email);
+  const naUpomienku = zive.filter((r: any) => jeFakturaPoSplatnosti(r, dnes) && r.customer_email);
+
+  async function emailVybranym() {
+    const targets = naEmail;
+    const prazdne = t("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav).");
+    if (!targets.length) {
+      toast.error(prazdne);
+      return;
+    }
+    if (
+      !(await potvrd(t("Odoslať e-mailom {n} faktúr?", { n: targets.length }), {
+        potvrdit: t("Odoslať"),
+        nebezpecne: false,
+      }))
+    )
+      return;
+    // Prvé odoslanie s dnešným dátumom vystavenia — ako pri faktúrach.
+    let kontroly: Record<string, any> = {};
+    try {
+      kontroly = await kontrolaDatumuFn({ data: { invoiceIds: targets.map((r: any) => r.id) } });
+    } catch {
+      /* rozhodne server pri odoslaní */
+    }
+    const naZmenu = targets.filter((r: any) => kontroly[r.id]?.treba && kontroly[r.id]?.mozno);
+    const nemenitelne = targets.filter((r: any) => kontroly[r.id]?.treba && !kontroly[r.id]?.mozno);
+    if (naZmenu.length || nemenitelne.length) {
+      const riadky = [
+        t("Faktúry so starším dátumom vystavenia: {n}. Faktúra sa odosiela dnes — dátum vystavenia by mal byť aktuálny.", {
+          n: naZmenu.length + nemenitelne.length,
+        }),
+        naZmenu.length
+          ? t("Dátum vystavenia sa zmení na dnes pri {n} z nich, splatnosť sa posunie o rovnaký počet dní a dátum dodania ostáva.", { n: naZmenu.length })
+          : "",
+        nemenitelne.length
+          ? t("Faktúry, ktorým sa dátum zmeniť nedá (uzamknuté obdobie alebo export do účtovníctva): {n}. Hromadne sa neodošlú — pošlite ich jednotlivo z detailu faktúry.", { n: nemenitelne.length })
+          : "",
+      ].filter(Boolean);
+      const ano = await potvrd(riadky.join("\n"), {
+        potvrdit: naZmenu.length ? t("Zmeniť dátum vystavenia na dnes a odoslať") : t("Odoslať ostatné"),
+        nebezpecne: false,
+      });
+      if (!ano) return;
+    }
+    const preskocit = new Set(nemenitelne.map((r: any) => r.id));
+    const menit = new Set<string>(naZmenu.map((r: any) => r.id));
+    const naOdoslanie = targets.filter((r: any) => !preskocit.has(r.id));
+    if (!naOdoslanie.length) {
+      toast.error(prazdne);
+      return;
+    }
+    setOdosielam(true);
+    setPriebeh({ current: 0, total: naOdoslanie.length });
+    let ok = 0,
+      fail = 0;
+    for (let i = 0; i < naOdoslanie.length; i++) {
+      const inv = naOdoslanie[i];
+      try {
+        if (menit.has(inv.id)) await zmenDatumFn({ data: { invoiceId: inv.id } });
+        await emailFn({ data: { invoiceId: inv.id, recipient_email: inv.customer_email } });
+        ok++;
+      } catch (e) {
+        console.error("bulk email failed", inv.id, e);
+        fail++;
+      }
+      setPriebeh({ current: i + 1, total: naOdoslanie.length });
+    }
+    setPriebeh(null);
+    setOdosielam(false);
+    if (fail === 0) toast.success(t("Odoslané e-maily: {n}", { n: ok }));
+    else toast.error(t("Odoslaných {ok}, zlyhalo {fail}", { ok, fail }));
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function upomienkaVybranym() {
+    const targets = naUpomienku;
+    if (!targets.length) {
+      toast.error(t("Žiadne po splatnosti faktúry s emailom."));
+      return;
+    }
+    if (
+      !(await potvrd(
+        t("Odoslať upomienky pre {n} faktúr?", { n: targets.length }) +
+          "\n" +
+          t("Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky."),
+        { potvrdit: t("Odoslať upomienky"), nebezpecne: false },
+      ))
+    )
+      return;
+    setOdosielam(true);
+    setPriebeh({ current: 0, total: targets.length });
+    // Poradie upomienky podľa už odoslaných — ako v detaile faktúry.
+    const { data: odoslane } = await supabase
+      .from("invoice_reminders")
+      .select("invoice_id, reminder_number")
+      .in("invoice_id", targets.map((r: any) => r.id))
+      .eq("status", "sent");
+    const podlaFaktury = new Map<string, number[]>();
+    for (const r of (odoslane ?? []) as any[]) {
+      podlaFaktury.set(r.invoice_id, [...(podlaFaktury.get(r.invoice_id) ?? []), Number(r.reminder_number)]);
+    }
+    let ok = 0,
+      fail = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const inv = targets[i];
+      const dalsia = dalsiaUpomienka(podlaFaktury.get(inv.id) ?? []) ?? 3;
+      try {
+        await reminderFn({
+          data: { invoiceId: inv.id, reminderNumber: dalsia, recipient_email: inv.customer_email },
+        });
+        ok++;
+      } catch (e) {
+        console.error("bulk reminder failed", inv.id, e);
+        fail++;
+      }
+      setPriebeh({ current: i + 1, total: targets.length });
+    }
+    setPriebeh(null);
+    setOdosielam(false);
+    if (fail === 0) toast.success(t("Odoslané upomienky: {n}", { n: ok }));
+    else toast.error(t("Odoslaných {ok}, zlyhalo {fail}", { ok, fail }));
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function pdfZipVybranych() {
+    const ids = list.selectedIds;
+    if (!ids.length) return;
+    setOdosielam(true);
+    setPriebeh({ current: 0, total: ids.length });
+    let ok = 0,
+      fail = 0;
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+      for (let i = 0; i < ids.length; i++) {
+        try {
+          const r = await pdfFn({ data: { invoiceId: ids[i] } });
+          const resp = await fetch(r.signedUrl);
+          if (!resp.ok) throw new Error("PDF fetch failed");
+          zip.file(r.fileName, new Uint8Array(await resp.arrayBuffer()));
+          ok++;
+        } catch (e) {
+          console.error("bulk pdf failed", ids[i], e);
+          fail++;
+        }
+        setPriebeh({ current: i + 1, total: ids.length });
+      }
+      if (ok > 0) {
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = await sFirmouAktivnej(`zalohove-faktury-${dnes}.zip`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } finally {
+      setPriebeh(null);
+      setOdosielam(false);
+    }
+    if (fail === 0) toast.success(t("ZIP stiahnutý — faktúr: {n}", { n: ok }));
+    else toast.error(t("Do ZIPu pridaných {ok}, zlyhalo {fail}", { ok, fail }));
+    list.clearSelection();
+  }
+
   /* Hromadné akcie — tá istá lišta ako pri faktúrach (predkontácia, členenie, KV, stav, štítky, mazanie). */
   const cis = useCiselnikyDokladov(getActiveCompanyId(), "vystavena", false);
   async function zmazatOznacene() {
@@ -401,17 +593,6 @@ function ProformaListPage() {
                 )}
               />
             ) : null}
-            {vybraneOdovzdane.length ? (
-              <button
-                type="button"
-                disabled={exportujem}
-                onClick={() => void vratitVybrane()}
-                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-              >
-                <Undo2 className="h-4 w-4" />{" "}
-                {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
-              </button>
-            ) : null}
             <HlavickaViac akcie={[{ label: "Číselné rady", icon: Hash, to: "/ciselne-rady" }]} />
             <Link
               to="/faktury/nova"
@@ -442,8 +623,13 @@ function ProformaListPage() {
             aria-label={t("Hromadné akcie")}
             className="sticky top-16 z-20 mt-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur"
           >
+            {/*
+              Jednotná lišta po označení: XML pre Pohodu → Hromadná akcia (aj PDF ZIP a
+              mazanie) → e-mail a upomienka → Vrátiť z Pohody → Zrušiť výber.
+              eFaktúra tu nie je — zálohová nie je daňový doklad (druhZFaktury ju odmietne).
+            */}
             <span className="mr-1 font-semibold">
-              {t("Označené:")} <span className="tabular-nums">{list.selectedIds.length}</span>
+              {t("Vybrané: {n}", { n: list.selectedIds.length })}
             </span>
             <HromadnaAkciaDokladov
               companyId={getActiveCompanyId()!}
@@ -455,8 +641,42 @@ function ProformaListPage() {
                   ? () => setVolbyExportu(true)
                   : undefined
               }
+              pdfZip={zaneprazdnene ? undefined : () => void pdfZipVybranych()}
               zmazat={() => void zmazatOznacene()}
             />
+            <button
+              type="button"
+              disabled={zaneprazdnene || naEmail.length === 0}
+              onClick={() => void emailVybranym()}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+            >
+              <Mail className="h-3.5 w-3.5" /> {t("Odoslať e-mailom")}{" "}
+              {naEmail.length > 0 ? `(${naEmail.length})` : ""}
+            </button>
+            <button
+              type="button"
+              disabled={zaneprazdnene || naUpomienku.length === 0}
+              onClick={() => void upomienkaVybranym()}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+            >
+              <Bell className="h-3.5 w-3.5" /> {t("Poslať upomienku")}{" "}
+              {naUpomienku.length > 0 ? `(${naUpomienku.length})` : ""}
+            </button>
+            {vybraneOdovzdane.length ? (
+              <button
+                type="button"
+                disabled={zaneprazdnene}
+                onClick={() => void vratitVybrane()}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+              >
+                <Undo2 className="h-3.5 w-3.5" /> {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
+              </button>
+            ) : null}
+            {priebeh && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary-hover">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: priebeh.current, b: priebeh.total })}
+              </span>
+            )}
             <button
               type="button"
               onClick={list.clearSelection}

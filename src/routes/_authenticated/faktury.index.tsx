@@ -36,7 +36,7 @@ import {
   Bell,
   Mail,
   CalendarPlus,
-  Archive,
+  Undo2,
   Landmark,
   X,
   Zap,
@@ -106,7 +106,7 @@ import { VyberStavuDokladu, StavDokladuOdznak } from "@/components/faktero/StavD
 import { useCiselnikyDokladov, filtreStavuAStitkov } from "@/hooks/useCiselnikyDokladov";
 import { dovodZamku, NAZOV_ZAMKU, platbaPreZoradenie } from "@/lib/faktero/doklady-hromadne";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
-import { zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
+import { vratVystavenuZPohodyFn, zauctujVystavenuFn } from "@/lib/faktero/zauctovanie.functions";
 
 import { dnesBratislava } from "@/lib/faktero/datum-vystavenia";
 import { useKontextHlasu } from "@/lib/faktero/hlas-kontext";
@@ -947,6 +947,42 @@ function InvoicesPage() {
     list.clearSelection();
   }
 
+  /*
+    Vrátenie z Pohody — tá istá serverová akcia ako v detaile faktúry a pri
+    zálohových: odovzdané vybrané sa odomknú a pri ďalšom exporte pôjdu znova.
+    V Pohode ich treba zmazať ručne.
+  */
+  const vratFn = useServerFn(vratVystavenuZPohodyFn);
+  const vybraneOdovzdane = selectedRows.filter((r: any) => r.exported_at && !r.deleted_at);
+  async function vratitVybrane() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneOdovzdane.length) return;
+    if (
+      !(await potvrd(
+        t(
+          "Vrátiť {n} faktúr z Pohody? Odomknú sa na opravu a pri ďalšom exporte pôjdu znova. V Pohode ich treba zmazať ručne, inak tam budú dvakrát.",
+          { n: vybraneOdovzdane.length },
+        ),
+      ))
+    )
+      return;
+    setBusy(true);
+    let ok = 0;
+    try {
+      for (const r of vybraneOdovzdane) {
+        await vratFn({ data: { company_id: cid, id: r.id } });
+        ok++;
+      }
+      toast.success(t("Vrátené z Pohody: {n}", { n: ok }));
+    } catch (e: any) {
+      toast.error((ok ? t("Vrátené z Pohody: {n}", { n: ok }) + " — " : "") + (e?.message ?? t("Nepodarilo sa")));
+    } finally {
+      setBusy(false);
+      list.clearSelection();
+      list.reload();
+    }
+  }
+
   // Žiadna z týchto akcií nič nemaže, preto majú vlastný text tlačidla.
   const confirmMessages: Record<
     Exclude<BulkAction, null>,
@@ -1184,65 +1220,86 @@ function InvoicesPage() {
         />
         ) : null}
         {list.selectedIds.length > 0 && !list.showDeleted && (
-          <div className="sticky top-16 z-20 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
-            {/* Počet vybraných ukazuje súčtová lišta dole a tlačidlo „Hromadná akcia“. */}
-            <div className="flex flex-wrap gap-2">
-              {/* Prvé: XML pre Pohodu (kreslí ho HromadnaAkciaDokladov), hneď za ním Hromadná akcia. */}
-              {getActiveCompanyId() ? (
-                <HromadnaAkciaDokladov
-                  companyId={getActiveCompanyId()!}
-                  agenda="vystavena"
-                  ids={list.selectedIds}
-                  onHotovo={() => list.reload()}
-                  pdfZip={() => setBulkAction("zip")}
-                  xmlPohoda={program.inyProgram || busy ? undefined : () => void bulkExport()}
-                  zmazat={() => void zmazatOznacene()}
-                />
-              ) : null}
+          <div
+            role="region"
+            aria-label={t("Hromadné akcie")}
+            className="sticky top-16 z-20 mt-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur"
+          >
+            {/*
+              Jednotná lišta po označení: XML pre Pohodu → Hromadná akcia (aj PDF ZIP a
+              mazanie) → akcie faktúr → Vrátiť z Pohody → Zrušiť výber.
+            */}
+            <span className="mr-1 font-semibold">
+              {t("Vybrané: {n}", { n: list.selectedIds.length })}
+            </span>
+            {getActiveCompanyId() ? (
+              <HromadnaAkciaDokladov
+                companyId={getActiveCompanyId()!}
+                agenda="vystavena"
+                ids={list.selectedIds}
+                onHotovo={() => list.reload()}
+                pdfZip={() => setBulkAction("zip")}
+                xmlPohoda={program.inyProgram || busy ? undefined : () => void bulkExport()}
+                zmazat={() => void zmazatOznacene()}
+              />
+            ) : null}
+            <button
+              type="button"
+              disabled={busy || emailableCount === 0}
+              onClick={() => setBulkAction("email")}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+            >
+              <Mail className="h-3.5 w-3.5" /> {t("Odoslať e-mailom")}{" "}
+              {emailableCount > 0 ? `(${emailableCount})` : ""}
+            </button>
+            <button
+              type="button"
+              disabled={busy || efakturaCount === 0}
+              onClick={() => setBulkAction("efaktura")}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+            >
+              <Send className="h-3.5 w-3.5" /> {efakturaTest ? t("Odoslať eFaktúrou (test)") : t("Odoslať eFaktúrou")}{" "}
+              {efakturaCount > 0 ? `(${efakturaCount})` : ""}
+            </button>
+            <button
+              type="button"
+              disabled={busy || overdueSelectedCount === 0}
+              onClick={() => setBulkAction("reminder")}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+            >
+              <Bell className="h-3.5 w-3.5" /> {t("Poslať upomienku")}{" "}
+              {overdueSelectedCount > 0 ? `(${overdueSelectedCount})` : ""}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setBulkAction("clone")}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
+            >
+              <CalendarPlus className="h-3.5 w-3.5" /> {t("Vystaviť pre ďalší mesiac")}
+            </button>
+            {vybraneOdovzdane.length ? (
               <button
-                disabled={busy || emailableCount === 0}
-                onClick={() => setBulkAction("email")}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
-              >
-                <Mail className="h-3.5 w-3.5" /> {t("Odoslať e-mailom")}{" "}
-                {emailableCount > 0 ? `(${emailableCount})` : ""}
-              </button>
-              <button
-                disabled={busy || efakturaCount === 0}
-                onClick={() => setBulkAction("efaktura")}
-                className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary-hover hover:bg-primary/15 disabled:opacity-50"
-              >
-                <Send className="h-3.5 w-3.5" /> {efakturaTest ? t("Odoslať eFaktúrou (test)") : t("Odoslať eFaktúrou")}{" "}
-                {efakturaCount > 0 ? `(${efakturaCount})` : ""}
-              </button>
-              <button
+                type="button"
                 disabled={busy}
-                onClick={() => setBulkAction("clone")}
+                onClick={() => void vratitVybrane()}
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
               >
-                <CalendarPlus className="h-3.5 w-3.5" /> {t("Vystaviť pre ďalší mesiac")}
+                <Undo2 className="h-3.5 w-3.5" /> {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
               </button>
-              <button
-                disabled={busy || overdueSelectedCount === 0}
-                onClick={() => setBulkAction("reminder")}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
-              >
-                <Bell className="h-3.5 w-3.5" /> {t("Poslať upomienku")}{" "}
-                {overdueSelectedCount > 0 ? `(${overdueSelectedCount})` : ""}
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => setBulkAction("zip")}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50"
-              >
-                <Archive className="h-3.5 w-3.5" /> {t("Exportovať PDF (ZIP)")}
-              </button>
-              {progress && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary-hover">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: progress.current, b: progress.total })}
-                </span>
-              )}
-            </div>
+            ) : null}
+            {progress && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary-hover">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: progress.current, b: progress.total })}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={list.clearSelection}
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" /> {t("Zrušiť výber")}
+            </button>
           </div>
         )}
         {!list.showDeleted ? (
