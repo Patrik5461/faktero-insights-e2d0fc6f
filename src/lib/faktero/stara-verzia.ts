@@ -56,7 +56,7 @@ export function sledujStareVydanie() {
 }
 
 /** Ako často sa karta pýta, či medzitým nevyšlo nové vydanie. */
-const KONTROLA_MS = 5 * 60_000;
+const KONTROLA_MS = 60_000;
 
 /**
  * Karta zo starého vydania volá serverové funkcie, ktoré nové vydanie už
@@ -64,7 +64,7 @@ const KONTROLA_MS = 5 * 60_000;
  * chybou a človek nevie prečo. Po každom nasadení sa to stalo desiatkam
  * požiadaviek.
  *
- * Karta si preto pri návrate do okna a každých 5 minút overí vydanie na
+ * Karta si preto pri návrate do okna a každú minútu overí vydanie na
  * serveri. Keď je novšie, najbližší prechod na inú stránku sa načíta celý
  * (nič sa nestratí), a keď serverová funkcia medzitým zlyhá, stránka sa
  * po krátkom ohlásení obnoví sama.
