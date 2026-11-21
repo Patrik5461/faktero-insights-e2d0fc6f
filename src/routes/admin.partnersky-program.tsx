@@ -23,6 +23,8 @@ import {
   upravPartneraUctovnikaFn,
   priradFirmuPartneroviAdminFn,
   oznacProvizieVyplateneFn,
+  najdiUcetPrePartneraFn,
+  pridajPartneraAdminFn,
   type PartnerVAdmine,
   type FirmaPartnera,
   type ProviziaPartnera,
@@ -120,16 +122,27 @@ const KLUC_ZOZNAMU = ["admin-partneri-uctovnici"] as const;
 
 function AdminPartnerskyProgramPage() {
   const nacitaj = useServerFn(zoznamPartnerovUctovnikovFn);
-  const { data: partneri, isLoading, error } = useQuery({
+  const {
+    data: partneri,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: KLUC_ZOZNAMU,
     queryFn: () => nacitaj(),
   });
   const [filter, setFilter] = useState<Filter>("vsetci");
   const [vybranyId, setVybranyId] = useState<string | null>(null);
+  const [pridavam, setPridavam] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const pocty = useMemo(() => {
-    const p: Record<Filter, number> = { ziadost: 0, aktivny: 0, pozastaveny: 0, zamietnuty: 0, vsetci: 0 };
+    const p: Record<Filter, number> = {
+      ziadost: 0,
+      aktivny: 0,
+      pozastaveny: 0,
+      zamietnuty: 0,
+      vsetci: 0,
+    };
     for (const r of partneri ?? []) {
       p[r.stav] += 1;
       p.vsetci += 1;
@@ -182,7 +195,25 @@ function AdminPartnerskyProgramPage() {
               {partneri ? ` (${pocty[f.k]})` : ""}
             </button>
           ))}
+          <button
+            onClick={() => setPridavam((v) => !v)}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Pridať partnera
+          </button>
         </div>
+
+        {pridavam && (
+          <PridatPartnera
+            onZavri={() => setPridavam(false)}
+            onPridany={(id) => {
+              setPridavam(false);
+              setFilter("vsetci");
+              setVybranyId(id);
+            }}
+          />
+        )}
 
         <div ref={panelRef} className="scroll-mt-4">
           {vybrany && (
@@ -216,7 +247,9 @@ function AdminPartnerskyProgramPage() {
               ) : vyber.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
-                    {partneri?.length ? "V tomto stave nikto nie je." : "Zatiaľ sa nikto neprihlásil."}
+                    {partneri?.length
+                      ? "V tomto stave nikto nie je."
+                      : "Zatiaľ sa nikto neprihlásil."}
                   </td>
                 </tr>
               ) : (
@@ -342,7 +375,9 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
     mutationFn: () => vyplatFn({ data: { partnerId: partner.id } }),
     onSuccess: async (r) => {
       toast.success(
-        r.pocet ? `Označené ako vyplatené: ${r.pocet} provízií, ${eur(r.sumaCents)}` : "Nebolo čo označiť.",
+        r.pocet
+          ? `Označené ako vyplatené: ${r.pocet} provízií, ${eur(r.sumaCents)}`
+          : "Nebolo čo označiť.",
       );
       await obnov();
     },
@@ -371,12 +406,17 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
 
   async function ulozPct() {
     const n = Number(pct.replace(",", "."));
-    if (!Number.isFinite(n) || n < 0 || n > 100) return toast.error("Provízia musí byť 0 až 100 %.");
+    if (!Number.isFinite(n) || n < 0 || n > 100)
+      return toast.error("Provízia musí byť 0 až 100 %.");
     uprava.mutate({ provizia_pct: n });
   }
 
   async function odober(f: FirmaPartnera) {
-    if (!(await potvrd(`Odobrať firmu „${f.nazov}" partnerovi ${partner.nazov}? Z jej ďalších platieb už provízia nevznikne.`)))
+    if (
+      !(await potvrd(
+        `Odobrať firmu „${f.nazov}" partnerovi ${partner.nazov}? Z jej ďalších platieb už provízia nevznikne.`,
+      ))
+    )
       return;
     priradenie.mutate({ companyId: f.company_id, partnerId: null });
   }
@@ -507,7 +547,9 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
 
       {/* Akcie so stavom */}
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        {(partner.stav === "ziadost" || partner.stav === "zamietnuty" || partner.stav === "pozastaveny") && (
+        {(partner.stav === "ziadost" ||
+          partner.stav === "zamietnuty" ||
+          partner.stav === "pozastaveny") && (
           <>
             <label className="mr-2 flex items-center gap-2 text-sm">
               <input
@@ -577,7 +619,9 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
               <Save className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">Platí pre nové platby, staré provízie sa nemenia.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Platí pre nové platby, staré provízie sa nemenia.
+          </p>
         </div>
         <div>
           <label htmlFor="partner-poznamka" className="mb-1 block text-xs text-muted-foreground">
@@ -634,7 +678,9 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
                     >
                       {f.nazov}
                     </Link>
-                    <div className="text-xs text-muted-foreground">{f.ico ? `IČO ${f.ico}` : ""}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {f.ico ? `IČO ${f.ico}` : ""}
+                    </div>
                   </td>
                   <td className="px-3 py-2">{ZDROJ_ADMIN[f.zdroj] ?? f.zdroj}</td>
                   <td className="px-3 py-2">
@@ -670,7 +716,11 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
             if (e.key === "Enter") void pridaj();
           }}
         />
-        <button onClick={pridaj} disabled={priradenie.isPending || !noveId.trim()} className={TLACIDLO}>
+        <button
+          onClick={pridaj}
+          disabled={priradenie.isPending || !noveId.trim()}
+          className={TLACIDLO}
+        >
           <Plus className="h-4 w-4" /> Priradiť firmu
         </button>
       </div>
@@ -683,7 +733,11 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
           disabled={vyplata.isPending || naVyplatuCents <= 0}
           className={`${TLACIDLO_HLAVNE} ml-auto`}
         >
-          {vyplata.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {vyplata.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Check className="h-4 w-4" />
+          )}
           Označiť ako vyplatené ({eur(naVyplatuCents)})
         </button>
       </div>
@@ -730,11 +784,15 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
                         {formatujMenu(p.provizia_cents / 100, p.mena)}
                       </td>
                       <td className="px-3 py-2">
-                        <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${TRIEDA_PROVIZIE[stav]}`}>
+                        <span
+                          className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${TRIEDA_PROVIZIE[stav]}`}
+                        >
                           {NAZOV_STAVU_PROVIZIE[stav]}
                         </span>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{kedy(p.vyplatene_at)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                        {kedy(p.vyplatene_at)}
+                      </td>
                     </tr>
                   );
                 })}
@@ -744,5 +802,272 @@ function DetailPartnera({ partner, onZavri }: { partner: PartnerVAdmine; onZavri
         )
       )}
     </section>
+  );
+}
+
+/* ───────────────────────── Ručné pridanie ───────────────────────── */
+
+/**
+ * Admin pridá účtovníka sám (napr. po telefonáte): účet musí existovať,
+ * názov a IČO sa dajú prevziať z jeho firmy. Predvolene rovno aktívny.
+ */
+function PridatPartnera({
+  onZavri,
+  onPridany,
+}: {
+  onZavri: () => void;
+  onPridany: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+  const najdiFn = useServerFn(najdiUcetPrePartneraFn);
+  const pridajFn = useServerFn(pridajPartneraAdminFn);
+  const [email, setEmail] = useState("");
+  const [ucet, setUcet] = useState<Awaited<ReturnType<typeof najdiFn>> | null>(null);
+  const [hladam, setHladam] = useState(false);
+  const [nazov, setNazov] = useState("");
+  const [ico, setIco] = useState("");
+  const [kontakt, setKontakt] = useState("");
+  const [telefon, setTelefon] = useState("");
+  const [iban, setIban] = useState("");
+  const [pct, setPct] = useState("20");
+  const [poznamka, setPoznamka] = useState("");
+  const [aktivovat, setAktivovat] = useState(true);
+  const [priradit, setPriradit] = useState(true);
+
+  async function over() {
+    if (!email.trim()) return;
+    setHladam(true);
+    try {
+      const r = await najdiFn({ data: { email: email.trim() } });
+      setUcet(r);
+      if (r.existuje) {
+        if (!kontakt && r.meno) setKontakt(r.meno);
+        const prva = r.firmy[0];
+        if (prva && !nazov) {
+          setNazov(prva.nazov);
+          setIco(prva.ico ?? "");
+        }
+      }
+    } catch (e) {
+      chyba(e, "Účet sa nepodarilo overiť.");
+    } finally {
+      setHladam(false);
+    }
+  }
+
+  const pridaj = useMutation({
+    mutationFn: () => {
+      const n = Number(pct.replace(",", "."));
+      if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error("Provízia musí byť 0 až 100 %.");
+      return pridajFn({
+        data: {
+          email: email.trim(),
+          nazov: nazov.trim(),
+          ico: ico.trim() || null,
+          kontakt_meno: kontakt.trim() || null,
+          telefon: telefon.trim() || null,
+          iban: iban.trim() || null,
+          provizia_pct: n,
+          poznamka_admin: poznamka.trim() || null,
+          aktivovat,
+          priraditClenstva: priradit,
+        },
+      });
+    },
+    onSuccess: async (r) => {
+      toast.success(
+        aktivovat
+          ? `Partner pridaný a aktívny${r.kod ? ` (kód ${r.kod})` : ""}, priradených firiem: ${r.priradenych}.`
+          : "Partner pridaný ako žiadosť.",
+      );
+      await qc.invalidateQueries({ queryKey: KLUC_ZOZNAMU });
+      onPridany(r.id);
+    },
+    onError: (e) => chyba(e, "Partnera sa nepodarilo pridať."),
+  });
+
+  const vstup =
+    "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+  const mozePridat = ucet?.existuje && !ucet.uzPartner && nazov.trim().length >= 2;
+
+  return (
+    <div className="mb-4 rounded-xl border border-primary/40 bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">Pridať partnera ručne</h2>
+        <button onClick={onZavri} className="rounded p-1 hover:bg-muted" aria-label="Zavrieť">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <form
+        className="flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void over();
+        }}
+      >
+        <label className="min-w-0 flex-1 text-xs font-medium sm:max-w-sm">
+          E-mail účtu vo Fakteri
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setUcet(null);
+            }}
+            className={vstup}
+            placeholder="uctovnik@kancelaria.sk"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={hladam || !email.trim()}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+        >
+          {hladam && <Loader2 className="h-4 w-4 animate-spin" />}
+          Overiť účet
+        </button>
+      </form>
+
+      {ucet && !ucet.existuje && (
+        <p className="mt-3 rounded-md bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+          Účet s týmto e-mailom neexistuje. Nech sa účtovník najprv zaregistruje na
+          faktero.sk/registracia (voľba „Účtovník alebo kancelária“) — potom ho sem pridáte.
+        </p>
+      )}
+      {ucet?.uzPartner && (
+        <p className="mt-3 rounded-md bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+          Tento účet už v programe je — nájdete ho v zozname nižšie.
+        </p>
+      )}
+
+      {ucet?.existuje && !ucet.uzPartner && (
+        <form
+          className="mt-4 space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            pridaj.mutate();
+          }}
+        >
+          {ucet.firmy.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              Firmy účtu (klik prevezme názov a IČO):
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {ucet.firmy.slice(0, 12).map((f, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setNazov(f.nazov);
+                      setIco(f.ico ?? "");
+                    }}
+                    className="max-w-full truncate rounded-full border border-border px-2.5 py-0.5 text-xs text-foreground hover:bg-muted"
+                  >
+                    {f.nazov}
+                    {f.ico ? ` · ${f.ico}` : ""}
+                  </button>
+                ))}
+                {ucet.firmy.length > 12 && <span>+ {ucet.firmy.length - 12} ďalších</span>}
+              </div>
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-medium">
+              Názov kancelárie *
+              <input
+                required
+                minLength={2}
+                value={nazov}
+                onChange={(e) => setNazov(e.target.value)}
+                className={vstup}
+              />
+            </label>
+            <label className="text-xs font-medium">
+              IČO
+              <input value={ico} onChange={(e) => setIco(e.target.value)} className={vstup} />
+            </label>
+            <label className="text-xs font-medium">
+              Kontaktná osoba
+              <input
+                value={kontakt}
+                onChange={(e) => setKontakt(e.target.value)}
+                className={vstup}
+              />
+            </label>
+            <label className="text-xs font-medium">
+              Telefón
+              <input
+                value={telefon}
+                onChange={(e) => setTelefon(e.target.value)}
+                className={vstup}
+              />
+            </label>
+            <label className="text-xs font-medium">
+              IBAN na výplatu (dá sa doplniť neskôr)
+              <input value={iban} onChange={(e) => setIban(e.target.value)} className={vstup} />
+            </label>
+            <label className="text-xs font-medium">
+              Provízia %
+              <input
+                inputMode="decimal"
+                value={pct}
+                onChange={(e) => setPct(e.target.value)}
+                className={vstup}
+              />
+            </label>
+          </div>
+          <label className="block text-xs font-medium">
+            Interná poznámka
+            <textarea
+              rows={2}
+              value={poznamka}
+              onChange={(e) => setPoznamka(e.target.value)}
+              className={vstup}
+            />
+          </label>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={aktivovat}
+                onChange={(e) => setAktivovat(e.target.checked)}
+              />
+              Rovno aktivovať (dostane kód a odkaz)
+            </label>
+            <label className={`inline-flex items-center gap-2 ${aktivovat ? "" : "opacity-50"}`}>
+              <input
+                type="checkbox"
+                checked={priradit}
+                disabled={!aktivovat}
+                onChange={(e) => setPriradit(e.target.checked)}
+              />
+              Priradiť firmy, kde je už členom ({ucet.firmy.length})
+            </label>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={onZavri}
+              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+            >
+              Zrušiť
+            </button>
+            <button
+              type="submit"
+              disabled={!mozePridat || pridaj.isPending}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {pridaj.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              Pridať do programu
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
