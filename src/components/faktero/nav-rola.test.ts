@@ -89,10 +89,13 @@ describe("rýchle Vytvoriť (S-19)", () => {
 
 describe("aktívna položka lišty (AB-08)", () => {
   const nav = filterNav("invoicing", true);
-  it("Doklady → Vystavené faktúry svieti v Dokladoch", () => {
+  it("/faktury bez parametrov svieti vo Fakturácii ako Vydané faktúry", () => {
     const a = aktivnaVListe(nav, "/faktury", {});
-    expect(a.skupina?.key).toBe("doklady");
-    expect(a.polozka).toBe("/faktury" + "Vystavené faktúry");
+    expect(a.skupina?.key).toBe("fakturacia");
+    expect(a.polozka).toBe("/faktury" + "Vydané faktúry");
+  });
+  it("prijaté faktúry svietia vo Fakturácii, nie v Dokladoch", () => {
+    expect(aktivnaVListe(nav, "/prijate-faktury", {}).skupina?.key).toBe("fakturacia");
   });
   it("Fakturácia s parametrom ostáva vo Fakturácii", () => {
     const a = aktivnaVListe(nav, "/faktury", { type: "credit" });

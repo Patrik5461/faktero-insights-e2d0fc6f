@@ -34,6 +34,12 @@ export /** `companyAdminOnly`: skryté pre bežných členov firmy — server ti
  *  vydá a členovi nie, takže položka by im aj tak skončila chybou. */
 type NavChild = {
   to: string;
+  /**
+   * Položka svieti aj vtedy, keď adresa nemá jej parametre (`/faktury` bez
+   * `type` = Vydané faktúry) — inak by zoznam po strate parametra „preskočil“
+   * do inej skupiny.
+   */
+  predvolena?: boolean;
   /** Parametre adresy. Musia ísť zvlášť — router ich z reťazca v `to` neprečíta. */
   search?: Record<string, string>;
   label: string;
@@ -86,7 +92,7 @@ export const NAV: NavGroup[] = [
         príslušnom zozname a rýchle „Vytvoriť“ v hlavičke. V menu ostávajú len
         agendy, nie akcie — inak tá istá vec visí na troch miestach.
       */
-      { to: "/faktury", search: { type: "vydane" }, label: "Vydané faktúry" },
+      { to: "/faktury", search: { type: "vydane" }, label: "Vydané faktúry", predvolena: true },
       { to: "/faktury", search: { type: "danove" }, label: "Daňové doklady" },
       { to: "/zalohove", label: "Vydané zálohové faktúry" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
@@ -138,13 +144,13 @@ export const NAV: NavGroup[] = [
     /*
       Sekcie ako v Doklado: všetko nahraté a z e-mailu čaká najprv
       v Nespracovaných a po spracovaní sa presunie do Bločkov, Prijatých
-      faktúr alebo Ostatných (iných) dokladov. Faktúry sú aj vo Fakturácii.
+      faktúr (Fakturácia) alebo Ostatných (iných) dokladov.
     */
     children: [
       { to: "/nespracovane", label: "Nespracované doklady" },
       { to: "/doklady", label: "Bločky" },
-      { to: "/prijate-faktury", label: "Prijaté faktúry" },
-      { to: "/faktury", label: "Vystavené faktúry" },
+      /* Prijaté a vystavené faktúry sú len vo Fakturácii — tu boli zdvojené
+         a klik na ne prehodil lištu do Dokladov (Patrik 21. 11.). */
       { to: "/ostatne-doklady", label: "Iné doklady" },
       { to: "/doklady/vyuctovania", label: "Vyúčtovanie výdavkov" },
       { to: "/kos", label: "Kôš" },
@@ -381,7 +387,9 @@ export function activeChildKey(
   );
   if (hit) return hit.to + hit.label;
   const plain = children.find((c) => c.to === pathname && !c.search);
-  return plain ? plain.to + plain.label : null;
+  if (plain) return plain.to + plain.label;
+  const predvolena = children.find((c) => c.to === pathname && c.predvolena);
+  return predvolena ? predvolena.to + predvolena.label : null;
 }
 
 export const QUICK_CREATE = [
@@ -470,9 +478,8 @@ export function filtrujPolozky<T extends { to: string; companyAdminOnly?: boolea
 
 /**
  * Ktorá skupina a položka lišty svieti. Skupina s presnou zhodou položky má
- * prednosť pred skupinou, ktorej len patrí predpona — `/faktury` z Dokladov
- * („Vystavené faktúry“) tak svieti v Dokladoch, nie vo Fakturácii, kde
- * `/faktury` bez parametrov položku nemá (AB-08).
+ * prednosť pred skupinou, ktorej len patrí predpona. `/faktury` bez parametrov
+ * je Fakturácia → Vydané faktúry (`predvolena`).
  */
 export function aktivnaVListe(
   nav: NavGroup[],
