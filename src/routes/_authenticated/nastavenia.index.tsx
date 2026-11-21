@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useSkokNaKotvu } from "@/hooks/useSkokNaKotvu";
 import { PrepinacDizajnu } from "@/components/faktero/PrepinacDizajnu";
 import { VolbaStranyNahladu } from "@/components/faktero/RozlozenieSNahladom";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
@@ -41,6 +42,8 @@ function SettingsPage() {
         .then(({ data }) => setProfile(data));
     });
   }, []);
+  // Hľadanie v hlavičke otvára aj časti stránky (#rozlozenie, #upozornenia).
+  useSkokNaKotvu(Boolean(profile));
   if (!profile)
     return (
       <PageBody>
@@ -116,7 +119,7 @@ function SettingsPage() {
           </button>
         </form>
 
-        <div className="mt-6 max-w-3xl rounded-xl border border-border bg-card p-6">
+        <div id="upozornenia" className="mt-6 max-w-3xl scroll-mt-24 rounded-xl border border-border bg-card p-6">
           <h2 className="text-base font-semibold">{t("E-mailové upozornenia")}</h2>
           <label className="mt-4 flex items-start gap-3">
             <input
@@ -136,7 +139,7 @@ function SettingsPage() {
           </label>
         </div>
 
-        <div className="mt-6 max-w-3xl rounded-xl border border-border bg-card p-6">
+        <div id="rozlozenie" className="mt-6 max-w-3xl scroll-mt-24 rounded-xl border border-border bg-card p-6">
           <h2 className="text-base font-semibold">{t("Rozloženie aplikácie")}</h2>
           <p className="mt-1 max-w-prose text-sm text-muted-foreground">
             {t(

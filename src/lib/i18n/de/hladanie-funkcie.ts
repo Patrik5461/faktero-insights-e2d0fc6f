@@ -1,0 +1,26 @@
+// Hľadanie funkcií a nastavení v hlavičke — GlobalneHladanie.tsx, hladanie-funkcie.ts.
+export default {
+  "Funkcie a nastavenia": "Funktionen und Einstellungen",
+  "Hľadať funkcie, doklady, firmy…": "Funktionen, Belege, Firmen suchen…",
+  "Hľadajte funkciu alebo nastavenie (napr. upomienky, logo), číslo dokladu, partnera, IČO, sumu alebo IBAN.":
+    "Suchen Sie eine Funktion oder Einstellung (z. B. Mahnungen, Logo), Belegnummer, Partner, Firmennummer, Betrag oder IBAN.",
+  "Import bankového výpisu": "Kontoauszug importieren",
+  "Bankové notifikácie e-mailom": "Bankbenachrichtigungen per E-Mail",
+  "Pripojenie Revolut": "Revolut verbinden",
+  "Prehľad (úvodná stránka)": "Übersicht (Startseite)",
+  "Párovanie platieb s faktúrami": "Zahlungen mit Rechnungen abgleichen",
+  "Import dokladov": "Belegimport",
+  "Import z iDokladu": "Import aus iDoklad",
+  "Import z KROS": "Import aus KROS",
+  "Import z Omegy": "Import aus Omega",
+  "Import z Pohody": "Import aus Pohoda",
+  "Jazdy z GPS": "Fahrten aus GPS",
+  "Prehľad knihy jázd": "Fahrtenbuch-Übersicht",
+  "Nový iný doklad": "Neuer sonstiger Beleg",
+  "Dodací list (rozpoznanie)": "Lieferschein (Erkennung)",
+  "Presuny medzi skladmi": "Umlagerungen zwischen Lagern",
+  "Export do Pohody": "Export nach Pohoda",
+  "OSS, predaj spotrebiteľom v EÚ": "OSS, Verkauf an Verbraucher in der EU",
+  "Aké videá sú k dispozícii": "Welche Videos verfügbar sind",
+  "Fio banka": "Fio Bank",
+};

@@ -17,6 +17,8 @@ import { vyradPodmienene, zapnutePodmienky } from "./znalosti-podmienky.mjs";
 const KOREN = path.resolve(import.meta.dirname, "..");
 const PRIECINOK = path.join(KOREN, "src/routes");
 const VYSTUP = path.join(KOREN, "src/lib/faktero/znalosti-manualy.json");
+/** Len titulky a nadpisy s kotvami — pre hľadanie v hlavičke (bez 300 kB textu). */
+const VYSTUP_NADPISY = path.join(KOREN, "src/lib/faktero/pomoc-nadpisy.gen.ts");
 /** Podmienené sekcie (WhatsApp…) idú do bázy len pri zapnutej integrácii. */
 const ZAPNUTE = zapnutePodmienky(process.env);
 
@@ -91,12 +93,12 @@ function vytiahni(subor) {
     }
   }
 
-  // `id` slúži len na vyradenie podmienených sekcií — do JSON nejde.
-  const ostatne = vyradPodmienene(cesta, sekcie, ZAPNUTE).map(({ nadpis, text }) => ({
-    nadpis,
-    text,
-  }));
-  return ostatne.length ? { cesta, titulok, sekcie: ostatne } : null;
+  // `id` do JSON nejde (vyraďujú sa podľa neho podmienené sekcie); kotvu
+  // potrebuje len hľadanie v hlavičke — ide do `pomoc-nadpisy.gen.ts`.
+  const ponechane = vyradPodmienene(cesta, sekcie, ZAPNUTE);
+  const ostatne = ponechane.map(({ nadpis, text }) => ({ nadpis, text }));
+  const kotvy = ponechane.map(({ id, nadpis }) => (id ? { id, nadpis } : { nadpis }));
+  return ostatne.length ? { cesta, titulok, sekcie: ostatne, kotvy } : null;
 }
 
 const subory = readdirSync(PRIECINOK)
@@ -130,6 +132,21 @@ try {
   /* bez videí sa znalosti vyrobia aj tak */
 }
 clanky.sort((a, b) => a.cesta.localeCompare(b.cesta));
+
+/* Titulky a nadpisy s kotvou pre hľadanie v hlavičke (GlobalneHladanie). */
+const nadpisy = clanky.map((c) => ({
+  cesta: c.cesta,
+  titulok: c.titulok,
+  sekcie: c.kotvy ?? c.sekcie.map((s) => ({ nadpis: s.nadpis })),
+}));
+for (const c of clanky) delete c.kotvy;
+writeFileSync(
+  VYSTUP_NADPISY,
+  "/* Vygenerované: node scripts/znalosti-manualy.mjs (z src/routes/pomoc.*.tsx). Ručne neupravovať. */\n\n" +
+    "export type NadpisPomoci = { id?: string; nadpis: string };\n" +
+    "export type ClanokPomoci = { cesta: string; titulok: string; sekcie: NadpisPomoci[] };\n\n" +
+    `export const NADPISY_POMOCI: ClanokPomoci[] = ${JSON.stringify(nadpisy, null, 2)};\n`,
+);
 const znakov = clanky.reduce((a, c) => a + c.sekcie.reduce((b, s) => b + s.text.length, 0), 0);
 
 writeFileSync(

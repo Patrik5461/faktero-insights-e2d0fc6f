@@ -2,6 +2,7 @@ import { MENY } from "@/lib/faktero/mena";
 import { VlastnySmtp } from "@/components/faktero/VlastnySmtp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useSkokNaKotvu } from "@/hooks/useSkokNaKotvu";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId, oznamZmenuFiriem } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -68,6 +69,8 @@ function CompanyPage() {
   /* Testovacia firma: vysvetlenie, vymazanie údajov, členovia len v skutočnej. */
   const test = nastaveniaTestovacej(c, clen.nacitane ? clen.rola : null);
   const nazovSkutocnej = useNazovSkutocnejFirmy(c);
+  // Hľadanie v hlavičke otvára aj časti stránky (#bankove-ucty, #upomienky, #pouzivatelia).
+  useSkokNaKotvu(Boolean(c));
   if (!c)
     return (
       <PageBody>
@@ -538,7 +541,7 @@ function CompanyPage() {
             </div>
           </div>
 
-          <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
+          <div id="upomienky" className="sm:col-span-2 mt-2 scroll-mt-24 border-t border-border pt-4">
             <h2 className="mb-3 text-base font-semibold text-foreground">
               {t("Automatické upomienky po splatnosti")}
             </h2>
@@ -623,7 +626,7 @@ function CompanyPage() {
           )}
         </form>
 
-        <div className="mt-6">
+        <div id="bankove-ucty" className="mt-6 scroll-mt-24">
           <BankoveUctyFirmy companyId={c.id} />
         </div>
 
@@ -761,7 +764,7 @@ function TeamSection({ companyId, spravca }: { companyId: string; spravca: boole
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-border bg-card p-5 sm:p-6">
+    <div id="pouzivatelia" className="mt-6 scroll-mt-24 rounded-xl border border-border bg-card p-5 sm:p-6">
       <h2 className="text-base font-semibold">{t("Používatelia a pozvánky")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {t(

@@ -1,10 +1,13 @@
 /*
-  Hľadanie v hlavičke (⌘K) — naprieč agendami aktívnej firmy.
+  Hľadanie v hlavičke (⌘K) — funkcie a nastavenia, potom agendy aktívnej firmy.
 
-  Písanie (od 2 znakov, po 250 ms) otvorí panel s výsledkami po skupinách:
+  Prvá skupina „Funkcie a nastavenia“ (od 1 znaku, hneď, bez servera —
+  `hladanie-funkcie.ts`): stránky, nastavenia, rýchle akcie a pod ňou „Pomoc“
+  (články manuálov). Potom (od 2 znakov, po 250 ms) doklady po skupinách:
   vystavené a prijaté faktúry, bločky, nespracované, kontakty, ponuky, banka,
-  zákazky. Šípky vyberajú, Enter otvorí vybraný riadok; bez výberu Enter
-  ostáva ako predtým — zoznam vystavených faktúr vyhľadaný podľa textu.
+  zákazky. Šípky vyberajú naprieč skupinami, Enter otvorí vybraný riadok. Keď
+  názov funkcie presne sedí („upomienky“), je predvybraná; inak Enter bez
+  výberu ostáva ako predtým — zoznam vystavených faktúr vyhľadaný podľa textu.
 
   Na telefóne je pole v hlavičke skryté — ikona lupy otvorí celú obrazovku
   s rovnakými výsledkami. Hľadá server (`globalne-hladanie.functions.ts`)
@@ -15,15 +18,21 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowRight,
+  BookOpen,
   Briefcase,
+  ChevronRight,
   FileInput,
   FileSignature,
   FileText,
   Inbox,
+  KeyRound,
   Landmark,
   Loader2,
+  Plus,
   Receipt,
   Search,
+  Settings,
+  ShieldCheck,
   Users,
   X,
   type LucideIcon,
@@ -40,6 +49,14 @@ import {
   type SkupinaVysledkov,
   type VysledokHladania,
 } from "@/lib/faktero/globalne-hladanie";
+import {
+  funkciePreKontext,
+  hladajFunkcie,
+  type Funkcia,
+  type KontextFunkcii,
+  type VysledokFunkcii,
+} from "@/lib/faktero/hladanie-funkcie";
+import { NAV } from "@/components/faktero/nav";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { cn } from "@/lib/utils";
@@ -57,18 +74,61 @@ const IKONA: Record<SkupinaHladania, LucideIcon> = {
 
 const ODKLAD_MS = 250;
 
-/** Riadok, na ktorý sa dá prejsť šípkami — výsledok alebo „Zobraziť všetky“. */
+/** Ikona skupiny lišty pre stránku funkcie (Banka → Landmark…). */
+const IKONA_LISTY: Record<string, LucideIcon> = Object.fromEntries(NAV.map((g) => [g.key, g.icon]));
+
+function ikonaFunkcie(f: Funkcia): LucideIcon {
+  if (f.druh === "akcia") return Plus;
+  if (f.druh === "pomoc") return BookOpen;
+  if (f.druh === "admin") return ShieldCheck;
+  if (f.druh === "nastavenie") return f.odkaz.to.startsWith("/api") || f.odkaz.to.startsWith("/webhooky") ? KeyRound : Settings;
+  return (f.skupinaNav && IKONA_LISTY[f.skupinaNav]) || FileText;
+}
+
+/** Riadok, na ktorý sa dá prejsť šípkami — funkcia, výsledok alebo „Zobraziť všetky“. */
 type Polozka =
+  | { druh: "funkcia"; f: Funkcia }
   | { druh: "vysledok"; v: VysledokHladania }
   | { druh: "vsetky"; skupina: SkupinaHladania; odkaz: Navigacia };
 
-function polozkyNaVyber(skupiny: SkupinaVysledkov[]): Polozka[] {
-  return skupiny.flatMap((g) => [
-    ...g.polozky.map((v): Polozka => ({ druh: "vysledok", v })),
-    ...(g.vsetky && g.pocet > g.polozky.length
-      ? [{ druh: "vsetky", skupina: g.skupina, odkaz: g.vsetky } as Polozka]
-      : []),
-  ]);
+function polozkyNaVyber(funkcie: VysledokFunkcii, skupiny: SkupinaVysledkov[]): Polozka[] {
+  return [
+    ...funkcie.funkcie.map((f): Polozka => ({ druh: "funkcia", f })),
+    ...funkcie.pomoc.map((f): Polozka => ({ druh: "funkcia", f })),
+    ...skupiny.flatMap((g) => [
+      ...g.polozky.map((v): Polozka => ({ druh: "vysledok", v })),
+      ...(g.vsetky && g.pocet > g.polozky.length
+        ? [{ druh: "vsetky", skupina: g.skupina, odkaz: g.vsetky } as Polozka]
+        : []),
+    ]),
+  ];
+}
+
+const ZIADNE_FUNKCIE: VysledokFunkcii = { funkcie: [], pomoc: [], najlepsie: 0 };
+
+/** Funkcie a pomoc pre text — v prehliadači, hneď pri písaní. */
+function useFunkcie(kontext: KontextFunkcii, text: string): VysledokFunkcii {
+  const { t } = useT();
+  const { isCompanyAdmin, krajina, rola, opravnenia, adminPlatformy, modulZamestnanci, knihaJazd } =
+    kontext;
+  const zoznam = useMemo(
+    () =>
+      funkciePreKontext({
+        isCompanyAdmin,
+        krajina,
+        rola,
+        opravnenia,
+        adminPlatformy,
+        modulZamestnanci,
+        knihaJazd,
+      }),
+    [isCompanyAdmin, krajina, rola, opravnenia, adminPlatformy, modulZamestnanci, knihaJazd],
+  );
+  const dotaz = upravDotaz(text);
+  return useMemo(
+    () => (dotaz ? hladajFunkcie(zoznam, dotaz, (s) => t(s)) : ZIADNE_FUNKCIE),
+    [zoznam, dotaz, t],
+  );
 }
 
 type Stav = {
@@ -136,8 +196,82 @@ function datumText(d: string | null, jazyk: string): string {
   return t.toLocaleDateString(loc, { timeZone: "UTC" });
 }
 
+/** Skupina „Funkcie a nastavenia“ alebo „Pomoc“ — ikona, názov, cesta v menu. */
+function SkupinaFunkcii({
+  nadpis,
+  polozky,
+  vsetky,
+  aktivny,
+  setAktivny,
+  otvor,
+  idZoznamu,
+}: {
+  nadpis: string;
+  polozky: Funkcia[];
+  vsetky: Polozka[];
+  aktivny: number;
+  setAktivny: (i: number) => void;
+  otvor: (p: Polozka) => void;
+  idZoznamu: string;
+}) {
+  const { t } = useT();
+  if (!polozky.length) return null;
+  return (
+    <div role="group" aria-label={nadpis} className="py-1">
+      <div className="px-3 pb-1 pt-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {nadpis}
+      </div>
+      {polozky.map((f) => {
+        const i = vsetky.findIndex((p) => p.druh === "funkcia" && p.f === f);
+        const vybrany = i === aktivny;
+        const Ikona = ikonaFunkcie(f);
+        return (
+          <div
+            key={f.kluc}
+            id={`${idZoznamu}-${i}`}
+            role="option"
+            aria-selected={vybrany}
+            data-hladanie-funkcia={f.kluc}
+            onMouseMove={() => !vybrany && setAktivny(i)}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => otvor({ druh: "funkcia", f })}
+            className={cn(
+              "mx-1 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5",
+              vybrany ? "bg-accent text-accent-foreground" : "hover:bg-muted/60",
+            )}
+          >
+            <span
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                f.druh === "akcia" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+              )}
+            >
+              <Ikona className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] font-medium">{t(f.nazov)}</span>
+              {f.cesta.length > 0 && (
+                <span className="flex min-w-0 items-center gap-0.5 truncate text-[11.5px] text-muted-foreground">
+                  {f.cesta.map((c, j) => (
+                    <span key={j} className="flex min-w-0 items-center gap-0.5">
+                      {j > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />}
+                      <span className="truncate">{t(c)}</span>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </span>
+            {vybrany && <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Vysledky({
   stav,
+  funkcie,
   text,
   aktivny,
   setAktivny,
@@ -146,6 +280,7 @@ function Vysledky({
   mobil,
 }: {
   stav: Stav;
+  funkcie: VysledokFunkcii;
   text: string;
   aktivny: number;
   setAktivny: (i: number) => void;
@@ -156,17 +291,54 @@ function Vysledky({
   const { t, jazyk } = useT();
   const dotaz = upravDotaz(text);
   const loc = jazyk === "de" ? "de-DE" : jazyk === "cs" ? "cs-CZ" : "sk-SK";
-  const vsetky = useMemo(() => polozkyNaVyber(stav.skupiny), [stav.skupiny]);
+  const vsetky = useMemo(() => polozkyNaVyber(funkcie, stav.skupiny), [funkcie, stav.skupiny]);
+  const maFunkcie = funkcie.funkcie.length + funkcie.pomoc.length > 0;
+  const dokladyHotove = stav.dotaz === dotaz && !stav.nacitava;
 
-  if (dotaz.length < MIN_DLZKA)
+  if (!dotaz)
     return (
       <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
-        {t("Hľadajte číslo dokladu, VS, partnera, IČO, sumu alebo IBAN.")}
+        {t("Hľadajte funkciu alebo nastavenie (napr. upomienky, logo), číslo dokladu, partnera, IČO, sumu alebo IBAN.")}
+      </p>
+    );
+
+  const skupinyFunkcii = (
+    <>
+      <SkupinaFunkcii
+        nadpis={t("Funkcie a nastavenia")}
+        polozky={funkcie.funkcie}
+        vsetky={vsetky}
+        aktivny={aktivny}
+        setAktivny={setAktivny}
+        otvor={otvor}
+        idZoznamu={idZoznamu}
+      />
+      <SkupinaFunkcii
+        nadpis={t("Pomoc")}
+        polozky={funkcie.pomoc}
+        vsetky={vsetky}
+        aktivny={aktivny}
+        setAktivny={setAktivny}
+        otvor={otvor}
+        idZoznamu={idZoznamu}
+      />
+    </>
+  );
+
+  // Jeden znak — doklady sa ešte nehľadajú, funkcie áno.
+  if (dotaz.length < MIN_DLZKA)
+    return maFunkcie ? (
+      <div id={idZoznamu} role="listbox" aria-label={t("Výsledky hľadania")} className="py-1">
+        {skupinyFunkcii}
+      </div>
+    ) : (
+      <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+        {t("Hľadajte funkciu alebo nastavenie (napr. upomienky, logo), číslo dokladu, partnera, IČO, sumu alebo IBAN.")}
       </p>
     );
 
   // Kostra pri prvom načítaní; pri ďalšom písaní ostanú staré výsledky.
-  if (stav.nacitava && !stav.skupiny.length)
+  if (stav.nacitava && !stav.skupiny.length && !maFunkcie)
     return (
       <div className="space-y-1 p-2" aria-busy="true" aria-label={t("Hľadám…")}>
         {[0, 1, 2, 3].map((i) => (
@@ -182,14 +354,14 @@ function Vysledky({
       </div>
     );
 
-  if (stav.chyba)
+  if (stav.chyba && !maFunkcie)
     return (
       <p className="px-4 py-6 text-center text-[12.5px] text-destructive">
         {t("Hľadanie sa nepodarilo. Skúste to znova.")}
       </p>
     );
 
-  if (!stav.skupiny.length && stav.dotaz === dotaz && !stav.nacitava)
+  if (!stav.skupiny.length && dokladyHotove && !maFunkcie)
     return (
       <div className="px-4 py-6 text-center">
         <p className="text-[13px] font-medium">{t("Nič sa nenašlo pre „{q}“", { q: dotaz })}</p>
@@ -201,6 +373,12 @@ function Vysledky({
 
   return (
     <div id={idZoznamu} role="listbox" aria-label={t("Výsledky hľadania")} className="py-1">
+      {skupinyFunkcii}
+      {stav.chyba && (
+        <p className="px-3 py-2 text-[12px] text-destructive">
+          {t("Hľadanie sa nepodarilo. Skúste to znova.")}
+        </p>
+      )}
       {stav.skupiny.map((g) => {
         const Ikona = IKONA[g.skupina];
         return (
@@ -302,15 +480,28 @@ function Vysledky({
 }
 
 /** Šípky, Enter a otvorenie výsledku — spoločné pre pole v hlavičke aj mobil. */
-function useOvladanie(stav: Stav, text: string, zavri: () => void) {
+/** Funkcia je predvybraná (Enter ju otvorí), keď jej názov dotaz presne obsahuje od začiatku. */
+const SKORE_PREDVYBERU = 90;
+
+function useOvladanie(stav: Stav, funkcie: VysledokFunkcii, text: string, zavri: () => void) {
   const navigate = useNavigate();
   const [aktivny, setAktivny] = useState(-1);
-  const polozky = useMemo(() => polozkyNaVyber(stav.skupiny), [stav.skupiny]);
-  useEffect(() => setAktivny(-1), [stav.skupiny]);
+  const polozky = useMemo(() => polozkyNaVyber(funkcie, stav.skupiny), [funkcie, stav.skupiny]);
+  const predvyber = funkcie.najlepsie >= SKORE_PREDVYBERU && upravDotaz(text).length >= 3 ? 0 : -1;
+  useEffect(() => setAktivny(predvyber), [stav.skupiny, funkcie, predvyber]);
 
   function otvor(p: Polozka) {
-    const n = p.druh === "vysledok" ? p.v.odkaz : p.odkaz;
     zavri();
+    if (p.druh === "funkcia") {
+      const o = p.f.odkaz;
+      navigate({
+        to: o.to as any,
+        search: (o.search ?? {}) as any,
+        ...(o.hash ? { hash: o.hash } : {}),
+      });
+      return;
+    }
+    const n = p.druh === "vysledok" ? p.v.odkaz : p.odkaz;
     navigate({ to: n.to as any, params: n.params as any, search: (n.search ?? {}) as any });
   }
 
@@ -338,16 +529,20 @@ function useOvladanie(stav: Stav, text: string, zavri: () => void) {
 export function GlobalneHladanie({
   companyId,
   inputRef,
+  kontext,
 }: {
   companyId: string | null;
   /** Pole, ktoré ⌘K / Ctrl+K zameria (skratku obsluhuje AppShell). */
   inputRef: RefObject<HTMLInputElement | null>;
+  /** Kto je prihlásený — funkcie sa filtrujú rovnako ako menu (AppShell). */
+  kontext: KontextFunkcii;
 }) {
   const { t } = useT();
   const [text, setText] = useState("");
   const [otvorene, setOtvorene] = useState(false);
   const [mobil, setMobil] = useState(false);
   const stav = useVysledky(companyId, text);
+  const funkcie = useFunkcie(kontext, text);
   const obal = useRef<HTMLDivElement>(null);
   const idZoznamu = useId();
 
@@ -355,7 +550,7 @@ export function GlobalneHladanie({
     setOtvorene(false);
     setMobil(false);
   };
-  const ovl = useOvladanie(stav, text, () => {
+  const ovl = useOvladanie(stav, funkcie, text, () => {
     zavri();
     inputRef.current?.blur();
   });
@@ -371,7 +566,7 @@ export function GlobalneHladanie({
     return () => document.removeEventListener("mousedown", h);
   }, [otvorene]);
 
-  const ukazPanel = otvorene && upravDotaz(text).length >= MIN_DLZKA;
+  const ukazPanel = otvorene && upravDotaz(text).length >= 1;
 
   return (
     <>
@@ -395,7 +590,7 @@ export function GlobalneHladanie({
               if (!otvorene && (e.key === "ArrowDown" || e.key === "ArrowUp")) setOtvorene(true);
               ovl.onKeyDown(e);
             }}
-            placeholder={t("Hľadať")}
+            placeholder={t("Hľadať funkcie, doklady, firmy…")}
             aria-label={t("Hľadať")}
             role="combobox"
             aria-expanded={ukazPanel}
@@ -421,6 +616,7 @@ export function GlobalneHladanie({
           >
             <Vysledky
               stav={stav}
+              funkcie={funkcie}
               text={text}
               aktivny={ovl.aktivny}
               setAktivny={ovl.setAktivny}
@@ -445,6 +641,7 @@ export function GlobalneHladanie({
           text={text}
           setText={setText}
           stav={stav}
+          funkcie={funkcie}
           ovl={ovl}
           idZoznamu={`${idZoznamu}-m`}
           zavri={() => setMobil(false)}
@@ -458,6 +655,7 @@ function MobilneHladanie({
   text,
   setText,
   stav,
+  funkcie,
   ovl,
   idZoznamu,
   zavri,
@@ -465,6 +663,7 @@ function MobilneHladanie({
   text: string;
   setText: (v: string) => void;
   stav: Stav;
+  funkcie: VysledokFunkcii;
   ovl: ReturnType<typeof useOvladanie>;
   idZoznamu: string;
   zavri: () => void;
@@ -486,10 +685,11 @@ function MobilneHladanie({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={ovl.onKeyDown}
-            placeholder={t("Hľadať doklady, partnerov, sumy…")}
+            placeholder={t("Hľadať funkcie, doklady, firmy…")}
             aria-label={t("Hľadať")}
             role="combobox"
-            aria-expanded={upravDotaz(text).length >= MIN_DLZKA}
+            aria-expanded={upravDotaz(text).length >= 1}
+            aria-activedescendant={ovl.aktivny >= 0 ? `${idZoznamu}-${ovl.aktivny}` : undefined}
             aria-controls={idZoznamu}
             autoComplete="off"
             spellCheck={false}
@@ -512,6 +712,7 @@ function MobilneHladanie({
       <div className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
         <Vysledky
           stav={stav}
+          funkcie={funkcie}
           text={text}
           aktivny={ovl.aktivny}
           setAktivny={ovl.setAktivny}

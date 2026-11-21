@@ -571,7 +571,16 @@ export function AppShell({
 
             {/* Hľadanie naprieč agendami firmy (⌘K) — GlobalneHladanie.tsx; na telefóne lupa. */}
             {view !== "logbook" ? (
-              <GlobalneHladanie companyId={active?.id ?? null} inputRef={searchRef} />
+              <GlobalneHladanie
+                companyId={active?.id ?? null}
+                inputRef={searchRef}
+                kontext={{
+                  ...kontextMenu,
+                  adminPlatformy: Boolean(adminRole),
+                  modulZamestnanci: Boolean(active?.module_employees),
+                  knihaJazd: productMode !== "invoicing" && krajina !== "DE",
+                }}
+              />
             ) : (
               <div className="flex-1" />
             )}
