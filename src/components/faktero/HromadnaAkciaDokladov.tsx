@@ -7,7 +7,6 @@ import {
   ChevronDown,
   CircleDashed,
   CreditCard,
-  FileCode2,
   ListChecks,
   MessageSquare,
   NotebookPen,
@@ -37,6 +36,7 @@ import { KV_CLENENIA, KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { potvrd, zadaj } from "@/lib/potvrdenie";
+import { TlacidloXmlPohody } from "@/components/faktero/TlacidloXmlPohody";
 import { useT } from "@/lib/i18n/useT";
 import { ZoznamMoznosti, moznostiKodov } from "./VyberVRiadku";
 
@@ -68,7 +68,10 @@ export function HromadnaAkciaDokladov({
   onHotovo: () => void;
   pdfZip?: () => void;
   pdfZipNazov?: string;
-  /** Bločky: samotné XML pre Pohodu bez skenov. */
+  /**
+   * XML pre Pohodu z označených dokladov — vykreslí sa ako PRVÉ, zvýraznené
+   * tlačidlo pred „Hromadnou akciou“ (jednotne vo všetkých zoznamoch).
+   */
   xmlPohoda?: () => void;
   zmazat?: () => void;
 }) {
@@ -180,6 +183,9 @@ export function HromadnaAkciaDokladov({
 
   return (
     <>
+      {xmlPohoda ? (
+        <TlacidloXmlPohody pocet={ids.length} onClick={() => xmlPohoda()} disabled={!ids.length} busy={busy} />
+      ) : null}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -308,12 +314,7 @@ export function HromadnaAkciaDokladov({
               </DropdownMenuItem>
             </>
           ) : null}
-          {pdfZip || xmlPohoda || zmazat ? <DropdownMenuSeparator /> : null}
-          {xmlPohoda ? (
-            <DropdownMenuItem onSelect={() => xmlPohoda()}>
-              <FileCode2 className="h-4 w-4" /> {t("Stiahnuť XML pre Pohodu")}
-            </DropdownMenuItem>
-          ) : null}
+          {pdfZip || zmazat ? <DropdownMenuSeparator /> : null}
           {pdfZip ? (
             <DropdownMenuItem onSelect={() => pdfZip()}>
               <Archive className="h-4 w-4" /> {pdfZipNazov ?? t("Exportovať do PDF (ZIP)")}

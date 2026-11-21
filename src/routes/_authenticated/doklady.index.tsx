@@ -3,6 +3,7 @@ import { sFirmouAktivnej } from "@/lib/faktero/nazov-suboru-aktivnej-firmy";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
 import { obnovPoctyMenu } from "@/lib/faktero/pocty-menu";
 import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
+import { TlacidloXmlPohody } from "@/components/faktero/TlacidloXmlPohody";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { useT } from "@/lib/i18n/useT";
 import { mnozne, CAKAJUCE_BLOCKY } from "@/lib/faktero/mnozne";
@@ -1011,6 +1012,17 @@ function DokladyPage() {
         )}
         action={
           <div className="flex flex-wrap items-center gap-2">
+            {/* XML pre Pohodu je všade prvá voľba (Patrik 21. 11.). Po označení ho
+                kreslí lišta HromadnaAkciaDokladov (prop xmlPohoda) — tu by bolo dvakrát. */}
+            {selected.size === 0 && (
+              <TlacidloXmlPohody
+                pocet={0}
+                onClick={() => void handleExport(false, undefined, "xml")}
+                disabled={exporting || !rows.length}
+                busy={exporting}
+                title={t("Len pohoda.xml na import do Pohody, bez skenov (tie sú v ZIP-e)")}
+              />
+            )}
             <Link
               to="/importy/doklady"
               className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
@@ -1024,15 +1036,6 @@ function DokladyPage() {
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
               <Download className="h-4 w-4" /> ZIP{" "}
-              {selected.size ? `(${selected.size})` : t("všetko")}
-            </button>
-            <button
-              onClick={() => handleExport(false, undefined, "xml")}
-              disabled={exporting || !rows.length}
-              title={t("Len pohoda.xml na import do Pohody, bez skenov (tie sú v ZIP-e)")}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> {t("XML pre Pohodu")}{" "}
               {selected.size ? `(${selected.size})` : t("všetko")}
             </button>
             <button
@@ -1192,6 +1195,19 @@ function DokladyPage() {
         />
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          {/* Prvá v lište: HromadnaAkciaDokladov kreslí pred menu tlačidlo XML pre Pohodu. */}
+          {selected.size > 0 && cid && (
+            <HromadnaAkciaDokladov
+              companyId={cid}
+              agenda="doklad"
+              ids={Array.from(selected)}
+              onHotovo={() => void refresh(true)}
+              pdfZip={() => void handleExport(false)}
+              pdfZipNazov={t("Stiahnuť ZIP (skeny + XML)")}
+              xmlPohoda={() => void handleExport(false, undefined, "xml")}
+              zmazat={() => void zmazVybrane()}
+            />
+          )}
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
             <button
               onClick={() =>
@@ -1219,18 +1235,6 @@ function DokladyPage() {
             >
               {t("Predkontácia")} ({selected.size})
             </button>
-          )}
-          {selected.size > 0 && cid && (
-            <HromadnaAkciaDokladov
-              companyId={cid}
-              agenda="doklad"
-              ids={Array.from(selected)}
-              onHotovo={() => void refresh(true)}
-              pdfZip={() => void handleExport(false)}
-              pdfZipNazov={t("Stiahnuť ZIP (skeny + XML)")}
-              xmlPohoda={() => void handleExport(false, undefined, "xml")}
-              zmazat={() => void zmazVybrane()}
-            />
           )}
           {selected.size > 0 && cid && (
             <SkontrolovaneHromadne

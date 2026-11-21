@@ -10,7 +10,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { Plus, Trash2, RotateCcw, Hash, Download, Undo2, X } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash, Undo2, X } from "lucide-react";
+import { TlacidloXmlPohody } from "@/components/faktero/TlacidloXmlPohody";
 import { vratVystavenuZPohodyFn } from "@/lib/faktero/zauctovanie.functions";
 import { potvrd } from "@/lib/potvrdenie";
 import { useServerFn } from "@tanstack/react-start";
@@ -388,21 +389,17 @@ function ProformaListPage() {
         description={t("Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre.")}
         action={
           <div className="flex flex-wrap gap-2">
-            {!list.showDeleted && !program.inyProgram && naExport.length ? (
-              <button
-                type="button"
-                disabled={exportujem}
+            {/* Bez označenia: XML pre Pohodu za všetko vo filtri. Po označení je to
+                isté tlačidlo prvé v lište hromadných akcií. */}
+            {!list.showDeleted && !program.inyProgram && !list.selectedIds.length && naExport.length ? (
+              <TlacidloXmlPohody
+                pocet={0}
+                busy={exportujem}
                 onClick={() => setVolbyExportu(true)}
                 title={t(
                   "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Vydané zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
                 )}
-                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-              >
-                <Download className="h-4 w-4" />{" "}
-                {vybraneIds.length
-                  ? t("XML pre Pohodu – vybrané ({n})", { n: vybraneIds.length })
-                  : t("XML pre Pohodu")}
-              </button>
+              />
             ) : null}
             {vybraneOdovzdane.length ? (
               <button
@@ -453,6 +450,11 @@ function ProformaListPage() {
               agenda="vystavena"
               ids={list.selectedIds}
               onHotovo={() => list.reload()}
+              xmlPohoda={
+                !program.inyProgram && vybraneIds.length && !exportujem
+                  ? () => setVolbyExportu(true)
+                  : undefined
+              }
               zmazat={() => void zmazatOznacene()}
             />
             <button

@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
-import { Download, Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
+import { Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
@@ -33,6 +33,7 @@ import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
 import { useStrankovanie } from "@/hooks/useStrankovanie";
 import { useCiselnikyDokladov } from "@/hooks/useCiselnikyDokladov";
 import { HromadnaAkciaDokladov } from "@/components/faktero/HromadnaAkciaDokladov";
+import { TlacidloXmlPohody } from "@/components/faktero/TlacidloXmlPohody";
 import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { usePlatbyZaloh } from "@/hooks/usePlatbyZaloh";
@@ -278,6 +279,9 @@ function PrijateZalohovePage() {
   */
   const vratZPohody = useServerFn(vratZPohodyFn);
   const vybraneOdovzdane = zobrazene.filter((r) => vybrane.has(r.id) && r.exported_at);
+  const titulXmlZaloh = t(
+    "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
+  );
   async function vratitVybrane() {
     const cid = getActiveCompanyId();
     if (!cid || !vybraneOdovzdane.length) return;
@@ -424,30 +428,9 @@ function PrijateZalohovePage() {
         description={t("Zálohy, ktoré vám vystavili dodávatelia. Platia sa, daň prinesie až ostrá faktúra.")}
         action={
           <div className="flex flex-wrap gap-2">
-            {!ajVymazane && !program.inyProgram && naExport.length ? (
-              <button
-                type="button"
-                onClick={() => setVolbyExportu(true)}
-                title={t(
-                  "Vybrané (alebo bez výberu všetky zobrazené) zálohové faktúry do Pohody (Prijaté zálohové faktúry) — bez DPH a bez zaúčtovania, kvôli úhrade a odpočtu zálohy",
-                )}
-                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
-              >
-                <Download className="h-4 w-4" />{" "}
-                {vybraneExport.length
-                  ? t("XML pre Pohodu – vybrané ({n})", { n: vybraneExport.length })
-                  : t("XML pre Pohodu")}
-              </button>
-            ) : null}
-            {vybraneOdovzdane.length ? (
-              <button
-                type="button"
-                onClick={() => void vratitVybrane()}
-                className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
-              >
-                <Undo2 className="h-4 w-4" />{" "}
-                {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
-              </button>
+            {/* Bez označenia celý filter; po označení je XML prvé v lište nižšie. */}
+            {!ajVymazane && !program.inyProgram && !vybraneRiadky.length && naExport.length ? (
+              <TlacidloXmlPohody pocet={0} onClick={() => setVolbyExportu(true)} title={titulXmlZaloh} />
             ) : null}
             <NahratDoklad druh="proforma" label={t("Nahrať zálohovú faktúru")} />
             <Link
@@ -499,8 +482,19 @@ function PrijateZalohovePage() {
                 agenda="prijata"
                 ids={vybraneRiadky.map((r) => r.id)}
                 onHotovo={() => void load()}
+                xmlPohoda={!program.inyProgram && vybraneExport.length ? () => setVolbyExportu(true) : undefined}
                 zmazat={() => void zmazatOznacene()}
               />
+              {vybraneOdovzdane.length ? (
+                <button
+                  type="button"
+                  onClick={() => void vratitVybrane()}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+                >
+                  <Undo2 className="h-3.5 w-3.5" />{" "}
+                  {t("Vrátiť z Pohody ({n})", { n: vybraneOdovzdane.length })}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setVybrane(new Set())}

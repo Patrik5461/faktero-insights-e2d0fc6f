@@ -1060,10 +1060,11 @@ function InvoicesPage() {
                 <BookCheck className="h-4 w-4" /> {t("Zaúčtovať ({n})", { n: list.selectedIds.length })}
               </button>
             )}
-            {list.selectedIds.length > 0 && !list.showDeleted && (
+            {/* Pohoda má jednotné tlačidlo prvé v lište po označení; sem patrí len iný program. */}
+            {list.selectedIds.length > 0 && !list.showDeleted && program.inyProgram && (
               <button
                 onClick={bulkExport}
-                disabled={busy}
+                disabled={busy || program.busy}
                 className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary-hover hover:bg-primary/15 disabled:opacity-50"
               >
                 {busy ? (
@@ -1071,7 +1072,7 @@ function InvoicesPage() {
                 ) : (
                   <FileCode2 className="h-4 w-4" />
                 )}
-                {t("Export {n} do {program}", { n: list.selectedIds.length, program: program.inyProgram ? program.nazov : t("Pohody XML") })}
+                {t("Export {n} do {program}", { n: list.selectedIds.length, program: program.nazov })}
               </button>
             )}
             {maBanku && (
@@ -1186,6 +1187,18 @@ function InvoicesPage() {
           <div className="sticky top-16 z-20 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
             {/* Počet vybraných ukazuje súčtová lišta dole a tlačidlo „Hromadná akcia“. */}
             <div className="flex flex-wrap gap-2">
+              {/* Prvé: XML pre Pohodu (kreslí ho HromadnaAkciaDokladov), hneď za ním Hromadná akcia. */}
+              {getActiveCompanyId() ? (
+                <HromadnaAkciaDokladov
+                  companyId={getActiveCompanyId()!}
+                  agenda="vystavena"
+                  ids={list.selectedIds}
+                  onHotovo={() => list.reload()}
+                  pdfZip={() => setBulkAction("zip")}
+                  xmlPohoda={program.inyProgram || busy ? undefined : () => void bulkExport()}
+                  zmazat={() => void zmazatOznacene()}
+                />
+              ) : null}
               <button
                 disabled={busy || emailableCount === 0}
                 onClick={() => setBulkAction("email")}
@@ -1224,16 +1237,6 @@ function InvoicesPage() {
               >
                 <Archive className="h-3.5 w-3.5" /> {t("Exportovať PDF (ZIP)")}
               </button>
-              {getActiveCompanyId() ? (
-                <HromadnaAkciaDokladov
-                  companyId={getActiveCompanyId()!}
-                  agenda="vystavena"
-                  ids={list.selectedIds}
-                  onHotovo={() => list.reload()}
-                  pdfZip={() => setBulkAction("zip")}
-                  zmazat={() => void zmazatOznacene()}
-                />
-              ) : null}
               {progress && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary-hover">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Spracováva sa {a}/{b}…", { a: progress.current, b: progress.total })}

@@ -1234,10 +1234,22 @@ function PurchaseInvoicesPage() {
         {selected.size > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
             <span className="font-medium">{t("Vybrané: {n}", { n: selected.size })}</span>
+            {/* XML pre Pohodu je po označení prvá voľba — vykreslí ho HromadnaAkciaDokladov (xmlPohoda). */}
+            {getActiveCompanyId() ? (
+              <HromadnaAkciaDokladov
+                companyId={getActiveCompanyId()!}
+                agenda="prijata"
+                ids={Array.from(selected)}
+                onHotovo={() => void load()}
+                pdfZip={() => void runBulkZip()}
+                xmlPohoda={program.inyProgram ? undefined : () => void hromadneXml()}
+                zmazat={() => void hromadneVymazat()}
+              />
+            ) : null}
             <button
               onClick={runBulkZip}
               disabled={zipBusy}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
             >
               {zipBusy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1246,16 +1258,6 @@ function PurchaseInvoicesPage() {
               )}
               {t("Stiahnuť ZIP (PDF + CSV)")}
             </button>
-            {getActiveCompanyId() ? (
-              <HromadnaAkciaDokladov
-                companyId={getActiveCompanyId()!}
-                agenda="prijata"
-                ids={Array.from(selected)}
-                onHotovo={() => void load()}
-                pdfZip={() => void runBulkZip()}
-                zmazat={() => void hromadneVymazat()}
-              />
-            ) : null}
             {getActiveCompanyId() ? (
               <SkontrolovaneHromadne
                 companyId={getActiveCompanyId()!}
@@ -1305,19 +1307,19 @@ function PurchaseInvoicesPage() {
             >
               <Sparkles className="h-3.5 w-3.5" /> {t("Navrhnúť AI pre vybrané")}
             </button>
-            <button
-              onClick={hromadneXml}
-              disabled={hromadneBusy}
-              title={t("Zaúčtované faktúry pre {program}; označia sa ako odovzdané", {
-                program: program.inyProgram ? program.nazov : "Pohodu",
-              })}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
-            >
-              <Download className="h-3.5 w-3.5" />{" "}
-              {program.inyProgram
-                ? t("Export pre {program}", { program: program.nazov })
-                : t("XML pre Pohodu")}
-            </button>
+            {/* Iný program než Pohoda: pôvodný export na tomto mieste. */}
+            {program.inyProgram ? (
+              <button
+                onClick={hromadneXml}
+                disabled={hromadneBusy}
+                title={t("Zaúčtované faktúry pre {program}; označia sa ako odovzdané", {
+                  program: program.nazov,
+                })}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" /> {t("Export pre {program}", { program: program.nazov })}
+              </button>
+            ) : null}
             <button
               onClick={() => void hromadneVymazat()}
               disabled={hromadneBusy}
