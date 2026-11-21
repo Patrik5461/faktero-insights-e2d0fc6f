@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { podmienkyBlockov, pouziFiltreBlockov } from "./doklad-filtre-zoznamu";
+import {
+  hraniceMesiacaBlockov,
+  podmienkaObdobiaBlockov,
+  podmienkyBlockov,
+  pouziFiltreBlockov,
+} from "./doklad-filtre-zoznamu";
 
 describe("podmienkyBlockov", () => {
   it("bez filtrov len stav záložky; Spracované vždy aj s odovzdanými", () => {
@@ -60,5 +65,25 @@ describe("pouziFiltreBlockov", () => {
       ["not", "exported_at", "is", null],
       ["is", "zauctovane_at", null],
     ]);
+  });
+});
+
+describe("obdobie bločkov", () => {
+  it("bez hraníc nič", () => {
+    expect(podmienkaObdobiaBlockov("vystavenie", "", null)).toBeNull();
+    expect(podmienkaObdobiaBlockov("vystavenie", "zle", "2026-1-1")).toBeNull();
+  });
+  it("podľa vystavenia s náhradou created_at", () => {
+    const p = podmienkaObdobiaBlockov("vystavenie", "2026-11-01", "2026-11-30")!;
+    expect(p.startsWith("and(issue_date.gte.2026-11-01,issue_date.lte.2026-11-30),")).toBe(true);
+    expect(p).toContain("and(issue_date.is.null,created_at.gte.");
+  });
+  it("podľa nahratia s náhradou created_at, len od", () => {
+    const p = podmienkaObdobiaBlockov("nahratie", "2026-11-01", null)!;
+    expect(p).toMatch(/^and\(nahrane_at\.gte\.[^,]+\),and\(nahrane_at\.is\.null,created_at\.gte\.[^,]+\)$/);
+  });
+  it("mesiac na hranice", () => {
+    expect(hraniceMesiacaBlockov("2026-02")).toEqual({ od: "2026-02-01", do: "2026-02-28" });
+    expect(hraniceMesiacaBlockov("vsetky")).toBeNull();
   });
 });

@@ -18,16 +18,18 @@ import { stiahniExcel, stlpceRozpisuDph, tabulka } from "@/lib/faktero/excel-zoz
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { uhradaSlovom } from "@/lib/faktero/payment-method";
 import { sPolozkami, SELECT_DOKLADOV } from "@/lib/faktero/stlpce-zoznamov";
-import { pouziFiltreBlockov } from "@/lib/faktero/doklad-filtre-zoznamu";
+import {
+  filtrujObdobieBlockov,
+  hraniceMesiacaBlockov,
+  pouziFiltreBlockov,
+} from "@/lib/faktero/doklad-filtre-zoznamu";
 import { vsetkyRiadkySubezne } from "@/lib/faktero/strankovanie";
-import { vMesiaci } from "@/lib/faktero/doklady-mesiac";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { dokladyMimoMesiacaFn } from "@/lib/faktero/expenses.functions";
 import {
   navrhniParovanieDokladov,
   potvrdParovanieDokladu,
@@ -124,8 +126,9 @@ import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/St
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: ({ match }) => ({ meta: [{ title: preloz(match.context.jazyk, "Doklady — Faktero") }] }),
   /*
-   * `mesiac` v adrese otvorí zoznam rovno na mesiaci dokladu. Bez neho sa
-   * zoznam otvára na všetkých mesiacoch — obdobie sa navolí filtrom.
+   * `mesiac` v adrese (odkaz po uložení dokladu) sa preloží na filter
+   * Obdobie (`f.obdobie_od` / `f.obdobie_do`) toho mesiaca. Bez neho sa
+   * zoznam otvára na všetkých dátumoch.
    */
   /*
    * `stav` vyberá záložku. Bez neho sa zoznam otvára na spracovaných —
@@ -133,9 +136,9 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
    * ho niekto spracuje (ako v sekcii Bločky v Doklado).
    */
   /*
-   * Hľadanie a filtre (úhrada, zvolený mesiac) sú v adrese cez `zoznamSearch`.
-   * Mesiac zvolený v zozname sa ukladá do `f.mesiac` („vsetky“ = bez mesiaca);
-   * `?mesiac=` ostáva len ako vstup z odkazu po uložení dokladu.
+   * Hľadanie a filtre (úhrada, obdobie) sú v adrese cez `zoznamSearch`.
+   * Obdobie: `f.obdobie_od`, `f.obdobie_do`, `f.podla` (vystavenie|nahratie).
+   * Staré `f.mesiac` aj `?mesiac=` sa prekladajú na obdobie.
    */
   validateSearch: (
     s: Record<string, unknown>,
@@ -186,7 +189,6 @@ const STATUS_TON: Record<string, TonStavu> = {
 function DokladyPage() {
   const { t, jazyk } = useT();
   const navigate = useNavigate();
-  const mimoFn = useServerFn(dokladyMimoMesiacaFn);
   const deleteFn = useServerFn(deleteExpenseFn);
   const exportFn = useServerFn(exportExpensesZipFn);
   const urlFn = useServerFn(getExpenseFileUrlFn);
@@ -380,21 +382,44 @@ function DokladyPage() {
   const { mesiac: mesiacZAdresy, stav: zalozkaZAdresy } = Route.useSearch();
   const zalozka: ZalozkaDokladov = zalozkaZAdresy ?? "spracovane";
   const status = ZALOZKY_DOKLADOV.find((z) => z.kluc === zalozka)!.stav;
-  /** Nespracované sa ukazujú zo všetkých mesiacov — nič nesmie ostať schované. */
+  /** Nespracované sa ukazujú zo všetkých dátumov — nič nesmie ostať schované. */
   const bezMesiaca = zalozka === "nespracovane";
-  // Mesiac zvolený v zozname (`f.mesiac`) má prednosť pred `?mesiac=` z odkazu;
-  // bez oboch sa zoznam otvára na všetkých mesiacoch — obdobie si používateľ
-  // navolí filtrom. „vsetky“ = všetky mesiace.
-  const mesiacFiltra = lf.filter("mesiac");
-  const month =
-    mesiacFiltra === "vsetky"
-      ? ""
-      : /^\d{4}-\d{2}$/.test(mesiacFiltra)
-        ? mesiacFiltra
-        : (mesiacZAdresy ?? "");
+  /*
+    Filter Obdobie (ako pri prijatých faktúrach) — ide priamo do dotazu.
+    Starý výber mesiaca (`f.mesiac`, `?mesiac=` z odkazu) sa preloží na
+    obdobie toho mesiaca; adresu potom prepíše efekt nižšie.
+  */
+  const mesiacStary = hraniceMesiacaBlockov(lf.filter("mesiac") || mesiacZAdresy);
+  const rozsahObdobia = lf.rozsah("obdobie");
+  const maObdobie = !!(rozsahObdobia.od || rozsahObdobia.do);
+  const obdobieOd = maObdobie ? rozsahObdobia.od : (mesiacStary?.od ?? "");
+  const obdobieDo = maObdobie ? rozsahObdobia.do : (mesiacStary?.do ?? "");
+  const podla = lf.filter("podla") === "nahratie" ? "nahratie" : "vystavenie";
+  /** Obdobie, ktoré naozaj platí — Nespracované ho ignorujú. */
+  const vObdobi = !bezMesiaca && !!(obdobieOd || obdobieDo);
+  useEffect(() => {
+    if (!mesiacZAdresy && !lf.filter("mesiac")) return;
+    navigate({
+      to: ".",
+      replace: true,
+      search: (prev: Record<string, unknown>) => {
+        const n: Record<string, unknown> = { ...prev };
+        delete n.mesiac;
+        const f: Record<string, string> = { ...((prev.f as Record<string, string>) ?? {}) };
+        delete f.mesiac;
+        if (!maObdobie && mesiacStary) {
+          f.obdobie_od = mesiacStary.od;
+          f.obdobie_do = mesiacStary.do;
+        }
+        n.f = Object.keys(f).length ? f : undefined;
+        return n;
+      },
+    } as any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mesiacZAdresy, lf.filter("mesiac")]);
   // Stránkovanie po 10/20/50/100 — súčty, výber a export pracujú so všetkými riadkami.
   const postupne = useStrankovanie(rad.zoradene, lf, {
-    reset: [zalozka, month],
+    reset: [zalozka, obdobieOd, obdobieDo, podla],
     potrebneId: posledny.id,
   });
   // Sken bločku vedľa zoznamu — pri kontrole netreba otvárať každý doklad zvlášť.
@@ -416,25 +441,10 @@ function DokladyPage() {
     const pdf = (r.file_mime ?? "").includes("pdf") || /\.pdf$/i.test(r.file_path);
     return { url, obrazok: !pdf };
   };
-  /** Zmena mesiaca — `?mesiac=` z odkazu sa pri tom zahodí, nech v adrese nie sú dva. */
-  function setMonth(m: string) {
-    navigate({
-      to: ".",
-      replace: true,
-      search: (prev: Record<string, unknown>) => {
-        const n: Record<string, unknown> = { ...prev };
-        delete n.mesiac;
-        delete n.page;
-        n.f = { ...((prev.f as Record<string, string>) ?? {}), mesiac: m || "vsetky" };
-        return n;
-      },
-    } as any);
+  /** Zruší obdobie — zoznam ukáže všetky dátumy. */
+  function zrusObdobie() {
+    lf.setFilters({ obdobie_od: undefined, obdobie_do: undefined, mesiac: undefined });
   }
-  /** Koľko dokladov je mimo vybraného mesiaca a kam sa dá skočiť. */
-  const [mimo, setMimo] = useState<{ pocet: number; mesiac: string | null }>({
-    pocet: 0,
-    mesiac: null,
-  });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Súčty do pätičky — vybrané a tie, čo čakajú na odovzdanie.
   const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
@@ -633,7 +643,6 @@ function DokladyPage() {
         zoznam prenášala dvakrát (databáza → server → prehliadač, PALIERA
         5,8 MB). Bez položiek a rozpisu DPH, stránky po prvej naraz.
       */
-      const mesiacFiltra = bezMesiaca ? null : month || null;
       const data = await vsetkyRiadkySubezne<any>((od, po, spocitaj) => {
         let q = supabase
           .from("expense_documents")
@@ -644,7 +653,7 @@ function DokladyPage() {
           .order("id")
           .range(od, po);
         q = pouziFiltreBlockov(q, { stav: status, export: exportFiltra, zauct: zauctFiltra });
-        if (mesiacFiltra) q = vMesiaci(q, mesiacFiltra);
+        if (vObdobi) q = filtrujObdobieBlockov(q, podla, obdobieOd || null, obdobieDo || null);
         return q;
       });
       if (cislo !== poslednyDotaz.current) return;
@@ -662,14 +671,6 @@ function DokladyPage() {
         Párovanie s bankou je nadstavba nad zoznamom — keď zlyhá, doklady sa aj
         tak ukážu. Preto zvlášť a ticho.
       */
-      void (async () => {
-        try {
-          if (month && !bezMesiaca) setMimo(await mimoFn({ data: { company_id: cid, month } }));
-          else setMimo({ pocet: 0, mesiac: null });
-        } catch {
-          /* upozornenie je nadstavba — zoznam funguje aj bez neho */
-        }
-      })();
       void (async () => {
         try {
           // Server berie najviac 200 id naraz — dlhý zoznam po dávkach, inak by
@@ -723,7 +724,7 @@ function DokladyPage() {
 
   useEffect(() => {
     refresh(); /* eslint-disable-next-line */
-  }, [status, month, exportFiltra, zauctFiltra]);
+  }, [status, vObdobi, obdobieOd, obdobieDo, podla, exportFiltra, zauctFiltra]);
 
   // Záložka mení len `stav` — hľadanie, mesiac a filtre z adresy ostávajú.
   function prepniZalozku(kluc: ZalozkaDokladov) {
@@ -1030,11 +1031,11 @@ function DokladyPage() {
             </button>
             <button
               onClick={() => setVolbyExportu(true)}
-              disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
+              disabled={exporting || !rows.length || (!vObdobi && !bezMesiaca && !selected.size)}
               title={
-                !month && !bezMesiaca && !selected.size
+                !vObdobi && !bezMesiaca && !selected.size
                   ? t(
-                      "Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.",
+                      "Vyberte obdobie alebo označte doklady — inak by sa za odovzdané označili všetky.",
                     )
                   : undefined
               }
@@ -1147,37 +1148,32 @@ function DokladyPage() {
                 { value: "nie", label: "Neexportované" },
               ],
             },
+            // Nespracované ukazujú všetky dátumy — obdobie tam nemá zmysel.
+            ...(bezMesiaca
+              ? []
+              : [
+                  {
+                    key: "obdobie",
+                    label: "Obdobie",
+                    type: "dateRange" as const,
+                    dateFieldOptions: [
+                      { value: "vystavenie", label: "dátumu vystavenia" },
+                      { value: "nahratie", label: "dátumu nahratia" },
+                    ],
+                  },
+                ]),
             ...filtreStavuAStitkov(cis.stavy, cis.stitky),
           ]}
           extra={
             <>
-              {/* Mesiac načítava server (a hlási doklady mimo neho) — preto ostáva
-                  samostatný výber vedľa hľadania, nie rozsah vo Filtroch. */}
-              {!bezMesiaca && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="month"
-                    aria-label={t("Mesiac")}
-                    value={month}
-                    onChange={(e) => setMonth(e.target.value)}
-                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMonth("")}
-                    disabled={!month}
-                    className="h-9 rounded-md border border-input bg-background px-2 text-xs hover:bg-secondary disabled:opacity-40"
-                  >
-                    {t("Všetky")}
-                  </button>
-                </div>
-              )}
               <NastaveniaZoznamu
                 nastavenia={zobrazenie}
                 stlpce={STLPCE_DOKLADOV}
                 aktualne={{
                   stav: zalozka,
-                  mesiac: month,
+                  podla: lf.filter("podla"),
+                  obdobie_od: obdobieOd,
+                  obdobie_do: obdobieDo,
                   hladaj,
                   platba,
                   stavPlatby: stavPlatbyFiltra,
@@ -1199,10 +1195,23 @@ function DokladyPage() {
                       else delete n.q;
                       const f: Record<string, string> = {
                         ...((prev.f as Record<string, string>) ?? {}),
-                        mesiac: h.mesiac || "vsetky",
                       };
+                      delete f.mesiac;
+                      // Staršie uložené filtre majú mesiac — preloží sa na obdobie.
+                      const m = hraniceMesiacaBlockov(h.mesiac);
+                      if (!h.obdobie_od && !h.obdobie_do && m) {
+                        h = { ...h, obdobie_od: m.od, obdobie_do: m.do };
+                      }
                       // Staršie uložené filtre tieto kľúče nemajú — vtedy sa zrušia.
-                      for (const k of ["platba", "stavPlatby", "export", "zauct"] as const) {
+                      for (const k of [
+                        "platba",
+                        "stavPlatby",
+                        "export",
+                        "zauct",
+                        "podla",
+                        "obdobie_od",
+                        "obdobie_do",
+                      ] as const) {
                         if (h[k]) f[k] = h[k];
                         else delete f[k];
                       }
@@ -1464,12 +1473,8 @@ function DokladyPage() {
                 <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
                 {bezMesiaca
                   ? t("Všetko je spracované — žiadny doklad nečaká na kontrolu.")
-                  : mimo.pocet > 0
-                    ? mimo.pocet === 1
-                      ? t("Vo výbere nie je žiadny doklad — jeden je v inom mesiaci.")
-                      : t("Vo výbere nie je žiadny doklad — {n} ich je v inom mesiaci.", {
-                          n: mimo.pocet,
-                        })
+                  : vObdobi
+                    ? t("Vo vybranom období nie je žiadny doklad.")
                     : t("Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF.")}
                 <div className="mt-4 flex justify-center gap-2">
                   {bezMesiaca ? (
@@ -1480,10 +1485,10 @@ function DokladyPage() {
                     >
                       {t("Zobraziť všetky doklady")}
                     </button>
-                  ) : mimo.pocet > 0 ? (
+                  ) : vObdobi ? (
                     <button
                       type="button"
-                      onClick={() => setMonth("")}
+                      onClick={zrusObdobie}
                       className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
                     >
                       {t("Zobraziť všetky doklady")}

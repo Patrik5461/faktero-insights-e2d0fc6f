@@ -58,3 +58,64 @@ export function pouziFiltreBlockov<Q>(q: Q, f: FiltreBlockov): Q {
   }
   return d as Q;
 }
+
+/*
+  Filter „Obdobie“ (ako pri prijatých faktúrach), v adrese:
+    ?f[obdobie_od]=RRRR-MM-DD&f[obdobie_do]=RRRR-MM-DD&f[podla]=vystavenie|nahratie
+
+  Bloček nemá DUZP ani dátum prijatia — vyberá sa podľa dátumu vystavenia
+  (nákupu) alebo podľa toho, kedy bol nahratý. Bloček bez dátumu vystavenia
+  (neprečítaný) padne do obdobia podľa vzniku, inak by vypadol zo všetkých
+  (rovnako ako `vMesiaci`). Staré doklady nemajú `nahrane_at` — berie sa
+  `created_at`.
+*/
+export type DatumObdobiaBlockov = "vystavenie" | "nahratie";
+
+/** Deň `RRRR-MM-DD` → okamih začiatku dňa v miestnom čase (ISO, UTC). */
+function zaciatokDna(den: string, posun = 0): string {
+  const [y, m, d] = den.split("-").map(Number);
+  return new Date(y!, m! - 1, d! + posun).toISOString();
+}
+
+const jeDen = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/** Podmienka `or` pre PostgREST, alebo null keď obdobie nie je zadané. */
+export function podmienkaObdobiaBlockov(
+  podla: DatumObdobiaBlockov | string | null | undefined,
+  od?: string | null,
+  doDna?: string | null,
+): string | null {
+  const o = jeDen(od) ? od : null;
+  const d = jeDen(doDna) ? doDna : null;
+  if (!o && !d) return null;
+  const casy = (stlpec: string) =>
+    [
+      o ? `${stlpec}.gte.${zaciatokDna(o)}` : null,
+      d ? `${stlpec}.lt.${zaciatokDna(d, 1)}` : null,
+    ].filter(Boolean);
+  if (podla === "nahratie")
+    return (
+      `and(${casy("nahrane_at").join(",")}),` +
+      `and(nahrane_at.is.null,${casy("created_at").join(",")})`
+    );
+  const dni = [o ? `issue_date.gte.${o}` : null, d ? `issue_date.lte.${d}` : null].filter(Boolean);
+  return `and(${dni.join(",")}),and(issue_date.is.null,${casy("created_at").join(",")})`;
+}
+
+export function filtrujObdobieBlockov<Q>(
+  q: Q,
+  podla: DatumObdobiaBlockov | string | null | undefined,
+  od?: string | null,
+  doDna?: string | null,
+): Q {
+  const p = podmienkaObdobiaBlockov(podla, od, doDna);
+  return p ? ((q as any).or(p) as Q) : q;
+}
+
+/** Prvý a posledný deň mesiaca `RRRR-MM` — `?mesiac=` z odkazu a staré uložené filtre. */
+export function hraniceMesiacaBlockov(mesiac: unknown): { od: string; do: string } | null {
+  const m = typeof mesiac === "string" ? /^(\d{4})-(\d{2})$/.exec(mesiac) : null;
+  if (!m) return null;
+  const posledny = new Date(Number(m[1]), Number(m[2]), 0).getDate();
+  return { od: `${m[1]}-${m[2]}-01`, do: `${m[1]}-${m[2]}-${String(posledny).padStart(2, "0")}` };
+}

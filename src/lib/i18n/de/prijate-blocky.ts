@@ -12,4 +12,8 @@ export default {
     "Alle gefundenen zuordnen",
   "Spárovať všetky nájdené platby kartou s bločkami ({n})? Bločky sa označia ako uhradené z účtu.":
     "Alle gefundenen Kartenzahlungen den Belegen zuordnen ({n})? Die Belege werden als vom Konto bezahlt markiert.",
+  // Filter „Obdobie“ v zozname bločkov.
+  "dátumu nahratia": "Upload-Datum",
+  "Vo vybranom období nie je žiadny doklad.": "Im gewählten Zeitraum gibt es keinen Beleg.",
+  "Vyberte obdobie alebo označte doklady — inak by sa za odovzdané označili všetky.": "Wählen Sie einen Zeitraum oder markieren Sie Belege — sonst würden alle als übergeben markiert.",
 };
