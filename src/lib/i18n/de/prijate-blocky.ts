@@ -8,4 +8,8 @@ export default {
   "chýba suma a dátum — ostáva v Nespracovaných": "Betrag und Datum fehlen — bleibt unter Unverarbeitete Belege",
   // Filter „Zaúčtovanie“ v zozname bločkov.
   Nezaúčtované: "Nicht verbucht",
+  "Spárovať všetky nájdené":
+    "Alle gefundenen zuordnen",
+  "Spárovať všetky nájdené platby kartou s bločkami ({n})? Bločky sa označia ako uhradené z účtu.":
+    "Alle gefundenen Kartenzahlungen den Belegen zuordnen ({n})? Die Belege werden als vom Konto bezahlt markiert.",
 };

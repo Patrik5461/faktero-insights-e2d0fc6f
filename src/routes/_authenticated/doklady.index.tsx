@@ -102,13 +102,21 @@ import { potvrdHromadneMazanie } from "@/components/faktero/HromadnyVyber";
 import { rozdelNaMazanie } from "@/lib/faktero/hromadny-vyber";
 import { VyberVRiadku, moznostiKodov } from "@/components/faktero/VyberVRiadku";
 import { StavDokladuOdznak, VyberStavuDokladu } from "@/components/faktero/StavDokladu";
-import { useCiselnikyDokladov, filtreStavuAStitkov, splnaStavAStitok } from "@/hooks/useCiselnikyDokladov";
+import {
+  useCiselnikyDokladov,
+  filtreStavuAStitkov,
+  splnaStavAStitok,
+} from "@/hooks/useCiselnikyDokladov";
 import { dovodZamku, NAZOV_ZAMKU } from "@/lib/faktero/doklady-hromadne";
 import { daSaPresunutMedziPrijate } from "@/lib/faktero/doklad-je-blocek";
 import { zoradPodlaDokladu } from "@/lib/faktero/predkontacie";
 import { zauctujDokladyFn } from "@/lib/faktero/zauctovanie.functions";
 import { SNahladom, useBocnyNahlad, useSipkyNahladu } from "@/components/faktero/BocnyNahlad";
-import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
+import {
+  NahladDokladuOkno,
+  TlacidloNahladu,
+  useNahladOkna,
+} from "@/components/faktero/NahladDokladuOkno";
 import { SkontrolovaneHromadne } from "@/components/faktero/SkontrolovaneHromadne";
 import { vybraneNaKontrolu } from "@/lib/faktero/hromadne-skontrolovane";
 import { StavOdznak, tonStavu, type TonStavu } from "@/components/faktero/web/Stav";
@@ -210,6 +218,7 @@ function DokladyPage() {
   const [navrhy, setNavrhy] = useState<any[]>([]);
   /** Zoznam nájdených platieb kartou je predvolene zbalený (len pás s počtom). */
   const [kartyRozbalene, setKartyRozbalene] = useState(false);
+  const [parujemVsetky, setParujemVsetky] = useState(false);
   /** Odkedy sa platby hľadajú a či má firma účet — bez toho sa „nenájdená“ nehlási. */
   const [hladanie, setHladanie] = useState<{ maUcet: boolean; od: string | null }>({
     maUcet: false,
@@ -248,12 +257,30 @@ function DokladyPage() {
         (!stavPlatbyFiltra || stavRiadku(r) === stavPlatbyFiltra) &&
         splnaStavAStitok(r, stavFiltra, stitokFiltra) &&
         (!h ||
-          [r.supplier_name, r.supplier_ico, r.document_number, r.note, r.komentar, r.int_poznamka, ...(r.stitky ?? [])]
+          [
+            r.supplier_name,
+            r.supplier_ico,
+            r.document_number,
+            r.note,
+            r.komentar,
+            r.int_poznamka,
+            ...(r.stitky ?? []),
+          ]
             .filter(Boolean)
             .some((x) => String(x).toLowerCase().includes(h))),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vsetkyRiadky, hladaj, platba, stavFiltra, stitokFiltra, stavPlatbyFiltra, uhrady, navrhPodlaDokladu, hladanie]);
+  }, [
+    vsetkyRiadky,
+    hladaj,
+    platba,
+    stavFiltra,
+    stitokFiltra,
+    stavPlatbyFiltra,
+    uhrady,
+    navrhPodlaDokladu,
+    hladanie,
+  ]);
   /*
     Návrhy k dokladom plateným prevodom ukazuje ikonka v riadku a pás nad
     zoznamom. Ostatné (karta, neuvedená úhrada) ostávajú v zozname návrhov —
@@ -270,7 +297,9 @@ function DokladyPage() {
   );
   const ostatneNavrhy = useMemo(() => {
     const prevodom = new Set(navrhyPrevodom.map((z: any) => z.transactionId));
-    return navrhy.filter((z: any) => !prevodom.has(z.transactionId) && z.doklad?.payment_method !== "prevod");
+    return navrhy.filter(
+      (z: any) => !prevodom.has(z.transactionId) && z.doklad?.payment_method !== "prevod",
+    );
   }, [navrhy, navrhyPrevodom]);
   /** Ikonka platby — v riadku tabuľky aj na mobilnej karte. */
   function ikonaPlatby(r: any) {
@@ -281,12 +310,22 @@ function DokladyPage() {
     return (
       <IkonaPlatby
         stav={stav}
-        pohyb={stav === "sparovana" && u ? pohybZUhrady(u) : stav === "navrh" && z ? pohybZNavrhu(z) : null}
+        pohyb={
+          stav === "sparovana" && u
+            ? pohybZUhrady(u)
+            : stav === "navrh" && z
+              ? pohybZNavrhu(z)
+              : null
+        }
         dovody={stav === "navrh" && z ? z.dovody.map((x: string) => t(x)) : undefined}
         ista={z?.istota === "auto"}
         zaneprazdnene={!!z && parujem === z.transactionId}
         onSparuj={z ? async () => void (await sparuj(z)) : undefined}
-        onNie={z ? () => setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId)) : undefined}
+        onNie={
+          z
+            ? () => setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
+            : undefined
+        }
         onZrus={u ? () => rozparuj(r.id, u.transactionId, true) : undefined}
         odkazRucne={odkazNaPohyb(null)}
       />
@@ -408,7 +447,9 @@ function DokladyPage() {
       .update({ payment_method: platbaRiadku || null } as any)
       .eq("id", id);
     if (error) return toast.error(error.message);
-    setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, payment_method: platbaRiadku || null } : x)));
+    setRows((rs: any[]) =>
+      rs.map((x) => (x.id === id ? { ...x, payment_method: platbaRiadku || null } : x)),
+    );
   }
   /** Predkontácia v riadku — tá istá serverová funkcia ako v úprave dokladu. */
   async function zmenPredkontaciuRiadku(id: string, kodPk: string) {
@@ -417,7 +458,9 @@ function DokladyPage() {
     try {
       const v = await zauctujDokladyFn({ data: { company_id: c, ids: [id], predkontacia: kodPk } });
       if (v.duplicity?.length) {
-        toast.warning(t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže."));
+        toast.warning(
+          t("Duplicitný doklad — zaúčtovať sa nedá, kým sa jeden z rovnakých dokladov nezmaže."),
+        );
         return;
       }
       if (v.preskocenych) {
@@ -426,7 +469,9 @@ function DokladyPage() {
       }
       // Zaúčtovaný nespracovaný bloček sa zároveň spracoval (server, zauctujDokladyFn).
       const stav = v.spracovanych ? { status: "processed" } : {};
-      setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, pohoda_predkontacia: kodPk, ...stav } : x)));
+      setRows((rs: any[]) =>
+        rs.map((x) => (x.id === id ? { ...x, pohoda_predkontacia: kodPk, ...stav } : x)),
+      );
     } catch (e: any) {
       toast.error(e?.message ?? t("Predkontáciu sa nepodarilo uložiť"));
     }
@@ -441,7 +486,13 @@ function DokladyPage() {
       rows.filter((r: any) => selected.has(r.id)),
       cis.zamknuteDo,
     );
-    if (!(await potvrdHromadneMazanie(t, m, t("Presunúť {n} dokladov do koša? Do 90 dní sa dajú obnoviť.", { n: m.ids.length }))))
+    if (
+      !(await potvrdHromadneMazanie(
+        t,
+        m,
+        t("Presunúť {n} dokladov do koša? Do 90 dní sa dajú obnoviť.", { n: m.ids.length }),
+      ))
+    )
       return;
     const ids = m.ids;
     let ok = 0;
@@ -455,7 +506,8 @@ function DokladyPage() {
       }
     }
     if (ok) toast.success(t("Do koša presunuté: {n}", { n: ok }));
-    if (chyby.length) toast.warning(t("Nezmazané: {n}", { n: chyby.length }), { description: chyby[0] });
+    if (chyby.length)
+      toast.warning(t("Nezmazané: {n}", { n: chyby.length }), { description: chyby[0] });
     if (ok) obnovPoctyMenu();
     refresh();
   }
@@ -503,6 +555,42 @@ function DokladyPage() {
       toast.warning(t("Nespárované: {n} — skúste ich jednotlivo.", { n: iste.length - ok }));
   }
 
+  /**
+   * „Spárovať všetky nájdené“ platby kartou — každý bloček aj každý pohyb
+   * najviac raz (prvý návrh vyhráva), jeden po druhom, výsledok jedným toastom.
+   */
+  async function sparujVsetkyKartou() {
+    const bloky = new Set<string>();
+    const pohyby = new Set<string>();
+    const vyber = ostatneNavrhy.filter((z: any) => {
+      if (!z.expenseId || bloky.has(z.expenseId) || pohyby.has(z.transactionId)) return false;
+      bloky.add(z.expenseId);
+      pohyby.add(z.transactionId);
+      return true;
+    });
+    if (!vyber.length) return;
+    const ok0 = await potvrd(
+      t(
+        "Spárovať všetky nájdené platby kartou s bločkami ({n})? Bločky sa označia ako uhradené z účtu.",
+        {
+          n: vyber.length,
+        },
+      ),
+      { potvrdit: t("Spárovať") },
+    );
+    if (!ok0) return;
+    setParujemVsetky(true);
+    let ok = 0;
+    try {
+      for (const z of vyber) if (await sparuj(z, true)) ok++;
+    } finally {
+      setParujemVsetky(false);
+    }
+    if (ok) toast.success(t("Spárované doklady: {n}", { n: ok }));
+    if (ok < vyber.length)
+      toast.warning(t("Nespárované: {n} — skúste ich jednotlivo.", { n: vyber.length - ok }));
+  }
+
   /** Filter „Platba“ v adrese — pás návrhov ho len zapína a vypína. */
   function nastavFilterPlatby(hodnota: string) {
     lf.setFilter("stavPlatby", hodnota);
@@ -510,7 +598,13 @@ function DokladyPage() {
 
   /** `potvrdene` — okienko pri ikonke sa už opýtalo samo. */
   async function rozparuj(expenseId: string, transactionId: string, potvrdene = false) {
-    if (!potvrdene && !(await potvrd(t("Zrušiť väzbu dokladu na platbu z účtu? Doklad prestane byť uhradený z účtu.")))) return;
+    if (
+      !potvrdene &&
+      !(await potvrd(
+        t("Zrušiť väzbu dokladu na platbu z účtu? Doklad prestane byť uhradený z účtu."),
+      ))
+    )
+      return;
     try {
       await rozparujFn({ data: { transaction_id: transactionId, expense_id: expenseId } });
       setUhrady((u) => {
@@ -675,7 +769,10 @@ function DokladyPage() {
 
   // Karty po menách — bloček v CZK sa k eurám nepripočíta (D-20).
   const menyFirmy = useFormatMenyFirmy();
-  const totals = useMemo(() => suctyBlockovPoMenach(rows, menyFirmy.domaca), [rows, menyFirmy.domaca]);
+  const totals = useMemo(
+    () => suctyBlockovPoMenach(rows, menyFirmy.domaca),
+    [rows, menyFirmy.domaca],
+  );
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -760,7 +857,9 @@ function DokladyPage() {
           stiahni(new Blob([f.xml], { type: "application/xml;charset=utf-8" }), f.fileName);
         toast.success(
           t("XML pre Pohodu: {n} dokladov", { n: res.v_xml }) +
-            (res.subory.length > 1 ? " " + t("v {n} súboroch podľa roka", { n: res.subory.length }) : ""),
+            (res.subory.length > 1
+              ? " " + t("v {n} súboroch podľa roka", { n: res.subory.length })
+              : ""),
         );
         toastNeodovzdane(t, res.preskocene);
       } else {
@@ -800,53 +899,74 @@ function DokladyPage() {
       toast.error(e?.message ?? t("Nepodarilo sa"));
       return;
     }
-    void stiahniExcel(await sFirmouAktivnej(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`), [
-      {
-        nazov: t("Doklady"),
-        data: tabulka(r, [
-          { nazov: t("Dátum"), hodnota: (x: any) => x.issue_date },
-          { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
-          { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
-          { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
-          { nazov: t("Číslo"), hodnota: (x: any) => x.document_number },
-          { nazov: t("Kategória"), hodnota: (x: any) => x.category },
-          { nazov: t("Základ"), hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
-          { nazov: t("DPH"), hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
-          { nazov: t("Spolu"), hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
-          // Rozpis DPH po sadzbách z `vat_breakdown` (starší doklad: jedna sadzba z hlavičky).
-          ...stlpceRozpisuDph(r, (x: any) => rozpisBlocku(x), t),
-          { nazov: t("Mena"), hodnota: (x: any) => x.currency },
-          { nazov: t("Úhrada"), hodnota: (x: any) => uhradaSlovom(x.payment_method, t) },
-          { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
-          { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
-          { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
-          { nazov: t("KV DPH"), hodnota: (x: any) => x.kv_clenenie },
-          { nazov: t("Zdroj"), hodnota: (x: any) => t(ZDROJ_DOKLADU[x.source] ?? x.source) },
-        ]),
-      },
-      {
-        nazov: t("Položky"),
-        data: tabulka(
-          r.flatMap((x: any) =>
-            (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
-              doklad: x.document_number,
-              dodavatel: x.supplier_name,
-              p,
-            })),
+    void stiahniExcel(
+      await sFirmouAktivnej(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`),
+      [
+        {
+          nazov: t("Doklady"),
+          data: tabulka(r, [
+            { nazov: t("Dátum"), hodnota: (x: any) => x.issue_date },
+            { nazov: t("Dodávateľ"), hodnota: (x: any) => x.supplier_name },
+            { nazov: t("IČO"), hodnota: (x: any) => x.supplier_ico },
+            { nazov: t("IČ DPH"), hodnota: (x: any) => x.supplier_ic_dph },
+            { nazov: t("Číslo"), hodnota: (x: any) => x.document_number },
+            { nazov: t("Kategória"), hodnota: (x: any) => x.category },
+            {
+              nazov: t("Základ"),
+              hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)),
+            },
+            {
+              nazov: t("DPH"),
+              hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)),
+            },
+            {
+              nazov: t("Spolu"),
+              hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)),
+            },
+            // Rozpis DPH po sadzbách z `vat_breakdown` (starší doklad: jedna sadzba z hlavičky).
+            ...stlpceRozpisuDph(r, (x: any) => rozpisBlocku(x), t),
+            { nazov: t("Mena"), hodnota: (x: any) => x.currency },
+            { nazov: t("Úhrada"), hodnota: (x: any) => uhradaSlovom(x.payment_method, t) },
+            { nazov: t("Stav"), hodnota: (x: any) => t(STATUS_LABEL[x.status] ?? x.status) },
+            { nazov: t("Predkontácia"), hodnota: (x: any) => x.pohoda_predkontacia },
+            { nazov: t("Členenie DPH"), hodnota: (x: any) => x.pohoda_clenenie_dph },
+            { nazov: t("KV DPH"), hodnota: (x: any) => x.kv_clenenie },
+            { nazov: t("Zdroj"), hodnota: (x: any) => t(ZDROJ_DOKLADU[x.source] ?? x.source) },
+          ]),
+        },
+        {
+          nazov: t("Položky"),
+          data: tabulka(
+            r.flatMap((x: any) =>
+              (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
+                doklad: x.document_number,
+                dodavatel: x.supplier_name,
+                p,
+              })),
+            ),
+            [
+              { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
+              { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
+              { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
+              { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+              { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
+              {
+                nazov: t("Jedn. cena"),
+                hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)),
+              },
+              {
+                nazov: t("Sadzba DPH"),
+                hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)),
+              },
+              {
+                nazov: t("Spolu"),
+                hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)),
+              },
+            ],
           ),
-          [
-            { nazov: t("Doklad"), hodnota: (x: any) => x.doklad },
-            { nazov: t("Dodávateľ"), hodnota: (x: any) => x.dodavatel },
-            { nazov: t("Položka"), hodnota: (x: any) => x.p?.name },
-            { nazov: t("Množstvo"), hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
-            { nazov: t("MJ"), hodnota: (x: any) => x.p?.unit },
-            { nazov: t("Jedn. cena"), hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
-            { nazov: t("Sadzba DPH"), hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
-            { nazov: t("Spolu"), hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
-          ],
-        ),
-      },
-    ]);
+        },
+      ],
+    );
   }
 
   async function del(id: string) {
@@ -868,7 +988,9 @@ function DokladyPage() {
         nacitaj={nacitajSubor}
         nazov={(id) => {
           const r: any = vsetkyRiadky.find((x: any) => x.id === id);
-          return r ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček") : null;
+          return r
+            ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček")
+            : null;
         }}
         onOtvorit={(id) => {
           posledny.zapamataj(id);
@@ -877,7 +999,9 @@ function DokladyPage() {
       />
       <PageHeader
         title={t("Bločky")}
-        description={t("Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch.")}
+        description={t(
+          "Spracované bločky a výdavkové doklady. Nové najprv skontrolujete v Nespracovaných dokladoch.",
+        )}
         action={
           <div className="flex flex-wrap items-center gap-2">
             <Link
@@ -892,7 +1016,8 @@ function DokladyPage() {
               title={t("pohoda.xml, súpiska CSV a skeny dokladov")}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : t("všetko")}
+              <Download className="h-4 w-4" /> ZIP{" "}
+              {selected.size ? `(${selected.size})` : t("všetko")}
             </button>
             <button
               onClick={() => handleExport(false, undefined, "xml")}
@@ -908,7 +1033,9 @@ function DokladyPage() {
               disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
               title={
                 !month && !bezMesiaca && !selected.size
-                  ? t("Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.")
+                  ? t(
+                      "Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky.",
+                    )
                   : undefined
               }
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
@@ -939,7 +1066,9 @@ function DokladyPage() {
         >
           {/* Nespracované bločky majú vlastné miesto v Nespracovaných dokladoch;
               záložka ostáva len pre staré odkazy (?stav=nespracovane). */}
-          {ZALOZKY_DOKLADOV.filter((z) => z.kluc !== "nespracovane" || zalozka === "nespracovane").map((z) => (
+          {ZALOZKY_DOKLADOV.filter(
+            (z) => z.kluc !== "nespracovane" || zalozka === "nespracovane",
+          ).map((z) => (
             <button
               key={z.kluc}
               role="tab"
@@ -966,16 +1095,16 @@ function DokladyPage() {
             to="/nespracovane"
             className="dk-pozor mb-4 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm hover:brightness-[0.97]"
           >
-            <span>
-              {t(mnozne(nespracovanych, CAKAJUCE_BLOCKY), { n: nespracovanych })}
-            </span>
+            <span>{t(mnozne(nespracovanych, CAKAJUCE_BLOCKY), { n: nespracovanych })}</span>
             <span className="shrink-0 font-medium">{t("Otvoriť")} →</span>
           </Link>
         ) : null}
 
         {bezMesiaca && (
           <p className="mb-4 text-sm text-muted-foreground">
-            {t("Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a označte ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.")}
+            {t(
+              "Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a označte ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.",
+            )}
           </p>
         )}
 
@@ -1064,7 +1193,8 @@ function DokladyPage() {
                       const n: Record<string, unknown> = { ...prev };
                       delete n.mesiac;
                       delete n.page;
-                      if (h.stav && ZALOZKY_DOKLADOV.some((z) => z.kluc === h.stav)) n.stav = h.stav;
+                      if (h.stav && ZALOZKY_DOKLADOV.some((z) => z.kluc === h.stav))
+                        n.stav = h.stav;
                       if (h.hladaj) n.q = h.hladaj;
                       else delete n.q;
                       const f: Record<string, string> = {
@@ -1137,7 +1267,12 @@ function DokladyPage() {
             />
           )}
           {selected.size > 0 && cid && (
-            <VyuctovanieZVyberu companyId={cid} druh="blocek" ids={Array.from(selected)} onHotovo={refresh} />
+            <VyuctovanieZVyberu
+              companyId={cid}
+              druh="blocek"
+              ids={Array.from(selected)}
+              onHotovo={refresh}
+            />
           )}
           {/* Úhrada faktúry nahratá ako bloček (METRO „ÚHRADA FAKTÚRY“) → k prijatej faktúre alebo do Iných dokladov. */}
           {selected.size > 0 && cid && (
@@ -1160,8 +1295,8 @@ function DokladyPage() {
               title={t("Spracované doklady so zaúčtovaním; označia sa ako odovzdané")}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-4 w-4" /> {t("Export pre {program}", { program: program.nazov })} (
-              {selected.size})
+              <Download className="h-4 w-4" />{" "}
+              {t("Export pre {program}", { program: program.nazov })} ({selected.size})
             </button>
           )}
           {volbyExportu ? (
@@ -1178,7 +1313,9 @@ function DokladyPage() {
 
         <p className="mb-4 text-xs text-muted-foreground">
           {t("V balíku je")} <strong>{t("pohoda.xml")}</strong>{" "}
-          {t("na priamy import do Pohody, súpiska v CSV a naskenované doklady. Predkontáciu prijatých dokladov nastavíte v Účtovníctvo → Prepojenie s Pohodou.")}
+          {t(
+            "na priamy import do Pohody, súpiska v CSV a naskenované doklady. Predkontáciu prijatých dokladov nastavíte v Účtovníctvo → Prepojenie s Pohodou.",
+          )}
         </p>
 
         {/*
@@ -1201,75 +1338,93 @@ function DokladyPage() {
         */}
         {ostatneNavrhy.length > 0 && (
           <div className="mb-4 overflow-hidden rounded-lg border border-primary/40 bg-primary/5">
-            <button
-              type="button"
-              onClick={() => setKartyRozbalene((v) => !v)}
-              aria-expanded={kartyRozbalene}
-              className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-left text-sm hover:bg-primary/10"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <BodkaPlatby stav="navrh" className="h-2.5 w-2.5 shrink-0" />
-                <span className="min-w-0">
-                  {t("Našli sme platby kartou k bločkom")} ({ostatneNavrhy.length})
-                </span>
-              </span>
-              <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary">
-                {kartyRozbalene ? t("Skryť") : t("Zobraziť")}
-                <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform ${kartyRozbalene ? "rotate-180" : ""}`}
-                  aria-hidden="true"
-                />
-              </span>
-            </button>
-            {kartyRozbalene && ostatneNavrhy.map((z) => (
-              <div
-                key={z.transactionId}
-                className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"
+            <div className="flex flex-wrap items-center gap-2 pr-3">
+              <button
+                type="button"
+                onClick={() => setKartyRozbalene((v) => !v)}
+                aria-expanded={kartyRozbalene}
+                className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-left text-sm hover:bg-primary/10"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">
-                    {z.doklad?.supplier_name ?? t("Doklad")}{" "}
-                    <span className="tabular-nums">
-                      {z.doklad?.total_amount != null
-                        ? formatujMenu(z.doklad.total_amount, z.doklad.currency ?? "EUR")
-                        : ""}
+                <span className="flex min-w-0 items-center gap-2">
+                  <BodkaPlatby stav="navrh" className="h-2.5 w-2.5 shrink-0" />
+                  <span className="min-w-0">
+                    {t("Našli sme platby kartou k bločkom")} ({ostatneNavrhy.length})
+                  </span>
+                </span>
+                <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  {kartyRozbalene ? t("Skryť") : t("Zobraziť")}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${kartyRozbalene ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={parujemVsetky || parujem != null}
+                onClick={() => void sparujVsetkyKartou()}
+                className="inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                {parujemVsetky ? t("Párujem…") : t("Spárovať všetky nájdené")}
+              </button>
+            </div>
+            {kartyRozbalene &&
+              ostatneNavrhy.map((z) => (
+                <div
+                  key={z.transactionId}
+                  className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
+                      {z.doklad?.supplier_name ?? t("Doklad")}{" "}
+                      <span className="tabular-nums">
+                        {z.doklad?.total_amount != null
+                          ? formatujMenu(z.doklad.total_amount, z.doklad.currency ?? "EUR")
+                          : ""}
+                      </span>
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {datumNaDoklade(z.pohyb?.booking_date)} ·{" "}
+                      {z.dovody.map((x: string) => t(x)).join(" · ")}
                     </span>
                   </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {datumNaDoklade(z.pohyb?.booking_date)} ·{" "}
-                    {z.dovody.map((x: string) => t(x)).join(" · ")}
-                  </span>
-                </span>
-                {/* Pred potvrdením si treba bloček pozrieť — v bočnom náhľade, ak je zapnutý, inak v novej karte, aby zoznam návrhov ostal. */}
-                {z.expenseId && (
+                  {/* Pred potvrdením si treba bloček pozrieť — v bočnom náhľade, ak je zapnutý, inak v novej karte, aby zoznam návrhov ostal. */}
+                  {z.expenseId && (
+                    <button
+                      onClick={() => {
+                        const id = z.expenseId as string;
+                        if (bocny.aktivny() && rows.some((x: any) => x.id === id))
+                          bocny.setVybrany(id);
+                        else
+                          window.open(
+                            `/doklady/novy?id=${encodeURIComponent(id)}`,
+                            "_blank",
+                            "noopener",
+                          );
+                      }}
+                      className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {t("Náhľad bločku")}
+                    </button>
+                  )}
                   <button
-                    onClick={() => {
-                      const id = z.expenseId as string;
-                      if (bocny.aktivny() && rows.some((x: any) => x.id === id)) bocny.setVybrany(id);
-                      else window.open(`/doklady/novy?id=${encodeURIComponent(id)}`, "_blank", "noopener");
-                    }}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    disabled={parujem === z.transactionId}
+                    onClick={() => sparuj(z)}
+                    className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary-hover disabled:opacity-60"
                   >
-                    {t("Náhľad bločku")}
+                    {z.istota === "auto" ? t("Spárovať") : t("Áno, patrí k sebe")}
                   </button>
-                )}
-                <button
-                  disabled={parujem === z.transactionId}
-                  onClick={() => sparuj(z)}
-                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary-hover disabled:opacity-60"
-                >
-                  {z.istota === "auto" ? t("Spárovať") : t("Áno, patrí k sebe")}
-                </button>
-                <button
-                  onClick={() =>
-                    setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
-                  }
-                  className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground"
-                >
-                  {t("Nie")}
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={() =>
+                      setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
+                    }
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground"
+                  >
+                    {t("Nie")}
+                  </button>
+                </div>
+              ))}
           </div>
         )}
 
@@ -1284,7 +1439,9 @@ function DokladyPage() {
           vybrany={bocny.vybrany}
           nazov={(() => {
             const r: any = rows.find((x: any) => x.id === bocny.vybrany);
-            return r ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček") : null;
+            return r
+              ? [r.supplier_name, r.document_number].filter(Boolean).join(" · ") || t("Bloček")
+              : null;
           })()}
           nacitaj={nacitajSubor}
           onOtvorit={(id) => {
@@ -1293,547 +1450,651 @@ function DokladyPage() {
           }}
           onZavriet={() => bocny.setVybrany(null)}
         >
-        {/* Na telefóne sú riadky samostatné karty (ako vo vystavených faktúrach) — rám zoznamu len pre tabuľku a prázdny stav. */}
-        <TabulkaZoznamu
-          className={`rounded-2xl ${!loading && rows.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
-          posuvClassName="max-sm:overflow-visible"
-        >
-          {loading ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">{t("Načítavam…")}</div>
-          ) : rows.length === 0 ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">
-              <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              {bezMesiaca
-                ? t("Všetko je spracované — žiadny doklad nečaká na kontrolu.")
-                : mimo.pocet > 0
-                  ? mimo.pocet === 1
-                    ? t("Vo výbere nie je žiadny doklad — jeden je v inom mesiaci.")
-                    : t("Vo výbere nie je žiadny doklad — {n} ich je v inom mesiaci.", { n: mimo.pocet })
-                  : t("Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF.")}
-              <div className="mt-4 flex justify-center gap-2">
-                {bezMesiaca ? (
-                  <button
-                    type="button"
-                    onClick={() => prepniZalozku("vsetky")}
-                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
-                  >
-                    {t("Zobraziť všetky doklady")}
-                  </button>
-                ) : mimo.pocet > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setMonth("")}
-                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
-                  >
-                    {t("Zobraziť všetky doklady")}
-                  </button>
-                ) : (
-                  <Link
-                    to="/doklady/novy"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-                  >
-                    <Camera className="h-4 w-4" /> {t("Skenovať doklad")}
-                  </Link>
-                )}
+          {/* Na telefóne sú riadky samostatné karty (ako vo vystavených faktúrach) — rám zoznamu len pre tabuľku a prázdny stav. */}
+          <TabulkaZoznamu
+            className={`rounded-2xl ${!loading && rows.length > 0 ? "max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent" : ""}`}
+            posuvClassName="max-sm:overflow-visible"
+          >
+            {loading ? (
+              <div className="p-12 text-center text-sm text-muted-foreground">
+                {t("Načítavam…")}
               </div>
-            </div>
-          ) : (
-            <>
-            <div className="space-y-2 sm:hidden">
-              {postupne.viditelne.map((r) => (
-                <MobileListCard
-                  key={r.id}
-                  vybrane={selected.has(r.id)}
-                  onVyber={() => toggle(r.id)}
-                  vyberPopis={t("Vybrať riadok")}
-                  ciel={{ to: "/doklady/novy", search: { id: r.id } as any }}
-                  onClick={() => {
-                    posledny.zapamataj(r.id);
-                    navigate({ to: "/doklady/novy", search: { id: r.id } as any });
-                  }}
-                  title={
-                    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                      {r.supplier_name ?? (
-                        <span className="font-normal text-muted-foreground italic">{t("bez názvu")}</span>
-                      )}
-                      <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
-                      <UhradaFakturyOdznak blocek={r} />
-                      {r.locked_at ? (
-                        <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label={t("Zamknutý doklad")} />
-                      ) : null}
-                      {r.na_kontrolu_at ? (
-                        <StavOdznak ton="pozor" maly title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : undefined}>
-                          {t("Na kontrolu")}
-                        </StavOdznak>
-                      ) : null}
-                    </span>
-                  }
-                  subtitle={
-                    [r.document_number, r.supplier_ico ? `${t("IČO")} ${r.supplier_ico}` : null]
-                      .filter(Boolean)
-                      .join(" · ") || undefined
-                  }
-                  status={
-                    <span className="flex flex-col items-end gap-1">
-                      {/* Ikonka platby mimo nadpisu — nadpis je odkaz na detail a klik by ho otvoril. */}
-                      <span className="inline-flex items-center gap-1">
-                        {ikonaPlatby(r)}
-                        <StavOdznak ton={tonStavu(STATUS_TON, r.status)}>
-                          {t(STATUS_LABEL[r.status] ?? r.status)}
-                        </StavOdznak>
-                      </span>
-                      <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
-                    </span>
-                  }
-                  meta={
-                    <>
-                      {datumNaDoklade(r.issue_date)}
-                      {r.pohoda_predkontacia ? ` · ${r.pohoda_predkontacia}` : ""}
-                      {r.status === "new" && chybajuceUdaje(r).length > 0 ? (
-                        <span className="dk-text-pozor block truncate">
-                          {t("Chýba: {polia}", { polia: chybajuceUdaje(r).map((x) => t(x)).join(", ") })}
-                        </span>
-                      ) : null}
-                    </>
-                  }
-                  amount={r.total_amount != null ? formatujMenu(r.total_amount, r.currency) : "—"}
-                  actions={
-                    <>
-                      {r.status === "new" && daSaSpracovat(r) ? (
-                        <button
-                          onClick={() => zmenStav([r.id], "processed")}
-                          disabled={menimStav}
-                          className="mr-auto inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary-hover disabled:opacity-50"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
-                        </button>
-                      ) : null}
-                      {r.status === "processed" && (
-                        <button
-                          onClick={() => zmenStav([r.id], "new")}
-                          disabled={menimStav}
-                          aria-label={t("Vrátiť medzi nespracované")}
-                          title={t("Vrátiť medzi nespracované")}
-                          className="mr-auto rounded-md p-1.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
-                        >
-                          <Undo2 className="h-4 w-4" />
-                        </button>
-                      )}
-                      {r.file_path && (
-                        <TlacidloNahladu popis={r.document_number} onClick={() => okno.otvor(r.id)} />
-                      )}
-                      {daSaPresunutMedziPrijate(r) && (
-                        <button
-                          onClick={() => doPrijatych(r)}
-                          disabled={presuvam === r.id}
-                          aria-label={t("Presunúť medzi prijaté faktúry")}
-                          title={t("Presunúť medzi prijaté faktúry")}
-                          className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
-                        >
-                          <FileInput className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => del(r.id)}
-                        aria-label={t("Zmazať")}
-                        title={t("Zmazať")}
-                        className="rounded-md p-1.5 hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </button>
-                    </>
-                  }
-                />
-              ))}
-              {postupne.zarazka()}
-            </div>
-            <table className="w-full text-sm max-sm:hidden">
-              <thead className="bg-secondary/40 text-xs font-semibold whitespace-nowrap text-muted-foreground">
-                <tr>
-                  <th className="w-8 px-3 py-2">
-                    <input
-                      type="checkbox"
-                      aria-label={t("Vybrať všetko")}
-                      checked={rows.length > 0 && selected.size === rows.length}
-                      onChange={toggleAll}
-                    />
-                    <span className="sr-only">{t("Výber")}</span>
-                  </th>
-                  {je("datum") && <th className="px-3 py-2 text-left">{rad.hlavicka("datum", t("Dátum"))}</th>}
-                  <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", t("Dodávateľ"))}</th>
-                  {je("cislo") && <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", t("Číslo"))}</th>}
-                  {je("predkontacia") && <th className="px-3 py-2 text-left">{t("Účtovná položka")}</th>}
-                  {stlpecStavDokladu && <th className="px-3 py-2 text-left">{t("Stav dokladu")}</th>}
-                  {je("kategoria") && <th className="px-3 py-2 text-left">{rad.hlavicka("kategoria", t("Kategória"))}</th>}
-                  {je("zaklad") && <th className="px-3 py-2 text-right">{rad.hlavicka("zaklad", t("Základ"))}</th>}
-                  {je("dph") && <th className="px-3 py-2 text-right">{rad.hlavicka("dph", t("DPH"))}</th>}
-                  {je("celkom") && <th className="px-3 py-2 text-right">{rad.hlavicka("celkom", t("Celkom"))}</th>}
-                  {je("platba") && <th className="px-3 py-2 text-left">{rad.hlavicka("platba", t("Spôsob úhrady"))}</th>}
-                  <th className="px-3 py-2 text-left">{rad.hlavicka("stav", t("Stav"))}</th>
-                  {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", t("Zdroj"))}</th>}
-                  {je("spracoval") && <th className="hidden px-3 py-2 text-left md:table-cell">{t("Spracoval")}</th>}
-                  {je("ktoKedy") && <th className="px-3 py-2 text-left">{t("Nahral / Zaúčtoval")}</th>}
-                  {je("uhrada") && <th className="px-3 py-2 text-left">{t("Úhrada z účtu")}</th>}
-                  <th className="px-3 py-2"><span className="sr-only">{t("Akcie")}</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {postupne.viditelne.map((r) => (
-                  <tr
-                    key={r.id}
-                    {...posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null)}
-                    data-nahlad-id={r.id}
-                    {...klik(
-                      { to: "/doklady/novy", search: { id: r.id } as any },
-                      {
-                        // Pri zapnutom náhľade vyberie riadok, inak otvorí detail; tlačidlá a výbery v riadku robia ďalej svoje.
-                        naKlik: () => {
-                          posledny.zapamataj(r.id);
-                          if (bocny.aktivny()) bocny.setVybrany(r.id);
-                          else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
-                        },
-                      },
-                    )}
-                    className={`${TRIEDA_KLIK_RIADKU} border-t border-border ${posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null).className}`}
-                  >
-                    <td className="px-3 py-2">
-                      <input
-                        type="checkbox"
-                        aria-label={t("Vybrať riadok")}
-                        checked={selected.has(r.id)}
-                        onChange={() => toggle(r.id)}
-                      />
-                    </td>
-                    {je("datum") && (
-                      <td className="px-3 py-2 whitespace-nowrap">{datumNaDoklade(r.issue_date)}</td>
-                    )}
-                    <td className="min-w-[11rem] max-w-[20rem] whitespace-normal px-3 py-2">
-                      <button
-                        onClick={() =>
-                          {
-                          posledny.zapamataj(r.id);
-                          // Zapnutý náhľad ukáže sken vedľa zoznamu, detail sa otvorí z neho.
-                          if (bocny.aktivny()) bocny.setVybrany(r.id);
-                          else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
-                        }
-                        }
-                        className="text-left hover:underline"
-                      >
-                        {r.supplier_name ?? (
-                          <span className="text-muted-foreground italic">{t("bez názvu")}</span>
-                        )}
-                      </button>
-                      <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
-                        <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
-                        {ikonaPlatby(r)}
-                        <UhradaFakturyOdznak blocek={r} />
-                      </span>
-                      {r.supplier_ico ? (
-                        <div className="text-xs text-muted-foreground">
-                          {t("IČO")} {r.supplier_ico}
-                        </div>
-                      ) : null}
-                      {r.stitky?.length ? (
-                        <div className="mt-0.5 flex flex-wrap gap-1">
-                          {r.stitky.map((stitok: string) => (
-                            <span key={stitok} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
-                              {stitok}
+            ) : rows.length === 0 ? (
+              <div className="p-12 text-center text-sm text-muted-foreground">
+                <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                {bezMesiaca
+                  ? t("Všetko je spracované — žiadny doklad nečaká na kontrolu.")
+                  : mimo.pocet > 0
+                    ? mimo.pocet === 1
+                      ? t("Vo výbere nie je žiadny doklad — jeden je v inom mesiaci.")
+                      : t("Vo výbere nie je žiadny doklad — {n} ich je v inom mesiaci.", {
+                          n: mimo.pocet,
+                        })
+                    : t("Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF.")}
+                <div className="mt-4 flex justify-center gap-2">
+                  {bezMesiaca ? (
+                    <button
+                      type="button"
+                      onClick={() => prepniZalozku("vsetky")}
+                      className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+                    >
+                      {t("Zobraziť všetky doklady")}
+                    </button>
+                  ) : mimo.pocet > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setMonth("")}
+                      className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+                    >
+                      {t("Zobraziť všetky doklady")}
+                    </button>
+                  ) : (
+                    <Link
+                      to="/doklady/novy"
+                      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                    >
+                      <Camera className="h-4 w-4" /> {t("Skenovať doklad")}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2 sm:hidden">
+                  {postupne.viditelne.map((r) => (
+                    <MobileListCard
+                      key={r.id}
+                      vybrane={selected.has(r.id)}
+                      onVyber={() => toggle(r.id)}
+                      vyberPopis={t("Vybrať riadok")}
+                      ciel={{ to: "/doklady/novy", search: { id: r.id } as any }}
+                      onClick={() => {
+                        posledny.zapamataj(r.id);
+                        navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                      }}
+                      title={
+                        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                          {r.supplier_name ?? (
+                            <span className="font-normal text-muted-foreground italic">
+                              {t("bez názvu")}
                             </span>
-                          ))}
-                        </div>
-                      ) : null}
-                      {r.status === "new" && chybajuceUdaje(r).length > 0 && (
-                        <div className="dk-text-pozor text-xs">
-                          {t("Chýba: {polia}", { polia: chybajuceUdaje(r).map((x) => t(x)).join(", ") })}
-                        </div>
-                      )}
-                    </td>
-                    {je("cislo") && (
-                      <td className="px-3 py-2">
-                        <span className="cislo-dokladu">{r.document_number ?? "—"}</span>
-                        {r.na_kontrolu_at ? (
-                          <StavOdznak ton="pozor" maly className="ml-1.5 align-middle" title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : undefined}>
-                            {t("Na kontrolu")}
-                          </StavOdznak>
-                        ) : null}
-                        {r.pohoda_predkontacia || r.pohoda_clenenie_dph || r.kv_clenenie ? (
-                          <div
-                            className="text-xs text-muted-foreground"
-                            title={t("Predkontácia · členenie DPH · KV DPH pre Pohodu")}
-                          >
-                            {textZauctovania(r.pohoda_predkontacia, r.pohoda_clenenie_dph, r.kv_clenenie)}
-                          </div>
-                        ) : null}
-                      </td>
-                    )}
-                    {je("predkontacia") && (
-                      <td className="px-3 py-2">
-                        {(() => {
-                          const z = dovodZamku(r, cis.zamknuteDo);
-                          return (
-                            <VyberVRiadku
-                              ariaLabel={t("Účtovná položka dokladu {cislo}", { cislo: r.document_number ?? "" })}
-                              hodnota={r.pohoda_predkontacia}
-                              moznosti={moznostiPredkontacie(r.payment_method)}
-                              zamok={z ? t(NAZOV_ZAMKU[z]) : null}
-                              onVyber={(v) => zmenPredkontaciuRiadku(r.id, v)}
+                          )}
+                          <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
+                          <UhradaFakturyOdznak blocek={r} />
+                          {r.locked_at ? (
+                            <Lock
+                              className="h-3.5 w-3.5 text-muted-foreground"
+                              aria-label={t("Zamknutý doklad")}
                             />
-                          );
-                        })()}
-                        {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie) ? (
-                          <div className="mt-0.5 text-xs text-muted-foreground" title={t("Členenie DPH · KV DPH")}>
-                            {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie)}
-                          </div>
-                        ) : null}
-                      </td>
-                    )}
-                    {stlpecStavDokladu && (
-                      <td className="px-3 py-2">
-                        {cis.stavy.length ? (
-                          <VyberStavuDokladu
-                            kompaktny
-                            tabulka="expense_documents"
-                            id={r.id}
-                            stavId={r.stav_id}
-                            stavy={cis.stavy}
-                            onZmena={(v) =>
-                              setRows((rs: any[]) => rs.map((x) => (x.id === r.id ? { ...x, stav_id: v } : x)))
-                            }
-                          />
-                        ) : (
+                          ) : null}
+                          {r.na_kontrolu_at ? (
+                            <StavOdznak
+                              ton="pozor"
+                              maly
+                              title={r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : undefined}
+                            >
+                              {t("Na kontrolu")}
+                            </StavOdznak>
+                          ) : null}
+                        </span>
+                      }
+                      subtitle={
+                        [r.document_number, r.supplier_ico ? `${t("IČO")} ${r.supplier_ico}` : null]
+                          .filter(Boolean)
+                          .join(" · ") || undefined
+                      }
+                      status={
+                        <span className="flex flex-col items-end gap-1">
+                          {/* Ikonka platby mimo nadpisu — nadpis je odkaz na detail a klik by ho otvoril. */}
+                          <span className="inline-flex items-center gap-1">
+                            {ikonaPlatby(r)}
+                            <StavOdznak ton={tonStavu(STATUS_TON, r.status)}>
+                              {t(STATUS_LABEL[r.status] ?? r.status)}
+                            </StavOdznak>
+                          </span>
                           <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
-                        )}
-                      </td>
-                    )}
-                    {je("kategoria") && (
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
-                        {r.category ?? "—"}
-                      </td>
-                    )}
-                    {je("zaklad") && (
-                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
-                        {r.net_amount != null ? formatujCislo(r.net_amount) : "—"}
-                      </td>
-                    )}
-                    {je("dph") && (
-                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
-                        {r.vat_amount != null ? formatujCislo(r.vat_amount) : "—"}
-                      </td>
-                    )}
-                    {je("celkom") && (
-                      <td className="suma px-3 py-2 text-right">
-                        {r.total_amount != null ? formatujMenu(r.total_amount, r.currency) : "—"}
-                      </td>
-                    )}
-                    {je("platba") && (
-                      <td className="px-3 py-2 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                        {/* Spôsob úhrady priamo v riadku — odovzdaný ani zamknutý doklad meniť nejde. */}
-                        {!dovodZamku(r, cis.zamknuteDo) ? (
-                          <select
-                            aria-label={t("Spôsob úhrady dokladu {cislo}", { cislo: r.document_number ?? "" })}
-                            value={r.payment_method ?? ""}
-                            onChange={(e) => void zmenPlatbuRiadku(r.id, e.target.value)}
-                            className="rounded-md border border-input bg-background px-1.5 py-1 text-xs text-foreground"
-                          >
-                            <option value="">—</option>
-                            <option value="hotovost">{t("hotovosť")}</option>
-                            <option value="karta">{t("karta")}</option>
-                            <option value="prevod">{t("prevod")}</option>
-                          </select>
-                        ) : (
-                          t(
-                            ({ hotovost: "hotovosť", karta: "karta", prevod: "prevod" } as Record<string, string>)[
-                              r.payment_method as string
-                            ] ?? "—",
-                          )
-                        )}
-                      </td>
-                    )}
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <StavOdznak
-                          ton={tonStavu(STATUS_TON, r.status)}
-                          title={
-                            r.processed_at
-                              ? t("Spracované {datum}", {
-                                  datum: new Date(r.processed_at).toLocaleDateString("sk-SK"),
-                                })
-                              : undefined
-                          }
-                        >
-                          {t(STATUS_LABEL[r.status] ?? r.status)}
-                        </StavOdznak>
-                        {r.locked_at ? (
-                          <span title={t("Zamknutý doklad")} className="text-muted-foreground">
-                            <Lock className="h-3.5 w-3.5" />
-                          </span>
-                        ) : null}
-                        {sch.stavy[r.id] ? (
-                          <span
-                            className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
-                            title={t("Schvaľovanie")}
-                          >
-                            {t(sch.stavy[r.id].odznak)}
-                          </span>
-                        ) : null}
-                        {r.status === "new" &&
-                          (daSaSpracovat(r) ? (
+                        </span>
+                      }
+                      meta={
+                        <>
+                          {datumNaDoklade(r.issue_date)}
+                          {r.pohoda_predkontacia ? ` · ${r.pohoda_predkontacia}` : ""}
+                          {r.status === "new" && chybajuceUdaje(r).length > 0 ? (
+                            <span className="dk-text-pozor block truncate">
+                              {t("Chýba: {polia}", {
+                                polia: chybajuceUdaje(r)
+                                  .map((x) => t(x))
+                                  .join(", "),
+                              })}
+                            </span>
+                          ) : null}
+                        </>
+                      }
+                      amount={
+                        r.total_amount != null ? formatujMenu(r.total_amount, r.currency) : "—"
+                      }
+                      actions={
+                        <>
+                          {r.status === "new" && daSaSpracovat(r) ? (
                             <button
                               onClick={() => zmenStav([r.id], "processed")}
                               disabled={menimStav}
-                              className="inline-flex h-6 items-center gap-1 rounded-md border border-input bg-card px-2 text-xs font-semibold text-primary-hover hover:bg-accent disabled:opacity-50"
+                              className="mr-auto inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary-hover disabled:opacity-50"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
                             </button>
-                          ) : (
+                          ) : null}
+                          {r.status === "processed" && (
                             <button
-                              onClick={() =>
-                                {
-                          posledny.zapamataj(r.id);
-                          navigate({ to: "/doklady/novy", search: { id: r.id } as any });
-                        }
-                              }
-                              className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-secondary"
+                              onClick={() => zmenStav([r.id], "new")}
+                              disabled={menimStav}
+                              aria-label={t("Vrátiť medzi nespracované")}
+                              title={t("Vrátiť medzi nespracované")}
+                              className="mr-auto rounded-md p-1.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
                             >
-                              {t("Doplniť")}
+                              <Undo2 className="h-4 w-4" />
                             </button>
-                          ))}
-                        {r.status === "processed" && (
+                          )}
+                          {r.file_path && (
+                            <TlacidloNahladu
+                              popis={r.document_number}
+                              onClick={() => okno.otvor(r.id)}
+                            />
+                          )}
+                          {daSaPresunutMedziPrijate(r) && (
+                            <button
+                              onClick={() => doPrijatych(r)}
+                              disabled={presuvam === r.id}
+                              aria-label={t("Presunúť medzi prijaté faktúry")}
+                              title={t("Presunúť medzi prijaté faktúry")}
+                              className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
+                            >
+                              <FileInput className="h-4 w-4" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => zmenStav([r.id], "new")}
-                            disabled={menimStav}
-                            title={t("Vrátiť medzi nespracované")}
-                            className="rounded-md p-0.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                            onClick={() => del(r.id)}
+                            aria-label={t("Zmazať")}
+                            title={t("Zmazať")}
+                            className="rounded-md p-1.5 hover:bg-destructive/10"
                           >
-                            <Undo2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </button>
+                        </>
+                      }
+                    />
+                  ))}
+                  {postupne.zarazka()}
+                </div>
+                <table className="w-full text-sm max-sm:hidden">
+                  <thead className="bg-secondary/40 text-xs font-semibold whitespace-nowrap text-muted-foreground">
+                    <tr>
+                      <th className="w-8 px-3 py-2">
+                        <input
+                          type="checkbox"
+                          aria-label={t("Vybrať všetko")}
+                          checked={rows.length > 0 && selected.size === rows.length}
+                          onChange={toggleAll}
+                        />
+                        <span className="sr-only">{t("Výber")}</span>
+                      </th>
+                      {je("datum") && (
+                        <th className="px-3 py-2 text-left">{rad.hlavicka("datum", t("Dátum"))}</th>
+                      )}
+                      <th className="px-3 py-2 text-left">
+                        {rad.hlavicka("dodavatel", t("Dodávateľ"))}
+                      </th>
+                      {je("cislo") && (
+                        <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", t("Číslo"))}</th>
+                      )}
+                      {je("predkontacia") && (
+                        <th className="px-3 py-2 text-left">{t("Účtovná položka")}</th>
+                      )}
+                      {stlpecStavDokladu && (
+                        <th className="px-3 py-2 text-left">{t("Stav dokladu")}</th>
+                      )}
+                      {je("kategoria") && (
+                        <th className="px-3 py-2 text-left">
+                          {rad.hlavicka("kategoria", t("Kategória"))}
+                        </th>
+                      )}
+                      {je("zaklad") && (
+                        <th className="px-3 py-2 text-right">
+                          {rad.hlavicka("zaklad", t("Základ"))}
+                        </th>
+                      )}
+                      {je("dph") && (
+                        <th className="px-3 py-2 text-right">{rad.hlavicka("dph", t("DPH"))}</th>
+                      )}
+                      {je("celkom") && (
+                        <th className="px-3 py-2 text-right">
+                          {rad.hlavicka("celkom", t("Celkom"))}
+                        </th>
+                      )}
+                      {je("platba") && (
+                        <th className="px-3 py-2 text-left">
+                          {rad.hlavicka("platba", t("Spôsob úhrady"))}
+                        </th>
+                      )}
+                      <th className="px-3 py-2 text-left">{rad.hlavicka("stav", t("Stav"))}</th>
+                      {je("zdroj") && (
+                        <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", t("Zdroj"))}</th>
+                      )}
+                      {je("spracoval") && (
+                        <th className="hidden px-3 py-2 text-left md:table-cell">
+                          {t("Spracoval")}
+                        </th>
+                      )}
+                      {je("ktoKedy") && (
+                        <th className="px-3 py-2 text-left">{t("Nahral / Zaúčtoval")}</th>
+                      )}
+                      {je("uhrada") && (
+                        <th className="px-3 py-2 text-left">{t("Úhrada z účtu")}</th>
+                      )}
+                      <th className="px-3 py-2">
+                        <span className="sr-only">{t("Akcie")}</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {postupne.viditelne.map((r) => (
+                      <tr
+                        key={r.id}
+                        {...posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null)}
+                        data-nahlad-id={r.id}
+                        {...klik(
+                          { to: "/doklady/novy", search: { id: r.id } as any },
+                          {
+                            // Pri zapnutom náhľade vyberie riadok, inak otvorí detail; tlačidlá a výbery v riadku robia ďalej svoje.
+                            naKlik: () => {
+                              posledny.zapamataj(r.id);
+                              if (bocny.aktivny()) bocny.setVybrany(r.id);
+                              else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                            },
+                          },
                         )}
-                      </div>
-                    </td>
-                    {je("zdroj") && (
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
-                        {t(ZDROJ_DOKLADU[r.source] ?? r.source)}
-                      </td>
-                    )}
-                    {je("spracoval") && (
-                      <td className="hidden px-3 py-2 text-xs md:table-cell">
-                        {(() => {
-                          const sp = spracovanieDokladu(r, "doklad");
-                          if (!sp) return <span className="text-muted-foreground">—</span>;
-                          return (
-                            <span className="block whitespace-nowrap">
-                              {menoSpracovatela(sp, mena) ?? (sp.kto ? t("kolega") : "—")}
-                              {sp.kedy ? (
-                                <span className="block text-muted-foreground">
-                                  {new Date(sp.kedy).toLocaleString(lokalJazyka(jazyk), {
-                                    dateStyle: "short",
-                                    timeStyle: "short",
-                                  })}
-                                </span>
-                              ) : null}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                    )}
-                    {je("ktoKedy") && (
-                      <td className="min-w-[12rem] px-3 py-2">
-                        <KtoKedyBunka row={r} agenda="doklad" mena={mena} />
-                      </td>
-                    )}
-                    {je("uhrada") && (
-                      <td className="px-3 py-2 text-xs whitespace-nowrap">
-                        {uhrady[r.id] ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className="dk-text-uspech">
-                              {uhrady[r.id].datum}
-                            </span>
-                            <button
-                              onClick={() => rozparuj(r.id, uhrady[r.id].transactionId)}
-                              title={t("Zrušiť párovanie s platbou")}
-                              className="text-muted-foreground hover:underline"
-                            >
-                              {t("zrušiť")}
-                            </button>
+                        className={`${TRIEDA_KLIK_RIADKU} border-t border-border ${posledny.riadok(r.id, bocny.zapnuty ? bocny.vybrany : null).className}`}
+                      >
+                        <td className="px-3 py-2">
+                          <input
+                            type="checkbox"
+                            aria-label={t("Vybrať riadok")}
+                            checked={selected.has(r.id)}
+                            onChange={() => toggle(r.id)}
+                          />
+                        </td>
+                        {je("datum") && (
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            {datumNaDoklade(r.issue_date)}
+                          </td>
+                        )}
+                        <td className="min-w-[11rem] max-w-[20rem] whitespace-normal px-3 py-2">
+                          <button
+                            onClick={() => {
+                              posledny.zapamataj(r.id);
+                              // Zapnutý náhľad ukáže sken vedľa zoznamu, detail sa otvorí z neho.
+                              if (bocny.aktivny()) bocny.setVybrany(r.id);
+                              else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                            }}
+                            className="text-left hover:underline"
+                          >
+                            {r.supplier_name ?? (
+                              <span className="text-muted-foreground italic">{t("bez názvu")}</span>
+                            )}
+                          </button>
+                          <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
+                            <OdovzdaneIkona kedy={r.exported_at} doklad={r} />
+                            {ikonaPlatby(r)}
+                            <UhradaFakturyOdznak blocek={r} />
                           </span>
-                        ) : r.payment_method === "hotovost" ||
-                          r.payment_method === "karta" ||
-                          r.payment_method === "prevod" ? (
-                          /*
+                          {r.supplier_ico ? (
+                            <div className="text-xs text-muted-foreground">
+                              {t("IČO")} {r.supplier_ico}
+                            </div>
+                          ) : null}
+                          {r.stitky?.length ? (
+                            <div className="mt-0.5 flex flex-wrap gap-1">
+                              {r.stitky.map((stitok: string) => (
+                                <span
+                                  key={stitok}
+                                  className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground"
+                                >
+                                  {stitok}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                          {r.status === "new" && chybajuceUdaje(r).length > 0 && (
+                            <div className="dk-text-pozor text-xs">
+                              {t("Chýba: {polia}", {
+                                polia: chybajuceUdaje(r)
+                                  .map((x) => t(x))
+                                  .join(", "),
+                              })}
+                            </div>
+                          )}
+                        </td>
+                        {je("cislo") && (
+                          <td className="px-3 py-2">
+                            <span className="cislo-dokladu">{r.document_number ?? "—"}</span>
+                            {r.na_kontrolu_at ? (
+                              <StavOdznak
+                                ton="pozor"
+                                maly
+                                className="ml-1.5 align-middle"
+                                title={
+                                  r.na_kontrolu_dovod ? String(r.na_kontrolu_dovod) : undefined
+                                }
+                              >
+                                {t("Na kontrolu")}
+                              </StavOdznak>
+                            ) : null}
+                            {r.pohoda_predkontacia || r.pohoda_clenenie_dph || r.kv_clenenie ? (
+                              <div
+                                className="text-xs text-muted-foreground"
+                                title={t("Predkontácia · členenie DPH · KV DPH pre Pohodu")}
+                              >
+                                {textZauctovania(
+                                  r.pohoda_predkontacia,
+                                  r.pohoda_clenenie_dph,
+                                  r.kv_clenenie,
+                                )}
+                              </div>
+                            ) : null}
+                          </td>
+                        )}
+                        {je("predkontacia") && (
+                          <td className="px-3 py-2">
+                            {(() => {
+                              const z = dovodZamku(r, cis.zamknuteDo);
+                              return (
+                                <VyberVRiadku
+                                  ariaLabel={t("Účtovná položka dokladu {cislo}", {
+                                    cislo: r.document_number ?? "",
+                                  })}
+                                  hodnota={r.pohoda_predkontacia}
+                                  moznosti={moznostiPredkontacie(r.payment_method)}
+                                  zamok={z ? t(NAZOV_ZAMKU[z]) : null}
+                                  onVyber={(v) => zmenPredkontaciuRiadku(r.id, v)}
+                                />
+                              );
+                            })()}
+                            {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie) ? (
+                              <div
+                                className="mt-0.5 text-xs text-muted-foreground"
+                                title={t("Členenie DPH · KV DPH")}
+                              >
+                                {textClenenia(r.pohoda_clenenie_dph, r.kv_clenenie)}
+                              </div>
+                            ) : null}
+                          </td>
+                        )}
+                        {stlpecStavDokladu && (
+                          <td className="px-3 py-2">
+                            {cis.stavy.length ? (
+                              <VyberStavuDokladu
+                                kompaktny
+                                tabulka="expense_documents"
+                                id={r.id}
+                                stavId={r.stav_id}
+                                stavy={cis.stavy}
+                                onZmena={(v) =>
+                                  setRows((rs: any[]) =>
+                                    rs.map((x) => (x.id === r.id ? { ...x, stav_id: v } : x)),
+                                  )
+                                }
+                              />
+                            ) : (
+                              <StavDokladuOdznak stav={stavPodlaId.get(r.stav_id)} />
+                            )}
+                          </td>
+                        )}
+                        {je("kategoria") && (
+                          <td className="px-3 py-2 text-xs text-muted-foreground">
+                            {r.category ?? "—"}
+                          </td>
+                        )}
+                        {je("zaklad") && (
+                          <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
+                            {r.net_amount != null ? formatujCislo(r.net_amount) : "—"}
+                          </td>
+                        )}
+                        {je("dph") && (
+                          <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
+                            {r.vat_amount != null ? formatujCislo(r.vat_amount) : "—"}
+                          </td>
+                        )}
+                        {je("celkom") && (
+                          <td className="suma px-3 py-2 text-right">
+                            {r.total_amount != null
+                              ? formatujMenu(r.total_amount, r.currency)
+                              : "—"}
+                          </td>
+                        )}
+                        {je("platba") && (
+                          <td
+                            className="px-3 py-2 text-xs text-muted-foreground"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Spôsob úhrady priamo v riadku — odovzdaný ani zamknutý doklad meniť nejde. */}
+                            {!dovodZamku(r, cis.zamknuteDo) ? (
+                              <select
+                                aria-label={t("Spôsob úhrady dokladu {cislo}", {
+                                  cislo: r.document_number ?? "",
+                                })}
+                                value={r.payment_method ?? ""}
+                                onChange={(e) => void zmenPlatbuRiadku(r.id, e.target.value)}
+                                className="rounded-md border border-input bg-background px-1.5 py-1 text-xs text-foreground"
+                              >
+                                <option value="">—</option>
+                                <option value="hotovost">{t("hotovosť")}</option>
+                                <option value="karta">{t("karta")}</option>
+                                <option value="prevod">{t("prevod")}</option>
+                              </select>
+                            ) : (
+                              t(
+                                (
+                                  {
+                                    hotovost: "hotovosť",
+                                    karta: "karta",
+                                    prevod: "prevod",
+                                  } as Record<string, string>
+                                )[r.payment_method as string] ?? "—",
+                              )
+                            )}
+                          </td>
+                        )}
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <StavOdznak
+                              ton={tonStavu(STATUS_TON, r.status)}
+                              title={
+                                r.processed_at
+                                  ? t("Spracované {datum}", {
+                                      datum: new Date(r.processed_at).toLocaleDateString("sk-SK"),
+                                    })
+                                  : undefined
+                              }
+                            >
+                              {t(STATUS_LABEL[r.status] ?? r.status)}
+                            </StavOdznak>
+                            {r.locked_at ? (
+                              <span title={t("Zamknutý doklad")} className="text-muted-foreground">
+                                <Lock className="h-3.5 w-3.5" />
+                              </span>
+                            ) : null}
+                            {sch.stavy[r.id] ? (
+                              <span
+                                className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
+                                title={t("Schvaľovanie")}
+                              >
+                                {t(sch.stavy[r.id].odznak)}
+                              </span>
+                            ) : null}
+                            {r.status === "new" &&
+                              (daSaSpracovat(r) ? (
+                                <button
+                                  onClick={() => zmenStav([r.id], "processed")}
+                                  disabled={menimStav}
+                                  className="inline-flex h-6 items-center gap-1 rounded-md border border-input bg-card px-2 text-xs font-semibold text-primary-hover hover:bg-accent disabled:opacity-50"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> {t("Spracovať")}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    posledny.zapamataj(r.id);
+                                    navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                                  }}
+                                  className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-secondary"
+                                >
+                                  {t("Doplniť")}
+                                </button>
+                              ))}
+                            {r.status === "processed" && (
+                              <button
+                                onClick={() => zmenStav([r.id], "new")}
+                                disabled={menimStav}
+                                title={t("Vrátiť medzi nespracované")}
+                                className="rounded-md p-0.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                              >
+                                <Undo2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        {je("zdroj") && (
+                          <td className="px-3 py-2 text-xs text-muted-foreground">
+                            {t(ZDROJ_DOKLADU[r.source] ?? r.source)}
+                          </td>
+                        )}
+                        {je("spracoval") && (
+                          <td className="hidden px-3 py-2 text-xs md:table-cell">
+                            {(() => {
+                              const sp = spracovanieDokladu(r, "doklad");
+                              if (!sp) return <span className="text-muted-foreground">—</span>;
+                              return (
+                                <span className="block whitespace-nowrap">
+                                  {menoSpracovatela(sp, mena) ?? (sp.kto ? t("kolega") : "—")}
+                                  {sp.kedy ? (
+                                    <span className="block text-muted-foreground">
+                                      {new Date(sp.kedy).toLocaleString(lokalJazyka(jazyk), {
+                                        dateStyle: "short",
+                                        timeStyle: "short",
+                                      })}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                        )}
+                        {je("ktoKedy") && (
+                          <td className="min-w-[12rem] px-3 py-2">
+                            <KtoKedyBunka row={r} agenda="doklad" mena={mena} />
+                          </td>
+                        )}
+                        {je("uhrada") && (
+                          <td className="px-3 py-2 text-xs whitespace-nowrap">
+                            {uhrady[r.id] ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="dk-text-uspech">{uhrady[r.id].datum}</span>
+                                <button
+                                  onClick={() => rozparuj(r.id, uhrady[r.id].transactionId)}
+                                  title={t("Zrušiť párovanie s platbou")}
+                                  className="text-muted-foreground hover:underline"
+                                >
+                                  {t("zrušiť")}
+                                </button>
+                              </span>
+                            ) : r.payment_method === "hotovost" ||
+                              r.payment_method === "karta" ||
+                              r.payment_method === "prevod" ? (
+                              /*
                             Bez spárovanej platby aspoň spôsob úhrady — pri karte a prevode bola
                             pomlčka mätúca (vyzeralo to, že sa ukazuje len hotovosť).
                           */
-                          <span className="text-muted-foreground">
-                            {t(
-                              ({ hotovost: "hotovosť", karta: "kartou", prevod: "prevodom" } as Record<string, string>)[
-                                r.payment_method
-                              ],
+                              <span className="text-muted-foreground">
+                                {t(
+                                  (
+                                    {
+                                      hotovost: "hotovosť",
+                                      karta: "kartou",
+                                      prevod: "prevodom",
+                                    } as Record<string, string>
+                                  )[r.payment_method],
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
                             )}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
+                          </td>
                         )}
-                      </td>
-                    )}
-                    <td className="px-3 py-2 text-right">
-                      {r.file_path && (
-                        /*
+                        <td className="px-3 py-2 text-right">
+                          {r.file_path && (
+                            /*
                           Pri zapnutom náhľade vedľa zoznamu (P-1006) sa sken ukáže tam,
                           inak v okne so šípkami na ďalší bloček (C1-3) — aj na telefóne.
                         */
-                        <TlacidloNahladu
-                          popis={r.document_number}
-                          onClick={() => (bocny.aktivny() ? bocny.setVybrany(r.id) : okno.otvor(r.id))}
-                        />
-                      )}
-                      {/* Bloček z pokladnice faktúrou nie je — presun sa ponúka len tomu, čo ňou byť môže. */}
-                      {daSaPresunutMedziPrijate(r) && (
-                        <button
-                          onClick={() => doPrijatych(r)}
-                          disabled={presuvam === r.id}
-                          title={t("Presunúť medzi prijaté faktúry")}
-                          className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
-                        >
-                          <FileInput className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => del(r.id)}
-                        title={t("Zmazať")}
-                        className="rounded-md p-1.5 hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {postupne.zarazkaRiadok(100)}
-              </tbody>
-            </table>
-            </>
-          )}
-          {postupne.stranky()}
-          {rows.length > 0 ? (
-            /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
+                            <TlacidloNahladu
+                              popis={r.document_number}
+                              onClick={() =>
+                                bocny.aktivny() ? bocny.setVybrany(r.id) : okno.otvor(r.id)
+                              }
+                            />
+                          )}
+                          {/* Bloček z pokladnice faktúrou nie je — presun sa ponúka len tomu, čo ňou byť môže. */}
+                          {daSaPresunutMedziPrijate(r) && (
+                            <button
+                              onClick={() => doPrijatych(r)}
+                              disabled={presuvam === r.id}
+                              title={t("Presunúť medzi prijaté faktúry")}
+                              className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
+                            >
+                              <FileInput className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => del(r.id)}
+                            title={t("Zmazať")}
+                            className="rounded-md p-1.5 hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {postupne.zarazkaRiadok(100)}
+                  </tbody>
+                </table>
+              </>
+            )}
+            {postupne.stranky()}
+            {rows.length > 0 ? (
+              /* Vybrané ukazuje lišta pod zoznamom (SuctovaListaVyberu); tu je celý
                vyfiltrovaný zoznam so základom a DPH, rovnako ako vo vystavených. */
-            <SuctovaPatickaZoznamu
-              nadpis={t("Spolu:")}
-              suhrn={suhrnZPoloziek(
-                rad.zoradene.map((r: any) => polozkaBlocku(r, !!uhrady[r.id])),
-              )}
-              doplnok={
-                <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
-                  {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
-                  {naExport.length
-                    ? ` · ${menyFirmy.formatSucty(
-                        menyFirmy.sucty(naExport, (r: any) => Number(r.total_amount ?? 0), (r: any) => r.currency),
-                      )}`
-                    : ""}
-                </span>
-              }
-            />
-          ) : null}
-        </TabulkaZoznamu>
+              <SuctovaPatickaZoznamu
+                nadpis={t("Spolu:")}
+                suhrn={suhrnZPoloziek(
+                  rad.zoradene.map((r: any) => polozkaBlocku(r, !!uhrady[r.id])),
+                )}
+                doplnok={
+                  <span title={t("Spracované a ešte neodovzdané do účtovníctva")}>
+                    {t("Na export:")} <strong className="text-foreground">{naExport.length}</strong>
+                    {naExport.length
+                      ? ` · ${menyFirmy.formatSucty(
+                          menyFirmy.sucty(
+                            naExport,
+                            (r: any) => Number(r.total_amount ?? 0),
+                            (r: any) => r.currency,
+                          ),
+                        )}`
+                      : ""}
+                  </span>
+                }
+              />
+            ) : null}
+          </TabulkaZoznamu>
         </SNahladom>
         {kos && getActiveCompanyId() && (
           <KosDokladovOkno

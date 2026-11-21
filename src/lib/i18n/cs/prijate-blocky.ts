@@ -8,4 +8,8 @@ export default {
   "chýba suma a dátum — ostáva v Nespracovaných": "chybí částka a datum — zůstává v Nezpracovaných",
   // Filter „Zaúčtovanie“ v zozname bločkov.
   Nezaúčtované: "Nezaúčtováno",
+  "Spárovať všetky nájdené":
+    "Spárovat všechny nalezené",
+  "Spárovať všetky nájdené platby kartou s bločkami ({n})? Bločky sa označia ako uhradené z účtu.":
+    "Spárovat všechny nalezené platby kartou s účtenkami ({n})? Účtenky se označí jako uhrazené z účtu.",
 };
