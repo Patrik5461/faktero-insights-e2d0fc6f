@@ -34,6 +34,8 @@ import {
   IdCard,
   Send,
   ArrowLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from "lucide-react";
 import { useTelegramPodpora } from "@/hooks/useTelegramPodpora";
 import { odkazNaTelegram } from "@/lib/faktero/telegram-podpora";
@@ -382,6 +384,14 @@ export function AppShell({
   const nativna = useIsNative();
   useWebRedizajn(!nativna);
   const { skupina: activeGroup, polozka: activeKey } = aktivnaVListe(nav, pathname, locSearch);
+  /* Horný pás podnavigácie (kompaktný režim): aktívny tab do pohľadu, ak pás pretečie. */
+  const pasRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const pas = pasRef.current;
+    if (!pas) return;
+    if (pas.scrollWidth > pas.clientWidth)
+      pas.querySelector<HTMLElement>("[data-aktivny-tab]")?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [activeKey, activeGroup?.key, dizajn]);
 
   /*
     `scope: "local"` odhlási **toto** zariadenie, nie účet všade.
@@ -755,21 +765,47 @@ export function AppShell({
                myši bez vodorovného kolieska vidno len prvých ~9 podstránok, zvyšok — aj
                aktívna podstránka — ostal za okrajom bez náznaku, že tam niečo je. */
             <nav aria-label={t(activeGroup.label)} className="hidden border-t border-border px-4 lg:block lg:px-6">
-              <ul className="flex flex-wrap items-center gap-1 py-2">
-                <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{t(activeGroup.label)}</li>
+              {/* Pás s oddielmi (Fakturácia): každá skupina má vľavo 17 px a oddeľovač v tom
+                  mieste; ul je posunutý o -17 px a obal oreže oddeľovač na začiatku riadka. */}
+              <div className="overflow-hidden">
+              <ul
+                ref={pasRef}
+                className={`flex flex-wrap items-center py-2 ${
+                  activeGroup.children.some((c) => c.oddiel != null) ? "-ml-[17px] gap-y-1" : "gap-1"
+                }`}
+              >
+                <li
+                  className={`mr-2 shrink-0 text-sm font-semibold text-foreground ${
+                    activeGroup.children.some((c) => c.oddiel != null) ? "ml-[17px]" : ""
+                  }`}
+                >
+                  {t(activeGroup.label)}
+                </li>
                 {podsekciePoloziek(activeGroup.children).map((g, gi) => {
                   const maPodsekcie = activeGroup.children.some((c) => c.skupina);
-                  const odkazy = g.polozky.map((c) => {
+                  const maOddiely = activeGroup.children.some((c) => c.oddiel != null);
+                  const odkaz = (c: (typeof activeGroup.children)[number]) => {
                     const je = activeKey === c.to + c.label;
+                    const Ikona = c.smer === "vydane" ? ArrowUpRight : c.smer === "prijate" ? ArrowDownLeft : null;
                     return (
                       <li key={c.to + c.label} className="shrink-0">
                         <Link
                           to={c.to as any}
                           search={c.search as any}
-                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
-                            je ? "bg-primary/10 font-semibold text-primary-hover" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          data-aktivny-tab={je ? "" : undefined}
+                          aria-current={je ? "page" : undefined}
+                          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm ${
+                            je
+                              ? "bg-emerald-50 font-medium text-emerald-900 ring-1 ring-inset ring-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-700"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           }`}
                         >
+                          {Ikona ? (
+                            <Ikona
+                              aria-hidden="true"
+                              className={`h-3.5 w-3.5 shrink-0 ${c.smer === "vydane" ? "text-emerald-500" : "text-blue-500"}`}
+                            />
+                          ) : null}
                           {t(c.label)}
                           {pocetPriPolozke(c.to) ? (
                             <span data-w-pocet className="rounded-full bg-primary px-1.5 py-px text-[11px] font-semibold leading-4 text-primary-foreground tabular-nums">
@@ -779,7 +815,32 @@ export function AppShell({
                         </Link>
                       </li>
                     );
-                  });
+                  };
+                  /* Oddiely (Fakturácia): skupiny bez nadpisu, medzi nimi zvislý oddeľovač. */
+                  if (maOddiely && !maPodsekcie) {
+                    const oddiely: (typeof activeGroup.children)[] = [];
+                    for (const c of g.polozky) {
+                      const i = c.oddiel ?? 0;
+                      const posledny = oddiely[oddiely.length - 1];
+                      if (posledny && (posledny[0].oddiel ?? 0) === i) posledny.push(c);
+                      else oddiely.push([c]);
+                    }
+                    return oddiely.map((o, oi) => (
+                      <li
+                        key={`oddiel-${gi}-${oi}`}
+                        className={`relative flex shrink-0 items-center ${oi === 0 ? "ml-1" : "ml-[17px]"}`}
+                      >
+                        {oi > 0 ? (
+                          <span
+                            aria-hidden="true"
+                            className="absolute -left-[9px] top-1/2 h-[18px] w-px -translate-y-1/2 bg-border"
+                          />
+                        ) : null}
+                        <ul className="flex items-center gap-1">{o.map(odkaz)}</ul>
+                      </li>
+                    ));
+                  }
+                  const odkazy = g.polozky.map(odkaz);
                   if (!maPodsekcie) return odkazy;
                   /* Podsekcie ako skupiny: oddelené zvislou čiarou, nadpis malým
                      písmom pred svojimi stránkami. Skupina sa nezalomí na dvoje. */
@@ -803,6 +864,7 @@ export function AppShell({
                   );
                 })}
               </ul>
+              </div>
             </nav>
           )}
         </header>

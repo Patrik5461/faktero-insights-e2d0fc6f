@@ -175,15 +175,28 @@ describe("filterNav", () => {
 
 describe("Prijaté bločky", () => {
   const fakturacia = () => NAV.find((g) => g.key === "fakturacia")!.children;
-  it("sú vo Fakturácii za prijatými zálohovými a daňovými dokladmi, na spracovaných bločkoch", () => {
+  it("Fakturácia v poradí oddielov (Patrik 22. 11.), bločky na spracovaných vedľa dobropisov", () => {
     const deti = fakturacia();
-    const i = deti.findIndex((c) => c.label === "Prijaté zálohové faktúry");
-    expect(deti[i + 1]).toEqual(
-      expect.objectContaining({ to: "/prijate-faktury", search: { type: "danove" }, label: "Prijaté daňové doklady" }),
+    expect(deti.map((c) => c.label)).toEqual([
+      "Vydané faktúry",
+      "Prijaté faktúry",
+      "Vydané zálohové faktúry",
+      "Prijaté zálohové faktúry",
+      "Vydané daňové doklady",
+      "Prijaté daňové doklady",
+      "Dobropisy",
+      "Prijaté bločky",
+      "Cenové ponuky",
+      "Objednávky",
+      "Opakované faktúry",
+      "Koncepty",
+      "Odoslané upomienky",
+      "Skener dokladov",
+    ]);
+    expect(deti.find((c) => c.label === "Prijaté bločky")).toEqual(
+      expect.objectContaining({ to: "/doklady", search: { stav: "spracovane" }, smer: "prijate", oddiel: 3 }),
     );
-    expect(deti[i + 2]).toEqual(
-      expect.objectContaining({ to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky" }),
-    );
+    expect(deti.find((c) => c.label === "Dobropisy")?.smer).toBe("vydane");
   });
   it("Prijaté daňové doklady a Prijaté faktúry nesvietia naraz", () => {
     const deti = fakturacia();

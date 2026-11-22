@@ -50,6 +50,13 @@ type NavChild = {
    * zmene hodnoty. Podsekcia s jedinou položkou rovnakého mena nadpis nemá.
    */
   skupina?: string;
+  /**
+   * Oddiel v hornom páse kompaktného režimu (bez nadpisu): medzi oddielmi je
+   * zvislý oddeľovač. Poradie aj oddiely Fakturácie sú v `ODDIELY_FAKTURACIE`.
+   */
+  oddiel?: number;
+  /** Smer dokladu — ikona v páse: vydané ↗ (zelená), prijaté ↙ (modrá). */
+  smer?: "vydane" | "prijate";
 };
 export type NavGroup = {
   key: string;
@@ -59,6 +66,44 @@ export type NavGroup = {
   children: NavChild[];
   exact?: boolean;
 };
+
+/**
+ * Poradie a oddiely podstránok Fakturácie (Patrik 22. 11.) — jeden zdroj pre
+ * horný pás kompaktného režimu aj bočné menu. Oddiel = skupina medzi
+ * zvislými oddeľovačmi v páse; `smer` dáva ikonu vydané/prijaté.
+ */
+const ODDIELY_FAKTURACIE: NavChild[][] = [
+  [
+    { to: "/faktury", search: { type: "vydane" }, label: "Vydané faktúry", predvolena: true, smer: "vydane" },
+    { to: "/prijate-faktury", label: "Prijaté faktúry", smer: "prijate" },
+  ],
+  [
+    { to: "/zalohove", label: "Vydané zálohové faktúry", smer: "vydane" },
+    { to: "/prijate-zalohove", label: "Prijaté zálohové faktúry", smer: "prijate" },
+  ],
+  [
+    { to: "/faktury", search: { type: "danove" }, label: "Vydané daňové doklady", smer: "vydane" },
+    // Daňové doklady k prijatej platbe od dodávateľov (purchase_invoices.type = advance_payment).
+    { to: "/prijate-faktury", search: { type: "danove" }, label: "Prijaté daňové doklady", smer: "prijate" },
+  ],
+  [
+    { to: "/faktury", search: { type: "credit" }, label: "Dobropisy", smer: "vydane" },
+    /* Zaúčtovaný (spracovaný) bloček z Nespracovaných — tá istá agenda ako
+       Doklady → Bločky, len rovno na záložke Spracované. */
+    { to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky", smer: "prijate" },
+  ],
+  [
+    { to: "/ponuky", label: "Cenové ponuky" },
+    { to: "/objednavky", label: "Objednávky" },
+    { to: "/opakovane", label: "Opakované faktúry" },
+    { to: "/faktury", search: { status: "draft" }, label: "Koncepty" },
+  ],
+  [
+    // Komu a kedy odišli upomienky — automatické aj ručné, aj neúspešné.
+    { to: "/faktury/upomienky", label: "Odoslané upomienky" },
+    { to: "/faktury/skener", label: "Skener dokladov" },
+  ],
+];
 
 export const NAV: NavGroup[] = [
   { key: "prehlad", label: "Prehľad", icon: LayoutDashboard, match: ["/dashboard"], children: [] },
@@ -92,24 +137,7 @@ export const NAV: NavGroup[] = [
         príslušnom zozname a rýchle „Vytvoriť“ v hlavičke. V menu ostávajú len
         agendy, nie akcie — inak tá istá vec visí na troch miestach.
       */
-      { to: "/faktury", search: { type: "vydane" }, label: "Vydané faktúry", predvolena: true },
-      { to: "/faktury", search: { type: "danove" }, label: "Daňové doklady" },
-      { to: "/zalohove", label: "Vydané zálohové faktúry" },
-      { to: "/prijate-faktury", label: "Prijaté faktúry" },
-      { to: "/prijate-zalohove", label: "Prijaté zálohové faktúry" },
-      // Daňové doklady k prijatej platbe od dodávateľov (purchase_invoices.type = advance_payment).
-      { to: "/prijate-faktury", search: { type: "danove" }, label: "Prijaté daňové doklady" },
-      /* Zaúčtovaný (spracovaný) bloček z Nespracovaných — tá istá agenda ako
-         Doklady → Bločky, len rovno na záložke Spracované. */
-      { to: "/doklady", search: { stav: "spracovane" }, label: "Prijaté bločky" },
-      { to: "/ponuky", label: "Cenové ponuky" },
-      { to: "/objednavky", label: "Objednávky" },
-      { to: "/opakovane", label: "Opakované faktúry" },
-      { to: "/faktury", search: { type: "credit" }, label: "Dobropisy" },
-      { to: "/faktury", search: { status: "draft" }, label: "Koncepty" },
-      // Komu a kedy odišli upomienky — automatické aj ručné, aj neúspešné.
-      { to: "/faktury/upomienky", label: "Odoslané upomienky" },
-      { to: "/faktury/skener", label: "Skener dokladov" },
+      ...ODDIELY_FAKTURACIE.flatMap((oddiel, i) => oddiel.map((c) => ({ ...c, oddiel: i }))),
     ],
   },
   {
