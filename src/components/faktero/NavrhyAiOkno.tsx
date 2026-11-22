@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 import { navrhyAiHromadneFn } from "@/lib/faktero/ai-predkontacia.functions";
-import { zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
+import { zauctujDokladyFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
 import { MAX_HROMADNE, type PoleNavrhu, type VysledokNavrhu } from "@/lib/faktero/ai-predkontacia";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -48,7 +48,10 @@ export function NavrhyAiOkno({
   ids,
   onClose,
   onHotovo,
+  typ = "prijata",
 }: {
+  /** `doklad` = bločky (zaúčtujú sa cez zauctujDokladyFn, bez „len uložiť“). */
+  typ?: "prijata" | "doklad";
   companyId: string;
   ids: string[];
   onClose: () => void;
@@ -59,6 +62,8 @@ export function NavrhyAiOkno({
   useZatvorNaEscape(onClose);
   const navrhni = useServerFn(navrhyAiHromadneFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
+  const zauctujDoklady = useServerFn(zauctujDokladyFn);
+  const jeDoklad = typ === "doklad";
   const [riadky, setRiadky] = useState<Riadok[]>([]);
   const [oznacene, setOznacene] = useState<Set<string>>(new Set());
   const [pocita, setPocita] = useState(true);
@@ -74,7 +79,7 @@ export function NavrhyAiOkno({
         // Server vráti, čo do svojho rozpočtu času nestihol — dopýtame sa.
         for (let pokus = 0; davka.length && pokus < 8 && !zrusene.current; pokus++) {
           try {
-            const r = await navrhni({ data: { company_id: companyId, ids: davka } });
+            const r = await navrhni({ data: { company_id: companyId, ids: davka, typ } });
             const nove = r.vysledky as Riadok[];
             setRiadky((p) => [...p, ...nove]);
             setOznacene((p) => {
@@ -130,6 +135,21 @@ export function NavrhyAiOkno({
           return h && (h.zdroj === "ai" || h.zdroj === "navyk") ? h.hodnota : undefined;
         };
         try {
+          if (jeDoklad) {
+            const v = await zauctujDoklady({
+              data: {
+                company_id: companyId,
+                ids: [r.id],
+                predkontacia: kod("predkontacia"),
+                clenenie: kod("clenenie"),
+                kv: kod("kv"),
+                kategoria: kod("kategoria"),
+              },
+            });
+            ok += v.zmenenych;
+            preskocene.push(...v.preskocene);
+            continue;
+          }
           const v = await zauctuj({
             data: {
               company_id: companyId,
@@ -151,7 +171,9 @@ export function NavrhyAiOkno({
         toast.success(
           lenUlozit
             ? t("Kódy uložené na {n} faktúrach", { n: ok })
-            : t("Zaúčtovaných {n} faktúr", { n: ok }),
+            : jeDoklad
+              ? t("Zaúčtovaných {n} dokladov", { n: ok })
+              : t("Zaúčtovaných {n} faktúr", { n: ok }),
         );
       if (preskocene.length)
         toast.error(t("Vynechané: {zoznam}", { zoznam: preskocene.join(" · ") }));
@@ -259,6 +281,7 @@ export function NavrhyAiOkno({
           >
             {t("Zrušiť")}
           </button>
+          {!jeDoklad && (
           <button
             onClick={() => void potvrd(true)}
             disabled={busy || pocita || !oznacene.size}
@@ -266,6 +289,7 @@ export function NavrhyAiOkno({
           >
             {t("Len uložiť kódy")}
           </button>
+          )}
           <button
             onClick={() => void potvrd(false)}
             disabled={busy || pocita || !oznacene.size}

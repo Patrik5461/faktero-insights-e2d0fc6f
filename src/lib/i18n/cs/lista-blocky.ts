@@ -4,4 +4,6 @@ export default {
     "Vrátit {n} dokladů z Pohody? Odemknou se k opravě a při dalším exportu půjdou znovu. V Pohodě je třeba je smazat ručně, jinak tam budou dvakrát.",
   "Odomkne odovzdané bločky na opravu; v Pohode ich treba zmazať ručne":
     "Odemkne předané účtenky k opravě; v Pohodě je třeba je smazat ručně",
+  "Najviac 50 dokladov naraz": "Nejvýše 50 dokladů najednou",
+  "Zaúčtovaných {n} dokladov": "Zaúčtováno {n} dokladů",
 };

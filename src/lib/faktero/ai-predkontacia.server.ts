@@ -572,6 +572,8 @@ export async function navrhyHromadne(
     userId: string | null;
     rozpocetMs?: number;
     naraz?: number;
+    /** `doklad` = bločky (expense_documents), inak prijaté faktúry. */
+    typ?: "prijata" | "doklad";
   },
 ): Promise<{
   vysledky: ({
@@ -586,8 +588,9 @@ export async function navrhyHromadne(
   const ids = [...new Set(args.ids)].slice(0, MAX_HROMADNE);
   const zaciatok = Date.now();
   const rozpocet = args.rozpocetMs ?? 10_000;
+  const jeDoklad = args.typ === "doklad";
   const { data: riadky, error } = await supabase
-    .from("purchase_invoices")
+    .from(jeDoklad ? "expense_documents" : "purchase_invoices")
     .select("*")
     .eq("company_id", args.companyId)
     .in("id", ids);
@@ -601,19 +604,21 @@ export async function navrhyHromadne(
       const row = fronta.shift()!;
       let v: VysledokNavrhu;
       try {
-        v = await navrhPrijatej(supabase, row, kontext, args.userId);
+        v = jeDoklad
+          ? await navrhBlocku(supabase, row, kontext, args.userId)
+          : await navrhPrijatej(supabase, row, kontext, args.userId);
       } catch {
         v = prazdnyVysledok("nedostupny");
       }
       hotove.add(row.id);
       vysledky.push({
         id: row.id,
-        cislo: row.invoice_number ?? null,
+        cislo: (jeDoklad ? row.document_number : row.invoice_number) ?? null,
         dodavatel: row.supplier_name ?? null,
-        suma:
-          row.amount_total === null || row.amount_total === undefined
-            ? null
-            : Number(row.amount_total),
+        suma: (() => {
+          const x = jeDoklad ? row.total_amount : row.amount_total;
+          return x === null || x === undefined ? null : Number(x);
+        })(),
         mena: row.currency ?? null,
         ...v,
       });

@@ -71,6 +71,7 @@ import {
 } from "@/lib/faktero/doklad-stav";
 import {
   BookCheck,
+  Sparkles,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -86,6 +87,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokladovOkno";
+import { NavrhyAiOkno } from "@/components/faktero/NavrhyAiOkno";
 import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { potvrd } from "@/lib/potvrdenie";
@@ -531,6 +533,7 @@ function DokladyPage() {
     refresh();
   }
   const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
+  const [aiOkno, setAiOkno] = useState(false);
   /*
     Vrátenie z Pohody — odovzdané vybrané bločky sa odomknú a pri ďalšom
     exporte pôjdu znova (vratZPohodyFn, druh „doklad“). V Pohode ich treba zmazať ručne.
@@ -1259,6 +1262,17 @@ function DokladyPage() {
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
               <BookCheck className="h-4 w-4" /> {t("Zaúčtovať")} ({selected.size})
+            </button>
+          )}
+          {/* Návrh predkontácie a členenia od AI pre označené (ako v prijatých faktúrach). */}
+          {selected.size > 0 && (
+            <button
+              onClick={() => setAiOkno(true)}
+              disabled={selected.size > 50}
+              title={selected.size > 50 ? t("Najviac 50 dokladov naraz") : undefined}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Sparkles className="h-4 w-4" /> {t("Navrhnúť AI pre vybrané")}
             </button>
           )}
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
@@ -2148,6 +2162,15 @@ function DokladyPage() {
             companyId={getActiveCompanyId()!}
             ids={Array.from(selected)}
             onClose={() => setPredkontaciaOkno(false)}
+            onHotovo={refresh}
+          />
+        )}
+        {aiOkno && getActiveCompanyId() && (
+          <NavrhyAiOkno
+            typ="doklad"
+            companyId={getActiveCompanyId()!}
+            ids={Array.from(selected).slice(0, 50)}
+            onClose={() => setAiOkno(false)}
             onHotovo={refresh}
           />
         )}

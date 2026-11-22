@@ -71,6 +71,8 @@ export const navrhyAiHromadneFn = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         ids: z.array(z.string().uuid()).min(1).max(50),
+        /** `doklad` = bločky. */
+        typ: z.enum(["prijata", "doklad"]).optional(),
       })
       .parse(d),
   )
@@ -83,5 +85,6 @@ export const navrhyAiHromadneFn = createServerFn({ method: "POST" })
       companyId: data.company_id,
       ids: data.ids,
       userId: context.userId,
+      typ: data.typ,
     });
   });
