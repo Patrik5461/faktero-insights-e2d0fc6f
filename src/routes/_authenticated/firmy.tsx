@@ -18,7 +18,10 @@ import {
   FileWarning,
   Mail,
   Send,
+  ChevronDown,
 } from "lucide-react";
+import { Fragment } from "react";
+import { UdajeFirmyPanel } from "@/components/faktero/UdajeFirmyPanel";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
@@ -76,6 +79,30 @@ const TON: Record<Ton, string> = {
 };
 
 function CompanyManagementPage() {
+  /** Firmy s rozbalenými údajmi (šípka pri firme). */
+  const [rozbalene, setRozbalene] = useState<Set<string>>(new Set());
+  const prepniUdaje = (id: string) =>
+    setRozbalene((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const sipka = (id: string) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        prepniUdaje(id);
+      }}
+      aria-expanded={rozbalene.has(id)}
+      aria-label={t("Údaje firmy")}
+      title={t("Údaje firmy")}
+      className="shrink-0 rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+    >
+      <ChevronDown className={cn("h-4 w-4 transition-transform", rozbalene.has(id) && "rotate-180")} />
+    </button>
+  );
   const { t, jazyk } = useT();
   const datum = (d: string) => new Date(d).toLocaleDateString(lokalJazyka(jazyk));
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -493,6 +520,7 @@ function CompanyManagementPage() {
               )}
             >
               <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {sipka(r.id)}
                 <AvatarFirmy nazov={r.name} />
                 {nazovFirmy(r)}
                 {r.id === activeId && (
@@ -521,6 +549,11 @@ function CompanyManagementPage() {
                 <dd className="min-w-0">{banka(r)}</dd>
               </dl>
               <div className="mt-3 flex justify-start [&>div]:justify-start">{akcie(r)}</div>
+              {rozbalene.has(r.id) && (
+                <div className="-mx-4 -mb-4 mt-3 border-t border-border bg-muted/30">
+                  <UdajeFirmyPanel companyId={r.id} />
+                </div>
+              )}
             </div>
             );
           })}
@@ -562,14 +595,15 @@ function CompanyManagementPage() {
                 </tr>
               )}
               {strankovanie.viditelne.map((r) => (
+                <Fragment key={r.id}>
                 <KlikatelnyRiadok
-                  key={r.id}
                   naKlik={() => switchTo(r.id)}
                   vypnute={r.id === activeId}
                   className="border-t border-border align-top"
                 >
                   <td className={cn("min-w-[220px] py-3 pr-4", r.testovacia_pre ? "pl-10" : "pl-4")}>
                     <div className="flex min-w-0 items-center gap-2">
+                      {sipka(r.id)}
                       <AvatarFirmy nazov={r.name} />
                       {nazovFirmy(r)}
                       {r.id === activeId && (
@@ -579,7 +613,7 @@ function CompanyManagementPage() {
                       )}
                     </div>
                     {/* IČO a dátum založenia pod názvom — stĺpce uvoľnili miesto stavu firmy. */}
-                    <div className="mt-0.5 pl-8 text-xs tabular-nums text-muted-foreground">
+                    <div className="mt-0.5 pl-16 text-xs tabular-nums text-muted-foreground">
                       {r.ico ? `${t("IČO {ico}", { ico: r.ico })} · ` : ""}
                       {t("vytvorené")} {datum(r.created_at)}
                     </div>
@@ -594,6 +628,14 @@ function CompanyManagementPage() {
                   <td className="px-4 py-3">{banka(r)}</td>
                   <td className="px-4 py-3 text-right">{akcie(r)}</td>
                 </KlikatelnyRiadok>
+                {rozbalene.has(r.id) && (
+                  <tr className="border-t border-border bg-muted/30">
+                    <td colSpan={8}>
+                      <UdajeFirmyPanel companyId={r.id} />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
