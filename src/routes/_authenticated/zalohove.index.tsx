@@ -10,7 +10,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { TabulkaZoznamu } from "@/components/faktero/TabulkaZoznamu";
 import { StatusBadge } from "./dashboard";
 import { StavOdznak } from "@/components/faktero/web/Stav";
-import { Plus, Trash2, RotateCcw, Hash, Undo2, X, Mail, Bell, Loader2 } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Hash, Undo2, X, Mail, Bell, Loader2, FileCheck2 } from "lucide-react";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import { sendReminderFn } from "@/lib/faktero/reminders.functions";
 import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
@@ -763,6 +763,15 @@ function ProformaListPage() {
                   ) : (
                     <div className="flex gap-1">
                       <TlacidloNahladu popis={i.invoice_number} onClick={() => okno.otvor(i.id)} />
+                      {i.status !== "draft" && i.status !== "cancelled" && (
+                        <Link
+                          to="/faktury/nova"
+                          search={{ zo_zalohy: i.id } as any}
+                          className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                        >
+                          <FileCheck2 className="h-3.5 w-3.5" /> {t("Faktúra")}
+                        </Link>
+                      )}
                       <button
                         onClick={() => setRowDelete(i)}
                         className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
@@ -905,6 +914,18 @@ function ProformaListPage() {
                           ) : (
                             <div className="flex justify-end gap-1">
                               <TlacidloNahladu popis={i.invoice_number} onClick={() => okno.otvor(i.id)} />
+                              {/* Faktúra zo zálohovej — predvyplnená (pri uhradenej aj s odpočtom zálohy). */}
+                              {i.status !== "draft" && i.status !== "cancelled" && (
+                                <Link
+                                  to="/faktury/nova"
+                                  search={{ zo_zalohy: i.id } as any}
+                                  title={t("Vystaviť faktúru zo zálohovej")}
+                                  aria-label={t("Vystaviť faktúru zo zálohovej")}
+                                  className="rounded p-1.5 text-primary hover:bg-primary/10"
+                                >
+                                  <FileCheck2 className="h-4 w-4" />
+                                </Link>
+                              )}
                               <button
                                 title={t("Vymazať")}
                                 onClick={() => setRowDelete(i)}

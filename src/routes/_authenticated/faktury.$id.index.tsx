@@ -1662,14 +1662,22 @@ function InvoiceDetail() {
           <div className="text-sm font-semibold text-muted-foreground">
             {t("Zálohová faktúra")}
           </div>
-          {stavOstrej && (stavOstrej.faktury.length > 0 || stavOstrej.mozeOstru) ? (
+          {stavOstrej &&
+          (stavOstrej.faktury.length > 0 ||
+            stavOstrej.mozeOstru ||
+            (inv.type === "proforma" && inv.status !== "draft" && inv.status !== "cancelled")) ? (
             <div className="mt-2 space-y-1">
               {stavOstrej.vyuctovana && (
                 <div>
                   <StavWeb ton="uspech" maly>{t("Zúčtovaná")}</StavWeb>
                 </div>
               )}
-              <OstraZoZalohy stav={stavOstrej} dokladId={inv.id} mena={inv.currency} />
+              <OstraZoZalohy
+                stav={stavOstrej}
+                dokladId={inv.id}
+                mena={inv.currency}
+                aNeuhradenu={inv.type === "proforma" && inv.status !== "draft" && inv.status !== "cancelled"}
+              />
             </div>
           ) : settledIn ? (
             <div className="mt-2 space-y-1">
@@ -2271,8 +2279,17 @@ function InvoiceDetail() {
                     </Link>
                   </MenuAkcia>
                 ) : (
-                  <MenuAkcia ikona={FileCheck2} disabled title={t("Ostrá faktúra sa vystaví po úhrade zálohy.")}>
-                    {t("Vystaviť ostrú faktúru")}
+                  /* Neuhradená záloha: faktúra sa predvyplní zo zálohovej (položky, odberateľ),
+                     len bez odpočtu zálohy — nič sa neprepisuje ručne (Patrik 22. 11.). */
+                  <MenuAkcia asChild>
+                    <Link
+                      to="/faktury/nova"
+                      search={{ zo_zalohy: id } as any}
+                      title={t("Záloha nie je uhradená — faktúra sa predvyplní bez odpočtu zálohy.")}
+                    >
+                      <FileCheck2 className="h-4 w-4" />
+                      {t("Vystaviť faktúru zo zálohovej")}
+                    </Link>
                   </MenuAkcia>
                 )
               )}

@@ -16,7 +16,10 @@ export function OstraZoZalohy({
   dokladId,
   mena,
   sOdkazomNaZalohu,
+  aNeuhradenu,
 }: {
+  /** Neuhradená (vystavená) zálohová: ponúknuť faktúru zo zálohovej bez odpočtu. */
+  aNeuhradenu?: boolean;
   stav: StavOstrej;
   /** Id dokladu, z ktorého sa ostrá faktúra vystavuje (záloha alebo doklad k platbe). */
   dokladId: string;
@@ -61,6 +64,21 @@ export function OstraZoZalohy({
             ))}
           </ul>
         </div>
+      )}
+      {!stav.mozeOstru && !stav.vyuctovana && aNeuhradenu && (
+        <>
+          <p className="text-muted-foreground">
+            {t("Záloha zatiaľ nie je uhradená — faktúra sa predvyplní zo zálohovej (odberateľ aj položky), len bez odpočtu zálohy.")}
+          </p>
+          <Link
+            to="/faktury/nova"
+            search={{ zo_zalohy: dokladId } as any}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            <FileCheck2 className="h-4 w-4" />
+            {t("Vystaviť faktúru zo zálohovej")}
+          </Link>
+        </>
       )}
       {stav.mozeOstru && (
         <>
