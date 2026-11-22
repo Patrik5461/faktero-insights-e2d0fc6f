@@ -49,8 +49,11 @@ export async function menoAutora(userId: string | null | undefined): Promise<str
     5 — 2026-11-17: dlhý názov / adresa / e-mail dodávateľa a odberateľa sa
         zalomí do rámika (predtým pretiekol za okraj strany), názov nad 40
         znakov menším písmom, oba rámiky rovnako vysoké.
+    6 — 2026-11-22: doklad, ktorému na ďalšiu stranu pretiekol len chvost
+        (vety o DPH, poznámka, podpisy dodacieho listu), sa nakreslí hustejšie
+        a zmestí sa na jednu stranu (faktúra 262400001).
 */
-export const VERZIA_SABLONY_PDF = 5;
+export const VERZIA_SABLONY_PDF = 6;
 
 /*
   Dobropis sa od 2026-10 kreslí s kladnými sumami. Obsah faktúry sa nezmenil,

@@ -158,14 +158,25 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     položkami. Krátka faktúra tak ostane na jednej strane.
   */
   const prvy = await vykresliFakturu(input, false);
-  if (!prvy.prenesenieMimoPrvejStrany) return prvy.bajty;
-  return (await vykresliFakturu(input, true)).bajty;
+  const zaklad = prvy.prenesenieMimoPrvejStrany ? await vykresliFakturu(input, true) : prvy;
+  /*
+    Krátka faktúra, ktorej len chvost (vety o DPH, poznámka, podpisy dodacieho
+    listu) pretiekol na ďalšiu stranu, sa nakreslí ešte raz hustejšie — nižšie
+    riadky položiek a menšie medzery (Patrik 22. 11., faktúra 262400001).
+    Použije sa, len keď má naozaj menej strán.
+  */
+  if (zaklad.pocetStran > 1) {
+    const husta = await vykresliFakturu(input, prvy.prenesenieMimoPrvejStrany, true);
+    if (husta.pocetStran < zaklad.pocetStran && !husta.prenesenieMimoPrvejStrany) return husta.bajty;
+  }
+  return zaklad.bajty;
 }
 
 async function vykresliFakturu(
   input: InvoicePdfInput,
   prenesenieHore: boolean,
-): Promise<{ bajty: Uint8Array; prenesenieMimoPrvejStrany: boolean }> {
+  husto = false,
+): Promise<{ bajty: Uint8Array; prenesenieMimoPrvejStrany: boolean; pocetStran: number }> {
   /*
     Dobropis je v databáze záporný; na doklade sa sumy píšu bez mínusu, že ide
     o zníženie, hovorí nadpis DOBROPIS a odkaz na opravovanú faktúru. Kreslí
@@ -464,7 +475,7 @@ async function vykresliFakturu(
   const NAME_SIZE = 10,
     DESC_SIZE = 8.5,
     ROW_LINE_H = 12;
-  const ROW_PAD_Y = 5.5;
+  const ROW_PAD_Y = husto ? 2.5 : 5.5;
 
   const pages: PDFPage[] = [page];
   let cur = page;
@@ -579,7 +590,7 @@ async function vykresliFakturu(
     const textH =
       nameLines.length * (NAME_SIZE + 2) +
       (descLines.length ? 2 + descLines.length * (DESC_SIZE + 2) : 0);
-    const rowH = Math.max(23, textH + ROW_PAD_Y * 2);
+    const rowH = Math.max(husto ? 16 : 23, textH + ROW_PAD_Y * 2);
 
     // Page break if row would overflow the safe area
     if (y - rowH < BOTTOM_LIMIT) {
@@ -1467,7 +1478,7 @@ async function vykresliFakturu(
       cur.drawText(ln, { x: margin, y, size: 9.5, font: bold, color: sub });
       y -= 12;
     });
-    y -= 10;
+    y -= husto ? 4 : 10;
   }
 
   if (invoice.notes && !poznamkyHotove) {
@@ -1512,8 +1523,8 @@ async function vykresliFakturu(
     Dve čiary vedľa seba na konci dokladu, pod všetkými údajmi.
   */
   if (dodaciList) {
-    ensureSpace(58);
-    y -= 30;
+    ensureSpace(husto ? 26 : 58);
+    y -= husto ? 10 : 30;
     const sirkaPola = (innerW - 40) / 2;
     [t.odovzdal, t.prevzal].forEach((popis, i) => {
       const x = margin + i * (sirkaPola + 40);
@@ -1525,7 +1536,7 @@ async function vykresliFakturu(
       });
       cur.drawText(san(popis), { x, y: y - 12, size: 8.5, font, color: muted });
     });
-    y -= 24;
+    y -= husto ? 18 : 24;
   }
 
   // ── Footer on every page ──
@@ -1624,7 +1635,7 @@ async function vykresliFakturu(
   // Doklad testovacej firmy nesmie vyzerať ako skutočný (testovacia-firma.ts).
   if (jeTestovacia(input.company)) nakresliVodotlacTest(doc.getPages(), bold);
 
-  return { bajty: await doc.save(), prenesenieMimoPrvejStrany };
+  return { bajty: await doc.save(), prenesenieMimoPrvejStrany, pocetStran: pages.length };
 }
 
 /** Text vodotlače na dokladoch testovacej firmy. */
