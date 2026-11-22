@@ -1088,10 +1088,13 @@ function InvoicesPage() {
           /* Hlavné tlačidlo je posledné a vpravo; Číselné rady a Účtovné exporty sú
              v riadku s filtrami, aby sa hlavička nezalamovala. */
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {(type || status || poSplatnosti || neuhradene) && (
+            {/* Agendy z menu (Vydané faktúry, Vydané daňové doklady, Dobropisy, Koncepty) nie sú
+                filter — „Zrušiť filter“ len pri skutočnom filtri z prehľadu (po splatnosti,
+                neuhradené, vystavené); typ agendy ostáva. */}
+            {(poSplatnosti || neuhradene || status === "issued") && (
               <Link
                 to="/faktury"
-                search={{} as any}
+                search={(type ? { type } : {}) as any}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
               >
                 <X className="h-4 w-4" /> {t("Zrušiť filter")}
