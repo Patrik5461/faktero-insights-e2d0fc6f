@@ -89,6 +89,8 @@ import {
   type StavEfaktury,
 } from "@/lib/faktero/efaktura/stav-efaktury";
 import { efakturaUzOdisla } from "@/lib/faktero/efaktura/stav-efaktury-texty";
+import { orHladania } from "@/lib/faktero/hladanie-zoznamu";
+import { rozoberDotaz } from "@/lib/faktero/globalne-hladanie";
 import { filtrujObdobie, datumDodania, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import {
   filterStavu,
@@ -255,6 +257,9 @@ function InvoicesPage() {
       if (uhrada === "prevod")
         d = d.or(`payment_method.is.null,payment_method.in.(${KODY_UHRADY.prevod.join(",")})`);
       else if (uhrada) d = d.in("payment_method", KODY_UHRADY[uhrada]);
+      // Samostatné `.or()` — PostgREST ho spojí s „Prevodom“ cez AND.
+      const hladanie = orHladania("vystavene", lf.q);
+      if (hladanie) d = d.or(hladanie);
       /*
         Neuhradené, po splatnosti a bez upomienky filtrovali kedysi len
         načítanú stránku — stránkovanie, počet aj „Vybrať všetko“ pracovali
@@ -267,13 +272,15 @@ function InvoicesPage() {
         dnes: today,
       });
     },
-    [podla, obdobieOd, obdobieDo, exportovane, stavFaktury, zauctovane, uhrada, stavFiltra, stitokFiltra, neuhradene, poSplatnosti, overdueNoReminder, today],
+    [podla, obdobieOd, obdobieDo, exportovane, stavFaktury, zauctovane, uhrada, stavFiltra, stitokFiltra, neuhradene, poSplatnosti, overdueNoReminder, today, lf.q],
   );
   const list = usePagedList({
     resource: "invoices",
     // Bez `select *` — stránka 100 faktúr COPY PRINTU 276 kB → 183 kB.
     stlpce: overdueNoReminder ? `${SELECT_VYSTAVENYCH},${STLPEC_UPOMIENOK}` : SELECT_VYSTAVENYCH,
-    searchColumns: ["invoice_number", "customer_name", "customer_ico"],
+    // Hľadanie ide cez `upravDotaz` (orHladania) — číslo/VS, odberateľ bez
+    // diakritiky, IČO/DIČ, IČ DPH aj suma s desatinnou čiarkou.
+    searchColumns: [],
     equals: Object.keys(equals).length ? equals : undefined,
     // Od najnovšej. Predtým sa radilo podľa `created_at`, čo je pri
     // naimportovaných faktúrach čas importu — všetky mali rovnaký a zoznam
@@ -630,6 +637,8 @@ function InvoicesPage() {
         list.showDeleted ||
         !!zauctovane ||
         !!uhrada ||
+        // Súčet v databáze hľadá len text v čísle, mene a IČO — sumu nepozná.
+        rozoberDotaz(list.search).suma != null ||
         (!!status && !!stavFaktury && stavFaktury !== status),
       nonce: list.rows,
     },
@@ -1183,7 +1192,7 @@ function InvoicesPage() {
         {type === "credit" ? <KartyDobropisov smer={undefined} /> : null}
         <DocumentListToolbar
           lf={lf}
-          searchPlaceholder="Hľadať číslo, odberateľa, IČO…"
+          searchPlaceholder="Číslo, odberateľ, IČO, suma…"
           sortOptions={ZORADENIE_FAKTUR}
           filters={[
             filterStavu(STAVY_FAKTUR),

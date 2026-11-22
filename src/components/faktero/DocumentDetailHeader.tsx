@@ -120,7 +120,7 @@ export function DocumentDetailHeader({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div data-w-hlavicka-stranky className="@container mx-auto w-full max-w-[1440px] border-b border-border px-4 py-4 sm:px-6 sm:py-5">
+      <div data-w-hlavicka-stranky className="@container mx-auto w-full border-b border-border px-4 py-4 sm:px-6 sm:py-5">
         <div className="flex flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:justify-between @2xl:gap-6">
           {/* Ľavá časť: späť, nadpis so stavom, dátumy */}
           <div className="min-w-0 @2xl:flex-1">

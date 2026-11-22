@@ -6,6 +6,7 @@ import { toastNeodovzdane } from "@/components/faktero/NeodovzdaneDoklady";
 import { TlacidloXmlPohody } from "@/components/faktero/TlacidloXmlPohody";
 import { exportSPotvrdenim } from "@/lib/faktero/export-potvrdenie";
 import { useT } from "@/lib/i18n/useT";
+import { zhodaHladania } from "@/lib/faktero/hladanie-zoznamu";
 import { mnozne, CAKAJUCE_BLOCKY } from "@/lib/faktero/mnozne";
 import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { OdovzdaneIkona } from "@/components/faktero/OdovzdaneIkona";
@@ -263,24 +264,17 @@ function DokladyPage() {
   const exportFiltra = lf.filter("export");
   const zauctFiltra = lf.filter("zauct");
   const rows = useMemo(() => {
-    const h = hladaj.trim().toLowerCase();
     return vsetkyRiadky.filter(
       (r) =>
         (!platba || r.payment_method === platba) &&
         (!stavPlatbyFiltra || stavRiadku(r) === stavPlatbyFiltra) &&
         splnaStavAStitok(r, stavFiltra, stitokFiltra) &&
-        (!h ||
-          [
-            r.supplier_name,
-            r.supplier_ico,
-            r.document_number,
-            r.note,
-            r.komentar,
-            r.int_poznamka,
-            ...(r.stitky ?? []),
-          ]
-            .filter(Boolean)
-            .some((x) => String(x).toLowerCase().includes(h))),
+        zhodaHladania(hladaj, {
+          nazvy: [r.supplier_name, r.note, r.komentar, r.int_poznamka, ...(r.stitky ?? [])],
+          cisla: [r.document_number, r.pohoda_cislo, r.qr_raw],
+          identifikatory: [r.supplier_ico, r.supplier_ic_dph],
+          sumy: [r.total_amount],
+        }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -1160,7 +1154,7 @@ function DokladyPage() {
         <DocumentListToolbar
           lf={lf}
           previewToggle={bocny}
-          searchPlaceholder="Dodávateľ, IČO, číslo…"
+          searchPlaceholder="Dodávateľ, IČO, číslo, suma…"
           filters={[
             // Jednotné poradie (filtre-dokladov.ts). Stav riešia záložky.
             // Nespracované ukazujú všetky dátumy — obdobie tam nemá zmysel.

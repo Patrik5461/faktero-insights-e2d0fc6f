@@ -29,6 +29,7 @@ import { PrenosFakturyZadarmo } from "@/components/faktero/PrenosFakturyZadarmo"
 import { BankWidget } from "@/components/faktero/BankWidget";
 import { AutoUctovanieWidget } from "@/components/faktero/AutoUctovanieWidget";
 import { VynosyNakladyPanel } from "@/components/faktero/VynosyNakladyPanel";
+import { MojeUlohyPanel, MojeUlohyPas, useMojeUlohy } from "@/components/faktero/MojeUlohyPanel";
 import { SumaVDomacejMene } from "@/components/faktero/SuctyPoMenach";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
@@ -179,6 +180,8 @@ function Dashboard() {
   const klik = useKlikNaRiadok();
   /* Slovenské povinnosti sa českej firme neponúkajú. */
   const krajina = useKrajinaDane();
+  /* Moje úlohy vedľa Prehľadu (široké okno) alebo ako pás nad ním — dáta sa načítajú raz. */
+  const mojeUlohy = useMojeUlohy(getActiveCompanyId());
   menaPrehladu = krajina === "CZ" ? "CZK" : "EUR";
   /* Súčty počíta databáza (`prehlad_suhrn`); tu sú len posledné záznamy do aktivity. */
   const [suhrn, setSuhrn] = useState<PrehladSuhrn>(PRAZDNY_PREHLAD);
@@ -356,6 +359,15 @@ function Dashboard() {
         */
       />
       <PageBody>
+        {/*
+          Prehľad ide na celú šírku monitora. Od 1440 bodov okna je vpravo panel Moje úlohy
+          (~1/3), pod tým pás s počtami úloh nad Prehľadom. Ľavý stĺpec je
+          `@container` — vnútorné mriežky sa riadia jeho šírkou, nie šírkou
+          okna, takže sa pri paneli vedľa prerovnajú (napr. 4 → 2×2).
+        */}
+        <MojeUlohyPas data={mojeUlohy} className="min-[1440px]:hidden" />
+        <div className="min-[1440px]:grid min-[1440px]:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] min-[1440px]:items-start min-[1440px]:gap-6">
+        <div className="@container min-w-0 space-y-6">
         {/* Nemecký Kleinunternehmer: obrat blízko hranice § 19 UStG. */}
         <UpozornenieKleinunternehmer firma={company} />
         {/* Faktúra z verejnej stránky „Faktúra zadarmo“ — jedným kliknutím koncept. */}
@@ -377,7 +389,7 @@ function Dashboard() {
             )}
 
             {/* CRM: Aging + DSO + Forecast */}
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 @2xl:grid-cols-2">
               <AgingPanel
                 title="Vek pohľadávok"
                 icon={HandCoins}
@@ -392,9 +404,9 @@ function Dashboard() {
               />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 @2xl:grid-cols-3">
               <DsoCard dso={dso} loading={loading} hasPaid={hasPaidInvoice} />
-              <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
+              <ForecastPanel rows={forecast} loading={loading} className="@2xl:col-span-2" />
             </div>
           </>
         )}
@@ -414,7 +426,7 @@ function Dashboard() {
         )}
 
         {/* SECOND ROW */}
-        <div className="grid gap-6 lg:grid-cols-4">
+        <div className="grid gap-6 @2xl:grid-cols-2 @4xl:grid-cols-4">
           <Panel title="Pohľadávky" icon={HandCoins}>
             <Row
               label="Celkové pohľadávky"
@@ -509,7 +521,7 @@ function Dashboard() {
         </div>
 
         {/* THIRD ROW */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 @2xl:grid-cols-2 @5xl:grid-cols-3">
           {/*
             Odpočet do 1. 1. 2027 je slovenská povinnosť a odkaz vedie na
             eFaktúru cez slovenskú schému Peppol. Českej firme by sľuboval
@@ -695,7 +707,7 @@ function Dashboard() {
             </Link>
           </div>
           )}
-          <div className="mb-6 grid gap-6 lg:grid-cols-2">
+          <div className="mb-6 grid gap-6 @2xl:grid-cols-2">
             <Panel title="Opakované faktúry" icon={Repeat}>
               <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
                 <div className="min-w-0 rounded-lg border border-border bg-muted/40 px-2.5 py-2">
@@ -841,6 +853,15 @@ function Dashboard() {
             )}
           </Panel>
         </div>
+        </div>
+        <aside
+          aria-label={t("Moje úlohy")}
+          data-moje-ulohy-panel=""
+          className="hidden min-w-0 min-[1440px]:sticky min-[1440px]:top-[calc(var(--vyska-hlavicky,3.5rem)+1.5rem)] min-[1440px]:block min-[1440px]:max-h-[calc(100vh-var(--vyska-hlavicky,3.5rem)-3rem)] min-[1440px]:overflow-y-auto min-[1440px]:overscroll-contain"
+        >
+          <MojeUlohyPanel companyId={getActiveCompanyId()} kompaktne data={mojeUlohy} />
+        </aside>
+        </div>
       </PageBody>
     </>
   );
@@ -940,7 +961,7 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
     t(mnozne(n, ["{n} odberateľ", "{n} odberatelia", "{n} odberateľov"]), { n });
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="space-y-2 rounded-xl border border-border bg-card p-4">
             <div className="h-3 w-24 animate-pulse rounded bg-muted" />
@@ -956,7 +977,7 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
   const jePoSplatnosti = metrics.overdueAmount > 0;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 @xl:grid-cols-2 @4xl:grid-cols-4">
       <KpiKarta
         label="Obrat tento mesiac"
         value={fmt(metrics.monthRevenue)}

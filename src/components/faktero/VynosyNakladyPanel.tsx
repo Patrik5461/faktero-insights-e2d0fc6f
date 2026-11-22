@@ -276,7 +276,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
         <p className="py-6 text-center text-sm text-destructive">{chyba}</p>
       ) : nacitava && !data ? (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 @xl:grid-cols-3 @4xl:grid-cols-6">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
             ))}
@@ -285,7 +285,7 @@ export function VynosyNakladyPanel({ companyId }: { companyId: string }) {
         </div>
       ) : (
         <div className={nacitava ? "opacity-60 transition-opacity" : ""}>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 @xl:grid-cols-3 @4xl:grid-cols-6">
             {dlazdice.map((d) => (
               <div
                 key={d.nazov}

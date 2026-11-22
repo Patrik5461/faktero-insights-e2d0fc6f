@@ -36,6 +36,8 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { KlikatelnyRiadok } from "@/components/faktero/KlikatelnyRiadok";
 import { DocumentListToolbar, HlavickaViac } from "@/components/faktero/DocumentListToolbar";
 import { useListFilters, zoznamSearch } from "@/hooks/useListFilters";
+import { orHladania } from "@/lib/faktero/hladanie-zoznamu";
+import { rozoberDotaz } from "@/lib/faktero/globalne-hladanie";
 import { filtrujObdobie, type DatumObdobia } from "@/lib/faktero/obdobie-filter";
 import { datumNaDoklade } from "@/lib/faktero/faktura-jazyk";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -133,6 +135,9 @@ function ProformaListPage() {
       if (uhrada === "prevod")
         q = q.or(`payment_method.is.null,payment_method.in.(${KODY_UHRADY.prevod.join(",")})`);
       else if (uhrada) q = q.in("payment_method", KODY_UHRADY[uhrada]);
+      // Samostatné `.or()` — PostgREST ho spojí s „Prevodom“ cez AND.
+      const hladanie = orHladania("vystavene", lf.q);
+      if (hladanie) q = q.or(hladanie);
       if (platbaFilter === "sparovana") q = q.eq("status", "paid");
       else if (platbaFilter === "navrh")
         q = q.in("id", navrhIds.length ? navrhIds : [ZIADNE_ID]).not("status", "in", "(paid,draft,cancelled)");
@@ -143,11 +148,13 @@ function ProformaListPage() {
       }
       return q;
     },
-    [podla, obdobieOd, obdobieDo, stavZalohovej, exportovane, uhrada, platbaFilter, navrhIds],
+    [podla, obdobieOd, obdobieDo, stavZalohovej, exportovane, uhrada, platbaFilter, navrhIds, lf.q],
   );
   const list = usePagedList({
     resource: "invoices",
-    searchColumns: ["invoice_number", "customer_name", "customer_ico"],
+    // Hľadanie ide cez `upravDotaz` (orHladania) — číslo/VS, odberateľ bez
+    // diakritiky, IČO/DIČ, IČ DPH aj suma s desatinnou čiarkou.
+    searchColumns: [],
     equals: { type: "proforma" },
     pageSizeKey: "invoices-proforma",
     orderBy: { column: "issue_date", ascending: false },
@@ -172,7 +179,15 @@ function ProformaListPage() {
       export: exportovane || null,
     },
     // Platbu a úhradu súčet v databáze nepozná — radšej žiadny súčet než nesprávny.
-    { vypnute: list.showDeleted || !!platbaFilter || !!uhrada, nonce: list.rows },
+    {
+      vypnute:
+        list.showDeleted ||
+        !!platbaFilter ||
+        !!uhrada ||
+        // Súčet v databáze hľadá len text v čísle, mene a IČO — sumu nepozná.
+        rozoberDotaz(list.search).suma != null,
+      nonce: list.rows,
+    },
   );
   // „Zobraziť vymazané“ je filter v adrese, kôš však prepína zoznam.
   const ajVymazane = lf.zapnute("vymazane");
@@ -607,7 +622,7 @@ function ProformaListPage() {
       <PageBody>
         <DocumentListToolbar
           lf={lf}
-          searchPlaceholder="Hľadať číslo, odberateľa, IČO…"
+          searchPlaceholder="Číslo, odberateľ, IČO, suma…"
           filters={[
             filterStavu(STAVY_ZALOHOVYCH),
             filterObdobia(["vystavenie", "dodanie", "splatnost"]),

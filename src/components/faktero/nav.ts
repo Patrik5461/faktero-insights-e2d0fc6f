@@ -165,10 +165,9 @@ export const NAV: NavGroup[] = [
     icon: Users,
     match: ["/odberatelia", "/dodavatelia"],
     children: [
+      // Nový odberateľ / dodávateľ sa zakladá tlačidlom v príslušnom zozname (Patrik 22. 11.).
       { to: "/odberatelia", label: "Odberatelia" },
-      { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
       { to: "/dodavatelia", label: "Dodávatelia" },
-      { to: "/dodavatelia", search: { new: "1" }, label: "Nový dodávateľ" },
     ],
   },
   {

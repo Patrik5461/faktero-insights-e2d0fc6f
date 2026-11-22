@@ -112,7 +112,7 @@ export function DeZm() {
   const sucty = zm ? suctyZm(zm.riadky) : null;
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 pb-24 sm:px-6 lg:px-6">
+    <div className="mx-auto w-full space-y-6 px-4 pb-24 sm:px-6 lg:px-6">
       <section className="rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <div className="text-base font-semibold">{t("Zusammenfassende Meldung (ZM)")}</div>

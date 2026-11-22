@@ -29,7 +29,7 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       supabase
         .from("expense_documents")
         .select(
-          "id, supplier_name, document_number, total_amount, currency, issue_date, created_at, created_by, source, qr_raw, payment_method, pohoda_predkontacia, zauctovane_at, ai_type:ai_raw->>document_type, ai_subtype:ai_raw->>document_subtype, ai_druh:ai_raw->>druh",
+          "id, supplier_name, supplier_ico, supplier_ic_dph, document_number, total_amount, currency, issue_date, created_at, created_by, source, qr_raw, payment_method, pohoda_predkontacia, zauctovane_at, ai_type:ai_raw->>document_type, ai_subtype:ai_raw->>document_subtype, ai_druh:ai_raw->>druh",
         )
         .eq("company_id", data.company_id)
         .eq("status", "new")
@@ -124,6 +124,18 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
         duplicita: duplicity.get(r.id) ?? null,
         vydanaNavrh: r.druh !== "vydana" && vydane?.get(r.id)?.navrh ? true : false,
         uhradaNavrh: uhradaNavrh(r),
+        // Hľadanie v zozname (hladanie-zoznamu.ts): IČO/DIČ/IČ DPH/IBAN a VS z údajov, inak z AI.
+        hladanieId: [
+          r.udaje?.dodavatel?.ico,
+          r.udaje?.dodavatel?.dic,
+          r.udaje?.dodavatel?.icDph,
+          r.udaje?.dodavatel?.iban,
+          r.supplier_ico,
+          r.supplier_dic,
+          r.supplier_ic_dph,
+          r.supplier_iban,
+        ].filter(Boolean) as string[],
+        hladanieCisla: [r.udaje?.vs, r.invoice_number, r.document_number].filter(Boolean) as string[],
       })),
       /*
         Skutočný bloček (eKasa, QR, druh bloček) sa dá hromadne spracovať;
@@ -133,6 +145,8 @@ export const nespracovaneFn = createServerFn({ method: "POST" })
       blocky: (blocky ?? []).map((b: any) => ({
         ...zhrnutieBlocku(b),
         uhradaFiltra: sposobUhrady(b.payment_method),
+        hladanieId: [b.supplier_ico, b.supplier_ic_dph].filter(Boolean) as string[],
+        hladanieCisla: [b.qr_raw].filter(Boolean) as string[],
         navrhZauctovania: !!String(b.pohoda_predkontacia ?? "").trim() || !!b.zauctovane_at,
         skutocnyBlocek: jeSkutocnyBlocek({
           source: b.source,

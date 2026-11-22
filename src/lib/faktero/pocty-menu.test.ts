@@ -38,7 +38,7 @@ describe("obnovPoctyMenu po akciách na stránke", () => {
     "src/routes/_authenticated/doklady.index.tsx",
     "src/routes/_authenticated/nespracovane.index.tsx",
     "src/routes/_authenticated/efaktura.prijate.tsx",
-    "src/routes/_authenticated/moje-ulohy.tsx",
+    "src/components/faktero/MojeUlohyPanel.tsx",
     "src/routes/_authenticated/schvalovanie.tsx",
     "src/components/faktero/SchvalovaniePanel.tsx",
   ];

@@ -305,6 +305,8 @@ function TripsPage() {
         }
       />
       <PageBody>
+        {/* Jazdy na celú šírku monitora (Patrik 22. 11.) — zruší strop 1440 px v PageBody. */}
+        <span data-plna-sirka hidden />
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <label className="text-sm font-semibold text-muted-foreground">{t("Vozidlo")}</label>
           <select
@@ -374,9 +376,15 @@ function TripsPage() {
               </div>
             )}
 
-            {/* Desktop */}
+            {/*
+              Desktop. Tabuľka ide na celú šírku monitora (data-plna-sirka).
+              Pod 1600 bodov okna sa vodič presunie pod vozidlo, rýchlosti pod
+              počet km a zdroj pod typ jazdy — inak 14 stĺpcov na notebooku
+              pretečie a adresy sa zalomia do štyroch riadkov. Bunky majú
+              užší vodorovný odstup (px-2.5) z toho istého dôvodu.
+            */}
             <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm [&_td]:px-2.5 [&_th]:px-2.5">
                 <thead className="whitespace-nowrap bg-muted/60 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="p-3 w-10">
@@ -391,16 +399,16 @@ function TripsPage() {
                     </th>
                     <th className="p-3">{t("Dátum jazdy")}</th>
                     <th className="p-3">{t("Vozidlo")}</th>
-                    <th className="p-3">{t("Vodič")}</th>
+                    <th className="hidden p-3 min-[1600px]:table-cell">{t("Vodič")}</th>
                     <th className="p-3">{t("Odkiaľ")}</th>
                     <th className="p-3">{t("Kam")}</th>
                     <th className="p-3">{t("Za kým")}</th>
                     <th className="p-3 text-right">{t("Počet km")}</th>
-                    <th className="p-3 text-right">{t("Priemerná rýchlosť")}</th>
-                    <th className="p-3 text-right">{t("Najvyššia rýchlosť")}</th>
+                    <th className="hidden p-3 text-right min-[1600px]:table-cell">{t("Priemerná rýchlosť")}</th>
+                    <th className="hidden p-3 text-right min-[1600px]:table-cell">{t("Najvyššia rýchlosť")}</th>
                     <th className="p-3 text-right">{t("Trvanie jazdy")}</th>
                     <th className="p-3">{t("Typ jazdy")}</th>
-                    <th className="p-3">{t("Zdroj")}</th>
+                    <th className="hidden p-3 min-[1600px]:table-cell">{t("Zdroj")}</th>
                     <th className="p-3">
                       <span className="sr-only">{t("Akcie")}</span>
                     </th>
@@ -431,15 +439,18 @@ function TripsPage() {
                         />
                       </td>
                       <td className="p-3 whitespace-nowrap">{datumNaDoklade(r.trip_date)}</td>
-                      <td className="min-w-[11rem] p-3">
+                      <td className="min-w-[9rem] p-3">
                         <span className="font-medium">{vehicles[r.vehicle_id]?.name ?? "—"}</span>{" "}
                         <span className="whitespace-nowrap text-xs text-muted-foreground">
                           {vehicles[r.vehicle_id]?.license_plate}
                         </span>
+                        {r.driver_name && (
+                          <div className="mt-0.5 text-xs text-muted-foreground min-[1600px]:hidden">{r.driver_name}</div>
+                        )}
                       </td>
-                      <td className="min-w-[8rem] p-3">{r.driver_name ?? "—"}</td>
-                      <td className="min-w-[9rem] p-3">{r.start_location ?? "—"}</td>
-                      <td className="min-w-[9rem] p-3">{r.end_location ?? "—"}</td>
+                      <td className="hidden min-w-[8rem] p-3 min-[1600px]:table-cell">{r.driver_name ?? "—"}</td>
+                      <td className="min-w-[8.5rem] p-3 [overflow-wrap:anywhere] 2xl:min-w-[13rem]">{r.start_location ?? "—"}</td>
+                      <td className="min-w-[8.5rem] p-3 [overflow-wrap:anywhere] 2xl:min-w-[13rem]">{r.end_location ?? "—"}</td>
                       {/* Odberateľ je to, čo z jazdy robí služobnú cestu —
                           v knihe jázd patrí do prehľadu, nie len do detailu. */}
                       <td className="p-3">
@@ -447,19 +458,27 @@ function TripsPage() {
                       </td>
                       <td className="p-3 text-right whitespace-nowrap tabular-nums font-semibold">
                         {formatujCislo(r.distance_km, 1)}
+                        <div className="mt-0.5 text-xs font-normal text-muted-foreground min-[1600px]:hidden">
+                          {[
+                            formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh),
+                            r.max_speed_kmh ? `max ${formatujCislo(r.max_speed_kmh, 0)} km/h` : null,
+                          ]
+                            .filter((x) => x && x !== "—")
+                            .join(" · ")}
+                        </div>
                       </td>
-                      <td className="p-3 text-right tabular-nums">
+                      <td className="hidden p-3 text-right whitespace-nowrap tabular-nums min-[1600px]:table-cell">
                         {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
                       </td>
                       {/* Najvyššiu rýchlosť merajú len appka a Commander —
                           pri ručne zapísanej jazde tam nemá čo stáť. */}
-                      <td className="p-3 text-right tabular-nums">
+                      <td className="hidden p-3 text-right whitespace-nowrap tabular-nums min-[1600px]:table-cell">
                         {r.max_speed_kmh ? `${formatujCislo(r.max_speed_kmh, 0)} km/h` : "—"}
                       </td>
-                      <td className="p-3 text-right tabular-nums">
+                      <td className="p-3 text-right whitespace-nowrap tabular-nums">
                         {formatDuration(r.duration_seconds)}
                       </td>
-                      <td className="p-3">
+                      <td className="min-w-[8rem] p-3 2xl:min-w-[10rem]">
                         {/* Charakter jazdy je štítok, účel je to, čo appka nevie
                             — za čím sa išlo. Kým sa účel vypĺňal zástupným
                             textom, stálo tu dvakrát to isté. */}
@@ -474,8 +493,11 @@ function TripsPage() {
                             {ucelNaZobrazenie(r.purpose, r.classification)}
                           </div>
                         )}
+                        <div className="mt-1 text-xs text-muted-foreground min-[1600px]:hidden">
+                          {t(sourceLabel(r.external_source))}
+                        </div>
                       </td>
-                      <td className="p-3 whitespace-nowrap text-xs text-muted-foreground">
+                      <td className="hidden p-3 whitespace-nowrap text-xs text-muted-foreground min-[1600px]:table-cell">
                         {t(sourceLabel(r.external_source))}
                       </td>
                       <td

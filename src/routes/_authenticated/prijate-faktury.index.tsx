@@ -1,4 +1,5 @@
 import { preloz } from "@/lib/i18n/jazyk";
+import { orHladania } from "@/lib/faktero/hladanie-zoznamu";
 import { sFirmouAktivnej } from "@/lib/faktero/nazov-suboru-aktivnej-firmy";
 import { poDavkach } from "@/lib/faktero/po-davkach";
 import { textClenenia, textZauctovania } from "@/lib/faktero/clenenie-text";
@@ -828,7 +829,10 @@ function PurchaseInvoicesPage() {
       if (obdobieOd || obdobieDo) q = filtrujObdobie(q, podla, obdobieOd || null, obdobieDo || null);
       if (exportovane === "ano") q = q.not("exported_at", "is", null);
       if (exportovane === "nie") q = q.is("exported_at", null).neq("status", "cancelled");
-      if (supplier.trim()) q = q.ilike("supplier_name", `%${supplier.trim()}%`);
+      // Číslo/VS, dodávateľ, IČO/DIČ/IČ DPH, IBAN aj suma (Patrik 22. 11.) — samostatné
+      // `.or()`, PostgREST ho s ostatnými podmienkami (aj iným `.or()`) spojí cez AND.
+      const orQ = orHladania("prijate", supplier);
+      if (orQ) q = q.or(orQ);
       if (stavFiltra === "_bez") q = q.is("stav_id", null);
       else if (stavFiltra) q = q.eq("stav_id", stavFiltra);
       if (stitokFiltra) q = q.contains("stitky", [stitokFiltra]);
@@ -1120,11 +1124,11 @@ function PurchaseInvoicesPage() {
           )}
         </div>
 
-        {/* Hľadá sa len podľa mena dodávateľa (ilike v dotaze), preto taký popis. */}
+        {/* Hľadá sa podľa čísla/VS, dodávateľa, IČO/DIČ/IČ DPH, IBAN a sumy (orHladania). */}
         <div className="mt-6">
           <DocumentListToolbar
             lf={lf}
-            searchPlaceholder="Dodávateľ…"
+            searchPlaceholder={t("Číslo, dodávateľ, IČO, suma…")}
             filters={[
               filterStavu([
                 ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),

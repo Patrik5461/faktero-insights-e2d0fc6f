@@ -1095,7 +1095,7 @@ export function PageHeader({
     */
     <div
       data-w-hlavicka-stranky
-      className={`mx-auto flex w-full ${sirka === "formular" ? "max-w-[calc(72rem+3rem)]" : "max-w-[1440px]"} flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:gap-x-6 lg:gap-y-3 lg:px-6`}
+      className={`mx-auto flex w-full ${sirka === "formular" ? "max-w-[calc(72rem+3rem)]" : ""} flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:gap-x-6 lg:gap-y-3 lg:px-6`}
     >
       <div className="min-w-0 lg:min-w-[min(100%,24rem)] lg:flex-[1_1_24rem]">
         <div className="flex items-center gap-2">
@@ -1148,15 +1148,13 @@ export function PageHeader({
 
 export function PageBody({ children }: { children: ReactNode }) {
   /*
-    Obsah má strop 1440 bodov. Bez neho sa tabuľky na širokouhlom monitore
-    roztiahnu tak, že oko medzi prvým a posledným stĺpcom stratí riadok.
-    Výnimkou sú zoznamy dokladov (stránka s `DocumentListToolbar`) — tam
-    používateľ pridáva stĺpce a strop by ich orezal; zruší ho pravidlo
-    `main:has([data-zoznam-dokladov])` v styles.css (aj pre `PageHeader`).
+    Obsah ide na celú šírku monitora — strop 1440 bodov Patrik 22. 11. zrušil
+    na všetkých stránkach („nech je to pekne jednotné“). Užšie formuláre si
+    šírku obmedzujú samy (PageHeader `sirka="formular"`).
     Medzery medzi sekciami rieši `space-y-6` — 24 bodov, ako všade inde.
   */
   return (
-    <div data-obsah-stranky className="mx-auto w-full max-w-[1440px] flex-1 space-y-6 px-4 pt-6 pb-24 sm:px-6 lg:px-6">
+    <div data-obsah-stranky className="mx-auto w-full flex-1 space-y-6 px-4 pt-6 pb-24 sm:px-6 lg:px-6">
       {children}
     </div>
   );

@@ -1,5 +1,6 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { useT } from "@/lib/i18n/useT";
+import { zhodaHladania } from "@/lib/faktero/hladanie-zoznamu";
 import { supabase } from "@/integrations/supabase/client";
 import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -163,17 +164,27 @@ function OstatneDokladyPage() {
   const stitkyNaVyber = [...new Set([...cis.stitky, ...rows.flatMap((r) => (r.stitky ?? []) as string[])])].sort();
   const priecinky = [...new Set(rows.map((r) => String(r.priecinok ?? "").trim()).filter(Boolean))].sort();
   // Hľadanie len prechádza načítané doklady.
-  const hladane = lf.q.trim().toLowerCase();
+  const hladane = lf.q.trim();
   const zobrazene = rows.filter(
     (r) =>
       (!priecinok ||
         String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok)) &&
       (!stitokFiltra || (r.stitky ?? []).includes(stitokFiltra)) &&
       (!platbaFiltra || platbaRiadku(r) === platbaFiltra) &&
-      (!hladane ||
-        [r.sender, r.subject, r.priecinok, ...(r.stitky ?? [])]
-          .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(hladane))),
+      zhodaHladania(hladane, {
+        nazvy: [
+          r.sender,
+          r.subject,
+          r.note,
+          r.priecinok,
+          r.zmluva?.name,
+          r.zmluva?.provider_name,
+          ...(r.stitky ?? []),
+        ],
+        cisla: [r.variable_symbol, r.zmluva?.contract_number],
+        identifikatory: [r.iban],
+        sumy: [r.amount],
+      }),
   );
   // Kreslí sa len jedna strana; výber, hromadné akcie a export pracujú so všetkými zobrazenými.
   const strankovanie = useStrankovanie(zobrazene, lf, { reset: zalozka });
@@ -526,7 +537,7 @@ function OstatneDokladyPage() {
 
         <DocumentListToolbar
           lf={lf}
-          searchPlaceholder="Hľadať odosielateľa alebo predmet…"
+          searchPlaceholder="Odosielateľ, predmet, suma…"
           filters={[
             // Jednotné poradie (filtre-dokladov.ts). Stav riešia záložky;
             // zaúčtovanie ani spôsob úhrady iné doklady nemajú.

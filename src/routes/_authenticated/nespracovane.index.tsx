@@ -1,3 +1,4 @@
+import { zhodaHladania } from "@/lib/faktero/hladanie-zoznamu";
 import { CudziaFakturaZnak } from "@/components/faktero/CudziaFaktura";
 import { useOznamDuplicitySuboru } from "@/components/faktero/DuplicitaSuboruOznam";
 import { DuplicitaZnak } from "@/components/faktero/DuplicitaDokladu";
@@ -251,7 +252,7 @@ function Stranka() {
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
 
   // Hľadanie a filtre len prechádzajú načítané doklady (zoznam je celý).
-  const hladane = lf.q.trim().toLowerCase();
+  const hladane = lf.q.trim();
   const filtre = {
     druh: lf.filter("druh"),
     platba: lf.filter("uhrada"),
@@ -265,9 +266,12 @@ function Stranka() {
   const zobrazene = riadky.filter((r) => {
     if (!vyhovujeFiltrom(r, filtre)) return false;
     if (!hladane) return true;
-    return [r.dodavatel, r.cislo, r.subor]
-      .filter(Boolean)
-      .some((v) => String(v).toLowerCase().includes(hladane));
+    return zhodaHladania(hladane, {
+      nazvy: [r.dodavatel, r.subor],
+      cisla: [r.cislo, ...(r.hladanieCisla ?? [])],
+      identifikatory: r.hladanieId ?? [],
+      sumy: [r.suma],
+    });
   });
 
   const nahraliMoznosti = moznostiNahral(riadky, mena);
@@ -707,7 +711,7 @@ function Stranka() {
 
         <DocumentListToolbar
           lf={lf}
-          searchPlaceholder="Hľadať dodávateľa alebo číslo"
+          searchPlaceholder="Dodávateľ, číslo, suma…"
           filters={[
             // Jednotné poradie: Obdobie · Zaúčtovanie · Úhrada · vlastné (Druh, Stav čítania, Nahral).
             filterObdobia(["vystavenie", "nahratie"]),

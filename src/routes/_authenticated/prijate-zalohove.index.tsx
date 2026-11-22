@@ -1,6 +1,7 @@
 import { preloz } from "@/lib/i18n/jazyk";
 import { obsadzujeZalohu } from "@/lib/faktero/prijaty-danovy-doklad";
 import { useT } from "@/lib/i18n/useT";
+import { zhodaHladania } from "@/lib/faktero/hladanie-zoznamu";
 import { StavOdznak } from "@/components/faktero/web/Stav";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NahladDokladuOkno, TlacidloNahladu, useNahladOkna } from "@/components/faktero/NahladDokladuOkno";
@@ -77,6 +78,8 @@ type Riadok = {
   locked_at?: string | null;
   file_path: string | null;
   supplier_ico?: string | null;
+  supplier_dic?: string | null;
+  supplier_ic_dph?: string | null;
   supplier_iban: string | null;
   variable_symbol?: string | null;
   specific_symbol?: string | null;
@@ -123,7 +126,7 @@ function PrijateZalohovePage() {
           .from("purchase_invoices")
           .select(
             // IBAN a symboly kvôli hromadnému príkazu na úhradu, IČO a DUZP do súhrnu v ZIP.
-            "id, invoice_number, supplier_name, supplier_ico, supplier_iban, variable_symbol, specific_symbol, constant_symbol, note, delivery_date, issue_date, due_date, amount_total, currency, payment_date, payment_method, status, deleted_at, exported_at, locked_at, file_path",
+            "id, invoice_number, supplier_name, supplier_ico, supplier_dic, supplier_ic_dph, supplier_iban, variable_symbol, specific_symbol, constant_symbol, note, delivery_date, issue_date, due_date, amount_total, currency, payment_date, payment_method, status, deleted_at, exported_at, locked_at, file_path",
           )
           .eq("company_id", cid)
           .eq("type", "proforma");
@@ -182,14 +185,20 @@ function PrijateZalohovePage() {
     lfPlatbaRaw === "sparovana" ? "uhradene" : lfPlatbaRaw === "nenajdena" ? "bez" : lfPlatbaRaw;
   const platbaFilter = jeFilterPlatby(lfPlatba) ? lfPlatba : "";
 
-  const hladane = lf.q.trim().toLowerCase();
+  const hladane = lf.q.trim();
   const stav = lf.filter("stav");
   const zobrazene = useMemo(
     () =>
       rows.filter((r) => {
         if (
           hladane &&
-          !`${r.invoice_number ?? ""} ${r.supplier_name ?? ""}`.toLowerCase().includes(hladane)
+          // Číslo/VS, dodávateľ bez diakritiky, IČO/DIČ/IČ DPH, IBAN aj suma (Patrik 22. 11.).
+          !zhodaHladania(hladane, {
+            nazvy: [r.supplier_name],
+            cisla: [r.invoice_number, r.variable_symbol],
+            identifikatory: [r.supplier_ico, r.supplier_dic, r.supplier_ic_dph, r.supplier_iban],
+            sumy: [r.amount_total],
+          })
         )
           return false;
         // Stav rovnako ako odznak StavZalohy: zúčtovaná > zaplatená > čaká.
@@ -480,7 +489,7 @@ function PrijateZalohovePage() {
         <div className="mt-6">
           <DocumentListToolbar
             lf={lf}
-            searchPlaceholder="Hľadať dodávateľa alebo číslo"
+            searchPlaceholder={t("Číslo, dodávateľ, IČO, suma…")}
             filters={[
               filterStavu([
                 { value: "caka", label: "Čaká na úhradu" },
