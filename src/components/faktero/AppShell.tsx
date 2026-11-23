@@ -92,6 +92,7 @@ import { useIsNative } from "@/hooks/useIsNative";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
+import { TlacidloMotivu } from "@/components/faktero/TlacidloMotivu";
 import { PrepinacJazyka } from "@/components/faktero/PrepinacJazyka";
 import { useT } from "@/lib/i18n/useT";
 import { NapovedaOtaznik } from "@/components/faktero/NapovedaOtaznik";
@@ -599,6 +600,7 @@ export function AppShell({
             {/* Right cluster */}
             <div className="ml-auto flex items-center gap-1.5">
               <PrepinacJazyka className="max-md:border-white/30 max-md:text-primary-foreground max-md:hover:bg-white/15 max-md:hover:text-primary-foreground max-md:data-[state=open]:text-primary-foreground" />
+              <TlacidloMotivu className="max-md:hidden" />
               {/* Nahlásenie chyby priamo v hlavičke — v ponuke pod avatarom ho nikto nenašiel. */}
               <button
                 type="button"

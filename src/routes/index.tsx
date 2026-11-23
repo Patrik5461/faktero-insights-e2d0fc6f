@@ -586,10 +586,6 @@ function Hero() {
                 <Sparkles className="h-3 w-3" />
                 {t("eFaktúra 2027 — zadarmo v každom pláne")}
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />{" "}
-                {t("Private Beta · Prijímame prvých testerov")}
-              </div>
             </div>
             <h1 className="text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
               {t("Fakturácia pripravená na")}{" "}
