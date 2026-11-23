@@ -311,7 +311,7 @@ export const funkcie: HubContent = {
         {
           type: "callout",
           title: "Kde ju stiahnete",
-          body: "Appka je v App Store — Faktero aj samostatná Kniha jázd pre vodičov, ktorí faktúry nerobia. Pre Android si obe appky stiahnete z webu (faktero.sk/android) — kým nebudú v Google Play, inštalujú sa ako APK.",
+          body: "Appka je v App Store — Faktero aj samostatná Kniha jázd pre vodičov, ktorí faktúry nerobia. Kniha jázd je už aj v Google Play, Faktero pre Android si zatiaľ stiahnete z webu (faktero.sk/android) ako APK.",
         },
       ],
     },

@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-11-21",
+ "vytvorene": "2026-11-23",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -75,7 +75,7 @@
     },
     {
      "nadpis": "Odkiaľ ju vziať",
-     "text": "<>\nObe appky pre iPhone sú v App Store:\nFaktero\na samostatná\nKniha jázd\n.\nPre Android si obe appky stiahnete z webu na stránke\nFaktero pre Android (/android) — kým nebudú v Google Play, inštalujú sa ako\nAPK. Je tam aj návod, ako inštaláciu mimo obchodu povoliť.\nAppka sa neaktualizuje sama . Celé rozhranie je zabalené v nej, aby sa\notvorila aj bez signálu — cenou za to je, že každá oprava znamená nový build. Keď vyjde\nnovšia verzia, appka to sama zbadá a ponúkne ju; dovtedy pokojne používate tú svoju."
+     "text": "<>\nObe appky pre iPhone sú v App Store:\nFaktero\na samostatná\nKniha jázd\n.\nPre Android je Kniha jázd už v Google Play, Faktero si zatiaľ stiahnete z\nwebu na stránke Faktero pre Android (/android) ako APK. Je tam aj návod, ako\ninštaláciu mimo obchodu povoliť.\nAppka sa neaktualizuje sama . Celé rozhranie je zabalené v nej, aby sa\notvorila aj bez signálu — cenou za to je, že každá oprava znamená nový build. Keď vyjde\nnovšia verzia, appka to sama zbadá a ponúkne ju; dovtedy pokojne používate tú svoju."
     },
     {
      "nadpis": "Čo sa dá v telefóne spraviť",

@@ -13,6 +13,9 @@ export const APP_STORE_FAKTERO = "https://apps.apple.com/sk/app/faktero/id680242
 /** Kniha jázd v App Store — samostatná appka len na jazdy. */
 export const APP_STORE_KNIHA_JAZD = "https://apps.apple.com/sk/app/kniha-jazd-faktero/id6806653930";
 
+/** Kniha jázd v Google Play — zverejnená 23. 11. 2026 (Faktero zatiaľ ako APK). */
+export const GOOGLE_PLAY_KNIHA_JAZD = "https://play.google.com/store/apps/details?id=sk.faktero.knihajazd";
+
 /**
  * Oficiálny odznak „Download on the App Store“ od Apple. Vlastné napodobeniny
  * pravidlá Apple nedovoľujú; slovenská verzia odznaku sa zo servera stiahnuť

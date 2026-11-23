@@ -70,6 +70,7 @@ import {
 import { track } from "@/lib/faktero/track";
 import {
   ANDROID_STRANKA,
+  GOOGLE_PLAY_KNIHA_JAZD,
   APP_STORE_FAKTERO,
   APP_STORE_KNIHA_JAZD,
   APP_STORE_ODZNAK,
@@ -1636,6 +1637,15 @@ function MobileAppSection() {
                   alt={t("Download on the App Store")}
                   className="h-10 w-auto"
                 />
+              </a>
+              <a
+                href={GOOGLE_PLAY_KNIHA_JAZD}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("Stiahnuť Knihu jázd v Google Play")}
+                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-semibold transition hover:border-primary/40 hover:text-primary"
+              >
+                <Smartphone className="h-4 w-4" /> {t("Google Play")}
               </a>
             </div>
           </div>

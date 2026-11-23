@@ -4,6 +4,7 @@ import { MarketingShell } from "@/components/faktero/MarketingShell";
 import {
   ANDROID_FAKTERO,
   ANDROID_KNIHA_JAZD,
+  GOOGLE_PLAY_KNIHA_JAZD,
   ANDROID_PODPIS_SHA256,
   type AndroidApk,
 } from "@/lib/faktero/obchody";
@@ -38,7 +39,18 @@ export const Route = createFileRoute("/android")({
   component: AndroidPage,
 });
 
-function Appka({ a, ikona, popis }: { a: AndroidApk; ikona: string; popis: string }) {
+function Appka({
+  a,
+  ikona,
+  popis,
+  googlePlay,
+}: {
+  a: AndroidApk;
+  ikona: string;
+  popis: string;
+  /** Appka už je v Google Play — hlavné tlačidlo vedie do obchodu, APK ostáva ako záloha. */
+  googlePlay?: string;
+}) {
   const { t } = useT();
   return (
     <div className="flex flex-col rounded-2xl border border-border bg-card p-6">
@@ -52,13 +64,33 @@ function Appka({ a, ikona, popis }: { a: AndroidApk; ikona: string; popis: strin
         </div>
       </div>
       <p className="mt-4 flex-1 text-sm text-muted-foreground">{popis}</p>
-      <a
-        href={a.url}
-        download={a.subor}
-        className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-      >
-        <Download className="h-4 w-4" /> {t("Stiahnuť {nazov} (APK)", { nazov: t(a.nazov) })}
-      </a>
+      {googlePlay ? (
+        <>
+          <a
+            href={googlePlay}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            <Download className="h-4 w-4" /> {t("Stiahnuť z Google Play")}
+          </a>
+          <a
+            href={a.url}
+            download={a.subor}
+            className="mt-2 text-center text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            {t("alebo stiahnuť APK priamo")}
+          </a>
+        </>
+      ) : (
+        <a
+          href={a.url}
+          download={a.subor}
+          className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+        >
+          <Download className="h-4 w-4" /> {t("Stiahnuť {nazov} (APK)", { nazov: t(a.nazov) })}
+        </a>
+      )}
       <div className="mt-3 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">
         {t("SHA-256:")} {a.sha256}
       </div>
@@ -79,7 +111,7 @@ function AndroidPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           {t(
-            "Kým appky nie sú v Google Play, nainštalujete ich priamo odtiaľto. Je to tá istá appka, ktorá do obchodu pôjde — prihlásite sa rovnakým účtom ako na webe.",
+            "Kniha jázd je už v Google Play. Faktero zatiaľ nainštalujete priamo odtiaľto — je to tá istá appka, ktorá do obchodu pôjde. Prihlásite sa rovnakým účtom ako na webe.",
           )}
         </p>
 
@@ -93,6 +125,7 @@ function AndroidPage() {
           />
           <Appka
             a={ANDROID_KNIHA_JAZD}
+            googlePlay={GOOGLE_PLAY_KNIHA_JAZD}
             ikona="/kniha-jazd-icon-168.png"
             popis={t(
               "Samostatná appka len na jazdy — pre vodičov, ktorí s faktúrami nerobia. Jazdu rozpozná a zapíše sama.",
