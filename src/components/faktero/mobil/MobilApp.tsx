@@ -1159,7 +1159,7 @@ function ObsahApky() {
         onBack={() => setKrok(DOMOV)}
       >
         <div className="space-y-4">
-          <StavPushu />
+          {!JE_KNIHA_JAZD && <StavPushu />}
           {firma && <CislaDopredu firma={firma} />}
           <button
             onClick={() => setDiagnostika(true)}

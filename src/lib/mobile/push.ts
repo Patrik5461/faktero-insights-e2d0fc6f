@@ -4,6 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { citaj, zapis, zmaz } from "./trvale-ulozisko";
+import { JE_KNIHA_JAZD } from "./apka";
 
 /**
  * Token, ktorý dorazil skôr, než bol používateľ prihlásený.
@@ -42,6 +43,7 @@ async function zapisToken(token: string, platform: string): Promise<boolean> {
  * pri štarte aj hneď po prihlásení.
  */
 export async function dorucCakajuciPushToken(): Promise<void> {
+  if (JE_KNIHA_JAZD) return;
   try {
     const raw = citaj(CAKAJUCI);
     if (!raw) return;
@@ -70,6 +72,14 @@ export async function registerPushNotifications({
   token?: string;
   error?: string;
 }> {
+  /*
+    Kniha jázd sa do push neregistruje (Patrik 23. 11.). Token je jeden na
+    používateľa (profiles.push_token) — keď ho zapísala Kniha jázd, prepísala
+    token appky Faktero a upozornenia „Faktúra zaplatená“ či eFaktúry chodili
+    do Knihy jázd namiesto Faktera. Kniha jázd žiadne serverové upozornenia
+    nepotrebuje (rozpoznanie jazdy je lokálne).
+  */
+  if (JE_KNIHA_JAZD) return { ok: false, error: "Kniha jázd upozornenia nepoužíva" };
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return { ok: false, error: "not native" };
