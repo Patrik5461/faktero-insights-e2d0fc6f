@@ -112,11 +112,21 @@ const Zmluva_ = z
           number: z.number().int().min(1).max(600),
           due_date: z.string().regex(DATUM),
           amount: z.number().min(0).max(10_000_000),
-          principal_part: z.number().min(0).max(10_000_000),
-          interest_part: z.number().min(0).max(10_000_000),
-          vat_amount: z.number().min(0).max(10_000_000),
-          insurance_part: z.number().min(0).max(10_000_000).optional(),
-          remaining_principal: z.number().min(0).max(100_000_000),
+          /*
+           * Časti splátky môžu byť záporné o pár centov — banka nimi dorovnáva
+           * zaokrúhlenie (úrok −0,01 v poslednej splátke). Zostatok istiny pod
+           * nulou je len zvyšok zaokrúhlenia, uloží sa ako 0 (24. 11., bager
+           * expres: −0,01 na 72. splátke zhodilo uloženie kalendára).
+           */
+          principal_part: z.number().min(-100).max(10_000_000),
+          interest_part: z.number().min(-100).max(10_000_000),
+          vat_amount: z.number().min(-100).max(10_000_000),
+          insurance_part: z.number().min(-100).max(10_000_000).optional(),
+          remaining_principal: z
+            .number()
+            .min(-1)
+            .max(100_000_000)
+            .transform((v) => (v < 0 ? 0 : v)),
         }),
       )
       .max(600)

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  cislo,
   jePouzitelna,
   normalizujOdpoved,
   normalizujSplatky,
@@ -499,5 +500,30 @@ describe("kontokorent", () => {
     expect(z.interest_rate).toBe(7.5);
     expect(z.account_iban).toBe("SK3112000000198742637541");
     expect(z.vyhrady).toEqual([]);
+  });
+});
+
+describe("centové a záporné sumy v kalendári (24. 11.)", () => {
+  it("zostatok −0,01 po poslednej splátke je nula", () => {
+    const r = normalizujSplatky([
+      { due_date: "2031-11-15", amount: "627,07", principal_part: "626,40", interest_part: "0,68", remaining_principal: "-0,01" },
+    ]);
+    expect(r[0].remaining_principal).toBe(0);
+  });
+  it("záporný úrok o cent ostane záporný", () => {
+    const r = normalizujSplatky([
+      { due_date: "2031-11-15", amount: 627.07, principal_part: 627.08, interest_part: "-0,01" },
+    ]);
+    expect(r[0].interest_part).toBe(-0.01);
+  });
+  it("rôzne zápisy čísel", () => {
+    expect(cislo("−0,01")).toBe(-0.01);
+    expect(cislo("0,01-")).toBe(-0.01);
+    expect(cislo("(0,01)")).toBe(-0.01);
+    expect(cislo("1 234,56 €")).toBe(1234.56);
+    expect(cislo("1.234,56")).toBe(1234.56);
+    expect(cislo("1,234.56")).toBe(1234.56);
+    expect(cislo("-0.01")).toBe(-0.01);
+    expect(cislo("abc")).toBeNull();
   });
 });

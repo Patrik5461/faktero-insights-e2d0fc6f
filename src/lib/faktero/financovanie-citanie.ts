@@ -79,10 +79,46 @@ const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 const VYHRADA_BEZ_SPLATNOSTI =
   "Splatnosť prvej splátky sa v dokumente nenašla — doplňte ju, inak sa kalendár dopočíta od zlého dátumu.";
 
-function cislo(v: unknown): number | null {
+/**
+ * Číslo z odpovede modelu. Banky píšu sumy rôzne a model ich občas prepíše
+ * doslova: „1 234,56 €“, „1.234,56“, „−0,01“ (typografické mínus), „0,01-“
+ * (mínus za číslom), „(0,01)“ (účtovné záporné). Všetko to je číslo.
+ */
+export function cislo(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
-  const n = typeof v === "number" ? v : Number(String(v).replace(/\s/g, "").replace(",", "."));
-  return Number.isFinite(n) ? n : null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  let t = String(v)
+    .replace(/[\s\u00a0\u202f]/g, "")
+    .replace(/[\u2212\u2013\u2014]/g, "-")
+    .replace(/(EUR|CZK|Kč|€|\$)/gi, "");
+  let zaporne = false;
+  if (/^\(.*\)$/.test(t)) {
+    zaporne = true;
+    t = t.slice(1, -1);
+  }
+  if (/^[^-].*-$/.test(t)) {
+    zaporne = true;
+    t = t.slice(0, -1);
+  }
+  // Tisícky aj desatinná čiarka: posledný oddeľovač je desatinný.
+  const posledna = Math.max(t.lastIndexOf(","), t.lastIndexOf("."));
+  if (posledna >= 0) {
+    const cela = t.slice(0, posledna).replace(/[.,]/g, "");
+    t = `${cela}.${t.slice(posledna + 1)}`;
+  }
+  const n = Number(t);
+  if (!Number.isFinite(n)) return null;
+  return zaporne ? -Math.abs(n) : n;
+}
+
+/**
+ * Zostatok istiny po poslednej splátke býva u banky −0,01 alebo 0,01 —
+ * zvyšok zaokrúhlenia. Pár centov okolo nuly je nula; záporný zostatok
+ * nedáva zmysel a uloženie by ho odmietlo.
+ */
+function zostatok(n: number): number {
+  const c = centy(n);
+  return Math.abs(c) <= 0.05 ? 0 : c;
 }
 
 function datum(v: unknown): string | null {
@@ -130,7 +166,7 @@ export function normalizujSplatky(surove: unknown): PrecitanaSplatka[] {
       interest_part: centy(r.interest_part),
       vat_amount: centy(r.vat_amount),
       insurance_part: centy(r.insurance_part),
-      remaining_principal: centy(r.remaining_principal),
+      remaining_principal: zostatok(r.remaining_principal),
     }));
 }
 
