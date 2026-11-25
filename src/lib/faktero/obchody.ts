@@ -26,6 +26,13 @@ export const GOOGLE_PLAY_KNIHA_JAZD = "https://play.google.com/store/apps/detail
  */
 export const APP_STORE_ODZNAK = "/app-store-odznak.svg";
 
+/**
+ * Oficiálny odznak „Get it on Google Play“ (play.google.com/intl/en_us/badges),
+ * s orezaným priehľadným okrajom, aby sedel vedľa odznaku Apple v rovnakej výške.
+ * Upravovať ho (farby, text) pravidlá Google nedovoľujú.
+ */
+export const GOOGLE_PLAY_ODZNAK = "/google-play-odznak.png";
+
 /*
   Android sa zatiaľ sťahuje z webu ako APK — v Google Play appka ešte nie je.
   Súbory sú vo verejnom kbelíku `android` v Supabase, s verziou v názve, aby

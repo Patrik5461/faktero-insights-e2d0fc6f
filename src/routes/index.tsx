@@ -70,6 +70,7 @@ import {
 import { track } from "@/lib/faktero/track";
 import {
   GOOGLE_PLAY_FAKTERO,
+  GOOGLE_PLAY_ODZNAK,
   GOOGLE_PLAY_KNIHA_JAZD,
   APP_STORE_FAKTERO,
   APP_STORE_KNIHA_JAZD,
@@ -1566,7 +1567,7 @@ function MobileAppSection() {
                   jazdu aj doklad, ale rozhranie sa načítava zo živého webu — pri
                   studenom štarte bez pripojenia sa neotvorí. Sľubujme len to, čo platí. */}
               {t(
-                "Appka pre iPhone aj Android so skenovaním dokladov a GPS knihou jázd — pre iPhone z App Store, pre Android zatiaľ priamo z webu. Jazdu aj odfotený doklad zapíše aj bez signálu a odošle ich, len čo ste online.",
+                "Appka pre iPhone aj Android so skenovaním dokladov a GPS knihou jázd — v App Store aj v Google Play. Jazdu aj odfotený doklad zapíše aj bez signálu a odošle ich, len čo ste online.",
               )}
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -1580,37 +1581,56 @@ function MobileAppSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              {/* Oficiálny odznak Apple — na svetlom aj tmavom pozadí ho drží jeho sivý rámik. */}
-              <a
-                href={APP_STORE_FAKTERO}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t("Stiahnuť Faktero v App Store")}
-                className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <img
-                  src={APP_STORE_ODZNAK}
-                  alt={t("Download on the App Store")}
-                  className="h-12 w-auto"
-                />
-              </a>
-              <a
-                href={GOOGLE_PLAY_FAKTERO}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t("Stiahnuť Faktero v Google Play")}
-                className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold transition hover:border-primary/40 hover:text-primary"
-              >
-                <Smartphone className="h-4 w-4" /> {t("Google Play")}
-              </a>
+            {/* Faktero a Kniha jázd rovnakou kartou: ikona, popis, oficiálne odznaky obchodov. */}
+            <div className="mt-8 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
+              <img
+                src="/faktero-icon-168.png"
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-[22%]"
+              />
+              <div className="min-w-0 flex-1 basis-48">
+                <div className="text-sm font-semibold">{t("Faktero")}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {t(
+                    "Faktúry, skenovanie bločkov a dokladov aj bez signálu, banka a automatická kniha jázd.",
+                  )}
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <a
+                  href={APP_STORE_FAKTERO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("Stiahnuť Faktero v App Store")}
+                  className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <img
+                    src={APP_STORE_ODZNAK}
+                    alt={t("Download on the App Store")}
+                    className="h-10 w-auto"
+                  />
+                </a>
+                <a
+                  href={GOOGLE_PLAY_FAKTERO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("Stiahnuť Faktero v Google Play")}
+                  className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <img
+                    src={GOOGLE_PLAY_ODZNAK}
+                    alt={t("Get it on Google Play")}
+                    className="h-10 w-auto"
+                  />
+                </a>
+              </div>
             </div>
             {/*
               Samostatná appka Kniha jázd — pre toho, kto potrebuje len jazdy,
               napríklad vodiča vo firme, ktorý s faktúrami nerobí. V obchode je
               zvlášť, s vlastnou ikonou, tak aj tu.
             */}
-            <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
+            <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
               <img
                 src="/kniha-jazd-icon-168.png"
                 alt=""
@@ -1623,28 +1643,34 @@ function MobileAppSection() {
                   {t("pre vodičov — jazdy rozpozná a zapíše sama, aj s telefónom vo vrecku.")}
                 </div>
               </div>
-              <a
-                href={APP_STORE_KNIHA_JAZD}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t("Stiahnuť Knihu jázd v App Store")}
-                className="inline-block shrink-0 rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <img
-                  src={APP_STORE_ODZNAK}
-                  alt={t("Download on the App Store")}
-                  className="h-10 w-auto"
-                />
-              </a>
-              <a
-                href={GOOGLE_PLAY_KNIHA_JAZD}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t("Stiahnuť Knihu jázd v Google Play")}
-                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-semibold transition hover:border-primary/40 hover:text-primary"
-              >
-                <Smartphone className="h-4 w-4" /> {t("Google Play")}
-              </a>
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <a
+                  href={APP_STORE_KNIHA_JAZD}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("Stiahnuť Knihu jázd v App Store")}
+                  className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <img
+                    src={APP_STORE_ODZNAK}
+                    alt={t("Download on the App Store")}
+                    className="h-10 w-auto"
+                  />
+                </a>
+                <a
+                  href={GOOGLE_PLAY_KNIHA_JAZD}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("Stiahnuť Knihu jázd v Google Play")}
+                  className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <img
+                    src={GOOGLE_PLAY_ODZNAK}
+                    alt={t("Get it on Google Play")}
+                    className="h-10 w-auto"
+                  />
+                </a>
+              </div>
             </div>
           </div>
           <div className="relative mx-auto w-full max-w-sm">

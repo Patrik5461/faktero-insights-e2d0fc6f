@@ -5,6 +5,7 @@ import {
   ANDROID_FAKTERO,
   ANDROID_KNIHA_JAZD,
   GOOGLE_PLAY_FAKTERO,
+  GOOGLE_PLAY_ODZNAK,
   GOOGLE_PLAY_KNIHA_JAZD,
   ANDROID_PODPIS_SHA256,
   type AndroidApk,
@@ -71,14 +72,19 @@ function Appka({
             href={googlePlay}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+            aria-label={t("Stiahnuť {nazov} v Google Play", { nazov: t(a.nazov) })}
+            className="mt-5 inline-block self-start rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <Download className="h-4 w-4" /> {t("Stiahnuť z Google Play")}
+            <img
+              src={GOOGLE_PLAY_ODZNAK}
+              alt={t("Get it on Google Play")}
+              className="h-12 w-auto"
+            />
           </a>
           <a
             href={a.url}
             download={a.subor}
-            className="mt-2 text-center text-xs text-muted-foreground underline hover:text-foreground"
+            className="mt-2 self-start text-xs text-muted-foreground underline hover:text-foreground"
           >
             {t("alebo stiahnuť APK priamo")}
           </a>
