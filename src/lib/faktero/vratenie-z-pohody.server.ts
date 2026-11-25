@@ -13,6 +13,7 @@
 */
 import { overPravoVratenia } from "./over-pristup";
 import { zvysVerziuPohody } from "./pohoda-odoslane-xml.server";
+import { poDavkach } from "./strankovanie";
 
 type Kontext = { supabase: any; userId: string };
 export type DruhVratenia = "prijata" | "doklad" | "pokladna";
@@ -30,13 +31,14 @@ export async function vratDokladyZPohody(
   await overPravoVratenia(ctx, data.company_id, data.druh === "pokladna" ? "pokladna" : "doklady");
   if (data.druh === "pokladna") {
     // Pokladničný doklad: odovzdanie sa zruší, ďalšia dávka ho pošle pod novou verziou.
-    const { data: r, error } = await supabase
-      .from("cash_entries")
-      .update({ exported_at: null, export_job_id: null, pohoda_cislo: null })
-      .eq("company_id", data.company_id)
-      .in("id", data.ids)
-      .select("id");
-    if (error) throw new Error(error.message);
+    const r = await poDavkach<any>(data.ids, (kus) =>
+      supabase
+        .from("cash_entries")
+        .update({ exported_at: null, export_job_id: null, pohoda_cislo: null })
+        .eq("company_id", data.company_id)
+        .in("id", kus)
+        .select("id"),
+    );
     await zvysVerziuPohody(supabase, "cash_entries", (r ?? []).map((x: any) => x.id));
     return { vratenych: (r ?? []).length };
   }
@@ -44,39 +46,43 @@ export async function vratDokladyZPohody(
     // Späť na „prijatú": zaúčtovanie sa zruší, aby ho človek opravil a
     // zaúčtoval znova — inak by nesprávne kódy odišli rovno ďalšou dávkou.
     // `export_job_id` ako pri bločku — odovzdaný súbor už k dokladu nepatrí.
-    const { data: r, error } = await supabase
-      .from("purchase_invoices")
-      .update({
-        exported_at: null,
-        export_job_id: null,
-        pohoda_cislo: null,
-        zauctovane_at: null,
-        zauctoval: null,
-      })
-      .eq("company_id", data.company_id)
-      .in("id", data.ids)
-      .select("id, status");
-    if (error) throw new Error(error.message);
+    const r = await poDavkach<any>(data.ids, (kus) =>
+      supabase
+        .from("purchase_invoices")
+        .update({
+          exported_at: null,
+          export_job_id: null,
+          pohoda_cislo: null,
+          zauctovane_at: null,
+          zauctoval: null,
+        })
+        .eq("company_id", data.company_id)
+        .in("id", kus)
+        .select("id, status"),
+    );
     const zauct = (r ?? []).filter((x: any) => x.status === "booked").map((x: any) => x.id);
     if (zauct.length) {
-      const { error: chybaStavu } = await supabase
-        .from("purchase_invoices")
-        .update({ status: "received" })
-        .eq("company_id", data.company_id)
-        .in("id", zauct);
-      if (chybaStavu) throw new Error(chybaStavu.message);
+      await poDavkach<any>(zauct, (kus) =>
+        supabase
+          .from("purchase_invoices")
+          .update({ status: "received" })
+          .eq("company_id", data.company_id)
+          .in("id", kus)
+          .select("id"),
+      );
     }
     await zvysVerziuPohody(supabase, "purchase_invoices", (r ?? []).map((x: any) => x.id));
     return { vratenych: (r ?? []).length };
   }
   // Doklad sa vráti medzi nespracované — po oprave ho človek spracuje znova.
-  const { data: r, error } = await supabase
-    .from("expense_documents")
-    .update({ exported_at: null, export_job_id: null, pohoda_cislo: null, status: "new" })
-    .eq("company_id", data.company_id)
-    .in("id", data.ids)
-    .select("id");
-  if (error) throw new Error(error.message);
+  const r = await poDavkach<any>(data.ids, (kus) =>
+    supabase
+      .from("expense_documents")
+      .update({ exported_at: null, export_job_id: null, pohoda_cislo: null, status: "new" })
+      .eq("company_id", data.company_id)
+      .in("id", kus)
+      .select("id"),
+  );
   await zvysVerziuPohody(supabase, "expense_documents", (r ?? []).map((x: any) => x.id));
   return { vratenych: (r ?? []).length };
 }

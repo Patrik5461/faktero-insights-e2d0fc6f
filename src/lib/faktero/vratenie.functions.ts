@@ -184,16 +184,20 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const [{ data: firma }, { data: riadky, error }] = await Promise.all([
+    // Po dávkach id — 1 200 vybraných faktúr urobilo 48 kB URL a databáza
+    // odpovedala len „Bad Request“ (PALIERA 24. 11.).
+    const { poDavkach } = await import("./strankovanie");
+    const [{ data: firma }, riadky] = await Promise.all([
       supabase.from("companies").select("*").eq("id", data.company_id).single(),
-      supabase
-        .from("purchase_invoices")
-        .select("*")
-        .eq("company_id", data.company_id)
-        .in("id", data.ids)
-        .is("deleted_at", null),
+      poDavkach<any>(data.ids, (kus) =>
+        supabase
+          .from("purchase_invoices")
+          .select("*")
+          .eq("company_id", data.company_id)
+          .in("id", kus)
+          .is("deleted_at", null),
+      ),
     ]);
-    if (error) throw new Error(error.message);
     const { zapocitatelna } = await import("./samofakturacia");
     const { prijataAkoDoklad } = await import("./prijate-do-pohody");
     const preskocene: string[] = [];
@@ -303,13 +307,18 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
           xml: subory[i].xml,
           pocet: r.doklady.length,
         });
-        await supabase
-          .from("purchase_invoices")
-          .update({ exported_at: new Date().toISOString(), export_job_id: jobId })
-          .in(
-            "id",
-            r.doklady.map((p: any) => p.id),
-          );
+        // Po dávkach a s kontrolou chyby — neoznačená faktúra by odišla aj nabudúce
+        // a v Pohode by bola dvakrát.
+        const oznacene = new Date().toISOString();
+        await poDavkach<any>(
+          r.doklady.map((p: any) => p.id),
+          (kus) =>
+            supabase
+              .from("purchase_invoices")
+              .update({ exported_at: oznacene, export_job_id: jobId })
+              .in("id", kus)
+              .select("id"),
+        );
       }
     }
     const den = dnesBratislava();
