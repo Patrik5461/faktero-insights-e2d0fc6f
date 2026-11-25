@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { PoleHesla } from "@/components/faktero/PoleHesla";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +34,10 @@ export const Route = createFileRoute("/prihlasenie")({
   head: ({ match }) => ({
     meta: [
       { title: preloz(match.context.jazyk ?? "sk", "Prihlásenie — Faktero") },
-      { name: "description", content: preloz(match.context.jazyk ?? "sk", "Prihláste sa do Faktera.") },
+      {
+        name: "description",
+        content: preloz(match.context.jazyk ?? "sk", "Prihláste sa do Faktera."),
+      },
     ],
   }),
   component: LoginPage,
@@ -153,7 +157,11 @@ function LoginPage() {
   }
 
   return (
-    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+    <main
+      id="obsah"
+      tabIndex={-1}
+      className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none"
+    >
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
@@ -165,9 +173,7 @@ function LoginPage() {
 
         {/* Product picker */}
         <div className="mt-5">
-          <p className="mb-2 text-sm font-semibold text-foreground">
-            {t("Prihlásiť sa do:")}
-          </p>
+          <p className="mb-2 text-sm font-semibold text-foreground">{t("Prihlásiť sa do:")}</p>
           <div className="grid grid-cols-2 gap-2">
             <ProductButton
               icon={<FileText className="h-4 w-4" />}
@@ -206,13 +212,15 @@ function LoginPage() {
           </label>
           <label className="block">
             <span className="text-sm font-semibold">{t("Heslo")}</span>
-            <input
-              type="password"
+            <PoleHesla
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              obal="mt-1"
+              popisZobraz={t("Zobraziť heslo")}
+              popisSkry={t("Skryť heslo")}
             />
           </label>
           <div className="text-right">
@@ -225,7 +233,9 @@ function LoginPage() {
             </Link>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t("Prihlasovali ste sa doteraz cez Google? Táto možnosť sa zrušila — cez „Zabudli ste heslo?“ si na svoj e-mail nastavíte heslo a účet aj dáta ostanú.")}
+            {t(
+              "Prihlasovali ste sa doteraz cez Google? Táto možnosť sa zrušila — cez „Zabudli ste heslo?“ si na svoj e-mail nastavíte heslo a účet aj dáta ostanú.",
+            )}
           </p>
           <button
             type="submit"

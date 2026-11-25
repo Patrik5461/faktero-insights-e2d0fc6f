@@ -648,6 +648,8 @@ export const sk = {
   "app.ucet": "Účet",
   "app.email": "E-mail",
   "app.heslo": "Heslo",
+  "app.zobrazHeslo": "Zobraziť heslo",
+  "app.skryHeslo": "Skryť heslo",
   "app.vyberteFirmu": "Vyberte firmu",
   "app.testovacia": "TESTOVACIA",
   "app.doVybranejFirmy": "Doklady sa uložia do vybranej firmy",

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PoleHesla } from "@/components/faktero/PoleHesla";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +37,8 @@ function NoveHesloPage() {
     let zive = true;
     // Relácia z `#access_token` sa nastaví až po chvíli — počkáme na ňu.
     const { data: odber } = supabase.auth.onAuthStateChange((udalost, relacia) => {
-      if (zive && relacia && (udalost === "PASSWORD_RECOVERY" || udalost === "SIGNED_IN")) setStav("formular");
+      if (zive && relacia && (udalost === "PASSWORD_RECOVERY" || udalost === "SIGNED_IN"))
+        setStav("formular");
     });
     void (async () => {
       const { data } = await supabase.auth.getSession();
@@ -72,7 +74,9 @@ function NoveHesloPage() {
         </Link>
         <h1 className="text-2xl font-bold tracking-tight">{t("Nové heslo")}</h1>
 
-        {stav === "overujem" && <p className="mt-3 text-sm text-muted-foreground">{t("Overujem odkaz…")}</p>}
+        {stav === "overujem" && (
+          <p className="mt-3 text-sm text-muted-foreground">{t("Overujem odkaz…")}</p>
+        )}
 
         {stav === "bez-relacie" && (
           <>
@@ -92,29 +96,33 @@ function NoveHesloPage() {
           <form onSubmit={uloz} className="mt-5 space-y-3">
             <label className="block">
               <span className="text-sm font-semibold">{t("Nové heslo")}</span>
-              <input
-                type="password"
+              <PoleHesla
                 autoComplete="new-password"
                 required
                 minLength={8}
                 value={heslo}
                 onChange={(e) => setHeslo(e.target.value)}
                 className={pole}
+                popisZobraz={t("Zobraziť heslo")}
+                popisSkry={t("Skryť heslo")}
               />
             </label>
             <label className="block">
               <span className="text-sm font-semibold">{t("Nové heslo znova")}</span>
-              <input
-                type="password"
+              <PoleHesla
                 autoComplete="new-password"
                 required
                 minLength={8}
                 value={znova}
                 onChange={(e) => setZnova(e.target.value)}
                 className={pole}
+                popisZobraz={t("Zobraziť heslo")}
+                popisSkry={t("Skryť heslo")}
               />
             </label>
-            <p className="text-xs text-muted-foreground">{t("Aspoň 8 znakov. Heslo, ktoré uniklo z iných služieb, neprejde.")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("Aspoň 8 znakov. Heslo, ktoré uniklo z iných služieb, neprejde.")}
+            </p>
             <button
               type="submit"
               disabled={ukladam}

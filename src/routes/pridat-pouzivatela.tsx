@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { PoleHesla } from "@/components/faktero/PoleHesla";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { Logo } from "@/components/faktero/Logo";
 import { useEffect, useRef, useState } from "react";
@@ -115,7 +116,9 @@ function AcceptInvitationPage() {
             throw new Error(
               p.nepotvrdeny
                 ? t(p.sprava)
-                : t("S touto adresou už účet existuje. Zadajte jeho heslo, alebo si ho obnovte cez „Zabudnuté heslo“."),
+                : t(
+                    "S touto adresou už účet existuje. Zadajte jeho heslo, alebo si ho obnovte cez „Zabudnuté heslo“.",
+                  ),
             );
           }
         } else {
@@ -126,7 +129,11 @@ function AcceptInvitationPage() {
             prijme sama.
           */
           if (!reg.emailOdoslany) {
-            toast.error(t("Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Skúste to o chvíľu znova."));
+            toast.error(
+              t(
+                "Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Skúste to o chvíľu znova.",
+              ),
+            );
           }
           setCakaNaPotvrdenie(true);
           return;
@@ -159,7 +166,9 @@ function AcceptInvitationPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t("Potvrďte e-mail")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("Na adresu")} <strong className="text-foreground">{inv?.email}</strong>{" "}
-          {t("sme poslali odkaz na potvrdenie účtu. Kliknite naň — vrátite sa sem a pripojíte sa k firme")}{" "}
+          {t(
+            "sme poslali odkaz na potvrdenie účtu. Kliknite naň — vrátite sa sem a pripojíte sa k firme",
+          )}{" "}
           <strong className="text-foreground">{inv?.company_name}</strong>.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -169,7 +178,9 @@ function AcceptInvitationPage() {
     );
 
   if (loading)
-    return <Obal className="text-center text-sm text-muted-foreground">{t("Načítavam pozvánku…")}</Obal>;
+    return (
+      <Obal className="text-center text-sm text-muted-foreground">{t("Načítavam pozvánku…")}</Obal>
+    );
 
   if (!token || !inv || !inv.valid) {
     return (
@@ -185,7 +196,9 @@ function AcceptInvitationPage() {
                 : t("Odkaz je neplatný.")}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("Ak už účet máte, prihláste sa. O novú pozvánku požiadajte toho, kto vás do firmy pozval.")}
+          {t(
+            "Ak už účet máte, prihláste sa. O novú pozvánku požiadajte toho, kto vás do firmy pozval.",
+          )}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
@@ -230,13 +243,15 @@ function AcceptInvitationPage() {
         {!alreadySignedIn && (
           <label className="block">
             <span className="text-sm font-semibold">{t("Zvoľte heslo (min. 8 znakov)")}</span>
-            <input
-              type="password"
+            <PoleHesla
               value={pwd}
               onChange={(e) => setPwd(e.target.value)}
               required
               minLength={8}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              obal="mt-1"
+              popisZobraz={t("Zobraziť heslo")}
+              popisSkry={t("Skryť heslo")}
             />
           </label>
         )}

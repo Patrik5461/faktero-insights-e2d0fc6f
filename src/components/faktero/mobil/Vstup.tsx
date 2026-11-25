@@ -6,6 +6,7 @@
  * aby si ich druhá appka nemusela ťahať aj s celou fakturáciou — správanie
  * ostáva to isté, len bývajú inde.
  */
+import { PoleHesla } from "@/components/faktero/PoleHesla";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Building2, Fingerprint, FlaskConical, Lock, LogOut, Plus, QrCode } from "lucide-react";
@@ -142,14 +143,15 @@ export function Prihlasenie({
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-app-sm border border-input bg-app-pozadie px-4 py-3 text-base"
           />
-          <input
-            type="password"
+          <PoleHesla
             autoComplete="current-password"
             placeholder={t("app.heslo")}
             value={heslo}
             onChange={(e) => setHeslo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && prihlas()}
             className="w-full rounded-app-sm border border-input bg-app-pozadie px-4 py-3 text-base"
+            popisZobraz={t("app.zobrazHeslo")}
+            popisSkry={t("app.skryHeslo")}
           />
           <button
             onClick={prihlas}
@@ -349,7 +351,13 @@ export function VyberFirmy({
  * Bez kódu by databáza appke nevydala nič a tvárila by sa, že účet nemá firmu.
  * Kód sa pýta raz — overená relácia vydrží v telefóne až do odhlásenia.
  */
-export function OverenieKodu({ onHotovo, onOdhlasit }: { onHotovo: () => void; onOdhlasit: () => void }) {
+export function OverenieKodu({
+  onHotovo,
+  onOdhlasit,
+}: {
+  onHotovo: () => void;
+  onOdhlasit: () => void;
+}) {
   const { t } = usePreklad();
   const [kod, setKod] = useState("");
   const [busy, setBusy] = useState(false);
@@ -391,7 +399,10 @@ export function OverenieKodu({ onHotovo, onOdhlasit }: { onHotovo: () => void; o
         >
           {busy ? t("app.overujem") : t("app.overit")}
         </button>
-        <button onClick={onOdhlasit} className="mt-3 w-full py-2 text-center text-sm text-app-text-2">
+        <button
+          onClick={onOdhlasit}
+          className="mt-3 w-full py-2 text-center text-sm text-app-text-2"
+        >
           {t("app.inyUcet")}
         </button>
       </div>

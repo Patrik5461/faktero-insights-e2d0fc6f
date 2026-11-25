@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PoleHesla } from "@/components/faktero/PoleHesla";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useOperacia } from "@/lib/mobile/server-most";
@@ -103,7 +104,8 @@ export function RegistraciaUctu({
       if (!v?.ok) {
         // Hláška servera je po slovensky (ako hlášky prihlasovania); doplnia sa premenné.
         let sprava: string = v?.sprava ?? t("reg.registraciaZlyhala");
-        for (const [k, x] of Object.entries(v?.parametre ?? {})) sprava = sprava.split(`{${k}}`).join(String(x));
+        for (const [k, x] of Object.entries(v?.parametre ?? {}))
+          sprava = sprava.split(`{${k}}`).join(String(x));
         throw new Error(sprava);
       }
       if (!v.emailOdoslany) toast.error(t("reg.emailNeodisiel"));
@@ -136,11 +138,7 @@ export function RegistraciaUctu({
       if (error) {
         if (!ticho) {
           const p = prelozAuthChybu(error.message);
-          toast.error(
-            p.nepotvrdeny
-              ? t("reg.nepotvrdene")
-              : p.sprava,
-          );
+          toast.error(p.nepotvrdeny ? t("reg.nepotvrdene") : p.sprava);
         }
         return false;
       }
@@ -220,13 +218,11 @@ export function RegistraciaUctu({
           <p className="mt-2 text-sm text-app-text-2">
             {t("reg.potvrdenieText", { email: email.trim() })}
           </p>
-          <p className="mt-2 text-sm text-app-text-2">
-            {t("reg.spamPriecinok")}
-          </p>
+          <p className="mt-2 text-sm text-app-text-2">{t("reg.spamPriecinok")}</p>
           <button
             onClick={() => skusPrihlasit(false)}
             disabled={overujem}
-            
+
             className="mt-6 w-full rounded-app bg-app-zelena-plocha px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
           >
             {overujem ? t("reg.overujem") : t("reg.uzSomPotvrdil")}
@@ -282,14 +278,15 @@ export function RegistraciaUctu({
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
           />
-          <input
-            type="password"
+          <PoleHesla
             autoComplete="new-password"
             placeholder={t("reg.heslo")}
             value={heslo}
             onChange={(e) => setHeslo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && registruj()}
             className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
+            popisZobraz={t("app.zobrazHeslo")}
+            popisSkry={t("app.skryHeslo")}
           />
         </div>
 
@@ -307,23 +304,23 @@ export function RegistraciaUctu({
         </div>
 
         {siteKey !== undefined && (
-        <TurnstileWidget
-          siteKey={siteKey}
-          jazyk={jazyk}
-          akcia="registracia-apka"
-          onToken={setCaptcha}
-          onStav={setStavCaptchy}
-          reset={resetCaptchy}
-          popis={t("reg.captchaPopis")}
-          chybaNacitania={t("reg.captchaChyba")}
-          className="mt-4"
-        />
+          <TurnstileWidget
+            siteKey={siteKey}
+            jazyk={jazyk}
+            akcia="registracia-apka"
+            onToken={setCaptcha}
+            onStav={setStavCaptchy}
+            reset={resetCaptchy}
+            popis={t("reg.captchaPopis")}
+            chybaNacitania={t("reg.captchaChyba")}
+            className="mt-4"
+          />
         )}
 
         <button
           onClick={registruj}
           disabled={busy}
-          
+
           className="mt-5 w-full rounded-app bg-app-zelena-plocha px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
         >
           {busy ? t("reg.vytvaram") : t("reg.vytvoritUcet")}

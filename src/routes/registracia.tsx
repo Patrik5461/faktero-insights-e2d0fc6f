@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { PoleHesla } from "@/components/faktero/PoleHesla";
 import { useWebRedizajn } from "@/lib/faktero/web-redizajn";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -149,7 +150,11 @@ function RegisterPage() {
     if (!vysledok.suhlasyZapisane) odlozSuhlasy();
     stashPlan();
     if (!vysledok.emailOdoslany) {
-      toast.error(t("Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Kliknite na „Poslať e-mail znova“."));
+      toast.error(
+        t(
+          "Účet je vytvorený, ale potvrdzovací e-mail sa nepodarilo odoslať. Kliknite na „Poslať e-mail znova“.",
+        ),
+      );
     }
     /*
      * Bez potvrdeného e-mailu Supabase reláciu nevydá — účet z registrácie
@@ -172,7 +177,11 @@ function RegisterPage() {
 
   if (cakaNaPotvrdenie) {
     return (
-      <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+      <main
+        id="obsah"
+        tabIndex={-1}
+        className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none"
+      >
         <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
           <Link to="/" className="mb-6 inline-flex items-center">
             <Logo variant="header" className="h-8" />
@@ -183,7 +192,9 @@ function RegisterPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("Potvrďte si e-mail")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {t("Účet")} <strong className="text-foreground">{email}</strong>{" "}
-            {t("je vytvorený. Poslali sme naň odkaz — otvorte ho a budete rovno v aplikácii. Bez potvrdenia sa prihlásiť nedá.")}
+            {t(
+              "je vytvorený. Poslali sme naň odkaz — otvorte ho a budete rovno v aplikácii. Bez potvrdenia sa prihlásiť nedá.",
+            )}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             {t("Ak e-mail do pár minút nepríde, pozrite si priečinok s nevyžiadanou poštou.")}
@@ -207,7 +218,11 @@ function RegisterPage() {
   }
 
   return (
-    <main id="obsah" tabIndex={-1} className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none">
+    <main
+      id="obsah"
+      tabIndex={-1}
+      className="grid min-h-screen place-items-center bg-page px-4 py-10 outline-none"
+    >
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <Link to="/" className="mb-6 inline-flex items-center">
           <Logo variant="header" className="h-8" />
@@ -228,7 +243,11 @@ function RegisterPage() {
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {(
                 [
-                  ["firma", t("Firma alebo živnostník"), t("Fakturujem a vediem doklady svojej firmy.")],
+                  [
+                    "firma",
+                    t("Firma alebo živnostník"),
+                    t("Fakturujem a vediem doklady svojej firmy."),
+                  ],
                   [
                     "uctovnik",
                     t("Účtovník alebo kancelária"),
@@ -295,14 +314,16 @@ function RegisterPage() {
           </label>
           <label className="block">
             <span className="text-sm font-semibold">{t("Heslo")}</span>
-            <input
-              type="password"
+            <PoleHesla
               autoComplete="new-password"
               minLength={8}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              obal="mt-1"
+              popisZobraz={t("Zobraziť heslo")}
+              popisSkry={t("Skryť heslo")}
             />
           </label>
           <div className="space-y-2 pt-2">
@@ -348,7 +369,9 @@ function RegisterPage() {
             onToken={setCaptcha}
             reset={resetCaptchy}
             popis={t("Overenie, že nie ste robot")}
-            chybaNacitania={t("Overenie sa nenačítalo — skontrolujte blokovanie reklám alebo obnovte stránku.")}
+            chybaNacitania={t(
+              "Overenie sa nenačítalo — skontrolujte blokovanie reklám alebo obnovte stránku.",
+            )}
             className="pt-2"
           />
           <button
