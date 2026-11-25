@@ -4,6 +4,7 @@ import { MarketingShell } from "@/components/faktero/MarketingShell";
 import {
   ANDROID_FAKTERO,
   ANDROID_KNIHA_JAZD,
+  GOOGLE_PLAY_FAKTERO,
   GOOGLE_PLAY_KNIHA_JAZD,
   ANDROID_PODPIS_SHA256,
   type AndroidApk,
@@ -22,12 +23,12 @@ export const Route = createFileRoute("/android")({
     const j = match.context.jazyk;
     return {
       meta: [
-        { title: preloz(j, "Faktero pre Android — stiahnuť APK") },
+        { title: preloz(j, "Faktero pre Android — Google Play") },
         {
           name: "description",
           content: preloz(
             j,
-            "Stiahnite si appku Faktero alebo Kniha jázd pre Android. Kým nie sú v Google Play, inštalujú sa priamo z webu.",
+            "Faktero aj Kniha jázd pre Android sú v Google Play. Pre telefóny bez Google Play je tu aj priame stiahnutie (APK).",
           ),
         },
         { property: "og:title", content: preloz(j, "Faktero pre Android") },
@@ -111,13 +112,21 @@ function AndroidPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           {t(
-            "Kniha jázd je už v Google Play. Faktero zatiaľ nainštalujete priamo odtiaľto — je to tá istá appka, ktorá do obchodu pôjde. Prihlásite sa rovnakým účtom ako na webe.",
+            "Faktero aj Kniha jázd sú v Google Play. Prihlásite sa rovnakým účtom ako na webe. Priame stiahnutie (APK) je len pre telefóny bez Google Play.",
           )}
         </p>
+
+        <div className="mt-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm dark:bg-amber-500/15">
+          <strong>{t("Máte Faktero nainštalované z tejto stránky (APK)?")}</strong>{" "}
+          {t(
+            "Aktualizácie z Google Play mu neprídu — appka z obchodu je podpísaná iným kľúčom. Počkajte, kým appka odošle všetky doklady (nič nečaká vo fronte), odinštalujte ju a nainštalujte Faktero z Google Play. Údaje sú na serveri, len sa znova prihlásite.",
+          )}
+        </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <Appka
             a={ANDROID_FAKTERO}
+            googlePlay={GOOGLE_PLAY_FAKTERO}
             ikona="/faktero-icon-168.png"
             popis={t(
               "Faktúry, skenovanie bločkov a dokladov aj bez signálu, banka a automatická kniha jázd.",
@@ -134,7 +143,7 @@ function AndroidPage() {
         </div>
 
         <div className="mt-10 rounded-2xl border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold">{t("Ako appku nainštalovať")}</h2>
+          <h2 className="text-lg font-semibold">{t("Inštalácia APK (len bez Google Play)")}</h2>
           <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm">
             <li>
               {t("Otvorte túto stránku")} <strong>{t("v telefóne")}</strong>{" "}

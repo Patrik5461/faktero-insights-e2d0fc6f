@@ -58,9 +58,8 @@ const sections: HelpSection[] = [
           .
         </p>
         <p>
-          Pre <strong>Android</strong> je Kniha jázd už v Google Play, Faktero si zatiaľ stiahnete z
-          webu na stránke <a href="/android">Faktero pre Android</a> ako APK. Je tam aj návod, ako
-          inštaláciu mimo obchodu povoliť.
+          Pre <strong>Android</strong> sú obe appky v Google Play. Telefónom bez Google Play poslúži
+          priame stiahnutie na stránke <a href="/android">Faktero pre Android</a>.
         </p>
         <p>
           Appka sa <strong>neaktualizuje sama</strong>. Celé rozhranie je zabalené v nej, aby sa

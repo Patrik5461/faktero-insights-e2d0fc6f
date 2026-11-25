@@ -69,7 +69,7 @@ import {
 } from "@/components/ui/accordion";
 import { track } from "@/lib/faktero/track";
 import {
-  ANDROID_STRANKA,
+  GOOGLE_PLAY_FAKTERO,
   GOOGLE_PLAY_KNIHA_JAZD,
   APP_STORE_FAKTERO,
   APP_STORE_KNIHA_JAZD,
@@ -1595,13 +1595,15 @@ function MobileAppSection() {
                   className="h-12 w-auto"
                 />
               </a>
-              {/* Kým appka nie je v Google Play, Android ju sťahuje z webu ako APK. */}
-              <Link
-                to={ANDROID_STRANKA}
+              <a
+                href={GOOGLE_PLAY_FAKTERO}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("Stiahnuť Faktero v Google Play")}
                 className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold transition hover:border-primary/40 hover:text-primary"
               >
-                <Smartphone className="h-4 w-4" /> {t("Stiahnuť pre Android")}
-              </Link>
+                <Smartphone className="h-4 w-4" /> {t("Google Play")}
+              </a>
             </div>
             {/*
               Samostatná appka Kniha jázd — pre toho, kto potrebuje len jazdy,
