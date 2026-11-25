@@ -142,9 +142,12 @@ export function MarketingNav() {
             ))}
           </nav>
 
-          <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 text-sm sm:gap-3">
             <PrepinacJazyka className="hidden sm:inline-flex" />
-            <TlacidloMotivu />
+            {/* Na mobile je prepínač režimu v menu — v hlavičke patrí miesto prihláseniu. */}
+            <span className="hidden sm:inline-flex">
+              <TlacidloMotivu />
+            </span>
             <span className="hidden 2xl:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-hover">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               {t("30 dní zdarma")}
@@ -155,11 +158,20 @@ export function MarketingNav() {
             >
               {t("Prihlásenie")}
             </Link>
+            {/* Mobil (Patrik 25. 11.): prihlásenie musí byť vidno hneď, nie až v menu. */}
+            <Link
+              to="/prihlasenie"
+              className="inline-flex sm:hidden whitespace-nowrap rounded-md border border-border px-2.5 py-2 font-medium text-foreground hover:bg-secondary"
+            >
+              {t("Prihlásiť sa")}
+            </Link>
+            {/* Na úzkom telefóne (pod 380 px) sa registrácia nezmestí vedľa prihlásenia — je v úvode stránky aj v menu. */}
             <Link
               to="/registracia"
-              className="whitespace-nowrap rounded-md bg-primary px-3 py-2 font-medium sm:px-4 text-primary-foreground hover:opacity-90"
+              className="whitespace-nowrap rounded-md bg-primary px-2.5 py-2 font-medium sm:px-4 text-primary-foreground hover:opacity-90 max-[379px]:hidden"
             >
-              {t("Vyskúšať zdarma")}
+              <span className="sm:hidden">{t("Vyskúšať")}</span>
+              <span className="hidden sm:inline">{t("Vyskúšať zdarma")}</span>
             </Link>
             <button
               type="button"
@@ -175,9 +187,16 @@ export function MarketingNav() {
         {mobileOpen && (
           <div className="xl:hidden border-t border-border bg-card">
             <div className="mx-auto max-w-6xl px-4 py-3">
-              <div className="mb-2 flex justify-end sm:hidden">
+              <div className="mb-2 flex items-center justify-end gap-2 sm:hidden">
                 <PrepinacJazyka />
+                <TlacidloMotivu />
               </div>
+              <Link
+                to="/registracia"
+                className="mb-2 block rounded-md bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground hover:opacity-90 sm:hidden"
+              >
+                {t("Vyskúšať zdarma")}
+              </Link>
               {menus.map((menu) => {
                 const isOpen = openMenu === menu.label;
                 return (
