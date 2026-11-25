@@ -21,7 +21,7 @@ export type MoznostiPotvrdenia = {
 export type Pole = {
   predvolene?: string;
   placeholder?: string;
-  typ?: "text" | "email" | "number" | "date";
+  typ?: "text" | "email" | "number" | "date" | "password";
   /** Prázdna odpoveď je platná (napr. „bez priečinka"). */
   povolitPrazdne?: boolean;
   /** Ponuka hodnôt na výber (datalist). */

@@ -212,8 +212,10 @@ export async function zalozNespracovany(
     prijate?: string | null;
     /** Odtlačok súboru, ak ho volajúci už spočítal (`odtlacokSuboru`). */
     hash?: string | null;
+    /** E-mail odosielateľa — podľa neho sa najprv skúsia uložené heslá k PDF. */
+    odosielatel?: string | null;
   },
-): Promise<{ id: string; udaje: UdajeNespracovaneho | null; vKosi?: boolean }> {
+): Promise<{ id: string; udaje: UdajeNespracovaneho | null; vKosi?: boolean; zaheslovane?: boolean }> {
   /*
     Ten istý súbor (bajt po bajte) už vo firme je — v Nespracovaných alebo
     vytvorený z nich — druhýkrát sa nezaloží (duplicita-suboru.ts). Doklad
@@ -225,6 +227,26 @@ export async function zalozNespracovany(
   if (rovnaky.duplicita) {
     const { DuplicitnySuborChyba } = await import("./duplicita-suboru");
     throw new DuplicitnySuborChyba(rovnaky.duplicita);
+  }
+  /*
+    Zaheslované PDF (25. 11.): skúsia sa uložené heslá firmy. Odomknuté sa
+    uloží už bez hesla a prečíta sa nanovo — prípadné čítanie volajúceho
+    bežalo nad zaheslovaným súborom, takže z neho nič nemá. Neodomknuté
+    počká v Nespracovaných s výzvou na heslo (CHYBA_ZAHESLOVANE).
+  */
+  let zaheslovane = false;
+  let odomknute = false;
+  const vytazeneOdVolajuceho = args.ai !== undefined;
+  {
+    const { jePdf, pripravPdf } = await import("./pdf-heslo.server");
+    if (jePdf(args.mime, args.nazov, args.bajty)) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const p = await pripravPdf(supabaseAdmin, args.companyId, args.bajty, { odosielatel: args.odosielatel });
+      if (p.zaheslovane || p.odomknute) args = { ...args, ai: undefined };
+      if (p.zmenene) args = { ...args, bajty: p.bajty };
+      zaheslovane = p.zaheslovane;
+      odomknute = p.odomknute;
+    }
   }
   const id = crypto.randomUUID();
   const cesta = `${args.companyId}/${id}.${priponaSuboru(args.nazov, args.mime)}`;
@@ -269,8 +291,12 @@ export async function zalozNespracovany(
     company_id: args.companyId,
     created_by: args.userId,
     zdroj: args.zdroj,
-    stav: vytazene ? (args.ai ? "vytazene" : "chyba") : "cita",
-    chyba: vytazene && !args.ai ? "Z dokladu sa nič nedalo prečítať — doplňte údaje ručne." : null,
+    stav: zaheslovane ? "chyba" : vytazene ? (args.ai ? "vytazene" : "chyba") : "cita",
+    chyba: zaheslovane
+      ? (await import("./pdf-heslo.server")).CHYBA_ZAHESLOVANE
+      : vytazene && !args.ai
+        ? "Z dokladu sa nič nedalo prečítať — doplňte údaje ručne."
+        : null,
     druh,
     file_path: cesta,
     file_name: args.nazov,
@@ -287,7 +313,22 @@ export async function zalozNespracovany(
   }
   // Zvlášť, aby chýbajúci stĺpec (pred migráciou) nezablokoval nahratie.
   await prenesOdtlacok(supabase, "nespracovane_doklady", id, hash);
-  return { id, udaje, ...(rovnaky.vKosi ? { vKosi: true } : {}) };
+  /*
+    Odomknuté uloženým heslom: volajúci si myslí, že doklad už prečítal (alebo
+    ho prečíta sám) — prečítanie odomknutého súboru spustíme tu. Volajúci, čo
+    vyťaženie spúšťa sám, ho spustí znova len nad stavom „cita“, nič sa nezdvojí.
+  */
+  if (odomknute && vytazeneOdVolajuceho) void vytazNespracovany(id);
+  return { id, udaje, ...(rovnaky.vKosi ? { vKosi: true } : {}), ...(zaheslovane ? { zaheslovane: true } : {}) };
+}
+
+/** E-mail odosielateľa správy, z ktorej doklad prišiel (pre výber uloženého hesla k PDF). */
+export async function odosielatelSpravy(admin: any, inboxMessageId: string | null | undefined): Promise<string | null> {
+  if (!inboxMessageId) return null;
+  const { data } = await admin.from("inbox_messages").select("from_email").eq("id", inboxMessageId).maybeSingle();
+  const v = (data as any)?.from_email ?? null;
+  const m = String(v ?? "").match(/[^\s<>"]+@[^\s<>"]+/);
+  return m ? m[0].toLowerCase() : null;
 }
 
 /** Vyťaží nespracovaný doklad cez AI (beží na pozadí, po odpovedi klientovi). */
@@ -353,7 +394,30 @@ export async function vytazNespracovany(id: string): Promise<void> {
     if (!cestaPatriFirme(r.file_path, r.company_id)) throw new Error("Súbor nepatrí k tejto firme.");
     const { data: subor, error } = await supabaseAdmin.storage.from(KOS_NESPRACOVANYCH).download(r.file_path);
     if (error || !subor) throw new Error("Súbor sa nepodarilo načítať.");
-    const bajty = Buffer.from(await subor.arrayBuffer());
+    let bajty: Buffer = Buffer.from(await subor.arrayBuffer());
+    {
+      const { jePdf, pripravPdf, CHYBA_ZAHESLOVANE } = await import("./pdf-heslo.server");
+      if (jePdf(r.file_mime, r.file_name, bajty)) {
+        const p = await pripravPdf(supabaseAdmin, r.company_id, bajty, {
+          odosielatel: await odosielatelSpravy(supabaseAdmin, r.inbox_message_id),
+        });
+        if (p.zaheslovane) {
+          await supabaseAdmin
+            .from("nespracovane_doklady")
+            .update({ stav: "chyba", chyba: CHYBA_ZAHESLOVANE, updated_at: new Date().toISOString() })
+            .eq("id", id);
+          return;
+        }
+        if (p.odomknute) {
+          // Uložené heslo sedelo — súbor sa nahradí odomknutým, aby išiel aj náhľad.
+          await supabaseAdmin.storage
+            .from(KOS_NESPRACOVANYCH)
+            .upload(r.file_path, p.bajty, { contentType: r.file_mime ?? "application/pdf", upsert: true });
+          await supabaseAdmin.from("nespracovane_doklady").update({ file_size: p.bajty.length }).eq("id", id);
+        }
+        bajty = p.bajty;
+      }
+    }
     const { precitajDoklad } = await import("./mail-prijem.server");
     const ai = await precitajDoklad(
       bajty.toString("base64"),

@@ -3,6 +3,7 @@ import { useT } from "@/lib/i18n/useT";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
+import { HeslaKPdf } from "@/components/faktero/HeslaKPdf";
 import { Forward, ScanLine, FileCheck2 } from "lucide-react";
 
 /**
@@ -65,6 +66,8 @@ function Stranka() {
         </div>
 
         <PrijemMailom predvoleneOtvorene />
+
+        <HeslaKPdf />
 
         <div className="rounded-xl border border-border bg-card p-5 text-sm">
           <h2 className="text-base font-semibold">{t("Dobré vedieť")}</h2>

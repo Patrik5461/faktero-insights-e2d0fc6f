@@ -8,6 +8,8 @@ import { ZdrojovyMailTlacidlo } from "@/components/faktero/ZdrojovyMail";
 import { UdalostText, useMenaClenov } from "@/components/faktero/KtoKedyDokladu";
 import { nahranieDokladu } from "@/lib/faktero/kto-kedy";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
+import { OdomknutiePdf } from "@/components/faktero/HeslaKPdf";
+import { jeChybaZaheslovane } from "@/lib/faktero/pdf-heslo";
 import { UpozornenieRozpisuDph, potvrdNesuladRozpisu } from "@/components/faktero/UpozornenieRozpisuDph";
 import { SadzbyPodlaDatumu } from "@/components/faktero/SadzbyPodlaDatumu";
 import { EditorRozpisuDph } from "@/components/faktero/EditorRozpisuDph";
@@ -674,6 +676,11 @@ function Detail() {
             subor={d.subor}
             stav={d.stav}
             chybaCitania={d.chyba}
+            odomknutie={
+              jeChybaZaheslovane(d.chyba) ? (
+                <OdomknutiePdf className="m-4" companyId={d.companyId} id={id} onOdomknute={() => void obnov()} />
+              ) : null
+            }
             varovania={d.varovania}
             druh={druh}
             setDruh={setDruh}
@@ -848,7 +855,11 @@ function Detail() {
                 <Loader2 className="h-4 w-4 animate-spin" /> {t("Čítam doklad — údaje sa doplnia samy.")}
               </div>
             )}
-            {d.chyba && <div className="dk-pozor rounded-md border p-3 text-sm">{d.chyba}</div>}
+            {d.chyba && jeChybaZaheslovane(d.chyba) ? (
+              <OdomknutiePdf companyId={d.companyId} id={id} onOdomknute={() => void obnov()} />
+            ) : (
+              d.chyba && <div className="dk-pozor rounded-md border p-3 text-sm">{d.chyba}</div>
+            )}
             {upozornenieVlastnej}
             {d.zdrojUdajov && (
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">

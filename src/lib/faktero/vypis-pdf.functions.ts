@@ -134,11 +134,17 @@ type PrecitanyVypis = Vypis & {
   varovanie?: string;
 };
 
-async function precitajVypis(data: {
-  pdf?: string;
-  text?: string;
-  stran?: number;
-}): Promise<PrecitanyVypis> {
+import { CHYBA_VYPIS_HESLO } from "./pdf-heslo";
+
+async function precitajVypis(
+  data: {
+    pdf?: string;
+    text?: string;
+    stran?: number;
+    heslo?: string;
+  },
+  companyId: string,
+): Promise<PrecitanyVypis> {
   {
     /*
       Text si vie vytiahnuť už prehliadač a vtedy sa sem posiela **len text**.
@@ -152,12 +158,30 @@ async function precitajVypis(data: {
     */
     let text = String(data.text ?? "").trim();
     let stran = Number(data.stran ?? 0);
-    let bajty = Buffer.alloc(0);
+    let bajty: Buffer = Buffer.alloc(0);
 
     if (!text) {
       bajty = Buffer.from(String(data.pdf ?? ""), "base64");
       if (!bajty.length) throw new Error("Súbor sa nepodarilo prečítať.");
       if (bajty.length > STROP_SUBORU) throw new Error("Súbor je väčší než 15 MB.");
+
+      /*
+        Zaheslovaný výpis (25. 11.): heslo od človeka, inak uložené heslá firmy
+        (Doklady e-mailom → Heslá k PDF). Prehliadač pri zaheslovanom PDF text
+        nevytiahne, takže sem príde vždy celý súbor.
+      */
+      {
+        const { pripravPdf } = await import("./pdf-heslo.server");
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const p = await pripravPdf(supabaseAdmin, companyId, bajty, { heslo: data.heslo ?? null });
+        if (p.zaheslovane)
+          throw new Error(
+            data.heslo
+              ? `${CHYBA_VYPIS_HESLO} a zadané heslo nesedí.`
+              : `${CHYBA_VYPIS_HESLO} — zadajte heslo k PDF.`,
+          );
+        bajty = p.bajty;
+      }
 
       const { extractText, getDocumentProxy } = await import("unpdf");
       try {
@@ -300,7 +324,10 @@ async function overClena(ctx: { supabase: any; userId: string }, companyId: stri
 
 export const spustiCitanieVypisuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { company_id: string; pdf?: string; text?: string; stran?: number }) => input)
+  .validator(
+    (input: { company_id: string; pdf?: string; text?: string; stran?: number; heslo?: string }) =>
+      input,
+  )
   .handler(async ({ data, context }): Promise<{ id: string }> => {
     const ctx = context as unknown as { supabase: any; userId: string };
     await overClena(ctx, data.company_id);
@@ -309,7 +336,7 @@ export const spustiCitanieVypisuFn = createServerFn({ method: "POST" })
     void (async () => {
       let vysledok: Record<string, unknown>;
       try {
-        vysledok = { ok: true, vypis: await precitajVypis(data) };
+        vysledok = { ok: true, vypis: await precitajVypis(data, data.company_id) };
       } catch (e: any) {
         vysledok = { ok: false, chyba: e?.message ?? "Výpis sa nepodarilo prečítať." };
       }
@@ -445,12 +472,16 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       const rucny = Number(data.pociatocnyZostatok);
       const zostatky =
         zPohybov ??
-        (data.pociatocnyZostatok != null && String(data.pociatocnyZostatok).trim() !== "" && Number.isFinite(rucny)
+        (data.pociatocnyZostatok != null &&
+        String(data.pociatocnyZostatok).trim() !== "" &&
+        Number.isFinite(rucny)
           ? {
               pociatocny: Math.round(rucny * 100) / 100,
               konecny:
                 Math.round(
-                  (rucny + zoradene.reduce((a, p) => a + (p.smer === "vydaj" ? -p.suma : p.suma), 0)) * 100,
+                  (rucny +
+                    zoradene.reduce((a, p) => a + (p.smer === "vydaj" ? -p.suma : p.suma), 0)) *
+                    100,
                 ) / 100,
             }
           : null);
@@ -505,7 +536,10 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
         (data.cisloVypisu ?? data.datumVypisu ?? "").replace(/[^\w-]/g, "") || "vypis";
       // Firma na konci názvu (Stiahnuté); obsah sa nemení.
       const { nazovSuboruSFirmou } = await import("./nazov-suboru-firmy");
-      return { fileName: nazovSuboruSFirmou(`sepa-vypis-${znackaSepa}.xml`, company.name), content: obsah };
+      return {
+        fileName: nazovSuboruSFirmou(`sepa-vypis-${znackaSepa}.xml`, company.name),
+        content: obsah,
+      };
     }
 
     /*
@@ -534,13 +568,20 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
     */
     const { domacaMena, krajinaKurzu } = await import("./kurzy");
     const domaca = domacaMena((company as any)?.country);
-    const menaVypisu = String(data.mena ?? "").trim().toUpperCase() || domaca;
+    const menaVypisu =
+      String(data.mena ?? "")
+        .trim()
+        .toUpperCase() || domaca;
     let pohybySKurzom = pohyby;
     if (menaVypisu !== domaca) {
       const { kurzPreDoklad } = await import("./kurzy.server");
       const kurzy = new Map<string, number | null>();
       for (const den of [...new Set(pohyby.map((p) => String(p.datum)))]) {
-        const k = await kurzPreDoklad(menaVypisu, den, krajinaKurzu((company as any)?.country)).catch(() => null);
+        const k = await kurzPreDoklad(
+          menaVypisu,
+          den,
+          krajinaKurzu((company as any)?.country),
+        ).catch(() => null);
         kurzy.set(den, k?.kurz ?? null);
       }
       pohybySKurzom = pohyby.map((p) => ({ ...p, kurz: kurzy.get(String(p.datum)) ?? null }));

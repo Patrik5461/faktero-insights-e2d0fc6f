@@ -871,8 +871,26 @@ export async function spracujPrijatyMail(
         }
       }
 
+      /*
+        Zaheslované PDF (25. 11.): skúsia sa uložené heslá firmy (najprv tie
+        k tomuto odosielateľovi). Bez hesla sa nečíta — AI by nič nevidela a
+        príloha by sa zahodila ako „nevyzerá ako doklad“. Pôjde do
+        Nespracovaných s výzvou na heslo.
+      */
+      let zaheslovanaPriloha = false;
+      if (!uz) {
+        const { jePdf, pripravPdf } = await import("./pdf-heslo.server");
+        if (jePdf(mime, priloha.filename, bajty)) {
+          const p = await pripravPdf(supabaseAdmin, adresaFirmy.company_id, bajty, { odosielatel });
+          if (p.zmenene) bajty = p.bajty;
+          zaheslovanaPriloha = p.zaheslovane;
+        }
+      }
+
       // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
-      const ai = uz
+      const ai = zaheslovanaPriloha
+        ? null
+        : uz
         ? uz.ai
         : ((await zXmlVedla(priloha).catch(() => null)) ??
           (await precitajDoklad(bajty.toString("base64"), mime, volbyCitania, {
@@ -885,10 +903,11 @@ export async function spracujPrijatyMail(
         meno a veľkosť — prázdna faktúra „Neurčený dodávateľ“ za 0 € je horšia
         než žiadna, lebo ju musí niekto ručne mazať.
       */
-      if (!maPouzitelneUdaje(ai)) {
+      if (!zaheslovanaPriloha && !maPouzitelneUdaje(ai)) {
         poznamky.push(`${priloha.filename ?? "príloha"}: nevyzerá ako doklad, preskočené`);
         continue;
       }
+      if (zaheslovanaPriloha) poznamky.push(`${priloha.filename ?? "príloha"}: PDF je chránené heslom, čaká na heslo`);
 
       /*
         Ako v Doklado: príloha nejde rovno medzi prijaté faktúry ani ostatné
@@ -915,7 +934,8 @@ export async function spracujPrijatyMail(
           bajty,
           nazov: meno,
           mime,
-          ai,
+          ai: zaheslovanaPriloha ? undefined : ai,
+          odosielatel,
           poznamka: [odkial + ".", smer?.rozdelovac?.poznamka, cudzi].filter(Boolean).join(" "),
           inboxMessageId: zaznam?.id ?? null,
           cezRozdelovac: !!smer?.rozdelovac,

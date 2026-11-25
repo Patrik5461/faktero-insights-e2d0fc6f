@@ -1,3 +1,5 @@
+import { zadaj } from "@/lib/potvrdenie";
+import { CHYBA_VYPIS_HESLO } from "@/lib/faktero/pdf-heslo";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -303,19 +305,38 @@ export function VypisDoPohody({ zdroj: odkial }: { zdroj: "banka" | "brana" }) {
     setNacitavam(true);
     try {
       const zPrehliadaca = await textZPdf(file);
-      const { id } = await spusti({
-        data: { company_id: cid, ...(zPrehliadaca ?? { pdf: await suborNaBase64(file) }) },
-      });
+      const pdf = zPrehliadaca ? null : await suborNaBase64(file);
 
       /*
         Čítanie beží na serveri a stránka sa naň pýta. Jedna dlhá požiadavka to
         byť nemôže — čokoľvek nad asi tridsať sekúnd sa medzi prehliadačom a
         serverom pretrhne a ostane z toho holé „Failed to fetch".
       */
-      let odpoved: any = null;
-      for (let i = 0; i < 150 && !odpoved?.hotovo; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        odpoved = await stav({ data: { company_id: cid, id } }).catch(() => null);
+      const citaj = async (heslo?: string) => {
+        const { id } = await spusti({
+          data: { company_id: cid, ...(zPrehliadaca ?? { pdf: pdf! }), ...(heslo ? { heslo } : {}) },
+        });
+        let o: any = null;
+        for (let i = 0; i < 150 && !o?.hotovo; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          o = await stav({ data: { company_id: cid, id } }).catch(() => null);
+        }
+        return o;
+      };
+      let odpoved: any = await citaj();
+      // Zaheslovaný výpis (25. 11.) — heslo sa vypýta (najviac trikrát) a čítanie sa zopakuje.
+      const zaheslovany = (o: any) =>
+        o?.hotovo && !o.ok && String(o.chyba ?? "").startsWith(CHYBA_VYPIS_HESLO);
+      for (let pokus = 0; pokus < 3 && zaheslovany(odpoved); pokus++) {
+        const heslo = await zadaj(
+          pokus === 0
+            ? t("Výpis je chránený heslom. Zadajte heslo k PDF (napr. IČO alebo číslo účtu).")
+            : t("Heslo nesedí. Skúste ho zadať znova."),
+          { typ: "password", placeholder: t("Heslo k PDF") },
+          { potvrdit: t("Odomknúť") },
+        );
+        if (!heslo) break;
+        odpoved = await citaj(heslo);
       }
       if (!odpoved?.hotovo) throw new Error(t("Čítanie trvá príliš dlho. Skúste kratší výpis."));
       if (!odpoved.ok || !odpoved.vypis)

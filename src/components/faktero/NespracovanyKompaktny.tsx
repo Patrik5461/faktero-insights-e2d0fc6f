@@ -70,6 +70,7 @@ export function NespracovanyKompaktny({
   subor,
   stav,
   chybaCitania,
+  odomknutie,
   varovania = [],
   druh,
   setDruh,
@@ -98,6 +99,8 @@ export function NespracovanyKompaktny({
   subor: { url: string | null; nazov: string | null; mime: string | null };
   stav: string;
   chybaCitania: string | null;
+  /** Zaheslované PDF — namiesto textu chyby sa ukáže zadanie hesla. */
+  odomknutie?: ReactNode;
   varovania?: string[];
   druh: DruhNespracovaneho | "";
   setDruh: (d: DruhNespracovaneho) => void;
@@ -286,11 +289,13 @@ export function NespracovanyKompaktny({
             <Loader2 className="h-4 w-4 animate-spin" /> {t("Čítam doklad…")}
           </div>
         )}
-        {chybaCitania && (
-          <div className="dk-pozor m-4 rounded-lg border p-3 text-sm">
-            {t(chybaCitania)}
-          </div>
-        )}
+        {odomknutie
+          ? odomknutie
+          : chybaCitania && (
+              <div className="dk-pozor m-4 rounded-lg border p-3 text-sm">
+                {t(chybaCitania)}
+              </div>
+            )}
         {varovania.map((v) => (
           <div
             key={v}

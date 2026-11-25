@@ -83,13 +83,19 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
         };
     }
 
+    // Zaheslované PDF sa nečíta (AI by nič nevidela) — odomkne ho uložené heslo
+    // firmy alebo človek v Nespracovaných (zalozNespracovany sa o to postará).
+    const { jePdf, stavPdf } = await import("./pdf-heslo.server");
+    const zaheslovane = jePdf(data.mime, data.nazov, bajty) && (await stavPdf(bajty).catch(() => "nezname")) === "heslo";
     const { precitajDoklad } = await import("./mail-prijem.server");
-    const ai = await precitajDoklad(bajty.toString("base64"), data.mime, null, {
-      ucel: "nespracovane",
-      firma: data.company_id,
-      // Prehliadač čaká na odpoveď — vyšší model by nestihol 30 s nginx.
-      synchronne: true,
-    });
+    const ai = zaheslovane
+      ? null
+      : await precitajDoklad(bajty.toString("base64"), data.mime, null, {
+          ucel: "nespracovane",
+          firma: data.company_id,
+          // Prehliadač čaká na odpoveď — vyšší model by nestihol 30 s nginx.
+          synchronne: true,
+        });
 
     const { zostavPrijatuFakturu } = await import("./mail-prijem");
     const dnes = dnesBratislava();
