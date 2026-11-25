@@ -221,6 +221,14 @@ const sections: HelpSection[] = [
           ktoré doklady sa naozaj založili a <strong>aké čísla dostali</strong>.
         </p>
         <p>
+          <strong>Most ide obojsmerne.</strong> Pri tom istom behu si Faktero od Pohody vypýta faktúry
+          zmenené od poslednej synchronizácie aj s ich úhradami (záložka Likvidácia). Keď účtovníčka
+          v Pohode spáruje platbu s faktúrou, Faktero ju označí ako uhradenú — vydanú aj prijatú, aj
+          čiastočne. Faktúru, ktorú má Faktero zaplatenú inak (z banky alebo ručne), druhýkrát
+          nezaplatí, len to ukáže ako rozdiel. Vypnúť sa to dá v Účtovníctvo → Prepojenie s Pohodou
+          (Úhrady z Pohody do Faktera).
+        </p>
+        <p>
           <strong>Nič sa neinštaluje.</strong> POHODA vie import spustiť sama z príkazového riadku,
           takže celé prepojenie je priečinok s dávkovým súborom a jedna naplánovaná úloha Windows.
           Neotvárajú sa žiadne porty — von ide len bežné zabezpečené spojenie, rovnako ako keby si

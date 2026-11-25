@@ -558,10 +558,23 @@ export async function zostavDavku(
     poslať, odíde samotná žiadosť bez zápisu do histórie.
   */
   const ciselniky = lenBezny && Boolean(company.pohoda_nacitat_ciselniky);
-  if (prazdna && ciselniky) {
+  /*
+    Spätný smer (25. 11.): najviac raz za 6 hodín sa Pohody opýtame na
+    faktúry zmenené od poslednej synchronizácie aj s likvidáciami — úhrady
+    z nich zapíše spracovanie odpovede (`pohoda-uhrady.server.ts`).
+  */
+  const uhrady = lenBezny && chceUhradyZPohody(company, dnes);
+  const odUhrad = zaciatokUhrad(company, dnes);
+  const sUhradami = async (x: string) => {
+    if (!uhrady) return x;
+    if (vstup.oznacit)
+      await supabase.from("companies").update({ pohoda_uhrady_ziadost_at: dnes.toISOString() } as any).eq("id", company.id);
+    return (await import("./pohoda-uhrady")).pridajZiadostUhrad(x, company.ico, odUhrad);
+  };
+  if (prazdna && (ciselniky || uhrady)) {
     const { ziadostCiselnikov } = await import("./predkontacie");
     return {
-      xml: ziadostCiselnikov(company.ico),
+      xml: await sUhradami(ciselniky ? ziadostCiselnikov(company.ico) : ""),
       prazdna: false,
       jobId: null,
       faktur: 0,
@@ -829,7 +842,7 @@ export async function zostavDavku(
   }
 
   return {
-    xml,
+    xml: await sUhradami(xml),
     prazdna: false,
     jobId,
     faktur: vyvezene.length,
@@ -850,6 +863,22 @@ export async function zostavDavku(
     ],
     ciselniky,
   };
+}
+
+/** Pýtať sa Pohody na úhrady? Zapnuté a posledná žiadosť je staršia ako 6 hodín. */
+export function chceUhradyZPohody(company: any, dnes: Date): boolean {
+  if (company?.pohoda_uhrady_zapnute === false) return false;
+  const posledna = company?.pohoda_uhrady_ziadost_at ? Date.parse(company.pohoda_uhrady_ziadost_at) : NaN;
+  return !Number.isFinite(posledna) || dnes.getTime() - posledna >= 6 * 3600_000;
+}
+
+/**
+ * Od kedy chceme zmenené faktúry: deň pred poslednou úspešnou synchronizáciou
+ * (rezerva na posun hodín a dávky, čo sa spracovali neskôr), prvýkrát 90 dní.
+ */
+export function zaciatokUhrad(company: any, dnes: Date): Date {
+  const sync = company?.pohoda_uhrady_sync_at ? Date.parse(company.pohoda_uhrady_sync_at) : NaN;
+  return new Date(Number.isFinite(sync) ? sync - 24 * 3600_000 : dnes.getTime() - 90 * 24 * 3600_000);
 }
 
 /**
@@ -1244,6 +1273,8 @@ export type SpracovanieOdpovede = {
   chybaBaliku?: string | null;
   /** Načítané predkontácie a členenia DPH, ak sa na ne dávka pýtala. */
   ciselniky?: { predkontacii: number; cleneni: number; vypnutych: number } | null;
+  /** Úhrady z Pohody (spätný smer mosta). */
+  uhrady?: { faktur: number; novychUhrad: number; uhradenych: number } | null;
 };
 
 /**
@@ -1273,7 +1304,8 @@ export async function spracujOdpoved(
     nevracia do fronty; výsledok párovania ide do upozornení.
   */
   const { jeIdLikvidacie, rozoberLikvidaciu, hlaskyLikvidacie } = await import("./banka-pohoda");
-  const mimoDokladov = (id: string) => jeIdCiselnika(id) || jeIdLikvidacie(id);
+  const { jeIdUhrad } = await import("./pohoda-uhrady");
+  const mimoDokladov = (id: string) => jeIdCiselnika(id) || jeIdLikvidacie(id) || jeIdUhrad(id);
   const hlaskyParovania = hlaskyLikvidacie(rozoberLikvidaciu(vstup.xml));
   const lenCiselniky = balik.polozky.length > 0 && balik.polozky.every((v) => mimoDokladov(v.id));
   const r = lenCiselniky
@@ -1299,15 +1331,45 @@ export async function spracujOdpoved(
   */
   const bezDavky = await spracujPolozkyBezDavky(supabase, vstup.companyId, r.nesparovane);
 
+  // Spätný smer: úhrady z Pohody (odpoveď na žiadosť `UHR-…`).
+  const uhrady = await (async () => {
+    const pu = await import("./pohoda-uhrady");
+    if (!pu.maOdpovedUhrad(vstup.xml)) return null;
+    const { zapisUhradyZPohody } = await import("./pohoda-uhrady.server");
+    const v = await zapisUhradyZPohody(supabase, vstup.companyId, pu.rozoberUhradyZPohody(vstup.xml));
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("pohoda_uhrady_ziadost_at")
+      .eq("id", vstup.companyId)
+      .maybeSingle();
+    await supabase
+      .from("companies")
+      .update({
+        // Synchronizované k času žiadosti — čo sa v Pohode zmenilo potom, príde nabudúce.
+        pohoda_uhrady_sync_at: (firma as any)?.pohoda_uhrady_ziadost_at ?? new Date().toISOString(),
+        pohoda_uhrady_vysledok: { ...v, rozdiely: v.rozdiely.slice(0, 50), kedy: new Date().toISOString() },
+      } as any)
+      .eq("id", vstup.companyId);
+    return v;
+  })();
+
   const chyby = [...r.chyby, ...bezDavky.chyby];
   return {
     spracovanych: r.spracovanych,
     zalozenych: r.zalozenych - r.nesparovane.length + bezDavky.zalozenych,
     chybnych: chyby.length,
     chyby: chyby.slice(0, 20),
-    upozornenia: [...hlaskyParovania, ...r.upozornenia, ...bezDavky.upozornenia].slice(0, 20),
+    upozornenia: [
+      ...hlaskyParovania,
+      ...r.upozornenia,
+      ...bezDavky.upozornenia,
+      ...(uhrady?.rozdiely ?? []),
+    ].slice(0, 20),
     chybaBaliku: r.chybaBaliku,
     ciselniky,
+    uhrady: uhrady
+      ? { faktur: uhrady.faktur, novychUhrad: uhrady.novychUhrad, uhradenych: uhrady.uhradenych }
+      : null,
   };
 }
 

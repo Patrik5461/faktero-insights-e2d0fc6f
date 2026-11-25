@@ -1,3 +1,4 @@
+import { UhradyZPohody } from "@/components/faktero/UhradyZPohody";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -282,6 +283,10 @@ function Stranka() {
 
         <div className="mx-auto max-w-5xl rounded-xl border border-border bg-card p-4 sm:p-5">
           <KonektorPohody companyId={c.id} />
+        </div>
+
+        <div className="mx-auto mt-4 max-w-5xl rounded-xl border border-border bg-card p-4 sm:p-5">
+          <UhradyZPohody firma={c} />
         </div>
       </PageBody>
     </>
