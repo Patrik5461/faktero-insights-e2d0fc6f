@@ -68,6 +68,7 @@ export function PoliaVeritela({
             />
             <IcoLookupButton
               ico={v("provider_ico")}
+              krajina={v("provider_country")}
               onResult={(d, { auto }) => {
                 // Automaticky len do prázdnych polí; po kliknutí register prebije, čo pozná.
                 if (auto) return onChange(doplnZRegistra(hodnota, d));

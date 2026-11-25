@@ -175,6 +175,7 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
                 {!jeDe && (
                   <IcoLookupButton
                     ico={form.ico}
+                    krajina={form.country}
                     onResult={(d, { auto }) =>
                       setForm((f) =>
                         mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),

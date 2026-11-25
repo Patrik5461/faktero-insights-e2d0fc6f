@@ -16,7 +16,19 @@ export type { NormalizedCompany } from "./finstat.server";
 export type { FinstatSuggestion } from "./finstat.server";
 
 export type RegistryLookupResult =
-  | { status: "ok"; provider: "finstat"; data: NormalizedCompany; raw: unknown; cached: boolean }
+  | {
+      status: "ok";
+      provider: "finstat";
+      data: NormalizedCompany;
+      raw: unknown;
+      cached: boolean;
+      /**
+       * To isté IČO má firma aj v druhej krajine (SK aj CZ čísla sa prekrývajú —
+       * 45274649 je na Slovensku ABC - servis, v Česku ČEZ). Bez určenej krajiny
+       * sa vráti slovenská a táto ako druhá možnosť na výber.
+       */
+      alternativa?: NormalizedCompany;
+    }
   | { status: "not_found"; provider: "finstat"; raw: unknown | null; cached: boolean }
   | { status: "error"; provider: "finstat"; message: string; raw: unknown | null; cached: false };
 
@@ -48,9 +60,10 @@ type CacheRow = {
   fetched_at: string;
 };
 
-async function readCache(ico: string): Promise<MemoEntry | null> {
+async function readCache(ico: string, region: "sk" | "cz"): Promise<MemoEntry | null> {
   const now = Date.now();
-  const hit = memo.get(ico);
+  const kluc = `${region}:${ico}`;
+  const hit = memo.get(kluc);
   if (hit && now - hit.at < CACHE_TTL_MS) return hit;
 
   try {
@@ -58,6 +71,7 @@ async function readCache(ico: string): Promise<MemoEntry | null> {
       .from("company_cache")
       .select("ico, region, status, data, raw, fetched_at")
       .eq("ico", ico)
+      .eq("region", region)
       .order("fetched_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -72,7 +86,7 @@ async function readCache(ico: string): Promise<MemoEntry | null> {
       data: (row.data as NormalizedCompany | null) ?? null,
       raw: row.raw ?? null,
     };
-    memo.set(ico, entry);
+    memo.set(kluc, entry);
     return entry;
   } catch (e) {
     console.warn("[company-cache] read failed", e);
@@ -88,7 +102,7 @@ async function writeCache(
   raw: unknown,
 ): Promise<void> {
   const entry: MemoEntry = { at: Date.now(), status, data, raw };
-  memo.set(ico, entry);
+  memo.set(`${region}:${ico}`, entry);
   try {
     await supabaseAdmin.from("company_cache").upsert(
       {
@@ -113,8 +127,10 @@ export async function clearCompanyCache(icoInput: string): Promise<void> {
     .trim();
   if (!ico) return;
   const padded = ico.padStart(8, "0");
-  memo.delete(ico);
-  memo.delete(padded);
+  for (const r of ["sk", "cz"]) {
+    memo.delete(`${r}:${ico}`);
+    memo.delete(`${r}:${padded}`);
+  }
   try {
     await supabaseAdmin.from("company_cache").delete().in("ico", [ico, padded]);
   } catch (e) {
@@ -128,8 +144,12 @@ export async function clearCompanyCache(icoInput: string): Promise<void> {
  * a keď FinStat firmu nepozná, zostaví sa celá z ARES. Slovenské firmy idú
  * ďalej len cez FinStat.
  */
-export async function lookupCompany(icoInput: string): Promise<RegistryLookupResult> {
-  return sRezimomDph(await lookupCompanyBezRezimu(icoInput));
+export async function lookupCompany(
+  icoInput: string,
+  krajina?: "SK" | "CZ" | null,
+): Promise<RegistryLookupResult> {
+  const r = await lookupCompanyBezRezimu(icoInput, krajina);
+  return sRezimomDph(r);
 }
 
 /** Na odpoveď registra sa nečaká dlhšie — formulár sa vyplní aj bez režimu DPH. */
@@ -171,62 +191,75 @@ async function sRezimomDph(r: RegistryLookupResult): Promise<RegistryLookupResul
   }
 }
 
-async function lookupCompanyBezRezimu(icoInput: string): Promise<RegistryLookupResult> {
-  const r = await lookupCompanyFinstat(icoInput);
-  const cz = r.status === "ok" ? /^(CZ|ČESK|CESK|CZECH)/i.test(String(r.data.country ?? "")) : true;
-  if (!cz) return r;
-  const ico = (icoInput ?? "").replace(/\s+/g, "").trim();
-  if (!/^\d{8}$/.test(ico)) return r;
-  const { firmaZAres } = await import("./ares.server");
-  const ares = await firmaZAres(ico);
-  if (!ares) return r;
-  const dic = ares.dic
-    ? ares.dic.toUpperCase().startsWith("CZ")
-      ? ares.dic.toUpperCase()
-      : `CZ${ares.dic}`
-    : null;
-  const doplnene = {
-    dic,
-    ic_dph: ares.platitelDph && dic ? dic : null,
-    vatStatus: (ares.platitelDph ? "Áno" : "Nie") as NormalizedCompany["vatStatus"],
-    country: "CZ",
-  };
-  if (r.status === "ok") {
-    return {
-      ...r,
-      data: {
-        ...r.data,
-        ...doplnene,
-        street: r.data.street || ares.ulica || null,
-        city: r.data.city || ares.mesto || null,
-        zip: r.data.zip || ares.psc || null,
-      },
-    };
-  }
-  if (!ares.nazov) return r;
-  return {
-    status: "ok",
-    provider: "finstat",
-    cached: false,
-    raw: { zdroj: "ares" },
-    data: {
-      ico,
-      name: ares.nazov,
-      ...doplnene,
-      street: ares.ulica ?? null,
-      city: ares.mesto ?? null,
-      zip: ares.psc ?? null,
-      legalForm: null,
-      registrationNumber: null,
-      registrationDate: null,
-      financials: null as any,
-      riskIndicators: null,
-      statutoryRepresentatives: [],
-    },
-  };
+/**
+ * Firma podľa IČO (25. 11.: české firmy sa načítavali zle — slovenské a české
+ * IČO sa prekrývajú a Slovensko sa skúšalo prvé, takže 45274649 dalo
+ * slovenskú ABC - servis namiesto ČEZ).
+ *
+ * Pýtajú sa obe krajiny naraz: Slovensko cez FinStat SK, Česko cez ARES
+ * (FinStat CZ len keď ARES firmu nepozná). Keď firma existuje v oboch, vráti
+ * sa tá z preferovanej krajiny (krajina vo formulári, predvolene SK) a druhá
+ * ide do `alternativa` — formulár ju ponúkne jedným klikom.
+ */
+async function lookupCompanyBezRezimu(
+  icoInput: string,
+  krajina?: "SK" | "CZ" | null,
+): Promise<RegistryLookupResult> {
+  const [sk, cz] = await Promise.all([lookupCompanyFinstat(icoInput, "sk"), lookupCz(icoInput)]);
+  const [hlavna, druha] = krajina === "CZ" ? [cz, sk] : [sk, cz];
+  if (hlavna.status === "ok" && druha.status === "ok") return { ...hlavna, alternativa: druha.data };
+  if (hlavna.status === "ok") return hlavna;
+  if (druha.status === "ok") return druha;
+  return hlavna.status === "error" && druha.status !== "error" ? druha : hlavna;
 }
 
-async function lookupCompanyFinstat(icoInput: string): Promise<RegistryLookupResult> {
+/**
+ * Česká firma: najprv ARES (oficiálny register, zadarmo — názov, sídlo, DIČ,
+ * platiteľ DPH). FinStat CZ (platený) sa pýta len vtedy, keď ARES firmu
+ * nepozná alebo neodpovedá.
+ */
+async function lookupCz(icoInput: string): Promise<RegistryLookupResult> {
+  const ico = (icoInput ?? "").replace(/\s+/g, "").trim();
+  if (/^\d{6,8}$/.test(ico)) {
+    const { firmaZAres } = await import("./ares.server");
+    const ares = await firmaZAres(ico.padStart(8, "0"));
+    if (ares?.nazov) {
+      const dic = ares.dic
+        ? ares.dic.toUpperCase().startsWith("CZ")
+          ? ares.dic.toUpperCase()
+          : `CZ${ares.dic}`
+        : null;
+      return {
+        status: "ok",
+        provider: "finstat",
+        cached: false,
+        raw: { zdroj: "ares" },
+        data: {
+          ico: ico.padStart(8, "0"),
+          name: ares.nazov,
+          dic,
+          ic_dph: ares.platitelDph && dic ? dic : null,
+          vatStatus: ares.platitelDph ? "Áno" : "Nie",
+          country: "CZ",
+          street: ares.ulica ?? null,
+          city: ares.mesto ?? null,
+          zip: ares.psc ?? null,
+          legalForm: null,
+          registrationNumber: null,
+          registrationDate: null,
+          financials: null as any,
+          riskIndicators: null,
+          statutoryRepresentatives: [],
+        } as NormalizedCompany,
+      };
+    }
+  }
+  const fin = await lookupCompanyFinstat(icoInput, "cz");
+  if (fin.status === "ok") return { ...fin, data: { ...fin.data, country: "CZ" } };
+  return fin;
+}
+
+async function lookupCompanyFinstat(icoInput: string, region: "sk" | "cz"): Promise<RegistryLookupResult> {
   const ico = (icoInput ?? "").replace(/\s+/g, "").trim();
   if (!/^\d{6,8}$/.test(ico)) {
     return {
@@ -249,7 +282,7 @@ async function lookupCompanyFinstat(icoInput: string): Promise<RegistryLookupRes
     };
   }
 
-  const hit = await readCache(padded);
+  const hit = await readCache(padded, region);
   if (hit) {
     if (hit.status === "ok" && hit.data) {
       return { status: "ok", provider: "finstat", data: hit.data, raw: hit.raw, cached: true };
@@ -259,22 +292,7 @@ async function lookupCompanyFinstat(icoInput: string): Promise<RegistryLookupRes
     }
   }
 
-  // Try SK first, fall back to CZ.
-  let value = await finstatLookup(padded, "sk");
-  let region: "sk" | "cz" = "sk";
-  if (value.status !== "ok") {
-    const cz = await finstatLookup(padded, "cz");
-    if (cz.status === "ok") {
-      value = cz;
-      region = "cz";
-    } else if (value.status === "not_found" && cz.status === "not_found") {
-      value = cz;
-      region = "cz";
-    } else if (value.status === "error" && cz.status !== "error") {
-      value = cz;
-      region = "cz";
-    }
-  }
+  const value = await finstatLookup(padded, region);
 
   if (value.status === "ok") {
     await writeCache(padded, region, "ok", value.data, value.raw);
@@ -308,31 +326,63 @@ export async function searchCompaniesByName(queryInput: string): Promise<Registr
   if (hit && Date.now() - hit.at < NAME_CACHE_TTL_MS) {
     return { status: "ok", provider: "finstat", data: hit.value, cached: true };
   }
-  const [sk, cz] = await Promise.all([finstatAutocomplete(q, "sk"), finstatAutocomplete(q, "cz")]);
-  if (sk.status !== "ok" && cz.status !== "ok") {
+  const [sk, cz, ares] = await Promise.all([
+    finstatAutocomplete(q, "sk"),
+    finstatAutocomplete(q, "cz"),
+    hladajVAres(q),
+  ]);
+  if (sk.status !== "ok" && cz.status !== "ok" && !ares.length) {
     return {
       status: "error",
       provider: "finstat",
-      message: sk.status === "error" ? sk.message : cz.message,
+      message: sk.status === "error" ? sk.message : cz.status === "error" ? cz.message : "error",
     };
   }
+  // Kľúč je krajina + IČO — to isté číslo môže byť na Slovensku aj v Česku iná firma.
   const merged: FinstatSuggestion[] = [];
   const seen = new Set<string>();
-  for (const r of sk.status === "ok" ? sk.data : []) {
-    if (r.ico && !seen.has(r.ico)) {
-      seen.add(r.ico);
-      merged.push(r);
+  const pridaj = (r: FinstatSuggestion, krajina: "SK" | "CZ") => {
+    const k = `${krajina}:${r.ico}`;
+    if (r.ico && !seen.has(k)) {
+      seen.add(k);
+      merged.push({ ...r, krajina });
     }
-  }
-  for (const r of cz.status === "ok" ? cz.data : []) {
-    if (r.ico && !seen.has(r.ico)) {
-      seen.add(r.ico);
-      merged.push(r);
-    }
+  };
+  // Slovenské a české návrhy sa striedajú — inak by desať slovenských
+  // „Cez…“ vytlačilo ČEZ z Česka. V českých ide ARES (oficiálny register) pred FinStat CZ.
+  const skL = sk.status === "ok" ? sk.data : [];
+  const czL = [...ares, ...(cz.status === "ok" ? cz.data : [])];
+  for (let i = 0; i < Math.max(skL.length, czL.length); i++) {
+    if (skL[i]) pridaj(skL[i], "SK");
+    if (czL[i]) pridaj(czL[i], "CZ");
   }
   const data = merged.slice(0, 10);
   nameCache.set(key, { at: Date.now(), value: data });
   return { status: "ok", provider: "finstat", data, cached: false };
+}
+
+/** Hľadanie v ARES podľa názvu (celé slová, napr. „alza“). Výpadok nič nezhodí. */
+async function hladajVAres(q: string): Promise<FinstatSuggestion[]> {
+  try {
+    const r = await fetch("https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/vyhledat", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ obchodniJmeno: q, pocet: 8, start: 0 }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) return [];
+    const d: any = await r.json();
+    return (Array.isArray(d?.ekonomickeSubjekty) ? d.ekonomickeSubjekty : [])
+      .filter((x: any) => x?.ico && x?.obchodniJmeno)
+      .map((x: any) => ({
+        ico: String(x.ico).padStart(8, "0"),
+        name: String(x.obchodniJmeno),
+        address: x?.sidlo?.textovaAdresa ?? null,
+        city: x?.sidlo?.nazevObce ?? null,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 /**

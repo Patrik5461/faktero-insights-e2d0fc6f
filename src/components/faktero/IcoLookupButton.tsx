@@ -15,10 +15,15 @@ type Props = {
   className?: string;
   /** Enable automatic debounced lookup when user types 8 digits. Default: true. */
   autoLookup?: boolean;
+  /**
+   * Krajina vo formulári (SK/CZ). Slovenské a české IČO sa prekrývajú — keď
+   * firma s tým istým číslom existuje v oboch, načíta sa táto a druhá sa ponúkne.
+   */
+  krajina?: string | null;
   /** Optional callback after a duplicate-customer check fires (caller wires findCustomerByIcoFn). */
 };
 
-export function IcoLookupButton({ ico, onResult, className, autoLookup = true }: Props) {
+export function IcoLookupButton({ ico, onResult, className, autoLookup = true, krajina }: Props) {
   // Optimistic default: show the button immediately. Server config check
   // only downgrades to `false` if FinStat is confirmed missing.
   const { t } = useT();
@@ -27,6 +32,8 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
   const [missing, setMissing] = useState<null | { dic: boolean; ic_dph: boolean }>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Tá istá IČO aj v druhej krajine (SK ↔ CZ) — ponuka jedným klikom.
+  const [alternativa, setAlternativa] = useState<NormalizedCompany | null>(null);
   const lookup = useServerFn(lookupCompanyByIcoFn);
   const cfg = useServerFn(companyLookupConfiguredFn);
   const lastAutoIcoRef = useRef<string>("");
@@ -62,18 +69,23 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
     // Clear any previous success/error before issuing a new lookup.
     setError(null);
     setSuccess(null);
+    setAlternativa(null);
     try {
-      const res = await lookup({ data: { ico: v } });
+      const res = await lookup({ data: { ico: v, krajina: krajina ?? null } });
       if (res.status === "ok") {
         onResult(res.data, { auto });
+        setAlternativa(res.alternativa ?? null);
         const dicMissing = !res.data.dic;
         const icDphMissing = !res.data.ic_dph;
         if (dicMissing || icDphMissing) setMissing({ dic: dicMissing, ic_dph: icDphMissing });
         // Data populated successfully — guarantee no error state remains visible.
         setError(null);
-        const msg = res.cached
-          ? t("Údaje boli načítané z FinStat (cache).")
-          : t("Údaje boli načítané z FinStat.");
+        const msg =
+          res.zdroj === "ares"
+            ? t("Údaje boli načítané z českého registra ARES.")
+            : res.cached
+              ? t("Údaje boli načítané z FinStat (cache).")
+              : t("Údaje boli načítané z FinStat.");
         showSuccess(msg);
         if (!auto) toast.success(msg);
       } else if (res.status === "not_found") {
@@ -169,6 +181,26 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           {error}
         </p>
+      )}
+      {alternativa && (
+        <div className="max-w-xs rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-foreground">
+          {t("Pod týmto IČO je aj firma v krajine {krajina}:", {
+            krajina: /^(CZ|ČESK|CESK)/i.test(String(alternativa.country ?? "")) ? t("Česko") : t("Slovensko"),
+          })}{" "}
+          <strong>{alternativa.name}</strong>
+          {alternativa.city ? ` (${alternativa.city})` : ""}.{" "}
+          <button
+            type="button"
+            className="font-semibold text-primary underline"
+            onClick={() => {
+              onResult(alternativa, { auto: false });
+              setAlternativa(null);
+              showSuccess(t("Načítaná druhá firma s týmto IČO."));
+            }}
+          >
+            {t("Použiť túto")}
+          </button>
+        </div>
       )}
       {missing && !error && (
         <p className="flex items-start gap-1 text-[11px] text-amber-700 dark:text-amber-400">

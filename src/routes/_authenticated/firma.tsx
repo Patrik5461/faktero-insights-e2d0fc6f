@@ -179,6 +179,7 @@ function CompanyPage() {
               {!jeDe && (
                 <IcoLookupButton
                   ico={c.ico ?? ""}
+                  krajina={c.country}
                   onResult={(d, { auto }) =>
                     setC((prev: any) =>
                       mergeCompanyAutofill(prev ?? {}, d, {

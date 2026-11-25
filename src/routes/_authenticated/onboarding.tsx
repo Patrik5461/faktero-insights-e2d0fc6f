@@ -271,6 +271,7 @@ function Onboarding() {
               {!jeDe && (
                 <IcoLookupButton
                   ico={form.ico}
+                  krajina={form.country}
                   onResult={(d, { auto }) =>
                     setForm((f) =>
                       sMenouKrajiny(

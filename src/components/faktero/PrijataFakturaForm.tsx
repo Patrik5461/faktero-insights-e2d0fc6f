@@ -994,6 +994,7 @@ export function PrijataFakturaForm({
           />
           <IcoLookupButton
             ico={form.supplier_ico}
+            krajina={krajinaDodavatela}
             onResult={(r) => {
               if (r.name) set("supplier_name", r.name);
               if (r.dic) set("supplier_dic", r.dic);

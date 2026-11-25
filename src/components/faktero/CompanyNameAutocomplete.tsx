@@ -131,7 +131,8 @@ export function CompanyNameAutocomplete({
     setPicking(s.ico);
     setError(null);
     try {
-      const res = await lookup({ data: { ico: s.ico } });
+      // Krajina z návrhu — to isté IČO môže byť v SK aj CZ iná firma.
+      const res = await lookup({ data: { ico: s.ico, krajina: s.krajina ?? null } });
       if (res.status === "ok") {
         // Force the official company name into the input, regardless of what
         // the user typed as the search query. Update lastQueryRef so the
@@ -146,7 +147,9 @@ export function CompanyNameAutocomplete({
         setItems([]);
         setError(null);
         setOpen(false);
-        showSuccess(t("Údaje boli načítané z FinStat."));
+        showSuccess(
+          res.zdroj === "ares" ? t("Údaje boli načítané z českého registra ARES.") : t("Údaje boli načítané z FinStat."),
+        );
       } else {
         setError(t("FinStat momentálne neodpovedá."));
         setOpen(true);
@@ -193,7 +196,7 @@ export function CompanyNameAutocomplete({
           {!loading &&
             items.map((s) => (
               <button
-                key={`${s.ico}-${s.name}`}
+                key={`${s.krajina ?? ""}-${s.ico}-${s.name}`}
                 type="button"
                 onClick={() => pick(s)}
                 disabled={picking === s.ico}
@@ -203,6 +206,7 @@ export function CompanyNameAutocomplete({
                 <div className="min-w-0 flex-1">
                   <div className="break-words font-medium text-foreground">{s.name}</div>
                   <div className="break-words text-[11px] text-muted-foreground">
+                    {s.krajina ? `${s.krajina} · ` : ""}
                     {t("IČO")} {s.ico}
                     {s.city ? ` · ${s.city}` : ""}
                   </div>

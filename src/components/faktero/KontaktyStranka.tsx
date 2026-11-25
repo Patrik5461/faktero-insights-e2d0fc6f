@@ -737,6 +737,7 @@ function CustomerDialog({
                 />
                 <IcoLookupButton
                   ico={c.ico ?? ""}
+                  krajina={c.country}
                   onResult={(d, { auto }) =>
                     setC(
                       (prev) =>

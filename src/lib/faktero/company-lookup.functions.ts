@@ -3,13 +3,18 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const lookupCompanyByIcoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { ico: string }) => {
+  .validator((input: { ico: string; krajina?: string | null }) => {
     if (!input || typeof input.ico !== "string") throw new Error("invalid_input");
-    return { ico: input.ico };
+    const k = String(input.krajina ?? "").trim().toUpperCase();
+    return { ico: input.ico, krajina: k === "CZ" || k === "SK" ? (k as "CZ" | "SK") : null };
   })
   .handler(async ({ data, context }) => {
     const { lookupCompanyByIco } = await import("./company-lookup.server");
-    return lookupCompanyByIco(data.ico, { supabase: context.supabase, userId: context.userId });
+    return lookupCompanyByIco(data.ico, {
+      supabase: context.supabase,
+      userId: context.userId,
+      krajina: data.krajina,
+    });
   });
 
 export const companyLookupConfiguredFn = createServerFn({ method: "GET" }).handler(async () => {

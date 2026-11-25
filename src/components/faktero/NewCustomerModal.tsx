@@ -196,6 +196,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
                   />
                   <IcoLookupButton
                     ico={f.ico}
+                    krajina={f.country}
                     onResult={(d, { auto }) =>
                       setF((prev) =>
                         mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }),

@@ -114,6 +114,8 @@ export type FinstatSuggestion = {
   name: string;
   address: string | null;
   city: string | null;
+  /** Krajina registra — to isté IČO môže byť v SK aj CZ iná firma. */
+  krajina?: "SK" | "CZ";
 };
 
 export type FinstatAutocompleteResult =
