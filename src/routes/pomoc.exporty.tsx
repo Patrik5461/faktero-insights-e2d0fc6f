@@ -294,7 +294,15 @@ const sections: HelpSection[] = [
             <strong>Pohoda, Money, ABRA, Helios, Premier aj iDoklad</strong> — je to najistejšia
             cesta, keď účtovníčka používa systém, pre ktorý nemáme vlastný súbor. Schéma žiada aspoň
             jeden riadok, takže faktúra <strong>bez položiek</strong> sa z dávky vynechá a Faktero
-            to povie menovite.
+            to povie menovite. Načíta ho aj <strong>Tangram EOS</strong> (prijaté faktúry, od
+            verzie 24.02), <strong>Vema Ekos</strong> a Helios Orange či Easy s doplnkom ISDOC.
+          </li>
+          <li>
+            <strong>MK-soft</strong> — vlastný súbor netreba: načíta <strong>Pohoda XML</strong>{" "}
+            (vydané cez I-FAKTURY, prijaté cez I-SALDOKONTO) aj <strong>Peppol BIS</strong> (vydané
+            od verzie 7.127, prijaté od 7.139). <strong>TatraSoft EuroFib</strong> a{" "}
+            <strong>eso/es (HT Solution)</strong> formát importu nezverejňujú — keď ich účtovníčka
+            používa, pošlite nám vzorový súbor a export doplníme.
           </li>
           <li>
             <strong>ABRA Flexi XML</strong> — dávka <code>winstrom</code> s vydanými faktúrami.

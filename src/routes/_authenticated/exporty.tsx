@@ -75,15 +75,22 @@ const ZALOZKY_EXPORTOV: { kod: ZalozkaExportov; nazov: string }[] = [
 ];
 
 /** Ponuka formátov. `note` vysvetlí, komu ešte súbor sadne. */
-const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
+/*
+  `aj` = ďalšie programy, ktoré ten istý súbor načítajú (overené 26. 11. 2026
+  podľa dokumentácie výrobcov) — vlastný formát pre ne netreba. TatraSoft
+  EuroFib a eso/es (HT Solution) formát importu nezverejňujú — čakáme na vzor.
+*/
+const FORMATY: { format: ExportFormat; label: string; note?: string; aj?: string }[] = [
   {
     format: "pohoda_xml",
     label: "Pohoda XML",
+    aj: "Načíta ho aj MK-soft: vydané faktúry cez I-FAKTURY, prijaté cez I-SALDOKONTO.",
     note: "Predkontácie a členenie DPH sa vypĺňajú v Účtovníctvo → Prepojenie s Pohodou; bez nich si ich účtovníčka doklikáva sama.",
   },
   {
     format: "bis_zip",
     label: "Peppol BIS XML (ZIP)",
+    aj: "Načíta ho aj MK-soft — vydané faktúry od verzie 7.127, prijaté od verzie 7.139.",
     note: "Formát eFaktúry. Pohoda od verzie Jeseň 2026 ho načíta hromadne: Súbor → Dátová komunikácia → Import z BIS. Faktúra, ktorá by neprešla ako eFaktúra, sa do súboru nedostane a povieme prečo.",
   },
   {
@@ -99,6 +106,7 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
   {
     format: "isdoc_zip",
     label: "ISDOC (ZIP)",
+    aj: "Helios (Orange, Easy, iNuvio — s doplnkom ISDOC), Tangram EOS (prijaté faktúry, od verzie 24.02) a Vema Ekos.",
     note: "Univerzálny formát — načíta ho Pohoda, Money, ABRA, Helios aj Premier. Jeden súbor .isdoc na doklad; faktúra bez položiek doň nejde.",
   },
   {
@@ -665,6 +673,11 @@ function ExportsPage() {
                           )}
                         </div>
                         {f.note && <p className="mt-1 text-xs text-muted-foreground">{t(f.note)}</p>}
+                        {f.aj && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            <strong>{t("Ďalšie programy:")}</strong> {t(f.aj)}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>
