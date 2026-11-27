@@ -72,6 +72,7 @@ import { Route as AdminIntegrationsRouteImport } from './routes/admin.integratio
 import { Route as AdminKnihaJazdRouteImport } from './routes/admin.kniha-jazd'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminOdosielanieRouteImport } from './routes/admin.odosielanie'
+import { Route as AdminOdstavkyRouteImport } from './routes/admin.odstavky'
 import { Route as AdminOznamyRouteImport } from './routes/admin.oznamy'
 import { Route as AdminPartneriRouteImport } from './routes/admin.partneri'
 import { Route as AdminPartnerskyProgramRouteImport } from './routes/admin.partnersky-program'
@@ -346,6 +347,7 @@ import { Route as ApiPublicHooksGpsSyncRouteImport } from './routes/api/public/h
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
+import { Route as ApiPublicHooksOdstavkyRouteImport } from './routes/api/public/hooks/odstavky'
 import { Route as ApiPublicHooksPalivoveKartySyncRouteImport } from './routes/api/public/hooks/palivove-karty-sync'
 import { Route as ApiPublicHooksPlatitelDphRouteImport } from './routes/api/public/hooks/platitel-dph'
 import { Route as ApiPublicHooksPodporaPristupyRouteImport } from './routes/api/public/hooks/podpora-pristupy'
@@ -730,6 +732,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
 const AdminOdosielanieRoute = AdminOdosielanieRouteImport.update({
   id: '/odosielanie',
   path: '/odosielanie',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOdstavkyRoute = AdminOdstavkyRouteImport.update({
+  id: '/odstavky',
+  path: '/odstavky',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOznamyRoute = AdminOznamyRouteImport.update({
@@ -2243,6 +2250,11 @@ const ApiPublicHooksOdovzdanieMesacneRoute =
     path: '/api/public/hooks/odovzdanie-mesacne',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksOdstavkyRoute = ApiPublicHooksOdstavkyRouteImport.update({
+  id: '/api/public/hooks/odstavky',
+  path: '/api/public/hooks/odstavky',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksPalivoveKartySyncRoute =
   ApiPublicHooksPalivoveKartySyncRouteImport.update({
     id: '/api/public/hooks/palivove-karty-sync',
@@ -2644,6 +2656,7 @@ export interface FileRoutesByFullPath {
   '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
+  '/admin/odstavky': typeof AdminOdstavkyRoute
   '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/partnersky-program': typeof AdminPartnerskyProgramRoute
@@ -2911,6 +2924,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/odstavky': typeof ApiPublicHooksOdstavkyRoute
   '/api/public/hooks/palivove-karty-sync': typeof ApiPublicHooksPalivoveKartySyncRoute
   '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
@@ -3035,6 +3049,7 @@ export interface FileRoutesByTo {
   '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
+  '/admin/odstavky': typeof AdminOdstavkyRoute
   '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/partnersky-program': typeof AdminPartnerskyProgramRoute
@@ -3301,6 +3316,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/odstavky': typeof ApiPublicHooksOdstavkyRoute
   '/api/public/hooks/palivove-karty-sync': typeof ApiPublicHooksPalivoveKartySyncRoute
   '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
@@ -3435,6 +3451,7 @@ export interface FileRoutesById {
   '/admin/kniha-jazd': typeof AdminKnihaJazdRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/odosielanie': typeof AdminOdosielanieRoute
+  '/admin/odstavky': typeof AdminOdstavkyRoute
   '/admin/oznamy': typeof AdminOznamyRoute
   '/admin/partneri': typeof AdminPartneriRoute
   '/admin/partnersky-program': typeof AdminPartnerskyProgramRoute
@@ -3702,6 +3719,7 @@ export interface FileRoutesById {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
+  '/api/public/hooks/odstavky': typeof ApiPublicHooksOdstavkyRoute
   '/api/public/hooks/palivove-karty-sync': typeof ApiPublicHooksPalivoveKartySyncRoute
   '/api/public/hooks/platitel-dph': typeof ApiPublicHooksPlatitelDphRoute
   '/api/public/hooks/podpora-pristupy': typeof ApiPublicHooksPodporaPristupyRoute
@@ -3836,6 +3854,7 @@ export interface FileRouteTypes {
     | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
+    | '/admin/odstavky'
     | '/admin/oznamy'
     | '/admin/partneri'
     | '/admin/partnersky-program'
@@ -4103,6 +4122,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/odstavky'
     | '/api/public/hooks/palivove-karty-sync'
     | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
@@ -4227,6 +4247,7 @@ export interface FileRouteTypes {
     | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
+    | '/admin/odstavky'
     | '/admin/oznamy'
     | '/admin/partneri'
     | '/admin/partnersky-program'
@@ -4493,6 +4514,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/odstavky'
     | '/api/public/hooks/palivove-karty-sync'
     | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
@@ -4626,6 +4648,7 @@ export interface FileRouteTypes {
     | '/admin/kniha-jazd'
     | '/admin/legal'
     | '/admin/odosielanie'
+    | '/admin/odstavky'
     | '/admin/oznamy'
     | '/admin/partneri'
     | '/admin/partnersky-program'
@@ -4893,6 +4916,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
+    | '/api/public/hooks/odstavky'
     | '/api/public/hooks/palivove-karty-sync'
     | '/api/public/hooks/platitel-dph'
     | '/api/public/hooks/podpora-pristupy'
@@ -5108,6 +5132,7 @@ export interface RootRouteChildren {
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
+  ApiPublicHooksOdstavkyRoute: typeof ApiPublicHooksOdstavkyRoute
   ApiPublicHooksPalivoveKartySyncRoute: typeof ApiPublicHooksPalivoveKartySyncRoute
   ApiPublicHooksPlatitelDphRoute: typeof ApiPublicHooksPlatitelDphRoute
   ApiPublicHooksPodporaPristupyRoute: typeof ApiPublicHooksPodporaPristupyRoute
@@ -5585,6 +5610,13 @@ declare module '@tanstack/react-router' {
       path: '/odosielanie'
       fullPath: '/admin/odosielanie'
       preLoaderRoute: typeof AdminOdosielanieRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/odstavky': {
+      id: '/admin/odstavky'
+      path: '/odstavky'
+      fullPath: '/admin/odstavky'
+      preLoaderRoute: typeof AdminOdstavkyRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/oznamy': {
@@ -7505,6 +7537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksOdovzdanieMesacneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/odstavky': {
+      id: '/api/public/hooks/odstavky'
+      path: '/api/public/hooks/odstavky'
+      fullPath: '/api/public/hooks/odstavky'
+      preLoaderRoute: typeof ApiPublicHooksOdstavkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/palivove-karty-sync': {
       id: '/api/public/hooks/palivove-karty-sync'
       path: '/api/public/hooks/palivove-karty-sync'
@@ -8329,6 +8368,7 @@ interface AdminRouteChildren {
   AdminKnihaJazdRoute: typeof AdminKnihaJazdRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminOdosielanieRoute: typeof AdminOdosielanieRoute
+  AdminOdstavkyRoute: typeof AdminOdstavkyRoute
   AdminOznamyRoute: typeof AdminOznamyRoute
   AdminPartneriRoute: typeof AdminPartneriRoute
   AdminPartnerskyProgramRoute: typeof AdminPartnerskyProgramRoute
@@ -8361,6 +8401,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminKnihaJazdRoute: AdminKnihaJazdRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminOdosielanieRoute: AdminOdosielanieRoute,
+  AdminOdstavkyRoute: AdminOdstavkyRoute,
   AdminOznamyRoute: AdminOznamyRoute,
   AdminPartneriRoute: AdminPartneriRoute,
   AdminPartnerskyProgramRoute: AdminPartnerskyProgramRoute,
@@ -8879,6 +8920,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
+  ApiPublicHooksOdstavkyRoute: ApiPublicHooksOdstavkyRoute,
   ApiPublicHooksPalivoveKartySyncRoute: ApiPublicHooksPalivoveKartySyncRoute,
   ApiPublicHooksPlatitelDphRoute: ApiPublicHooksPlatitelDphRoute,
   ApiPublicHooksPodporaPristupyRoute: ApiPublicHooksPodporaPristupyRoute,

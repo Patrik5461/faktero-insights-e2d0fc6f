@@ -29,6 +29,7 @@ import {
   BookOpen,
   Landmark,
   BadgePercent,
+  CalendarClock,
 } from "lucide-react";
 
 const NAV = [
@@ -38,6 +39,7 @@ const NAV = [
   { to: "/admin/efaktura", label: "eFaktúra", icon: Send },
   { to: "/admin/odosielanie", label: "Odosielanie e-mailov", icon: MailWarning },
   { to: "/admin/oznamy", label: "Oznamy o aktualizácii", icon: Megaphone },
+  { to: "/admin/odstavky", label: "Odstávky inštitúcií", icon: CalendarClock },
   { to: "/admin/health", label: "Health check", icon: HeartPulse },
   { to: "/admin/companies", label: "Firmy", icon: Building2 },
   { to: "/admin/users", label: "Používatelia", icon: Users },

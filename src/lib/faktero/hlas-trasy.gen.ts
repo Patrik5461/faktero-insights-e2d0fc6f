@@ -169,6 +169,7 @@ export const TRASY_ADMINA = [
   "/admin/kniha-jazd",
   "/admin/legal",
   "/admin/odosielanie",
+  "/admin/odstavky",
   "/admin/oznamy",
   "/admin/partneri",
   "/admin/partnersky-program",
