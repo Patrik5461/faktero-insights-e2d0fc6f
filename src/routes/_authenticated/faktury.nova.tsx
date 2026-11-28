@@ -2654,7 +2654,7 @@ function NewInvoice() {
                           onChange={(e) => setItem(idx, { name: e.target.value })}
                           placeholder={t("Názov položky")}
                           aria-label={t("Názov položky")}
-                          className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+                          className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                         <PoznamkaPolozky value={it.description} onChange={(v) => setItem(idx, { description: v })} />
                         <ColneUdajePolozky value={it} onChange={(v) => setItem(idx, v)} />
@@ -2673,7 +2673,7 @@ function NewInvoice() {
                           value={it.unit}
                           onChange={(e) => setItem(idx, { unit: e.target.value })}
                           aria-label={t("Merná jednotka")}
-                          className="w-14 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+                          className="w-14 rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -2727,7 +2727,7 @@ function NewInvoice() {
                             }
                             title={it.prenesenie ? t("Prenesenie daňovej povinnosti — daň priznáva odberateľ") : undefined}
                             aria-label={t("Sadzba DPH")}
-                            className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+                            className="rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                           >
                             {sadzbyPolozky.map((r) => (
                               <option key={r} value={r}>
@@ -3296,7 +3296,7 @@ function CellNum({
         onChange(Number(e.target.value));
       }}
       onBlur={() => setRozpisane(null)}
-      className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums hover:border-input focus:border-input focus:bg-background ${align === "right" ? "text-right" : ""}`}
+      className={`${w} rounded-md border border-input bg-background px-2 py-1.5 text-sm tabular-nums hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 ${align === "right" ? "text-right" : ""}`}
     />
   );
 }
@@ -3334,7 +3334,7 @@ function CellSpolu({
         onZmena(Number(e.target.value));
       }}
       onBlur={() => setRozpisane(null)}
-      className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-input focus:border-input focus:bg-background`}
+      className={`${w} rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20`}
     />
   );
 }

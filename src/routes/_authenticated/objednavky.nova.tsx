@@ -537,7 +537,7 @@ function NewOrder() {
                     <tr key={i} className="border-b border-border last:border-0">
                       <td className="py-2">
                         <input
-                          className="w-full min-w-40 rounded-md border border-transparent bg-transparent px-2 py-1.5 hover:border-input focus:border-input focus:bg-background"
+                          className="w-full min-w-40 rounded-md border border-input bg-background px-2 py-1.5 hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                           value={p.name}
                           onChange={(e) => nastavPolozku(i, { name: e.target.value })}
                           placeholder={t("Názov položky")}
@@ -548,14 +548,14 @@ function NewOrder() {
                           type="number"
                           step="0.001"
                           min="0"
-                          className="w-20 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right hover:border-input focus:border-input focus:bg-background"
+                          className="w-20 rounded-md border border-input bg-background px-2 py-1.5 text-right hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                           value={p.quantity}
                           onChange={(e) => nastavPolozku(i, { quantity: e.target.value })}
                         />
                       </td>
                       <td className="py-2 pl-3">
                         <input
-                          className="w-14 rounded-md border border-transparent bg-transparent px-2 py-1.5 hover:border-input focus:border-input focus:bg-background"
+                          className="w-14 rounded-md border border-input bg-background px-2 py-1.5 hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                           value={p.unit}
                           onChange={(e) => nastavPolozku(i, { unit: e.target.value })}
                         />
@@ -565,7 +565,7 @@ function NewOrder() {
                           type="number"
                           step={KROK_CENY}
                           min="0"
-                          className="w-24 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right hover:border-input focus:border-input focus:bg-background"
+                          className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-right hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                           value={p.unit_price}
                           onChange={(e) =>
                             nastavPolozku(i, { unit_price: e.target.value, _cena_rucne: true })
@@ -579,7 +579,7 @@ function NewOrder() {
                       </td>
                       <td className="py-2 pl-3">
                         <select
-                          className="rounded-md border border-transparent bg-transparent px-2 py-1.5 hover:border-input focus:border-input focus:bg-background"
+                          className="rounded-md border border-input bg-background px-2 py-1.5 hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                           value={p.vat_rate}
                           onChange={(e) => nastavPolozku(i, { vat_rate: Number(e.target.value) })}
                         >

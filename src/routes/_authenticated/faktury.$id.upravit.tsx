@@ -927,7 +927,7 @@ function EditInvoice() {
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { name: e.target.value })}
                           placeholder={t("Názov položky")}
-                          className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+                          className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                         <PoznamkaPolozky
                           value={it.description}
@@ -947,7 +947,7 @@ function EditInvoice() {
                           value={it.quantity}
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { quantity: Number(e.target.value) })}
-                          className="w-16 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums hover:border-input focus:border-input focus:bg-background"
+                          className="w-16 rounded-md border border-input bg-background px-2 py-1.5 text-sm tabular-nums hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -956,7 +956,7 @@ function EditInvoice() {
                           value={it.unit}
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { unit: e.target.value })}
-                          className="w-14 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+                          className="w-14 rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -967,7 +967,7 @@ function EditInvoice() {
                           placeholder="0"
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}
-                          className="w-24 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums text-right hover:border-input focus:border-input focus:bg-background"
+                          className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-sm tabular-nums text-right hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -982,7 +982,7 @@ function EditInvoice() {
                           onChange={(e) =>
                             setItem(idx, { discount_percent: percentoZlavy(e.target.value) })
                           }
-                          className="w-16 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm tabular-nums hover:border-input focus:border-input focus:bg-background"
+                          className="w-16 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         />
                       </td>
                       <td className="py-2 pl-3">
@@ -998,7 +998,7 @@ function EditInvoice() {
                                   prenesenie: false,
                                 })
                           }
-                          className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+                          className="rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
                         >
                           {(() => {
                             const v = sadzbyDoVyberu(rezim, it.vat_rate, form.issue_date);
@@ -1516,7 +1516,7 @@ function CellSpolu({
         onZmena(Number(e.target.value));
       }}
       onBlur={() => setRozpisane(null)}
-      className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-input focus:border-input focus:bg-background disabled:opacity-60`}
+      className={`${w} rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60`}
     />
   );
 }

@@ -557,7 +557,7 @@ function NewRecurring() {
 
 const vstup = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const bunka =
-  "w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background";
+  "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20";
 
 function SectionHeader({ icon: Icon, title }: { icon: typeof FileText; title: string }) {
   return (
@@ -588,7 +588,7 @@ function SadzbaSelect({
       onChange={(e) => onZmena(Number(e.target.value))}
       className={
         className ??
-        "w-20 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
+        "w-20 rounded-md border border-input bg-background px-2 py-1.5 text-sm hover:border-primary/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
       }
     >
       {v.platne.map((r) => (
