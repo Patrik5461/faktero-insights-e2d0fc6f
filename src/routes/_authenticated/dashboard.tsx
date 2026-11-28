@@ -30,6 +30,7 @@ import { BankWidget } from "@/components/faktero/BankWidget";
 import { AutoUctovanieWidget } from "@/components/faktero/AutoUctovanieWidget";
 import { VynosyNakladyPanel } from "@/components/faktero/VynosyNakladyPanel";
 import { MojeUlohyPanel, MojeUlohyPas, useMojeUlohy } from "@/components/faktero/MojeUlohyPanel";
+import { NajblizsieTerminy } from "@/components/faktero/NajblizsieTerminy";
 import { SumaVDomacejMene } from "@/components/faktero/SuctyPoMenach";
 import { formatujMenu } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
@@ -372,6 +373,8 @@ function Dashboard() {
         <UpozornenieKleinunternehmer firma={company} />
         {/* Faktúra z verejnej stránky „Faktúra zadarmo“ — jedným kliknutím koncept. */}
         <PrenosFakturyZadarmo />
+        {/* Daňové termíny firmy (FAK-667) — aby kalendár nebol schovaný v Účtovníctve. */}
+        <NajblizsieTerminy companyId={getActiveCompanyId()} />
         {isEmpty ? (
           <EmptyDashboard />
         ) : (

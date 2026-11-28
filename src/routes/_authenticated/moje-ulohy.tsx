@@ -1,3 +1,4 @@
+import { NajblizsieTerminy } from "@/components/faktero/NajblizsieTerminy";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n/useT";
 import { preloz } from "@/lib/i18n/jazyk";
@@ -86,7 +87,10 @@ function Stranka() {
         {prepinam ? (
           <NacitavanieStav text="Prepínam firmu…" className="rounded-xl border border-border bg-card" />
         ) : (
-          <MojeUlohyPanel companyId={companyId} />
+          <div className="space-y-4">
+            <NajblizsieTerminy companyId={companyId} />
+            <MojeUlohyPanel companyId={companyId} />
+          </div>
         )}
       </PageBody>
     </>
