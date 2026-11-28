@@ -199,6 +199,28 @@ async function lehotyOstatnych(companyId: string): Promise<AppNotification[]> {
   );
 }
 
+/**
+ * Daňový kalendár (FAK-667): termíny firmy v najbližších 7 dňoch. Kľúč nesie
+ * druh, obdobie aj dátum — po prečítaní sa ten istý termín neozve znova.
+ */
+async function notifikacieDanovehoKalendara(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
+  const o7 = new Date(`${dnes}T00:00:00Z`);
+  o7.setUTCDate(o7.getUTCDate() + 7);
+  const { kalendarFirmy } = await import("./danovy-kalendar.server");
+  const k = await kalendarFirmy(supabaseAdmin, companyId, dnes, o7.toISOString().slice(0, 10));
+  return k.terminy.map((t) => ({
+    key: `danovy-kalendar:${t.druh}:${t.obdobie}:${t.datum}`,
+    severity: t.datum === dnes ? "danger" : "warning",
+    title: "Blíži sa termín: {nazov}",
+    detail: "za {obdobie} · do {datum}",
+    params: { nazov: t.nazov, obdobie: t.obdobie, datum: t.datum.split("-").reverse().map(Number).join(". ") },
+    to: "/uctovnictvo/danovy-kalendar",
+    date: t.datum,
+  })) as AppNotification[];
+}
+
 /** Iné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
 async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -510,7 +532,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
     supabaseAdmin.from("companies").select("country").eq("id", companyId).maybeSingle(),
   ]);
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph, webhooky, efakturyZlyhane] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie, efaktury, dph, webhooky, efakturyZlyhane, danovyKalendar] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
@@ -522,6 +544,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       notifikacieDph(companyId).catch(() => [] as AppNotification[]),
       notifikacieWebhookov(companyId).catch(() => [] as AppNotification[]),
       notifikacieZlyhanychEfaktur(companyId).catch(() => [] as AppNotification[]),
+      notifikacieDanovehoKalendara(companyId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
@@ -537,6 +560,7 @@ async function vsetkyNotifikacie(companyId: string, userId: string): Promise<App
       ...dph,
       ...webhooky,
       ...efakturyZlyhane,
+      ...danovyKalendar,
     ].sort(
       (a, b) => {
         const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];

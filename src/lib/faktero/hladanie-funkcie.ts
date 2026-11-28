@@ -197,6 +197,7 @@ export const SLOVA: Record<string, string[]> = {
   "/uctovnictvo/dph": ["DPH", "daň", "prehľad DPH"],
   "/uctovnictvo/vykazy": ["DPH priznanie", "kontrolný výkaz", "KV", "súhrnný výkaz", "SV", "XML pre finančnú správu"],
   "/uctovnictvo/oss": ["OSS", "EÚ", "spotrebiteľ", "VIES"],
+  "/uctovnictvo/danovy-kalendar": ["daňový kalendár", "termíny", "lehoty", "termín DPH", "preddavky", "kedy podať"],
   "/uctovnictvo/uzavierka": ["uzávierka", "uzamknutie", "zamknúť obdobie", "mesiac"],
   "/exporty": ["export", "Pohoda", "Omega", "Money", "ISDOC", "XML", "CSV", "pre účtovníka"],
   "/importy/novy": ["import", "prenos", "migrácia", "SuperFaktúra", "iDoklad", "Pohoda", "KROS", "Omega", "Money"],

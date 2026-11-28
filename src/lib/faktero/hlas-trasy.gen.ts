@@ -124,6 +124,7 @@ export const TRASY_APLIKACIE = [
   "/sklad/produkty/$id",
   "/sklad/produkty/$id/upravit",
   "/sklad/vydaj",
+  "/uctovnictvo/danovy-kalendar",
   "/uctovnictvo/dph",
   "/uctovnictvo/konvertor",
   "/uctovnictvo/konvertory",

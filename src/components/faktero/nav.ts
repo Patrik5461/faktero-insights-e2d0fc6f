@@ -291,6 +291,7 @@ export const NAV: NavGroup[] = [
       { to: "/uctovnictvo/dph", label: "DPH prehľad", skupina: "Uzávierky a DPH" },
       { to: "/uctovnictvo/vykazy", label: "Výkazy k DPH", skupina: "Uzávierky a DPH" },
       { to: "/uctovnictvo/oss", label: "OSS", skupina: "Uzávierky a DPH" },
+      { to: "/uctovnictvo/danovy-kalendar", label: "Daňový kalendár", skupina: "Uzávierky a DPH" },
       { to: "/uctovnictvo/uzavierka", label: "Uzávierka", skupina: "Uzávierky a DPH" },
       { to: "/exporty", label: "Účtovné exporty", skupina: "Exporty a importy" },
       /* Jedna položka na všetky programy — odkiaľ sa importuje, si človek

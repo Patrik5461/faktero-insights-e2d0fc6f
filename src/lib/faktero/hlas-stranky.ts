@@ -105,6 +105,7 @@ export const NAZVY_MIMO_MENU: Record<string, string> = {
   "/admin/efaktura": "Administrácia — eFaktúra",
   "/admin/odosielanie": "Administrácia — odosielanie e-mailov",
   "/admin/oznamy": "Administrácia — oznamy o aktualizácii",
+  "/admin/odstavky": "Administrácia — odstávky inštitúcií",
   "/admin/health": "Administrácia — health check",
   "/admin/companies": "Administrácia — firmy",
   "/admin/companies/$id": "Administrácia — detail firmy",

@@ -107,6 +107,7 @@ describe("účtovníctvo", () => {
       ["Uzávierky a DPH", "DPH prehľad", "/uctovnictvo/dph"],
       ["Uzávierky a DPH", "Výkazy k DPH", "/uctovnictvo/vykazy"],
       ["Uzávierky a DPH", "OSS", "/uctovnictvo/oss"],
+      ["Uzávierky a DPH", "Daňový kalendár", "/uctovnictvo/danovy-kalendar"],
       ["Uzávierky a DPH", "Uzávierka", "/uctovnictvo/uzavierka"],
       ["Exporty a importy", "Účtovné exporty", "/exporty"],
       ["Exporty a importy", "Účtovné importy", "/importy/novy"],

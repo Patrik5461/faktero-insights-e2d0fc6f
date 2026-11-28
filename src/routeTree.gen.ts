@@ -244,6 +244,7 @@ import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authent
 import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
+import { Route as AuthenticatedUctovnictvoDanovyKalendarRouteImport } from './routes/_authenticated/uctovnictvo.danovy-kalendar'
 import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
 import { Route as AuthenticatedUctovnictvoKonvertorRouteImport } from './routes/_authenticated/uctovnictvo.konvertor'
 import { Route as AuthenticatedUctovnictvoKonvertoryRouteImport } from './routes/_authenticated/uctovnictvo.konvertory'
@@ -1675,6 +1676,12 @@ const AuthenticatedSkladVydajRoute = AuthenticatedSkladVydajRouteImport.update({
   path: '/vydaj',
   getParentRoute: () => AuthenticatedSkladRoute,
 } as any)
+const AuthenticatedUctovnictvoDanovyKalendarRoute =
+  AuthenticatedUctovnictvoDanovyKalendarRouteImport.update({
+    id: '/uctovnictvo/danovy-kalendar',
+    path: '/uctovnictvo/danovy-kalendar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUctovnictvoDphRoute =
   AuthenticatedUctovnictvoDphRouteImport.update({
     id: '/uctovnictvo/dph',
@@ -2810,6 +2817,7 @@ export interface FileRoutesByFullPath {
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
+  '/uctovnictvo/danovy-kalendar': typeof AuthenticatedUctovnictvoDanovyKalendarRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
   '/uctovnictvo/konvertory': typeof AuthenticatedUctovnictvoKonvertoryRoute
@@ -3202,6 +3210,7 @@ export interface FileRoutesByTo {
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
+  '/uctovnictvo/danovy-kalendar': typeof AuthenticatedUctovnictvoDanovyKalendarRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
   '/uctovnictvo/konvertory': typeof AuthenticatedUctovnictvoKonvertoryRoute
@@ -3605,6 +3614,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
+  '/_authenticated/uctovnictvo/danovy-kalendar': typeof AuthenticatedUctovnictvoDanovyKalendarRoute
   '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/_authenticated/uctovnictvo/konvertor': typeof AuthenticatedUctovnictvoKonvertorRoute
   '/_authenticated/uctovnictvo/konvertory': typeof AuthenticatedUctovnictvoKonvertoryRoute
@@ -4008,6 +4018,7 @@ export interface FileRouteTypes {
     | '/sklad/nastavenia'
     | '/sklad/prijem'
     | '/sklad/vydaj'
+    | '/uctovnictvo/danovy-kalendar'
     | '/uctovnictvo/dph'
     | '/uctovnictvo/konvertor'
     | '/uctovnictvo/konvertory'
@@ -4400,6 +4411,7 @@ export interface FileRouteTypes {
     | '/sklad/nastavenia'
     | '/sklad/prijem'
     | '/sklad/vydaj'
+    | '/uctovnictvo/danovy-kalendar'
     | '/uctovnictvo/dph'
     | '/uctovnictvo/konvertor'
     | '/uctovnictvo/konvertory'
@@ -4802,6 +4814,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/nastavenia'
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/vydaj'
+    | '/_authenticated/uctovnictvo/danovy-kalendar'
     | '/_authenticated/uctovnictvo/dph'
     | '/_authenticated/uctovnictvo/konvertor'
     | '/_authenticated/uctovnictvo/konvertory'
@@ -6816,6 +6829,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladVydajRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/uctovnictvo/danovy-kalendar': {
+      id: '/_authenticated/uctovnictvo/danovy-kalendar'
+      path: '/uctovnictvo/danovy-kalendar'
+      fullPath: '/uctovnictvo/danovy-kalendar'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoDanovyKalendarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/uctovnictvo/dph': {
       id: '/_authenticated/uctovnictvo/dph'
       path: '/uctovnictvo/dph'
@@ -8151,6 +8171,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedPrijateFakturySamofakturaRoute: typeof AuthenticatedPrijateFakturySamofakturaRoute
+  AuthenticatedUctovnictvoDanovyKalendarRoute: typeof AuthenticatedUctovnictvoDanovyKalendarRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
   AuthenticatedUctovnictvoKonvertorRoute: typeof AuthenticatedUctovnictvoKonvertorRoute
   AuthenticatedUctovnictvoKonvertoryRoute: typeof AuthenticatedUctovnictvoKonvertoryRoute
@@ -8289,6 +8310,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
   AuthenticatedPrijateFakturySamofakturaRoute:
     AuthenticatedPrijateFakturySamofakturaRoute,
+  AuthenticatedUctovnictvoDanovyKalendarRoute:
+    AuthenticatedUctovnictvoDanovyKalendarRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
   AuthenticatedUctovnictvoKonvertorRoute:
     AuthenticatedUctovnictvoKonvertorRoute,

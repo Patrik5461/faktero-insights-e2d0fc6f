@@ -384,8 +384,9 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Kurz ECB a daň v eurách pri faktúre v cudzej mene",
       "Zaokrúhľovanie hotovosti na päť centov a upozornenie na limit 5 000 €",
       "Vety osobitných úprav (§ 68d, § 65, § 66)",
+      "Daňový kalendár firmy (Účtovníctvo → Daňový kalendár): termíny DPH, KV, SV, OSS, dane z príjmov a preddavkov, DMV, nehnuteľností a odvodov za zamestnancov podľa firmy, posun na pracovný deň, upozornenie na odstávky, export .ics",
     ],
-    routes: ["/uctovnictvo/dph", "/uctovnictvo/vykazy", "/uctovnictvo/oss", "/firma"],
+    routes: ["/uctovnictvo/dph", "/uctovnictvo/vykazy", "/uctovnictvo/oss", "/uctovnictvo/danovy-kalendar", "/firma"],
   },
   {
     key: "ostatne-doklady",
